@@ -1,15 +1,16 @@
 // クイズ画面。選択肢の数に依存しない（2択・3択・4択…すべて同じ処理）
-import { h, base, getJSON } from './dom.js';
+import { h, home, getData, makeT, loc } from './dom.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
 
 const app = document.getElementById('quiz');
 const params = Object.fromEntries(new URLSearchParams(location.search));
 const mode = modes.find(m => m.id === params.mode) || modes.find(m => m.id === 'random');
-const index = await getJSON('data/index.json');
+const index = await getData('index.json');
+const t = makeT(index.strings);
 const catName = id => index.categories.find(c => c.id === id)?.name ?? '';
-const title = mode.label + (params.c ? `：${catName(params.c)}` : '');
-const homeUrl = params.c ? `${base}c/${params.c}/` : base;
+const title = loc(mode.label) + (params.c ? ` : ${catName(params.c)}` : '');
+const homeUrl = params.c ? `${home}c/${params.c}/` : home;
 
 let qs, i, answers, done;
 start();
@@ -17,7 +18,7 @@ start();
 async function start() {
   const ids = mode.cats ? mode.cats(params, index) : index.categories.map(c => c.id);
   const pool = (await Promise.all(ids.map(id =>
-    getJSON(`data/q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
+    getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
   qs = mode.pick(pool, params, { store });
   i = 0;
   answers = [];
@@ -25,8 +26,8 @@ async function start() {
   if (!qs.length) {
     app.replaceChildren(
       h('h1', {}, title),
-      h('p', {}, mode.empty || '出題できる問題がありません。'),
-      h('a', { class: 'btn btn-primary', href: homeUrl }, '戻る'));
+      h('p', {}, loc(mode.empty) || t('no_questions')),
+      h('a', { class: 'btn btn-primary', href: homeUrl }, t('back')));
     return;
   }
   show();
@@ -75,9 +76,9 @@ function answer(n) {
   const fb = app.querySelector('.feedback');
   const last = i === qs.length - 1;
   fb.replaceChildren(
-    h('p', { class: `verdict ${ok ? 'ok' : 'ng'}` }, ok ? '正解！' : `不正解… 正解は ${String.fromCharCode(65 + q.answer)}`),
+    h('p', { class: `verdict ${ok ? 'ok' : 'ng'}` }, ok ? t('correct') : t('incorrect', { mark: String.fromCharCode(65 + q.answer) })),
     h('p', { class: 'explanation' }, q.explanation),
-    h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: next }, last ? '結果を見る' : '次の問題へ'));
+    h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: next }, last ? t('see_result') : t('next')));
   fb.className = `feedback ${ok ? 'ok' : 'ng'}`;
   fb.hidden = false;
   fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -94,21 +95,21 @@ function result() {
   const total = answers.length;
   const pct = Math.round((score / total) * 100);
   store.addHistory({ mode: mode.id, c: params.c || null, score, total });
-  const msg = pct >= 80 ? 'すばらしい！この調子です。' : pct >= 60 ? 'あと一歩。間違えた問題を復習しましょう。' : '解説を読んで、もう一度挑戦してみましょう。';
+  const msg = t(pct >= 80 ? 'msg_good' : pct >= 60 ? 'msg_mid' : 'msg_low');
   const wrong = total - score;
 
   app.replaceChildren(
     h('div', { class: 'result' },
       h('p', { class: 'quiz-title' }, title),
-      h('h1', {}, '結果'),
-      h('p', { class: 'score' }, h('b', {}, score), ` / ${total}問 正解`),
-      h('p', { class: 'score-pct' }, `正答率 ${pct}%`),
+      h('h1', {}, t('result')),
+      h('p', { class: 'score' }, h('b', {}, score), t('score_total', { total })),
+      h('p', { class: 'score-pct' }, t('rate_pct', { pct })),
       h('p', {}, msg),
       h('div', { class: 'actions' },
-        wrong > 0 && h('a', { class: 'btn btn-primary', href: `${base}quiz/?mode=weak${params.c ? `&c=${params.c}` : ''}` }, '間違えた問題を解き直す'),
-        h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: start }, 'もう一度'),
-        h('a', { class: 'btn btn-ghost', href: homeUrl }, params.c ? '分野ページへ' : 'トップへ'))),
-    h('h2', {}, '解答と解説'),
+        wrong > 0 && h('a', { class: 'btn btn-primary', href: `${home}quiz/?mode=weak${params.c ? `&c=${params.c}` : ''}` }, t('retry_wrong')),
+        h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: start }, t('again')),
+        h('a', { class: 'btn btn-ghost', href: homeUrl }, t(params.c ? 'to_category' : 'to_top')))),
+    h('h2', {}, t('review_heading')),
     h('ol', { class: 'review' }, answers.map(({ q, choice, ok }) =>
       h('li', { class: ok ? 'ok' : 'ng' },
         h('details', { open: !ok },
@@ -116,7 +117,7 @@ function result() {
           h('ul', { class: 'review-choices' }, q.choices.map((c, n) =>
             h('li', { class: n === q.answer ? 'is-answer' : n === choice ? 'is-chosen' : '' },
               `${String.fromCharCode(65 + n)}. ${c}`,
-              n === q.answer ? '（正解）' : n === choice ? '（あなたの解答）' : ''))),
+              n === q.answer ? t('mark_correct') : n === choice ? t('mark_yours') : ''))),
           h('p', { class: 'explanation' }, q.explanation))))));
   window.scrollTo(0, 0);
 }

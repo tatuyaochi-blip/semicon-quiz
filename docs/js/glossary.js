@@ -14,7 +14,7 @@ function filter() {
     el.hidden = !hit;
     if (hit) n++;
   }
-  count.textContent = `${n}件`;
+  count.textContent = count.dataset.label.replace('{n}', n);
 }
 
 input.addEventListener('input', filter);

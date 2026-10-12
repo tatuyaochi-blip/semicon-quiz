@@ -3,8 +3,8 @@ import { shuffle } from '../util.js';
 
 export default {
   id: 'category',
-  label: 'この分野を解く',
-  desc: 'この分野の問題をすべて、ランダムな順で出題します',
+  label: { ja: 'この分野を解く', en: 'Practice this topic', zh: '练习本领域' },
+  desc: { ja: 'この分野の問題をすべて、ランダムな順で出題します', en: 'All questions in this topic, in random order', zh: '按随机顺序练习本领域的全部题目' },
   order: 1,
   scope: ['category'],          // 表示する場所: 'top' = トップページ, 'category' = 分野ページ
   feedback: 'instant',          // 'instant' = 1問ごとに解説, 'end' = 最後にまとめて解説

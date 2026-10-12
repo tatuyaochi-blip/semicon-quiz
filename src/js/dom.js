@@ -1,8 +1,19 @@
 // ブラウザ用の共通関数
 
-export const base = document.documentElement.dataset.base;
+const root = document.documentElement;
+export const base = root.dataset.base;   // サイトのルート(データ・CSS・JSの置き場所)
+export const home = root.dataset.home;   // 表示中の言語のトップ(ページへのリンクに使う)
+export const lang = root.dataset.lang;
 
-export const getJSON = path => fetch(base + path).then(r => r.json());
+// 表示中の言語のデータを読む: getData('index.json') → data/{lang}/index.json
+export const getData = path => fetch(`${base}data/${lang}/${path}`).then(r => r.json());
+
+// 文言の取り出し: t('incorrect', { mark: 'A' })
+export const makeT = strings => (key, vars = {}) =>
+  (strings[key] ?? key).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+
+// 言語ごとの値 { ja: '…', en: '…' } から表示中の言語のものを選ぶ
+export const loc = v => (v && typeof v === 'object' ? v[lang] ?? v.ja : v);
 
 // h('button', { class: 'x', onclick: fn }, '子要素', ...)
 export function h(tag, props = {}, ...children) {

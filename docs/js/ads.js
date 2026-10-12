@@ -6,7 +6,7 @@ export function slot(name) {
   const el = document.createElement('aside');
   el.className = 'ad-slot';
   el.dataset.slot = name;
-  if (document.documentElement.hasAttribute('data-ad-ph')) el.textContent = `広告枠（${name}）`;
+  if (document.documentElement.hasAttribute('data-ad-ph')) el.textContent = `AD (${name})`;
   return el;
 }
 

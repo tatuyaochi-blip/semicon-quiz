@@ -52,11 +52,46 @@ export function validate() {
       if (!q.reviewed) unreviewed++;
     });
   }
-  return { errors, total, unreviewed };
+  // ---- 翻訳(data/i18n/{言語}/) ----
+  const warnings = [];
+  const config = readJSON('config.json');
+  const allQ = new Map();
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
+    try { for (const q of readJSON(`data/questions/${f}`)) allQ.set(q.id, q); } catch {}
+  }
+  const glossaryTerms = new Set(readJSON('data/glossary.json').map(g => g.term));
+  for (const { code } of config.languages.slice(1)) {
+    const base = `data/i18n/${code}`;
+    const opt = p => (fs.existsSync(path.join(root, p)) ? readJSON(p) : {});
+    const catT = opt(`${base}/categories.json`);
+    for (const id of Object.keys(catT)) if (!catIds.has(id)) errors.push(`${base}/categories.json: 分野 "${id}" がありません`);
+    const missingCats = [...catIds].filter(id => !catT[id]);
+    if (missingCats.length) warnings.push(`[${code}] 分野の翻訳なし: ${missingCats.length}件`);
+    for (const term of Object.keys(opt(`${base}/glossary.json`))) {
+      if (!glossaryTerms.has(term)) errors.push(`${base}/glossary.json: 用語 "${term}" が glossary.json にありません`);
+    }
+    let done = 0;
+    const qdir = path.join(root, base, 'questions');
+    for (const f of fs.existsSync(qdir) ? fs.readdirSync(qdir).filter(f => f.endsWith('.json')) : []) {
+      let tq;
+      try { tq = readJSON(`${base}/questions/${f}`); } catch (e) { errors.push(`${base}/questions/${f}: JSONの書式エラー ${e.message}`); continue; }
+      for (const [id, q] of Object.entries(tq)) {
+        const where = `${base}/questions/${f} ${id}`;
+        const orig = allQ.get(id);
+        if (!orig) { errors.push(`${where}: 元の問題がありません`); continue; }
+        for (const k of ['question', 'explanation']) if (typeof q[k] !== 'string' || !q[k]) errors.push(`${where}: ${k} がありません`);
+        if (!Array.isArray(q.choices) || q.choices.length !== orig.choices.length) errors.push(`${where}: choices の数が元の問題と違います`);
+        done++;
+      }
+    }
+    if (done < total) warnings.push(`[${code}] 問題の翻訳: ${done} / ${total} 問(残りは日本語で表示)`);
+  }
+  return { errors, warnings, total, unreviewed };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const { errors, total, unreviewed } = validate();
+  const { errors, warnings, total, unreviewed } = validate();
+  warnings.forEach(w => console.log(`注意: ${w}`));
   if (errors.length) {
     console.error(errors.join('\n'));
     console.error(`\nNG: ${errors.length} 件のエラー`);
