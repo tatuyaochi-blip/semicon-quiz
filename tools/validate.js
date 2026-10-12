@@ -25,6 +25,7 @@ export function validate() {
   }
 
   const qIds = new Map();
+  const qTexts = new Map();
   const dir = path.join(root, 'data/questions');
   for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
     const cat = f.slice(0, -5);
@@ -44,6 +45,9 @@ export function validate() {
       }
       if (qIds.has(q.id)) errors.push(`${where}: IDが ${qIds.get(q.id)} と重複しています`);
       else qIds.set(q.id, f);
+      if (qTexts.has(q.question)) errors.push(`${where}: 問題文が ${qTexts.get(q.question)} と同じです`);
+      else qTexts.set(q.question, q.id);
+      if (Array.isArray(q.choices) && new Set(q.choices).size !== q.choices.length) errors.push(`${where}: 同じ選択肢があります`);
       total++;
       if (!q.reviewed) unreviewed++;
     });
