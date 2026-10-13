@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-717ad4a847';
+const CACHE = 'sq-3a936e3cea';
 const BASE = "/semicon-quiz/";
 const PRECACHE = [
   "/semicon-quiz/",
