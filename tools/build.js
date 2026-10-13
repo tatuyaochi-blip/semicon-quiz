@@ -1,11 +1,13 @@
 // src/ と data/ から docs/ を生成する。実行: node tools/build.js
 // 言語ごとに出力する(config.languages の先頭が既定言語でルート、ほかは /en/ など)。
 // 翻訳がない問題はその言語では出さない。分野名・用語・UI文言は、翻訳がなければ既定言語で表示する。
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { validate } from './validate.js';
 import { termMatcher, linkTerms, reportUrl } from '../src/js/util.js';
+import { iconPng } from './icon.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -60,6 +62,14 @@ modes.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 const hasQ = Object.fromEntries(langs.map(L => [L.code, new Set(categories.flatMap(c => L.code === langs[0].code
   ? questions[c.id].map(q => q.id)
   : Object.keys(readOpt(`data/i18n/${L.code}/questions/${c.id}.json`, {}))))]));
+// 広告(AdSense)とアクセス解析(GA4)のタグ。config で未設定なら何も出さない
+const adsenseTag = config.adsenseClient
+  ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(config.adsenseClient)}" crossorigin="anonymous"></script>`
+  : '';
+const ga4Tag = config.ga4Id
+  ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${esc(config.ga4Id)}"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', '${esc(config.ga4Id)}');</script>`
+  : '';
 const loc = (v, code) => (v && typeof v === 'object' ? v[code] ?? v[defLang] : v);
 
 // ---- 出力先を作り直す ----
@@ -123,6 +133,22 @@ function buildLang(L) {
     modes: Object.fromEntries(modes.map(m => [m.id, { label: modeText(m, 'label'), empty: modeText(m, 'empty') ?? null }])),
     reportFormUrl: config.reportFormUrl ?? null,
   }));
+  // PWA のマニフェスト(言語ごと。ホーム画面から開くとその言語のトップになる)
+  write(`${L.path}manifest.json`, JSON.stringify({
+    name: siteName,
+    short_name: siteName,
+    lang: L.htmlLang,
+    start_url: home,
+    scope: base,
+    display: 'standalone',
+    background_color: '#f5f8fb',
+    theme_color: '#1d64c8',
+    icons: [
+      { src: `${base}icon-192.png`, sizes: '192x192', type: 'image/png' },
+      { src: `${base}icon-512.png`, sizes: '512x512', type: 'image/png' },
+      { src: `${base}icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  }, null, 2));
 
   // ---- HTML部品 ----
   const quizUrl = (m, cat) => `${home}quiz/?mode=${m.id}${cat ? `&amp;c=${cat}` : ''}`;
@@ -178,6 +204,9 @@ function buildLang(L) {
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: categories.length,
+    // プライバシーポリシーの「広告・アクセス解析」: 使っているサービスの説明だけを出す
+    adsPolicy: [config.adsenseClient && S.policy_adsense, config.ga4Id && S.policy_ga4].filter(Boolean).map(x => `<p>${x}</p>`).join('\n')
+      || `<p>${S.policy_none}</p>`,
     ...Object.fromEntries(Object.entries(S).map(([k, v]) => [`t_${k}`, v])),
   };
 
@@ -199,6 +228,11 @@ function buildLang(L) {
       `<meta property="og:site_name" content="${esc(siteName)}">`,
       `<meta property="og:locale" content="${L.locale.replace('-', '_')}">`,
       '<meta name="twitter:card" content="summary">',
+      `<link rel="manifest" href="${home}manifest.json">`,
+      `<link rel="icon" href="${base}icon-192.png" type="image/png">`,
+      `<link rel="apple-touch-icon" href="${base}icon-192.png">`,
+      ads ? adsenseTag : '', // クイズ画面(ads:false)には広告を出さない
+      ga4Tag,
     ].filter(Boolean).join('\n');
     const langLinks = langs.map(x => x.code === code
       ? `<span aria-current="true">${esc(x.label)}</span>`
@@ -212,7 +246,7 @@ function buildLang(L) {
       description: esc(description),
       head,
       langLinks,
-      htmlAttrs: ads && config.adPlaceholders ? ' data-ad-ph' : '',
+      htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : '',
       content,
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
     }));
@@ -300,6 +334,26 @@ ${sitemap.map(u => `  <url><loc>${u}</loc></url>`).join('\n')}
 write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}sitemap.xml\n`);
 write('.nojekyll', '');
 if (config.cname) write('CNAME', config.cname + '\n');
+// AdSense の販売者情報(adsenseClient が ca-pub-XXXX のとき pub-XXXX を書く)
+if (config.adsenseClient) write('ads.txt', `google.com, ${config.adsenseClient.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
+
+// ---- PWA: アイコンと Service Worker ----
+for (const size of [192, 512]) write(`icon-${size}.png`, iconPng(size));
+// 最初に保存しておくファイル: 各言語のトップ・クイズ・成績のページと問題データ、JS・CSS・アイコン
+const files = dir => fs.readdirSync(path.join(out, dir), { recursive: true }).map(f => `${dir}/${f.replaceAll('\\', '/')}`)
+  .filter(f => fs.statSync(path.join(out, f)).isFile());
+const precache = [
+  ...langs.flatMap(L => [L.path, `${L.path}quiz/`, `${L.path}stats/`, `${L.path}manifest.json`, ...files(`data/${L.code}`)]),
+  ...files('js'), ...files('css'), 'icon-192.png', 'icon-512.png',
+];
+// 中身が変わったら版も変わり、古いキャッシュは消える
+const hash = crypto.createHash('sha1');
+for (const f of precache) hash.update(fs.readFileSync(path.join(out, f.endsWith('/') || !f ? `${f}index.html` : f)));
+write('sw.js', fill(read('src/templates/sw.js'), {
+  version: hash.digest('hex').slice(0, 10),
+  base: JSON.stringify(base),
+  precache: JSON.stringify(precache.map(f => base + f), null, 2),
+}));
 
 const total = Object.values(questions).reduce((s, x) => s + x.length, 0);
 console.log(`build完了: ${langs.length}言語, ${sitemap.length} ページ（sitemap掲載）, 問題 ${total} 問 → docs/`);
