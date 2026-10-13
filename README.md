@@ -29,6 +29,7 @@ npm run serve      # http://localhost:8080/semicon-quiz/ で確認
 - **問題**：`{ id, question, choices, answer(0始まり), explanation, reviewed, source }`。choices の数は自由（2択・4択も可）
   - 任意：`level`（1 基礎・2 標準・3 応用。分野ページで絞り込める）、`choiceNotes`（選択肢ごとの「なぜ違うか」。choices と同じ数の配列で、補足がない選択肢は `""`）、`tags`（分野をまたぐタグの配列）
   - 英訳ファイルにも `choiceNotes` を書ける。英訳にない場合、英語版では表示しない
+- **言語**：`config.json` の `languages` に1行足し（先頭が既定言語）、翻訳ファイルを置く：`src/i18n/{言語}.json`（UI文言。モード名は `mode_{モードID}_label` / `_desc` / `_empty`）、`src/pages/{言語}/`、`data/i18n/{言語}/`（categories・exams・glossary・questions）。翻訳のない問題はその言語では出題しない。欠落数は `npm run validate` で表示される
 - **ページ**：`src/pages/xxx.html` を置くと `/xxx/` が生成される（先頭のコメントに title などを JSON で書く）
 - **クイズモード**：`src/js/modes/xxx.js` を置くと自動で登録される（`category.js` を参考に）
 - **広告**：`src/js/ads.js` の `slot()` を変更する。クイズ画面には読み込まれない

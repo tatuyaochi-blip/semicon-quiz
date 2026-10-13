@@ -1,5 +1,6 @@
 // src/ と data/ から docs/ を生成する。実行: node tools/build.js
-// 言語ごとに出力する(既定言語はルート、ほかは /en/ /zh/ など)。翻訳がない項目は既定言語で表示する。
+// 言語ごとに出力する(config.languages の先頭が既定言語でルート、ほかは /en/ など)。
+// 翻訳がない問題はその言語では出さない。分野名・用語・UI文言は、翻訳がなければ既定言語で表示する。
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -20,11 +21,12 @@ const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;
 const fill = (tpl, vars) => tpl.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m));
 
 // ---- 検査 ----
-const { errors, warnings } = validate();
+const { errors, warnings, translations } = validate();
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
 }
+translations.forEach(x => console.log(x));
 warnings.forEach(w => console.log(`注意: ${w}`));
 
 // ---- 読み込み ----
@@ -86,6 +88,8 @@ function buildLang(L) {
   const gloT = tr('glossary');
   const home = base + L.path;
   const siteName = loc(config.siteName, code);
+  // モード名: 翻訳ファイルの mode_{id}_label などがあればそれを、なければモードのファイルに書いたものを使う
+  const modeText = (m, k) => S[`mode_${m.id}_${k}`] ?? loc(m[k], code);
 
   const exName = e => exT[e.id]?.name ?? e.name;
   const grName = (e, g) => exT[e.id]?.groups?.[g.id] ?? g.name;
@@ -101,7 +105,7 @@ function buildLang(L) {
   for (const c of categories) {
     const tq = isDef ? {} : readOpt(`data/i18n/${code}/questions/${c.id}.json`, {});
     // choiceNotes は訳がある言語だけで表示する(既定言語の補足が混ざらないように)
-    qs[c.id] = questions[c.id].map(({ reviewed, source, choiceNotes, ...q }) => ({ ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}) }));
+    qs[c.id] = questions[c.id].filter(q => isDef || tq[q.id]).map(({ reviewed, source, choiceNotes, ...q }) => ({ ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}) }));
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
@@ -116,6 +120,7 @@ function buildLang(L) {
     exams: exams.map(e => ({ id: e.id, name: exName(e), groups: e.groups.map(g => ({ id: g.id, name: grName(e, g) })) })),
     categories: cats.map(c => ({ id: c.id, exam: c.exam, group: c.group, name: c.name, count: qs[c.id].length })),
     glossary: glossaryIndex,
+    modes: Object.fromEntries(modes.map(m => [m.id, { label: modeText(m, 'label'), empty: modeText(m, 'empty') ?? null }])),
     reportFormUrl: config.reportFormUrl ?? null,
   }));
 
@@ -128,7 +133,7 @@ function buildLang(L) {
   </a></li>`).join('') + '</ul>';
   const modeCards = (list, cat) => '<div class="mode-grid">' + list.map((m, i) => `
   <a class="mode-card${i === 0 ? ' primary' : ''}" href="${quizUrl(m, cat)}" rel="nofollow">
-    <strong>${esc(loc(m.label, code))}</strong><span>${esc(loc(m.desc, code))}</span>
+    <strong>${esc(modeText(m, 'label'))}</strong><span>${esc(modeText(m, 'desc'))}</span>
   </a>`).join('') + '</div>';
   const categoryList = exams.map(e => `
 <section class="exam">
@@ -178,7 +183,8 @@ function buildLang(L) {
 
   // ---- ページ生成 ----
   // alt: 言語コード → その言語での同じページのパス(なければ省略)
-  function page({ path: p, alt, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, content }) {
+  // fallback: 同じページがない言語へ切り替えるときの行き先(既定はその言語のトップ)
+  function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, content }) {
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
     const alts = langs.filter(x => alt[x.code] != null);
@@ -194,9 +200,11 @@ function buildLang(L) {
       `<meta property="og:locale" content="${L.locale.replace('-', '_')}">`,
       '<meta name="twitter:card" content="summary">',
     ].filter(Boolean).join('\n');
-    const langLinks = alts.map(x => x.code === code
+    const langLinks = langs.map(x => x.code === code
       ? `<span aria-current="true">${esc(x.label)}</span>`
-      : `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
+      : alt[x.code] != null
+        ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`
+        : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
     if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
       ...common,
@@ -224,7 +232,7 @@ function buildLang(L) {
   for (const c of cats) {
     const g = groupOf(c);
     const count = qs[c.id].length;
-    const pqs = qs[c.id].filter(q => hasQ[code].has(q.id)).map(q => ({ ...q, cat: c.id })); // 問題ページを作る問題
+    const pqs = qs[c.id].map(q => ({ ...q, cat: c.id }));
     const filter = levelFilter(pqs);
     page({
       path: `${L.path}c/${c.id}/`,
@@ -259,6 +267,7 @@ function buildLang(L) {
       page({
         path: qUrl(c.id, q.id),
         alt: Object.fromEntries(langs.filter(x => hasQ[x.code].has(q.id)).map(x => [x.code, qUrl(c.id, q.id, x)])),
+        fallback: x => `${x.path}c/${c.id}/`,
         title: t('question_title', { name: c.name, q: short(q.question, 50) }),
         description: short(q.question, 150),
         content: fill(qTpl, {
@@ -273,7 +282,7 @@ function buildLang(L) {
           choiceNotes: choiceNotes(q),
           report: reportLink(q.id),
           solveUrl: quizUrl(solve, c.id),
-          solveLabel: esc(loc(solve.label, code)),
+          solveLabel: esc(modeText(solve, 'label')),
           toCategory: esc(t('to_category')),
           related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
         }),

@@ -1,5 +1,5 @@
 // クイズ画面。選択肢の数に依存しない（2択・3択・4択…すべて同じ処理）
-import { h, home, getData, makeT, loc } from './dom.js';
+import { h, home, getData, makeT } from './dom.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
 import { termMatcher, linkTerms, reportUrl } from './util.js';
@@ -10,7 +10,8 @@ const mode = modes.find(m => m.id === params.mode) || modes.find(m => m.id === '
 const index = await getData('index.json');
 const t = makeT(index.strings);
 const catName = id => index.categories.find(c => c.id === id)?.name ?? '';
-const title = loc(mode.label) + (params.c ? ` : ${catName(params.c)}` : '');
+const label = index.modes[mode.id].label;
+const title = label + (params.c ? ` : ${catName(params.c)}` : '');
 const homeUrl = params.c ? `${home}c/${params.c}/` : home;
 const matcher = termMatcher(index.glossary);
 
@@ -22,6 +23,9 @@ const explain = q => h('div', {},
     note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
   index.reportFormUrl && h('p', { class: 'q-report' },
     h('a', { class: 'report-link', href: reportUrl(index.reportFormUrl, q.id, index.lang), target: '_blank', rel: 'noopener' }, t('report_error'))));
+
+// 言語を切り替えても同じ出題条件(?mode=…&c=…)のままにする
+document.querySelectorAll('.lang-switch a').forEach(a => (a.search = location.search));
 
 let qs, i, answers, done;
 start();
@@ -37,7 +41,7 @@ async function start() {
   if (!qs.length) {
     app.replaceChildren(
       h('h1', {}, title),
-      h('p', {}, loc(mode.empty) || t('no_questions')),
+      h('p', {}, index.modes[mode.id].empty || t('no_questions')),
       h('a', { class: 'btn btn-primary', href: homeUrl }, t('back')));
     return;
   }
@@ -136,7 +140,7 @@ function result() {
 
 // 結果の共有: Web Share API、使えなければ X の共有リンク
 function shareButton(score, total) {
-  const text = t('share_text', { title: params.c ? catName(params.c) : loc(mode.label), score, total, site: index.siteName });
+  const text = t('share_text', { title: params.c ? catName(params.c) : label, score, total, site: index.siteName });
   const url = new URL(homeUrl, location.href).href;
   if (navigator.share) {
     return h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => navigator.share({ text, url }).catch(() => {}) }, t('share'));

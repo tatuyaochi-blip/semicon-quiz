@@ -1,7 +1,6 @@
 // 成績ページ
-import { h, home, getData, makeT, loc } from './dom.js';
+import { h, home, getData, makeT } from './dom.js';
 import * as store from './store.js';
-import modes from './modes/index.js';
 
 const root = document.getElementById('stats');
 const index = await getData('index.json');
@@ -42,7 +41,7 @@ function render() {
       history.length
         ? h('ul', { class: 'history' }, history.map(x => h('li', {},
           h('span', { class: 'muted' }, new Date(x.at).toLocaleString(index.locale, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })),
-          h('span', {}, (loc(modes.find(m => m.id === x.mode)?.label) ?? x.mode) + (x.c ? ` : ${catName(x.c)}` : '')),
+          h('span', {}, (index.modes[x.mode]?.label ?? x.mode) + (x.c ? ` : ${catName(x.c)}` : '')),
           h('b', {}, `${x.score}/${x.total}`))))
         : h('p', { class: 'muted' }, t('no_history'))),
 

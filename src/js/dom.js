@@ -12,9 +12,6 @@ export const getData = path => fetch(`${base}data/${lang}/${path}`).then(r => r.
 export const makeT = strings => (key, vars = {}) =>
   (strings[key] ?? key).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
 
-// 言語ごとの値 { ja: '…', en: '…' } から表示中の言語のものを選ぶ
-export const loc = v => (v && typeof v === 'object' ? v[lang] ?? v.ja : v);
-
 // h('button', { class: 'x', onclick: fn }, '子要素', ...)
 export function h(tag, props = {}, ...children) {
   const el = document.createElement(tag);

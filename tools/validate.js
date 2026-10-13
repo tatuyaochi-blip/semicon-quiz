@@ -63,24 +63,36 @@ export function validate() {
       if (!q.reviewed) unreviewed++;
     });
   }
-  // ---- 翻訳(data/i18n/{言語}/) ----
+  // ---- 翻訳(data/i18n/{言語}/、src/i18n/{言語}.json、src/pages/{言語}/) ----
   const warnings = [];
+  const translations = []; // 言語ごとの翻訳欠落数(1言語1行)
   const config = readJSON('config.json');
   const allQ = new Map();
   for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
     try { for (const q of readJSON(`data/questions/${f}`)) allQ.set(q.id, q); } catch {}
   }
   const glossaryTerms = new Set(readJSON('data/glossary.json').map(g => g.term));
+  const opt = p => (fs.existsSync(path.join(root, p)) ? readJSON(p) : {});
+  const pages = code => (fs.existsSync(path.join(root, 'src/pages', code)) ? fs.readdirSync(path.join(root, 'src/pages', code)).filter(f => f.endsWith('.html')) : []);
+  const def = config.languages[0].code;
+  const uiKeys = Object.keys(readJSON(`src/i18n/${def}.json`));
   for (const { code } of config.languages.slice(1)) {
     const base = `data/i18n/${code}`;
-    const opt = p => (fs.existsSync(path.join(root, p)) ? readJSON(p) : {});
     const catT = opt(`${base}/categories.json`);
     for (const id of Object.keys(catT)) if (!catIds.has(id)) errors.push(`${base}/categories.json: 分野 "${id}" がありません`);
-    const missingCats = [...catIds].filter(id => !catT[id]);
-    if (missingCats.length) warnings.push(`[${code}] 分野の翻訳なし: ${missingCats.length}件`);
-    for (const term of Object.keys(opt(`${base}/glossary.json`))) {
+    const gloT = opt(`${base}/glossary.json`);
+    for (const term of Object.keys(gloT)) {
       if (!glossaryTerms.has(term)) errors.push(`${base}/glossary.json: 用語 "${term}" が glossary.json にありません`);
     }
+    const exT = opt(`${base}/exams.json`);
+    const ui = opt(`src/i18n/${code}.json`);
+    const missing = {
+      'UI文言': uiKeys.filter(k => !(k in ui)).length,
+      'ページ': pages(def).filter(f => !pages(code).includes(f)).length,
+      '試験・区分': exams.flatMap(e => [!exT[e.id]?.name, ...e.groups.map(g => !exT[e.id]?.groups?.[g.id])]).filter(Boolean).length,
+      '分野': [...catIds].filter(id => !catT[id]).length,
+      '用語': [...glossaryTerms].filter(term => !gloT[term]).length,
+    };
     let done = 0;
     const qdir = path.join(root, base, 'questions');
     for (const f of fs.existsSync(qdir) ? fs.readdirSync(qdir).filter(f => f.endsWith('.json')) : []) {
@@ -96,13 +108,16 @@ export function validate() {
         done++;
       }
     }
-    if (done < total) warnings.push(`[${code}] 問題の翻訳: ${done} / ${total} 問(残りは日本語で表示)`);
+    missing['問題'] = total - done;
+    translations.push(`[${code}] 翻訳の欠落: ${Object.entries(missing).map(([k, n]) => `${k} ${n}`).join(' / ')}`
+      + (missing['問題'] ? '(訳のない問題はこの言語では出題しない)' : ''));
   }
-  return { errors, warnings, total, unreviewed };
+  return { errors, warnings, translations, total, unreviewed };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const { errors, warnings, total, unreviewed } = validate();
+  const { errors, warnings, translations, total, unreviewed } = validate();
+  translations.forEach(x => console.log(x));
   warnings.forEach(w => console.log(`注意: ${w}`));
   if (errors.length) {
     console.error(errors.join('\n'));
