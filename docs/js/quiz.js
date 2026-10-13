@@ -2,7 +2,7 @@
 import { h, home, getData, makeT } from './dom.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
-import { termMatcher, linkTerms, reportUrl } from './util.js';
+import { termMatcher, linkTerms, reportUrl, shuffle } from './util.js';
 
 const app = document.getElementById('quiz');
 const params = Object.fromEntries(new URLSearchParams(location.search));
@@ -11,8 +11,10 @@ const index = await getData('index.json');
 const t = makeT(index.strings);
 const catName = id => index.categories.find(c => c.id === id)?.name ?? '';
 const label = index.modes[mode.id].label;
-const title = label + (params.c ? ` : ${catName(params.c)}` : '');
-const homeUrl = params.c ? `${home}c/${params.c}/` : home;
+// ?c= が存在しない分野(古いリンクなど)のときは、分野の指定がないものとして扱う
+const cat = index.categories.find(c => c.id === params.c);
+const title = label + (cat ? ` : ${cat.name}` : '');
+const homeUrl = cat ? `${home}c/${cat.id}/` : home;
 const matcher = termMatcher(index.glossary);
 
 // 図: ビルド時に作った SVG をそのまま入れる
@@ -35,21 +37,31 @@ const explain = q => h('div', {},
 // 言語を切り替えても同じ出題条件(?mode=…&c=…)のままにする
 document.querySelectorAll('.lang-switch a').forEach(a => (a.search = location.search));
 
-let qs, i, answers, done;
+let qs, i, answers, done, loadError;
 start();
 
-async function start() {
-  const ids = mode.cats ? mode.cats(params, index) : index.categories.map(c => c.id);
-  const pool = (await Promise.all(ids.map(id =>
-    getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
-  qs = mode.pick(pool, params, { store });
+// retry を渡すと、その問題だけを出し直す(結果画面の「間違えた問題を解き直す」)
+async function start(retry) {
+  if (retry) qs = shuffle(retry);
+  else {
+    const known = new Set(index.categories.map(c => c.id));
+    const ids = (mode.cats ? mode.cats(params, index) : [...known]).filter(id => known.has(id));
+    try {
+      const pool = (await Promise.all(ids.map(id =>
+        getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
+      qs = mode.pick(pool, params, { store });
+    } catch {
+      qs = []; // 問題データを読めない(オフラインで未保存など)
+      loadError = true;
+    }
+  }
   i = 0;
   answers = [];
   document.title = `${title} | ${document.title.split(' | ').pop()}`;
   if (!qs.length) {
     app.replaceChildren(
       h('h1', {}, title),
-      h('p', {}, index.modes[mode.id].empty || t('no_questions')),
+      h('p', {}, (!loadError && index.modes[mode.id].empty) || t('no_questions')),
       h('a', { class: 'btn btn-primary', href: homeUrl }, t('back')));
     return;
   }
@@ -117,7 +129,7 @@ function result() {
   const score = answers.filter(a => a.ok).length;
   const total = answers.length;
   const pct = Math.round((score / total) * 100);
-  store.addHistory({ mode: mode.id, c: params.c || null, score, total });
+  store.addHistory({ mode: mode.id, c: cat?.id ?? null, score, total });
   const msg = t(pct >= 80 ? 'msg_good' : pct >= 60 ? 'msg_mid' : 'msg_low');
   const wrong = total - score;
 
@@ -129,9 +141,10 @@ function result() {
       h('p', { class: 'score-pct' }, t('rate_pct', { pct })),
       h('p', {}, msg),
       h('div', { class: 'actions' },
-        wrong > 0 && h('a', { class: 'btn btn-primary', href: `${home}quiz/?mode=weak${params.c ? `&c=${params.c}` : ''}` }, t('retry_wrong')),
-        h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: start }, t('again')),
-        h('a', { class: 'btn btn-ghost', href: homeUrl }, t(params.c ? 'to_category' : 'to_top')),
+        // 今回間違えた問題だけを、この画面のまま出し直す(過去の苦手問題は混ぜない)
+        wrong > 0 && h('button', { class: 'btn btn-primary', type: 'button', onclick: () => start(answers.filter(a => !a.ok).map(a => a.q)) }, t('retry_wrong')),
+        h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: () => start() }, t('again')),
+        h('a', { class: 'btn btn-ghost', href: homeUrl }, t(cat ? 'to_category' : 'to_top')),
         shareButton(score, total))),
     h('h2', {}, t('review_heading')),
     h('ol', { class: 'review' }, answers.map(({ q, choice, ok }) =>
@@ -148,7 +161,7 @@ function result() {
 
 // 結果の共有: Web Share API、使えなければ X の共有リンク
 function shareButton(score, total) {
-  const text = t('share_text', { title: params.c ? catName(params.c) : label, score, total, site: index.siteName });
+  const text = t('share_text', { title: cat ? cat.name : label, score, total, site: index.siteName });
   const url = new URL(homeUrl, location.href).href;
   if (navigator.share) {
     return h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => navigator.share({ text, url }).catch(() => {}) }, t('share'));
@@ -158,7 +171,8 @@ function shareButton(score, total) {
 
 // キーボード操作: 数字キーで選択、Enterで次へ
 document.addEventListener('keydown', e => {
-  if (!qs?.length || i >= qs.length) return;
+  // Ctrl+1 などブラウザのショートカット、キーの押しっぱなしでは反応しない
+  if (!qs?.length || i >= qs.length || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
   const n = Number(e.key) - 1;
   if (!done && n >= 0 && n < qs[i].choices.length) answer(n);
   else if (done && e.key === 'Enter' && mode.feedback !== 'end') {

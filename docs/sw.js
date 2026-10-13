@@ -1,7 +1,9 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-ecac688f97';
+const CACHE = 'sq-9856983b17';
 const BASE = "/semicon-quiz/";
+// 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
+const HOMES = ["/semicon-quiz/en/","/semicon-quiz/"];
 const PRECACHE = [
   "/semicon-quiz/",
   "/semicon-quiz/quiz/",
@@ -129,5 +131,5 @@ self.addEventListener('fetch', e => {
     })
     // オフライン: 保存してあるもの(クイズ画面の ?mode=… は無視して探す)、なければトップ
     .catch(() => caches.match(e.request, { ignoreSearch: e.request.mode === 'navigate' })
-      .then(res => res || (e.request.mode === 'navigate' ? caches.match(BASE) : Response.error()))));
+      .then(res => res || (e.request.mode === 'navigate' ? caches.match(HOMES.find(h => url.pathname.startsWith(h)) || BASE) : Response.error()))));
 });

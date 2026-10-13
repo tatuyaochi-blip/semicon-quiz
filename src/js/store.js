@@ -9,14 +9,31 @@ let data = load();
 
 function load() {
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || empty();
+    const d = JSON.parse(localStorage.getItem(KEY));
+    return valid(d) ? d : empty();
   } catch {
     return empty();
   }
 }
 
+// 容量オーバーやブラウザの設定で保存できなくても、解答や表示は続けられるようにする
 function save() {
-  localStorage.setItem(KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } catch {
+    // この回の記録は保存されないが、画面の動作は止めない
+  }
+}
+
+// 記録の形式の検査(読み込み時とバックアップの読み込み時)
+function isObj(v) {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+function valid(d) {
+  return isObj(d) && isObj(d.q) && Array.isArray(d.history)
+    && Object.values(d.q).every(r => isObj(r) && Number.isFinite(r.ok) && Number.isFinite(r.ng))
+    && d.history.every(isObj);
 }
 
 export function record(id, cat, ok) {
@@ -85,7 +102,7 @@ export const exportData = () => JSON.stringify(data);
 export function importData(json) {
   let d;
   try { d = JSON.parse(json); } catch { return false; }
-  if (!d || typeof d.q !== 'object' || !Array.isArray(d.history)) return false;
+  if (!valid(d)) return false;
   data = d;
   save();
   return true;

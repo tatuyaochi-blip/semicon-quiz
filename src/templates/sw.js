@@ -2,6 +2,8 @@
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
 const CACHE = 'sq-{{version}}';
 const BASE = {{base}};
+// 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
+const HOMES = {{homes}};
 const PRECACHE = {{precache}};
 
 self.addEventListener('install', e => {
@@ -28,5 +30,5 @@ self.addEventListener('fetch', e => {
     })
     // オフライン: 保存してあるもの(クイズ画面の ?mode=… は無視して探す)、なければトップ
     .catch(() => caches.match(e.request, { ignoreSearch: e.request.mode === 'navigate' })
-      .then(res => res || (e.request.mode === 'navigate' ? caches.match(BASE) : Response.error()))));
+      .then(res => res || (e.request.mode === 'navigate' ? caches.match(HOMES.find(h => url.pathname.startsWith(h)) || BASE) : Response.error()))));
 });

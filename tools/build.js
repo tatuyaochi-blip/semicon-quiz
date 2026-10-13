@@ -375,6 +375,7 @@ for (const f of precache) hash.update(fs.readFileSync(path.join(out, f.endsWith(
 write('sw.js', fill(read('src/templates/sw.js'), {
   version: hash.digest('hex').slice(0, 10),
   base: JSON.stringify(base),
+  homes: JSON.stringify(langs.map(L => base + L.path).sort((a, b) => b.length - a.length)),
   precache: JSON.stringify(precache.map(f => base + f), null, 2),
 }));
 
