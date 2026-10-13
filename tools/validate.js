@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { figures, figureLabels, needsTr } from './figures.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const readJSON = p => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'));
@@ -18,6 +19,8 @@ export function validate() {
     if (!Array.isArray(notes) || !Array.isArray(choices) || notes.length !== choices.length
       || notes.some(x => x != null && typeof x !== 'string')) errors.push(`${where}: choiceNotes は choices と同じ数の文字列の配列にしてください`);
   };
+
+  const figs = figures();
 
   const catIds = new Set();
   for (const c of categories) {
@@ -58,6 +61,7 @@ export function validate() {
       // 任意の項目(あるときだけ検査)
       if ('level' in q && ![1, 2, 3].includes(q.level)) errors.push(`${where}: level は 1〜3 の整数にしてください`);
       checkNotes(q.choiceNotes, q.choices, where);
+      if ('figure' in q && !figs[q.figure]) errors.push(`${where}: 図 "${q.figure}" が data/figures/${q.figure}.svg にありません`);
       if ('tags' in q && (!Array.isArray(q.tags) || q.tags.some(x => typeof x !== 'string' || !x))) errors.push(`${where}: tags は文字列の配列にしてください`);
       total++;
       if (!q.reviewed) unreviewed++;
@@ -84,6 +88,12 @@ export function validate() {
     for (const term of Object.keys(gloT)) {
       if (!glossaryTerms.has(term)) errors.push(`${base}/glossary.json: 用語 "${term}" が glossary.json にありません`);
     }
+    const figT = opt(`${base}/figures.json`);
+    for (const [id, map] of Object.entries(figT)) {
+      if (!figs[id]) { errors.push(`${base}/figures.json: 図 "${id}" がありません`); continue; }
+      const labels = figureLabels(figs[id]);
+      for (const k of Object.keys(map)) if (!labels.includes(k)) errors.push(`${base}/figures.json: 図 "${id}" に文字 "${k}" がありません`);
+    }
     const exT = opt(`${base}/exams.json`);
     const ui = opt(`src/i18n/${code}.json`);
     const missing = {
@@ -92,6 +102,7 @@ export function validate() {
       '試験・区分': exams.flatMap(e => [!exT[e.id]?.name, ...e.groups.map(g => !exT[e.id]?.groups?.[g.id])]).filter(Boolean).length,
       '分野': [...catIds].filter(id => !catT[id]).length,
       '用語': [...glossaryTerms].filter(term => !gloT[term]).length,
+      '図': Object.entries(figs).filter(([id, svg]) => figureLabels(svg).some(x => needsTr(x) && figT[id]?.[x] == null)).length,
     };
     let done = 0;
     const qdir = path.join(root, base, 'questions');

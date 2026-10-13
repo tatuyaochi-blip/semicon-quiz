@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { validate } from './validate.js';
 import { termMatcher, linkTerms, reportUrl } from '../src/js/util.js';
 import { iconPng } from './icon.js';
+import { figures, localizeFigure } from './figures.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -40,6 +41,7 @@ const defLang = langs[0].code;
 const exams = readJSON('data/exams.json');
 const categories = readJSON('data/categories.json');
 const glossary = readJSON('data/glossary.json');
+const figs = figures();
 const layout = read('src/templates/layout.html');
 const catTpl = read('src/templates/category.html');
 const qTpl = read('src/templates/question.html');
@@ -96,6 +98,7 @@ function buildLang(L) {
   const exT = tr('exams');
   const catT = tr('categories');
   const gloT = tr('glossary');
+  const figT = tr('figures');
   const home = base + L.path;
   const siteName = loc(config.siteName, code);
   // モード名: 翻訳ファイルの mode_{id}_label などがあればそれを、なければモードのファイルに書いたものを使う
@@ -115,7 +118,11 @@ function buildLang(L) {
   for (const c of categories) {
     const tq = isDef ? {} : readOpt(`data/i18n/${code}/questions/${c.id}.json`, {});
     // choiceNotes は訳がある言語だけで表示する(既定言語の補足が混ざらないように)
-    qs[c.id] = questions[c.id].filter(q => isDef || tq[q.id]).map(({ reviewed, source, choiceNotes, ...q }) => ({ ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}) }));
+    // 図(figure)は、この言語の文字にした SVG を figureSvg として渡す(訳が足りなければ出さない)
+    qs[c.id] = questions[c.id].filter(q => isDef || tq[q.id]).map(({ reviewed, source, choiceNotes, figure, ...q }) => {
+      const figureSvg = figure ? localizeFigure(figs[figure], figT[figure], isDef) : null;
+      return { ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg } : {}) };
+    });
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
@@ -313,6 +320,7 @@ function buildLang(L) {
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
           explanation: linked(q.explanation),
+          figure: q.figureSvg ? `<figure class="fig">${q.figureSvg}</figure>` : '',
           choiceNotes: choiceNotes(q),
           report: reportLink(q.id),
           solveUrl: quizUrl(solve, c.id),

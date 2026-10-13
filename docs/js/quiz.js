@@ -15,10 +15,18 @@ const title = label + (params.c ? ` : ${catName(params.c)}` : '');
 const homeUrl = params.c ? `${home}c/${params.c}/` : home;
 const matcher = termMatcher(index.glossary);
 
-// 解説文(用語集の語にリンク)、選択肢ごとの補足(choiceNotes)、誤り報告リンク
+// 図: ビルド時に作った SVG をそのまま入れる
+const figure = svg => {
+  const el = h('figure', { class: 'fig' });
+  el.innerHTML = svg;
+  return el;
+};
+
+// 解説文(用語集の語にリンク)、図、選択肢ごとの補足(choiceNotes)、誤り報告リンク
 const explain = q => h('div', {},
   h('p', { class: 'explanation' }, linkTerms(q.explanation, matcher).map(p => (typeof p === 'string' ? p
     : h('a', { class: 'term-link', href: `${home}glossary/#${encodeURIComponent(p.id)}` }, p.text)))),
+  q.figureSvg && figure(q.figureSvg),
   q.choiceNotes && h('ul', { class: 'choice-notes' }, q.choiceNotes.map((note, n) =>
     note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
   index.reportFormUrl && h('p', { class: 'q-report' },
