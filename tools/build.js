@@ -176,14 +176,29 @@ function buildLang(L) {
 </section>`).join('\n');
 
   terms.sort((a, b) => (isDef ? a.reading.localeCompare(b.reading, 'ja') : a.term.localeCompare(b.term, L.locale)));
-  const glossaryList = '<dl class="glossary">' + terms.map(g => {
-    const c = catOf(g.cat);
-    return `
-  <div class="term" id="${esc(g.key)}">
-    <dt>${esc(g.term)}${g.reading ? `<small>${esc(g.reading)}</small>` : ''}</dt>
-    <dd>${esc(g.desc)}${c ? ` <a href="${home}c/${c.id}/">${esc(t('related', { name: c.name }))}</a>` : ''}</dd>
-  </div>`;
-  }).join('') + '</dl>';
+  // 用語集は試験の区分 → 分野の順にまとめる(分野の中は読み順)。上に分野へのジャンプ用リンクを置く
+  const termItem = g => `
+    <div class="term" id="${esc(g.key)}">
+      <dt>${esc(g.term)}${g.reading ? `<small>${esc(g.reading)}</small>` : ''}</dt>
+      <dd>${esc(g.desc)}</dd>
+    </div>`;
+  const gloGroups = exams.flatMap(e => e.groups.map(g => ({
+    name: grName(e, g),
+    cats: cats.filter(c => c.exam === e.id && c.group === g.id)
+      .map(c => ({ c, list: terms.filter(x => x.cat === c.id) })).filter(x => x.list.length),
+  }))).filter(g => g.cats.length);
+  const glossaryList = `<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}">${gloGroups.map(g => `
+  <p><b>${esc(g.name)}</b>${g.cats.map(({ c, list }) => ` <a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join('')}</p>`).join('')}
+</nav>` + gloGroups.map(g => `
+<section class="glossary-group">
+  <h2>${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
+  <section class="glossary-cat" id="cat-${c.id}">
+    <h3>${esc(c.name)}<a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></h3>
+    <dl class="glossary">${list.map(termItem).join('')}
+    </dl>
+  </section>`).join('')}
+</section>`).join('') + (terms.some(g => !catOf(g.cat)) ? `
+<dl class="glossary">${terms.filter(g => !catOf(g.cat)).map(termItem).join('')}</dl>` : '');
 
   // 問題ページ用
   const mark = n => String.fromCharCode(65 + n);

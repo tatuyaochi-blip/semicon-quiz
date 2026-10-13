@@ -14,6 +14,12 @@ function filter() {
     el.hidden = !hit;
     if (hit) n++;
   }
+  // 該当する用語がない分野・区分は見出しごと隠す。検索中は分野へのジャンプ用リンクも隠す
+  for (const sec of document.querySelectorAll('.glossary-cat, .glossary-group')) {
+    sec.hidden = !sec.querySelector('.term:not([hidden])');
+  }
+  const nav = document.querySelector('.glossary-nav');
+  if (nav) nav.hidden = words.length > 0;
   count.textContent = count.dataset.label.replace('{n}', n);
 }
 
