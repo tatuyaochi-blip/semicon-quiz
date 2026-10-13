@@ -100,7 +100,8 @@ function buildLang(L) {
   const qs = {};
   for (const c of categories) {
     const tq = isDef ? {} : readOpt(`data/i18n/${code}/questions/${c.id}.json`, {});
-    qs[c.id] = questions[c.id].map(({ reviewed, source, ...q }) => ({ ...q, ...(tq[q.id] || {}) }));
+    // choiceNotes は訳がある言語だけで表示する(既定言語の補足が混ざらないように)
+    qs[c.id] = questions[c.id].map(({ reviewed, source, choiceNotes, ...q }) => ({ ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}) }));
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
@@ -110,6 +111,7 @@ function buildLang(L) {
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
     locale: L.locale,
+    siteName,
     strings: S,
     exams: exams.map(e => ({ id: e.id, name: exName(e), groups: e.groups.map(g => ({ id: g.id, name: grName(e, g) })) })),
     categories: cats.map(c => ({ id: c.id, exam: c.exam, group: c.group, name: c.name, count: qs[c.id].length })),
@@ -155,7 +157,12 @@ function buildLang(L) {
     ? `<p class="q-report"><a class="report-link" href="${esc(reportUrl(config.reportFormUrl, id, code))}" target="_blank" rel="noopener nofollow">${esc(t('report_error'))}</a></p>`
     : '');
   const qLinks = list => '<ol class="q-list">' + list.map(q => `
-  <li><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></li>`).join('') + '</ol>';
+  <li${q.level ? ` data-level="${q.level}"` : ''}><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></li>`).join('') + '</ol>';
+  // 難易度の絞り込みボタン(level のある問題があるときだけ。動きは level.js)
+  const levelFilter = list => (list.some(q => q.level) ? `<div class="level-filter" role="group">${
+    ['', 1, 2, 3].map(lv => `<button type="button" class="chip" data-level-btn="${lv}"${lv ? '' : ' aria-pressed="true"'}>${esc(t(`level_${lv || 'all'}`))}</button>`).join('')}</div>` : '');
+  const choiceNotes = q => (q.choiceNotes ? '<ul class="choice-notes">' + q.choiceNotes.map((note, k) =>
+    (note ? `<li><b>${mark(k)}. </b>${esc(note)}</li>` : '')).join('') + '</ul>' : '');
 
   const common = {
     base, home, lang: code, htmlLang: L.htmlLang,
@@ -218,12 +225,13 @@ function buildLang(L) {
     const g = groupOf(c);
     const count = qs[c.id].length;
     const pqs = qs[c.id].filter(q => hasQ[code].has(q.id)).map(q => ({ ...q, cat: c.id })); // 問題ページを作る問題
+    const filter = levelFilter(pqs);
     page({
       path: `${L.path}c/${c.id}/`,
       alt: catAlt(c.id),
       title: t('category_title', { name: c.name }),
       description: c.description,
-      scripts: ['progress.js'],
+      scripts: filter ? ['progress.js', 'level.js'] : ['progress.js'],
       content: fill(catTpl, {
         ...common,
         id: c.id,
@@ -234,7 +242,7 @@ function buildLang(L) {
         keyPoints: esc(t('key_points', { name: c.name })),
         otherInGroup: esc(t('other_in_group', { group: g.name })),
         intro: c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
-        modes: count ? modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
+        modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(cats.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
         questionList: pqs.length ? `<section>
   <h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2>
@@ -262,6 +270,7 @@ function buildLang(L) {
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
           explanation: linked(q.explanation),
+          choiceNotes: choiceNotes(q),
           report: reportLink(q.id),
           solveUrl: quizUrl(solve, c.id),
           solveLabel: esc(loc(solve.label, code)),

@@ -27,6 +27,8 @@ npm run serve      # http://localhost:8080/semicon-quiz/ で確認
 
 - **分野**：`data/categories.json` に1行足し、`data/questions/{分野ID}.json` を置く（問題ごとのページ `/q/{分野ID}/{問題ID}/` も自動で生成される）
 - **問題**：`{ id, question, choices, answer(0始まり), explanation, reviewed, source }`。choices の数は自由（2択・4択も可）
+  - 任意：`level`（1 基礎・2 標準・3 応用。分野ページで絞り込める）、`choiceNotes`（選択肢ごとの「なぜ違うか」。choices と同じ数の配列で、補足がない選択肢は `""`）、`tags`（分野をまたぐタグの配列）
+  - 英訳ファイルにも `choiceNotes` を書ける。英訳にない場合、英語版では表示しない
 - **ページ**：`src/pages/xxx.html` を置くと `/xxx/` が生成される（先頭のコメントに title などを JSON で書く）
 - **クイズモード**：`src/js/modes/xxx.js` を置くと自動で登録される（`category.js` を参考に）
 - **広告**：`src/js/ads.js` の `slot()` を変更する。クイズ画面には読み込まれない

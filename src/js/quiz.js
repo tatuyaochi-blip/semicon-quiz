@@ -14,10 +14,12 @@ const title = loc(mode.label) + (params.c ? ` : ${catName(params.c)}` : '');
 const homeUrl = params.c ? `${home}c/${params.c}/` : home;
 const matcher = termMatcher(index.glossary);
 
-// 解説文(用語集の語にリンク)と誤り報告リンク
+// 解説文(用語集の語にリンク)、選択肢ごとの補足(choiceNotes)、誤り報告リンク
 const explain = q => h('div', {},
   h('p', { class: 'explanation' }, linkTerms(q.explanation, matcher).map(p => (typeof p === 'string' ? p
     : h('a', { class: 'term-link', href: `${home}glossary/#${encodeURIComponent(p.id)}` }, p.text)))),
+  q.choiceNotes && h('ul', { class: 'choice-notes' }, q.choiceNotes.map((note, n) =>
+    note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
   index.reportFormUrl && h('p', { class: 'q-report' },
     h('a', { class: 'report-link', href: reportUrl(index.reportFormUrl, q.id, index.lang), target: '_blank', rel: 'noopener' }, t('report_error'))));
 
@@ -117,7 +119,8 @@ function result() {
       h('div', { class: 'actions' },
         wrong > 0 && h('a', { class: 'btn btn-primary', href: `${home}quiz/?mode=weak${params.c ? `&c=${params.c}` : ''}` }, t('retry_wrong')),
         h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: start }, t('again')),
-        h('a', { class: 'btn btn-ghost', href: homeUrl }, t(params.c ? 'to_category' : 'to_top')))),
+        h('a', { class: 'btn btn-ghost', href: homeUrl }, t(params.c ? 'to_category' : 'to_top')),
+        shareButton(score, total))),
     h('h2', {}, t('review_heading')),
     h('ol', { class: 'review' }, answers.map(({ q, choice, ok }) =>
       h('li', { class: ok ? 'ok' : 'ng' },
@@ -129,6 +132,16 @@ function result() {
               n === q.answer ? t('mark_correct') : n === choice ? t('mark_yours') : ''))),
           explain(q))))));
   window.scrollTo(0, 0);
+}
+
+// 結果の共有: Web Share API、使えなければ X の共有リンク
+function shareButton(score, total) {
+  const text = t('share_text', { title: params.c ? catName(params.c) : loc(mode.label), score, total, site: index.siteName });
+  const url = new URL(homeUrl, location.href).href;
+  if (navigator.share) {
+    return h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => navigator.share({ text, url }).catch(() => {}) }, t('share'));
+  }
+  return h('a', { class: 'btn btn-ghost', href: `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, target: '_blank', rel: 'noopener' }, t('share'));
 }
 
 // キーボード操作: 数字キーで選択、Enterで次へ

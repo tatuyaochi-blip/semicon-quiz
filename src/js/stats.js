@@ -47,6 +47,14 @@ function render() {
         : h('p', { class: 'muted' }, t('no_history'))),
 
     h('section', {},
+      h('h2', {}, t('backup_heading')),
+      h('p', { class: 'muted' }, t('backup_note')),
+      h('div', { class: 'backup' },
+        h('button', { class: 'btn btn-ghost', type: 'button', onclick: exportFile }, t('export_button')),
+        h('label', { class: 'btn btn-ghost' }, t('import_button'),
+          h('input', { type: 'file', accept: '.json,application/json', hidden: true, onchange: e => importFile(e.target.files[0]) })))),
+
+    h('section', {},
       h('h2', {}, t('reset_heading')),
       h('button', {
         class: 'btn btn-ghost', type: 'button',
@@ -57,6 +65,20 @@ function render() {
           }
         },
       }, t('reset_button')))));
+}
+
+// 記録をJSONファイルとして保存する(ファイル名に今日の日付)
+function exportFile() {
+  const url = URL.createObjectURL(new Blob([store.exportData()], { type: 'application/json' }));
+  h('a', { href: url, download: `semicon-quiz-${new Date().toLocaleDateString('sv-SE')}.json` }).click();
+  setTimeout(() => URL.revokeObjectURL(url));
+}
+
+// 保存したJSONファイルで記録を置き換える
+async function importFile(file) {
+  if (!file || !confirm(t('import_confirm'))) return;
+  alert(store.importData(await file.text()) ? t('import_done') : t('import_error'));
+  render();
 }
 
 function tile(num, label) {

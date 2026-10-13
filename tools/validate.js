@@ -12,6 +12,13 @@ export function validate() {
   const exams = readJSON('data/exams.json');
   const categories = readJSON('data/categories.json');
 
+  // choiceNotes: 選択肢と同じ数の配列。値は文字列(補足がない選択肢は "" か null)
+  const checkNotes = (notes, choices, where) => {
+    if (notes === undefined) return;
+    if (!Array.isArray(notes) || !Array.isArray(choices) || notes.length !== choices.length
+      || notes.some(x => x != null && typeof x !== 'string')) errors.push(`${where}: choiceNotes は choices と同じ数の文字列の配列にしてください`);
+  };
+
   const catIds = new Set();
   for (const c of categories) {
     for (const k of ['id', 'exam', 'group', 'name', 'description', 'intro']) {
@@ -48,6 +55,10 @@ export function validate() {
       if (qTexts.has(q.question)) errors.push(`${where}: 問題文が ${qTexts.get(q.question)} と同じです`);
       else qTexts.set(q.question, q.id);
       if (Array.isArray(q.choices) && new Set(q.choices).size !== q.choices.length) errors.push(`${where}: 同じ選択肢があります`);
+      // 任意の項目(あるときだけ検査)
+      if ('level' in q && ![1, 2, 3].includes(q.level)) errors.push(`${where}: level は 1〜3 の整数にしてください`);
+      checkNotes(q.choiceNotes, q.choices, where);
+      if ('tags' in q && (!Array.isArray(q.tags) || q.tags.some(x => typeof x !== 'string' || !x))) errors.push(`${where}: tags は文字列の配列にしてください`);
       total++;
       if (!q.reviewed) unreviewed++;
     });
@@ -81,6 +92,7 @@ export function validate() {
         if (!orig) { errors.push(`${where}: 元の問題がありません`); continue; }
         for (const k of ['question', 'explanation']) if (typeof q[k] !== 'string' || !q[k]) errors.push(`${where}: ${k} がありません`);
         if (!Array.isArray(q.choices) || q.choices.length !== orig.choices.length) errors.push(`${where}: choices の数が元の問題と違います`);
+        checkNotes(q.choiceNotes, orig.choices, where);
         done++;
       }
     }
