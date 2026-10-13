@@ -2,6 +2,7 @@
 import { h, home, getData, makeT, loc } from './dom.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
+import { termMatcher, linkTerms, reportUrl } from './util.js';
 
 const app = document.getElementById('quiz');
 const params = Object.fromEntries(new URLSearchParams(location.search));
@@ -11,6 +12,14 @@ const t = makeT(index.strings);
 const catName = id => index.categories.find(c => c.id === id)?.name ?? '';
 const title = loc(mode.label) + (params.c ? ` : ${catName(params.c)}` : '');
 const homeUrl = params.c ? `${home}c/${params.c}/` : home;
+const matcher = termMatcher(index.glossary);
+
+// 解説文(用語集の語にリンク)と誤り報告リンク
+const explain = q => h('div', {},
+  h('p', { class: 'explanation' }, linkTerms(q.explanation, matcher).map(p => (typeof p === 'string' ? p
+    : h('a', { class: 'term-link', href: `${home}glossary/#${encodeURIComponent(p.id)}` }, p.text)))),
+  index.reportFormUrl && h('p', { class: 'q-report' },
+    h('a', { class: 'report-link', href: reportUrl(index.reportFormUrl, q.id, index.lang), target: '_blank', rel: 'noopener' }, t('report_error'))));
 
 let qs, i, answers, done;
 start();
@@ -77,7 +86,7 @@ function answer(n) {
   const last = i === qs.length - 1;
   fb.replaceChildren(
     h('p', { class: `verdict ${ok ? 'ok' : 'ng'}` }, ok ? t('correct') : t('incorrect', { mark: String.fromCharCode(65 + q.answer) })),
-    h('p', { class: 'explanation' }, q.explanation),
+    explain(q),
     h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: next }, last ? t('see_result') : t('next')));
   fb.className = `feedback ${ok ? 'ok' : 'ng'}`;
   fb.hidden = false;
@@ -118,7 +127,7 @@ function result() {
             h('li', { class: n === q.answer ? 'is-answer' : n === choice ? 'is-chosen' : '' },
               `${String.fromCharCode(65 + n)}. ${c}`,
               n === q.answer ? t('mark_correct') : n === choice ? t('mark_yours') : ''))),
-          h('p', { class: 'explanation' }, q.explanation))))));
+          explain(q))))));
   window.scrollTo(0, 0);
 }
 

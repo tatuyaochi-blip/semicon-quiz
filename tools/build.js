@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { validate } from './validate.js';
+import { termMatcher, linkTerms, reportUrl } from '../src/js/util.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -37,6 +38,7 @@ const categories = readJSON('data/categories.json');
 const glossary = readJSON('data/glossary.json');
 const layout = read('src/templates/layout.html');
 const catTpl = read('src/templates/category.html');
+const qTpl = read('src/templates/question.html');
 
 const questions = {};
 for (const c of categories) {
@@ -52,6 +54,10 @@ for (const f of fs.readdirSync(modeDir).filter(f => f.endsWith('.js') && f !== '
   modes.push({ ...m, file: f });
 }
 modes.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+// 言語コード → その言語で問題ページを作る問題IDの集合(既定言語はすべて、ほかは翻訳があるものだけ)
+const hasQ = Object.fromEntries(langs.map(L => [L.code, new Set(categories.flatMap(c => L.code === langs[0].code
+  ? questions[c.id].map(q => q.id)
+  : Object.keys(readOpt(`data/i18n/${L.code}/questions/${c.id}.json`, {}))))]));
 const loc = (v, code) => (v && typeof v === 'object' ? v[code] ?? v[defLang] : v);
 
 // ---- 出力先を作り直す ----
@@ -97,12 +103,18 @@ function buildLang(L) {
     qs[c.id] = questions[c.id].map(({ reviewed, source, ...q }) => ({ ...q, ...(tq[q.id] || {}) }));
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
+  // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
+  const terms = glossary.map(g => ({ ...g, ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
+  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term }));
+  const matcher = termMatcher(glossaryIndex);
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
     locale: L.locale,
     strings: S,
     exams: exams.map(e => ({ id: e.id, name: exName(e), groups: e.groups.map(g => ({ id: g.id, name: grName(e, g) })) })),
     categories: cats.map(c => ({ id: c.id, exam: c.exam, group: c.group, name: c.name, count: qs[c.id].length })),
+    glossary: glossaryIndex,
+    reportFormUrl: config.reportFormUrl ?? null,
   }));
 
   // ---- HTML部品 ----
@@ -123,16 +135,27 @@ function buildLang(L) {
   ${catCards(cats.filter(c => c.exam === e.id && c.group === g.id))}`).join('\n')}
 </section>`).join('\n');
 
-  const terms = glossary.map(g => ({ ...g, ...(gloT[g.term] || {}), reading: gloT[g.term] ? '' : g.reading }));
   terms.sort((a, b) => (isDef ? a.reading.localeCompare(b.reading, 'ja') : a.term.localeCompare(b.term, L.locale)));
   const glossaryList = '<dl class="glossary">' + terms.map(g => {
     const c = catOf(g.cat);
     return `
-  <div class="term">
+  <div class="term" id="${esc(g.key)}">
     <dt>${esc(g.term)}${g.reading ? `<small>${esc(g.reading)}</small>` : ''}</dt>
     <dd>${esc(g.desc)}${c ? ` <a href="${home}c/${c.id}/">${esc(t('related', { name: c.name }))}</a>` : ''}</dd>
   </div>`;
   }).join('') + '</dl>';
+
+  // 問題ページ用
+  const mark = n => String.fromCharCode(65 + n);
+  const short = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  const qUrl = (cat, id, l = L) => `${l.path}q/${cat}/${id}/`;
+  const linked = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? esc(p)
+    : `<a class="term-link" href="${home}glossary/#${encodeURIComponent(p.id)}">${esc(p.text)}</a>`)).join('');
+  const reportLink = id => (config.reportFormUrl
+    ? `<p class="q-report"><a class="report-link" href="${esc(reportUrl(config.reportFormUrl, id, code))}" target="_blank" rel="noopener nofollow">${esc(t('report_error'))}</a></p>`
+    : '');
+  const qLinks = list => '<ol class="q-list">' + list.map(q => `
+  <li><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></li>`).join('') + '</ol>';
 
   const common = {
     base, home, lang: code, htmlLang: L.htmlLang,
@@ -194,6 +217,7 @@ function buildLang(L) {
   for (const c of cats) {
     const g = groupOf(c);
     const count = qs[c.id].length;
+    const pqs = qs[c.id].filter(q => hasQ[code].has(q.id)).map(q => ({ ...q, cat: c.id })); // 問題ページを作る問題
     page({
       path: `${L.path}c/${c.id}/`,
       alt: catAlt(c.id),
@@ -212,7 +236,39 @@ function buildLang(L) {
         intro: c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
         modes: count ? modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(cats.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
+        questionList: pqs.length ? `<section>
+  <h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2>
+  ${qLinks(pqs)}
+</section>` : '',
       }),
+    });
+
+    // 問題ページ /q/{分野ID}/{問題ID}/
+    const solve = modes.find(m => m.id === 'category');
+    pqs.forEach((q, n) => {
+      // 関連問題: 同じ分野で後ろに続く5問(末尾の次は先頭)
+      const related = [...new Set([1, 2, 3, 4, 5].map(k => pqs[(n + k) % pqs.length]))].filter(r => r !== q);
+      page({
+        path: qUrl(c.id, q.id),
+        alt: Object.fromEntries(langs.filter(x => hasQ[x.code].has(q.id)).map(x => [x.code, qUrl(c.id, q.id, x)])),
+        title: t('question_title', { name: c.name, q: short(q.question, 50) }),
+        description: short(q.question, 150),
+        content: fill(qTpl, {
+          ...common,
+          catUrl: `${home}c/${c.id}/`,
+          catName: esc(c.name),
+          groupName: esc(g.name),
+          question: esc(q.question),
+          choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
+          answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
+          explanation: linked(q.explanation),
+          report: reportLink(q.id),
+          solveUrl: quizUrl(solve, c.id),
+          solveLabel: esc(loc(solve.label, code)),
+          toCategory: esc(t('to_category')),
+          related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
+        }),
+      });
     });
   }
 }

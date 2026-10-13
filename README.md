@@ -20,11 +20,12 @@ npm run serve      # http://localhost:8080/semicon-quiz/ で確認
 | cname | 独自ドメイン名。設定すると docs/CNAME を出力する |
 | onlyReviewed | true にすると reviewed:false の問題を出題しない |
 | contactFormUrl | お問い合わせ用 Googleフォームの URL |
+| reportFormUrl | 誤り報告用 Googleフォームの事前入力URL。`{id}`（問題ID）と `{lang}`（言語）を埋めて開く。null ならリンクを出さない |
 | adPlaceholders | true のとき広告枠の位置を点線で表示する |
 
 ## 追加のしかた
 
-- **分野**：`data/categories.json` に1行足し、`data/questions/{分野ID}.json` を置く
+- **分野**：`data/categories.json` に1行足し、`data/questions/{分野ID}.json` を置く（問題ごとのページ `/q/{分野ID}/{問題ID}/` も自動で生成される）
 - **問題**：`{ id, question, choices, answer(0始まり), explanation, reviewed, source }`。choices の数は自由（2択・4択も可）
 - **ページ**：`src/pages/xxx.html` を置くと `/xxx/` が生成される（先頭のコメントに title などを JSON で書く）
 - **クイズモード**：`src/js/modes/xxx.js` を置くと自動で登録される（`category.js` を参考に）
