@@ -262,7 +262,7 @@ function buildLang(L) {
         ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`
         : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
     // ヘッダーのナビ(いまいるページには aria-current を付ける)
-    const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary]]
+    const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary], ['contact/', S.nav_contact]]
       .map(([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('');
     if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
