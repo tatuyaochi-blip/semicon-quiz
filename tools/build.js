@@ -41,6 +41,10 @@ const defLang = langs[0].code;
 const exams = readJSON('data/exams.json');
 const categories = readJSON('data/categories.json');
 const glossary = readJSON('data/glossary.json');
+// 用語ページのURL(/term/{slug}/)。英語の用語名から作る(glossary.json の slug で上書きできる)
+const gloEn = readOpt('data/i18n/en/glossary.json', {});
+const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
+  ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
 const courses = readOpt('data/courses.json', []);
 const figs = figures();
 const layout = read('src/templates/layout.html');
@@ -128,7 +132,7 @@ function buildLang(L) {
   }
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
   const terms = glossary.map(g => ({ ...g, ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
-  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term }));
+  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key] }));
   const matcher = termMatcher(glossaryIndex);
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
@@ -180,7 +184,7 @@ function buildLang(L) {
   // 用語集は試験の区分 → 分野の順にまとめる(分野の中は読み順)。上に分野へのジャンプ用リンクを置く
   const termItem = g => `
     <div class="term" id="${esc(g.key)}">
-      <dt>${esc(g.term)}${g.reading ? `<small>${esc(g.reading)}</small>` : ''}</dt>
+      <dt><a href="${home}term/${termSlug[g.key]}/">${esc(g.term)}</a>${g.reading ? `<small>${esc(g.reading)}</small>` : ''}</dt>
       <dd>${esc(g.desc)}</dd>
     </div>`;
   const gloGroups = exams.flatMap(e => e.groups.map(g => ({
@@ -206,7 +210,7 @@ function buildLang(L) {
   const short = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
   const qUrl = (cat, id, l = L) => `${l.path}q/${cat}/${id}/`;
   const linked = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? esc(p)
-    : `<a class="term-link" href="${home}glossary/#${encodeURIComponent(p.id)}">${esc(p.text)}</a>`)).join('');
+    : `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`)).join('');
   const reportLink = id => (config.reportFormUrl
     ? `<p class="q-report"><a class="report-link" href="${esc(reportUrl(config.reportFormUrl, id, code))}" target="_blank" rel="noopener nofollow">${esc(t('report_error'))}</a></p>`
     : '');
@@ -396,6 +400,59 @@ function buildLang(L) {
   </li>`).join('')}
 </ol>
 <p class="muted">${esc(t('course_rule'))}</p>`,
+    });
+  }
+
+  // 用語ページ /term/{slug}/ : 定義、その用語が出てくる問題(問題文・解説の自動リンクから逆引き)、関連する用語
+  const termIds = text => linkTerms(text, matcher).filter(x => typeof x !== 'string').map(x => x.id);
+  const termQs = new Map(terms.map(g => [g.key, []]));
+  for (const c of cats) for (const q of qs[c.id]) {
+    const inQ = new Set(termIds(q.question));
+    const ids = new Set([...inQ, ...termIds(q.explanation)]);
+    for (const id of ids) termQs.get(id).push({ ...q, cat: c.id, ids, inQ: inQ.has(id) });
+  }
+  for (const g of terms) {
+    // 問題文に用語が出てくる問題を先に並べる
+    const list = termQs.get(g.key).sort((a, b) => b.inQ - a.inQ);
+    const fig = list.find(q => q.inQ && q.figureSvg);
+    // 解説からの抜き出し: 用語を含む最初の文(最大3問ぶん)
+    const quotes = list.map(q => ({ q, s: q.explanation.split(/(?<=。)|(?<=[.!?])\s+/).map(x => x.trim()).find(x => termIds(x).includes(g.key)) }))
+      .filter(x => x.s).slice(0, 3);
+    // 関連する用語: 同じ問題によく一緒に出てくる語 → 同じ分野の語
+    const co = new Map();
+    for (const q of list) for (const id of q.ids) if (id !== g.key) co.set(id, (co.get(id) || 0) + 1);
+    const rel = [...[...co].sort((a, b) => b[1] - a[1]).map(([id]) => id),
+      ...terms.filter(x => x.cat === g.cat && x.key !== g.key).map(x => x.key)];
+    const related = [...new Set(rel)].slice(0, 10).map(id => terms.find(x => x.key === id));
+    const c = catOf(g.cat);
+    page({
+      path: `${L.path}term/${termSlug[g.key]}/`,
+      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
+      title: t('term_title', { term: g.term }),
+      description: short(g.desc, 150),
+      noindex: !list.length, // 問題に一度も出てこない用語のページは検索に出さない
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
+<article class="term-page">
+  <h1>${esc(t('term_heading', { term: g.term }))}</h1>
+  ${g.reading ? `<p class="muted">${esc(g.reading)}</p>` : ''}
+  <p class="lead">${esc(g.desc)}</p>
+  ${fig ? `<figure class="fig">${fig.figureSvg}</figure>` : ''}
+  ${c ? `<p>${esc(t('term_category'))}: <a href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
+</article>
+${quotes.length ? `<section>
+  <h2>${esc(t('term_quotes', { term: g.term }))}</h2>
+  <ul class="term-quotes">${quotes.map(({ q, s }) => `<li><p>${esc(s)}</p><a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 60))}</a></li>`).join('')}</ul>
+</section>` : ''}
+${list.length ? `<section>
+  <h2>${esc(t('term_questions', { term: g.term, n: list.length }))}</h2>
+  ${qLinks(list.slice(0, 15))}
+</section>` : ''}
+<div data-ad="term"></div>
+${related.length ? `<section>
+  <h2>${esc(t('term_related'))}</h2>
+  <p class="term-chips">${related.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
+</section>` : ''}
+<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
   }
 }

@@ -17,6 +17,7 @@ const cat = index.categories.find(c => c.id === params.c);
 const title = label + (cat ? ` : ${cat.name}` : '');
 const homeUrl = cat ? `${home}c/${cat.id}/` : home;
 const matcher = termMatcher(index.glossary);
+const slugOf = new Map(index.glossary.map(g => [g.id, g.slug]));
 
 // 図: ビルド時に作った SVG をそのまま入れる
 const figure = svg => {
@@ -28,7 +29,7 @@ const figure = svg => {
 // 解説文(用語集の語にリンク)、図、選択肢ごとの補足(choiceNotes)、誤り報告リンク
 const explain = q => h('div', {},
   h('p', { class: 'explanation' }, linkTerms(q.explanation, matcher).map(p => (typeof p === 'string' ? p
-    : h('a', { class: 'term-link', href: `${home}glossary/#${encodeURIComponent(p.id)}` }, p.text)))),
+    : h('a', { class: 'term-link', href: `${home}term/${slugOf.get(p.id)}/` }, p.text)))),
   q.figureSvg && figure(q.figureSvg),
   q.choiceNotes && h('ul', { class: 'choice-notes' }, q.choiceNotes.map((note, n) =>
     note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
