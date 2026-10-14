@@ -38,7 +38,7 @@ const explain = q => h('div', {},
 // 言語を切り替えても同じ出題条件(?mode=…&c=…)のままにする
 document.querySelectorAll('.lang-switch a').forEach(a => (a.search = location.search));
 
-let qs, i, answers, done, loadError;
+let qs, i, answers, done, finished, loadError;
 start();
 
 // retry を渡すと、その問題だけを出し直す(結果画面の「間違えた問題を解き直す」)
@@ -58,6 +58,7 @@ async function start(retry) {
   }
   i = 0;
   answers = [];
+  finished = false;
   document.title = `${title} | ${document.title.split(' | ').pop()}`;
   if (!qs.length) {
     app.replaceChildren(
@@ -80,7 +81,8 @@ function show() {
   app.replaceChildren(
     h('div', { class: 'quiz-head' },
       h('span', { class: 'quiz-title' }, title),
-      h('span', { class: 'quiz-count' }, `${i + 1} / ${qs.length}`)),
+      h('span', { class: 'quiz-count' }, `${i + 1} / ${qs.length}`),
+      h('button', { class: 'quiz-quit', type: 'button', onclick: quit }, t('quit'))),
     h('div', { class: 'progress' }, h('div', { class: 'progress-bar', style: `width:${(i / qs.length) * 100}%` })),
     h('p', { class: 'q-cat' }, catName(q.cat)),
     h('h1', { class: 'q-text' }, q.question),
@@ -121,12 +123,20 @@ function answer(n) {
 }
 
 function next() {
+  if (finished) return; // 「ここで終了」のあとに、模擬試験の自動送り(setTimeout)が来ても何もしない
   i++;
   if (i < qs.length) show();
   else result();
 }
 
+// 「ここで終了」: 解いた分だけで結果を出す(記録は1問ごとに保存済み)。1問も解いていなければ元のページへ
+function quit() {
+  if (!answers.length) location.href = homeUrl;
+  else result();
+}
+
 function result() {
+  finished = true;
   const score = answers.filter(a => a.ok).length;
   const total = answers.length;
   const pct = Math.round((score / total) * 100);
@@ -147,7 +157,7 @@ function result() {
         h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: () => start() }, t('again')),
         h('a', { class: 'btn btn-ghost', href: homeUrl }, t(cat ? 'to_category' : 'to_top')),
         shareButton(score, total))),
-    mode.report === 'diagnosis' && diagnosisReport(answers, index, t),
+    mode.report === 'diagnosis' ? diagnosisReport(answers, index, t) : '', // replaceChildren は false を文字として出すので '' にする
     h('h2', {}, t('review_heading')),
     h('ol', { class: 'review' }, answers.map(({ q, choice, ok }) =>
       h('li', { class: ok ? 'ok' : 'ng' },
@@ -174,7 +184,7 @@ function shareButton(score, total) {
 // キーボード操作: 数字キーで選択、Enterで次へ
 document.addEventListener('keydown', e => {
   // Ctrl+1 などブラウザのショートカット、キーの押しっぱなしでは反応しない
-  if (!qs?.length || i >= qs.length || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (!qs?.length || finished || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
   const n = Number(e.key) - 1;
   if (!done && n >= 0 && n < qs[i].choices.length) answer(n);
   else if (done && e.key === 'Enter' && mode.feedback !== 'end') {
