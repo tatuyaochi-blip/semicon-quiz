@@ -38,19 +38,31 @@ const explain = q => h('div', {},
 // 言語を切り替えても同じ出題条件(?mode=…&c=…)のままにする
 document.querySelectorAll('.lang-switch a').forEach(a => (a.search = location.search));
 
+// 選択肢の順番を出題のたびに入れ替える(正解の位置を覚えたり読んだりできないように)。
+// 正解の番号と選択肢ごとの補足も同じ順に並べ替える
+function shuffleChoices(q) {
+  const order = shuffle(q.choices.map((_, n) => n));
+  return {
+    ...q,
+    choices: order.map(n => q.choices[n]),
+    choiceNotes: q.choiceNotes && order.map(n => q.choiceNotes[n]),
+    answer: order.indexOf(q.answer),
+  };
+}
+
 let qs, i, answers, done, finished, loadError;
 start();
 
 // retry を渡すと、その問題だけを出し直す(結果画面の「間違えた問題を解き直す」)
 async function start(retry) {
-  if (retry) qs = shuffle(retry);
+  if (retry) qs = shuffle(retry).map(shuffleChoices);
   else {
     const known = new Set(index.categories.map(c => c.id));
     const ids = (mode.cats ? mode.cats(params, index) : [...known]).filter(id => known.has(id));
     try {
       const pool = (await Promise.all(ids.map(id =>
         getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
-      qs = mode.pick(pool, params, { store });
+      qs = mode.pick(pool, params, { store }).map(shuffleChoices);
     } catch {
       qs = []; // 問題データを読めない(オフラインで未保存など)
       loadError = true;

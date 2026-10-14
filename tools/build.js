@@ -276,7 +276,8 @@ function buildLang(L) {
       content,
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
     }));
-    if (!noindex) sitemap.push(url);
+    // 更新日の判定用に、本文(タイトル・説明・内容)のハッシュを残す。ヘッダーなど全ページ共通の部分は含めない
+    if (!noindex) sitemap.push({ url, hash: crypto.createHash('sha1').update(tt + description + content).digest('hex').slice(0, 16) });
   }
 
   // src/pages/{言語}/*.html(ファイルを足せばページが増える)
@@ -353,9 +354,17 @@ function buildLang(L) {
 }
 
 // ---- sitemap / robots / その他 ----
+// data/lastmod.json に「ページ → 本文のハッシュと更新日」を記録し、本文が変わったページだけ更新日(lastmod)を今日にする
+const lastmodFile = path.join(root, 'data/lastmod.json');
+const lastmodOld = fs.existsSync(lastmodFile) ? JSON.parse(fs.readFileSync(lastmodFile, 'utf8')) : {};
+const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD(端末の日付)
+const pageKey = url => url.slice(baseUrl.length) || '/';
+const lastmod = Object.fromEntries(sitemap.map(({ url, hash }) =>
+  [pageKey(url), lastmodOld[pageKey(url)]?.hash === hash ? lastmodOld[pageKey(url)] : { hash, date: today }]));
+fs.writeFileSync(lastmodFile, '{\n' + Object.entries(lastmod).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n') + '\n}\n');
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemap.map(u => `  <url><loc>${u}</loc></url>`).join('\n')}
+${sitemap.map(({ url }) => `  <url><loc>${url}</loc><lastmod>${lastmod[pageKey(url)].date}</lastmod></url>`).join('\n')}
 </urlset>
 `);
 write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}sitemap.xml\n`);
