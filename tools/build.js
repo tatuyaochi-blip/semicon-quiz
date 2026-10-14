@@ -242,7 +242,7 @@ function buildLang(L) {
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: categories.length,
     // プライバシーポリシーの「広告・アクセス解析」: 使っているサービスの説明だけを出す
-    adsPolicy: [config.adsenseClient && S.policy_adsense, config.ga4Id && S.policy_ga4].filter(Boolean).map(x => `<p>${x}</p>`).join('\n')
+    adsPolicy: [config.adsenseClient && S.policy_adsense, S.policy_affiliate, config.ga4Id && S.policy_ga4].filter(Boolean).map(x => `<p>${x}</p>`).join('\n')
       || `<p>${S.policy_none}</p>`,
     ...Object.fromEntries(Object.entries(S).map(([k, v]) => [`t_${k}`, v])),
   };
