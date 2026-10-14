@@ -7,7 +7,7 @@ HTML/CSS/JavaScript だけで作った学習サイト。`src/` と `data/` か�
 ```
 npm run validate   # 問題データの検査
 npm run build      # docs/ を生成（validate も自動で実行）
-npm run serve      # http://localhost:8080/semicon-quiz/ で確認
+npm run serve      # http://localhost:8080/ で確認
 ```
 
 `docs/` はビルドのたびに作り直すため、直接編集しないこと。
