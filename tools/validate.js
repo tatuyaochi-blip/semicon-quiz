@@ -34,6 +34,13 @@ export function validate() {
     else if (!exam.groups.some(g => g.id === c.group)) errors.push(`categories.json: ${c.id} の group "${c.group}" が exams.json にありません`);
   }
 
+  // 学習コース: 分野IDが存在するか
+  if (fs.existsSync(path.join(root, 'data/courses.json'))) {
+    for (const co of readJSON('data/courses.json')) {
+      for (const id of co.steps) if (!catIds.has(id)) errors.push(`courses.json: ${co.id} の分野 "${id}" が categories.json にありません`);
+    }
+  }
+
   const qIds = new Map();
   const qTexts = new Map();
   const dir = path.join(root, 'data/questions');

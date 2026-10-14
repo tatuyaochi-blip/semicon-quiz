@@ -20,7 +20,8 @@ function render() {
       tile(pct(all.rate), t('overall_rate')),
       tile(`${all.answered}`, t('answered_of', { total })),
       tile(`${all.weak}`, t('weak_count')),
-      tile(`${store.history().length}`, t('attempts'))),
+      tile(`${store.history().length}`, t('attempts')),
+      tile(`${store.streak()}`, t('streak_days'))),
     all.weak > 0 && h('p', {}, h('a', { class: 'btn btn-primary', href: `${home}quiz/?mode=weak` }, t('solve_weak', { n: all.weak }))),
 
     index.exams.map(e => e.groups.map(g =>

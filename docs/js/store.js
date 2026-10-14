@@ -33,7 +33,8 @@ function isObj(v) {
 function valid(d) {
   return isObj(d) && isObj(d.q) && Array.isArray(d.history)
     && Object.values(d.q).every(r => isObj(r) && Number.isFinite(r.ok) && Number.isFinite(r.ng))
-    && d.history.every(isObj);
+    && d.history.every(isObj)
+    && (d.days == null || (Array.isArray(d.days) && d.days.every(x => typeof x === 'string')));
 }
 
 export function record(id, cat, ok) {
@@ -85,8 +86,30 @@ export function stats(cat) {
 export function addHistory(entry) {
   data.history.unshift({ ...entry, at: Date.now() });
   data.history.length = Math.min(data.history.length, 50);
+  // 学習した日(連続学習日数の計算用)。days は後から追加した項目で、古い記録にはない
+  const today = dayKey(Date.now());
+  data.days = (data.days || []).filter(d => d !== today).concat(today).slice(-400);
   save();
 }
+
+// 端末の日付で YYYY-MM-DD
+const dayKey = at => new Date(at).toLocaleDateString('sv-SE');
+
+// 連続学習日数: 今日(まだなら昨日)から、毎日続けて学習した日数
+export function streak() {
+  const days = new Set(data.days || []);
+  const d = new Date();
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (days.has(dayKey(d))) {
+    n++;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+
+// 今日の1問をもう解いたか
+export const dailyDone = () => data.history.some(h => h.mode === 'daily' && dayKey(h.at) === dayKey(Date.now()));
 
 export const history = () => data.history;
 

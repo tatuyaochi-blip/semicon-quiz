@@ -34,6 +34,7 @@ npm run serve      # http://localhost:8080/ で確認
 - **分野**：`data/categories.json` に1行足し、`data/questions/{分野ID}.json` を置く（問題ごとのページ `/q/{分野ID}/{問題ID}/` も自動で生成される）
 - **問題**：`{ id, question, choices, answer(0始まり), explanation, reviewed, source }`。choices の数は自由（2択・4択も可）
 - **更新日**：`data/lastmod.json` はビルドが自動で書き換える（ページ本文のハッシュと更新日）。本文が変わったページだけ sitemap.xml の lastmod が新しくなる。手で編集しない
+- **学習コース**：`data/courses.json` の `steps` に分野IDを学ぶ順に並べる。名前と説明は言語ごと（`{ "ja": …, "en": … }`）。トップに一覧、`/course/{id}/` にページができる
   - 任意：`level`（1 基礎・2 標準・3 応用。分野ページで絞り込める）、`choiceNotes`（選択肢ごとの「なぜ違うか」。choices と同じ数の配列で、補足がない選択肢は `""`）、`tags`（分野をまたぐタグの配列）
   - 英訳ファイルにも `choiceNotes` を書ける。英訳にない場合、英語版では表示しない
 - **図**：`data/figures/{図ID}.svg` を置き、問題に `"figure": "{図ID}"` を書くと、解説の下に表示される（クイズ画面と問題ページ）

@@ -41,6 +41,7 @@ const defLang = langs[0].code;
 const exams = readJSON('data/exams.json');
 const categories = readJSON('data/categories.json');
 const glossary = readJSON('data/glossary.json');
+const courses = readOpt('data/courses.json', []);
 const figs = figures();
 const layout = read('src/templates/layout.html');
 const catTpl = read('src/templates/category.html');
@@ -217,12 +218,26 @@ function buildLang(L) {
   const choiceNotes = q => (q.choiceNotes ? '<ul class="choice-notes">' + q.choiceNotes.map((note, k) =>
     (note ? `<li><b>${mark(k)}. </b>${esc(note)}</li>` : '')).join('') + '</ul>' : '');
 
+  // 学習コース: トップの一覧と /course/{id}/ のページ(進み具合の表示は course.js)
+  const courseList = courses.length ? `<section id="courses">
+  <h2>${esc(t('course_heading'))}</h2>
+  <p class="muted">${esc(t('course_lead'))}</p>
+  <div class="course-grid">${courses.map(co => `
+  <a class="course-card" href="${home}course/${co.id}/" data-course-card="${co.steps.map(id => `${id}:${qs[id].length}`).join(' ')}">
+    <strong>${esc(loc(co.name, code))}</strong>
+    <span>${esc(loc(co.desc, code))}</span>
+    <span class="course-meta"><span>${esc(t('course_steps_n', { n: co.steps.length }))}</span><b data-course-done></b></span>
+    <span class="meter"><span class="meter-bar" style="width:0%"></span></span>
+  </a>`).join('')}
+  </div>
+</section>` : '';
+
   const common = {
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
     contactFormUrl: esc(loc(config.contactFormUrl, code)),
-    categoryList, glossaryList,
+    categoryList, glossaryList, courseList,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: categories.length,
@@ -349,6 +364,38 @@ function buildLang(L) {
           related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
         }),
       });
+    });
+  }
+
+  // 学習コースのページ /course/{id}/
+  const solveMode = modes.find(m => m.id === 'category');
+  for (const co of courses) {
+    const name = loc(co.name, code);
+    page({
+      path: `${L.path}course/${co.id}/`,
+      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}course/${co.id}/`])),
+      title: t('course_title', { name }),
+      description: loc(co.desc, code),
+      scripts: ['course.js'],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}#courses">${esc(t('course_heading'))}</a></nav>
+<h1>${esc(name)}</h1>
+<p class="lead">${esc(loc(co.desc, code))}</p>
+<div class="course-progress" data-course-progress="${esc(t('course_progress'))}">
+  <p class="course-progress-text"></p>
+  <span class="meter"><span class="meter-bar" style="width:0%"></span></span>
+</div>
+<div class="course-next" hidden data-solve="${home}quiz/?mode=${solveMode.id}&c=" data-all-done="${esc(t('course_all_done'))}">
+  <p class="course-next-label">${esc(t('course_next'))}</p>
+  <p class="course-next-name"></p>
+  <p><a class="btn btn-primary" href="#">${esc(modeText(solveMode, 'label'))}</a></p>
+</div>
+<ol class="course-steps" data-done-label="${esc(t('course_step_done'))}">${co.steps.map(id => catOf(id)).map(c => `
+  <li class="course-step" data-cat="${c.id}" data-count="${qs[c.id].length}">
+    <a href="${home}c/${c.id}/"><span class="step-name">${esc(c.name)}</span><span class="step-status"></span></a>
+    <span class="step-meta">${t('n_questions', { n: qs[c.id].length })} · ${esc(t('rate_label'))} <b data-rate="${c.id}">—</b> · ${esc(t('answered_label'))} <span data-answered="${c.id}">0</span></span>
+  </li>`).join('')}
+</ol>
+<p class="muted">${esc(t('course_rule'))}</p>`,
     });
   }
 }
