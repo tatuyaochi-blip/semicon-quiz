@@ -261,6 +261,9 @@ function buildLang(L) {
       : alt[x.code] != null
         ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`
         : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
+    // ヘッダーのナビ(いまいるページには aria-current を付ける)
+    const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary]]
+      .map(([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('');
     if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
       ...common,
@@ -268,6 +271,7 @@ function buildLang(L) {
       description: esc(description),
       head,
       langLinks,
+      headerNav,
       htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : '',
       content,
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
