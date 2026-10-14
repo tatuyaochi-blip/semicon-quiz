@@ -26,8 +26,12 @@ export function termMatcher(terms) {
       if (key.length >= 2 && !keys.has(key)) keys.set(key, id);
     }
   }
+  // カタカナだけの語は、長いカタカナ語の一部には一致させない(「ジクロロシラン」の中の「シラン」など)
   const words = [...keys.keys()].sort((a, b) => b.length - a.length)
-    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    .map(k => {
+      const w = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return /^[ァ-ヶー・]+$/.test(k) ? `(?<![ァ-ヶー])${w}(?![ァ-ヶー])` : w;
+    });
   return { keys, re: new RegExp(`(?<![A-Za-z0-9])(${words.join('|')})(?![A-Za-z0-9])`, 'gi') };
 }
 
