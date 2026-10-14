@@ -221,7 +221,7 @@ function buildLang(L) {
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
-    contactFormUrl: esc(config.contactFormUrl),
+    contactFormUrl: esc(loc(config.contactFormUrl, code)),
     categoryList, glossaryList,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),

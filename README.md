@@ -19,7 +19,7 @@ npm run serve      # http://localhost:8080/semicon-quiz/ で確認
 | baseUrl | 公開URL。独自ドメインにするときはここを変更する |
 | cname | 独自ドメイン名。設定すると docs/CNAME を出力する |
 | onlyReviewed | true にすると reviewed:false の問題を出題しない |
-| contactFormUrl | お問い合わせ用 Googleフォームの URL |
+| contactFormUrl | お問い合わせ用 Googleフォームの URL（言語ごとに分けるときは `{ "ja": "…", "en": "…" }`。ない言語は既定言語のものを使う） |
 | reportFormUrl | 誤り報告用 Googleフォームの事前入力URL。`{id}`（問題ID）と `{lang}`（言語）を埋めて開く。null ならリンクを出さない |
 | adPlaceholders | true のとき広告枠の位置を点線で表示する（adsenseClient を設定すると表示しない） |
 | adsenseClient | AdSense のクライアントID（`ca-pub-…`）。設定すると広告スクリプト（クイズ画面以外）と `ads.txt` を出力し、プライバシーポリシーに説明を載せる。null なら何も出さない |
