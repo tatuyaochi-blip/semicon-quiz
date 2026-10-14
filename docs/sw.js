@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-113e8ff959';
+const CACHE = 'sq-aa656947ae';
 const BASE = "/semicon-quiz/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/semicon-quiz/en/","/semicon-quiz/"];
@@ -88,6 +88,7 @@ const PRECACHE = [
   "/semicon-quiz/data/en/q/wafer.json",
   "/semicon-quiz/data/en/q/yield.json",
   "/semicon-quiz/js/ads.js",
+  "/semicon-quiz/js/diagnosis.js",
   "/semicon-quiz/js/dom.js",
   "/semicon-quiz/js/glossary.js",
   "/semicon-quiz/js/level.js",
@@ -97,6 +98,7 @@ const PRECACHE = [
   "/semicon-quiz/js/store.js",
   "/semicon-quiz/js/util.js",
   "/semicon-quiz/js/modes/category.js",
+  "/semicon-quiz/js/modes/diagnosis.js",
   "/semicon-quiz/js/modes/exam.js",
   "/semicon-quiz/js/modes/index.js",
   "/semicon-quiz/js/modes/random.js",

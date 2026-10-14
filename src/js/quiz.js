@@ -3,6 +3,7 @@ import { h, home, getData, makeT } from './dom.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
 import { termMatcher, linkTerms, reportUrl, shuffle } from './util.js';
+import { diagnosisReport } from './diagnosis.js';
 
 const app = document.getElementById('quiz');
 const params = Object.fromEntries(new URLSearchParams(location.search));
@@ -146,6 +147,7 @@ function result() {
         h('button', { class: `btn ${wrong ? 'btn-ghost' : 'btn-primary'}`, type: 'button', onclick: () => start() }, t('again')),
         h('a', { class: 'btn btn-ghost', href: homeUrl }, t(cat ? 'to_category' : 'to_top')),
         shareButton(score, total))),
+    mode.report === 'diagnosis' && diagnosisReport(answers, index, t),
     h('h2', {}, t('review_heading')),
     h('ol', { class: 'review' }, answers.map(({ q, choice, ok }) =>
       h('li', { class: ok ? 'ok' : 'ng' },
