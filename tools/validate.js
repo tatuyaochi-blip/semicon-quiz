@@ -69,6 +69,10 @@ export function validate() {
       if ('level' in q && ![1, 2, 3].includes(q.level)) errors.push(`${where}: level は 1〜3 の整数にしてください`);
       checkNotes(q.choiceNotes, q.choices, where);
       if ('figure' in q && !figs[q.figure]) errors.push(`${where}: 図 "${q.figure}" が data/figures/${q.figure}.svg にありません`);
+      // コード: 10行以内の文字列。codeLang は表示用の言語名(C / RISC-V / Verilog)
+      if ('code' in q && (typeof q.code !== 'string' || !q.code)) errors.push(`${where}: code は文字列にしてください`);
+      else if ('code' in q && q.code.split('\n').length > 10) errors.push(`${where}: code は10行以内にしてください`);
+      if ('codeLang' in q && !['C', 'RISC-V', 'Verilog'].includes(q.codeLang)) errors.push(`${where}: codeLang は C / RISC-V / Verilog のどれかにしてください`);
       if ('tags' in q && (!Array.isArray(q.tags) || q.tags.some(x => typeof x !== 'string' || !x))) errors.push(`${where}: tags は文字列の配列にしてください`);
       total++;
       if (!q.reviewed) unreviewed++;

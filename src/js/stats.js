@@ -24,7 +24,8 @@ function render() {
       tile(`${store.streak()}`, t('streak_days'))),
     all.weak > 0 && h('p', {}, h('a', { class: 'btn btn-primary', href: `${home}quiz/?mode=weak` }, t('solve_weak', { n: all.weak }))),
 
-    index.exams.map(e => e.groups.map(g =>
+    // 問題のある分野がひとつもない区分(準備中)は出さない
+    index.exams.map(e => e.groups.filter(g => index.categories.some(c => c.exam === e.id && c.group === g.id)).map(g =>
       h('section', {},
         h('h2', {}, g.name),
         h('div', { class: 'stat-rows' }, index.categories.filter(c => c.exam === e.id && c.group === g.id).map(c => {

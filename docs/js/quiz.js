@@ -19,6 +19,9 @@ const homeUrl = cat ? `${home}c/${cat.id}/` : home;
 const matcher = termMatcher(index.glossary);
 const slugOf = new Map(index.glossary.map(g => [g.id, g.slug]));
 
+// コード(問題文の下に表示する短いプログラム)。言語名は見出しとして小さく出す
+const codeBlock = q => q.code && h('pre', { class: 'q-code', 'data-lang': q.codeLang ?? '' }, h('code', {}, q.code));
+
 // 図: ビルド時に作った SVG をそのまま入れる
 const figure = svg => {
   const el = h('figure', { class: 'fig' });
@@ -99,6 +102,7 @@ function show() {
     h('div', { class: 'progress' }, h('div', { class: 'progress-bar', style: `width:${(i / qs.length) * 100}%` })),
     h('p', { class: 'q-cat' }, catName(q.cat)),
     h('h1', { class: 'q-text' }, q.question),
+    codeBlock(q),
     h('div', { class: 'choices' }, buttons),
     h('div', { class: 'feedback', hidden: true }));
   window.scrollTo(0, 0);
@@ -176,6 +180,7 @@ function result() {
       h('li', { class: ok ? 'ok' : 'ng' },
         h('details', { open: !ok },
           h('summary', {}, h('span', { class: 'badge' }, ok ? '○' : '×'), q.question),
+          codeBlock(q),
           h('ul', { class: 'review-choices' }, q.choices.map((c, n) =>
             h('li', { class: n === q.answer ? 'is-answer' : n === choice ? 'is-chosen' : '' },
               `${String.fromCharCode(65 + n)}. ${c}`,

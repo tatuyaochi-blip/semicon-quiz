@@ -130,6 +130,8 @@ function buildLang(L) {
     });
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
+  // 問題がまだない分野(準備中)は、一覧・コース・分野数から外す。分野ページだけは「準備中」で作る(noindex)
+  const live = cats.filter(c => qs[c.id].length);
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
   const terms = glossary.map(g => ({ ...g, ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
   const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key] }));
@@ -140,7 +142,7 @@ function buildLang(L) {
     siteName,
     strings: S,
     exams: exams.map(e => ({ id: e.id, name: exName(e), groups: e.groups.map(g => ({ id: g.id, name: grName(e, g) })) })),
-    categories: cats.map(c => ({ id: c.id, exam: c.exam, group: c.group, name: c.name, count: qs[c.id].length })),
+    categories: live.map(c => ({ id: c.id, exam: c.exam, group: c.group, name: c.name, count: qs[c.id].length })),
     glossary: glossaryIndex,
     modes: Object.fromEntries(modes.map(m => [m.id, { label: modeText(m, 'label'), empty: modeText(m, 'empty') ?? null }])),
     reportFormUrl: config.reportFormUrl ?? null,
@@ -176,8 +178,9 @@ function buildLang(L) {
   const categoryList = exams.map(e => `
 <section class="exam">
   <h2>${esc(t('exam_heading', { exam: exName(e) }))}</h2>
-  ${e.groups.map(g => `<h3 class="group-title">${esc(grName(e, g))}</h3>
-  ${catCards(cats.filter(c => c.exam === e.id && c.group === g.id))}`).join('\n')}
+  ${e.groups.map(g => ({ g, list: live.filter(c => c.exam === e.id && c.group === g.id) })).filter(x => x.list.length)
+    .map(({ g, list }) => `<h3 class="group-title">${esc(grName(e, g))}</h3>
+  ${catCards(list)}`).join('\n')}
 </section>`).join('\n');
 
   terms.sort((a, b) => (isDef ? a.reading.localeCompare(b.reading, 'ja') : a.term.localeCompare(b.term, L.locale)));
@@ -223,10 +226,12 @@ function buildLang(L) {
     (note ? `<li><b>${mark(k)}. </b>${esc(note)}</li>` : '')).join('') + '</ul>' : '');
 
   // 学習コース: トップの一覧と /course/{id}/ のページ(進み具合の表示は course.js)
-  const courseList = courses.length ? `<section id="courses">
+  // コースの分野のうち、問題がまだない分野は準備ができるまで外す
+  const liveCourses = courses.map(co => ({ ...co, steps: co.steps.filter(id => qs[id]?.length) })).filter(co => co.steps.length);
+  const courseList = liveCourses.length ? `<section id="courses">
   <h2>${esc(t('course_heading'))}</h2>
   <p class="muted">${esc(t('course_lead'))}</p>
-  <div class="course-grid">${courses.map(co => `
+  <div class="course-grid">${liveCourses.map(co => `
   <a class="course-card" href="${home}course/${co.id}/" data-course-card="${co.steps.map(id => `${id}:${qs[id].length}`).join(' ')}">
     <strong>${esc(loc(co.name, code))}</strong>
     <span>${esc(loc(co.desc, code))}</span>
@@ -244,7 +249,7 @@ function buildLang(L) {
     categoryList, glossaryList, courseList,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
-    categoryTotal: categories.length,
+    categoryTotal: live.length,
     // プライバシーポリシーの「広告・アクセス解析」: 使っているサービスの説明だけを出す
     adsPolicy: [config.adsenseClient && S.policy_adsense, S.policy_affiliate, config.ga4Id && S.policy_ga4].filter(Boolean).map(x => `<p>${x}</p>`).join('\n')
       || `<p>${S.policy_none}</p>`,
@@ -304,7 +309,7 @@ function buildLang(L) {
     const src = read(`src/pages/${code}/${name}.html`);
     const m = src.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/);
     const alt = Object.fromEntries(langs.filter(x => pageNames(x.code).includes(name)).map(x => [x.code, pagePath(x, name)]));
-    page({ path: pagePath(L, name), alt, ...JSON.parse(m[1]), content: fill(src.slice(m[0].length), common) });
+    page({ path: pagePath(L, name), alt, ...JSON.parse(fill(m[1], common)), content: fill(src.slice(m[0].length), common) });
   }
 
   // 分野ページ /c/{id}/
@@ -319,6 +324,7 @@ function buildLang(L) {
       alt: catAlt(c.id),
       title: t('category_title', { name: c.name }),
       description: c.description,
+      noindex: !count,
       scripts: filter ? ['progress.js', 'level.js'] : ['progress.js'],
       content: fill(catTpl, {
         ...common,
@@ -331,7 +337,7 @@ function buildLang(L) {
         otherInGroup: esc(t('other_in_group', { group: g.name })),
         intro: c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
         modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
-        siblings: catCards(cats.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
+        siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
         questionList: pqs.length ? `<section>
   <h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2>
   ${qLinks(pqs)}
@@ -356,6 +362,7 @@ function buildLang(L) {
           catName: esc(c.name),
           groupName: esc(g.name),
           question: esc(q.question),
+          code: q.code ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
           explanation: linked(q.explanation),
@@ -373,7 +380,7 @@ function buildLang(L) {
 
   // 学習コースのページ /course/{id}/
   const solveMode = modes.find(m => m.id === 'category');
-  for (const co of courses) {
+  for (const co of liveCourses) {
     const name = loc(co.name, code);
     page({
       path: `${L.path}course/${co.id}/`,
