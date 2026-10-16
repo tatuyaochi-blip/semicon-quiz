@@ -46,33 +46,41 @@
   
   <p class="lead">不同執行緒各自改寫不同的變數，但因這些變數位於同一條快取行，使得該行在核心之間來回傳遞而變慢的現象。</p>
   <p class="muted">日文名稱: <span lang="ja">偽共有</span></p>
-  <p class="muted term-summary">「偽共享（False sharing）」出現在1領域的1道練習題中（CPU與架構等）。</p>
+  <p class="muted term-summary">「偽共享（False sharing）」出現在2領域的4道練習題中（多核心與同步, CPU與架構等）。</p>
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
 <section>
   <h2>練習偽共享（False sharing）的題目</h2>
   <article class="q-mini">
-    <h3><a href="/zh-hant/q/cpu/cpu-039/">目前許多 CPU 所使用之快取列（快取區塊）的大小，下列何者為一般情況？</a></h3>
-    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">1 位元組</span></li><li><span class="choice-mark">B</span><span class="choice-text">64 位元組</span></li><li><span class="choice-mark">C</span><span class="choice-text">64 MB</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 64 位元組</p><p class="explanation">許多 CPU 在快取與主記憶體之間，是以 64 位元組的快取列為單位交換資料。相鄰位址的資料經常會被連續使用（<a class="term-link" href="/zh-hant/term/spatial-locality/">空間局部性</a>），所以一併取入較有效率，也與 DRAM 的突發傳輸（DDR4 為 8 次 × 8 位元組 = 64 位元組）相符。在多執行緒程式中，必須注意若不同的變數位於同一條快取列，會發生互相爭奪的「<a class="term-link" href="/zh-hant/term/false-sharing/">偽共享</a>」（false sharing）。</p></details>
+    <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-010/">關於多執行緒程式中發生的偽共享（false sharing），下列說明何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">不同的執行緒雖然改寫不同的變數，但因為這些變數位於同一條快取列，使快取列在核心之間來回移動而變慢</span></li><li><span class="choice-mark">B</span><span class="choice-text">兩個執行緒未經同步就改寫同一個變數，導致值被破壞</span></li><li><span class="choice-mark">C</span><span class="choice-text">執行緒彼此等待對方的鎖而停住</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 不同的執行緒雖然改寫不同的變數，但因為這些變數位於同一條快取列，使快取列在核心之間來回移動而變慢</p><p class="explanation">一致性是以快取列（一般為64位元組）為單位管理的。即使核心0只是改寫變數a、核心1只是改寫變數b，若a與b位於同一條快取列，每次寫入都會使對方的副本失效，快取列就會在兩個核心之間來回移動。明明結果正確，效能卻大幅下降，這就是<a class="term-link" href="/zh-hant/term/false-sharing/">偽共享</a>。這是在每個執行緒各自的彙總用陣列等情況中容易發生的問題。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-011/">像「long cnt[8];」這樣排列每個執行緒的計數器陣列，發生了偽共享。下列何者是最適當的對策？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">把計數器的型別從long改為int，縮小陣列</span></li><li><span class="choice-mark">B</span><span class="choice-text">在各計數器之間加入填充或進行對齊，使它們放在不同的快取列</span></li><li><span class="choice-mark">C</span><span class="choice-text">增加執行緒的數量，分散等待時間</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 在各計數器之間加入填充或進行對齊，使它們放在不同的快取列</p><p class="explanation">若long為8位元組，8個計數器就會收進64位元組的一條快取列，所有執行緒都會爭奪同一條快取列。只要加入填充使各計數器每隔64位元組放置，或將結構對齊到快取列的大小，每個執行緒就能使用各自不同的快取列。此外，讓各執行緒以區域變數計數，最後只加總到共用位置一次，也是有效的方法。</p></details>
   </article>
 </section>
 <section>
   <h2>解析中的「偽共享（False sharing）」</h2>
-  <ul class="term-quotes"><li><p>在多執行緒程式中，必須注意若不同的變數位於同一條快取列，會發生互相爭奪的「偽共享」（false sharing）。</p><a href="/zh-hant/q/cpu/cpu-039/">目前許多 CPU 所使用之快取列（快取區塊）的大小，下列何者為一般情況？</a></li></ul>
+  <ul class="term-quotes"><li><p>明明結果正確，效能卻大幅下降，這就是偽共享。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-010/">關於多執行緒程式中發生的偽共享（false sharing），下列說明何者正確？</a></li><li><p>在多執行緒程式中，必須注意若不同的變數位於同一條快取列，會發生互相爭奪的「偽共享」（false sharing）。</p><a href="/zh-hant/q/cpu/cpu-039/">目前許多 CPU 所使用之快取列（快取區塊）的大小，下列何者為一般情況？</a></li><li><p>妨礙平行化效果的主要原因包括：無法平行化的部分（阿姆達爾定律）、鎖或屏障造成的等待、共用資料或偽共享造成的快取列來回移動、工作的偏差，以及記憶體頻寬不足等。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-043/">在平行程式中，即使增加核心數量，效能仍未如預期成長，下列何者不屬於其原因？</a></li></ul>
 </section>
 <section>
-  <h2>出現「偽共享（False sharing）」的題目（1題）</h2>
+  <h2>出現「偽共享（False sharing）」的題目（4題）</h2>
   <ol class="q-list">
-  <li data-level="2"><a href="/zh-hant/q/cpu/cpu-039/">目前許多 CPU 所使用之快取列（快取區塊）的大小，下列何者為一般情況？</a></li></ol>
+  <li data-level="1"><a href="/zh-hant/q/multicore-sync/multicore-sync-010/">關於多執行緒程式中發生的偽共享（false sharing），下列說明何者正確？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/multicore-sync/multicore-sync-011/">像「long cnt[8];」這樣排列每個執行緒的計數器陣列，發生了偽共享。下列何者是最適當的對策？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/cpu/cpu-039/">目前許多 CPU 所使用之快取列（快取區塊）的大小，下列何者為一般情況？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/multicore-sync/multicore-sync-043/">在平行程式中，即使增加核心數量，效能仍未如預期成長，下列何者不屬於其原因？</a></li></ol>
 </section>
 
 <div data-ad="term"></div>
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/spatial-locality/">空間局部性</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a> <a class="chip" href="/zh-hant/term/atomic-instruction/">原子指令（Atomic instruction）</a> <a class="chip" href="/zh-hant/term/memory-consistency-model/">記憶體一致性模型（Memory consistency model）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/spatial-locality/">空間局部性</a> <a class="chip" href="/zh-hant/term/amdahl-s-law/">阿姆達爾定律</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a> <a class="chip" href="/zh-hant/term/atomic-instruction/">原子指令（Atomic instruction）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>

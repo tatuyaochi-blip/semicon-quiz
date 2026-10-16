@@ -46,25 +46,33 @@
   
   <p class="lead">Non-Uniform Memory Access 的縮寫。有離核心近與離核心遠的記憶體，存取遠處記憶體需要較長時間的架構。將資料與執行緒放在同一側會比較快。</p>
   <p class="muted">日文名稱: <span lang="ja">NUMA</span></p>
-  <p class="muted term-summary">「NUMA（非均勻記憶體存取）」出現在1領域的1道練習題中（DRAM等）。</p>
+  <p class="muted term-summary">「NUMA（非均勻記憶體存取）」出現在3領域的4道練習題中（多核心與同步, 效能評估與效能剖析, DRAM等）。</p>
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
 <section>
   <h2>練習NUMA（非均勻記憶體存取）的題目</h2>
   <article class="q-mini">
-    <h3><a href="/zh-hant/q/dram/dram-043/">在現今多數電腦用處理器中，控制DRAM的記憶體控制器位於何處？</a></h3>
-    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">DRAM晶片之中</span></li><li><span class="choice-mark">B</span><span class="choice-text">處理器的晶片（封裝）之中</span></li><li><span class="choice-mark">C</span><span class="choice-text">SSD之中</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 處理器的晶片（封裝）之中</p><p class="explanation">過去記憶體控制器位於主機板上的晶片組（北橋），但自2003年的AMD Opteron、2008年的Intel Core i7（Nehalem）以後，一般都內建在處理器中。CPU與記憶體之間的路徑縮短，延遲改善了數十%。在具有多顆CPU的伺服器中，會形成直接連接到各CPU的記憶體速度較快的<a class="term-link" href="/zh-hant/term/non-uniform-memory-access/">NUMA</a>架構。</p></details>
+    <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-041/">關於NUMA（非均勻記憶體存取）系統，下列說明何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">所有核心都能以相同的時間存取所有記憶體</span></li><li><span class="choice-mark">B</span><span class="choice-text">有離核心近的記憶體與遠的記憶體，存取遠處的記憶體需要較多時間</span></li><li><span class="choice-mark">C</span><span class="choice-text">各核心只能讀取自己的記憶體，無法使用其他核心的記憶體</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 有離核心近的記憶體與遠的記憶體，存取遠處的記憶體需要較多時間</p><p class="explanation">在具有多個CPU插槽的伺服器等系統中，各插槽有直接連接的記憶體，而存取其他插槽的記憶體則要經過插槽之間的連線。因此，遠處的記憶體比近處的記憶體慢，頻寬也較小。所有記憶體在單一位址空間中看起來是一體的，所以程式可以直接運作，但把資料與執行緒放在同一側可以提升效能。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-042/">在Linux的NUMA系統中常用的首次接觸（first touch）策略（將頁面放在第一次寫入該頁面的執行緒所在節點的記憶體），下列關於需要注意之處的說明何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">首次接觸會把頁面放在隨機的節點</span></li><li><span class="choice-mark">B</span><span class="choice-text">在呼叫malloc的時間點，所有頁面的放置位置就已決定</span></li><li><span class="choice-mark">C</span><span class="choice-text">只用一個執行緒將大型陣列初始化為0的話，整個陣列會全部放在同一個節點，其他節點的執行緒就得使用遠處的記憶體</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 只用一個執行緒將大型陣列初始化為0的話，整個陣列會全部放在同一個節點，其他節點的執行緒就得使用遠處的記憶體</p><p class="explanation">僅以malloc配置並不會分配實體頁面，而是在第一次寫入時發生的分頁錯誤（page fault）中，將頁面放在該執行緒所在節點的記憶體。因此，若以一個執行緒進行初始化，整個陣列都會集中在那個節點，在平行運算時，各執行緒負責的部分大多會落在遠處的記憶體。若初始化也以與運算相同的分工平行進行，各部分就會被放在負責它的執行緒附近。</p></details>
   </article>
 </section>
 <section>
   <h2>解析中的「NUMA（非均勻記憶體存取）」</h2>
-  <ul class="term-quotes"><li><p>在具有多顆CPU的伺服器中，會形成直接連接到各CPU的記憶體速度較快的NUMA架構。</p><a href="/zh-hant/q/dram/dram-043/">在現今多數電腦用處理器中，控制DRAM的記憶體控制器位於何處？</a></li></ul>
+  <ul class="term-quotes"><li><p>移動後的核心快取中沒有所需的資料，而在NUMA系統中，也可能移到離放置資料的記憶體較遠的插槽（socket）上。</p><a href="/zh-hant/q/performance/performance-045/">在多核心或NUMA系統上測量效能時，有時會將執行緒固定在特定的核心上（設定親和性，affinity），其理由下列何者正…</a></li><li><p>在具有多顆CPU的伺服器中，會形成直接連接到各CPU的記憶體速度較快的NUMA架構。</p><a href="/zh-hant/q/dram/dram-043/">在現今多數電腦用處理器中，控制DRAM的記憶體控制器位於何處？</a></li></ul>
 </section>
 <section>
-  <h2>出現「NUMA（非均勻記憶體存取）」的題目（1題）</h2>
+  <h2>出現「NUMA（非均勻記憶體存取）」的題目（4題）</h2>
   <ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/multicore-sync/multicore-sync-041/">關於NUMA（非均勻記憶體存取）系統，下列說明何者正確？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/multicore-sync/multicore-sync-042/">在Linux的NUMA系統中常用的首次接觸（first touch）策略（將頁面放在第一次寫入該頁面的執行緒所在節點的記憶體），下列關於需要注意之處的說明何者正確？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/performance/performance-045/">在多核心或NUMA系統上測量效能時，有時會將執行緒固定在特定的核心上（設定親和性，affinity），其理由下列何者正確？</a></li>
   <li data-level="2"><a href="/zh-hant/q/dram/dram-043/">在現今多數電腦用處理器中，控制DRAM的記憶體控制器位於何處？</a></li></ol>
 </section>
 
@@ -72,7 +80,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a> <a class="chip" href="/zh-hant/term/atomic-instruction/">原子指令（Atomic instruction）</a> <a class="chip" href="/zh-hant/term/memory-consistency-model/">記憶體一致性模型（Memory consistency model）</a> <a class="chip" href="/zh-hant/term/memory-barrier/">記憶體屏障（Memory barrier）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/unified-memory/">統一記憶體（Unified memory）</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a> <a class="chip" href="/zh-hant/term/atomic-instruction/">原子指令（Atomic instruction）</a> <a class="chip" href="/zh-hant/term/memory-consistency-model/">記憶體一致性模型（Memory consistency model）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>

@@ -46,30 +46,27 @@
   
   <p class="lead">同一時間只有一個執行緒能持有的鎖。無法取得時讓執行緒休眠並讓出 CPU，鎖被釋放時由作業系統喚醒，是一般常見的實作。</p>
   <p class="muted">日文名稱: <span lang="ja">ミューテックス</span></p>
-  <p class="muted term-summary">「互斥鎖（Mutex）」出現在1領域的3道練習題中（嵌入式與韌體等）。</p>
+  <p class="muted term-summary">「互斥鎖（Mutex）」出現在2領域的5道練習題中（嵌入式與韌體, 多核心與同步等）。</p>
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
 <section>
   <h2>練習互斥鎖（Mutex）的題目</h2>
   <article class="q-mini">
-    <h3><a href="/zh-hant/q/embedded/embedded-030/">在嵌入式裝置中使用RTOS（即時作業系統）的主要目的，下列何者正確？</a></h3>
-    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">在畫面上顯示美觀的視窗</span></li><li><span class="choice-mark">B</span><span class="choice-text">使處理的平均速度一定比個人電腦的OS更快</span></li><li><span class="choice-mark">C</span><span class="choice-text">依優先順序切換多項處理（工作），使其能在規定的時間內回應</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 依優先順序切換多項處理（工作），使其能在規定的時間內回應</p><p class="explanation"><a class="term-link" href="/zh-hant/term/real-time-operating-system/">RTOS</a>將處理分成工作（task），一旦優先順序較高的工作成為可執行，就立即切換執行。目的是讓馬達控制或通訊回應這類延遲就會出問題的處理，能確實在規定時間內完成。同時也備有在工作之間傳遞資料的佇列、保護資源的<a class="term-link" href="/zh-hant/term/mutex/">互斥鎖（mutex）</a>，以及等待時間的功能等。例如FreeRTOS、Zephyr、μITRON等。</p></details>
-  </article>
-  <article class="q-mini">
-    <h3><a href="/zh-hant/q/embedded/embedded-032/">關於RTOS中發生的優先順序反轉，下列說明何者正確？</a></h3>
-    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">在高優先順序的工作等待低優先順序的工作所持有的資源期間，中優先順序的工作中止低優先順序的工作並持續執行，使高優先順序的工作被迫長時間等待</span></li><li><span class="choice-mark">B</span><span class="choice-text">工作的優先順序數值被解讀成與設定相反的錯誤</span></li><li><span class="choice-mark">C</span><span class="choice-text">優先順序高的工作一定比低優先順序的工作更後執行的規定</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 在高優先順序的工作等待低優先順序的工作所持有的資源期間，中優先順序的工作中止低優先順序的工作並持續執行，使高優先順序的工作被迫長時間等待</p><p class="explanation">當低優先順序的工作持有<a class="term-link" href="/zh-hant/term/mutex/">互斥鎖</a>時，高優先順序的工作要等待它，就必須等到低優先順序的工作釋放。此時若與資源無關的中優先順序工作開始執行，低優先順序的工作會被中止而無法釋放資源，結果高優先順序的工作反而被中優先順序的工作拖延。1997年的火星探測器火星探路者（Mars Pathfinder）就因此而反覆發生系統重置。</p></details>
+    <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-023/">比較互斥鎖（休眠等待的鎖）與自旋鎖，下列說明何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">互斥鎖在等待期間會讓出CPU，所以適合長時間等待，但休眠與喚醒需要作業系統的額外負擔</span></li><li><span class="choice-mark">B</span><span class="choice-text">互斥鎖在等待期間也會持續占用CPU，所以只能用於短時間的等待</span></li><li><span class="choice-mark">C</span><span class="choice-text">互斥鎖與自旋鎖是相同的東西，只是名稱不同</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 互斥鎖在等待期間會讓出CPU，所以適合長時間等待，但休眠與喚醒需要作業系統的額外負擔</p><p class="explanation"><a class="term-link" href="/zh-hant/term/mutex/">互斥鎖</a>在取不到鎖時，會讓執行緒進入等待狀態並把CPU讓給其他執行緒，鎖被釋放時再由作業系統喚醒。由於等待期間不會浪費CPU，適合長時間的等待，但休眠、喚醒的處理與情境切換（context switch）需要數微秒左右。實際的函式庫中的互斥鎖，會先自旋一小段時間再休眠，結合了兩者的優點。</p></details>
   </article>
 </section>
 <section>
   <h2>解析中的「互斥鎖（Mutex）」</h2>
-  <ul class="term-quotes"><li><p>同時也備有在工作之間傳遞資料的佇列、保護資源的互斥鎖（mutex），以及等待時間的功能等。</p><a href="/zh-hant/q/embedded/embedded-030/">在嵌入式裝置中使用RTOS（即時作業系統）的主要目的，下列何者正確？</a></li><li><p>當低優先順序的工作持有互斥鎖時，高優先順序的工作要等待它，就必須等到低優先順序的工作釋放。</p><a href="/zh-hant/q/embedded/embedded-032/">關於RTOS中發生的優先順序反轉，下列說明何者正確？</a></li><li><p>在優先順序繼承中，當高優先順序的工作開始等待低優先順序工作所持有的互斥鎖時，暫時把低優先順序工作的優先順序提升到與高優先順序工作相同。</p><a href="/zh-hant/q/embedded/embedded-033/">用來防止優先順序反轉的「優先順序繼承」，其概念下列何者正確？</a></li></ul>
+  <ul class="term-quotes"><li><p>互斥鎖在取不到鎖時，會讓執行緒進入等待狀態並把CPU讓給其他執行緒，鎖被釋放時再由作業系統喚醒。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-023/">比較互斥鎖（休眠等待的鎖）與自旋鎖，下列說明何者正確？</a></li><li><p>長時間的等待應使用休眠等待的互斥鎖，也有先自旋一小段時間再休眠的方式。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-021/">下列何者是最不適合使用自旋鎖的情境？</a></li><li><p>同時也備有在工作之間傳遞資料的佇列、保護資源的互斥鎖（mutex），以及等待時間的功能等。</p><a href="/zh-hant/q/embedded/embedded-030/">在嵌入式裝置中使用RTOS（即時作業系統）的主要目的，下列何者正確？</a></li><li><p>當低優先順序的工作持有互斥鎖時，高優先順序的工作要等待它，就必須等到低優先順序的工作釋放。</p><a href="/zh-hant/q/embedded/embedded-032/">關於RTOS中發生的優先順序反轉，下列說明何者正確？</a></li><li><p>在優先順序繼承中，當高優先順序的工作開始等待低優先順序工作所持有的互斥鎖時，暫時把低優先順序工作的優先順序提升到與高優先順序工作相同。</p><a href="/zh-hant/q/embedded/embedded-033/">用來防止優先順序反轉的「優先順序繼承」，其概念下列何者正確？</a></li></ul>
 </section>
 <section>
-  <h2>出現「互斥鎖（Mutex）」的題目（3題）</h2>
+  <h2>出現「互斥鎖（Mutex）」的題目（5題）</h2>
   <ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/multicore-sync/multicore-sync-023/">比較互斥鎖（休眠等待的鎖）與自旋鎖，下列說明何者正確？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/multicore-sync/multicore-sync-021/">下列何者是最不適合使用自旋鎖的情境？</a></li>
   <li data-level="1"><a href="/zh-hant/q/embedded/embedded-030/">在嵌入式裝置中使用RTOS（即時作業系統）的主要目的，下列何者正確？</a></li>
   <li data-level="3"><a href="/zh-hant/q/embedded/embedded-032/">關於RTOS中發生的優先順序反轉，下列說明何者正確？</a></li>
   <li data-level="3"><a href="/zh-hant/q/embedded/embedded-033/">用來防止優先順序反轉的「優先順序繼承」，其概念下列何者正確？</a></li></ol>
@@ -84,7 +81,7 @@
 </section>
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/real-time-operating-system/">RTOS（即時作業系統）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a> <a class="chip" href="/zh-hant/term/atomic-instruction/">原子指令（Atomic instruction）</a> <a class="chip" href="/zh-hant/term/memory-consistency-model/">記憶體一致性模型（Memory consistency model）</a> <a class="chip" href="/zh-hant/term/memory-barrier/">記憶體屏障（Memory barrier）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/real-time-operating-system/">RTOS（即時作業系統）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a> <a class="chip" href="/zh-hant/term/atomic-instruction/">原子指令（Atomic instruction）</a> <a class="chip" href="/zh-hant/term/memory-consistency-model/">記憶體一致性模型（Memory consistency model）</a> <a class="chip" href="/zh-hant/term/memory-barrier/">記憶體屏障（Memory barrier）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>
