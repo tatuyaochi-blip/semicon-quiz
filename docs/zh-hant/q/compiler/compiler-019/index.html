@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>編譯器的練習題：在上方函式中，編譯器無法直接進行把 *b 的讀取移到迴圈之外的最佳化，其原因為何？ | 半導體教室</title>
+<meta name="description" content="在上方函式中，編譯器無法直接進行把 *b 的讀取移到迴圈之外的最佳化，其原因為何？">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/q/compiler/compiler-019/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/q/compiler/compiler-019/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/q/compiler/compiler-019/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/q/compiler/compiler-019/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/q/compiler/compiler-019/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="編譯器的練習題：在上方函式中，編譯器無法直接進行把 *b 的讀取移到迴圈之外的最佳化，其原因為何？ | 半導體教室">
+<meta property="og:description" content="在上方函式中，編譯器無法直接進行把 *b 的讀取移到迴圈之外的最佳化，其原因為何？">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/q/compiler/compiler-019/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/q/compiler/compiler-019/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/">首頁</a><a href="/zh-hant/stats/">成績</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/contact/">聯絡我們</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/q/compiler/compiler-019/" hreflang="ja" lang="ja">日本語</a><a href="/en/q/compiler/compiler-019/" hreflang="en" lang="en">English</a><span aria-current="true">繁體中文</span></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> 電腦系統 <span>›</span> <a href="/zh-hant/c/compiler/">編譯器</a></nav>
+
+<article class="q-page">
+  <p class="q-cat">編譯器</p>
+  <h1 class="q-text">在上方函式中，編譯器無法直接進行把 *b 的讀取移到迴圈之外的最佳化，其原因為何？</h1><pre class="q-code" data-lang="C"><code>void add(int *a, int *b, int n) {
+    for (int i = 0; i &lt; n; i++)
+        a[i] += *b;
+}</code></pre>
+  <ol class="q-choices">
+<li><span class="choice-mark">A</span><span class="choice-text">因為 *b 是整數，移到迴圈外會使值的精確度下降</span></li>
+<li><span class="choice-mark">B</span><span class="choice-text">因為 a 與 b 可能指向同一個位置，對 a[i] 的寫入可能會使 *b 改變</span></li>
+<li><span class="choice-mark">C</span><span class="choice-text">因為規定編譯器絕對不可以最佳化以指標為引數的函式</span></li>
+  </ol>
+
+  <details class="q-answer">
+    <summary>查看答案與解析</summary>
+    <p class="verdict ok">正確答案：B. 因為 a 與 b 可能指向同一個位置，對 a[i] 的寫入可能會使 *b 改變</p>
+    <p class="explanation">乍看之下，*b 在迴圈中不會改變，似乎只讀一次就好。然而若呼叫端像 add(x, &amp;x[3], n) 這樣，傳入指向 a 的某個元素的指標作為 b，對 a[3] 的寫入就會使 *b 的值改變。編譯器無法否定這種可能性（別名），所以會產生每次都重新讀取的程式碼。在C語言中，若對指標加上 restrict，保證它們指向不同的位置，就能進行最佳化。這既不是精確度的問題，也不是最佳化遭到禁止。</p>
+    
+    <ul class="choice-notes"><li><b>A. </b>移動整數的讀取並不會改變精確度。</li><li><b>B. </b>正確。因為 a 與 b 有重疊的可能（別名）。</li><li><b>C. </b>使用指標的函式同樣可以被最佳化。</li></ul>
+  </details>
+  
+</article>
+
+<nav class="q-nav"><a class="btn btn-ghost" href="/zh-hant/q/compiler/compiler-018/" rel="prev">← 上一題</a><a class="btn btn-primary" href="/zh-hant/q/compiler/compiler-020/" rel="next">下一題 →</a></nav>
+
+<div class="actions">
+  <a class="btn btn-primary" href="/zh-hant/quiz/?mode=category&amp;c=compiler" rel="nofollow">練習這個領域</a>
+  <a class="btn btn-ghost" href="/zh-hant/c/compiler/">前往領域頁面</a>
+</div>
+
+
+
+<div data-ad="question"></div>
+
+<section>
+  <h2>編譯器的其他題目</h2>
+<ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/compiler/compiler-020/">在編譯器的暫存器配置中，使用對干涉圖著色（染色）的方法時，圖中的節點與邊所代表的事物，下列組合何者正確？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/compiler/compiler-021/">在暫存器配置中發生「溢出（spill）」時，所產生的程式碼會變成怎樣？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/compiler/compiler-022/">編譯器的指令排程，其主要目的為何？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/compiler/compiler-023/">對上方函式最後的遞迴呼叫進行尾端呼叫最佳化，會有什麼效果？</a></li>
+  <li data-level="1"><a href="/zh-hant/q/compiler/compiler-024/">關於編譯器與直譯器的差異，下列何者正確？</a></li></ol>
+</section>
+
+<section>
+  <h2>這個領域的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/compiler-vs-interpreter-vs-jit/"><strong>編譯器、直譯器、JIT 的差異：比較執行方式</strong><span>以轉換時機、啟動、執行速度、可攜性、錯誤偵測、記憶體使用量與代表性語言等面向，用表格比較編譯器、直譯器與 JIT 編譯器。</span></a></li></ul>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

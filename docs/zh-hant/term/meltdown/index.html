@@ -46,25 +46,32 @@
   
   <p class="lead">在部分 CPU 上，於權限檢查造成例外之前，可推測性地讀取核心記憶體，並能從快取痕跡推測其值的弱點。已用 KPTI 等對策因應。</p>
   <p class="muted">日文名稱: <span lang="ja">Meltdown</span></p>
-  <p class="muted term-summary">「Meltdown」出現在1領域的1道練習題中（CPU與架構等）。</p>
+  <p class="muted term-summary">「Meltdown」出現在2領域的3道練習題中（硬體安全, CPU與架構等）。</p>
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hw-security/">硬體安全</a></p>
 </article>
 <section>
   <h2>練習Meltdown的題目</h2>
   <article class="q-mini">
-    <h3><a href="/zh-hant/q/cpu/cpu-027/">利用投機執行的痕跡殘留在快取中，推測本來無法存取之資料的攻擊，其被揭露的漏洞例子是下列何者？</a></h3>
-    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Rowhammer</span></li><li><span class="choice-mark">B</span><span class="choice-text">Spectre 與 Meltdown</span></li><li><span class="choice-mark">C</span><span class="choice-text">閂鎖效應（latch-up）</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. Spectre 與 Meltdown</p><p class="explanation">2018 年公開的 <a class="term-link" href="/zh-hant/term/spectre/">Spectre</a> 與 <a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>，是利用投機執行的指令結果雖然被取消、但所讀取的資料仍留在快取中的特性，從存取時間的差異（旁通道，side channel）推測出原本無法讀取之機密資料的攻擊。幾乎所有高效能 CPU 都受到影響，因此進行了作業系統的修補與 CPU 設計的變更。這是顯示提升效能的機制也可能成為安全弱點的案例。</p></details>
+    <h3><a href="/zh-hant/q/hw-security/hw-security-008/">下列關於部分CPU出現問題的Meltdown漏洞的原理，何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">CPU因熱而熔化，資料洩漏到外部</span></li><li><span class="choice-mark">B</span><span class="choice-text">即使是讀取無權限的核心記憶體的指令，在因權限檢查而產生的例外確定之前，值就已被推測讀取，依賴該值的痕跡會殘留在快取中</span></li><li><span class="choice-mark">C</span><span class="choice-text">核心記憶體對所有行程公開的設定錯誤</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 即使是讀取無權限的核心記憶體的指令，在因權限檢查而產生的例外確定之前，值就已被推測讀取，依賴該值的痕跡會殘留在快取中</p><p class="explanation">當使用者程式想讀取核心記憶體時，原本會因權限違規而產生例外，得不到值。然而在受影響的CPU上，到例外確定為止的短暫期間，使用所讀取之值的後續指令會被<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a>，對應該值的位置被載入快取。即使例外使結果被捨棄，仍可藉由快取旁路推測出核心的資料。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/zh-hant/q/hw-security/hw-security-009/">下列關於作為Meltdown的軟體對策而導入的KPTI（核心分頁表隔離）的概念，何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">在使用者程式執行期間，將核心記憶體的大部分從分頁表中移除，使其連推測也無法讀取</span></li><li><span class="choice-mark">B</span><span class="choice-text">將核心整個加密後放在磁碟上</span></li><li><span class="choice-mark">C</span><span class="choice-text">禁止執行使用者的程式</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 在使用者程式執行期間，將核心記憶體的大部分從分頁表中移除，使其連推測也無法讀取</p><p class="explanation">以往的作業系統為了加快切換，會在使用者行程的分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>中也放入核心記憶體（並標上禁止存取的標記）。在<a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>中，由於能在檢查該標記之前就推測讀取，<a class="term-link" href="/zh-hant/term/kernel-page-table-isolation/">KPTI</a>便在使用者程式執行期間，連核心分頁的對應本身都移除。位址無法轉換，就連推測也讀不到。不過，每次<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>都要切換分頁表，因此效能會下降。</p></details>
   </article>
 </section>
 <section>
   <h2>解析中的「Meltdown」</h2>
-  <ul class="term-quotes"><li><p>2018 年公開的 Spectre 與 Meltdown，是利用投機執行的指令結果雖然被取消、但所讀取的資料仍留在快取中的特性，從存取時間的差異（旁通道，side channel）推測出原本無法讀取之機密資料的攻擊。</p><a href="/zh-hant/q/cpu/cpu-027/">利用投機執行的痕跡殘留在快取中，推測本來無法存取之資料的攻擊，其被揭露的漏洞例子是下列何者？</a></li></ul>
+  <ul class="term-quotes"><li><p>在Meltdown中，由於能在檢查該標記之前就推測讀取，KPTI便在使用者程式執行期間，連核心分頁的對應本身都移除。</p><a href="/zh-hant/q/hw-security/hw-security-009/">下列關於作為Meltdown的軟體對策而導入的KPTI（核心分頁表隔離）的概念，何者正確？</a></li><li><p>2018 年公開的 Spectre 與 Meltdown，是利用投機執行的指令結果雖然被取消、但所讀取的資料仍留在快取中的特性，從存取時間的差異（旁通道，side channel）推測出原本無法讀取之機密資料的攻擊。</p><a href="/zh-hant/q/cpu/cpu-027/">利用投機執行的痕跡殘留在快取中，推測本來無法存取之資料的攻擊，其被揭露的漏洞例子是下列何者？</a></li></ul>
 </section>
 <section>
-  <h2>出現「Meltdown」的題目（1題）</h2>
+  <h2>出現「Meltdown」的題目（3題）</h2>
   <ol class="q-list">
+  <li data-level="3"><a href="/zh-hant/q/hw-security/hw-security-008/">下列關於部分CPU出現問題的Meltdown漏洞的原理，何者正確？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/hw-security/hw-security-009/">下列關於作為Meltdown的軟體對策而導入的KPTI（核心分頁表隔離）的概念，何者正確？</a></li>
   <li><a href="/zh-hant/q/cpu/cpu-027/">利用投機執行的痕跡殘留在快取中，推測本來無法存取之資料的攻擊，其被揭露的漏洞例子是下列何者？</a></li></ol>
 </section>
 
@@ -72,7 +79,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/spectre/">Spectre</a> <a class="chip" href="/zh-hant/term/power-analysis-attack/">功耗分析攻擊（Power analysis attack）</a> <a class="chip" href="/zh-hant/term/secure-boot/">安全開機（Secure boot）</a> <a class="chip" href="/zh-hant/term/cold-boot-attack/">冷開機攻擊（Cold boot attack）</a> <a class="chip" href="/zh-hant/term/tamper-resistance/">抗竄改性（Tamper resistance）</a> <a class="chip" href="/zh-hant/term/anti-rollback-protection/">防回滾保護（Anti-rollback protection）</a> <a class="chip" href="/zh-hant/term/root-of-trust/">信任根（Root of trust）</a> <a class="chip" href="/zh-hant/term/constant-time-implementation/">恆定時間實作（Constant-time implementation）</a> <a class="chip" href="/zh-hant/term/fault-injection-attack/">故障注入攻擊（Fault injection attack）</a> <a class="chip" href="/zh-hant/term/secure-enclave/">飛地（Secure enclave）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/speculative-execution/">推測執行（Speculative execution）</a> <a class="chip" href="/zh-hant/term/kernel-page-table-isolation/">KPTI（核心分頁表隔離）</a> <a class="chip" href="/zh-hant/term/page-table/">頁表</a> <a class="chip" href="/zh-hant/term/system-call/">系統呼叫</a> <a class="chip" href="/zh-hant/term/spectre/">Spectre</a> <a class="chip" href="/zh-hant/term/power-analysis-attack/">功耗分析攻擊（Power analysis attack）</a> <a class="chip" href="/zh-hant/term/secure-boot/">安全開機（Secure boot）</a> <a class="chip" href="/zh-hant/term/cold-boot-attack/">冷開機攻擊（Cold boot attack）</a> <a class="chip" href="/zh-hant/term/tamper-resistance/">抗竄改性（Tamper resistance）</a> <a class="chip" href="/zh-hant/term/anti-rollback-protection/">防回滾保護（Anti-rollback protection）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>
