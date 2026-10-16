@@ -261,12 +261,28 @@ function buildLang(L) {
   }
   const cmpCards = list => '<ul class="cmp-list">' + list.map(e => `
   <li><a class="cmp-card" href="${cmpUrl(e)}"><strong>${esc(e.title)}</strong><span>${esc(short(e.description, 110))}</span></a></li>`).join('') + '</ul>';
-  const compareList = cmp.length ? `<section id="compare">
-  <h2>${esc(t('compare_heading'))}</h2>
-  <p class="muted">${esc(t('compare_lead'))}</p>
-  ${cmpCards(cmp)}
-  <p><a class="btn btn-ghost" href="${home}compare/">${esc(t('compare_all'))}</a></p>
-</section>` : '';
+  // 比較の一覧(用語集と同じ作り): 区分 → 分野の順にまとめる
+  const cmpGroups = exams.flatMap(e => e.groups.map(g => ({
+    name: grName(e, g),
+    cats: cats.filter(c => c.exam === e.id && c.group === g.id)
+      .map(c => ({ c, list: cmp.filter(x => x.cat === c.id) })).filter(x => x.list.length),
+  }))).filter(g => g.cats.length);
+  const cmpItem = e => `
+    <div class="term" id="cmp-${esc(e.slug)}">
+      <dt><a href="${cmpUrl(e)}">${esc(e.title)}</a></dt>
+      <dd>${esc(e.description)}</dd>
+    </div>`;
+  const compareIndex = `<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}">${cmpGroups.map(g => `
+  <p><b>${esc(g.name)}</b>${g.cats.map(({ c, list }) => ` <a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join('')}</p>`).join('')}
+</nav>` + cmpGroups.map(g => `
+<section class="glossary-group">
+  <h2>${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
+  <section class="glossary-cat" id="cat-${c.id}">
+    <h3>${esc(c.name)}<a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></h3>
+    <dl class="glossary">${list.map(cmpItem).join('')}
+    </dl>
+  </section>`).join('')}
+</section>`).join('');
   const cmpSection = (heading, list) => (list.length ? `<section>
   <h2>${esc(heading)}</h2>
   ${cmpCards(list)}
@@ -277,7 +293,7 @@ function buildLang(L) {
     siteName: esc(siteName),
     year: new Date().getFullYear(),
     contactFormUrl: esc(loc(config.contactFormUrl, code)),
-    categoryList, glossaryList, courseList, compareList,
+    categoryList, glossaryList, courseList, compareIndex,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: live.length,
@@ -318,7 +334,7 @@ function buildLang(L) {
         ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`
         : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
     // ヘッダーのナビ(いまいるページには aria-current を付ける)
-    const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary], ['contact/', S.nav_contact]]
+    const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['contact/', S.nav_contact]]
       .map(([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
@@ -455,18 +471,6 @@ function buildLang(L) {
       itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: abs(url) })) });
     const topCrumb = [t('breadcrumb_top'), home];
     const idxCrumb = [t('breadcrumb_compare'), `${home}compare/`];
-    page({
-      path: `${L.path}compare/`,
-      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}compare/`])),
-      title: t('compare_index_title'),
-      description: t('compare_index_desc'),
-      jsonld: crumbs(topCrumb, idxCrumb),
-      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> ${esc(t('breadcrumb_compare'))}</nav>
-<h1>${esc(t('compare_index_title'))}</h1>
-<p class="lead">${esc(t('compare_index_desc'))}</p>
-${cmpCards(cmp)}
-<div data-ad="compare-index"></div>`,
-    });
     for (const e of cmp) {
       const c = catOf(e.cat);
       const quiz = (e.questions ?? []).map(id => qById.get(id)).filter(Boolean);
