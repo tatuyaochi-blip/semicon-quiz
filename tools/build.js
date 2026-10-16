@@ -502,6 +502,7 @@ function buildLang(L) {
           toCategory: esc(t('to_category')),
           nextQ: pqs.length > 1 ? `<nav class="q-nav"><a class="btn btn-ghost" href="${base}${qUrl(c.id, pqs[(n + pqs.length - 1) % pqs.length].id)}" rel="prev">${esc(t('q_prev'))}</a><a class="btn btn-primary" href="${base}${qUrl(c.id, pqs[(n + 1) % pqs.length].id)}" rel="next">${esc(t('q_next'))}</a></nav>` : '',
           compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id).slice(0, 3)),
+          books: bookSection(c),
           related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
         }),
       });
@@ -683,6 +684,7 @@ ${list.length ? `<section>
   <h2>${esc(t('term_questions', { term: g.term, n: list.length }))}</h2>
   ${qLinks(list.slice(0, 15))}
 </section>` : ''}
+${c ? bookSection(c) : ''}
 <div data-ad="term"></div>
 ${cmpSection(t('compare_in_term'), cmp.filter(e => (e.terms ?? []).includes(g.key)))}
 ${related.length ? `<section>
