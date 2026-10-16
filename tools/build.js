@@ -305,6 +305,20 @@ function buildLang(L) {
   ${cmpCards(list)}
 </section>` : '');
 
+  // ---- 参考書(Amazonアソシエイト): 分野ページに検索リンクを出す。config.amazonTag に言語がなければ出さない ----
+  const amazonTag = config.amazonTag?.[code];
+  const booksData = readOpt('data/books.json', {});
+  const bookSection = c => {
+    if (!amazonTag) return '';
+    const kws = booksData[c.id] || [`半導体 ${c.name.replace(/[(（].*?[)）]/g, '')}`];
+    const links = kws.map(kw => `<li><a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}&amp;tag=${esc(amazonTag)}" target="_blank" rel="sponsored nofollow noopener">${esc(t('books_link', { kw }))}</a></li>`).join('');
+    return `<section class="books">
+  <h2>${esc(t('books_heading', { name: c.name }))} <small class="pr-badge">${esc(t('books_pr'))}</small></h2>
+  <ul>${links}</ul>
+  <p class="muted">${esc(t('books_note'))}</p>
+</section>`;
+  };
+
   // ---- 図解集(/figures/)と、問題・用語ページの図 ----
   const figList = Object.keys(figs).map(id => ({ id, svg: localizeFigure(figs[id], figT[id], isDef) })).filter(x => x.svg)
     .map(x => ({ ...x, title: figTitle(x.svg), size: figSize(x.svg) }));
@@ -451,6 +465,7 @@ function buildLang(L) {
         modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
         compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id)),
+        books: bookSection(c),
         questionList: pqs.length ? `<section>
   <h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2>
   ${qLinks(pqs)}
