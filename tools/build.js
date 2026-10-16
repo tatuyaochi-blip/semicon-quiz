@@ -52,6 +52,21 @@ const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
 const courses = readOpt('data/courses.json', []);
 const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 const figs = figures();
+// 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
+const siteCss = read('src/css/style.css');
+const cssVars = block => [...block.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(m => `${m[1]}:${m[2].trim()}`).join(';');
+const figStyle = `:root{${cssVars(siteCss.match(/:root \{([\s\S]*?)\n\}/)[1])}}`
+  + `@media (prefers-color-scheme: dark){:root{${cssVars(siteCss.match(/prefers-color-scheme: dark\) \{\s*:root \{([\s\S]*?)\n  \}/)[1])}}}`
+  + 'text{font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif}'
+  + siteCss.split('\n').filter(l => /^\.fig [^{]+\{/.test(l) && !/^\.fig svg/.test(l)).map(l => l.replace(/^\.fig /, '').replace(/font-family:\s*inherit;?/, '')).join('');
+const xmlText = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+const figTitle = svg => xmlText((svg.match(/<title>([^<]*)<\/title>/) || [, ''])[1]);
+const figSize = svg => (svg.match(/viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"/) || [, 600, 300]).slice(1).map(Number);
+// 単独で開いても色が付き(ダークモードにも対応)、背景もあるSVGにする
+function standaloneSvg(svg) {
+  const [w, h] = figSize(svg);
+  return svg.replace(/^(<svg[^>]*>)/, `$1<style>${figStyle}</style><rect width="${w}" height="${h}" style="fill:var(--surface)"/>`);
+}
 const layout = read('src/templates/layout.html');
 const catTpl = read('src/templates/category.html');
 const qTpl = read('src/templates/question.html');
@@ -131,7 +146,7 @@ function buildLang(L) {
     // 図(figure)は、この言語の文字にした SVG を figureSvg として渡す(訳が足りなければ出さない)
     qs[c.id] = questions[c.id].filter(q => isDef || tq[q.id]).map(({ reviewed, source, choiceNotes, figure, ...q }) => {
       const figureSvg = figure ? localizeFigure(figs[figure], figT[figure], isDef) : null;
-      return { ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg } : {}) };
+      return { ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg, figureId: figure } : {}) };
     });
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
@@ -288,12 +303,54 @@ function buildLang(L) {
   ${cmpCards(list)}
 </section>` : '');
 
+  // ---- 図解集(/figures/)と、問題・用語ページの図 ----
+  const figList = Object.keys(figs).map(id => ({ id, svg: localizeFigure(figs[id], figT[id], isDef) })).filter(x => x.svg)
+    .map(x => ({ ...x, title: figTitle(x.svg), size: figSize(x.svg) }));
+  const figUse = {}; // 図ID → その図を使う問題(この言語で出せるもの)
+  for (const c of categories) for (const q of questions[c.id]) {
+    if (q.figure && qById.has(q.id)) (figUse[q.figure] = figUse[q.figure] || []).push(qById.get(q.id));
+  }
+  figList.sort((a, b) => (categories.findIndex(c => c.id === figUse[a.id]?.[0]?.cat) + 1 || 999) - (categories.findIndex(c => c.id === figUse[b.id]?.[0]?.cat) + 1 || 999));
+  for (const x of figList) write(`img/${code}/${x.id}.svg`, standaloneSvg(x.svg));
+  const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${home}figures/#fig-${id}">${esc(t('figure_open'))}</a></figcaption></figure>`;
+  const figureGallery = `<div class="fig-grid">${figList.map(x => `
+  <figure class="fig-item" id="fig-${x.id}">
+    <img src="${base}img/${code}/${x.id}.svg" alt="${esc(x.title)}" width="${x.size[0]}" height="${x.size[1]}" loading="lazy">
+    <figcaption><strong>${esc(x.title)}</strong>${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
+  </figure>`).join('')}
+</div>`;
+  const figureLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': figList.map(x => ({ '@type': 'ImageObject', contentUrl: abs(`${base}img/${code}/${x.id}.svg`), name: x.title, caption: x.title, inLanguage: L.htmlLang })),
+  }).replace(/</g, '\\u003c');
+
+  // ---- サイト内検索の索引(検索ページが最初に読み込む。動きは search.js) ----
+  const searchItems = [
+    ...cmp.map(e => ({ t: 'c', n: e.title, u: `compare/${e.slug}/`, x: `${e.description} ${e.items.join(' ')}` })),
+    ...terms.map(g => ({ t: 't', n: g.term, u: `term/${termSlug[g.key]}/`, x: `${g.desc} ${isDef ? '' : g.key}` })),
+    ...live.map(c => ({ t: 'k', n: c.name, u: `c/${c.id}/`, x: c.description })),
+    ...figList.map(x => ({ t: 'f', n: x.title, u: `figures/#fig-${x.id}`, x: '' })),
+    ...live.flatMap(c => qs[c.id].map(q => ({ t: 'q', n: q.question, u: `q/${c.id}/${q.id}/`, x: c.name }))),
+  ];
+  write(`data/${code}/search.json`, JSON.stringify({
+    strings: Object.fromEntries(['search_none', 'search_hint', 'search_more', 'search_count', 'search_g_c', 'search_g_t', 'search_g_k', 'search_g_f', 'search_g_q'].map(k => [k, S[k]])),
+    items: searchItems,
+  }));
+
+  // 比較ページの「関連する比較」: 共通の用語・同じ分野・同じ区分の近いものを選ぶ
+  const relatedCmp = e => {
+    const grp = x => catOf(x.cat)?.group;
+    return cmp.filter(x => x !== e)
+      .map(x => ({ x, s: 2 * (x.terms ?? []).filter(k => (e.terms ?? []).includes(k)).length + (x.cat === e.cat ? 4 : 0) + (grp(x) === grp(e) ? 1 : 0) }))
+      .sort((a, b) => b.s - a.s).slice(0, 6).map(r => r.x);
+  };
+
   const common = {
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
     contactFormUrl: esc(loc(config.contactFormUrl, code)),
-    categoryList, glossaryList, courseList, compareIndex,
+    categoryList, glossaryList, courseList, compareIndex, figureGallery, figureLd,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: live.length,
@@ -423,12 +480,14 @@ function buildLang(L) {
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
           explanation: linked(q.explanation),
-          figure: q.figureSvg ? `<figure class="fig">${q.figureSvg}</figure>` : '',
+          figure: q.figureSvg ? figureHtml(q.figureSvg, q.figureId) : '',
           choiceNotes: choiceNotes(q),
           report: reportLink(q.id),
           solveUrl: quizUrl(solve, c.id),
           solveLabel: esc(modeText(solve, 'label')),
           toCategory: esc(t('to_category')),
+          nextQ: pqs.length > 1 ? `<nav class="q-nav"><a class="btn btn-ghost" href="${base}${qUrl(c.id, pqs[(n + pqs.length - 1) % pqs.length].id)}" rel="prev">${esc(t('q_prev'))}</a><a class="btn btn-primary" href="${base}${qUrl(c.id, pqs[(n + 1) % pqs.length].id)}" rel="next">${esc(t('q_next'))}</a></nav>` : '',
+          compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id).slice(0, 3)),
           related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
         }),
       });
@@ -515,7 +574,7 @@ ${chips.length ? `<section>
   <h2>${esc(t('compare_terms'))}</h2>
   <p class="term-chips">${chips.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
 </section>` : ''}
-${cmpSection(t('compare_more'), cmp.filter(x => x !== e))}`,
+${cmpSection(t('compare_more'), relatedCmp(e))}`,
       });
     }
   }
@@ -534,7 +593,7 @@ ${cmpSection(t('compare_more'), cmp.filter(x => x !== e))}`,
     const fig = list.find(q => q.inQ && q.figureSvg);
     // 解説からの抜き出し: 用語を含む最初の文(最大3問ぶん)
     const quotes = list.map(q => ({ q, s: q.explanation.split(/(?<=。)|(?<=[.!?])\s+/).map(x => x.trim()).find(x => termIds(x).includes(g.key)) }))
-      .filter(x => x.s).slice(0, 3);
+      .filter(x => x.s).slice(0, 5);
     // 関連する用語: 同じ問題によく一緒に出てくる語 → 同じ分野の語
     const co = new Map();
     for (const q of list) for (const id of q.ids) if (id !== g.key) co.set(id, (co.get(id) || 0) + 1);
@@ -542,6 +601,21 @@ ${cmpSection(t('compare_more'), cmp.filter(x => x !== e))}`,
       ...terms.filter(x => x.cat === g.cat && x.key !== g.key).map(x => x.key)];
     const related = [...new Set(rel)].slice(0, 10).map(id => terms.find(x => x.key === id));
     const c = catOf(g.cat);
+    // どの分野の何問に出てくるか(本文の要約)と、その場で解ける練習問題
+    const byCat = new Map();
+    for (const q of list) byCat.set(q.cat, (byCat.get(q.cat) || 0) + 1);
+    const topCats = [...byCat].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => catOf(id).name);
+    const termSummary = list.length ? `<p class="muted term-summary">${esc(t('term_summary', { term: g.term, n: list.length, k: byCat.size, topics: topCats.join(', ') }))}</p>` : '';
+    const pickable = list.filter(q => !q.code);
+    const pick = (pickable.some(q => q.inQ) ? pickable.filter(q => q.inQ) : pickable).slice(0, 2);
+    const practiceHtml = pick.length ? `<section>
+  <h2>${esc(t('term_practice', { term: g.term }))}</h2>${pick.map(q => `
+  <article class="q-mini">
+    <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
+    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
+  </article>`).join('')}
+</section>` : '';
     page({
       path: `${L.path}term/${termSlug[g.key]}/`,
       alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
@@ -553,9 +627,12 @@ ${cmpSection(t('compare_more'), cmp.filter(x => x !== e))}`,
   <h1>${esc(t('term_heading', { term: g.term }))}</h1>
   ${g.reading ? `<p class="muted">${esc(g.reading)}</p>` : ''}
   <p class="lead">${esc(g.desc)}</p>
-  ${fig ? `<figure class="fig">${fig.figureSvg}</figure>` : ''}
+  ${isDef ? '' : `<p class="muted">${esc(t('term_ja_name'))}: <span lang="ja">${esc(g.key)}</span></p>`}
+  ${termSummary}
+  ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
   ${c ? `<p>${esc(t('term_category'))}: <a href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
 </article>
+${practiceHtml}
 ${quotes.length ? `<section>
   <h2>${esc(t('term_quotes', { term: g.term }))}</h2>
   <ul class="term-quotes">${quotes.map(({ q, s }) => `<li><p>${esc(s)}</p><a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 60))}</a></li>`).join('')}</ul>
@@ -601,7 +678,7 @@ for (const size of [192, 512]) write(`icon-${size}.png`, iconPng(size));
 const files = dir => fs.readdirSync(path.join(out, dir), { recursive: true }).map(f => `${dir}/${f.replaceAll('\\', '/')}`)
   .filter(f => fs.statSync(path.join(out, f)).isFile());
 const precache = [
-  ...langs.flatMap(L => [L.path, `${L.path}quiz/`, `${L.path}stats/`, `${L.path}manifest.json`, ...files(`data/${L.code}`)]),
+  ...langs.flatMap(L => [L.path, `${L.path}quiz/`, `${L.path}stats/`, `${L.path}manifest.json`, ...files(`data/${L.code}`).filter(f => !f.endsWith("/search.json"))]),
   ...files('js'), ...files('css'), 'icon-192.png', 'icon-512.png',
 ];
 // 中身が変わったら版も変わり、古いキャッシュは消える
