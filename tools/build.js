@@ -307,11 +307,12 @@ function buildLang(L) {
 
   // ---- 参考書(Amazonアソシエイト): 分野ページに検索リンクを出す。config.amazonTag に言語がなければ出さない ----
   const amazonTag = config.amazonTag?.[code];
-  const booksData = readOpt('data/books.json', {});
+  const amazonHost = config.amazonDomain?.[code] || 'www.amazon.co.jp';
+  const booksData = isDef ? readOpt('data/books.json', {}) : readOpt(`data/i18n/${code}/books.json`, {});
   const bookSection = c => {
     if (!amazonTag) return '';
-    const kws = booksData[c.id] || [`半導体 ${c.name.replace(/[(（].*?[)）]/g, '')}`];
-    const links = kws.map(kw => `<li><a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}&amp;tag=${esc(amazonTag)}" target="_blank" rel="sponsored nofollow noopener">${esc(t('books_link', { kw }))}</a></li>`).join('');
+    const kws = booksData[c.id] || [`${t('books_fallback')} ${c.name.replace(/[(（].*?[)）]/g, '')}`];
+    const links = kws.map(kw => `<li><a href="https://${amazonHost}/s?k=${encodeURIComponent(kw)}&amp;tag=${esc(amazonTag)}" target="_blank" rel="sponsored nofollow noopener">${esc(t('books_link', { kw }))}</a></li>`).join('');
     return `<section class="books">
   <h2>${esc(t('books_heading', { name: c.name }))} <small class="pr-badge">${esc(t('books_pr'))}</small></h2>
   <ul>${links}</ul>
