@@ -50,6 +50,7 @@ const gloEn = readOpt('data/i18n/en/glossary.json', {});
 const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
 const courses = readOpt('data/courses.json', []);
+const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
 const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 const figs = figures();
 // 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
@@ -273,6 +274,7 @@ function buildLang(L) {
     for (const k of e.terms ?? []) if (!glossary.some(g => g.term === k)) throw new Error(`${where}: 用語集にない語 ${k}`);
     for (const id of e.questions ?? []) if (isDef && !qById.has(id)) throw new Error(`${where}: 存在しない問題 ${id}`);
     if (!catOf(e.cat)) throw new Error(`${where}: 存在しない分野 ${e.cat}`);
+    if ((e.faq ?? []).some(f => !Array.isArray(f) || f.length !== 2 || f.some(x => typeof x !== 'string'))) throw new Error(`${where}(${code}): faq は [質問, 答え] の配列にしてください`);
   }
   const cmpCards = list => '<ul class="cmp-list">' + list.map(e => `
   <li><a class="cmp-card" href="${cmpUrl(e)}"><strong>${esc(e.title)}</strong><span>${esc(short(e.description, 110))}</span></a></li>`).join('') + '</ul>';
@@ -526,6 +528,13 @@ function buildLang(L) {
     });
   }
 
+  const miniQ = q => `
+  <article class="q-mini">
+    <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
+    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
+  </article>`;
+
   // 比較ページ /compare/ と /compare/{slug}/
   const cmpLangs = slug => langs.filter(x => x.code === defLang || readOpt(`data/i18n/${x.code}/compare.json`, {})[slug]);
   if (cmp.length) {
@@ -536,18 +545,32 @@ function buildLang(L) {
     for (const e of cmp) {
       const c = catOf(e.cat);
       const quiz = (e.questions ?? []).map(id => qById.get(id)).filter(Boolean);
-      const chips = (e.terms ?? []).map(k => terms.find(x => x.key === k)).filter(Boolean);
+      const keyTerms = (e.terms ?? []).map(k => terms.find(x => x.key === k)).filter(Boolean);
+      const faq = e.faq ?? [];
+      const mini = quiz.filter(q => !q.code).slice(0, 3);
+      const modified = lastmodPrev[`${L.path}compare/${e.slug}/`]?.date ?? new Date().toLocaleDateString('sv-SE');
       page({
         path: `${L.path}compare/${e.slug}/`,
         alt: Object.fromEntries(cmpLangs(e.slug).map(x => [x.code, `${x.path}compare/${e.slug}/`])),
         fallback: x => `${x.path}compare/`,
         title: e.title,
         description: e.description,
-        jsonld: crumbs(topCrumb, idxCrumb, [e.title, cmpUrl(e)]),
+        scripts: ['compare.js'],
+        jsonld: [
+          crumbs(topCrumb, idxCrumb, [e.title, cmpUrl(e)]),
+          { '@context': 'https://schema.org', '@type': 'Article', headline: e.title, description: e.description, inLanguage: L.htmlLang, dateModified: modified,
+            mainEntityOfPage: abs(cmpUrl(e)), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+          ...(faq.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage',
+            mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }] : []),
+        ],
         content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}compare/">${esc(t('breadcrumb_compare'))}</a></nav>
 <article class="compare-page">
   <h1>${esc(e.title)}</h1>
   <p class="lead">${esc(e.lead)}</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="${esc(t('compare_copied'))}">${esc(t('compare_copy'))}</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="${esc(t('compare_link_copied'))}">${esc(t('compare_share'))}</button>
+  </div>
   <div class="table-wrap">
     <table class="compare">
       <thead><tr><th scope="col">${esc(t('compare_aspect'))}</th>${e.items.map(x => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead>
@@ -565,14 +588,21 @@ function buildLang(L) {
     <dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}
   </dl>
 </section>
+${faq.length ? `<section class="faq">
+  <h2>${esc(t('compare_faq'))}</h2>${faq.map(([q, a]) => `
+  <h3>${esc(q)}</h3>
+  <p>${esc(a)}</p>`).join('')}
+</section>` : ''}
 ${quiz.length ? `<section>
-  <h2>${esc(t('compare_quiz'))}</h2>
-  ${qLinks(quiz)}
+  <h2>${esc(t('compare_quiz'))}</h2>${mini.map(miniQ).join('')}
+  ${quiz.length > mini.length ? qLinks(quiz.filter(q => !mini.includes(q))) : ''}
   <p><a class="btn btn-primary" href="${home}c/${c.id}/">${esc(t('compare_to_category', { name: c.name }))}</a></p>
 </section>` : ''}
-${chips.length ? `<section>
+${keyTerms.length ? `<section>
   <h2>${esc(t('compare_terms'))}</h2>
-  <p class="term-chips">${chips.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
+  <dl class="glossary">${keyTerms.map(x => `
+    <div class="term"><dt><a href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a></dt><dd>${esc(x.desc)}</dd></div>`).join('')}
+  </dl>
 </section>` : ''}
 ${cmpSection(t('compare_more'), relatedCmp(e))}`,
       });
