@@ -38,6 +38,10 @@ const baseUrl = config.baseUrl.replace(/\/?$/, '/');
 const base = new URL(baseUrl).pathname; // 例: /semicon-quiz/ または /
 const langs = config.languages;
 const defLang = langs[0].code;
+// 検索エンジンに既定として伝える言語(x-default)。ほかの言語のページには、この言語版への案内を出す
+const mainLang = config.mainLang ?? defLang;
+const mainL = langs.find(x => x.code === mainLang);
+const mainS = { ...readJSON(`src/i18n/${defLang}.json`), ...readOpt(`src/i18n/${mainLang}.json`, {}) };
 const exams = readJSON('data/exams.json');
 const categories = readJSON('data/categories.json');
 const glossary = readJSON('data/glossary.json');
@@ -259,14 +263,14 @@ function buildLang(L) {
   // ---- ページ生成 ----
   // alt: 言語コード → その言語での同じページのパス(なければ省略)
   // fallback: 同じページがない言語へ切り替えるときの行き先(既定はその言語のトップ)
-  function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, content }) {
+  function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, content }) {
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
     const alts = langs.filter(x => alt[x.code] != null);
     const head = [
       noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${url}">`,
       ...(noindex ? [] : alts.map(x => `<link rel="alternate" hreflang="${x.htmlLang}" href="${baseUrl}${alt[x.code]}">`)),
-      !noindex && alt[defLang] != null ? `<link rel="alternate" hreflang="x-default" href="${baseUrl}${alt[defLang]}">` : '',
+      !noindex && alt[mainLang] != null ? `<link rel="alternate" hreflang="x-default" href="${baseUrl}${alt[mainLang]}">` : '',
       `<meta property="og:type" content="${p === L.path ? 'website' : 'article'}">`,
       `<meta property="og:title" content="${esc(tt)}">`,
       `<meta property="og:description" content="${esc(description)}">`,
@@ -288,6 +292,10 @@ function buildLang(L) {
     // ヘッダーのナビ(いまいるページには aria-current を付ける)
     const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary], ['contact/', S.nav_contact]]
       .map(([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('');
+    // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
+    const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
+    const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>` : '';
     if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
       ...common,
@@ -296,6 +304,7 @@ function buildLang(L) {
       head,
       langLinks,
       headerNav,
+      langBanner: bannerHtml,
       htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : '',
       content,
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
