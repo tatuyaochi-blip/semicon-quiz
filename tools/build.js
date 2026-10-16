@@ -399,9 +399,7 @@ function buildLang(L) {
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
 <script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>` : '';
-    // 要望の受け付けを知らせる通知(動きは notice.js)。クイズ画面(ads:false)には出さない
-    const noticeHtml = ads ? `<aside class="contact-toast" role="status" hidden><a href="${home}contact/">${esc(S.contact_notice)}</a><button type="button" aria-label="${esc(S.lang_banner_close)}">×</button></aside>` : '';
-    if (ads) scripts = ['ads.js', 'notice.js', ...scripts];
+    if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
       ...common,
       title: esc(tt),
@@ -410,7 +408,6 @@ function buildLang(L) {
       langLinks,
       headerNav,
       langBanner: bannerHtml,
-      contactNotice: noticeHtml,
       htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : ads && config.adsenseClient && config.adsenseSlots ? ` data-adsense-client="${esc(config.adsenseClient)}" data-adsense-slots="${esc(JSON.stringify(config.adsenseSlots))}"` : '',
       content,
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
