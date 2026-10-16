@@ -23,6 +23,7 @@ npm run serve      # http://localhost:8080/ で確認
 | reportFormUrl | 誤り報告用 Googleフォームの事前入力URL。`{id}`（問題ID）と `{lang}`（言語）を埋めて開く。null ならリンクを出さない |
 | adPlaceholders | true のとき広告枠の位置を点線で表示する（adsenseClient を設定すると表示しない） |
 | adsenseClient | AdSense のクライアントID（`ca-pub-…`）。設定すると広告スクリプト（クイズ画面以外）と `ads.txt` を出力し、プライバシーポリシーに説明を載せる。null なら何も出さない |
+| adsenseSlots | AdSense の広告ユニットID。`{ "default": "1234567890", "top": "…" }` のように、枠の名前（top / question / category / glossary / stats / compare / term / figures）ごと、または `default` で指定する。IDのない枠は何も出さない。null なら枠に広告を入れない |
 | ga4Id | Google アナリティクス 4 の測定ID（`G-…`）。設定すると全ページに計測タグを出力し、プライバシーポリシーに説明を載せる。null なら何も出さない |
 
 ## PWA

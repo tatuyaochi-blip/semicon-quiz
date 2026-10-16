@@ -411,7 +411,7 @@ function buildLang(L) {
       headerNav,
       langBanner: bannerHtml,
       contactNotice: noticeHtml,
-      htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : '',
+      htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : ads && config.adsenseClient && config.adsenseSlots ? ` data-adsense-client="${esc(config.adsenseClient)}" data-adsense-slots="${esc(JSON.stringify(config.adsenseSlots))}"` : '',
       content,
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
     }));
