@@ -50,6 +50,7 @@ const gloEn = readOpt('data/i18n/en/glossary.json', {});
 const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
 const courses = readOpt('data/courses.json', []);
+const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 const figs = figures();
 const layout = read('src/templates/layout.html');
 const catTpl = read('src/templates/category.html');
@@ -245,12 +246,38 @@ function buildLang(L) {
   </div>
 </section>` : '';
 
+  // ---- 用語の違い比較 ----
+  const cmpT = tr('compare');
+  const cmp = compares.filter(e => isDef || cmpT[e.slug]).map(e => ({ ...e, ...(isDef ? {} : cmpT[e.slug]) }));
+  const qById = new Map(categories.flatMap(c => qs[c.id].map(q => [q.id, { ...q, cat: c.id }])));
+  const abs = x => new URL(x, baseUrl).href;
+  const cmpUrl = e => `${home}compare/${e.slug}/`;
+  for (const e of cmp) {
+    const where = `data/compare.json「${e.slug}」`;
+    if (!e.rows.length || e.rows.some(r => r.length !== e.items.length + 1)) throw new Error(`${where}(${code}): rows の列数が items と合っていません`);
+    for (const k of e.terms ?? []) if (!glossary.some(g => g.term === k)) throw new Error(`${where}: 用語集にない語 ${k}`);
+    for (const id of e.questions ?? []) if (isDef && !qById.has(id)) throw new Error(`${where}: 存在しない問題 ${id}`);
+    if (!catOf(e.cat)) throw new Error(`${where}: 存在しない分野 ${e.cat}`);
+  }
+  const cmpCards = list => '<ul class="cmp-list">' + list.map(e => `
+  <li><a class="cmp-card" href="${cmpUrl(e)}"><strong>${esc(e.title)}</strong><span>${esc(short(e.description, 110))}</span></a></li>`).join('') + '</ul>';
+  const compareList = cmp.length ? `<section id="compare">
+  <h2>${esc(t('compare_heading'))}</h2>
+  <p class="muted">${esc(t('compare_lead'))}</p>
+  ${cmpCards(cmp)}
+  <p><a class="btn btn-ghost" href="${home}compare/">${esc(t('compare_all'))}</a></p>
+</section>` : '';
+  const cmpSection = (heading, list) => (list.length ? `<section>
+  <h2>${esc(heading)}</h2>
+  ${cmpCards(list)}
+</section>` : '');
+
   const common = {
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
     contactFormUrl: esc(loc(config.contactFormUrl, code)),
-    categoryList, glossaryList, courseList,
+    categoryList, glossaryList, courseList, compareList,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: live.length,
@@ -263,7 +290,7 @@ function buildLang(L) {
   // ---- ページ生成 ----
   // alt: 言語コード → その言語での同じページのパス(なければ省略)
   // fallback: 同じページがない言語へ切り替えるときの行き先(既定はその言語のトップ)
-  function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, content }) {
+  function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
     const alts = langs.filter(x => alt[x.code] != null);
@@ -281,6 +308,7 @@ function buildLang(L) {
       `<link rel="manifest" href="${home}manifest.json">`,
       `<link rel="icon" href="${base}icon-192.png" type="image/png">`,
       `<link rel="apple-touch-icon" href="${base}icon-192.png">`,
+      jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, '\\u003c')}</script>` : '',
       ads ? adsenseTag : '', // クイズ画面(ads:false)には広告を出さない
       ga4Tag,
     ].filter(Boolean).join('\n');
@@ -347,6 +375,7 @@ function buildLang(L) {
         intro: c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
         modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
+        compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id)),
         questionList: pqs.length ? `<section>
   <h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2>
   ${qLinks(pqs)}
@@ -419,6 +448,71 @@ function buildLang(L) {
     });
   }
 
+  // 比較ページ /compare/ と /compare/{slug}/
+  const cmpLangs = slug => langs.filter(x => x.code === defLang || readOpt(`data/i18n/${x.code}/compare.json`, {})[slug]);
+  if (cmp.length) {
+    const crumbs = (...items) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: abs(url) })) });
+    const topCrumb = [t('breadcrumb_top'), home];
+    const idxCrumb = [t('breadcrumb_compare'), `${home}compare/`];
+    page({
+      path: `${L.path}compare/`,
+      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}compare/`])),
+      title: t('compare_index_title'),
+      description: t('compare_index_desc'),
+      jsonld: crumbs(topCrumb, idxCrumb),
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> ${esc(t('breadcrumb_compare'))}</nav>
+<h1>${esc(t('compare_index_title'))}</h1>
+<p class="lead">${esc(t('compare_index_desc'))}</p>
+${cmpCards(cmp)}
+<div data-ad="compare-index"></div>`,
+    });
+    for (const e of cmp) {
+      const c = catOf(e.cat);
+      const quiz = (e.questions ?? []).map(id => qById.get(id)).filter(Boolean);
+      const chips = (e.terms ?? []).map(k => terms.find(x => x.key === k)).filter(Boolean);
+      page({
+        path: `${L.path}compare/${e.slug}/`,
+        alt: Object.fromEntries(cmpLangs(e.slug).map(x => [x.code, `${x.path}compare/${e.slug}/`])),
+        fallback: x => `${x.path}compare/`,
+        title: e.title,
+        description: e.description,
+        jsonld: crumbs(topCrumb, idxCrumb, [e.title, cmpUrl(e)]),
+        content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}compare/">${esc(t('breadcrumb_compare'))}</a></nav>
+<article class="compare-page">
+  <h1>${esc(e.title)}</h1>
+  <p class="lead">${esc(e.lead)}</p>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">${esc(t('compare_aspect'))}</th>${e.items.map(x => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead>
+      <tbody>${e.rows.map(([label, ...cells]) => `
+        <tr><th scope="row">${esc(label)}</th>${cells.map(x => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">${esc(t('compare_note'))}</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>${esc(t('compare_when'))}</h2>
+  <dl class="compare-when">${e.when.map(([k, v]) => `
+    <dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}
+  </dl>
+</section>
+${quiz.length ? `<section>
+  <h2>${esc(t('compare_quiz'))}</h2>
+  ${qLinks(quiz)}
+  <p><a class="btn btn-primary" href="${home}c/${c.id}/">${esc(t('compare_to_category', { name: c.name }))}</a></p>
+</section>` : ''}
+${chips.length ? `<section>
+  <h2>${esc(t('compare_terms'))}</h2>
+  <p class="term-chips">${chips.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
+</section>` : ''}
+${cmpSection(t('compare_more'), cmp.filter(x => x !== e))}`,
+      });
+    }
+  }
+
   // 用語ページ /term/{slug}/ : 定義、その用語が出てくる問題(問題文・解説の自動リンクから逆引き)、関連する用語
   const termIds = text => linkTerms(text, matcher).filter(x => typeof x !== 'string').map(x => x.id);
   const termQs = new Map(terms.map(g => [g.key, []]));
@@ -464,6 +558,7 @@ ${list.length ? `<section>
   ${qLinks(list.slice(0, 15))}
 </section>` : ''}
 <div data-ad="term"></div>
+${cmpSection(t('compare_in_term'), cmp.filter(e => (e.terms ?? []).includes(g.key)))}
 ${related.length ? `<section>
   <h2>${esc(t('term_related'))}</h2>
   <p class="term-chips">${related.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
