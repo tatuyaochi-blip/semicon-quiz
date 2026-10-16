@@ -54,6 +54,9 @@ function shuffleChoices(q) {
   };
 }
 
+// アクセス解析(GA4)へのイベント送信。タグがない(オフライン・未設定)ときは何もしない
+const track = (name, p) => { try { window.gtag?.('event', name, { mode: mode.id, category: cat?.id ?? '', ...p }); } catch {} };
+
 let qs, i, answers, done, finished, loadError;
 start();
 
@@ -83,6 +86,7 @@ async function start(retry) {
       h('a', { class: 'btn btn-primary', href: homeUrl }, t('back')));
     return;
   }
+  if (!retry) track('quiz_start', { total: qs.length });
   show();
 }
 
@@ -158,6 +162,7 @@ function result() {
   const total = answers.length;
   const pct = Math.round((score / total) * 100);
   store.addHistory({ mode: mode.id, c: cat?.id ?? null, score, total });
+  track('quiz_complete', { score, total });
   const msg = t(pct >= 80 ? 'msg_good' : pct >= 60 ? 'msg_mid' : 'msg_low');
   const wrong = total - score;
 
