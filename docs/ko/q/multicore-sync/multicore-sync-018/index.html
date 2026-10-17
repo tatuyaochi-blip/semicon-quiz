@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko" data-lang="ko" data-base="/" data-home="/ko/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>멀티코어와 동기화 연습 문제: CAS를 사용한 락프리 자료구조에서 문제가 되는 ABA 문제에 대한 설명으로 올바른 것은? | 반도체 교실</title>
+<meta name="description" content="CAS를 사용한 락프리 자료구조에서 문제가 되는 ABA 문제에 대한 설명으로 올바른 것은?">
+<link rel="canonical" href="https://semiconroom.com/ko/q/multicore-sync/multicore-sync-018/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/q/multicore-sync/multicore-sync-018/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/q/multicore-sync/multicore-sync-018/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/q/multicore-sync/multicore-sync-018/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/q/multicore-sync/multicore-sync-018/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/q/multicore-sync/multicore-sync-018/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="멀티코어와 동기화 연습 문제: CAS를 사용한 락프리 자료구조에서 문제가 되는 ABA 문제에 대한 설명으로 올바른 것은? | 반도체 교실">
+<meta property="og:description" content="CAS를 사용한 락프리 자료구조에서 문제가 되는 ABA 문제에 대한 설명으로 올바른 것은?">
+<meta property="og:url" content="https://semiconroom.com/ko/q/multicore-sync/multicore-sync-018/">
+<meta property="og:site_name" content="반도체 교실">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/ko/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/q/multicore-sync/multicore-sync-018/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/ko/"><span class="logo-mark" aria-hidden="true"></span><span>반도체 교실<small></small></span></a>
+    <nav class="header-nav"><a href="/ko/">홈</a><a href="/ko/stats/">성적</a><a href="/ko/glossary/">용어집</a><a href="/ko/compare/">비교</a><a href="/ko/contact/">문의</a></nav>
+    <form class="site-search" role="search" action="/ko/search/" method="get"><input type="search" name="q" placeholder="검색 (예: MOSFET)" aria-label="사이트 내 검색" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/q/multicore-sync/multicore-sync-018/" hreflang="ja" lang="ja">日本語</a><a href="/en/q/multicore-sync/multicore-sync-018/" hreflang="en" lang="en">English</a><a href="/zh-hant/q/multicore-sync/multicore-sync-018/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><span aria-current="true">한국어</span><a href="/de/c/multicore-sync/" lang="de">Deutsch</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/ko/">홈</a> <span>›</span> 컴퓨터 시스템 <span>›</span> <a href="/ko/c/multicore-sync/">멀티코어와 동기화</a></nav>
+
+<article class="q-page">
+  <p class="q-cat">멀티코어와 동기화</p>
+  <h1 class="q-text">CAS를 사용한 락프리 자료구조에서 문제가 되는 ABA 문제에 대한 설명으로 올바른 것은?</h1>
+  <ol class="q-choices">
+<li><span class="choice-mark">A</span><span class="choice-text">A와 B 두 스레드가 번갈아서만 실행될 수 있게 된다</span></li>
+<li><span class="choice-mark">B</span><span class="choice-text">값이 A에서 B로 바뀌었다가 다시 A로 돌아오면, CAS가 변화를 알아차리지 못하고 성공해 버린다</span></li>
+<li><span class="choice-mark">C</span><span class="choice-text">A와 B 두 락을 반대 순서로 잡아 버린다</span></li>
+  </ol>
+
+  <details class="q-answer">
+    <summary>정답과 해설 보기</summary>
+    <p class="verdict ok">정답: B. 값이 A에서 B로 바뀌었다가 다시 A로 돌아오면, CAS가 변화를 알아차리지 못하고 성공해 버린다</p>
+    <p class="explanation">연결 리스트의 헤드 포인터가 A일 때, 한 스레드가 A를 읽고 CAS를 준비하는 사이에 다른 스레드가 A를 제거하고 B에 대한 조작을 한 뒤, 다시 같은 주소 A의 노드를 넣는 일이 있습니다. CAS는 값이 A 그대로이므로 성공하지만, 리스트의 내용은 이미 바뀌어 있어 구조가 깨집니다. 포인터에 갱신 횟수를 붙여 함께 비교하는 방법이나 <a class="term-link" href="/ko/term/load-reserved-store-conditional/">LR/SC</a>를 사용하는 방법으로 방지합니다.</p>
+    
+    <ul class="choice-notes"><li><b>A. </b>실행 순서의 문제가 아닙니다.</li><li><b>B. </b>맞습니다. 값만 비교하는 CAS의 약점입니다.</li><li><b>C. </b>그것은 데드락의 원인입니다.</li></ul>
+  </details>
+  
+</article>
+
+<nav class="q-nav"><a class="btn btn-ghost" href="/ko/q/multicore-sync/multicore-sync-017/" rel="prev">← 이전</a><a class="btn btn-primary" href="/ko/q/multicore-sync/multicore-sync-019/" rel="next">다음 문제 →</a></nav>
+
+<div class="actions">
+  <a class="btn btn-primary" href="/ko/quiz/?mode=category&amp;c=multicore-sync" rel="nofollow">이 분야 연습하기</a>
+  <a class="btn btn-ghost" href="/ko/c/multicore-sync/">분야로 돌아가기</a>
+</div>
+
+
+
+<div data-ad="question"></div>
+
+<section>
+  <h2>멀티코어와 동기화의 다른 문제</h2>
+<ol class="q-list">
+  <li data-level="2"><a href="/ko/q/multicore-sync/multicore-sync-019/">RISC-V의 amoadd.w 명령이나 x86의 lock xadd 명령과 같은 fetch-and-add 명령의 동작으로 올바른 것은?</a></li>
+  <li data-level="1"><a href="/ko/q/multicore-sync/multicore-sync-020/">스핀락(spinlock)에 대한 설명으로 올바른 것은?</a></li>
+  <li data-level="2"><a href="/ko/q/multicore-sync/multicore-sync-021/">스핀락이 적합하지 않은 상황으로 가장 적절한 것은?</a></li>
+  <li data-level="3"><a href="/ko/q/multicore-sync/multicore-sync-022/">스핀락에서 락 변수를 곧바로 아토믹 명령으로 갱신하려 하지 않고, 평소에는 일반 읽기로 풀리기를 기다리다가 풀린 것으로 보일 때만 아토믹 명령을 사용하는 방식(test-and-test-and-set)의 이유로 올바른 것은?</a></li>
+  <li data-level="2"><a href="/ko/q/multicore-sync/multicore-sync-023/">뮤텍스(잠들어서 기다리는 락)와 스핀락을 비교한 설명으로 올바른 것은?</a></li></ol>
+</section>
+
+<section>
+  <h2>이 분야의 비교</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/ko/compare/mutex-vs-semaphore/"><strong>뮤텍스 vs 세마포어: 차이점 설명</strong><span>뮤텍스와 세마포어를 표로 비교합니다: 목적, 값, 소유권, 연산, 시그널링, 우선순위 역전, 주요 용도, 흔한 함정.</span></a></li></ul>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">개인이 운영하는 반도체 학습 사이트입니다.</p>
+    <p class="footer-request"><a href="/ko/contact/">요청이나 의견은 언제든 환영해요. 문의 페이지에서 보내 주세요 →</a></p>
+    <nav class="footer-nav">
+      <a href="/ko/about/">사이트 소개</a>
+      <a href="/ko/figures/">도해</a>
+      <a href="/ko/privacy/">개인정보 처리방침</a>
+      <a href="/ko/disclaimer/">면책 사항</a>
+      <a href="/ko/contact/">문의</a>
+    </nav>
+    <p class="copyright">© 2026 반도체 교실</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

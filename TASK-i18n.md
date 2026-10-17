@@ -6,4 +6,5 @@
 ## ko
 - 完了(仕組み・UI・ページ・分野・区分・用語集864・比較・図・全51分野の問題)
 ## de
-- 進行中: config/UI/ページ/exams・categories・figures・compare・glossary をサブエージェントで翻訳中。その後に問題51分野。
+- 仕組み・UI・ページ・区分・分野・用語集・比較・図は完了。残り: 問題51分野 (data/i18n/de/questions/)。
+- 注意: サブエージェントは node tools/build.js を実行しない(並列実行で docs が壊れる)。ビルドは親だけ。

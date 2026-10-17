@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="de" data-lang="de" data-base="/" data-home="/de/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutex vs. Semaphor: Unterschiede im Überblick | Halbleiter-Raum</title>
+<meta name="description" content="Mutex und Semaphor im Tabellenvergleich: Zweck, Wert, Besitz, Operationen, Signalisierung, Prioritätsinversion, typische Einsatzgebiete und häufige Fallstricke.">
+<link rel="canonical" href="https://semiconroom.com/de/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/mutex-vs-semaphore/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mutex vs. Semaphor: Unterschiede im Überblick | Halbleiter-Raum">
+<meta property="og:description" content="Mutex und Semaphor im Tabellenvergleich: Zweck, Wert, Besitz, Operationen, Signalisierung, Prioritätsinversion, typische Einsatzgebiete und häufige Fallstricke.">
+<meta property="og:url" content="https://semiconroom.com/de/compare/mutex-vs-semaphore/">
+<meta property="og:site_name" content="Halbleiter-Raum">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/de/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Vergleiche","item":"https://semiconroom.com/de/compare/"},{"@type":"ListItem","position":3,"name":"Mutex vs. Semaphor: Unterschiede im Überblick","item":"https://semiconroom.com/de/compare/mutex-vs-semaphore/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Mutex vs. Semaphor: Unterschiede im Überblick","description":"Mutex und Semaphor im Tabellenvergleich: Zweck, Wert, Besitz, Operationen, Signalisierung, Prioritätsinversion, typische Einsatzgebiete und häufige Fallstricke.","inLanguage":"de","dateModified":"2026-10-17","mainEntityOfPage":"https://semiconroom.com/de/compare/mutex-vs-semaphore/","author":{"@type":"Organization","name":"Halbleiter-Raum"},"publisher":{"@type":"Organization","name":"Halbleiter-Raum"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Ist ein Mutex dasselbe wie ein binäres Semaphor?","acceptedAnswer":{"@type":"Answer","text":"Nicht ganz. Beide haben zwei Zustände, aber ein Mutex hat einen Besitzer, der ihn freigeben muss, und unterstützt oft Prioritätsvererbung, während ein Semaphor keinen Besitzer hat und von jedem Thread signalisiert werden kann."}},{"@type":"Question","name":"Wann brauche ich ein zählendes Semaphor?","acceptedAnswer":{"@type":"Answer","text":"Wenn Sie begrenzen müssen, wie viele Threads eine Ressource nutzen, etwa einen Pool von N Verbindungen, oder die verfügbaren Einträge in einem Producer-Consumer-Puffer zählen müssen."}},{"@type":"Question","name":"Was ist ein Deadlock?","acceptedAnswer":{"@type":"Answer","text":"Eine Situation, in der Threads ewig aufeinander warten, zum Beispiel hält Thread A Sperre 1 und wartet auf Sperre 2, während Thread B Sperre 2 hält und auf Sperre 1 wartet. Das Anfordern der Sperren in einheitlicher Reihenfolge verhindert das."}},{"@type":"Question","name":"Was ist der Unterschied zwischen einem Spinlock und einem Mutex?","acceptedAnswer":{"@type":"Answer","text":"Ein Spinlock wartet aktiv (Busy-Waiting) und eignet sich für sehr kurze Wartezeiten auf Mehrkernsystemen. Ein Mutex versetzt den wartenden Thread in den Schlafzustand, was bei längeren Wartezeiten besser ist."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/mutex-vs-semaphore/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/de/"><span class="logo-mark" aria-hidden="true"></span><span>Halbleiter-Raum<small></small></span></a>
+    <nav class="header-nav"><a href="/de/">Start</a><a href="/de/stats/">Fortschritt</a><a href="/de/glossary/">Glossar</a><a href="/de/compare/">Vergleiche</a><a href="/de/contact/">Kontakt</a></nav>
+    <form class="site-search" role="search" action="/de/search/" method="get"><input type="search" name="q" placeholder="Suchen (z. B. MOSFET)" aria-label="Auf der Seite suchen" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/compare/mutex-vs-semaphore/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/mutex-vs-semaphore/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/mutex-vs-semaphore/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/mutex-vs-semaphore/" hreflang="ko" lang="ko">한국어</a><span aria-current="true">Deutsch</span></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/de/">Start</a> <span>›</span> <a href="/de/compare/">Vergleiche</a></nav>
+<article class="compare-page">
+  <h1>Mutex vs. Semaphor: Unterschiede im Überblick</h1>
+  <p class="lead">Ein Mutex schützt einen kritischen Abschnitt, sodass nur ein Thread zur Zeit eine gemeinsame Ressource nutzen kann, und derjenige Thread, der ihn gesperrt hat, muss ihn auch wieder freigeben. Ein Semaphor ist ein Zähler: Er steuert, wie viele Threads eine begrenzte Ressource nutzen können, und kann auch dazu dienen, Ereignisse von einem Thread an einen anderen zu signalisieren. Ein Mutex dreht sich um Besitz und Ausschluss, ein Semaphor ums Zählen und Signalisieren.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Kopiert!">Tabelle kopieren</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link kopiert">Teilen</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Aspekt</th><th scope="col">Mutex</th><th scope="col">Semaphor</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Zweck</th><td>Gegenseitiger Ausschluss: ein Thread zur Zeit im kritischen Abschnitt</td><td>Zählen: den Zugriff auf einen Pool von N Ressourcen begrenzen oder Ereignisse zwischen Threads signalisieren</td></tr>
+        <tr><th scope="row">Wert</th><td>Gesperrt oder entsperrt (binär)</td><td>Ein nicht negativer ganzzahliger Zählerstand (ein binäres Semaphor ist der Sonderfall 0 oder 1)</td></tr>
+        <tr><th scope="row">Besitz</th><td>Gehört dem Thread, der ihn gesperrt hat, und dieser Thread sollte ihn auch freigeben</td><td>Kein Besitzer: Jeder Thread kann post oder signal aufrufen</td></tr>
+        <tr><th scope="row">Operationen</th><td>Lock und Unlock</td><td>Wait (P, Dekrement) und Post (V, Inkrement)</td></tr>
+        <tr><th scope="row">Signalisierung zwischen Threads</th><td>Dafür nicht vorgesehen</td><td>Ja: zum Beispiel ein Producer, der einem Consumer ein Signal gibt</td></tr>
+        <tr><th scope="row">Prioritätsinversion</th><td>Wird oft durch Prioritätsvererbung vermieden</td><td>Wird meist nicht unterstützt</td></tr>
+        <tr><th scope="row">Typische Einsatzgebiete</th><td>Schutz einer gemeinsamen Datenstruktur wie einer Liste oder eines Zählers</td><td>Begrenzung eines Verbindungspools, begrenzte Producer-Consumer-Puffer, Signalisierung von einem Interrupt-Handler an eine Task</td></tr>
+        <tr><th scope="row">Häufige Fallstricke</th><td>Deadlock durch uneinheitliche Sperrreihenfolge oder vergessenes Entsperren</td><td>Verlorene Signale und Deadlock, wenn die Zählerstände nicht zusammenpassen</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Die Zahlenangaben sind typische Größenordnungen und variieren je nach Prozessgeneration und Produkt.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Wann welches einsetzen</h2>
+  <dl class="compare-when">
+    <dt>Mutex</dt><dd>Wenn mehrere Threads auf dieselben Daten zugreifen und immer nur einer das darf.</dd>
+    <dt>Semaphor</dt><dd>Wenn Sie begrenzen müssen, wie viele Threads eine Ressource nutzen, oder einen Thread wecken wollen, wenn etwas passiert.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Ist ein Mutex dasselbe wie ein binäres Semaphor?</h3>
+  <p>Nicht ganz. Beide haben zwei Zustände, aber ein Mutex hat einen Besitzer, der ihn freigeben muss, und unterstützt oft Prioritätsvererbung, während ein Semaphor keinen Besitzer hat und von jedem Thread signalisiert werden kann.</p>
+  <h3>Wann brauche ich ein zählendes Semaphor?</h3>
+  <p>Wenn Sie begrenzen müssen, wie viele Threads eine Ressource nutzen, etwa einen Pool von N Verbindungen, oder die verfügbaren Einträge in einem Producer-Consumer-Puffer zählen müssen.</p>
+  <h3>Was ist ein Deadlock?</h3>
+  <p>Eine Situation, in der Threads ewig aufeinander warten, zum Beispiel hält Thread A Sperre 1 und wartet auf Sperre 2, während Thread B Sperre 2 hält und auf Sperre 1 wartet. Das Anfordern der Sperren in einheitlicher Reihenfolge verhindert das.</p>
+  <h3>Was ist der Unterschied zwischen einem Spinlock und einem Mutex?</h3>
+  <p>Ein Spinlock wartet aktiv (Busy-Waiting) und eignet sich für sehr kurze Wartezeiten auf Mehrkernsystemen. Ein Mutex versetzt den wartenden Thread in den Schlafzustand, was bei längeren Wartezeiten besser ist.</p>
+</section>
+
+<section>
+  <h2>Wichtige Begriffe erklärt</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/de/term/mutex/">Mutex (gegenseitiger Ausschluss)</a></dt><dd>Eine Sperre, die nur ein Thread gleichzeitig halten kann. Typischerweise schläft ein Thread, der sie nicht bekommt, und gibt die CPU ab; das Betriebssystem weckt ihn, wenn die Sperre freigegeben wird.</dd></div>
+    <div class="term"><dt><a href="/de/term/semaphore/">Semaphor</a></dt><dd>Ein Synchronisationsmechanismus mit einem Zähler für die verbleibenden Einheiten: vor der Nutzung dekrementieren (bei 0 warten), danach inkrementieren. Dient zur Verwaltung von Ressourcen mit fester Stückzahl.</dd></div>
+    <div class="term"><dt><a href="/de/term/spinlock/">Spinlock (Busy-Wait-Sperre)</a></dt><dd>Eine Sperre, bei der durch wiederholtes Prüfen der Sperrvariable in einer Schleife gewartet wird. Schnell bei kurzen Wartezeiten, belegt aber beim Warten weiter die CPU.</dd></div>
+    <div class="term"><dt><a href="/de/term/deadlock/">Verklemmung (Deadlock)</a></dt><dd>Ein Zustand, in dem Threads jeweils eine Ressource halten und auf eine von einem anderen gehaltene warten, so dass keiner weiterkommt. Eine feste globale Sperrreihenfolge verhindert ihn.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Weitere Vergleiche</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/de/compare/process-vs-thread/"><strong>Prozess vs. Thread: Unterschiede erklärt</strong><span>Prozess und Thread im Tabellenvergleich: Speicher, Erzeugungskosten, Kontextwechsel, Kommunikation, Isolation…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/cpu-vs-gpu/"><strong>CPU vs. GPU: Unterschiede in Architektur und Einsatz</strong><span>CPU vs. GPU im Tabellenvergleich: Entwurfsziel, Kernanzahl, Ausführungsmodell, Caches, Speicherbandbreite, Ve…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs. SPI vs. UART: Unterschiede und Einsatzgebiete</strong><span>I2C, SPI und UART im Tabellenvergleich: Anzahl der Leitungen, Takt, Geschwindigkeit, Topologie, Adressierung,…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/verilog-vs-vhdl/"><strong>Verilog vs. VHDL: Unterschiede der beiden HDLs</strong><span>Verilog und VHDL im Tabellenvergleich: Herkunft, Syntax, Typisierung, Groß-/Kleinschreibung, Verifikationsfun…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/nvme-vs-sata-ssd/"><strong>NVMe vs. SATA SSD: Geschwindigkeit, Schnittstelle und Kaufberatung</strong><span>NVMe und SATA SSD im Tabellenvergleich: Schnittstelle, Geschwindigkeit, Latenz, Befehlswarteschlangen, Baufor…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/mcu-vs-mpu/"><strong>MCU vs. MPU: Mikrocontroller und Mikroprozessor im Vergleich</strong><span>MCU und MPU im Tabellenvergleich: Integration, Taktfrequenz, Speicher, Betriebssystem, Echtzeitverhalten, Lei…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Dies ist eine private Lernseite rund um Halbleiter.</p>
+    <p class="footer-request"><a href="/de/contact/">Wünsche und Rückmeldungen sind willkommen. Senden Sie sie über Kontakt →</a></p>
+    <nav class="footer-nav">
+      <a href="/de/about/">Über die Seite</a>
+      <a href="/de/figures/">Diagramme</a>
+      <a href="/de/privacy/">Datenschutzerklärung</a>
+      <a href="/de/disclaimer/">Haftungsausschluss</a>
+      <a href="/de/contact/">Kontakt</a>
+    </nav>
+    <p class="copyright">© 2026 Halbleiter-Raum</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

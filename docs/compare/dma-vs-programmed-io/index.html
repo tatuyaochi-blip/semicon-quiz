@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DMAとプログラムI/Oの違い：データ転送の方法を比較 | 半導体教室</title>
+<meta name="description" content="DMAとプログラムI/O(PIO)を、データを動かす主体・CPUの負荷・スループット・準備のコスト・複雑さ・バスの使用・用途の観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/dma-vs-programmed-io/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DMAとプログラムI/Oの違い：データ転送の方法を比較 | 半導体教室">
+<meta property="og:description" content="DMAとプログラムI/O(PIO)を、データを動かす主体・CPUの負荷・スループット・準備のコスト・複雑さ・バスの使用・用途の観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/dma-vs-programmed-io/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"DMAとプログラムI/Oの違い：データ転送の方法を比較","item":"https://semiconroom.com/compare/dma-vs-programmed-io/"}]},{"@context":"https://schema.org","@type":"Article","headline":"DMAとプログラムI/Oの違い：データ転送の方法を比較","description":"DMAとプログラムI/O(PIO)を、データを動かす主体・CPUの負荷・スループット・準備のコスト・複雑さ・バスの使用・用途の観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-16","mainEntityOfPage":"https://semiconroom.com/compare/dma-vs-programmed-io/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"なぜDMAはCPUの負荷を減らせるのですか？","acceptedAnswer":{"@type":"Answer","text":"DMAコントローラがデータを自分で動かすので、CPUは転送の準備をするだけで、終わると通知を受けるからです。"}},{"@type":"Question","name":"DMAはいつも速いですか？","acceptedAnswer":{"@type":"Answer","text":"いいえ。非常に小さな転送では、準備のコストが利点を上回り、プログラムI/Oのほうが速いことがあります。"}},{"@type":"Question","name":"DMAのディスクリプタのリングとは何ですか？","acceptedAnswer":{"@type":"Answer","text":"メモリ上にある、バッファを1つずつ説明するディスクリプタのリングです。ネットワークカードやNVMeのドライブのように、デバイスとドライバが、これを通してバッファをやり取りします。"}},{"@type":"Question","name":"なぜDMAではキャッシュコヒーレンシが重要なのですか？","acceptedAnswer":{"@type":"Answer","text":"デバイスがメモリを直接読み書きするので、CPUのキャッシュに古いデータが残ることがあります。ソフトウェアが、キャッシュのフラッシュや無効化をするか、コヒーレントなメモリを使う必要があります。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/dma-vs-programmed-io/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/">ホーム</a><a href="/stats/">成績</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/contact/">お問い合わせ</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><span aria-current="true">日本語</span><a href="/en/compare/dma-vs-programmed-io/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/dma-vs-programmed-io/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/dma-vs-programmed-io/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/dma-vs-programmed-io/" hreflang="de" lang="de">Deutsch</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>DMAとプログラムI/Oの違い：データ転送の方法を比較</h1>
+  <p class="lead">デバイスとメモリの間でデータを動かす方法は2つあります。プログラムI/O(PIO)では、CPU自身が、レジスタを通して1ワードずつ読み書きします。ダイレクトメモリアクセス(DMA)では、DMAコントローラが自分でデータを動かし、CPUは転送の準備をするだけで、終わると通知を受けます。DMAは、CPUを解放し、大きな転送ははるかに速く行えますが、準備に手間がかかり、注意も必要です。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">プログラムI/O(PIO)</th><th scope="col">DMA</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">データを動かす主体</th><td>CPU。ロードとストアの命令で1ワードずつ</td><td>DMAコントローラ、またはデバイス自身。メモリへ直接、またはメモリから直接</td></tr>
+        <tr><th scope="row">CPUの負荷</th><td>高い。転送の間ずっと、CPUがふさがる</td><td>低い。CPUは転送の準備をして、ほかの仕事をする</td></tr>
+        <tr><th scope="row">大きな転送のスループット</th><td>CPUの速度に制限される</td><td>高い</td></tr>
+        <tr><th scope="row">準備のオーバーヘッド</th><td>なし</td><td>アドレス、長さ、ディスクリプタの設定と、完了の処理が必要</td></tr>
+        <tr><th scope="row">小さな転送</th><td>準備がないので、速いことが多い</td><td>準備のコストが、利点を上回ることがある</td></tr>
+        <tr><th scope="row">複雑さ</th><td>単純</td><td>複雑。ディスクリプタのリング、バッファのアラインメント、キャッシュコヒーレンシ、IOMMUの設定</td></tr>
+        <tr><th scope="row">メモリバスの使用</th><td>CPUを通る</td><td>DMAのエンジンが、CPUとメモリの帯域を取り合う</td></tr>
+        <tr><th scope="row">主な用途</th><td>小さな制御用のレジスタ、単純なセンサー、古いPIOモード</td><td>SSDやNVMe、ネットワークカード、オーディオのバッファ、ADCのサンプルの連続した転送、GPUへの転送</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>PIO</dt><dd>転送が非常に小さいか、まれで、CPUの時間よりも単純さが重要なとき。</dd>
+    <dt>DMA</dt><dd>転送が大きいか連続していて、CPUをふさぎたくないとき。ストレージ、ネットワーク、ストリーミングデータなど。</dd>
+    <dt>注意</dt><dd>DMAでは、デバイスが読む前、または書いたあとに、CPUのキャッシュとメモリが一致していることを確認します(キャッシュのフラッシュや無効化をするか、コヒーレントなメモリを使います)。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>なぜDMAはCPUの負荷を減らせるのですか？</h3>
+  <p>DMAコントローラがデータを自分で動かすので、CPUは転送の準備をするだけで、終わると通知を受けるからです。</p>
+  <h3>DMAはいつも速いですか？</h3>
+  <p>いいえ。非常に小さな転送では、準備のコストが利点を上回り、プログラムI/Oのほうが速いことがあります。</p>
+  <h3>DMAのディスクリプタのリングとは何ですか？</h3>
+  <p>メモリ上にある、バッファを1つずつ説明するディスクリプタのリングです。ネットワークカードやNVMeのドライブのように、デバイスとドライバが、これを通してバッファをやり取りします。</p>
+  <h3>なぜDMAではキャッシュコヒーレンシが重要なのですか？</h3>
+  <p>デバイスがメモリを直接読み書きするので、CPUのキャッシュに古いデータが残ることがあります。ソフトウェアが、キャッシュのフラッシュや無効化をするか、コヒーレントなメモリを使う必要があります。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini">
+    <h3><a href="/q/io-interface/io-interface-049/">ネットワークカードやNVMeのSSDなどで広く使われる、メモリ上の記述子(ディスクリプタ)の輪(リング)を使ったDMAのしくみについて正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">CPUがデータを1バイトずつ機器のレジスタに書き込んで転送する</span></li><li><span class="choice-mark">B</span><span class="choice-text">CPUは転送の番地や長さを記述子に書いて機器に知らせるだけで、機器が記述子を読んで自分で転送を進める</span></li><li><span class="choice-mark">C</span><span class="choice-text">記述子は機器の中にだけあり、CPUからは見えない</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. CPUは転送の番地や長さを記述子に書いて機器に知らせるだけで、機器が記述子を読んで自分で転送を進める</p><p class="explanation">記述子のリングは、メインメモリ上に並べた「どの番地から何バイト送るか」を書いた表を輪のように使うしくみです。CPUは空いている記述子に転送の内容を書き、機器のレジスタに「ここまで書いた」と1回知らせます。機器は<a class="term-link" href="/term/dma/">DMA</a>で記述子を読み、データを転送し、終わった記述子に完了の印を付けます。CPUと機器が互いを待たずに多くの転送を進められます。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/q/embedded/embedded-044/">マイコンでADコンバータの変換結果を一定の間隔で大量に取り込むとき、DMAを使う利点として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">ADコンバータの分解能が自動で上がる</span></li><li><span class="choice-mark">B</span><span class="choice-text">入力の電圧が自動で大きくなる</span></li><li><span class="choice-mark">C</span><span class="choice-text">変換が終わるたびにCPUが割り込みで読む必要がなく、DMAがメモリに並べてくれるので、CPUの負担が減る</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 変換が終わるたびにCPUが割り込みで読む必要がなく、DMAがメモリに並べてくれるので、CPUの負担が減る</p><p class="explanation">変換のたびに<a class="term-link" href="/term/interrupt/">割り込み</a>でCPUが結果を読むと、1秒に数万回の取り込みでは割り込みの手間だけでCPUの多くの時間が使われます。<a class="term-link" href="/term/dma/">DMA</a>を使えば、変換が終わるたびにDMAが結果をメモリの配列に順に書き込み、配列がいっぱいになったときだけCPUに知らせます。タイマで変換を始める設定と組み合わせれば、正確な間隔での取り込みをCPUなしで続けられます。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/q/os-hardware/os-hardware-029/">キャッシュの一貫性をハードウェアが保たない(非コヒーレントな)システムで、装置がDMAで主記憶に書き込んだデータをCPUが読む前に、ソフトウェアが行う必要のある処理はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">CPUのクロック周波数を一時的に下げる</span></li><li><span class="choice-mark">B</span><span class="choice-text">該当する範囲のキャッシュの内容を無効にして、主記憶から読み直すようにする</span></li><li><span class="choice-mark">C</span><span class="choice-text">キャッシュの内容をすべて主記憶に書き戻してから、DMAで届いた結果を破棄する</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 該当する範囲のキャッシュの内容を無効にして、主記憶から読み直すようにする</p><p class="explanation"><a class="term-link" href="/term/dma/">DMA</a>はCPUを通さずに装置と主記憶の間でデータを転送するため、ハードウェアが一貫性を保たないシステムでは、CPUのキャッシュにはその範囲の古いデータが残っていることがあります。そのまま読むと、DMAで届いた新しいデータではなく古い値を読んでしまいます。そこでドライバは、読む前にその範囲のキャッシュを無効にして、主記憶から新しい値を読ませます。逆に装置に送るデータは、DMAを始める前にキャッシュから書き戻しておきます。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/os-hardware/os-hardware-030/">IOMMUの主な役割として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/io-interface/">インターフェース・バス規格の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/dma/">DMA(ダイレクトメモリアクセス)</a></dt><dd>CPUを介さずに、周辺装置とメモリの間で直接データを転送する仕組み。大量のデータ転送の間もCPUが別の処理を進められる。</dd></div>
+    <div class="term"><dt><a href="/term/interrupt/">割り込み</a></dt><dd>外部機器からの要求などに応じて、実行中の処理を一時的に中断し、対応する処理を優先して行うCPUの仕組み。終わると元の処理に戻る。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/nvme-vs-sata-ssd/"><strong>NVMeとSATAのSSDの違い：速度・インターフェース・選び方</strong><span>NVMeとSATAのSSDを、インターフェース・速度・遅延・コマンドキュー・形状・消費電力・互換性・価格・向いている人の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/pcie-3-vs-4-vs-5-vs-6/"><strong>PCIe 3.0・4.0・5.0・6.0の違い：速度と世代ごとの特徴を比較</strong><span>PCIe 3.0、4.0、5.0、6.0を、転送レート・レーンあたりと×4、×16のリンクの帯域・エンコード・信号方式・使われる機器の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/mcu-vs-mpu/"><strong>MCUとMPUの違い：マイコンとマイクロプロセッサを比較</strong><span>MCUとMPUを、集積度・クロック・メモリ・OS・リアルタイム性・消費電力・起動時間・コスト・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/interrupt-vs-polling/"><strong>割り込みとポーリングの違い：仕組みと使い分けを比較</strong><span>割り込みとポーリングを、仕組み・CPUの使用・応答時間・オーバーヘッド・複雑さ・消費電力・組み込みやOSでの用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu/"><strong>CPUとGPUの違い：構造・得意な処理・用途を比較</strong><span>CPUとGPUを、設計の目的・コア数・実行モデル・キャッシュ・メモリ帯域・分岐・データ転送・得意な処理の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/i2c-vs-spi-vs-uart/"><strong>I2C・SPI・UARTの違い：配線・速度・使い分けを比較</strong><span>I2C、SPI、UARTを、配線の数・クロック・速度・接続形態・アドレス・誤り検出・マイコンでの主な用途の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

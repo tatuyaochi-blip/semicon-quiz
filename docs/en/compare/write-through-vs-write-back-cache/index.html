@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-lang="en" data-base="/" data-home="/en/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Write-Through vs Write-Back Cache: Differences Explained | Semiconductor Room</title>
+<meta name="description" content="Write-through vs write-back cache compared in a table: write policy, memory traffic, speed, consistency, complexity, eviction cost and typical use.">
+<link rel="canonical" href="https://semiconroom.com/en/compare/write-through-vs-write-back-cache/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/write-through-vs-write-back-cache/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/write-through-vs-write-back-cache/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/write-through-vs-write-back-cache/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/write-through-vs-write-back-cache/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/write-through-vs-write-back-cache/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/write-through-vs-write-back-cache/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Write-Through vs Write-Back Cache: Differences Explained | Semiconductor Room">
+<meta property="og:description" content="Write-through vs write-back cache compared in a table: write policy, memory traffic, speed, consistency, complexity, eviction cost and typical use.">
+<meta property="og:url" content="https://semiconroom.com/en/compare/write-through-vs-write-back-cache/">
+<meta property="og:site_name" content="Semiconductor Room">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/en/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Comparisons","item":"https://semiconroom.com/en/compare/"},{"@type":"ListItem","position":3,"name":"Write-Through vs Write-Back Cache: Differences Explained","item":"https://semiconroom.com/en/compare/write-through-vs-write-back-cache/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Write-Through vs Write-Back Cache: Differences Explained","description":"Write-through vs write-back cache compared in a table: write policy, memory traffic, speed, consistency, complexity, eviction cost and typical use.","inLanguage":"en","dateModified":"2026-10-16","mainEntityOfPage":"https://semiconroom.com/en/compare/write-through-vs-write-back-cache/","author":{"@type":"Organization","name":"Semiconductor Room"},"publisher":{"@type":"Organization","name":"Semiconductor Room"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a dirty bit?","acceptedAnswer":{"@type":"Answer","text":"A bit on each cache line in a write-back cache that marks the line as modified. A dirty line must be written back to memory when it is evicted."}},{"@type":"Question","name":"Why is write-back faster?","acceptedAnswer":{"@type":"Answer","text":"Repeated writes to the same line stay in the cache and are merged into a single write to memory, which reduces memory traffic."}},{"@type":"Question","name":"What does a write buffer do?","acceptedAnswer":{"@type":"Answer","text":"In a write-through cache it queues the writes to memory, so the processor does not have to wait for them to finish."}},{"@type":"Question","name":"Which is simpler for multiple cores?","acceptedAnswer":{"@type":"Answer","text":"Write-through, because memory is always up to date. Write-back needs more care, such as coherence protocols, because memory can be stale."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/en/"><span class="logo-mark" aria-hidden="true"></span><span>Semiconductor Room<small></small></span></a>
+    <nav class="header-nav"><a href="/en/">Home</a><a href="/en/stats/">Progress</a><a href="/en/glossary/">Glossary</a><a href="/en/compare/">Compare</a><a href="/en/contact/">Contact</a></nav>
+    <form class="site-search" role="search" action="/en/search/" method="get"><input type="search" name="q" placeholder="Search (e.g. MOSFET)" aria-label="Search the site" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/compare/write-through-vs-write-back-cache/" hreflang="ja" lang="ja">日本語</a><span aria-current="true">English</span><a href="/zh-hant/compare/write-through-vs-write-back-cache/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/write-through-vs-write-back-cache/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/write-through-vs-write-back-cache/" hreflang="de" lang="de">Deutsch</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/en/">Home</a> <span>›</span> <a href="/en/compare/">Comparisons</a></nav>
+<article class="compare-page">
+  <h1>Write-Through vs Write-Back Cache: Differences Explained</h1>
+  <p class="lead">A write policy decides what happens when the CPU writes to data that is in the cache. A write-through cache updates the cache and main memory at the same time, so memory is always current but every write costs memory traffic. A write-back cache updates only the cache, marks the line dirty, and writes it to memory later when the line is evicted. Write-back is faster and uses less bandwidth, but it is more complex to keep consistent.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copied!">Copy table</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link copied">Share</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Aspect</th><th scope="col">Write-through</th><th scope="col">Write-back</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Write policy</th><td>Every write goes to both the cache and the next memory level</td><td>A write updates only the cache and sets the dirty bit; memory is updated on eviction</td></tr>
+        <tr><th scope="row">Memory traffic</th><td>High: every write goes out</td><td>Lower: repeated writes to one line are merged into one write-back</td></tr>
+        <tr><th scope="row">Write speed</th><td>Slower without help; a write buffer hides much of the delay</td><td>Faster: writes complete at cache speed</td></tr>
+        <tr><th scope="row">Consistency with memory</th><td>Memory is always up to date, which simplifies sharing with DMA and other cores</td><td>Memory can be stale until the line is written back, so coherence needs more care</td></tr>
+        <tr><th scope="row">Complexity</th><td>Simple</td><td>More complex: dirty bits, write-back on eviction, coherence protocols</td></tr>
+        <tr><th scope="row">Cost of eviction</th><td>Cheap: nothing needs to be written</td><td>Evicting a dirty line costs an extra write to memory</td></tr>
+        <tr><th scope="row">Usual write-miss policy</th><td>No-write-allocate</td><td>Write-allocate</td></tr>
+        <tr><th scope="row">Typical use</th><td>Some L1 caches and simple or reliability-focused systems</td><td>Most modern CPU caches, especially L2 and L3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Figures are typical orders of magnitude and vary by process generation and product.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>When to use which</h2>
+  <dl class="compare-when">
+    <dt>Write-through</dt><dd>When simplicity and an always-current memory matter more than write bandwidth.</dd>
+    <dt>Write-back</dt><dd>When performance matters, especially for code that writes to the same lines many times.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a dirty bit?</h3>
+  <p>A bit on each cache line in a write-back cache that marks the line as modified. A dirty line must be written back to memory when it is evicted.</p>
+  <h3>Why is write-back faster?</h3>
+  <p>Repeated writes to the same line stay in the cache and are merged into a single write to memory, which reduces memory traffic.</p>
+  <h3>What does a write buffer do?</h3>
+  <p>In a write-through cache it queues the writes to memory, so the processor does not have to wait for them to finish.</p>
+  <h3>Which is simpler for multiple cores?</h3>
+  <p>Write-through, because memory is always up to date. Write-back needs more care, such as coherence protocols, because memory can be stale.</p>
+</section>
+<section>
+  <h2>Check your understanding</h2>
+  <article class="q-mini">
+    <h3><a href="/en/q/cpu/cpu-037/">Which correctly describes the write-back policy for caches?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Writes skip the cache and update only main memory</span></li><li><span class="choice-mark">B</span><span class="choice-text">Every write always updates both the cache and main memory</span></li><li><span class="choice-mark">C</span><span class="choice-text">Only the cache is updated at first, and the data is written back to main memory when it is evicted from the cache</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Only the cache is updated at first, and the data is written back to main memory when it is evicted from the cache</p><p class="explanation">Write-back caches update only the cache and write a dirty line to main memory when it is evicted. Many writes to the same location collapse into one write-back, drastically cutting memory traffic, so most CPU L1–L3 caches use it. Main memory and cache temporarily disagree, however, so coherence and consistency with <a class="term-link" href="/en/term/dma/">DMA</a> must be managed. <a class="term-link" href="/en/term/write-through/">Write-through</a> updates both every time.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/en/q/memory-hierarchy/memory-hierarchy-011/">What is the main purpose of a write buffer in a write-through cache?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">To let the CPU continue without waiting for writes to main memory to complete</span></li><li><span class="choice-mark">B</span><span class="choice-text">To keep the data in the cache newer than in main memory</span></li><li><span class="choice-mark">C</span><span class="choice-text">To always fetch the line from main memory into the cache first on a write miss, then write it</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. To let the CPU continue without waiting for writes to main memory to complete</p><p class="explanation">A <a class="term-link" href="/en/term/write-through/">write-through</a> cache also writes to main memory on every store, so waiting for each write to finish would stall the CPU constantly. A write buffer holds writes temporarily, letting the CPU move on immediately while the buffer drains to memory in the background. Keeping the cache newer than memory characterizes write-back caches; with write-through the two stay consistent. Whether to load a line on a write miss is the <a class="term-link" href="/en/term/write-allocate/">write-allocate</a> decision, separate from the write buffer.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/en/q/memory-hierarchy/memory-hierarchy-012/">In a write-back cache, what is the role of the dirty bit attached to each line?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">It shows whether the line&#39;s data is valid and can be read</span></li><li><span class="choice-mark">B</span><span class="choice-text">It shows the line was modified and differs from memory</span></li><li><span class="choice-mark">C</span><span class="choice-text">It shows the time the line was last accessed</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. It shows the line was modified and differs from memory</p><p class="explanation">A write-back cache completes writes in the cache alone, so some lines end up newer than main memory. The dirty bit marks such modified lines so that only dirty lines need to be written back on eviction; clean lines can simply be discarded, avoiding wasted writes. Validity is indicated by the valid bit, and access order is tracked by separate replacement information such as LRU state.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="1"><a href="/en/q/memory-hierarchy/memory-hierarchy-038/">For code that writes to the same line many times, why is a write-back cache more advantageous than write-through?</a></li></ol>
+  <p><a class="btn btn-primary" href="/en/c/memory-hierarchy/">Practice Memory Hierarchy questions</a></p>
+</section>
+<section>
+  <h2>Key terms explained</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/en/term/write-through/">Write-through</a></dt><dd>A write policy that writes to the level below (such as main memory) at the same time as the cache. The lower level stays up to date, but write traffic is heavy, so it is paired with a write buffer.</dd></div>
+    <div class="term"><dt><a href="/en/term/cache-memory/">Cache memory</a></dt><dd>Fast, small memory placed close to the CPU. It holds frequently used data to bridge the speed gap with main memory. Mostly built from SRAM.</dd></div>
+    <div class="term"><dt><a href="/en/term/cache-coherency/">Cache coherency</a></dt><dd>In a multicore CPU, the mechanism that keeps copies of the same address in different cores&#39; caches consistent, for example by invalidating other copies when one core writes.</dd></div>
+    <div class="term"><dt><a href="/en/term/cache-line/">Cache line</a></dt><dd>The unit in which data moves between a cache and the level below, also called a cache block. Many CPUs use 64 bytes, and the low address bits give the position (offset) within the line.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Related comparisons</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/en/compare/direct-mapped-vs-set-associative-vs-fully-associative-cache/"><strong>Direct-Mapped vs Set-Associative vs Fully Associative Cache</strong><span>Direct-mapped, set-associative and fully associative caches compared in a table: where a block can go, tag co…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/cpu-vs-gpu/"><strong>CPU vs GPU: Differences in Architecture and Use</strong><span>CPU vs GPU compared in a table: design goal, core count, execution model, caches, memory bandwidth, branching…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/dram-vs-sram/"><strong>DRAM vs SRAM: Key Differences Explained</strong><span>DRAM vs SRAM in one table: cell structure, refresh, speed, density, cost, power and typical uses, plus a guid…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/von-neumann-vs-harvard/"><strong>Von Neumann vs Harvard Architecture: Differences Explained</strong><span>Von Neumann vs Harvard architecture compared in a table: memory, buses, throughput, flexibility, complexity, …</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs SPI vs UART: Differences and When to Use Each</strong><span>I2C vs SPI vs UART compared in a table: number of wires, clock, speed, topology, addressing, error checking a…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/verilog-vs-vhdl/"><strong>Verilog vs VHDL: Differences Between the Two HDLs</strong><span>Verilog vs VHDL compared in a table: origin, syntax, typing, case sensitivity, verification features, who use…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">This is a semiconductor learning site run by an individual.</p>
+    <p class="footer-request"><a href="/en/contact/">Requests and feedback are welcome. Send them via Contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/en/about/">About</a>
+      <a href="/en/figures/">Diagrams</a>
+      <a href="/en/privacy/">Privacy policy</a>
+      <a href="/en/disclaimer/">Disclaimer</a>
+      <a href="/en/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Semiconductor Room</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

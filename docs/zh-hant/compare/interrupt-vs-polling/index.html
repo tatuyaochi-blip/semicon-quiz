@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中斷與輪詢的差異：比較機制與使用時機 | 半導體教室</title>
+<meta name="description" content="以機制、CPU 使用、回應時間、額外負擔、複雜度、耗電量，以及在嵌入式與作業系統中的用途等面向，用表格比較中斷與輪詢。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/interrupt-vs-polling/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="中斷與輪詢的差異：比較機制與使用時機 | 半導體教室">
+<meta property="og:description" content="以機制、CPU 使用、回應時間、額外負擔、複雜度、耗電量，以及在嵌入式與作業系統中的用途等面向，用表格比較中斷與輪詢。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/compare/interrupt-vs-polling/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/zh-hant/compare/"},{"@type":"ListItem","position":3,"name":"中斷與輪詢的差異：比較機制與使用時機","item":"https://semiconroom.com/zh-hant/compare/interrupt-vs-polling/"}]},{"@context":"https://schema.org","@type":"Article","headline":"中斷與輪詢的差異：比較機制與使用時機","description":"以機制、CPU 使用、回應時間、額外負擔、複雜度、耗電量，以及在嵌入式與作業系統中的用途等面向，用表格比較中斷與輪詢。","inLanguage":"zh-Hant","dateModified":"2026-10-16","mainEntityOfPage":"https://semiconroom.com/zh-hant/compare/interrupt-vs-polling/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"中斷與輪詢哪一個比較好？","acceptedAnswer":{"@type":"Answer","text":"不能說哪一個永遠比較好。中斷回應快，也能讓 CPU 睡眠；輪詢簡單且容易預測。罕見的事件用中斷，非常頻繁的事件用輪詢。"}},{"@type":"Question","name":"中斷處理常式應該做什麼？","acceptedAnswer":{"@type":"Answer","text":"要保持簡短。只做最少的處理，設置旗標或把工作放入佇列後就返回。在處理常式中做冗長的處理或會產生等待的呼叫，會損害回應性。"}},{"@type":"Question","name":"什麼是中斷風暴？","acceptedAnswer":{"@type":"Answer","text":"事件來得太快，使 CPU 把時間全花在進出處理常式上的狀態。高速網路驅動程式在這種情況下會切換成輪詢。"}},{"@type":"Question","name":"為什麼中斷能節省耗電量？","acceptedAnswer":{"@type":"Answer","text":"因為 CPU 不必一直醒著確認，可以睡眠到被事件喚醒為止。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/interrupt-vs-polling/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/">首頁</a><a href="/zh-hant/stats/">成績</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/contact/">聯絡我們</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/compare/interrupt-vs-polling/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/interrupt-vs-polling/" hreflang="en" lang="en">English</a><span aria-current="true">繁體中文</span><a href="/ko/compare/interrupt-vs-polling/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/interrupt-vs-polling/" hreflang="de" lang="de">Deutsch</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>中斷與輪詢的差異：比較機制與使用時機</h1>
+  <p class="lead">處理器得知裝置需要處理的方式有兩種。輪詢是由 CPU 在迴圈中反覆確認裝置的狀態。中斷則是由裝置向 CPU 送出訊號，CPU 暫停手邊的工作去執行一個小型的處理常式，之後再回到原本的工作。輪詢簡單且容易預測，但會浪費時間；中斷有效率且回應快，但會增加負擔，也讓程式的行為更難掌握。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="已複製">複製表格</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="已複製連結">分享</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">輪詢</th><th scope="col">中斷</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">機制</th><td>CPU 反覆讀取狀態暫存器，確認裝置是否就緒</td><td>裝置發出訊號，CPU 中斷工作並執行中斷處理常式(ISR)</td></tr>
+        <tr><th scope="row">等待期間的 CPU</th><td>忙碌。耗用週期來進行確認</td><td>閒置。可以處理其他工作或進入睡眠</td></tr>
+        <tr><th scope="row">回應時間</th><td>由迴圈的確認間隔決定。容易預測</td><td>快(微秒等級)。但會因遮罩、優先權與上下文儲存而改變</td></tr>
+        <tr><th scope="row">額外負擔</th><td>即使什麼都沒發生也是固定的</td><td>每個事件都有成本。事件非常多時，CPU 會來不及處理(中斷風暴)</td></tr>
+        <tr><th scope="row">複雜度</th><td>容易撰寫，也容易除錯</td><td>複雜。處理常式必須簡短，與主程式共用的資料也要小心(volatile、原子存取)</td></tr>
+        <tr><th scope="row">耗電量</th><td>讓 CPU 一直保持喚醒</td><td>可在低耗電下睡眠，直到被事件喚醒</td></tr>
+        <tr><th scope="row">時序是否容易掌握</th><td>容易掌握</td><td>處理常式與主程式之間可能發生並行處理的錯誤</td></tr>
+        <tr><th scope="row">主要用途</th><td>非常快速或連續的事件、簡單的程式、高速網路驅動程式</td><td>計時器、按鈕、通訊事件、感測器警報、從睡眠中喚醒</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">數值為具代表性的大致參考值，會因世代或產品而異。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>適用於什麼情況</h2>
+  <dl class="compare-when">
+    <dt>輪詢</dt><dd>事件頻繁時，或是迴圈簡單、想要可預測的時序而不想有處理常式的複雜度時。</dd>
+    <dt>中斷</dt><dd>事件罕見或無法預測、想要快速回應與低耗電，且 CPU 還有其他工作時。</dd>
+    <dt>併用</dt><dd>也有系統會組合使用。以中斷通知第一個事件，在通訊量大的期間由驅動程式改用輪詢。高速網路驅動程式即是一例。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>中斷與輪詢哪一個比較好？</h3>
+  <p>不能說哪一個永遠比較好。中斷回應快，也能讓 CPU 睡眠；輪詢簡單且容易預測。罕見的事件用中斷，非常頻繁的事件用輪詢。</p>
+  <h3>中斷處理常式應該做什麼？</h3>
+  <p>要保持簡短。只做最少的處理，設置旗標或把工作放入佇列後就返回。在處理常式中做冗長的處理或會產生等待的呼叫，會損害回應性。</p>
+  <h3>什麼是中斷風暴？</h3>
+  <p>事件來得太快，使 CPU 把時間全花在進出處理常式上的狀態。高速網路驅動程式在這種情況下會切換成輪詢。</p>
+  <h3>為什麼中斷能節省耗電量？</h3>
+  <p>因為 CPU 不必一直醒著確認，可以睡眠到被事件喚醒為止。</p>
+</section>
+<section>
+  <h2>理解度檢測</h2>
+  <article class="q-mini">
+    <h3><a href="/zh-hant/q/embedded/embedded-028/">在得知週邊電路狀態的方法中，輪詢（polling）與中斷的差異，下列何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">輪詢是CPU反覆去檢查狀態，中斷是在狀態改變時由週邊電路通知CPU</span></li><li><span class="choice-mark">B</span><span class="choice-text">輪詢與中斷是相同的東西</span></li><li><span class="choice-mark">C</span><span class="choice-text">中斷是CPU反覆去檢查狀態的方式</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 輪詢是CPU反覆去檢查狀態，中斷是在狀態改變時由週邊電路通知CPU</p><p class="explanation"><a class="term-link" href="/zh-hant/term/polling/">輪詢</a>的結構簡單，檢查的間隔固定，因此動作容易預測；但即使什麼都沒發生，CPU也持續檢查，會浪費時間與電力。<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>只在有變化時CPU才回應，因此等待期間可以做其他處理或進入睡眠。不過若中斷過於頻繁，反而會使處理的負擔變大，所以區分使用很重要。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/zh-hant/q/embedded/embedded-015/">在中斷處理常式中應避免的事項，下列何者最為適當？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">在旗標變數寫入1，通知主程式</span></li><li><span class="choice-mark">B</span><span class="choice-text">清除表示中斷原因的位元</span></li><li><span class="choice-mark">C</span><span class="choice-text">以printf輸出長字串，或是持續等待某事發生的迴圈這類耗時的處理</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 以printf輸出長字串，或是持續等待某事發生的迴圈這類耗時的處理</p><p class="explanation"><a class="term-link" href="/zh-hant/term/interrupt-handler/">中斷處理常式</a>若長時間執行，這段期間就無法回應其他<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>，主程式也會停住。printf需要花時間到輸出完成，內部還可能使用中斷，特別危險。處理常式中只應進行最低限度的處理，例如接收資料放入緩衝區、設立旗標，繁重的處理則交給主程式或工作（task）。也別忘了清除原因位元。</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/zh-hant/q/embedded/embedded-050/">在可為中斷設定優先順序的微控制器上，執行低優先順序中斷的處理常式期間，發生了高優先順序的中斷。一般會如何（假設設定為允許中斷巢狀）？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">中斷低優先順序的處理常式，執行高優先順序的處理常式，結束後回到低優先順序處理常式的後續</span></li><li><span class="choice-mark">B</span><span class="choice-text">在低優先順序的處理常式結束之前，高優先順序的中斷會被捨棄</span></li><li><span class="choice-mark">C</span><span class="choice-text">兩個處理常式在同一個CPU上同時並行執行</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 中斷低優先順序的處理常式，執行高優先順序的處理常式，結束後回到低優先順序處理常式的後續</p><p class="explanation">為<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>設定優先順序後，緊急的中斷即使在其他處理常式執行中，也能插入並被處理。例如，若將馬達過電流的偵測設為高優先順序，通訊接收設為低優先順序，即使在接收處理中，也能立即因應過電流。Arm Cortex-M的NVIC等具備此機制。優先順序相同或較低的中斷，則要等到目前的處理常式結束才會被處理。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="3"><a href="/zh-hant/q/os-hardware/os-hardware-009/">將中斷處理常式的處理，分成立即執行的簡短部分，以及稍後在一般環境下執行的其餘部分，其理由為下列何者？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/embedded/embedded-006/">主程式正以「reg |= mask;」（讀取、修改、寫回）操作暫存器的位元時，中斷處理常式改寫了同一暫存器的另一個位元，可能發生的問題與對策的組合，下列何者正確？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/embedded/embedded-011/">將16 MHz的時脈經預除器除以16後供計時器計數，設定每計數1000次產生一次中斷。中斷的間隔是多少？</a></li></ol>
+  <p><a class="btn btn-primary" href="/zh-hant/c/embedded/">前往嵌入式與韌體的練習題</a></p>
+</section>
+<section>
+  <h2>相關名詞的解說</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/zh-hant/term/interrupt/">中斷</a></dt><dd>回應外部裝置的請求等，暫時中止執行中的處理，優先進行對應處理的 CPU 機制。結束後回到原本的處理。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/polling/">輪詢（Polling）</a></dt><dd>CPU 反覆去檢查周邊電路的狀態，藉以發現變化的方式。雖然單純，但即使什麼都沒發生也持續檢查，因此耗費時間與電力。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/interrupt-handler/">中斷處理常式</a></dt><dd>發生中斷或例外時CPU所執行的處理。儲存被中斷處理的狀態，依原因進行相應處理後，回到原本的處理。原則上處理要盡可能簡短。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>相關的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/mcu-vs-mpu/"><strong>MCU與MPU的差異：微控制器與微處理器比較</strong><span>以整合度、時脈、記憶體、作業系統、即時性、耗電量、開機時間、成本與用途等面向，用表格比較MCU與MPU。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/i2c-vs-spi-vs-uart/"><strong>I2C、SPI、UART 的差異：佈線、速度、使用時機比較</strong><span>從佈線數量、時脈、速度、連接形態、位址、錯誤偵測與在微控制器上的主要用途等面向，以表格比較 I2C、SPI、UART。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/dma-vs-programmed-io/"><strong>DMA 與程式化 I/O 的差異：比較資料傳輸方式</strong><span>以搬移資料的主體、CPU 負載、傳輸量、準備成本、複雜度、匯流排使用與用途等面向，用表格比較 DMA 與程式化 I/O(PIO)。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/cpu-vs-gpu/"><strong>CPU 與 GPU 的差異：結構、擅長的運算、用途比較</strong><span>從設計目的、核心數、執行模型、快取、記憶體頻寬、分支、資料傳輸與擅長的運算等面向，以表格比較 CPU 與 GPU。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/verilog-vs-vhdl/"><strong>Verilog 與 VHDL 的差異：兩種硬體描述語言比較</strong><span>從來歷、語法、型別、大小寫、驗證功能、使用領域與選擇方式等面向，以表格比較 Verilog 與 VHDL。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/nvme-vs-sata-ssd/"><strong>NVMe 與 SATA SSD 的差異：速度、介面、選擇方式</strong><span>從介面、速度、延遲、指令佇列、外型、耗電量、相容性、價格與適合的使用者等面向，以表格比較 NVMe 與 SATA 的 SSD。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
