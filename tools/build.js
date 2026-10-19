@@ -749,6 +749,61 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
       data-labels="${esc(JSON.stringify({ cutoff: x.r_cutoff, linear: x.r_linear, sat: x.r_sat, op: x.lbl_op }))}"></svg>
     <p class="muted">${esc(x.chart_note)}</p>
   </section>`,
+    thermal: x => `<form id="th-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('p', x.p, 1, 'min="0" step="0.1"')}
+    ${field('ta', x.ta, 25, 'step="1"')}
+    ${field('tjmax', x.tjmax, 125, 'step="5"')}
+    ${field('tja', x.tja, 50, 'min="0" step="1"')}
+    ${field('tjc', x.tjc, 1, 'min="0" step="0.1"')}
+    ${field('tcs', x.tcs, 0.5, 'min="0" step="0.1"')}
+    ${field('tsa', x.tsa, 3, 'min="0" step="0.5"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <div class="table-wrap"><table class="dy-table">
+      <thead><tr><th scope="col"></th><th scope="col">${esc(x.col_tj)}</th><th scope="col">${esc(x.col_margin)}</th><th scope="col">${esc(x.col_pmax)}</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">${esc(x.row_ja)}</th><td data-out="ja-tj">–</td><td data-out="ja-margin">–</td><td data-out="ja-pmax">–</td></tr>
+        <tr><th scope="row">${esc(x.row_hs)} (<span data-out="hs-theta">–</span>)</th><td data-out="hs-tj">–</td><td data-out="hs-margin">–</td><td data-out="hs-pmax">–</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'mem-bw': x => `<form id="bw-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('preset', x.preset, [['', x.custom], [0, 'DDR4-3200'], [1, 'DDR5-6400'], [2, 'LPDDR5X-8533'], [3, 'GDDR6 16 Gb/s'], [4, 'HBM3 6.4 Gb/s']], 0)}
+    ${field('rate', x.rate, 3200, 'min="1" step="100"')}
+    ${field('width', x.width, 64, 'min="1" step="8"')}
+    ${field('count', x.count, 1, 'min="1" step="1"')}
+    ${field('eff', x.eff, 70, 'min="1" max="100" step="5"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('peak', x.peak)}${stat('eff', x.effective)}${stat('pin', x.pin)}${stat('per-ns', x.per_ns)}</dl>
+  </section>
+  <section class="dy-out">
+    <h2>${esc(x.table_heading)}</h2>
+    <div class="table-wrap"><table class="dy-table" id="bw-table">
+      <thead><tr><th scope="col">${esc(x.col_std)}</th><th scope="col">MT/s</th><th scope="col">${esc(x.col_width)}</th><th scope="col">${esc(x.col_peak)}</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="muted">${esc(x.table_note)}</p>
+  </section>`,
+    'adc-snr': x => `<form id="adc-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('bits', x.bits, 12, 'min="1" max="32" step="1"')}
+    ${field('fs', x.fs, 2, 'min="0.001" step="0.1"')}
+    ${field('fin', x.fin, 10, 'min="0" step="1"')}
+    ${field('jitter', x.jitter, 1, 'min="0" step="0.1"')}
+    ${field('osr', x.osr, 1, 'min="1" step="1"')}
+    ${field('sinad', x.sinad, 70, 'step="0.5"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('lsb', x.lsb)}${stat('snr-q', x.snr_q)}${stat('snr-j', x.snr_j)}${stat('snr', x.snr)}${stat('enob', x.enob)}${stat('enob-in', x.enob_in)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
     <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>

@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-834b587c1a';
+const CACHE = 'sq-8e1bd5b041';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -425,6 +425,7 @@ const PRECACHE = [
   "/data/fr/q/test.json",
   "/data/fr/q/wafer.json",
   "/data/fr/q/yield.json",
+  "/js/adc-snr.js",
   "/js/ads.js",
   "/js/answer.js",
   "/js/compare.js",
@@ -436,6 +437,7 @@ const PRECACHE = [
   "/js/glossary.js",
   "/js/level.js",
   "/js/litho.js",
+  "/js/mem-bw.js",
   "/js/mosfet-iv.js",
   "/js/progress.js",
   "/js/quiz-set.js",
@@ -444,6 +446,7 @@ const PRECACHE = [
   "/js/sta.js",
   "/js/stats.js",
   "/js/store.js",
+  "/js/thermal.js",
   "/js/util.js",
   "/js/modes/category.js",
   "/js/modes/daily.js",
