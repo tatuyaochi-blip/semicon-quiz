@@ -230,15 +230,17 @@ function buildLang(L) {
     ${startCard(`${home}quiz/?mode=weak`, esc(t('start_weak')), esc(t('start_weak_desc')), ' rel="nofollow" data-weak hidden data-track="home_weak"')}
   </div>
 </section>`;
-  // トップの「できること」: メニューを開かなくても主な機能が分かるカード(実在するページだけ)
-  const feature = (href, key, track, vars) => `<a class="feature-card" href="${href}" data-track="${track}"><strong>${esc(t(key))}</strong><span>${esc(t(`${key}_desc`, vars))}</span></a>`;
+  // トップの「できること」: メニューを開かなくても主な機能が分かるカード(実在するページだけ。見出しはヘッダーの名前とそろえる)
+  const feature = (href, title, desc, track) => `<a class="feature-card" href="${href}" data-track="${track}"><strong>${esc(title)}</strong><span>${esc(desc)}</span></a>`;
   const homeFeatures = `<section class="features" aria-labelledby="features-h">
   <h2 id="features-h" class="visually-hidden">${esc(t('home_feat_heading'))}</h2>
   <div class="feature-grid">
-    ${feature('#topics', 'home_feat_topics', 'home_feat_topics', { n: live.length })}
-    ${courses.length ? feature('#courses', 'home_feat_courses', 'home_feat_courses') : ''}
-    ${feature(`${home}glossary/`, 'home_feat_glossary', 'home_feat_glossary')}
-    ${toolsIn(code).length ? feature(`${home}tools/`, 'home_feat_tools', 'home_feat_tools') : ''}
+    ${feature('#topics', S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics')}
+    ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses') : ''}
+    ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary')}
+    ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
+    ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
+    ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
   </div>
 </section>`;
   // 先頭の #topics はヘッダーの Topics と「分野から選ぶ」からのジャンプ先。大分類(試験の区分)ごとの目次を置く
@@ -486,16 +488,14 @@ function buildLang(L) {
         ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}" data-lang="${x.code}">${esc(x.label)}</a>`
         : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}" data-lang="${x.code}">${esc(x.label)}</a>`).join('');
     // ヘッダーのナビ(いまいるページには aria-current を付ける)。
-    // PC: Home / Topics / Resources(用語集・比較・図解をまとめたメニュー) / Progress。スマートフォン: 同じリンクを Menu に縦に並べる
+    // PC: Topics / 用語集 / 比較 / 図解 / 計算ツール / Progress。スマートフォン: ホームを加えて Menu に縦に並べる
     const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
     const resources = [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
       ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : []),
       ...(toolsIn(code).length ? [['tools/', S.nav_tools]] : [])];
-    const inResources = resources.some(([sub]) => p === L.path + sub);
-    const headerNav = [navLink(['', S.nav_home]), navLink(['#topics', S.nav_topics]),
-      `<details class="menu"><summary${inResources ? ' aria-current="page"' : ''}>${esc(S.nav_resources)}</summary><div class="menu-panel">${resources.map(navLink).join('')}</div></details>`,
-      navLink(['stats/', S.nav_stats])].join('');
-    const navMenu = [['', S.nav_home], ['#topics', S.nav_topics], ['stats/', S.nav_stats], ...resources].map(navLink).join('');
+    // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
+    const headerNav = [['#topics', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
+    const navMenu = [['', S.nav_home], ['#topics', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
