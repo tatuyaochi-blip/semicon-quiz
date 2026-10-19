@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"False sharing","item":"https://semiconroom.com/nl/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"False sharing","description":"Verschijnsel waarbij afzonderlijke threads verschillende variabelen wijzigen, maar die in dezelfde cacheregel liggen, zodat de regel tussen cores heen en weer gaat en het traag wordt.","url":"https://semiconroom.com/nl/term/false-sharing/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"False sharing","item":"https://semiconroom.com/nl/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"False sharing","description":"Verschijnsel waarbij afzonderlijke threads verschillende variabelen wijzigen, maar die in dezelfde cacheregel liggen, zodat de regel tussen cores heen en weer gaat en het traag wordt.","url":"https://semiconroom.com/nl/term/false-sharing/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Veroorzaakt false sharing verkeerde resultaten?","acceptedAnswer":{"@type":"Answer","text":"Nee. Het coherentieprotocol houdt elke variabele correct; false sharing kost alleen tijd, omdat de cacheline met de variabelen steeds tussen cores heen en weer gaat."}},{"@type":"Question","name":"Hoeveel padding is nodig om false sharing te voorkomen?","acceptedAnswer":{"@type":"Answer","text":"Genoeg om elke onafhankelijk geschreven variabele een eigen cacheline te geven, meestal 64 bytes. Sommige code gebruikt 128 bytes omdat bepaalde CPU's aangrenzende paren lines samen prefetchen."}},{"@type":"Question","name":"Kan gedeelde alleen-lezendata false sharing veroorzaken?","acceptedAnswer":{"@type":"Answer","text":"Nee. Meerdere cores kunnen dezelfde line tegelijk in een gedeelde toestand houden; het probleem ontstaat pas wanneer ten minste één thread naar de line schrijft."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom coherentie per line werkt en niet per variabele</h2>
+  <p>Cachecoherentieprotocollen zoals MESI (Modified, Exclusive, Shared, Invalid) volgen het eigendom van hele cachelines, doorgaans 64 bytes, in plaats van afzonderlijke variabelen. Voordat een core kan schrijven, moet hij de line exclusief bezitten, wat de kopie van elke andere core invalideert. Als core 0 steeds variabele a schrijft en core 1 steeds variabele b in dezelfde line, dwingt elke schrijfactie de line tussen de twee caches heen en weer. Geen van beide threads leest de data van de ander, dus de resultaten blijven correct, maar een toegang die een L1-hit van enkele cycli zou zijn, wordt een trage overdracht tussen cores.</p>
+</section>
+<section class="term-about">
+  <h2>False sharing versus true sharing</h2>
+  <p>True sharing betekent dat threads werkelijk dezelfde variabele benaderen, zoals een globale teller of een lockwoord; de contentie is inherent en kan alleen worden weggenomen door het algoritme te veranderen, bijvoorbeeld door de teller op te splitsen. False sharing betekent dat de data logisch onafhankelijk zijn en toevallig naast elkaar in het geheugen liggen, dus de remedie is een andere datalayout. Beide geven hetzelfde symptoom: zwaar coherentieverkeer op een paar lines. Alleen-lezen delen veroorzaakt geen van beide problemen, omdat veel caches een line tegelijk in de Shared-toestand kunnen houden; alleen schrijfacties dwingen invalidaties af.</p>
+</section>
+<section class="term-about">
+  <h2>Typische boosdoeners</h2>
+  <p>Het klassieke geval is een array van tellers per thread: met elementen van 8 bytes passen er acht in één line van 64 bytes, zodat tot acht threads erom vechten. Andere veelvoorkomende bronnen zijn structs waarvan de velden door verschillende threads worden bijgewerkt, een lock in dezelfde line als data die door een andere lock wordt beschermd, en werkwachtrijen waarvan de head- en tail-indexen, geschreven door producent en consument, naast elkaar liggen. Het gebruikelijke teken is een programma waarvan de versnelling afvlakt of zelfs daalt naarmate er threads bijkomen, hoewel elke thread alleen zijn eigen data lijkt aan te raken.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe je het oplost en opspoort</h2>
+  <p>Vul elk onafhankelijk geschreven item op of lijn het uit op de grootte van een cacheline, bijvoorbeeld met alignas(64) in C of C++, zodat elke thread zijn eigen line bezit. Sommige processors halen aangrenzende paren lines samen op, en daarom wordt soms een scheiding van 128 bytes gebruikt. Beter nog: laat elke thread accumuleren in een lokale variabele of een register en de gedeelde locatie aan het eind één keer schrijven. Hardwareprestatietellers kunnen het probleem blootleggen; op Linux rapporteert de tool perf c2c cachelines die vaak door de ene core worden gewijzigd en daarna door een andere worden geraakt.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over False sharing</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Opvulling tussen de tellers invoegen of ze uitlijnen, zodat ze in afzonderlijke cacheregels staan</p><p class="explanation">Bij een long van 8 byte passen 8 tellers in één regel van 64 byte, en alle threads strijden om dezelfde regel. Als opvulling wordt ingevoegd zodat elke teller per 64 byte staat, of de structuur op de grootte van de <a class="term-link" href="/nl/term/cache-line/">cacheregel</a> wordt uitgelijnd, gebruikt elke thread een eigen regel. Het is ook effectief dat elke thread met een lokale variabele telt en aan het eind slechts één keer bij de gedeelde plaats optelt.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Veroorzaakt false sharing verkeerde resultaten?</h3>
+  <p>Nee. Het coherentieprotocol houdt elke variabele correct; false sharing kost alleen tijd, omdat de cacheline met de variabelen steeds tussen cores heen en weer gaat.</p>
+  <h3>Hoeveel padding is nodig om false sharing te voorkomen?</h3>
+  <p>Genoeg om elke onafhankelijk geschreven variabele een eigen cacheline te geven, meestal 64 bytes. Sommige code gebruikt 128 bytes omdat bepaalde CPU&#39;s aangrenzende paren lines samen prefetchen.</p>
+  <h3>Kan gedeelde alleen-lezendata false sharing veroorzaken?</h3>
+  <p>Nee. Meerdere cores kunnen dezelfde line tegelijk in een gedeelde toestand houden; het probleem ontstaat pas wanneer ten minste één thread naar de line schrijft.</p>
+</section>
 <section>
   <h2>“False sharing” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Dit is false sharing: het resultaat is juist, maar de prestaties dalen sterk.</p><a href="/nl/q/multicore-sync/multicore-sync-010/">Welke uitleg over false sharing, dat bij multithreaded prog…</a></li><li><p>Bij multithreaded programma&#39;s moet worden gelet op false sharing, waarbij verschillende variabelen op dezelfde regel conflicten veroorzaken.</p><a href="/nl/q/cpu/cpu-039/">Welke grootte van een cacheregel (cacheblok) is gebruikelij…</a></li><li><p>De belangrijkste oorzaken die het effect van parallellisering belemmeren zijn het niet-paralleliseerbare deel (wet van Amdahl), wachten door locks en barrières, het heen en weer gaan van cacheregels door gedeelde gegevens en false sharing, ongelijke werkverdeling en onvoldoende geheugenbandbreedte.</p><a href="/nl/q/multicore-sync/multicore-sync-043/">Welke van de volgende is geen oorzaak dat de prestaties van…</a></li></ul>

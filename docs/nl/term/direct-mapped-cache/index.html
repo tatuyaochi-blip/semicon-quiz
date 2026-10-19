@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Direct-mapped cache","item":"https://semiconroom.com/nl/term/direct-mapped-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Direct-mapped cache","description":"Cacheorganisatie waarin voor de data van elk adres precies één plek in de cache is vastgelegd. Eenvoudig circuit en korte hit-tijd, maar conflictmisses doordat adressen om dezelfde plek strijden komen vaak voor.","url":"https://semiconroom.com/nl/term/direct-mapped-cache/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Direct-mapped cache","item":"https://semiconroom.com/nl/term/direct-mapped-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Direct-mapped cache","description":"Cacheorganisatie waarin voor de data van elk adres precies één plek in de cache is vastgelegd. Eenvoudig circuit en korte hit-tijd, maar conflictmisses doordat adressen om dezelfde plek strijden komen vaak voor.","url":"https://semiconroom.com/nl/term/direct-mapped-cache/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Hoe bereken je de tagbits van een direct-mapped cache?","acceptedAnswer":{"@type":"Answer","text":"Trek de offsetbits (log2 van de linegrootte) en de indexbits (log2 van het aantal lines) af van de adresbreedte; bijvoorbeeld 32 − 6 − 9 = 17 bits voor een cache van 32 KB met lines van 64 bytes."}},{"@type":"Question","name":"Waarom heeft een direct-mapped cache meer conflictmisses?","acceptedAnswer":{"@type":"Answer","text":"Elk blok kan maar in één line terecht, dus blokken met dezelfde index verdringen elkaar, zelfs als andere lines vrij zijn; associatieve caches geven elke index meerdere plaatsen."}},{"@type":"Question","name":"Is een direct-mapped cache sneller dan een set-associatieve cache?","acceptedAnswer":{"@type":"Answer","text":"De hittijd is meestal korter omdat er maar één tag wordt vergeleken, maar het hogere missratio kan de totale gemiddelde toegangstijd slechter maken, dus de vergelijking hangt af van de workload en de misstraffe."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe een adres wordt opgesplitst</h2>
+  <p>Een direct-mapped cache verdeelt elk adres in drie velden. De offset selecteert een byte binnen een cacheline, de index selecteert de ene line waarin het blok mag staan, en de resterende hoge bits vormen de tag die bij de line wordt opgeslagen. Bij een 32-bits adres, een cache van 32 KB en lines van 64 bytes is de offset 6 bits, zijn er 512 lines zodat de index 9 bits is, en is de tag 32 − 9 − 6 = 17 bits. Er is een hit wanneer de opgeslagen tag overeenkomt en de valid-bit is gezet.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom de hittijd kort is</h2>
+  <p>Omdat een blok maar één mogelijke locatie heeft, leest een lookup één tag en één data-entry en gebruikt hij één enkele <a class="term-link" href="/nl/term/comparator/">comparator</a>. Er is geen <a class="term-link" href="/nl/term/multiplexer/">multiplexer</a> nodig om tussen ways te kiezen, en de data kan speculatief worden doorgestuurd terwijl de tagcontrole wordt afgerond, omdat er maar één kandidaat is. Ook een vervangingsstrategie is niet nodig: bij een miss wordt het blok in die line gewoon vervangen. Deze eenvoud levert een korte hittijd, een klein oppervlak en een laag energieverbruik per toegang op, en daarom zijn kleine, snelheidskritische caches soms direct-mapped uitgevoerd.</p>
+</section>
+<section class="term-about">
+  <h2>Het probleem van conflictmisses</h2>
+  <p>Misses worden vaak ingedeeld in compulsory misses (eerste toegang), capacity misses (werkset groter dan de cache) en conflict misses. In een direct-mapped cache worden twee adressen die een veelvoud van de cachegrootte verschillen op dezelfde line afgebeeld. Als een lus afwisselt tussen twee zulke blokken, bijvoorbeeld twee arrays die op dezelfde macht-van-tweegrens zijn uitgelijnd, verdringt elke toegang de andere, ook al is het grootste deel van de cache leeg. Padding of het verschuiven van één array, of het toevoegen van een kleine volledig associatieve victim cache voor recent verdrongen lines, vermindert dit <a class="term-link" href="/nl/term/thrashing/">thrashing</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Direct-mapped versus set-associatief</h2>
+  <p>Een direct-mapped cache is gewoon een 1-weg set-associatieve cache, en een volledig associatieve cache is het andere uiterste met één enkele set. De overstap van direct-mapped naar n-weg associativiteit laat n blokken met dezelfde index naast elkaar bestaan, wat conflictmisses vermindert, maar vereist het parallel vergelijken van n tags en het selecteren van de overeenkomende way, wat de hittijd doorgaans verlengt en het vermogen verhoogt. Bij dezelfde capaciteit heeft een 4-weg cache vier keer minder sets, zodat de index 2 bits kleiner en de tag 2 bits groter wordt. De juiste keuze hangt af van de <a class="term-link" href="/nl/term/average-memory-access-time/">gemiddelde geheugentoegangstijd</a>.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Direct-mapped cache</h2>
   <article class="q-mini" data-qid="memory-hierarchy-003" data-cat="memory-hierarchy" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Conflictmiss</p><p class="explanation">Een miss waarbij twee gegevens om dezelfde set concurreren en elkaar verdringen terwijl er in de cache als geheel nog ruimte is, is een <a class="term-link" href="/nl/term/conflict-miss/">conflictmiss</a>. Deze kan worden verminderd door de associativiteit te verhogen zodat twee of meer gegevens in dezelfde set passen, of door het begin van een array te verschuiven zodat deze op een andere set uitkomt. Een <a class="term-link" href="/nl/term/capacity-miss/">capaciteitsmiss</a> wordt veroorzaakt doordat de working set groter is dan de hele cache en verdwijnt ook bij volledige associativiteit niet. Een <a class="term-link" href="/nl/term/compulsory-miss/">compulsory miss</a> treedt op bij de eerste toegang en past niet bij herhaalde toegangen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Hoe bereken je de tagbits van een direct-mapped cache?</h3>
+  <p>Trek de offsetbits (log2 van de linegrootte) en de indexbits (log2 van het aantal lines) af van de adresbreedte; bijvoorbeeld 32 − 6 − 9 = 17 bits voor een cache van 32 KB met lines van 64 bytes.</p>
+  <h3>Waarom heeft een direct-mapped cache meer conflictmisses?</h3>
+  <p>Elk blok kan maar in één line terecht, dus blokken met dezelfde index verdringen elkaar, zelfs als andere lines vrij zijn; associatieve caches geven elke index meerdere plaatsen.</p>
+  <h3>Is een direct-mapped cache sneller dan een set-associatieve cache?</h3>
+  <p>De hittijd is meestal korter omdat er maar één tag wordt vergeleken, maar het hogere missratio kan de totale gemiddelde toegangstijd slechter maken, dus de vergelijking hangt af van de workload en de misstraffe.</p>
+</section>
 
 <section>
   <h2>Vragen met “Direct-mapped cache” (2)</h2>

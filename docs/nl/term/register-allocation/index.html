@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Registertoewijzing (register allocation)","item":"https://semiconroom.com/nl/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Registertoewijzing (register allocation)","description":"Compilerstap die variabelen en tussenwaarden van het programma toewijst aan een beperkt aantal CPU-registers. Wordt bepaald met onder meer het kleuren van een interferentiegraaf, zodat tegelijk gebruikte waarden niet in hetzelfde register komen.","url":"https://semiconroom.com/nl/term/register-allocation/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Registertoewijzing (register allocation)","item":"https://semiconroom.com/nl/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Registertoewijzing (register allocation)","description":"Compilerstap die variabelen en tussenwaarden van het programma toewijst aan een beperkt aantal CPU-registers. Wordt bepaald met onder meer het kleuren van een interferentiegraaf, zodat tegelijk gebruikte waarden niet in hetzelfde register komen.","url":"https://semiconroom.com/nl/term/register-allocation/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is register spilling?","acceptedAnswer":{"@type":"Answer","text":"Spilling is het bewaren van een waarde in het geheugen, meestal in een stackslot, omdat er niet genoeg registers zijn voor alles wat op dat punt live is; de compiler voegt stores en loads rond het gebruik ervan in, wat de code vertraagt."}},{"@type":"Question","name":"Waarom is registertoewijzing een graafkleuringsprobleem?","acceptedAnswer":{"@type":"Answer","text":"Waarden die tegelijk live zijn, interfereren en hebben verschillende registers nodig; als waarden knopen zijn en interferenties kanten, is elke knoop een van k kleuren geven zonder gelijke buren precies het toewijzen van k registers."}},{"@type":"Question","name":"Wat is het verschil tussen graafkleuring en linear scan bij registertoewijzing?","acceptedAnswer":{"@type":"Answer","text":"Graafkleuring bouwt een volledige interferentiegraaf en levert meestal betere code, maar duurt langer; linear scan wijst toe in één doorgang over gesorteerde live-intervallen en ruilt wat codekwaliteit in voor veel snellere compilatie."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/compiler/">Compilers</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Van virtuele naar fysieke registers</h2>
+  <p>Compilers genereren tussencode met een onbeperkte voorraad virtuele registers of temporaries, maar een echte CPU heeft slechts een kleine vaste set, doorgaans 16 tot 32 registers voor algemeen gebruik. Registertoewijzing bepaalt welke waarden op elk punt in welke fysieke registers staan en welke in plaats daarvan in het geheugen moeten worden bewaard. Omdat registers veel sneller zijn dan zelfs een L1-cachetoegang, heeft een goede toewijzing een groot effect op de snelheid, vooral in lussen. De harde regel is dat twee waarden die tegelijk nodig zijn geen register kunnen delen.</p>
+</section>
+<section class="term-about">
+  <h2>Liveness en de interferentiegraaf</h2>
+  <p>De allocator voert eerst een liveness-analyse uit over de <a class="term-link" href="/nl/term/control-flow-graph/">control-flow-graaf</a> om op elk punt te bepalen welke waarden later mogelijk nog worden gelezen. Daarna bouwt hij een interferentiegraaf: elke waarde is een knoop, en een kant verbindt twee waarden die tegelijk live zijn. Het toewijzen van registers wordt dan het kleuren van de graaf met k kleuren, waarbij k het aantal beschikbare registers is, zodat geen buren dezelfde kleur hebben. Optimaal kleuren is in het algemeen NP-volledig, dus compilers gebruiken heuristieken zoals vereenvoudiging in de stijl van Chaitin, waarbij herhaaldelijk knopen met minder dan k buren worden verwijderd.</p>
+</section>
+<section class="term-about">
+  <h2>Spilling en de kosten ervan</h2>
+  <p>Als de graaf niet met k kleuren kan worden gekleurd, worden sommige waarden gespild: ze worden in een stackslot bewaard, met een store <a class="term-link" href="/nl/term/numerical-aperture/">na</a> elke definitie en een load vóór elk gebruik. Spills voegen instructies en geheugenverkeer toe, dus de allocator schat voor elke kandidaat de spillkosten, waarbij gebruik wordt gewogen naar lusnestingdiepte, en spilt bij voorkeur waarden die zelden worden gebruikt maar met veel andere interfereren. Het opsplitsen van een lang live range in kortere stukken kan een waarde ook in een register laten blijven waar dat het meest uitmaakt.</p>
+</section>
+<section class="term-about">
+  <h2>Calling conventions, coalescing en linear scan</h2>
+  <p>Echte allocators moeten de <a class="term-link" href="/nl/term/calling-convention/">calling convention</a> respecteren: argumenten en returnwaarden gebruiken specifieke registers, caller-saved registers worden door aanroepen overschreven, en callee-saved registers moeten vóór het terugkeren worden hersteld. Coalescing wijst hetzelfde register toe aan bron en doel van een kopie wanneer die niet interfereren, waardoor de move-instructie verdwijnt. <a class="term-link" href="/nl/term/jit-compilation/">Just-in-time</a>-compilers (JIT) gebruiken vaak linear-scantoewijzing in plaats van graafkleuring, waarbij gesorteerde live-intervallen in één doorgang worden doorlopen; dat is veel sneller uit te voeren, ten koste van een iets lagere codekwaliteit.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Registertoewijzing (register allocation)</h2>
   <article class="q-mini" data-qid="compiler-020" data-cat="compiler" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Er komen instructies bij om waarden naar de stack weg te schrijven en terug te lezen, waardoor het gemakkelijk trager wordt</p><p class="explanation">Een <a class="term-link" href="/nl/term/register-spilling/">spill</a> is het in het geheugen (op de stack) plaatsen van sommige waarden wanneer er meer gelijktijdig levende waarden zijn dan registers. Bij elk gebruik van zo&#39;n waarde is een leesinstructie nodig en bij elke wijziging een schrijfinstructie, zodat het aantal instructies toeneemt en het door de geheugentoegangen gemakkelijk trager wordt. De compiler laat daarom vaak gebruikte waarden, bijvoorbeeld in lussen, in registers en kiest weinig gebruikte waarden om te spillen. Het aantal registers ligt vast door de CPU en neemt niet toe, en het verwijderen van overbodige waarden is iets anders.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is register spilling?</h3>
+  <p>Spilling is het bewaren van een waarde in het geheugen, meestal in een stackslot, omdat er niet genoeg registers zijn voor alles wat op dat punt live is; de compiler voegt stores en loads rond het gebruik ervan in, wat de code vertraagt.</p>
+  <h3>Waarom is registertoewijzing een graafkleuringsprobleem?</h3>
+  <p>Waarden die tegelijk live zijn, interfereren en hebben verschillende registers nodig; als waarden knopen zijn en interferenties kanten, is elke knoop een van k kleuren geven zonder gelijke buren precies het toewijzen van k registers.</p>
+  <h3>Wat is het verschil tussen graafkleuring en linear scan bij registertoewijzing?</h3>
+  <p>Graafkleuring bouwt een volledige interferentiegraaf en levert meestal betere code, maar duurt langer; linear scan wijst toe in één doorgang over gesorteerde live-intervallen en ruilt wat codekwaliteit in voor veel snellere compilatie.</p>
+</section>
 
 <section>
   <h2>Vragen met “Registertoewijzing (register allocation)” (3)</h2>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Systeemaanroep (system call)","item":"https://semiconroom.com/nl/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Systeemaanroep (system call)","description":"Mechanisme waarmee een applicatie het besturingssysteem vraagt om bijvoorbeeld bestanden te lezen of te schrijven of geheugen toe te wijzen. Met een speciale instructie wordt een exceptie opgewekt, naar de bevoorrechte modus geschakeld en de kernelcode aangeroepen.","url":"https://semiconroom.com/nl/term/system-call/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Systeemaanroep (system call)","item":"https://semiconroom.com/nl/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Systeemaanroep (system call)","description":"Mechanisme waarmee een applicatie het besturingssysteem vraagt om bijvoorbeeld bestanden te lezen of te schrijven of geheugen toe te wijzen. Met een speciale instructie wordt een exceptie opgewekt, naar de bevoorrechte modus geschakeld en de kernelcode aangeroepen.","url":"https://semiconroom.com/nl/term/system-call/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verschil tussen een systeemaanroep en een interrupt","acceptedAnswer":{"@type":"Answer","text":"Een systeemaanroep is een synchrone trap die het programma bewust activeert met een speciale instructie. Een interrupt is een asynchroon signaal van hardware, zoals een timer of apparaat, dat binnenkomt ongeacht wat het programma doet."}},{"@type":"Question","name":"Is printf een systeemaanroep?","acceptedAnswer":{"@type":"Answer","text":"Nee. printf is een functie uit de C-bibliotheek die uitvoer in user space formatteert; uiteindelijk roept die de systeemaanroep write aan om de gebufferde data aan de kernel over te dragen."}},{"@type":"Question","name":"Waarom zijn systeemaanroepen traag?","acceptedAnswer":{"@type":"Answer","text":"Elke aanroep schakelt naar bevoorrechte modus, slaat toestand op, valideert argumenten en keert terug, en verstoort caches en de TLB. De kosten zijn vast per aanroep, dus veel kleine aanroepen tellen op."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Een systeemaanroep stap voor stap</h2>
+  <p>Op RISC-V Linux zet een programma het nummer van de systeemaanroep in register a7 en de argumenten in a0 en verder, en voert dan ecall uit. De instructie genereert bewust een exceptie: de CPU legt het adres van de ecall vast, schakelt naar supervisormodus en springt naar de trap-ingang van de kernel. De kernel slaat de gebruikersregisters op, zoekt de handler op aan de hand van het nummer, controleert de argumenten, voert het werk uit en zet het resultaat in a0. Daarna verhoogt hij het opgeslagen adres tot voorbij de ecall en keert met sret terug naar gebruikersmodus. Andere architecturen gebruiken instructies zoals syscall op x86-64 en svc op Arm.</p>
+</section>
+<section class="term-about">
+  <h2>Systeemaanroep versus bibliotheekfunctie</h2>
+  <p>Programma&#39;s bereiken systeemaanroepen meestal <a class="term-link" href="/nl/term/interconnect-via/">via</a> wrappers in een bibliotheek, dus de grens valt makkelijk weg. Een functie zoals printf draait volledig in user space, formatteert tekst in een buffer en roept slechts af en toe de systeemaanroep write aan om die buffer aan de kernel door te geven. Veel bibliotheekfuncties, zoals stringbewerkingen of wiskundige routines, komen helemaal niet in de kernel. Een systeemaanroep wordt bepaald door de overgang naar <a class="term-link" href="/nl/term/privileged-mode/">bevoorrechte modus</a>, niet door de naam van de functie.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom systeemaanroepen tijd kosten</h2>
+  <p>Elke aanroep betaalt een vaste overhead: de moduswissel, het opslaan en herstellen van registers, de validatie van argumenten en de terugkeer. Het binnengaan van de kernel verstoort ook caches en de <a class="term-link" href="/nl/term/tlb/">TLB</a>, en tegenmaatregelen tegen aanvallen <a class="term-link" href="/nl/term/interconnect-via/">via</a> <a class="term-link" href="/nl/term/speculative-execution/">speculatieve uitvoering</a>, zoals kernel page-table isolation (<a class="term-link" href="/nl/term/kernel-page-table-isolation/">KPTI</a>), voegen bij elke ingang een wissel van <a class="term-link" href="/nl/term/page-table/">paginatabel</a> toe. Eén byte per aanroep schrijven is daarom veel trager dan enkele kilobytes in user space bufferen en die in één aanroep schrijven.</p>
+</section>
+<section class="term-about">
+  <h2>Manieren om aanroepen te vermijden</h2>
+  <p>Naast bufferen kunnen programma&#39;s een bestand met mmap in het geheugen mappen, waarna leesacties gewone loads zijn die bij de eerste toegang <a class="term-link" href="/nl/term/interconnect-via/">via</a> paginafouten worden bediend in plaats van een aanroep per leesactie. Interfaces die meerdere bewerkingen in één aanroep indienen, verminderen het aantal overgangen nog verder. Sommige besturingssystemen mappen ook alleen-lezen kerneldata, zoals de huidige tijd, in user space, zodat frequente opvragingen helemaal geen trap nodig hebben.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Systeemaanroep (system call)</h2>
   <article class="q-mini" data-qid="os-hardware-050" data-cat="os-hardware" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Omdat de vaste last per systeemaanroep wordt beperkt door het aantal aanroepen te verminderen</p><p class="explanation">Bij een <a class="term-link" href="/nl/term/system-call/">systeemaanroep</a> zijn telkens nodig: omschakelen van gebruikersmodus naar <a class="term-link" href="/nl/term/privileged-mode/">bevoorrechte modus</a>, registers opslaan, argumenten controleren en terugkeren, en deze vaste last is er zelfs als maar 1 byte wordt verwerkt. Bovendien raken door het betreden van de kernel de inhoud van cache en <a class="term-link" href="/nl/term/tlb/">TLB</a> verstoord. Als gegevens in een buffer worden verzameld en per enkele KB gebundeld worden geschreven, neemt het aantal systeemaanroepen sterk af en wordt het geheel sneller. De totale hoeveelheid weg te schrijven gegevens verandert niet en wordt uiteindelijk naar schijf geschreven.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Verschil tussen een systeemaanroep en een interrupt</h3>
+  <p>Een systeemaanroep is een synchrone trap die het programma bewust activeert met een speciale instructie. Een interrupt is een asynchroon signaal van hardware, zoals een timer of apparaat, dat binnenkomt ongeacht wat het programma doet.</p>
+  <h3>Is printf een systeemaanroep?</h3>
+  <p>Nee. printf is een functie uit de C-bibliotheek die uitvoer in user space formatteert; uiteindelijk roept die de systeemaanroep write aan om de gebufferde data aan de kernel over te dragen.</p>
+  <h3>Waarom zijn systeemaanroepen traag?</h3>
+  <p>Elke aanroep schakelt naar bevoorrechte modus, slaat toestand op, valideert argumenten en keert terug, en verstoort caches en de TLB. De kosten zijn vast per aanroep, dus veel kleine aanroepen tellen op.</p>
+</section>
 <section>
   <h2>“Systeemaanroep (system call)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij een systeemaanroep zijn telkens nodig: omschakelen van gebruikersmodus naar bevoorrechte modus, registers opslaan, argumenten controleren en terugkeren, en deze vaste last is er zelfs als maar 1 byte wordt verwerkt.</p><a href="/nl/q/os-hardware/os-hardware-050/">Wat is de belangrijkste reden dat het sneller is om kleine …</a></li><li><p>Daarom gebruiken ze een systeemaanroep: met een speciale instructie wordt naar de bevoorrechte modus overgeschakeld, wordt kernelcode aangeroepen en worden onder meer het lezen en schrijven van bestanden, geheugentoewijzing en het aanmaken van processen aangevraagd.</p><a href="/nl/q/os-hardware/os-hardware-002/">Hoe heet het mechanisme waarmee een toepassing het besturin…</a></li><li><p>De kernel bepaalt aan de hand van het nummer in a7 welke systeemaanroep het is, verwerkt de argumenten in a0 tot en met a2 en keert na het teruggeven van het resultaat terug naar de gebruikersmodus.</p><a href="/nl/q/os-hardware/os-hardware-003/">Wat gebeurt er juist wanneer de laatste ecall-instructie va…</a></li><li><p>Als de kernel op dezelfde manier aan de adresruimte van elk proces is toegewezen, kan bij het betreden van de kernel via een systeemaanroep of interrupt zonder omschakelen van paginatabel rechtstreeks toegang worden verkregen tot kernelcode en -gegevens, en hoeft ook de TLB niet te worden geleegd.</p><a href="/nl/q/os-hardware/os-hardware-040/">In veel besturingssystemen wordt het kernelgebied toegeweze…</a></li><li><p>Het is hetzelfde mechanisme als demand paging, hoeft niet bij elke leesactie een systeemaanroep te doen en vermindert ook onnodig kopiëren van gegevens.</p><a href="/nl/q/os-hardware/os-hardware-049/">Welke uitleg is juist over wat er gebeurt bij het lezen van…</a></li></ul>
@@ -104,7 +127,11 @@
 </section>
 
 <div data-ad="term"></div>
-
+<section>
+  <h2>Vergelijkingen met deze term</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/nl/compare/user-mode-vs-kernel-mode/"><strong>Gebruikersmodus versus kernelmodus: instructies en bescherming</strong><span>Gebruikersmodus en kernelmodus vergeleken: uitvoerbare instructies, toegankelijk geheugen, aanleiding tot een…</span></a></li></ul>
+</section>
 
 <section>
   <h2>Verwante termen</h2>

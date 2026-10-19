@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Pull-upweerstand","item":"https://semiconroom.com/nl/term/pull-up-resistor/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Pull-upweerstand","description":"Weerstand die een signaallijn met de voeding verbindt om deze op niveau 1 te houden wanneer niets de lijn aanstuurt. Voorkomt zwevende ingangen en wordt ook gebruikt voor onder meer I2C-lijnen.","url":"https://semiconroom.com/nl/term/pull-up-resistor/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Pull-upweerstand","item":"https://semiconroom.com/nl/term/pull-up-resistor/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Pull-upweerstand","description":"Weerstand die een signaallijn met de voeding verbindt om deze op niveau 1 te houden wanneer niets de lijn aanstuurt. Voorkomt zwevende ingangen en wordt ook gebruikt voor onder meer I2C-lijnen.","url":"https://semiconroom.com/nl/term/pull-up-resistor/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom hebben I2C-lijnen pull-upweerstanden nodig?","acceptedAnswer":{"@type":"Answer","text":"I²C-componenten hebben open-drainuitgangen die SDA en SCL alleen laag kunnen trekken, dus externe pull-ups zijn nodig om het hoge niveau te creëren en meerdere componenten de lijnen veilig te laten delen."}},{"@type":"Question","name":"Wat gebeurt er als de pull-upweerstand te klein is?","acceptedAnswer":{"@type":"Answer","text":"De flanken worden sneller, maar er loopt meer stroom wanneer een component de lijn laag houdt, wat vermogen verspilt en de lage spanning boven de gespecificeerde VOL kan duwen als de sinkspecificatie van de driver wordt overschreden."}},{"@type":"Question","name":"Wat gebeurt er als een ingang van een microcontroller zwevend blijft?","acceptedAnswer":{"@type":"Answer","text":"Het niveau van de pin is ongedefinieerd, zodat ruis hem onvoorspelbaar 0 en 1 laat lezen en een tussenliggende spanning extra stroom in de ingangsbuffer kan veroorzaken; een pull-up- of pull-downweerstand lost dit op."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/embedded/">Embedded systemen en firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom ingangen een gedefinieerd niveau nodig hebben</h2>
+  <p>Een <a class="term-link" href="/nl/term/cmos/">CMOS</a>-ingang trekt vrijwel geen stroom, dus als niets hem aanstuurt, is de spanning ongedefinieerd. Ingekoppelde ruis of zelfs een hand in de buurt kan hem willekeurig 0 en 1 laten lezen, en een ingang die op een tussenliggende spanning blijft hangen, kan beide transistors van de ingangstrap laten geleiden, wat <a class="term-link" href="/nl/term/short-circuit-current/">shoot-through-stroom</a> verspilt. Een pull-upweerstand verbindt de lijn met de voeding, zodat die standaard 1 leest. Een schakelaar tussen de pin en massa leest dan 1 wanneer hij open is en 0 wanneer hij is ingedrukt. Een pull-downweerstand doet het spiegelbeeldige werk.</p>
+</section>
+<section class="term-about">
+  <h2>Open-drainlijnen en wired-AND</h2>
+  <p>Een <a class="term-link" href="/nl/term/open-drain-output/">open-drainuitgang</a> (of open-collectoruitgang) kan een lijn alleen naar massa trekken of loslaten; hij stuurt nooit hoog. De pull-upweerstand levert het hoge niveau. Wanneer meerdere van zulke uitgangen één lijn delen, is de lijn alleen hoog als ze hem allemaal loslaten, en wordt hij laag als er één omlaag trekt, wat een wired-AND vormt. Meerdere componenten kunnen de lijn daardoor tegelijk aansturen zonder elkaar te beschadigen; daarom gebruiken I²C, gedeelde interruptlijnen en resetlijnen deze opzet. Optrekken naar een andere voedingsspanning levert bovendien eenvoudige niveauverschuiving op.</p>
+</section>
+<section class="term-about">
+  <h2>De weerstandswaarde kiezen</h2>
+  <p>De stijgende flank is het opladen van de lijncapaciteit <a class="term-link" href="/nl/term/interconnect-via/">via</a> de pull-up volgens een RC-curve, dus de <a class="term-link" href="/nl/term/time-constant/">tijdconstante</a> is R × C: 10 kΩ en 100 pF geven 1 µs, waarbij de stijging van 10–90% ongeveer 2,2 tijdconstanten duurt. Een kleinere weerstand versnelt dit, maar telkens wanneer een uitgang de lijn laag houdt, loopt er een stroom V/R, bijvoorbeeld 3,3 mA bij 3,3 V door 1 kΩ. Die stroom moet binnen de sinkstroom blijven waarbij de datasheet de lage uitgangsspanning VOL garandeert, en hij verspilt vermogen. Bussen zoals I²C specificeren zowel de maximale stijgtijd als de sinkstroom.</p>
+</section>
+<section class="term-about">
+  <h2>Zwakke pulls versus sterke drivers</h2>
+  <p>Een pull-up is bewust zwak, zodat elke actieve driver hem kan overheersen; hij legt alleen de standaardtoestand vast. Een push-pulluitgang stuurt daarentegen zowel hoog als laag actief met lage impedantie en mag nooit met een andere push-pulluitgang worden verbonden. De meeste microcontrollers bieden interne pull-ups, doorgaans van enkele tientallen kilo-ohms, die prima zijn voor knoppen maar vaak te zwak voor snelle bussen die externe weerstanden nodig hebben. Pull-ups en pull-downs houden ook enable-, reset- en configuratiepinnen tijdens het opstarten in een bekende toestand.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Pull-upweerstand</h2>
   <article class="q-mini" data-qid="logic-050" data-cat="logic" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. De stijgende flank wordt sneller, maar de stroom bij een L-uitgang neemt toe en VOL stijgt gemakkelijker</p><p class="explanation">Het H-niveau van een open-drain-uitgang ontstaat doordat de <a class="term-link" href="/nl/term/pull-up-resistor/">pull-upweerstand</a> de signaallijn omhoogtrekt wanneer de uitgangstransistor uit staat. De stijgsnelheid wordt bepaald door de <a class="term-link" href="/nl/term/time-constant/">tijdconstante</a> van de weerstand en de bedradingscapaciteit, bijvoorbeeld 1 µs bij 10 kΩ en 100 pF. Een kleinere weerstand maakt de flank sneller, maar bij een L-uitgang loopt er stroom van de voeding door de weerstand: bij 3,3 V en 1 kΩ is dat 3,3 mA. Overschrijdt deze stroom de conditie voor IOL in de datasheet, dan blijft VOL niet binnen de gespecificeerde waarde; kies dus een waarde die aan beide voldoet.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom hebben I2C-lijnen pull-upweerstanden nodig?</h3>
+  <p>I²C-componenten hebben open-drainuitgangen die SDA en SCL alleen laag kunnen trekken, dus externe pull-ups zijn nodig om het hoge niveau te creëren en meerdere componenten de lijnen veilig te laten delen.</p>
+  <h3>Wat gebeurt er als de pull-upweerstand te klein is?</h3>
+  <p>De flanken worden sneller, maar er loopt meer stroom wanneer een component de lijn laag houdt, wat vermogen verspilt en de lage spanning boven de gespecificeerde VOL kan duwen als de sinkspecificatie van de driver wordt overschreden.</p>
+  <h3>Wat gebeurt er als een ingang van een microcontroller zwevend blijft?</h3>
+  <p>Het niveau van de pin is ongedefinieerd, zodat ruis hem onvoorspelbaar 0 en 1 laat lezen en een tussenliggende spanning extra stroom in de ingangsbuffer kan veroorzaken; een pull-up- of pull-downweerstand lost dit op.</p>
+</section>
 <section>
   <h2>“Pull-upweerstand” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Een open-drain-uitgang heeft twee toestanden: de transistor trekt de lijn naar aarde of koppelt los, en de 1 wordt door de pull-upweerstand gemaakt.</p><a href="/nl/q/logic/logic-050/">Wat is de juiste werking als meerdere circuits met open-dra…</a></li><li><p>Het H-niveau van een open-drain-uitgang ontstaat doordat de pull-upweerstand de signaallijn omhoogtrekt wanneer de uitgangstransistor uit staat.</p><a href="/nl/q/datasheet/datasheet-012/">Wat verandert er als je de waarde van de pull-upweerstand v…</a></li><li><p>Met een pull-upweerstand naar de voeding wordt de pin bij een open schakelaar 1 en bij een gesloten, geaarde schakelaar 0 gelezen, dus betrouwbaar.</p><a href="/nl/q/embedded/embedded-007/">Aan een ingangspin van een microcontroller is alleen een sc…</a></li></ul>

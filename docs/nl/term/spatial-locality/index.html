@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Ruimtelijke lokaliteit (spatial locality)","item":"https://semiconroom.com/nl/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Ruimtelijke lokaliteit (spatial locality)","description":"Eigenschap dat na toegang tot een bepaald adres er snel ook toegang tot nabijgelegen adressen is. Een voorbeeld is het achtereenvolgens lezen van een array; dit is de reden dat per cacheline in één keer wordt ingelezen.","url":"https://semiconroom.com/nl/term/spatial-locality/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Ruimtelijke lokaliteit (spatial locality)","item":"https://semiconroom.com/nl/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Ruimtelijke lokaliteit (spatial locality)","description":"Eigenschap dat na toegang tot een bepaald adres er snel ook toegang tot nabijgelegen adressen is. Een voorbeeld is het achtereenvolgens lezen van een array; dit is de reden dat per cacheline in één keer wordt ingelezen.","url":"https://semiconroom.com/nl/term/spatial-locality/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Voorbeeld van ruimtelijke lokaliteit","acceptedAnswer":{"@type":"Answer","text":"Een array van begin tot eind lezen: nadat element i is gebruikt, wordt element i+1 op het volgende adres gebruikt, en dat is waarschijnlijk door dezelfde line fill al in de cache gehaald."}},{"@type":"Question","name":"Hoe benutten caches ruimtelijke lokaliteit?","acceptedAnswer":{"@type":"Answer","text":"Ze dragen bij elke miss hele cachelines over, gewoonlijk 64 bytes, en prefetchen vaak de volgende lines, zodat naburige data al aanwezig is wanneer het programma erom vraagt."}},{"@type":"Question","name":"Waarom is een C-array kolomsgewijs doorlopen traag?","acceptedAnswer":{"@type":"Answer","text":"C slaat arrays rij voor rij op, dus omlaag stappen in een kolom verspringt bij elke toegang een volledige rij en gebruikt slechts een klein deel van elke opgehaalde cacheline."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom programma&#39;s het hebben</h2>
+  <p>Instructies worden achter elkaar opgehaald van opeenvolgende adressen tot een sprong, arrays worden vaak element voor element doorlopen, en de velden van een structuur of de lokale variabelen in een <a class="term-link" href="/nl/term/stack-frame/">stackframe</a> liggen naast elkaar. Daardoor wordt een toegang tot één adres vaak snel gevolgd door toegangen tot naburige adressen. Ruimtelijke lokaliteit is deze neiging, en het is een eigenschap van het toegangspatroon van het programma, niet van de hardware.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe hardware het benut</h2>
+  <p>Caches verplaatsen data in lines, in huidige CPU&#39;s doorgaans 64 bytes, zodat één miss buren binnenhaalt die waarschijnlijk als volgende worden gebruikt. Dit past ook bij DRAM-bursts: bij DDR4 leveren acht overdrachten van 8 bytes precies 64 bytes. Hardwareprefetchers herkennen sequentiële streams of streams met constante stride en halen komende lines vooraf op, en DRAM-rijen die open blijven, bedienen nabije toegangen sneller. Pagina&#39;s en de <a class="term-link" href="/nl/term/tlb/">TLB</a> profiteren ook, omdat één vertaling veel nabije adressen dekt.</p>
+</section>
+<section class="term-about">
+  <h2>Ruimtelijke versus temporele lokaliteit</h2>
+  <p><a class="term-link" href="/nl/term/temporal-locality/">Temporele lokaliteit</a> betekent dezelfde data snel opnieuw gebruiken, zoals een lusteller of een lopende som; ruimtelijke lokaliteit betekent nabije data snel gebruiken, zoals het volgende array-element. Eén doorgang over een grote array heeft sterke ruimtelijke maar geen temporele lokaliteit, terwijl het herhaaldelijk bijwerken van één variabele temporele maar weinig ruimtelijke lokaliteit heeft. Willekeurige toegangen tot een grote dataset, zoals bij sommige hashtabellen of graafdoorlopingen, hebben van geen van beide veel en missen vaak.</p>
+</section>
+<section class="term-about">
+  <h2>Code schrijven die het heeft</h2>
+  <p>In C worden tweedimensionale arrays row-major opgeslagen, dus de binnenste lus over kolommen laten itereren raakt opeenvolgende adressen, terwijl het omwisselen van de lussen bij elke stap een volledige rij verspringt. Een structure-of-arrays-layout kiezen wanneer slechts één veld wordt verwerkt, voorkomt het laden van ongebruikte velden. Grotere cachelines benutten ruimtelijke lokaliteit beter, maar verhogen de <a class="term-link" href="/nl/term/miss-penalty/">miss penalty</a> en kunnen onnodige data laden, en in multithreaded code veroorzaken niet-gerelateerde variabelen die één line delen <a class="term-link" href="/nl/term/false-sharing/">false sharing</a>.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Ruimtelijke lokaliteit (spatial locality)</h2>
   <article class="q-mini" data-qid="cpu-002" data-cat="cpu" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. 64 byte</p><p class="explanation">De meeste CPU&#39;s wisselen gegevens tussen cache en hoofdgeheugen uit in regels van 64 byte. Gegevens op nabije adressen worden vaak achtereenvolgens gebruikt (<a class="term-link" href="/nl/term/spatial-locality/">ruimtelijke lokaliteit</a>), dus ze samen binnenhalen is efficiënt, en het sluit ook aan op de burst-overdracht van DRAM (bij DDR4 8 keer 8 byte = 64 byte). Bij multithreaded programma&#39;s moet worden gelet op <a class="term-link" href="/nl/term/false-sharing/">false sharing</a>, waarbij verschillende variabelen op dezelfde regel conflicten veroorzaken.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Voorbeeld van ruimtelijke lokaliteit</h3>
+  <p>Een array van begin tot eind lezen: nadat element i is gebruikt, wordt element i+1 op het volgende adres gebruikt, en dat is waarschijnlijk door dezelfde line fill al in de cache gehaald.</p>
+  <h3>Hoe benutten caches ruimtelijke lokaliteit?</h3>
+  <p>Ze dragen bij elke miss hele cachelines over, gewoonlijk 64 bytes, en prefetchen vaak de volgende lines, zodat naburige data al aanwezig is wanneer het programma erom vraagt.</p>
+  <h3>Waarom is een C-array kolomsgewijs doorlopen traag?</h3>
+  <p>C slaat arrays rij voor rij op, dus omlaag stappen in een kolom verspringt bij elke toegang een volledige rij en gebruikt slechts een klein deel van elke opgehaalde cacheline.</p>
+</section>
 <section>
   <h2>“Ruimtelijke lokaliteit (spatial locality)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Dit benut temporele lokaliteit (dezelfde gegevens worden binnenkort opnieuw gebruikt) en ruimtelijke lokaliteit (nabije adressen worden achtereen gebruikt); L1 is binnen enkele klokcycli toegankelijk en zelfs L3 binnen enkele tientallen.</p><a href="/nl/q/cpu/cpu-002/">Wat is het belangrijkste doel van het aanbrengen van cacheg…</a></li><li><p>Gegevens op nabije adressen worden vaak achtereenvolgens gebruikt (ruimtelijke lokaliteit), dus ze samen binnenhalen is efficiënt, en het sluit ook aan op de burst-overdracht van DRAM (bij DDR4 8 keer 8 byte = 64 byte).</p><a href="/nl/q/cpu/cpu-039/">Welke grootte van een cacheregel (cacheblok) is gebruikelij…</a></li><li><p>Een array van voor naar achter lezen is een voorbeeld van ruimtelijke lokaliteit, waarbij achtereenvolgens nabijgelegen adressen worden gebruikt; dat is een andere eigenschap dan temporele lokaliteit.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-001/">Welk voorbeeld illustreert temporele lokaliteit het best?</a></li><li><p>Bij een grotere regel wordt nabijgelegen data bij één miss in één keer binnengehaald, zodat bij verwerking met ruimtelijke lokaliteit het aantal compulsory misses afneemt.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-010/">Wat is een juist gevolg van het vergroten van de regelgroot…</a></li></ul>

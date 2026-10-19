@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Missing code","item":"https://semiconroom.com/nl/term/missing-code/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Missing code","description":"Fout waarbij een bepaalde uitgangscode van een AD-omzetter nooit voorkomt, hoe de ingang ook wordt gevarieerd. Treedt op wanneer de DNL −1 LSB bereikt.","url":"https://semiconroom.com/nl/term/missing-code/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Missing code","item":"https://semiconroom.com/nl/term/missing-code/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Missing code","description":"Fout waarbij een bepaalde uitgangscode van een AD-omzetter nooit voorkomt, hoe de ingang ook wordt gevarieerd. Treedt op wanneer de DNL −1 LSB bereikt.","url":"https://semiconroom.com/nl/term/missing-code/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat betekent 'no missing codes' in een ADC-datasheet?","acceptedAnswer":{"@type":"Answer","text":"Het garandeert dat elke uitgangscode bij de vermelde resolutie voor een bepaalde ingangsspanning optreedt, wat gelijkstaat aan een DNL die groter blijft dan −1 LSB."}},{"@type":"Question","name":"Kan INL missing codes veroorzaken?","acceptedAnswer":{"@type":"Answer","text":"Niet direct. INL is een geaccumuleerde afwijking van een rechte lijn, terwijl missing codes ontstaan doordat één codebin tot een breedte van nul krimpt, wat een DNL-conditie is."}},{"@type":"Question","name":"Hoe test je een ADC op missing codes?","acceptedAnswer":{"@type":"Answer","text":"Leg een langzame ramp of een sinus aan, verzamel een groot aantal samples en maak een histogram van de uitgangscodes; elke code die nul keer voorkomt, ontbreekt."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/adc-dac/">A/D- en D/A-conversie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe een code verdwijnt</h2>
+  <p>Een ADC verdeelt zijn ingangsbereik in codebins, gescheiden door overgangsspanningen. Idealiter is elke bin precies 1 LSB breed. De <a class="term-link" href="/nl/term/dnl/">differentiële niet-lineariteit</a> (DNL) is de werkelijke breedte van elke bin min 1 LSB: een bin van 1,5 LSB breed heeft DNL = +0,5 LSB. Bereikt de DNL −1 LSB, dan heeft de bin een breedte van nul; de twee overgangen vallen samen en geen enkele ingangsspanning levert die code op. Dat is een missing code. Omdat de binbreedtes samen het volledige bereik moeten beslaan, gaat een missing code vaak gepaard met een naburige code die te breed is.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom het gebeurt</h2>
+  <p>Missing codes treden meestal op bij grote carry-overgangen, waar veel bits tegelijk veranderen, zoals van 0111…1 naar 1000…0. In een <a class="term-link" href="/nl/term/successive-approximation-adc/">SAR-ADC</a> (successive-approximation register) bepaalt de interne capacitieve DAC (digitaal-analoogomzetter) de beslisniveaus; is het gewicht van een hogere bit iets te klein vergeleken met de som van de lagere bits, dan kan de code net onder die overgang verdwijnen, terwijl een te groot gewicht juist een extra brede code oplevert. Pipeline- en subranging-ADC&#39;s zijn gevoelig voor comparatoroffsets tussen de trappen, en daarom voegen ze redundantie en digitale foutcorrectie toe om te garanderen dat er geen missing codes zijn.</p>
+</section>
+<section class="term-about">
+  <h2>Testen en datasheetspecificaties</h2>
+  <p>Missing codes worden opgespoord met een histogramtest: er wordt een langzame ramp of een sinus aangelegd, veel samples worden verzameld en het aantal treffers per code wordt geteld. Bij een ramp is het aantal per code evenredig met de breedte ervan; bij een sinus worden de aantallen gecorrigeerd voor de amplitudeverdeling van de sinus. Een code met nul treffers ontbreekt. Datasheets vermelden een resolutie met gegarandeerd geen missing codes, bijvoorbeeld een 16-bits uitgang zonder missing codes bij 16 of misschien 15 bits, wat neerkomt op een garantie dat de <a class="term-link" href="/nl/term/dnl/">DNL</a> bij die resolutie groter is dan −1 LSB.</p>
+</section>
+<section class="term-about">
+  <h2>Missing codes versus INL en monotoniciteit van DAC&#39;s</h2>
+  <p>De <a class="term-link" href="/nl/term/inl/">integrale niet-lineariteit</a> (INL) is de geaccumuleerde afwijking van de overdrachtskarakteristiek ten opzichte van een ideale rechte lijn; een ADC kan meerdere LSB INL hebben en toch elke code produceren, dus de INL bepaalt niet direct of er missing codes zijn. Bij een DAC is het analoge aandachtspunt de monotoniciteit: als de <a class="term-link" href="/nl/term/dnl/">DNL</a> boven −1 LSB blijft, daalt de uitgang nooit wanneer de code toeneemt. Missing codes doen er het meest toe in regellussen, waar een overgeslagen code werkt als een plotselinge sprong in de lusversterking die limit cycling kan veroorzaken, en in meetsystemen die histogrammen van codes opbouwen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Missing code</h2>
   <article class="q-mini" data-qid="adc-dac-013" data-cat="adc-dac" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Missing code</p><p class="explanation">Een code met een <a class="term-link" href="/nl/term/dnl/">DNL</a> van −1 LSB of lager heeft geen ingangsbreedte meer en verschijnt dus niet aan de uitgang. Dit is een <a class="term-link" href="/nl/term/missing-code/">missing code</a>; als bijvoorbeeld het gewicht van de hoogste bits van de interne DAC van een <a class="term-link" href="/nl/term/successive-approximation-adc/">SAR-ADC</a> te klein is, kunnen codes worden overgeslagen. Dit is fataal bij regelsystemen en bij toepassingen waarin de verdeling met een histogram wordt onderzocht; daarom vermeldt het datablad het aantal bits waarvoor &quot;No Missing Codes&quot; wordt gegarandeerd.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat betekent &#39;no missing codes&#39; in een ADC-datasheet?</h3>
+  <p>Het garandeert dat elke uitgangscode bij de vermelde resolutie voor een bepaalde ingangsspanning optreedt, wat gelijkstaat aan een DNL die groter blijft dan −1 LSB.</p>
+  <h3>Kan INL missing codes veroorzaken?</h3>
+  <p>Niet direct. INL is een geaccumuleerde afwijking van een rechte lijn, terwijl missing codes ontstaan doordat één codebin tot een breedte van nul krimpt, wat een DNL-conditie is.</p>
+  <h3>Hoe test je een ADC op missing codes?</h3>
+  <p>Leg een langzame ramp of een sinus aan, verzamel een groot aantal samples en maak een histogram van de uitgangscodes; elke code die nul keer voorkomt, ontbreekt.</p>
+</section>
 <section>
   <h2>“Missing code” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij een DNL van −1 LSB verschijnt de betreffende code niet meer (missing code), en boven +1 LSB neemt de effectieve resolutie af.</p><a href="/nl/q/adc-dac/adc-dac-013/">Welke uitspraak over de differentiële niet-lineariteit (DNL…</a></li><li><p>Dit is een missing code; als bijvoorbeeld het gewicht van de hoogste bits van de interne DAC van een SAR-ADC te klein is, kunnen codes worden overgeslagen.</p><a href="/nl/q/adc-dac/adc-dac-014/">Hoe heet het defect van een AD-converter waarbij een bepaal…</a></li><li><p>Bij een DNL van −1 LSB wordt de breedte van die code 0 en ontstaat een missing code: een code die bij geen enkele ingangswaarde wordt uitgegeven.</p><a href="/nl/q/datasheet/datasheet-040/">Met welke conditie hangt de garantie &quot;no missing codes&quot; in …</a></li></ul>

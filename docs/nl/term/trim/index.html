@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/nl/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"Commando waarmee het besturingssysteem de ssd laat weten welke gebieden door verwijderde bestanden vrij zijn. Doordat de ssd weet welke gegevens overbodig zijn, wordt garbage collection efficiënter.","url":"https://semiconroom.com/nl/term/trim/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/nl/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"Commando waarmee het besturingssysteem de ssd laat weten welke gebieden door verwijderde bestanden vrij zijn. Doordat de ssd weet welke gegevens overbodig zijn, wordt garbage collection efficiënter.","url":"https://semiconroom.com/nl/term/trim/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wist TRIM gegevens direct?","acceptedAnswer":{"@type":"Answer","text":"Niet noodzakelijk. TRIM markeert de gegevens als ongeldig en verwijdert de adresmapping; het fysieke wissen gebeurt later wanneer garbage collection het blok terugwint, hoewel het lezen van getrimde adressen al nullen kan opleveren."}},{"@type":"Question","name":"Ondersteunen NVMe-ssd's TRIM?","acceptedAnswer":{"@type":"Answer","text":"Ja, via de optie Deallocate van het NVMe-commando Dataset Management, dat hetzelfde doet; besturingssystemen noemen het meestal toch TRIM of discard."}},{"@type":"Question","name":"Is TRIM nodig op een harde schijf?","acceptedAnswer":{"@type":"Answer","text":"Conventionele harde schijven kunnen sectoren ter plaatse overschrijven en hebben dus geen baat bij TRIM; het is van belang voor flashopslag, waar blokken vóór hergebruik moeten worden gewist."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/sram-flash/">SRAM en flashgeheugen</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom een ssd het moet worden verteld</h2>
+  <p>De controller van een ssd draait een flash translation layer (FTL) die de logische blokadressen die het besturingssysteem gebruikt, koppelt aan fysieke flashpagina&#39;s. Het verwijderen van een bestand werkt alleen de eigen administratie van het bestandssysteem bij; de ssd ontvangt geen schrijfopdracht en beschouwt de oude gegevens nog steeds als geldig. Tijdens <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> blijft de drive daarom gegevens kopiëren die niemand ooit nog zal lezen, wat tijd en flashlevensduur verspilt. TRIM dicht dit informatiegat: het besturingssysteem stuurt de adresbereiken die geen bruikbare gegevens meer bevatten, zodat de drive kan stoppen met het bewaren ervan.</p>
+</section>
+<section class="term-about">
+  <h2>Wat er na een TRIM gebeurt</h2>
+  <p>Bij ontvangst van TRIM verwijdert de FTL de mapping voor die logische adressen en markeert de bijbehorende fysieke pagina&#39;s als ongeldig. De gegevens worden niet noodzakelijk direct gewist; het wissen gebeurt later, blok voor blok, wanneer <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> de ruimte terugwint. Blokken met voornamelijk ongeldige pagina&#39;s kunnen dan met weinig of geen kopieerwerk worden gewist, wat de <a class="term-link" href="/nl/term/write-amplification/">write amplification</a> vermindert en de schrijfprestaties stabiel houdt naarmate de drive voller raakt. Afhankelijk van de drive kan het lezen van een getrimd adres daarna nullen of ongedefinieerde gegevens opleveren, waardoor verwijderde bestanden op ssd&#39;s doorgaans veel moeilijker te herstellen zijn dan op harde schijven.</p>
+</section>
+<section class="term-about">
+  <h2>Interfaces en hoe het wordt verstuurd</h2>
+  <p>TRIM is de naam van de ATA-commando-optie (SATA); SCSI- en SAS-systemen gebruiken UNMAP, en <a class="term-link" href="/nl/term/nvme/">NVMe</a> biedt dezelfde functie <a class="term-link" href="/nl/term/interconnect-via/">via</a> de optie Deallocate van zijn Dataset Management-commando. Besturingssystemen versturen het ofwel continu, met een discard bij elk verwijderd bestand, ofwel periodiek in batches, wat vertraging van het verwijderen voorkomt. Lagen tussen het bestandssysteem en de drive, zoals sommige RAID- of schijfversleutelingsopstellingen en virtuele schijven, moeten het commando doorgeven om de flash te bereiken, en moeten daar mogelijk voor worden geconfigureerd.</p>
+</section>
+<section class="term-about">
+  <h2>Niet te verwarren met</h2>
+  <p>TRIM is slechts een hint van de host; <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> is het interne proces van de drive dat geldige gegevens daadwerkelijk verplaatst en blokken wist, en het draait met of zonder TRIM. In de halfgeleiderfabricage is resist trimming een ongerelateerd plasmaproces dat resistlijnen dunner maakt tot onder de belichtingslimiet, en laser trimming stelt weerstandswaarden in analoge chips bij. Conventionele harde schijven overschrijven gegevens ter plaatse en hebben geen TRIM nodig, hoewel thin-provisioned opslag het equivalente unmap-commando gebruikt om ruimte terug te winnen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over TRIM</h2>
   <article class="q-mini" data-qid="sram-flash-028" data-cat="sram-flash" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. De hoeveelheid gegevens die werkelijk naar het flashgeheugen wordt geschreven is groter dan de hoeveelheid die de host heeft geschreven</p><p class="explanation">Omdat flash niet kan worden overschreven en wissen per blok gebeurt, ontstaan extra schrijfbewerkingen, zoals het kopiëren van geldige gegevens naar een ander blok bij <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a>, waardoor de werkelijke schrijfhoeveelheid groter is dan de schrijfhoeveelheid van de host. Deze verhouding is de schrijfversterkingsfactor (WAF), die bij veel willekeurige kleine schrijfbewerkingen enkele malen kan bedragen. Ze wordt verkleind met <a class="term-link" href="/nl/term/trim/">TRIM</a>, extra ruimte en gegevenscompressie om levensduur en prestaties te beschermen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wist TRIM gegevens direct?</h3>
+  <p>Niet noodzakelijk. TRIM markeert de gegevens als ongeldig en verwijdert de adresmapping; het fysieke wissen gebeurt later wanneer garbage collection het blok terugwint, hoewel het lezen van getrimde adressen al nullen kan opleveren.</p>
+  <h3>Ondersteunen NVMe-ssd&#39;s TRIM?</h3>
+  <p>Ja, via de optie Deallocate van het NVMe-commando Dataset Management, dat hetzelfde doet; besturingssystemen noemen het meestal toch TRIM of discard.</p>
+  <h3>Is TRIM nodig op een harde schijf?</h3>
+  <p>Conventionele harde schijven kunnen sectoren ter plaatse overschrijven en hebben dus geen baat bij TRIM; het is van belang voor flashopslag, waar blokken vóór hergebruik moeten worden gewist.</p>
+</section>
 <section>
   <h2>“TRIM” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Als met het TRIM-commando de overbodige gebieden worden doorgegeven, behandelt de SSD die pagina’s als ongeldig en kan ze wissen zonder te kopiëren, waardoor schrijfversterking afneemt en prestaties en levensduur verbeteren.</p><a href="/nl/q/sram-flash/sram-flash-028/">Welk commando wordt gebruikt om de SSD op de hoogte te bren…</a></li><li><p>Ze wordt verkleind met TRIM, extra ruimte en gegevenscompressie om levensduur en prestaties te beschermen.</p><a href="/nl/q/sram-flash/sram-flash-042/">Welke uitspraak over “write amplification” (schrijfversterk…</a></li></ul>

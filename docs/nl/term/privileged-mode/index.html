@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Bevoorrechte modus (privileged mode)","item":"https://semiconroom.com/nl/term/privileged-mode/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bevoorrechte modus (privileged mode)","description":"CPU-modus die alleen de OS-kernel kan gebruiken. Hierin kunnen gevaarlijke instructies worden uitgevoerd, zoals het instellen van paginatabellen en I/O-bewerkingen; onderscheiden van de gebruikersmodus waarin applicaties draaien.","url":"https://semiconroom.com/nl/term/privileged-mode/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Bevoorrechte modus (privileged mode)","item":"https://semiconroom.com/nl/term/privileged-mode/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bevoorrechte modus (privileged mode)","description":"CPU-modus die alleen de OS-kernel kan gebruiken. Hierin kunnen gevaarlijke instructies worden uitgevoerd, zoals het instellen van paginatabellen en I/O-bewerkingen; onderscheiden van de gebruikersmodus waarin applicaties draaien.","url":"https://semiconroom.com/nl/term/privileged-mode/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verschil tussen kernelmodus en gebruikersmodus","acceptedAnswer":{"@type":"Answer","text":"In kernelmodus (bevoorrechte modus) staat de CPU bewerkingen toe zoals paginatabellen wijzigen, apparaten aansturen en interrupts uitschakelen. In gebruikersmodus leveren deze een exceptie op, dus applicaties moeten het via systeemaanroepen aan de kernel vragen."}},{"@type":"Question","name":"Betekent draaien als root draaien in kernelmodus?","acceptedAnswer":{"@type":"Answer","text":"Nee. Root is een permissieniveau van het besturingssysteem, en rootprocessen draaien nog steeds in gebruikersmodus; alleen de kernel draait in bevoorrechte modus."}},{"@type":"Question","name":"Hoe schakelt een programma naar kernelmodus?","acceptedAnswer":{"@type":"Answer","text":"Alleen via een trap, zoals het uitvoeren van een instructie voor een systeemaanroep, of via een exceptie of interrupt, die allemaal de kernel binnenkomen via ingangspunten die het OS heeft ingesteld."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat de bevoorrechte modus beschermt</h2>
+  <p>Bepaalde bewerkingen zouden één programma de hele machine laten overnemen: paginatabellen wijzigen of het register dat ernaar verwijst, rechtstreeks I/O-apparaten benaderen, interrupts uitschakelen, de timer herprogrammeren waarmee het OS de controle terugkrijgt, of de CPU stilzetten. De processor staat deze alleen toe in bevoorrechte modus, ook kernel- of supervisormodus genoemd. Als code in gebruikersmodus er een probeert, genereert de CPU een exceptie en beslist het OS wat er gebeurt, meestal door het programma te beëindigen.</p>
+</section>
+<section class="term-about">
+  <h2>Erin en eruit</h2>
+  <p>Gebruikerscode kan niet zomaar naar de bevoorrechte modus springen. De enige ingangen zijn excepties, interrupts en bewuste traps zoals systeemaanroepen, en elk daarvan draagt de controle over aan een ingangspunt dat het OS vooraf heeft ingesteld. De CPU slaat het terugkeeradres, de vorige modus en de <a class="term-link" href="/nl/term/interrupt/">interrupt</a>-enable-toestand op in speciale registers. Een speciale return-instructie, zoals sret of mret op RISC-V, herstelt deze allemaal tegelijk, zodat de uitvoering nooit in gebruikerscode verdergaat terwijl er nog privileges actief zijn.</p>
+</section>
+<section class="term-about">
+  <h2>Niveaus op echte CPU&#39;s</h2>
+  <p>Veel architecturen hebben meer dan twee niveaus. RISC-V definieert machine-, supervisor- en gebruikersmodus; x86 heeft rings 0 tot 3, waarbij besturingssystemen vooral ring 0 voor de kernel en ring 3 voor applicaties gebruiken; Arm gebruikt exception levels EL0 tot EL3. Een <a class="term-link" href="/nl/term/hypervisor/">hypervisor</a> draait boven gastkernels, en wanneer een gast een bevoorrechte instructie uitvoert, trapt die naar de hypervisor, die het effect emuleert. Dit trap-and-emulate-schema hergebruikt hetzelfde beschermingsidee een niveau hoger.</p>
+</section>
+<section class="term-about">
+  <h2>Bevoorrechte modus versus beheerdersrechten</h2>
+  <p>De bevoorrechte modus is een hardwaretoestand van de CPU, geen gebruikersaccount. Een proces dat door een beheerder of rootgebruiker wordt gestart, draait nog steeds in gebruikersmodus; de extra rechten zijn permissies die de kernel controleert wanneer hij de systeemaanroepen van dat proces afhandelt. Alleen kernelcode, en in sommige systemen firmware of een <a class="term-link" href="/nl/term/hypervisor/">hypervisor</a>, draait in bevoorrechte modus. Geheugenbescherming vult het modusbit aan: entries in de <a class="term-link" href="/nl/term/page-table/">paginatabel</a> geven aan welke pagina&#39;s de gebruikersmodus mag benaderen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Bevoorrechte modus (privileged mode)</h2>
   <article class="q-mini" data-qid="os-hardware-001" data-cat="os-hardware" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Toepassingen beschermen tegen willekeurige bewerking van paginatabellen en apparaten</p><p class="explanation">Als toepassingen vrij paginatabellen konden wijzigen, I/O-apparaten konden bedienen en interrupts konden uitschakelen, zouden ze het geheugen van andere programma&#39;s kunnen beschadigen of het hele systeem kunnen stilleggen. Daarom laat de CPU deze instructies alleen in de <a class="term-link" href="/nl/term/privileged-mode/">bevoorrechte modus</a> toe, zodat alleen de kernel van het besturingssysteem ze kan gebruiken. Een poging ze in de gebruikersmodus uit te voeren geeft een exception. Het is geen mechanisme voor snelheid of gelijktijdige uitvoering.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Verschil tussen kernelmodus en gebruikersmodus</h3>
+  <p>In kernelmodus (bevoorrechte modus) staat de CPU bewerkingen toe zoals paginatabellen wijzigen, apparaten aansturen en interrupts uitschakelen. In gebruikersmodus leveren deze een exceptie op, dus applicaties moeten het via systeemaanroepen aan de kernel vragen.</p>
+  <h3>Betekent draaien als root draaien in kernelmodus?</h3>
+  <p>Nee. Root is een permissieniveau van het besturingssysteem, en rootprocessen draaien nog steeds in gebruikersmodus; alleen de kernel draait in bevoorrechte modus.</p>
+  <h3>Hoe schakelt een programma naar kernelmodus?</h3>
+  <p>Alleen via een trap, zoals het uitvoeren van een instructie voor een systeemaanroep, of via een exceptie of interrupt, die allemaal de kernel binnenkomen via ingangspunten die het OS heeft ingesteld.</p>
+</section>
 <section>
   <h2>“Bevoorrechte modus (privileged mode)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Daarom laat de CPU deze instructies alleen in de bevoorrechte modus toe, zodat alleen de kernel van het besturingssysteem ze kan gebruiken.</p><a href="/nl/q/os-hardware/os-hardware-001/">Wat is het belangrijkste doel van het onderscheid tussen be…</a></li><li><p>Daarom gebruiken ze een systeemaanroep: met een speciale instructie wordt naar de bevoorrechte modus overgeschakeld, wordt kernelcode aangeroepen en worden onder meer het lezen en schrijven van bestanden, geheugentoewijzing en het aanmaken van processen aangevraagd.</p><a href="/nl/q/os-hardware/os-hardware-002/">Hoe heet het mechanisme waarmee een toepassing het besturin…</a></li><li><p>Wanneer een exception of interrupt optreedt, slaat de CPU naast het terugkeeradres ook de tot dan toe geldende werkingsmodus en of interrupts waren toegestaan op in speciale registers en gaat naar de bevoorrechte modus.</p><a href="/nl/q/os-hardware/os-hardware-044/">Waarom wordt bij terugkeer naar het oorspronkelijke program…</a></li><li><p>Bij een systeemaanroep zijn telkens nodig: omschakelen van gebruikersmodus naar bevoorrechte modus, registers opslaan, argumenten controleren en terugkeren, en deze vaste last is er zelfs als maar 1 byte wordt verwerkt.</p><a href="/nl/q/os-hardware/os-hardware-050/">Wat is de belangrijkste reden dat het sneller is om kleine …</a></li></ul>
@@ -102,7 +125,11 @@
 </section>
 
 <div data-ad="term"></div>
-
+<section>
+  <h2>Vergelijkingen met deze term</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/nl/compare/user-mode-vs-kernel-mode/"><strong>Gebruikersmodus versus kernelmodus: instructies en bescherming</strong><span>Gebruikersmodus en kernelmodus vergeleken: uitvoerbare instructies, toegankelijk geheugen, aanleiding tot een…</span></a></li></ul>
+</section>
 
 <section>
   <h2>Verwante termen</h2>

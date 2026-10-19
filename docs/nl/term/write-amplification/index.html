@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Write amplification","item":"https://semiconroom.com/nl/term/write-amplification/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write amplification","description":"Verschijnsel dat er door onder meer garbage collection feitelijk meer gegevens naar het flashgeheugen worden geschreven dan de host heeft geschreven. Hoe groter, hoe korter de levensduur van de SSD.","url":"https://semiconroom.com/nl/term/write-amplification/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Write amplification","item":"https://semiconroom.com/nl/term/write-amplification/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write amplification","description":"Verschijnsel dat er door onder meer garbage collection feitelijk meer gegevens naar het flashgeheugen worden geschreven dan de host heeft geschreven. Hoe groter, hoe korter de levensduur van de SSD.","url":"https://semiconroom.com/nl/term/write-amplification/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is een goede write amplification factor?","acceptedAnswer":{"@type":"Answer","text":"Een WAF dicht bij 1 is ideaal en gebruikelijk bij sequentiële workloads; kleine willekeurige schrijfacties op een bijna volle drive kunnen hem opdrijven tot enkele. Lager is beter voor zowel de endurance als de aanhoudende schrijfsnelheid."}},{"@type":"Question","name":"Kan write amplification kleiner zijn dan 1?","acceptedAnswer":{"@type":"Answer","text":"Ja, als de controller gegevens comprimeert of dedupliceert, kan hij minder naar de flash schrijven dan de host heeft verstuurd, wat voor comprimeerbare gegevens een effectieve WAF onder 1 oplevert."}},{"@type":"Question","name":"Vermindert over-provisioning de write amplification?","acceptedAnswer":{"@type":"Answer","text":"Ja. Extra reserveruimte betekent dat garbage collection blokken kan kiezen met minder geldige pagina's om te kopiëren, wat de WAF verlaagt, vooral bij workloads met willekeurige schrijfacties."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/sram-flash/">SRAM en flashgeheugen</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waar de extra schrijfacties vandaan komen</h2>
+  <p>NAND-flash wordt per pagina geprogrammeerd maar alleen gewist in veel grotere blokken met honderden of meer pagina&#39;s, en een pagina kan niet ter plaatse worden overschreven. Wanneer de host gegevens bijwerkt, schrijft de ssd de nieuwe versie naar een verse pagina en markeert de oude als ongeldig. Om ruimte terug te winnen, kiest <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> een blok met veel ongeldige pagina&#39;s, kopieert de resterende geldige pagina&#39;s naar elders en wist het blok. Die kopieën zijn schrijfacties waar de host nooit om heeft gevraagd. <a class="term-link" href="/nl/term/wear-leveling/">Wear leveling</a>, dat zelden gewijzigde gegevens weghaalt uit weinig versleten blokken, en de updates van de eigen mappingtabellen van de drive voegen er nog meer aan toe.</p>
+</section>
+<section class="term-about">
+  <h2>WAF definiëren en schatten</h2>
+  <p>De write amplification factor (WAF) is de hoeveelheid gegevens die naar de flash wordt geschreven gedeeld door de hoeveelheid die de host schrijft. Grote sequentiële schrijfacties maken doorgaans hele blokken tegelijk ongeldig, zodat <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> weinig hoeft te kopiëren en de WAF dicht bij 1 blijft. Kleine willekeurige schrijfacties verspreiden ongeldige pagina&#39;s over veel blokken, zodat elk teruggewonnen blok nog veel geldige gegevens bevat en de WAF kan oplopen tot enkele. Hoe voller de drive en hoe minder reserveruimte hij heeft, hoe minder grotendeels lege blokken er beschikbaar zijn, en zowel de write amplification als het prestatieverlies nemen toe.</p>
+</section>
+<section class="term-about">
+  <h2>Effect op de levensduur</h2>
+  <p>Elk flashblok overleeft slechts een beperkt aantal program/erase-cycli, dus write amplification verbruikt rechtstreeks de endurance. Als eenvoudige illustratie: als de flash van een drive van 1 TB 1.000 cycli zou kunnen doorstaan, zou het ruwe budget ongeveer 1 PB aan flashschrijfacties zijn; bij een WAF van 3 zou de host slechts ongeveer een derde daarvan kunnen schrijven. Endurancespecificaties van drives in geschreven terabytes gaan al uit van een typische WAF voor de workload, dus een workload die wordt gedomineerd door kleine willekeurige schrijfacties kan een drive sneller verslijten dan de specificatie doet vermoeden.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe je het vermindert</h2>
+  <p><a class="term-link" href="/nl/term/trim/">TRIM</a> vertelt de drive welke gegevens achterhaald zijn, zodat <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> ze niet kopieert. Over-provisioning, reserveflashcapaciteit die voor de host verborgen is, geeft garbage collection meer vrije blokken om mee te werken, zodat de te wissen blokken minder geldige pagina&#39;s bevatten; enterprise-drives reserveren om die reden een groter aandeel. Controllers die gegevens vóór het schrijven comprimeren, kunnen de effectieve WAF voor comprimeerbare gegevens onder 1 brengen. Schrijven in grote, uitgelijnde, sequentiële brokken en kortlevende gegevens gescheiden van langlevende gegevens in verschillende blokken plaatsen helpt ook; dat is het idee achter zoned-storage-interfaces waarmee de host gegevens bewust kan plaatsen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Write amplification</h2>
   <article class="q-mini" data-qid="sram-flash-042" data-cat="sram-flash" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. De hoeveelheid gegevens die werkelijk naar het flashgeheugen wordt geschreven is groter dan de hoeveelheid die de host heeft geschreven</p><p class="explanation">Omdat flash niet kan worden overschreven en wissen per blok gebeurt, ontstaan extra schrijfbewerkingen, zoals het kopiëren van geldige gegevens naar een ander blok bij <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a>, waardoor de werkelijke schrijfhoeveelheid groter is dan de schrijfhoeveelheid van de host. Deze verhouding is de schrijfversterkingsfactor (WAF), die bij veel willekeurige kleine schrijfbewerkingen enkele malen kan bedragen. Ze wordt verkleind met <a class="term-link" href="/nl/term/trim/">TRIM</a>, extra ruimte en gegevenscompressie om levensduur en prestaties te beschermen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is een goede write amplification factor?</h3>
+  <p>Een WAF dicht bij 1 is ideaal en gebruikelijk bij sequentiële workloads; kleine willekeurige schrijfacties op een bijna volle drive kunnen hem opdrijven tot enkele. Lager is beter voor zowel de endurance als de aanhoudende schrijfsnelheid.</p>
+  <h3>Kan write amplification kleiner zijn dan 1?</h3>
+  <p>Ja, als de controller gegevens comprimeert of dedupliceert, kan hij minder naar de flash schrijven dan de host heeft verstuurd, wat voor comprimeerbare gegevens een effectieve WAF onder 1 oplevert.</p>
+  <h3>Vermindert over-provisioning de write amplification?</h3>
+  <p>Ja. Extra reserveruimte betekent dat garbage collection blokken kan kiezen met minder geldige pagina&#39;s om te kopiëren, wat de WAF verlaagt, vooral bij workloads met willekeurige schrijfacties.</p>
+</section>
 
 <section>
   <h2>Vragen met “Write amplification” (1)</h2>

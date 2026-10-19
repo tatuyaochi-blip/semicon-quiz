@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Fully associative","item":"https://semiconroom.com/nl/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Fully associative","description":"Cache-opbouw waarin elk gegeven op elke plaats in de cache kan staan. Er zijn geen conflictmissers, maar alle tags moeten worden vergeleken, waardoor het niet geschikt is voor grote caches. Wordt gebruikt in onder meer de TLB.","url":"https://semiconroom.com/nl/term/fully-associative-cache/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Fully associative","item":"https://semiconroom.com/nl/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Fully associative","description":"Cache-opbouw waarin elk gegeven op elke plaats in de cache kan staan. Er zijn geen conflictmissers, maar alle tags moeten worden vergeleken, waardoor het niet geschikt is voor grote caches. Wordt gebruikt in onder meer de TLB.","url":"https://semiconroom.com/nl/term/fully-associative-cache/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Hoeveel indexbits heeft een volledig associatieve cache?","acceptedAnswer":{"@type":"Answer","text":"Nul. De hele cache is één set, dus het adres bestaat alleen uit een tag en een offset, en de tag wordt met elke line vergeleken."}},{"@type":"Question","name":"Waarom zijn TLB's vaak volledig associatief?","acceptedAnswer":{"@type":"Answer","text":"TLB's zijn klein en elke miss dwingt een kostbare page table walk af, dus de extra comparators zijn het waard om conflictmisses volledig te vermijden."}},{"@type":"Question","name":"Elimineert een volledig associatieve cache alle misses?","acceptedAnswer":{"@type":"Answer","text":"Nee. Hij verwijdert conflictmisses, maar compulsory misses bij het eerste gebruik en capacity misses door een werkset die groter is dan de cache treden nog steeds op."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Geen index, alleen tag en offset</h2>
+  <p>In een volledig associatieve cache is de hele cache één set, zodat elk blok in elke line kan worden opgeslagen. Er zijn geen bits nodig om een set te selecteren: de index is 0 bits, en het adres wordt alleen opgesplitst in een offset binnen de line en een tag die uit alle overige bits bestaat. Bij elke toegang moet de gevraagde tag tegelijk worden vergeleken met de tags van alle geldige lines, wat doorgaans gebeurt met content-addressable memory (CAM), waarin elke entry een eigen <a class="term-link" href="/nl/term/comparator/">comparator</a> heeft.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom het alleen voor kleine structuren wordt gebruikt</h2>
+  <p>Een CAM met N entries heeft N brede comparators nodig die bij elke lookup actief zijn, plus een grote <a class="term-link" href="/nl/term/multiplexer/">multiplexer</a> om de overeenkomende data af te leveren. Oppervlak, vermogen en hittijd groeien snel met het aantal entries, dus grote datacaches zijn in plaats daarvan <a class="term-link" href="/nl/term/set-associative-cache/">set-associatief</a>. Volledige associativiteit is betaalbaar en de moeite waard in kleine structuren die intensief worden gebruikt en waar elke miss duur is, zoals translation lookaside buffers (<a class="term-link" href="/nl/term/tlb/">TLB</a>&#39;s) die <a class="term-link" href="/nl/term/page-table/">paginatabel</a>-entries cachen, of kleine victim caches die lines bewaren die recent uit een <a class="term-link" href="/nl/term/direct-mapped-cache/">direct-mapped cache</a> zijn verdrongen.</p>
+</section>
+<section class="term-about">
+  <h2>De vervangingsstrategie bepaalt de prestaties</h2>
+  <p>Omdat elke line kan worden verdrongen, heeft de cache een vervangingsstrategie nodig. <a class="term-link" href="/nl/term/lru-replacement/">Least recently used</a> (LRU) verdringt de line die het langst niet is gebruikt. Met twee lines en de referentiereeks A, B, A, C, B, A geeft LRU vijf misses: door de hit op A wordt B het slachtoffer wanneer C binnenkomt, en daarna worden A en C beurtelings verdrongen. Echte LRU wordt kostbaar om bij te houden voor veel entries, dus hardware gebruikt vaak pseudo-LRU of willekeurige vervanging. LRU presteert ook slecht bij cyclische patronen die iets groter zijn dan de cache, waar willekeurige vervanging het beter kan doen.</p>
+</section>
+<section class="term-about">
+  <h2>Wat volledige associativiteit niet kan oplossen</h2>
+  <p>Volledige associativiteit elimineert conflictmisses, omdat blokken nooit om een bepaalde set concurreren. In het gebruikelijke model met drie categorieën worden conflictmisses zelfs gedefinieerd als de misses die een volledig associatieve cache van dezelfde grootte zou vermijden. Compulsory misses bij de eerste toegang blijven bestaan, net als capacity misses wanneer de werkset groter is dan de hele cache. Die vereisen een grotere cache, <a class="term-link" href="/nl/term/prefetching/">prefetching</a> of het herstructureren van code zodat data eerder wordt hergebruikt, bijvoorbeeld door <a class="term-link" href="/nl/term/loop-blocking/">loop blocking (tiling)</a>.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Fully associative</h2>
   <article class="q-mini" data-qid="cpu-038" data-cat="cpu" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. De gegevens van een adres kunnen op een van meerdere plaatsen (ways) binnen een vaste set worden geplaatst</p><p class="explanation">Bij een set-associatieve cache wordt de set bepaald door een deel van het adres, en kunnen de gegevens op een van meerdere ways daarbinnen worden geplaatst. Bij 8 ways zijn er bijvoorbeeld 8 kandidaatplaatsen, zodat conflicten om dezelfde plaats (conflictmisses) minder vaak voorkomen dan bij direct mapped. Meer ways betekent meer vergelijkingsschakelingen en meer vermogen; gebruikelijk zijn circa 8 tot 12 ways in L1 en circa 16 ways in L3. Gegevens overal kunnen plaatsen is een <a class="term-link" href="/nl/term/fully-associative-cache/">fully associative</a> cache.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Hoeveel indexbits heeft een volledig associatieve cache?</h3>
+  <p>Nul. De hele cache is één set, dus het adres bestaat alleen uit een tag en een offset, en de tag wordt met elke line vergeleken.</p>
+  <h3>Waarom zijn TLB&#39;s vaak volledig associatief?</h3>
+  <p>TLB&#39;s zijn klein en elke miss dwingt een kostbare page table walk af, dus de extra comparators zijn het waard om conflictmisses volledig te vermijden.</p>
+  <h3>Elimineert een volledig associatieve cache alle misses?</h3>
+  <p>Nee. Hij verwijdert conflictmisses, maar compulsory misses bij het eerste gebruik en capacity misses door een werkset die groter is dan de cache treden nog steeds op.</p>
+</section>
 <section>
   <h2>“Fully associative” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Gegevens overal kunnen plaatsen is een fully associative cache.</p><a href="/nl/q/cpu/cpu-038/">Welke uitspraak over een set-associatieve cache is juist?</a></li></ul>

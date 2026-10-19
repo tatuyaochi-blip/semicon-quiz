@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Write-through","item":"https://semiconroom.com/nl/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-through","description":"Methode waarbij tegelijk met het schrijven naar de cache ook naar het onderliggende niveau (zoals het hoofdgeheugen) wordt geschreven. Het onderliggende niveau blijft altijd actueel, maar er is veel schrijfverkeer, dus wordt het met een schrijfbuffer gecombineerd.","url":"https://semiconroom.com/nl/term/write-through/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Write-through","item":"https://semiconroom.com/nl/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-through","description":"Methode waarbij tegelijk met het schrijven naar de cache ook naar het onderliggende niveau (zoals het hoofdgeheugen) wordt geschreven. Het onderliggende niveau blijft altijd actueel, maar er is veel schrijfverkeer, dus wordt het met een schrijfbuffer gecombineerd.","url":"https://semiconroom.com/nl/term/write-through/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verschil tussen write-through en write-back cache","acceptedAnswer":{"@type":"Answer","text":"Write-through schrijft bij elke store naar het lagere niveau en houdt dat altijd actueel. Write-back schrijft alleen naar de cache en werkt het lagere niveau één keer bij wanneer de gewijzigde line wordt verdrongen, wat verkeer bespaart."}},{"@type":"Question","name":"Waarom heeft een write-through-cache een schrijfbuffer nodig?","acceptedAnswer":{"@type":"Answer","text":"Zonder buffer zou de CPU moeten wachten tot elke store in het tragere geheugen is voltooid. De buffer zet schrijfacties in een wachtrij zodat de CPU kan doorgaan terwijl ze op de achtergrond worden weggeschreven."}},{"@type":"Question","name":"Heeft een write-through-cache een dirty bit nodig?","acceptedAnswer":{"@type":"Answer","text":"Nee. Omdat elke schrijfactie direct wordt doorgegeven, wijkt een line nooit af van het lagere niveau, zodat ze kan worden verdrongen zonder iets terug te schrijven."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe een write-through-cache een store afhandelt</h2>
+  <p>Bij een store-hit werkt een write-through-cache zijn eigen kopie bij en stuurt de schrijfactie ook door naar het volgende niveau, zoals een L2-cache of het hoofdgeheugen. Lines zijn daardoor nooit dirty: er is geen dirty bit nodig, en een verdrongen line kan eenvoudig worden weggegooid omdat het niveau eronder al dezelfde data bevat. Bij een store-miss gebruiken write-through-caches meestal no-<a class="term-link" href="/nl/term/write-allocate/">write-allocate</a> en sturen ze de schrijfactie rechtstreeks naar beneden zonder de line te laden, aangezien een latere write-back toch niet nodig is.</p>
+</section>
+<section class="term-about">
+  <h2>De schrijfbuffer</h2>
+  <p>Wachten tot elke store het geheugen heeft bereikt, zou de CPU voortdurend laten stilstaan, dus gaan schrijfacties naar een schrijfbuffer die op de achtergrond naar het lagere niveau leegloopt terwijl de CPU doorgaat. De CPU staat alleen stil als de buffer vol raakt, wat gebeurt als stores sneller binnenkomen dan het geheugen ze kan verwerken. Loads die missen, moeten de buffer controleren of wachten tot die leeg is, zodat ze geen verouderde data uit het geheugen lezen. Buffers voegen vaak meerdere schrijfacties naar dezelfde line samen tot één overdracht.</p>
+</section>
+<section class="term-about">
+  <h2>Write-through versus write-back</h2>
+  <p>Write-back werkt alleen de cache bij en schrijft een dirty line één keer naar het geheugen, wanneer die wordt verdrongen, zodat herhaalde schrijfacties naar dezelfde line samenvallen tot één overdracht. Dat bespaart bandbreedte en vermogen, en daarom zijn de meeste L1- tot L3-caches van CPU&#39;s write-back. Write-through genereert verkeer bij elke store, maar houdt het lagere niveau altijd actueel, wat coherentie met andere cores en met <a class="term-link" href="/nl/term/dma/">DMA</a> vereenvoudigt en herstel makkelijk maakt: een L1 die write-through is, kan zijn data met eenvoudige pariteit beschermen en bij een fout een schone kopie opnieuw ophalen.</p>
+</section>
+<section class="term-about">
+  <h2>Waar het wordt gebruikt</h2>
+  <p>Write-through komt voor in kleine eersteniveaucaches met een write-back-L2 erachter, in eenvoudige embedded processors, en in geheugengebieden waar het lagere niveau elke schrijfactie snel moet zien; veel architecturen laten het besturingssysteem dit per pagina kiezen <a class="term-link" href="/nl/term/interconnect-via/">via</a> memory-type-attributen. Het is minder geschikt voor het laatste cacheniveau vóór DRAM, waar storeverkeer geheugenbandbreedte zou verbruiken die een write-backbeleid zou besparen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Write-through</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Schrijven blijft binnen de cache en naar het hoofdgeheugen hoeft maar één keer te worden geschreven bij verdringing</p><p class="explanation">Bij write-back blijven herhaalde schrijfacties naar dezelfde regel binnen de cache, en bij verdringing wordt de dirty regel slechts één keer teruggeschreven. Daardoor nemen het verkeer naar het hoofdgeheugen en het energieverbruik sterk af. Het hoofdgeheugen bij elke schrijfactie actueel maken is een eigenschap van <a class="term-link" href="/nl/term/write-through/">write-through</a>, waarbij herhaald schrijven naar dezelfde regel telkens verkeer veroorzaakt. Dat cache en hoofdgeheugen altijd overeenstemmen is ook een eigenschap van write-through; bij write-back zijn er perioden waarin ze niet overeenstemmen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Verschil tussen write-through en write-back cache</h3>
+  <p>Write-through schrijft bij elke store naar het lagere niveau en houdt dat altijd actueel. Write-back schrijft alleen naar de cache en werkt het lagere niveau één keer bij wanneer de gewijzigde line wordt verdrongen, wat verkeer bespaart.</p>
+  <h3>Waarom heeft een write-through-cache een schrijfbuffer nodig?</h3>
+  <p>Zonder buffer zou de CPU moeten wachten tot elke store in het tragere geheugen is voltooid. De buffer zet schrijfacties in een wachtrij zodat de CPU kan doorgaan terwijl ze op de achtergrond worden weggeschreven.</p>
+  <h3>Heeft een write-through-cache een dirty bit nodig?</h3>
+  <p>Nee. Omdat elke schrijfactie direct wordt doorgegeven, wijkt een line nooit af van het lagere niveau, zodat ze kan worden verdrongen zonder iets terug te schrijven.</p>
+</section>
 <section>
   <h2>“Write-through” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij write-through wordt bij elke schrijfactie ook naar het hoofdgeheugen geschreven; als op de voltooiing wordt gewacht, komt de CPU geregeld stil te staan.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-011/">Wat is het belangrijkste doel van een schrijfbuffer bij een…</a></li><li><p>Het hoofdgeheugen bij elke schrijfactie actueel maken is een eigenschap van write-through, waarbij herhaald schrijven naar dezelfde regel telkens verkeer veroorzaakt.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-038/">Wat is de belangrijkste reden dat write-back voordeliger is…</a></li><li><p>De methode die bij een schrijfmiss rechtstreeks naar het lagere niveau schrijft zonder de regel in te lezen, is no-write-allocate; ze wordt vaak gecombineerd met write-through.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-013/">Welke methode schrijft bij een cachemiss op een schrijfacti…</a></li></ul>

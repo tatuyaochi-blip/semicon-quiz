@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Write-allocate","item":"https://semiconroom.com/nl/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-allocate","description":"Methode waarbij bij een cachemiss bij schrijven de regel eerst in de cache wordt ingelezen en daarna wordt beschreven. Wordt vaak gecombineerd met write-back. De methode die rechtstreeks naar het onderliggende niveau schrijft zonder in te lezen heet no-write-allocate.","url":"https://semiconroom.com/nl/term/write-allocate/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Write-allocate","item":"https://semiconroom.com/nl/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-allocate","description":"Methode waarbij bij een cachemiss bij schrijven de regel eerst in de cache wordt ingelezen en daarna wordt beschreven. Wordt vaak gecombineerd met write-back. De methode die rechtstreeks naar het onderliggende niveau schrijft zonder in te lezen heet no-write-allocate.","url":"https://semiconroom.com/nl/term/write-allocate/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verschil tussen write-allocate en no-write-allocate","acceptedAnswer":{"@type":"Answer","text":"Bij een write-miss laadt write-allocate de line in de cache en schrijft daar, terwijl no-write-allocate direct naar het lagere niveau schrijft zonder de line te laden."}},{"@type":"Question","name":"Waarom wordt write-allocate meestal gecombineerd met write-back?","acceptedAnswer":{"@type":"Answer","text":"Zodra de line in een write-back-cache staat, hitten verdere schrijfacties erop en worden ze zonder geheugenverkeer opgevangen, zodat de kosten van het eerste ophalen worden terugverdiend."}},{"@type":"Question","name":"Waarvoor worden non-temporal stores gebruikt?","acceptedAnswer":{"@type":"Answer","text":"Ze schrijven grote hoeveelheden data die niet snel worden hergebruikt rechtstreeks naar het geheugen, waardoor het lezen van elke line dat write-allocate zou veroorzaken wordt vermeden en de cache vrij blijft voor nuttige data."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat er gebeurt bij een write-miss</h2>
+  <p>Bij write-allocate haalt een store die mist eerst de hele line op uit het lagere niveau, plaatst die in de cache en voegt daarna de geschreven bytes erin samen. In een write-back-cache wordt de line vervolgens als dirty gemarkeerd en bereikt die het geheugen pas wanneer ze later wordt verdrongen. In een multicoresysteem verkrijgt het ophalen ook exclusief eigendom van de line, zodat kopieën van andere cores vóór het schrijven worden geïnvalideerd; door deze read-for-ownership ziet een store-miss eruit als een leesactie op de geheugenbus.</p>
+</section>
+<section class="term-about">
+  <h2>Write-allocate versus no-write-allocate</h2>
+  <p>No-write-allocate stuurt een gemiste store direct naar het lagere niveau en laat de cache ongemoeid. Write-allocate loont wanneer geschreven data snel weer wordt gelezen of beschreven, omdat latere toegangen dan hitten; het is daarom de gebruikelijke partner van write-back. No-write-allocate past bij data die één keer wordt geschreven en niet hergebruikt, en is de gebruikelijke partner van <a class="term-link" href="/nl/term/write-through/">write-through</a>. Let op: write-back versus write-through bepaalt hoe hits worden doorgegeven, terwijl allocatie bepaalt wat een miss doet; het zijn twee aparte keuzes.</p>
+</section>
+<section class="term-about">
+  <h2>De verborgen kosten voor alleen-schrijfdata</h2>
+  <p>Wanneer een programma een grote buffer schrijft die het niet snel zal lezen, zoals bij het wissen van geheugen of het produceren van uitvoer, leest write-allocate eerst elke line uit het geheugen om die vervolgens te overschrijven, en schrijft die later terug, wat het verkeer ruwweg verdubbelt. Die lines verdringen ook nuttige data. Non-temporal of streaming stores vermijden dit door schrijfacties te combineren en rechtstreeks naar het geheugen te sturen. Sommige <a class="term-link" href="/nl/term/instruction-set-architecture/">ISA</a>&#39;s bieden ook instructies die een hele cacheline op nul zetten zonder de oude inhoud op te halen.</p>
+</section>
+<section class="term-about">
+  <h2>Verwante technieken voor missafhandeling</h2>
+  <p>Write-allocate bepaalt of een line wordt binnengehaald, maar andere technieken bepalen hoe lang de miss duurt. Critical word first stuurt het gevraagde woord vóór de rest van de 64-byte-line, zodat de CPU eerder kan doorgaan. Een schrijfbuffer verbergt de storelatentie in <a class="term-link" href="/nl/term/write-through/">write-through</a>-caches, en een victim cache bewaart recent verdrongen lines. Elk pakt een ander deel van de misskosten aan, wat vaak voor verwarring zorgt.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Write-allocate</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. No-write-allocate</p><p class="explanation">De methode die bij een schrijfmiss rechtstreeks naar het lagere niveau schrijft zonder de regel in te lezen, is no-<a class="term-link" href="/nl/term/write-allocate/">write-allocate</a>; ze wordt vaak gecombineerd met <a class="term-link" href="/nl/term/write-through/">write-through</a>. Bij data die <a class="term-link" href="/nl/term/numerical-aperture/">na</a> het schrijven niet meer worden teruggelezen, bespaart dit onnodig inlezen. Write-allocate leest juist eerst de regel in en schrijft dan; dit is voordelig als de geschreven data snel weer worden gebruikt en wordt daarom vaak met write-back gecombineerd. Write-back bepaalt hoe schrijfhits worden afgehandeld en is een andere as dan de vraag of bij een miss wordt ingelezen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Verschil tussen write-allocate en no-write-allocate</h3>
+  <p>Bij een write-miss laadt write-allocate de line in de cache en schrijft daar, terwijl no-write-allocate direct naar het lagere niveau schrijft zonder de line te laden.</p>
+  <h3>Waarom wordt write-allocate meestal gecombineerd met write-back?</h3>
+  <p>Zodra de line in een write-back-cache staat, hitten verdere schrijfacties erop en worden ze zonder geheugenverkeer opgevangen, zodat de kosten van het eerste ophalen worden terugverdiend.</p>
+  <h3>Waarvoor worden non-temporal stores gebruikt?</h3>
+  <p>Ze schrijven grote hoeveelheden data die niet snel worden hergebruikt rechtstreeks naar het geheugen, waardoor het lezen van elke line dat write-allocate zou veroorzaken wordt vermeden en de cache vrij blijft voor nuttige data.</p>
+</section>
 <section>
   <h2>“Write-allocate” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Of een gemiste regel wordt ingelezen is de keuze tussen write-allocate en no-write-allocate en staat los van de schrijfbuffer.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-011/">Wat is het belangrijkste doel van een schrijfbuffer bij een…</a></li><li><p>De methode die bij een schrijfmiss rechtstreeks naar het lagere niveau schrijft zonder de regel in te lezen, is no-write-allocate; ze wordt vaak gecombineerd met write-through.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-013/">Welke methode schrijft bij een cachemiss op een schrijfacti…</a></li><li><p>Bij gewoon schrijven wordt vanwege write-allocate de regel eerst uit het hoofdgeheugen ingelezen en daarna beschreven; ook voor data die alleen worden geschreven ontstaat zo leesverkeer, en worden andere data die worden hergebruikt verdrongen.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-043/">Wat is het belangrijkste voordeel van stores die de cache o…</a></li><li><p>Write-allocate is een methode voor het wel of niet inlezen van de regel bij een schrijfmiss, en een victim cache is een kleine buffer die verdrongen regels tijdelijk bewaart.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-045/">Welke techniek stuurt, bij het inlezen van een gemiste rege…</a></li></ul>

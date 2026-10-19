@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"LR/SC","item":"https://semiconroom.com/nl/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"LR/SC","description":"Paar instructies: load-reserved (LR) en store-conditional (SC). Ook LL en SC genoemd. Als na LR een andere core naar dat adres schrijft, mislukt SC, waardoor atomaire updates kunnen worden gebouwd.","url":"https://semiconroom.com/nl/term/load-reserved-store-conditional/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"LR/SC","item":"https://semiconroom.com/nl/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"LR/SC","description":"Paar instructies: load-reserved (LR) en store-conditional (SC). Ook LL en SC genoemd. Als na LR een andere core naar dat adres schrijft, mislukt SC, waardoor atomaire updates kunnen worden gebouwd.","url":"https://semiconroom.com/nl/term/load-reserved-store-conditional/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wanneer mislukt een store-conditional?","acceptedAnswer":{"@type":"Answer","text":"Hij mislukt wanneer de reservering die door de load-reserved is gezet verloren is gegaan, meestal omdat een andere core naar het adres heeft geschreven, maar mogelijk ook door een interrupt, context switch of verdringing uit de cache."}},{"@type":"Question","name":"Lost LR/SC het ABA-probleem op?","acceptedAnswer":{"@type":"Answer","text":"Ja. LR/SC detecteert elke tussentijdse schrijfactie naar de gereserveerde locatie, dus een waarde die verandert en weer terugverandert, laat de store-conditional toch mislukken, anders dan bij compare-and-swap."}},{"@type":"Question","name":"Wat is het verschil tussen LL/SC en LR/SC?","acceptedAnswer":{"@type":"Answer","text":"Het is hetzelfde idee onder verschillende namen: load-linked/store-conditional is de traditionele term, en load-reserved/store-conditional is de RISC-V-naam."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe het paar werkt</h2>
+  <p>Load-reserved (LR) leest een geheugenwoord en registreert tegelijk een reservering op dat adres, meestal voor de hele cacheline. Het programma berekent een nieuwe waarde in registers, waarna store-conditional (SC) probeert die te schrijven. SC schrijft alleen als de reservering nog intact is en geeft een statuscode terug die succes of mislukking aangeeft; op RISC-V betekent nul succes. Software verpakt de reeks in een retry-lus. RISC-V noemt het paar lr en sc, Arm biedt equivalente load-exclusive- en store-exclusive-instructies, en de algemene naam is LL/SC.</p>
+</section>
+<section class="term-about">
+  <h2>Wat een reservering verbreekt</h2>
+  <p>De belangrijkste oorzaak van mislukking is dat een andere core tussen de LR en de SC naar de gereserveerde locatie schrijft. De core detecteert dit <a class="term-link" href="/nl/term/interconnect-via/">via</a> <a class="term-link" href="/nl/term/cache-coherency/">cachecoherentie</a>: de schrijfactie invalideert zijn kopie van de line en wist de reservering. De reservering kan ook worden gewist door een <a class="term-link" href="/nl/term/interrupt/">interrupt</a> of <a class="term-link" href="/nl/term/context-switch/">context switch</a>, een andere SC of het verdringen van de line, zodat SC zelfs zonder echt conflict kan mislukken. Correcte code moet altijd voorbereid zijn op een nieuwe poging, en RISC-V garandeert uiteindelijk succes alleen voor korte lussen die aan gespecificeerde beperkingen voldoen.</p>
+</section>
+<section class="term-about">
+  <h2>LR/SC versus CAS en het ABA-probleem</h2>
+  <p><a class="term-link" href="/nl/term/compare-and-swap/">Compare-and-swap</a> (CAS) controleert of het geheugen nog een verwachte waarde bevat. Als een andere thread een waarde van A naar B en weer terug naar A verandert, kan CAS dat niet zien en slaagt het, wat <a class="term-link" href="/nl/term/lock-free-algorithm/">lock-free</a> structuren zoals gelinkte lijsten kan corrumperen: het <a class="term-link" href="/nl/term/aba-problem/">ABA-probleem</a>. LR/SC controleert of er überhaupt een schrijfactie heeft plaatsgevonden, niet wat de waarde is, dus een A-B-A-reeks verbreekt de reservering toch. Met LR/SC kan ook elke <a class="term-link" href="/nl/term/read-modify-write/">read-modify-write</a> op één woord in software worden gebouwd, inclusief CAS zelf en fetch-and-add. De zwakke punten zijn onterechte mislukkingen en mogelijke livelock bij zware contentie.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom load-store-architecturen er de voorkeur aan geven</h2>
+  <p>Eén CAS-instructie moet het geheugen in één stap lezen, vergelijken en schrijven, wat slecht past in een pipeline waarin elke instructie hooguit één geheugentoegang uitvoert. LR/SC behoudt die load/store-discipline: LR gedraagt zich als een load plus een reserveringsregister, en SC als een store die door dat register wordt bewaakt. Buslocking is niet nodig, omdat het coherentieprotocol de core al laat weten wanneer een andere processor naar de line schrijft. Daarom wordt het paar al lang gebruikt in RISC-instructiesets, vaak naast atomaire instructies die uit één instructie bestaan.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over LR/SC</h2>
   <article class="q-mini" data-qid="multicore-sync-017" data-cat="multicore-sync" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Wanneer tussen LR en SC de reservering verloren is gegaan, bijvoorbeeld doordat een andere core naar dat adres heeft geschreven</p><p class="explanation">LR &#39;reserveert&#39; dat adres terwijl het de waarde leest. Bij het latere schrijven met SC lukt het als de reservering behouden is, en bij verlies van de reservering, bijvoorbeeld door een schrijfactie van een andere core, wordt niet geschreven en een mislukking gemeld. Waar CAS de gelijkheid van waarden controleert, controleert <a class="term-link" href="/nl/term/load-reserved-store-conditional/">LR/SC</a> of er is geschreven, zodat ook gevallen worden gedetecteerd waarin de waarde is veranderd en teruggekeerd. ARM heeft een vergelijkbaar instructiepaar.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wanneer mislukt een store-conditional?</h3>
+  <p>Hij mislukt wanneer de reservering die door de load-reserved is gezet verloren is gegaan, meestal omdat een andere core naar het adres heeft geschreven, maar mogelijk ook door een interrupt, context switch of verdringing uit de cache.</p>
+  <h3>Lost LR/SC het ABA-probleem op?</h3>
+  <p>Ja. LR/SC detecteert elke tussentijdse schrijfactie naar de gereserveerde locatie, dus een waarde die verandert en weer terugverandert, laat de store-conditional toch mislukken, anders dan bij compare-and-swap.</p>
+  <h3>Wat is het verschil tussen LL/SC en LR/SC?</h3>
+  <p>Het is hetzelfde idee onder verschillende namen: load-linked/store-conditional is de traditionele term, en load-reserved/store-conditional is de RISC-V-naam.</p>
+</section>
 <section>
   <h2>“LR/SC” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Waar CAS de gelijkheid van waarden controleert, controleert LR/SC of er is geschreven, zodat ook gevallen worden gedetecteerd waarin de waarde is veranderd en teruggekeerd.</p><a href="/nl/q/multicore-sync/multicore-sync-017/">Wanneer mislukt bij een instructiepaar zoals LR/SC (load-re…</a></li><li><p>Voorbeelden zijn CAS (compare-and-swap), fetch-and-add en de LR/SC- en AMO-instructies van RISC-V; ze vormen de basis voor locks en lock-free datastructuren.</p><a href="/nl/q/multicore-sync/multicore-sync-014/">Welke uitleg over atomaire instructies (ondeelbare instruct…</a></li><li><p>Dit wordt voorkomen door de pointer samen met een bijwerkteller te vergelijken, of met LR/SC.</p><a href="/nl/q/multicore-sync/multicore-sync-018/">Welke uitleg over het ABA-probleem, dat bij lock-free datas…</a></li></ul>

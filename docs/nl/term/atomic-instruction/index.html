@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Atomaire instructie","item":"https://semiconroom.com/nl/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Atomaire instructie","description":"Instructie die lezen en schrijven van het geheugen uitvoert als één bewerking die niet door andere cores kan worden onderbroken. Voorbeelden: CAS, fetch-and-add en LR/SC.","url":"https://semiconroom.com/nl/term/atomic-instruction/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Atomaire instructie","item":"https://semiconroom.com/nl/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Atomaire instructie","description":"Instructie die lezen en schrijven van het geheugen uitvoert als één bewerking die niet door andere cores kan worden onderbroken. Voorbeelden: CAS, fetch-and-add en LR/SC.","url":"https://semiconroom.com/nl/term/atomic-instruction/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen een atomaire instructie en een lock?","acceptedAnswer":{"@type":"Answer","text":"Een atomaire instructie maakt één read-modify-write op één geheugenlocatie in hardware ondeelbaar; een lock is een softwareconstructie, opgebouwd uit atomaire instructies, die een langer stuk code beschermt dat veel locaties raakt."}},{"@type":"Question","name":"Wat is compare-and-swap?","acceptedAnswer":{"@type":"Answer","text":"Compare-and-swap schrijft alleen een nieuwe waarde naar een geheugenlocatie als die nog een verwachte waarde bevat, en meldt succes of mislukking, alles als één atomaire bewerking."}},{"@type":"Question","name":"Waarom zijn atomaire bewerkingen traag?","acceptedAnswer":{"@type":"Answer","text":"De core moet exclusief eigendom van de cacheline verkrijgen en vaak de geheugenordening afdwingen, en wanneer meerdere cores om dezelfde line concurreren, wordt die herhaaldelijk tussen hen overgedragen en geïnvalideerd."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom gewone loads en stores niet volstaan</h2>
+  <p>Een statement als counter++ wordt gecompileerd tot een load, een optelling en een store. Als twee cores het tegelijk uitvoeren, kunnen beide dezelfde oude waarde laden en beide oud + 1 opslaan, waardoor één ophoging verloren gaat. Een atomaire instructie voert de hele <a class="term-link" href="/nl/term/read-modify-write/">read-modify-write</a> uit als één ondeelbare bewerking: geen enkele toegang van een andere core tot die locatie kan ertussen glippen, en andere cores zien alleen de waarde ervoor of erna. Deze garantie is de basis voor locks, tellers en <a class="term-link" href="/nl/term/lock-free-algorithm/">lock-free</a> datastructuren op multicoreprocessors.</p>
+</section>
+<section class="term-about">
+  <h2>Gangbare soorten atomaire bewerkingen</h2>
+  <p>Test-and-set en atomic swap schrijven een nieuwe waarde en geven de oude terug. Fetch-and-add telt op bij het geheugen en geeft de vorige waarde terug. <a class="term-link" href="/nl/term/compare-and-swap/">Compare-and-swap</a> (CAS) schrijft alleen een nieuwe waarde als het geheugen nog een verwachte waarde bevat en meldt of dat is gelukt. Load-reserved/store-conditional (<a class="term-link" href="/nl/term/load-reserved-store-conditional/">LR/SC</a>) splitst de bewerking in een reserverende load en een store die mislukt als de reservering verloren is gegaan. RISC-V biedt daarnaast atomic memory operation-instructies (AMO) zoals amoadd en amoswap, terwijl x86 een LOCK-prefix toepast op instructies zoals cmpxchg en xadd.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe hardware ze atomair houdt</h2>
+  <p>Vroege systemen vergrendelden de gedeelde bus voor de duur van de bewerking. Moderne cores gebruiken in plaats daarvan het cachecoherentieprotocol: de core verkrijgt exclusief eigendom van de cacheline, in de toestand Modified of Exclusive van een MESI-achtig protocol, en houdt verzoeken van andere cores voor die line tegen totdat de <a class="term-link" href="/nl/term/read-modify-write/">read-modify-write</a> klaar is. Een atomaire bewerking is daardoor veel trager dan een gewone gecachete load, en bij contentie stuitert de line heen en weer tussen cores. Atomaire bewerkingen hebben ook interactie met de geheugenordening; op x86 werken gelockte instructies als volledige memory barriers.</p>
+</section>
+<section class="term-about">
+  <h2>Van atomaire instructies naar locks</h2>
+  <p>Een <a class="term-link" href="/nl/term/spinlock/">spinlock</a> probeert een lockvariabele met een atomaire instructie te zetten en probeert het in een lus opnieuw als die al bezet is. Direct opnieuw proberen met de atomaire schrijfactie veroorzaakt zwaar coherentieverkeer, omdat elke poging exclusief eigendom eist. Het test-and-test-and-set-patroon spint met gewone reads op een gedeelde kopie in de lokale cache en probeert de atomaire bewerking pas wanneer de lock vrij lijkt. <a class="term-link" href="/nl/term/lock-free-algorithm/">Lock-free</a> structuren gebruiken CAS of <a class="term-link" href="/nl/term/load-reserved-store-conditional/">LR/SC</a> direct, maar ontwerpen op basis van CAS moeten zich wapenen tegen het <a class="term-link" href="/nl/term/aba-problem/">ABA-probleem</a>, waarbij een waarde ongemerkt verandert en weer terugverandert.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Atomaire instructie</h2>
   <article class="q-mini" data-qid="multicore-sync-015" data-cat="multicore-sync" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Omdat bij alleen lezen in de eigen cache kan worden gewacht, zodat het verkeer van cacheregels tussen cores sterk afneemt</p><p class="explanation">Een <a class="term-link" href="/nl/term/atomic-instruction/">atomaire instructie</a> omvat een schrijfactie, dus als een wachtende thread die herhaaldelijk uitvoert, strijden de cores telkens om de regel in de M-toestand en worden kopieën in andere cores steeds ongeldig gemaakt. Met gewoon lezen blijft elke core alleen zijn S-kopie in de eigen cache lezen, en ontstaat geen verkeer. Alleen wanneer de lock vrijkomt en de waarde verandert, wordt met een atomaire instructie geprobeerd hem te nemen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen een atomaire instructie en een lock?</h3>
+  <p>Een atomaire instructie maakt één read-modify-write op één geheugenlocatie in hardware ondeelbaar; een lock is een softwareconstructie, opgebouwd uit atomaire instructies, die een langer stuk code beschermt dat veel locaties raakt.</p>
+  <h3>Wat is compare-and-swap?</h3>
+  <p>Compare-and-swap schrijft alleen een nieuwe waarde naar een geheugenlocatie als die nog een verwachte waarde bevat, en meldt succes of mislukking, alles als één atomaire bewerking.</p>
+  <h3>Waarom zijn atomaire bewerkingen traag?</h3>
+  <p>De core moet exclusief eigendom van de cacheline verkrijgen en vaak de geheugenordening afdwingen, en wanneer meerdere cores om dezelfde line concurreren, wordt die herhaaldelijk tussen hen overgedragen en geïnvalideerd.</p>
+</section>
 <section>
   <h2>“Atomaire instructie” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Een atomaire instructie omvat een schrijfactie, dus als een wachtende thread die herhaaldelijk uitvoert, strijden de cores telkens om de regel in de M-toestand en worden kopieën in andere cores steeds ongeldig gemaakt.</p><a href="/nl/q/multicore-sync/multicore-sync-022/">Waarom wordt bij een spinlock niet meteen met een atomaire …</a></li><li><p>Een atomaire instructie voert de reeks lezen, rekenen en schrijven zo uit dat er geen lees- of schrijfactie van andere cores tussen komt.</p><a href="/nl/q/multicore-sync/multicore-sync-014/">Welke uitleg over atomaire instructies (ondeelbare instruct…</a></li><li><p>Een spinlock probeert met een atomaire instructie de lock te nemen en probeert het, als dat niet lukt, direct opnieuw.</p><a href="/nl/q/multicore-sync/multicore-sync-020/">Welke uitleg over een spinlock is juist?</a></li></ul>

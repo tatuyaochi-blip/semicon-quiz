@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Contextwissel (context switch)","item":"https://semiconroom.com/nl/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Contextwissel (context switch)","description":"Het omschakelen van het proces of de thread dat de CPU uitvoert. De toestand zoals registers en programmateller wordt opgeslagen en hersteld; bij een proceswissel wordt ook de adresruimte omgeschakeld.","url":"https://semiconroom.com/nl/term/context-switch/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Contextwissel (context switch)","item":"https://semiconroom.com/nl/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Contextwissel (context switch)","description":"Het omschakelen van het proces of de thread dat de CPU uitvoert. De toestand zoals registers en programmateller wordt opgeslagen en hersteld; bij een proceswissel wordt ook de adresruimte omgeschakeld.","url":"https://semiconroom.com/nl/term/context-switch/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat wordt opgeslagen bij een contextwissel?","acceptedAnswer":{"@type":"Answer","text":"De CPU-toestand van de vertrekkende thread: registers, programmateller, stackpointer en statusinformatie, plus de paginatabelpointer bij het wisselen van processen. Het geheugen zelf wordt niet opgeslagen omdat het op zijn plaats blijft."}},{"@type":"Question","name":"Waarom zijn contextwissels duur?","acceptedAnswer":{"@type":"Answer","text":"Naast het kernelwerk zelf begint het binnenkomende proces met caches en een TLB die de inhoud van een ander proces bevatten, zodat het veel misses heeft totdat ze opnieuw zijn gevuld."}},{"@type":"Question","name":"Is een systeemaanroep een contextwissel?","acceptedAnswer":{"@type":"Answer","text":"Nee. Een systeemaanroep is een moduswissel binnen hetzelfde proces; een contextwissel vindt alleen plaats als de kernel besluit vóór de terugkeer een andere thread of een ander proces te laten draaien."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
+<section class="term-about">
+  <h2>Wat wordt opgeslagen en hersteld</h2>
+  <p>De kernel slaat de CPU-toestand van de vertrekkende thread op, dat wil zeggen de registers voor algemeen gebruik, de programmateller, de <a class="term-link" href="/nl/term/stack-pointer/">stackpointer</a> en statusbits zoals de vorige modus, en laadt die later opnieuw zodat de thread precies verdergaat waar hij stopte. Floating-point- en vectorregisters horen ook bij de toestand, en sommige kernels slaan die lazy op, alleen wanneer de volgende thread ze daadwerkelijk gebruikt. Bij een wissel tussen processen wordt ook het register dat naar de <a class="term-link" href="/nl/term/page-table/">paginatabel</a> verwijst gewijzigd, waardoor het nieuwe proces zijn eigen adresruimte krijgt. Geheugeninhoud en geopende bestanden blijven op hun plaats en worden niet gekopieerd.</p>
+</section>
+<section class="term-about">
+  <h2>Wanneer wissels plaatsvinden</h2>
+  <p>Een wissel wordt geactiveerd wanneer de lopende thread blokkeert, bijvoorbeeld in afwachting van schijf-I/O of een lock, wanneer hij vrijwillig de CPU afstaat, of wanneer een timerinterrupt de scheduler laat weten dat zijn tijdsdeel is verstreken en een andere thread moet draaien. In elk geval zit de CPU al in de kernel, bezig met een <a class="term-link" href="/nl/term/system-call/">systeemaanroep</a> of <a class="term-link" href="/nl/term/interrupt/">interrupt</a>, en kiest de scheduler de volgende thread. Wisselen tussen threads van hetzelfde proces is goedkoper omdat de adresruimte niet verandert.</p>
+</section>
+<section class="term-about">
+  <h2>Directe en indirecte kosten</h2>
+  <p>Registers opslaan en laden kost weinig tijd; het hele kernelpad, inclusief scheduling, kost doorgaans in de orde van microseconden. De grotere kosten zijn vaak indirect: het nieuwe proces treft caches en de <a class="term-link" href="/nl/term/tlb/">TLB</a> gevuld met data en vertalingen van het vorige proces, zodat het herhaaldelijk mist totdat ze zijn opgewarmd. CPU&#39;s die TLB-entries taggen met een address-space identifier (<a class="term-link" href="/nl/term/asid/">ASID</a>) hoeven de TLB niet bij elke wissel te flushen, maar het opwarmen van de cache blijft. Frequent wisselen verlaagt de <a class="term-link" href="/nl/term/throughput/">doorvoer</a> daarom meer dan de wisseltijd alleen doet vermoeden.</p>
+</section>
+<section class="term-about">
+  <h2>Contextwissel versus moduswissel</h2>
+  <p>Een <a class="term-link" href="/nl/term/system-call/">systeemaanroep</a> of <a class="term-link" href="/nl/term/interrupt/">interrupt</a> brengt de CPU van gebruikersmodus naar <a class="term-link" href="/nl/term/privileged-mode/">bevoorrechte modus</a> en terug, maar daarna gaat hetzelfde proces verder; dat is een moduswissel, geen contextwissel. Een contextwissel verandert welke thread of welk proces de CPU bezit. De twee gaan vaak samen, omdat een wissel altijd in de kernel plaatsvindt, maar een systeemaanroep die terugkeert naar de aanroeper omvat helemaal geen contextwissel.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat wordt opgeslagen bij een contextwissel?</h3>
+  <p>De CPU-toestand van de vertrekkende thread: registers, programmateller, stackpointer en statusinformatie, plus de paginatabelpointer bij het wisselen van processen. Het geheugen zelf wordt niet opgeslagen omdat het op zijn plaats blijft.</p>
+  <h3>Waarom zijn contextwissels duur?</h3>
+  <p>Naast het kernelwerk zelf begint het binnenkomende proces met caches en een TLB die de inhoud van een ander proces bevatten, zodat het veel misses heeft totdat ze opnieuw zijn gevuld.</p>
+  <h3>Is een systeemaanroep een contextwissel?</h3>
+  <p>Nee. Een systeemaanroep is een moduswissel binnen hetzelfde proces; een contextwissel vindt alleen plaats als de kernel besluit vóór de terugkeer een andere thread of een ander proces te laten draaien.</p>
+</section>
 
 
 
@@ -80,7 +103,8 @@
 <section>
   <h2>Vergelijkingen met deze term</h2>
   <ul class="cmp-list">
-  <li><a class="cmp-card" href="/nl/compare/process-vs-thread/"><strong>Proces versus thread: geheugen, omschakeling en keuzecriteria vergeleken</strong><span>Processen en threads vergeleken in een tabel: geheugen, aanmaakkosten, context switch, communicatie, isolatie…</span></a></li></ul>
+  <li><a class="cmp-card" href="/nl/compare/process-vs-thread/"><strong>Proces versus thread: geheugen, omschakeling en keuzecriteria vergeleken</strong><span>Processen en threads vergeleken in een tabel: geheugen, aanmaakkosten, context switch, communicatie, isolatie…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/user-mode-vs-kernel-mode/"><strong>Gebruikersmodus versus kernelmodus: instructies en bescherming</strong><span>Gebruikersmodus en kernelmodus vergeleken: uitvoerbare instructies, toegankelijk geheugen, aanleiding tot een…</span></a></li></ul>
 </section>
 
 <section>

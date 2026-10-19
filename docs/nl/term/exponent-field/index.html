@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Exponent","item":"https://semiconroom.com/nl/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Exponent","description":"Bitreeks in een zwevendekommagetal die aangeeft met welke macht van 2 wordt vermenigvuldigd. Om ook negatieve exponenten te kunnen weergeven wordt de werkelijke exponent plus een bias (127 bij enkele precisie) opgeslagen.","url":"https://semiconroom.com/nl/term/exponent-field/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Exponent","item":"https://semiconroom.com/nl/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Exponent","description":"Bitreeks in een zwevendekommagetal die aangeeft met welke macht van 2 wordt vermenigvuldigd. Om ook negatieve exponenten te kunnen weergeven wordt de werkelijke exponent plus een bias (127 bij enkele precisie) opgeslagen.","url":"https://semiconroom.com/nl/term/exponent-field/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom heeft de exponent een bias in IEEE 754?","acceptedAnswer":{"@type":"Answer","text":"Met een bias kan het veld als unsigned getal worden opgeslagen en toch negatieve exponenten weergeven, en positieve floats worden zo op dezelfde manier geordend als hun bitpatronen gelezen als integers."}},{"@type":"Question","name":"Wat is de exponentbias bij dubbele precisie?","acceptedAnswer":{"@type":"Answer","text":"1023, met een exponentveld van 11 bits; enkele precisie gebruikt 127 met 8 bits, en halve precisie gebruikt 15 met 5 bits."}},{"@type":"Question","name":"Wat betekent een exponentveld met allemaal nullen?","acceptedAnswer":{"@type":"Answer","text":"Het codeert nul als de significand nul is en anders een subnormaal getal, zonder impliciete leidende 1 en met de exponent vast op de minimale normale waarde."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -110,7 +110,22 @@
 </svg><figcaption class="fig-cap">Bitindeling van een IEEE 754-float met enkele precisie · <a href="/nl/figures/#fig-ieee754">Bekijken in het figurenoverzicht</a></figcaption></figure>
   <p>Vakgebied: <a href="/nl/c/computer-arithmetic/">Computerarithmetiek</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe de bias werkt</h2>
+  <p>Het exponentveld is een unsigned integer die de werkelijke exponent plus een vaste bias opslaat, zodat negatieve exponenten geen teken nodig hebben. Enkele precisie (FP32) gebruikt 8 bits met bias 127, dubbele precisie (FP64) 11 bits met bias 1023, en halve precisie (FP16) 5 bits met bias 15. In FP32 dekken opgeslagen waarden 1 tot en met 254 werkelijke exponenten −126 tot +127; een opgeslagen 130 betekent 2³. Vergeten de bias af te trekken is de meest gemaakte fout bij het decoderen.</p>
+</section>
+<section class="term-about">
+  <h2>Gereserveerde waarden</h2>
+  <p>Twee exponentpatronen zijn bijzonder. Allemaal nullen betekent nul of een <a class="term-link" href="/nl/term/subnormal-number/">subnormaal getal</a>: de impliciete leidende 1 vervalt en de exponent ligt vast op de minimale normale waarde (−126 in FP32), zodat waarden geleidelijk naar nul kunnen afnemen. Allemaal enen betekent oneindig als de <a class="term-link" href="/nl/term/significand/">significand</a> nul is en anders <a class="term-link" href="/nl/term/nan/">NaN</a> (not a number). Het grootste normale FP32-exponentveld is daarom 254, en FP16 houdt op bij 65.504 omdat het exponentveld stopt bij 30.</p>
+</section>
+<section class="term-about">
+  <h2>Exponentbits versus significandbits</h2>
+  <p>De breedte van de exponent bepaalt het bereik; de breedte van de <a class="term-link" href="/nl/term/significand/">significand</a> bepaalt de precisie. De 8 exponentbits van FP32 reiken tot ongeveer 3,4 × 10³⁸, met normale getallen tot ongeveer 1,2 × 10⁻³⁸, terwijl de 5 bits van FP16 stoppen bij 65.504; daarom moet bij training in FP16 op overflow worden gelet. Het formaat <a class="term-link" href="/nl/term/bfloat16/">bfloat16</a> behoudt de 8-bits exponent van FP32 met slechts 7 significandbits, wat hetzelfde bereik als FP32 geeft met veel minder precisie, een afweging die goed past bij veel neurale-netwerkworkloads.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom een bias in plaats van two&#39;s complement</h2>
+  <p>Doordat de exponent met bias direct onder het tekenbit en boven de <a class="term-link" href="/nl/term/significand/">significand</a> staat, heeft bij positieve getallen een grotere waarde altijd een groter bitpatroon wanneer dat als integer wordt gelezen. Vergelijken en sorteren kunnen daardoor integerhardware gebruiken met alleen een extra tekenafhandeling. Een uitgewerkt voorbeeld: 10,0 is 1,25 × 2³, dus het teken is 0, het exponentveld is 130 (binair 10000010) en de fractie is .01, wat het FP32-patroon 0x41200000 geeft.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Exponent</h2>
   <article class="q-mini" data-qid="computer-arithmetic-003" data-cat="computer-arithmetic" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -124,7 +139,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Exponent 11 bit, mantisse 52 bit</p><p class="explanation">Dubbele precisie (FP64) heeft 1 tekenbit, 11 exponentbits en 52 mantissebits, samen 64 bit. De exponentbias is 1023 en het bereik is ongeveer 10⁻³⁰⁸ tot 10³⁰⁸; de precisie van 53 bit inclusief de voorste 1 komt overeen met ongeveer 15 tot 16 decimale cijfers. Zowel de <a class="term-link" href="/nl/term/exponent-field/">exponent</a> als de <a class="term-link" href="/nl/term/significand/">mantisse</a> zijn breder dan bij enkele precisie, en het formaat is de standaard voor wetenschappelijke en technische berekeningen. Een exponent van 8 bit is de breedte van enkele precisie waarbij alleen de mantisse is verbreed, wat geen formaat uit de norm is.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom heeft de exponent een bias in IEEE 754?</h3>
+  <p>Met een bias kan het veld als unsigned getal worden opgeslagen en toch negatieve exponenten weergeven, en positieve floats worden zo op dezelfde manier geordend als hun bitpatronen gelezen als integers.</p>
+  <h3>Wat is de exponentbias bij dubbele precisie?</h3>
+  <p>1023, met een exponentveld van 11 bits; enkele precisie gebruikt 127 met 8 bits, en halve precisie gebruikt 15 met 5 bits.</p>
+  <h3>Wat betekent een exponentveld met allemaal nullen?</h3>
+  <p>Het codeert nul als de significand nul is en anders een subnormaal getal, zonder impliciete leidende 1 en met de exponent vast op de minimale normale waarde.</p>
+</section>
 <section>
   <h2>“Exponent” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Dubbele precisie (FP64) heeft 1 teken-, 11 exponent- en 52 mantissebits, met een groter exponentbereik en een hogere precisie.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-003/">Welke combinatie van aantallen bits voor teken, exponent en…</a></li><li><p>Zowel de exponent als de mantisse zijn breder dan bij enkele precisie, en het formaat is de standaard voor wetenschappelijke en technische berekeningen.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-004/">Welke combinatie van aantallen exponent- en mantissebits is…</a></li><li><p>Om ook negatieve exponenten te kunnen weergeven, wordt in het exponentveld de werkelijke exponent plus de bias opgeslagen.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-005/">Wat is de werkelijke exponent (de macht van 2) wanneer in e…</a></li><li><p>De eigenschappen hangen af van hoe de beperkte 8 bit over exponent en mantisse worden verdeeld.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-029/">Hoe worden de twee FP8-formaten E4M3 (exponent 4, mantisse …</a></li><li><p>Een drijvendekommagetal drukt een waarde uit als (−1)^teken × 1.mantisse × 2^exponent en legt dit vast in drie delen: een tekenbit voor positief of negatief, een exponent die aangeeft met welke macht van 2 wordt vermenigvuldigd, en een mantisse voor de significante cijfers.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-002/">Welke combinatie van drie onderdelen vormt een IEEE 754-dri…</a></li></ul>
