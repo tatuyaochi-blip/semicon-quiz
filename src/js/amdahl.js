@@ -28,3 +28,14 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: 並列化できる割合やコア数を変えたときの速度向上
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['p', 'n'], outputs: ['amdahl', 'eff', 'gustafson'], defaults: { x: 'p', y: 'amdahl' }, ranges: { p: [0, 99] },
+  calc: v => {
+    const p = Math.min(Math.max(v.p, 0), 100) / 100, n = Math.max(1, Math.round(v.n));
+    const a = amdahl(p, n);
+    return { amdahl: a, eff: (a / n) * 100, gustafson: gustafson(p, n) };
+  },
+});
