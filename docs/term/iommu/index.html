@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU","item":"https://semiconroom.com/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU","description":"周辺装置がDMAで使うアドレスを、物理アドレスに変換して保護する装置。装置が許されていないメモリに書き込むのを防ぎ、仮想マシンに装置を割り当てるときにも使う。","url":"https://semiconroom.com/term/iommu/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU","item":"https://semiconroom.com/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU","description":"周辺装置がDMAで使うアドレスを、物理アドレスに変換して保護する装置。装置が許されていないメモリに書き込むのを防ぎ、仮想マシンに装置を割り当てるときにも使う。","url":"https://semiconroom.com/term/iommu/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"GPUパススルーにIOMMUは必要ですか?","acceptedAnswer":{"@type":"Answer","text":"必要です。物理デバイスを仮想マシンに渡す仕組みは、ゲストのDMAアドレスの変換と、装置がそのVMの外のメモリに届かないようにすることをIOMMUに頼っています。そのため、ファームウェアとOSの両方でIOMMUがサポートされ、有効になっている必要があります。"}},{"@type":"Question","name":"IOMMUを有効にするとI/Oは遅くなりますか?","acceptedAnswer":{"@type":"Answer","text":"変換ミスや対応付けの作成・削除に多少のコストがかかり、非常に高頻度でアクセスする装置では影響が出ることがあります。IOTLBによるキャッシュや長く保持する対応付けにより、ほとんどの用途ではオーバーヘッドは小さく抑えられます。"}},{"@type":"Question","name":"IOMMUとMMUの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"MMUはプロセスのためにCPUが発行するアドレスを変換し、IOMMUはDMAを行う装置が発行するアドレスを変換します。どちらもページテーブルと権限ビットを使いますが、IOMMUのテーブルは装置または装置グループごとに用意されます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>IOMMUによるDMAアドレスの変換</h2>
+  <p>IOMMU(入出力メモリ管理ユニット)があると、装置は生の物理アドレスを発行しなくなります。<a class="term-link" href="/term/dma/">DMA</a>要求にはI/O仮想アドレスが入っており、IOMMUはOSがその装置または装置グループ用に用意した<a class="term-link" href="/term/page-table/">ページテーブル</a>でそれを引きます。PCIeでは、装置は要求元のバス番号、デバイス番号、ファンクション番号で識別されます。最近の変換結果はIOTLB(I/O変換索引バッファ)にキャッシュされます。有効な対応付けのないアドレスや、読み書きの権限が合わないアクセスはメモリに届く前に遮断され、フォルトとしてOSに通知されます。</p>
+</section>
+<section class="term-about">
+  <h2>IOMMUとMMUの違い</h2>
+  <p>どちらも<a class="term-link" href="/term/page-table/">ページテーブル</a>でアドレスを変換しますが、仕える相手が異なります。CPUのMMU(メモリ管理ユニット)はプロセスごとに仮想アドレスを変換し、プログラム同士を分離します。IOMMUは装置ごとにアドレスを変換し、<a class="term-link" href="/term/dma/">DMA</a>エンジンがドライバの割り当てたバッファの外に出られないようにします。両者の対応付けは独立しているため、OSは物理的には多数のページに散らばったバッファを、装置のアドレス空間では連続して見えるように渡せます。これにより、自分ではスキャッタ・ギャザー転送ができない装置の扱いが簡単になります。</p>
+</section>
+<section class="term-about">
+  <h2>DMA攻撃を防ぐ</h2>
+  <p><a class="term-link" href="/term/dma/">DMA</a>はCPUとそのメモリ保護を経由しないため、IOMMUがなければ、バスマスタになれる装置は暗号鍵を読み出したりカーネルのコードを書き換えたりできます。これは、PCIe相当のDMAを接続されたハードウェアに開放する外部ポートでは現実の脅威です。IOMMUを有効にすると、OSは各ドライバが使う特定のバッファだけを、通常は転送ごとにその間だけ対応付け、それ以外のメモリにはその装置から届かなくなります。多くのプラットフォームでは装置の<a class="term-link" href="/term/interrupt/">割り込み</a>のリマッピングにもIOMMUを使い、装置が任意の割り込みメッセージを偽造できないようにしています。</p>
+</section>
+<section class="term-about">
+  <h2>仮想マシンへの装置割り当て</h2>
+  <p>ゲストOSは物理アドレスだと思っている値を装置に設定しますが、実際にはそれはゲスト物理アドレスです。<a class="term-link" href="/term/hypervisor/">ハイパーバイザ</a>が<a class="term-link" href="/term/gpu/">GPU</a>やネットワークカードといった実際の装置を仮想マシンに直接渡す(パススルーする)場合は、IOMMUを設定して、そのゲスト物理アドレスをVMの実体であるホスト物理ページに変換させます。これにより装置は、転送のたびにハイパーバイザが介入することなく<a class="term-link" href="/term/dma/">DMA</a>を最高速度で使え、しかも他のVMのメモリには触れられません。代償は変換のオーバーヘッドで、主にIOTLBミスと、バッファの対応付けおよび解除のコストです。</p>
+</section>
 <section>
   <h2>IOMMUの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-030" data-cat="os-hardware" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 装置のDMAのアドレスを変換し、不正なアクセスを防ぐ</p><p class="explanation"><a class="term-link" href="/term/dma/">DMA</a>を使う装置は主記憶を直接読み書きできるため、誤動作や悪意のある装置がOSのメモリを書き換える危険があります。<a class="term-link" href="/term/iommu/">IOMMU</a>は、CPUにとってのMMUのように、装置が使うアドレスを物理アドレスに変換し、許可された範囲以外へのアクセスを止めます。連続していない物理メモリを装置からは連続して見せることもでき、仮想マシンに装置を直接割り当てるときにも使われます。命令の翻訳や電源の制御を行う装置ではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>GPUパススルーにIOMMUは必要ですか?</h3>
+  <p>必要です。物理デバイスを仮想マシンに渡す仕組みは、ゲストのDMAアドレスの変換と、装置がそのVMの外のメモリに届かないようにすることをIOMMUに頼っています。そのため、ファームウェアとOSの両方でIOMMUがサポートされ、有効になっている必要があります。</p>
+  <h3>IOMMUを有効にするとI/Oは遅くなりますか?</h3>
+  <p>変換ミスや対応付けの作成・削除に多少のコストがかかり、非常に高頻度でアクセスする装置では影響が出ることがあります。IOTLBによるキャッシュや長く保持する対応付けにより、ほとんどの用途ではオーバーヘッドは小さく抑えられます。</p>
+  <h3>IOMMUとMMUの違いは何ですか?</h3>
+  <p>MMUはプロセスのためにCPUが発行するアドレスを変換し、IOMMUはDMAを行う装置が発行するアドレスを変換します。どちらもページテーブルと権限ビットを使いますが、IOMMUのテーブルは装置または装置グループごとに用意されます。</p>
+</section>
 <section>
   <h2>解説の中の「IOMMU」</h2>
   <ul class="term-quotes"><li><p>IOMMUは、CPUにとってのMMUのように、装置が使うアドレスを物理アドレスに変換し、許可された範囲以外へのアクセスを止めます。</p><a href="/q/os-hardware/os-hardware-030/">IOMMUの主な役割として正しいものはどれか。</a></li><li><p>IOMMUを使えば、機器ごとにアクセスできる番地をOSが決めた範囲に限れるので、許されていない場所へのDMAは拒否されます。</p><a href="/q/hw-security/hw-security-047/">パソコンにつないだ外部の機器が、DMAを使ってメインメモリの内容を勝手に読み書きする攻撃への対策として正しいものはどれ…</a></li></ul>

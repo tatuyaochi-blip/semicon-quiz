@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ループブロッキング","item":"https://semiconroom.com/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ループブロッキング","description":"大きな配列を、キャッシュに収まる小さなブロックに分けて処理し、読み込んだデータを追い出される前に何度も使うようにする最適化。行列の積などで効果が大きい。","url":"https://semiconroom.com/term/loop-blocking/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ループブロッキング","item":"https://semiconroom.com/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ループブロッキング","description":"大きな配列を、キャッシュに収まる小さなブロックに分けて処理し、読み込んだデータを追い出される前に何度も使うようにする最適化。行列の積などで効果が大きい。","url":"https://semiconroom.com/term/loop-blocking/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ループタイリングは何のために使う?","acceptedAnswer":{"@type":"Answer","text":"ループを組み替えてキャッシュに収まる大きさのデータブロック単位で処理し、読み込んだ各要素を追い出される前に何度も再利用するためです。容量ミスとメモリ転送量を大きく減らせます。"}},{"@type":"Question","name":"行列積のブロックサイズはどう決める?","acceptedAnswer":{"@type":"Answer","text":"まず作業中のタイルが対象のキャッシュに収まるサイズから始めます。たとえば 32 KBのL1に倍精度の b × b タイルを3つ置くならbは32前後で、そこから競合ミス、TLB、プリフェッチを考慮して実測で調整します。"}},{"@type":"Question","name":"ループブロッキングとループアンローリングは同じ?","acceptedAnswer":{"@type":"Answer","text":"違います。アンローリングはループのオーバーヘッドや分岐を減らすもので、ブロッキングは反復の順序を並べ替えてキャッシュの再利用を高めるものです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/memory-hierarchy/">メモリ階層と性能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>素朴な行列積でキャッシュミスが起こる理由</h2>
+  <p>N × Nの倍精度行列について、教科書どおりの三重ループでC = A × Bを計算する場合を考えます。Cの各要素にはAの1行全体とBの1列全体が必要で、行優先で格納されたBを列方向にたどると、要素ごとに別の<a class="term-link" href="/term/cache-line/">キャッシュライン</a>にアクセスすることになります。Nが大きいと、Bの列やAの行は再利用されるまでキャッシュにとどまっていられず、同じデータが主記憶から何度も読み直されます。これは<a class="term-link" href="/term/capacity-miss/">容量ミス</a>です。作業データがそもそも大きすぎるので、キャッシュの連想度を上げても解決しません。</p>
+</section>
+<section class="term-about">
+  <h2>ブロッキングの仕組み</h2>
+  <p>ループブロッキング(タイリング)では、各行列を b × b のタイルに分け、ループの順序を入れ替えて、3つのタイルがすべてキャッシュに載っている間に1つのタイル積、つまりCのタイル += Aのタイル × Bのタイルを完了させます。こうすると読み込んだ各要素が追い出されるまでに約b回再利用され、メモリとの転送量はN³要素程度からN³/b程度に減ります。演算量もメモリ使用量全体も変わらず、変わるのは演算の順序だけです。転送する1バイトあたりの演算数である<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>は、タイルサイズにほぼ比例して高くなります。</p>
+</section>
+<section class="term-about">
+  <h2>タイルサイズの選び方</h2>
+  <p>最初の見積もりとして、3つのタイルが対象のキャッシュに収まる必要があります。倍精度なら 3 × b² × 8 バイトです。32 KBのL1キャッシュならbは約36となり、ほかのデータの分の余裕を残して32前後のタイルを選ぶのが自然です。実際には、2のべき乗のストライドによる<a class="term-link" href="/term/conflict-miss/">競合ミス</a>、<a class="term-link" href="/term/tlb/">TLB</a>のカバー範囲、ハードウェアプリフェッチも影響するため、タイルサイズは実測で調整し、タイルを連続したバッファにコピーすることもあります。高性能なライブラリでは、レジスタ、L1、L2、L3の複数のレベルで同時にブロッキングを行います。</p>
+</section>
+<section class="term-about">
+  <h2>ほかのループ変換との違い</h2>
+  <p>ループアンローリングはループ本体を複製してループのオーバーヘッドを減らし、命令レベルの並列性を引き出すもので、それだけではキャッシュの再利用は改善しません。ループ交換はループの入れ子の順序を入れ替え、最内ループがメモリを連続的にたどるようにして<a class="term-link" href="/term/spatial-locality/">空間的局所性</a>を高めます。ブロッキングは大きなデータ全体にわたる<a class="term-link" href="/term/temporal-locality/">時間的局所性</a>を狙うもので、この2つとよく組み合わせて使われます。同じ考え方は、タイルをオンチップの共有メモリに置く<a class="term-link" href="/term/gpu/">GPU</a>のプログラミングや、ステンシル計算、畳み込み、多くの密行列の線形代数カーネルにも見られます。</p>
+</section>
 <section>
   <h2>ループブロッキングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="memory-hierarchy-018" data-cat="memory-hierarchy" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. キャッシュに収まる小さなブロックごとに計算し、データの再利用を増やすため</p><p class="explanation">大きな行列の積をそのまま計算すると、一度読み込んだ要素が再び使われる前にキャッシュから追い出され、何度も主記憶から読み直すことになります。<a class="term-link" href="/term/loop-blocking/">ループブロッキング</a>では行列をキャッシュに収まる小さなブロックに分け、ブロックの中で計算をすませることで、読み込んだデータを何度も再利用し、<a class="term-link" href="/term/capacity-miss/">容量ミス</a>を大きく減らします。分岐命令を減らすのは<a class="term-link" href="/term/loop-unrolling/">ループ展開</a>の目的で、使うメモリの総量は変わりません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ループタイリングは何のために使う?</h3>
+  <p>ループを組み替えてキャッシュに収まる大きさのデータブロック単位で処理し、読み込んだ各要素を追い出される前に何度も再利用するためです。容量ミスとメモリ転送量を大きく減らせます。</p>
+  <h3>行列積のブロックサイズはどう決める?</h3>
+  <p>まず作業中のタイルが対象のキャッシュに収まるサイズから始めます。たとえば 32 KBのL1に倍精度の b × b タイルを3つ置くならbは32前後で、そこから競合ミス、TLB、プリフェッチを考慮して実測で調整します。</p>
+  <h3>ループブロッキングとループアンローリングは同じ?</h3>
+  <p>違います。アンローリングはループのオーバーヘッドや分岐を減らすもので、ブロッキングは反復の順序を並べ替えてキャッシュの再利用を高めるものです。</p>
+</section>
 <section>
   <h2>解説の中の「ループブロッキング」</h2>
   <ul class="term-quotes"><li><p>ループブロッキングでは行列をキャッシュに収まる小さなブロックに分け、ブロックの中で計算をすませることで、読み込んだデータを何度も再利用し、容量ミスを大きく減らします。</p><a href="/q/memory-hierarchy/memory-hierarchy-018/">行列の積などで使われるループブロッキング(タイリング)の主な目的はどれか。</a></li><li><p>これが容量ミスで、キャッシュを大きくするか、ループブロッキングなどで再利用の範囲を小さくする必要があります。</p><a href="/q/memory-hierarchy/memory-hierarchy-009/">キャッシュをフルアソシアティブ方式にしても減らないミスとして正しいものはどれか。</a></li></ul>

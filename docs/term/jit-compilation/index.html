@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"JITコンパイル","item":"https://semiconroom.com/term/jit-compilation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"JITコンパイル","description":"プログラムの実行中に、よく実行される部分を機械語にコンパイルする方式。実行時の情報を使った最適化ができる。JavaやJavaScriptの実行環境などで使われる。","url":"https://semiconroom.com/term/jit-compilation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"JITコンパイル","item":"https://semiconroom.com/term/jit-compilation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"JITコンパイル","description":"プログラムの実行中に、よく実行される部分を機械語にコンパイルする方式。実行時の情報を使った最適化ができる。JavaやJavaScriptの実行環境などで使われる。","url":"https://semiconroom.com/term/jit-compilation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"JITコンパイルはAOTコンパイルより速いですか?","acceptedAnswer":{"@type":"Answer","text":"処理の内容によります。長時間動くプログラムでは、JITのコードは実際のプロファイルを使って最適化するのでAOTのコードと同等以上になりえますが、起動時間、メモリ使用量、性能の予測しやすさではAOTが有利です。"}},{"@type":"Question","name":"JITのウォームアップとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"実行環境がプロファイルを取りながらよく実行される部分をコンパイルする間、コードがインタプリタやベースラインの段階で動いている最初の期間のことです。ウォームアップ中に測った性能は、定常状態の速度より低く出ます。"}},{"@type":"Question","name":"JITの脱最適化とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"最適化コードの前提だった仮定が誤りだとわかったときにそのコードを捨て、対応する地点からインタプリタや最適化の弱いコードで実行を続けることです。その後、更新されたプロファイル情報で再コンパイルすることもあります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>段階的に切り替わる実行(ティアード実行)</h2>
+  <p>典型的なJIT(実行時)コンパイルの実行環境は、まずバイトコードをインタプリタで実行します。事前の手間はかかりませんが、実行は遅くなります。インタプリタで実行しながら、各メソッドが呼ばれた回数や各ループが回った回数を数えます。しきい値を超えたコードは高速なベースラインコンパイラに渡され、その後もよく実行され続けるコードは、関数1つあたりにはるかに多くの時間をかける最適化コンパイラで再コンパイルされます。長く回るループは実行の途中でコンパイル済みコードに切り替えることができ、この手法はオンスタックリプレースメント(OSR)と呼ばれます。コンパイルは通常バックグラウンドのスレッドで行われ、その間もプログラムは動き続けます。</p>
+</section>
+<section class="term-about">
+  <h2>投機的最適化と脱最適化</h2>
+  <p>インタプリタやベースラインのコードは、どの分岐が選ばれたか、各呼び出し箇所にどの型のオブジェクトが現れたか、整数がオーバーフローしたことがあるか、といったプロファイルを集めます。最適化コンパイラはこの観測結果に賭けます。たとえば、仮想呼び出しがこれまで常に同じ1つのメソッドに到達していればそれを<a class="term-link" href="/term/function-inlining/">インライン展開</a>し、一度も現れていない型のためのコードは省きます。どの賭けも軽いガード(検査)で守られています。ガードが失敗すると実行環境は脱最適化を行い、現在のフレームをインタプリタ側の状態に組み直して遅いコードで実行を続け、後で新しい情報を使って再コンパイルすることもあります。事前コンパイラはこうした賭けを自由には行えません。</p>
+</section>
+<section class="term-about">
+  <h2>JIT、AOT、インタプリタの比較</h2>
+  <p>純粋なインタプリタは即座に起動でき、実行時にコンパイラも不要ですが、各演算の実行は遅くなります。AOT(事前)コンパイルはプログラムの実行前に機械語を生成するので、起動が速く、性能が予測しやすく、メモリ上にコンパイラを置く必要もありません。ただし、プロファイルに基づく最適化で試行実行のデータを与えない限り、実際の入力を知らずに最適化することになります。JITはウォームアップ時間、コンパイルの<a class="term-link" href="/term/cpu-time/">CPU時間</a>、コードキャッシュのメモリを負担する代わりに、長時間動くプログラムで高いピーク性能を出せます。起動時のコードをキャッシュしたりAOTコンパイルしたりと、複数の方式を組み合わせる実行環境も多くあります。</p>
+</section>
+<section class="term-about">
+  <h2>実用上の制約</h2>
+  <p>JITは機械語をメモリに書き込んでから実行します。これは、メモリを書き込み可能かつ実行可能な状態に同時にしてはならないというセキュリティ上の原則とぶつかります。実行環境は、コードを生成した後にページの権限を切り替えたり、同じ物理メモリを異なる権限で2か所にマッピングしたりして対処しており、実行時のコード生成を全面的に禁止している制限の厳しいプラットフォームもあります。また、コンパイル済みコードは実行時のプロファイルに依存するため、性能は実行ごとにばらつき、脱最適化が起きると急に低下することもあります。このため、JITを使うシステムの<a class="term-link" href="/term/benchmark/">ベンチマーク</a>では適切なウォームアップが欠かせません。</p>
+</section>
 <section>
   <h2>JITコンパイルの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-025" data-cat="compiler" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 実行中によく使う部分を機械語にし、実行時の情報も使える</p><p class="explanation"><a class="term-link" href="/term/jit-compilation/">JITコンパイル</a>では、最初はバイトコードを解釈しながら実行し、何度も実行される部分(ホットスポット)を見つけたら、実行中にそこを機械語にコンパイルします。実際に通る分岐や渡される型などの実行時の情報を使って、前もって行うコンパイルでは難しい大胆な最適化ができます。想定が外れたら解釈の実行に戻るしくみも備えています。前もってすべてを翻訳するのは事前(AOT)コンパイル、解釈だけを続けるのは純粋なインタプリタです。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>JITコンパイルはAOTコンパイルより速いですか?</h3>
+  <p>処理の内容によります。長時間動くプログラムでは、JITのコードは実際のプロファイルを使って最適化するのでAOTのコードと同等以上になりえますが、起動時間、メモリ使用量、性能の予測しやすさではAOTが有利です。</p>
+  <h3>JITのウォームアップとは何ですか?</h3>
+  <p>実行環境がプロファイルを取りながらよく実行される部分をコンパイルする間、コードがインタプリタやベースラインの段階で動いている最初の期間のことです。ウォームアップ中に測った性能は、定常状態の速度より低く出ます。</p>
+  <h3>JITの脱最適化とは何ですか?</h3>
+  <p>最適化コードの前提だった仮定が誤りだとわかったときにそのコードを捨て、対応する地点からインタプリタや最適化の弱いコードで実行を続けることです。その後、更新されたプロファイル情報で再コンパイルすることもあります。</p>
+</section>
 <section>
   <h2>解説の中の「JITコンパイル」</h2>
   <ul class="term-quotes"><li><p>JITコンパイルでは、最初はバイトコードを解釈しながら実行し、何度も実行される部分(ホットスポット)を見つけたら、実行中にそこを機械語にコンパイルします。</p><a href="/q/compiler/compiler-025/">JITコンパイルを使う実行環境の特徴として正しいものはどれか。</a></li><li><p>空白を取り除いて単語に区切るのは字句解析、実行中に機械語に変換するのはJITコンパイルです。</p><a href="/q/compiler/compiler-002/">コンパイラの構文解析で行うこととして正しいものはどれか。</a></li><li><p>実際にはバイトコードに翻訳してから解釈し、よく使う部分をJITコンパイルするなど、両者を組み合わせた方式も多く使われます。</p><a href="/q/compiler/compiler-024/">コンパイラとインタプリタの違いとして正しいものはどれか。</a></li></ul>

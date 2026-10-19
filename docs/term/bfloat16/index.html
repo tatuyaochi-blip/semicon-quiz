@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"符号1ビット、指数8ビット、仮数7ビットの16ビットの浮動小数点の形式。指数がFP32と同じなので表せる範囲が広く、精度は低いがAIの学習で使われる。FP16は指数5ビット・仮数10ビットで、精度は高いが範囲が狭い。","url":"https://semiconroom.com/term/bfloat16/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"符号1ビット、指数8ビット、仮数7ビットの16ビットの浮動小数点の形式。指数がFP32と同じなので表せる範囲が広く、精度は低いがAIの学習で使われる。FP16は指数5ビット・仮数10ビットで、精度は高いが範囲が狭い。","url":"https://semiconroom.com/term/bfloat16/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"bfloat16とFP16は同じものですか?","acceptedAnswer":{"@type":"Answer","text":"違います。どちらも16ビットですが、bfloat16は指数8ビット・仮数7ビット、FP16は指数5ビット・仮数10ビットです。bfloat16は精度を犠牲にして、FP32と同じ範囲を得ています。"}},{"@type":"Question","name":"FP32をbfloat16に変換するにはどうしますか?","acceptedAnswer":{"@type":"Answer","text":"FP32のビットパターンの上位16ビットを残します。単に切り捨てるのではなく、捨てる16ビットをもとに最近接偶数丸めを行うのが望ましい方法です。逆の変換は下位に16個の0ビットを付け足すだけで、誤差なく行えます。"}},{"@type":"Question","name":"bfloat16での学習にロススケーリングが通常不要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"ロススケーリングは、FP16の狭い範囲で小さな勾配がアンダーフローするのを防ぐための手法です。bfloat16はFP32と同じ指数範囲を持つので、そうした勾配も通常は表現できる範囲に収まります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/computer-arithmetic/">計算機算術</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ビット配置からわかること</h2>
+  <p>bfloat16(brain floating point)は、FP32の数の上位16ビットそのものです。符号ビットと8ビットの指数は同じで、<a class="term-link" href="/term/significand/">仮数</a>だけが23ビットから7ビットに削られています。bfloat16からFP32への変換は下位に16個の0ビットを付け足すだけで、誤差なく行えます。逆方向の変換も下位16ビットを丸めて落とすだけです。表せる範囲はFP32と同じで、正規化数ではおよそ 1e-38 から 3e38 ですが、有効ビットは隠れビットを含めて8ビットしかないため、精度は10進でおよそ2〜3桁です。1.0 のすぐ上の間隔は2の−7乗、約 0.0078 です。</p>
+</section>
+<section class="term-about">
+  <h2>bfloat16とFP16の違い</h2>
+  <p>FP16はビットの配分が逆で、指数が5ビット、<a class="term-link" href="/term/significand/">仮数</a>が10ビットです。精度は10進で約3桁と高めですが、最大値は 65504、最小の正規化数は約 6e-5 です。学習では小さな勾配がFP16ではアンダーフローして0になることがあるため、FP16での学習には通常、損失に大きな係数を掛けておき後で勾配を割り戻すロススケーリングが必要です。bfloat16はFP32と同じ広さの範囲を持つので、一般にこの処理が不要で、既存のFP32モデルからの変換も簡単です。これが学習用に広く使われている理由です。</p>
+</section>
+<section class="term-about">
+  <h2>マスター重みをFP32で持つ理由</h2>
+  <p>低精度の形式は、大きな値に小さな更新を加えるときに破綻します。重み 1.0 をbfloat16で保持すると、次に表せる値は 1.0078125 なので、0.001 の更新は1刻みの半分にも満たず、和は丸められてちょうど 1.0 に戻ります。つまり更新が吸収されてしまいます。そのため<a class="term-link" href="/term/mixed-precision/">混合精度</a>学習では、マスター重みとオプティマイザの状態をFP32で保持し、順伝播と<a class="term-link" href="/term/backpropagation/">逆伝播</a>にはbfloat16のコピーを使います。同様に行列演算ユニットも、通常はbfloat16の入力どうしを掛け、積の累積はFP32で行うので、長い総和でも小さな寄与が失われません。</p>
+</section>
+<section class="term-about">
+  <h2>使われている場所</h2>
+  <p>bfloat16は、現在の多くの<a class="term-link" href="/term/gpu/">GPU</a>やAIアクセラレータの行列演算ユニットや、一部のCPUのベクトル拡張でサポートされており、学習と<a class="term-link" href="/term/ai-inference/">推論</a>の両方で使われます。値1つあたりのサイズがFP32の半分なので、必要なメモリ容量と帯域幅が半分になり、チップ面積あたりにより多くの乗算器を載せられます。ただし、汎用の形式としては向いていません。<a class="term-link" href="/term/significand/">仮数</a>ビットが非常に少ないため、多数の値の総和、小さな差、数桁を超える精度が必要な計算は、より幅の広い型で行う必要があります。</p>
+</section>
 <section>
   <h2>bfloat16の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 小さな更新量を重みに足すとき、精度の低い形式では情報落ちで更新が消えてしまうから</p><p class="explanation">学習では、重みに「学習率 × 勾配」という非常に小さな値を何度も足していきます。FP16や<a class="term-link" href="/term/bfloat16/">bfloat16</a>は<a class="term-link" href="/term/significand/">仮数</a>が短く、重みに比べて更新量が小さすぎると、足した結果が丸めで元の重みのままになり、更新が消えてしまいます(<a class="term-link" href="/term/floating-point-absorption/">情報落ち</a>)。そこで重みはFP32で保持して更新を正しく積み重ね、前向きや逆向きの計算には低い精度に変換した写しを使います。計算の速さは低い精度の方が速く、低い精度の値も保存はできます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>bfloat16とFP16は同じものですか?</h3>
+  <p>違います。どちらも16ビットですが、bfloat16は指数8ビット・仮数7ビット、FP16は指数5ビット・仮数10ビットです。bfloat16は精度を犠牲にして、FP32と同じ範囲を得ています。</p>
+  <h3>FP32をbfloat16に変換するにはどうしますか?</h3>
+  <p>FP32のビットパターンの上位16ビットを残します。単に切り捨てるのではなく、捨てる16ビットをもとに最近接偶数丸めを行うのが望ましい方法です。逆の変換は下位に16個の0ビットを付け足すだけで、誤差なく行えます。</p>
+  <h3>bfloat16での学習にロススケーリングが通常不要なのはなぜですか?</h3>
+  <p>ロススケーリングは、FP16の狭い範囲で小さな勾配がアンダーフローするのを防ぐための手法です。bfloat16はFP32と同じ指数範囲を持つので、そうした勾配も通常は表現できる範囲に収まります。</p>
+</section>
 <section>
   <h2>解説の中の「bfloat16」</h2>
   <ul class="term-quotes"><li><p>bfloat16は符号1ビット、指数部8ビット、仮数部7ビットの16ビット形式です。</p><a href="/q/computer-arithmetic/computer-arithmetic-026/">bfloat16がAIの学習で使われる主な理由はどれか。</a></li><li><p>FP16やbfloat16は仮数が短く、重みに比べて更新量が小さすぎると、足した結果が丸めで元の重みのままになり、更新が消えてしまいます(情報落ち)。</p><a href="/q/computer-arithmetic/computer-arithmetic-050/">AIの混合精度の学習で、計算の多くをFP16やbfloat16で行いながら、重みの元の値(マスターウェイト)をFP32…</a></li></ul>

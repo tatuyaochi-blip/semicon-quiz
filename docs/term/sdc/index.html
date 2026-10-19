@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"クロックの周期や波形、入出力の遅延、タイミング例外などを記述するタイミング制約の形式。Tclのコマンドで書かれ、論理合成、配置配線、STAの各ツールで共通に使われる。","url":"https://semiconroom.com/term/sdc/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"クロックの周期や波形、入出力の遅延、タイミング例外などを記述するタイミング制約の形式。Tclのコマンドで書かれ、論理合成、配置配線、STAの各ツールで共通に使われる。","url":"https://semiconroom.com/term/sdc/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"VLSI設計でいうSDCとは何の略ですか?","acceptedAnswer":{"@type":"Answer","text":"Synopsys Design Constraintsの略で、クロック、入出力遅延、タイミング例外などのタイミング制約を記述するTclベースの形式です。論理合成、配置配線、STAの各ツールで共通に使われます。"}},{"@type":"Question","name":"SDCとSDFの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"SDCは設計が満たすべきタイミングの要求を記述し、SDFは計算されたセルや配線の遅延を伝えるもので、主に遅延情報を戻し込んだゲートレベルシミュレーションに使われます。"}},{"@type":"Question","name":"create_generated_clockはどんなときに必要ですか?","acceptedAnswer":{"@type":"Answer","text":"分周器やクロックマルチプレクサなど、設計の内部でクロックを派生させるときは必ず必要です。指定しないと派生したネットがクロックとして扱われず、それで動く論理が正しくタイミング解析されません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SDCファイルに書く内容</h2>
+  <p>SDC(Synopsys Design Constraints)はTclをベースにした形式で、Synopsysで生まれ、現在ではほとんどの<a class="term-link" href="/term/logic-synthesis/">論理合成</a>、<a class="term-link" href="/term/place-and-route/">配置配線</a>、<a class="term-link" href="/term/sta/">STA(静的タイミング解析)</a>のツールが読み込めます。代表的なコマンドとして、周期と波形を指定するクロック定義(create_clock)、派生クロック(create_generated_clock)、ポートでの外部タイミング(set_input_delay、set_output_delay)、電気的な環境(set_load、set_driving_cell)、クロックの品質(set_clock_uncertainty、set_clock_latency)、タイミング例外(set_false_path、set_multicycle_path、set_max_delay、set_clock_groups)があります。</p>
+</section>
+<section class="term-about">
+  <h2>クロックの不確かさと生成クロック</h2>
+  <p>set_clock_uncertaintyは、<a class="term-link" href="/term/jitter/">ジッタ</a>と、CTS(クロックツリー合成)前であれば見込まれるスキューの分のマージンを差し引きます。周期1 ns、不確かさ50 psなら、データは0.95 ns以内に到着しなければなりません。CTS後はツールが実際に作ったツリーから本当のスキューを計算するため、不確かさはジッタと意図的に設けるマージンだけに減らします。分周したクロックは、元のクロックを基準にcreate_generated_clockで宣言する必要があります。例えば2分周で500 MHzを250 MHzにする場合で、こうすることでそのクロックで動く<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>が正しい周期と位相関係で解析されます。</p>
+</section>
+<section class="term-about">
+  <h2>制約がサインオフのリスクになる理由</h2>
+  <p>ツールが最適化し検証するのは、制約に書かれた内容だけです。クロックの定義が漏れていれば<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>は解析されず、範囲の広すぎる<a class="term-link" href="/term/false-path/">フォールスパス</a>は実在する違反を隠し、同期しているクロックどうしを非同期と宣言すればチェックすべき経路が抜け落ちます。こうした設計は、すべてのツールのレポートを通過しても実チップでは不良になりえます。そのため制約は<a class="term-link" href="/term/rtl/">RTL</a>と同じくらい慎重にレビューし、制約チェック(リント)ツールでクロックのないレジスタや制約のないポートを確認し、<a class="term-link" href="/term/logic-synthesis/">論理合成</a>、実装、サインオフの間で一貫性を保ちます。</p>
+</section>
+<section class="term-about">
+  <h2>SDCと関連する形式の違い</h2>
+  <p>SDCが記述するのは要求であって、結果ではありません。計算された遅延は、遅延情報を戻し込む<a class="term-link" href="/term/gate-level-simulation/">ゲートレベルシミュレーション</a>用にSDF(Standard Delay Format)でやり取りされ、抽出した寄生成分はSPEF(Standard Parasitic Exchange Format)でやり取りされます。<a class="term-link" href="/term/fpga/">FPGA</a>のツールでは、SDCそのもの、またはピン割り当てなどの物理的な制約を加えた派生形式が使われます。SDCはTclなので、変数やループを使って制約を簡潔に生成できますが、スクリプトを多用したファイルはレビューしにくくなります。</p>
+</section>
 <section>
   <h2>SDCの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="eda-047" data-cat="eda" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 分周回路の出力を、元のクロックとの関係(2分周であること)を指定した生成クロックとして定義する</p><p class="explanation"><a class="term-link" href="/term/sdc/">SDC</a>は、クロックの周期や波形、入出力の遅延、例外となる経路などをツールに伝えるタイミング制約の記述です。分周回路の出力は、何も定義しなければクロックとして扱われず、その先の<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>が正しく解析されません。生成クロックとして定義すれば、元のクロックが 500 MHz なら 250 MHz として、元のクロックとの位相関係も含めて解析されます。両者は同期しているので、非同期として扱うと、本来チェックすべき経路が解析から外れてしまいます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>VLSI設計でいうSDCとは何の略ですか?</h3>
+  <p>Synopsys Design Constraintsの略で、クロック、入出力遅延、タイミング例外などのタイミング制約を記述するTclベースの形式です。論理合成、配置配線、STAの各ツールで共通に使われます。</p>
+  <h3>SDCとSDFの違いは何ですか?</h3>
+  <p>SDCは設計が満たすべきタイミングの要求を記述し、SDFは計算されたセルや配線の遅延を伝えるもので、主に遅延情報を戻し込んだゲートレベルシミュレーションに使われます。</p>
+  <h3>create_generated_clockはどんなときに必要ですか?</h3>
+  <p>分周器やクロックマルチプレクサなど、設計の内部でクロックを派生させるときは必ず必要です。指定しないと派生したネットがクロックとして扱われず、それで動く論理が正しくタイミング解析されません。</p>
+</section>
 <section>
   <h2>解説の中の「SDC」</h2>
   <ul class="term-quotes"><li><p>SDCは、クロックの周期や波形、入出力の遅延、例外となる経路などをツールに伝えるタイミング制約の記述です。</p><a href="/q/sta-cdc/sta-cdc-024/">クロックを分周回路で2分周して別の回路に使う場合、SDCでの扱いとして正しいものはどれか。</a></li><li><p>タイミング制約には、クロックの周期や波形、入出力ポートの遅延、タイミングを検証しない経路(フォルスパス)や複数サイクルかけてよい経路の指定などが記述され、SDC形式などで書かれます。</p><a href="/q/eda/eda-027/">論理合成や静的タイミング解析で、クロック周期や入出力の遅延などのタイミングの条件を記述したものを何と呼ぶか。</a></li></ul>

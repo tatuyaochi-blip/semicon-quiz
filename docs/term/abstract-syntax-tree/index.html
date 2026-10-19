@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"抽象構文木(AST)","item":"https://semiconroom.com/term/abstract-syntax-tree/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"抽象構文木(AST)","description":"プログラムの構造を、演算や文を節にした木で表したもの。括弧や区切り記号などの意味をもたない情報は省き、演算子の優先順位は木の形で表す。","url":"https://semiconroom.com/term/abstract-syntax-tree/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"抽象構文木(AST)","item":"https://semiconroom.com/term/abstract-syntax-tree/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"抽象構文木(AST)","description":"プログラムの構造を、演算や文を節にした木で表したもの。括弧や区切り記号などの意味をもたない情報は省き、演算子の優先順位は木の形で表す。","url":"https://semiconroom.com/term/abstract-syntax-tree/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"構文解析木と抽象構文木の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"構文解析木は区切り記号を含むすべての文法規則とトークンを記録しますが、ASTは意味をもつ構文要素だけを残します。構文解析木では規則の連なりで示される優先順位が、ASTではどの節が親になるかだけで表されます。"}},{"@type":"Question","name":"ASTでは括弧はどう表されますか?","acceptedAnswer":{"@type":"Answer","text":"括弧は節としては保存されません。その効果は木の構造に反映され、括弧で囲まれた部分式は、親の演算より先に評価される部分木になります。"}},{"@type":"Question","name":"インタプリタはASTを使いますか?","acceptedAnswer":{"@type":"Answer","text":"多くのインタプリタが使います。木走査型インタプリタはASTを直接評価し、より高速なインタプリタは通常、ASTをいったんバイトコードにコンパイルしてからそれを実行します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>構文解析木からASTへ</h2>
+  <p>文法をそのままたどる<a class="term-link" href="/term/syntax-analysis/">構文解析</a>器(パーサ)は、具象構文木(構文解析木)を作ります。そこには適用した文法規則ごとの節と、括弧、カンマ、セミコロンまで含むすべてのトークンの葉があります。式・項・因子を別々の規則にして優先順位を表す文法では、子が1つだけの節が長く連なることもあります。AST(抽象構文木)はこうしたものをすべて捨てます。各節は二項演算、関数呼び出し、if文、変数参照といった意味のある構文要素で、その要素に必要な子だけを持ちます。</p>
+</section>
+<section class="term-about">
+  <h2>木の形で表す優先順位と結合性</h2>
+  <p>先に評価される演算ほど、木の深い位置に置かれます。2 + 3 * 4 では根が + で、その子は 2 と、3 と 4 を子に持つ * の節です。(2 + 3) * 4 では根が * になり、括弧は役目を終えて消えます。結合性も同じように表されます。a - b - c は (a - b) - c を意味するので、根の左の子がもう1つの減算になり、左に傾いた木になります。したがって、子を親より先に訪れる後行順(帰りがけ順)の走査を行えば、式を正しい順序で評価できます。</p>
+</section>
+<section class="term-about">
+  <h2>コンパイラはASTで何をするか</h2>
+  <p><a class="term-link" href="/term/syntax-analysis/">構文解析</a>の後、意味解析がASTをたどり、各名前をその宣言に結び付け、型を検査・<a class="term-link" href="/term/ai-inference/">推論</a>し、暗黙の型変換を挿入し、宣言されていない変数の使用などのエラーを報告します。各節には通常これらの情報が付加されます。情報を付加した木は次に、3番地コードや<a class="term-link" href="/term/ssa-form/">SSA形式</a>などの<a class="term-link" href="/term/intermediate-representation/">中間表現</a>(IR)に変換され、そこでは制御の流れが<a class="term-link" href="/term/basic-block/">基本ブロック</a>間の明示的な分岐になります。単純な木走査型インタプリタはASTを直接実行し、フォーマッタ、リンタ、リファクタリングエンジンといったツールもASTを対象に動作します。</p>
+</section>
+<section class="term-about">
+  <h2>ASTとIRの違い</h2>
+  <p>ASTはソース言語をそのまま映したもので、入れ子のループや構造化されたif文、ソースレベルの式がまだ残っています。そのため、書かれたとおりのプログラムを対象にする検査や変換に最適です。IRはよりマシンに近く、単純な演算の平たい並びと明示的なジャンプで構成されるため、データフロー解析や最適化に向いています。両者は混同されがちですが、おおまかな境界は次のとおりです。ASTはプログラマが何を書いたかを表し、IRは何を計算しなければならないかを表します。</p>
+</section>
 <section>
   <h2>抽象構文木(AST)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-004" data-cat="compiler" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 根は + の節で、その右の子が 3 * 4 を表す * の節になる</p><p class="explanation">掛け算は足し算より優先順位が高いので、この式は 2 + (3 * 4) と解釈されます。<a class="term-link" href="/term/abstract-syntax-tree/">抽象構文木</a>では先に計算する演算ほど下に置かれるので、根は + で、その左の子が2、右の子が3と4を子にもつ * の節になります。木を下から評価すると、3 * 4 = 12 を先に計算し、2 + 12 = 14 が得られます。根が * になるのは (2 + 3) * 4 と書いた場合で、すべてを根の子に並べると計算の順番が表せません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>構文解析木と抽象構文木の違いは何ですか?</h3>
+  <p>構文解析木は区切り記号を含むすべての文法規則とトークンを記録しますが、ASTは意味をもつ構文要素だけを残します。構文解析木では規則の連なりで示される優先順位が、ASTではどの節が親になるかだけで表されます。</p>
+  <h3>ASTでは括弧はどう表されますか?</h3>
+  <p>括弧は節としては保存されません。その効果は木の構造に反映され、括弧で囲まれた部分式は、親の演算より先に評価される部分木になります。</p>
+  <h3>インタプリタはASTを使いますか?</h3>
+  <p>多くのインタプリタが使います。木走査型インタプリタはASTを直接評価し、より高速なインタプリタは通常、ASTをいったんバイトコードにコンパイルしてからそれを実行します。</p>
+</section>
 <section>
   <h2>解説の中の「抽象構文木(AST)」</h2>
   <ul class="term-quotes"><li><p>抽象構文木は、プログラムの意味に必要な演算や文だけを節にした木で、例えば (a + b) * c では、掛け算の節の下に足し算の節がくることで、括弧がなくても計算の順番が分かります。</p><a href="/q/compiler/compiler-004/">抽象構文木(AST)の特徴として正しいものはどれか。</a></li><li><p>抽象構文木では先に計算する演算ほど下に置かれるので、根は + で、その左の子が2、右の子が3と4を子にもつ * の節になります。</p><a href="/q/compiler/compiler-035/">式 2 + 3 * 4 の抽象構文木の形として正しいものはどれか。</a></li></ul>

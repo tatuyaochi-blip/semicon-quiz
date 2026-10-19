@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"シストリックアレイ","item":"https://semiconroom.com/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"シストリックアレイ","description":"多数の積和演算器を格子状に並べ、データを隣の演算器へ順に流しながら行列の積を計算する構成。AI向けのアクセラレータで使われる。","url":"https://semiconroom.com/term/systolic-array/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"シストリックアレイ","item":"https://semiconroom.com/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"シストリックアレイ","description":"多数の積和演算器を格子状に並べ、データを隣の演算器へ順に流しながら行列の積を計算する構成。AI向けのアクセラレータで使われる。","url":"https://semiconroom.com/term/systolic-array/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"シストリックアレイという名前の由来は何ですか?","acceptedAnswer":{"@type":"Answer","text":"心臓が収縮期(シストール)に血液を送り出すように、データが1クロックに1ステップずつ規則正しいリズムで格子の中を脈打つように流れるからです。"}},{"@type":"Question","name":"GoogleのTPUはシストリックアレイを使っていますか?","acceptedAnswer":{"@type":"Answer","text":"はい。TPUの行列演算ユニットは、128 × 128などの積和演算要素からなる大きなシストリックアレイで、ニューラルネットワークの行列積を計算します。"}},{"@type":"Question","name":"ウェイトステーショナリ方式とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"各処理要素が重みを1つ固定して保持し、入力の活性値を流しながら部分和を受け渡していく方式です。重みの繰り返し読み出しを最小限に抑えられるため、ニューラルネットワークの推論に適しています。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>格子の中のデータの流れ</h2>
+  <p>シストリックアレイは処理要素を2次元の格子状に並べたもので、各要素は隣接する要素とだけやり取りするMAC(積和演算)器です。ウェイトステーショナリ方式では、各要素にあらかじめ重みを1つずつ読み込んでおきます。入力の活性値は左端から入り、1クロックに1要素ずつ右へ進み、部分和は下へ流れて、各要素が自分の積を加えていきます。完成した結果は下端から出てきます。対応する値が正しい要素に正しいタイミングで出会うよう、入力は行ごとに1サイクルずつずらして投入します。</p>
+</section>
+<section class="term-about">
+  <h2>効率が高い理由</h2>
+  <p>メモリから取り出した値は、演算ごとに1回読むのではなく、行や列に並ぶ要素全体で再利用されます。128 × 128のアレイは、端からデータを供給されるだけで1クロックに16,384回の積和演算を行うため、メモリ転送1バイトあたりの仕事量が非常に大きくなります。チップ外のメモリからデータを運ぶには積和演算よりはるかに多くのエネルギーがかかるので、この再利用は帯域だけでなく電力も節約します。すべての配線が隣接要素どうしをつなぐため長いブロードキャストバスがなく、高密度なレイアウトと高いクロック周波数が可能になります。</p>
+</section>
+<section class="term-about">
+  <h2>データフローの種類と限界</h2>
+  <p>ウェイトステーショナリのほかに、両方のオペランドを流しながら各部分和をその場に保持するアウトプットステーショナリ方式や、入力を固定する方式もあります。いずれもアレイの大きさに比例したデータの充填と排出の遅延があり、行列の次元が小さかったりアレイに合わなかったりすると、遊ぶ要素が出て利用率が下がります。畳み込みは通常、行列積に書き換えて適合させます。クロックに同期した固定的なデータフローでは処理を簡単に飛ばせないため、スパースな計算や不規則な計算には向きません。</p>
+</section>
+<section class="term-about">
+  <h2>起源と使われる場面</h2>
+  <p>この考え方は1970年代後半にさかのぼり、H. T. Kungらが、VLSI(超大規模集積回路)向けに単純なセルを規則正しく並べるアレイを提案し、心臓の律動的な拍出にちなんで名付けました。最大の応用先は行列積が大半を占めるニューラルネットワークのアクセラレータで、たとえばGoogleのTPUは128 × 128のような大きなアレイを使っています。<a class="term-link" href="/term/gpu/">GPU</a>は別の方法で同様の目標を達成しており、各<a class="term-link" href="/term/tensor-core/">テンソルコア</a>が小さな行列タイルを計算し、データの再利用はレジスタや共有メモリでより柔軟に扱います。</p>
+</section>
 <section>
   <h2>シストリックアレイの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-038" data-cat="ai-stack" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. データを隣の演算器へ順に渡して使い回すので、メモリから読み出す回数が少なく、多数の演算器を同時に動かせるから</p><p class="explanation"><a class="term-link" href="/term/systolic-array/">シストリックアレイ</a>では、格子状に並べた積和の演算器の間をデータが拍動のように一定のリズムで流れます。一度読み込んだ値は隣の演算器へ次々と渡され、何十回もの演算に使われるので、メモリから読む量に比べて非常に多くの計算ができます。配線も隣どうしの短いものだけで済むので、多数の演算器を高い密度で並べられます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>シストリックアレイという名前の由来は何ですか?</h3>
+  <p>心臓が収縮期(シストール)に血液を送り出すように、データが1クロックに1ステップずつ規則正しいリズムで格子の中を脈打つように流れるからです。</p>
+  <h3>GoogleのTPUはシストリックアレイを使っていますか?</h3>
+  <p>はい。TPUの行列演算ユニットは、128 × 128などの積和演算要素からなる大きなシストリックアレイで、ニューラルネットワークの行列積を計算します。</p>
+  <h3>ウェイトステーショナリ方式とは何ですか?</h3>
+  <p>各処理要素が重みを1つ固定して保持し、入力の活性値を流しながら部分和を受け渡していく方式です。重みの繰り返し読み出しを最小限に抑えられるため、ニューラルネットワークの推論に適しています。</p>
+</section>
 <section>
   <h2>解説の中の「シストリックアレイ」</h2>
   <ul class="term-quotes"><li><p>シストリックアレイでは、格子状に並べた積和の演算器の間をデータが拍動のように一定のリズムで流れます。</p><a href="/q/ai-stack/ai-stack-038/">AI向けのアクセラレータで使われるシストリックアレイが、行列の積を効率よく計算できる主な理由はどれか。</a></li><li><p>シストリックアレイは、積和演算器(MAC)を2次元に並べ、データを隣の演算器へ規則的に送りながら計算する構成で、血液を送り出す心臓の収縮(シストール)になぞらえた名前です。</p><a href="/q/cpu/cpu-049/">AI向けのアクセラレータなどで、多数の積和演算器を格子状に並べ、データを隣の演算器へ順に流しながら行列の積を計算する構…</a></li></ul>

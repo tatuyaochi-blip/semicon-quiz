@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ブロッキング代入","item":"https://semiconroom.com/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ブロッキング代入","description":"Verilogの「=」の代入。その場で左辺が更新され、次の行ではその新しい値が使われる。組み合わせ回路のalwaysやテストベンチで使う。","url":"https://semiconroom.com/term/blocking-assignment/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ブロッキング代入","item":"https://semiconroom.com/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ブロッキング代入","description":"Verilogの「=」の代入。その場で左辺が更新され、次の行ではその新しい値が使われる。組み合わせ回路のalwaysやテストベンチで使う。","url":"https://semiconroom.com/term/blocking-assignment/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verilogでブロッキング代入とノンブロッキング代入はどう使い分けますか?","acceptedAnswer":{"@type":"Answer","text":"クロック同期のalwaysブロック内のレジスタにはノンブロッキング代入を、組み合わせ回路のブロックや一時変数にはブロッキング代入を使います。同じ変数に両方の代入を混在させてはいけません。"}},{"@type":"Question","name":"Verilogで書いたシフトレジスタが1クロック分しか遅延しないのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"おそらく各段をブロッキング代入で書いているため、各段が前の行で更新されたばかりの値を受け取っています。ノンブロッキング代入に変えれば、各段がエッジ前の値を取り込むようになります。"}},{"@type":"Question","name":"VHDLの変数代入はVerilogのブロッキング代入と同じですか?","acceptedAnswer":{"@type":"Answer","text":"おおむね同じです。VHDLの変数代入はプロセス内ですぐに反映され、VHDLの信号代入は更新が予約されるため、ノンブロッキング代入に近い動作をします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/hdl-verification/">ハードウェア記述言語と検証</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ブロッキング代入の動き</h2>
+  <p>ブロッキング代入は等号1つ(=)で書き、右辺を評価して左辺の変数を更新してから、同じ手続きブロック内の次の文が実行されます。C言語の代入とほぼ同じです。そのため文は上から順に作用し、後の行は前の行が書き込んだばかりの値を参照します。一方、<a class="term-link" href="/term/nonblocking-assignment/">ノンブロッキング代入</a>(&lt;=)は、まずすべての右辺を評価し、その更新を同じタイムステップの後のほうでまとめて反映します。そのため、各文はクロックエッジの前の値を参照することになります。</p>
+</section>
+<section class="term-about">
+  <h2>クロック同期回路で問題になる理由</h2>
+  <p>クロック同期のalwaysブロックでブロッキング代入を使うと、同じエッジの中で、あるレジスタが別のレジスタの新しい値を見てしまいます。2段の<a class="term-link" href="/term/shift-register/">シフトレジスタ</a>を「q1 = d; q2 = q1;」と書くと、q2には更新されたばかりのq1、つまりdが入るため、シミュレーションでも合成後の回路でも1段分しか遅延しません。同様に「a = b; b = a;」と書いても入れ替わらず、両方とも元のbの値になります。クロック同期ブロック内のすべてのレジスタに<a class="term-link" href="/term/nonblocking-assignment/">ノンブロッキング代入</a>を使えば、文の順序に関係なく、並列に動く<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>と同じ動作になります。</p>
+</section>
+<section class="term-about">
+  <h2>ブロッキング代入を使うべき場面</h2>
+  <p>ブロッキング代入は、always @(*)や<a class="term-link" href="/term/systemverilog/">SystemVerilog</a>のalways_combで書く<a class="term-link" href="/term/combinational-circuit/">組み合わせ回路</a>のalwaysブロックで使います。ある行で計算した中間変数を次の行で使うことで、ゲートの連なりを記述できます。<a class="term-link" href="/term/testbench/">テストベンチ</a>の手続き的なコードや、functionやtaskの中の一時変数にも自然に使えます。広く守られているルールは、クロック同期回路には<a class="term-link" href="/term/nonblocking-assignment/">ノンブロッキング代入</a>、組み合わせ回路にはブロッキング代入を使い、同じ変数に両方の代入を混在させない、というものです。</p>
+</section>
+<section class="term-about">
+  <h2>テストベンチでの競合</h2>
+  <p>有効なクロックエッジとまったく同じシミュレーション時刻に、ブロッキング代入で設計の入力を駆動すると競合(レース)が生じます。設計内の<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>が古い値と新しい値のどちらを取り込むかは、シミュレータがどのプロセスを先に実行するかで決まり、シミュレータによって結果が異なることもあります。よく使われる対策は、反対側のクロックエッジや有効エッジから少し遅れたタイミングで入力を変える、入力を<a class="term-link" href="/term/nonblocking-assignment/">ノンブロッキング代入</a>で駆動する、<a class="term-link" href="/term/systemverilog/">SystemVerilog</a>のクロッキングブロックを使う、といったものです。</p>
+</section>
 <section>
   <h2>ブロッキング代入の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hdl-verification-034" data-cat="hdl-verification" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 回路が変わる前と後のどちらの値を取り込むかが実行の順番で変わる(競合)ため。入力はクロックのエッジから少しずらすか、ノンブロッキング代入で変える</p><p class="explanation">同じ時刻に、<a class="term-link" href="/term/testbench/">テストベンチ</a>が入力を書き換える処理と、回路の<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>が入力を取り込む処理が起こると、シミュレータがどちらを先に実行するかで、取り込まれる値が古い値にも新しい値にもなります。これはシミュレーションの競合(レース)で、シミュレータによって結果が変わることもあります。入力を立ち下がりで変える、少し遅らせる、<a class="term-link" href="/term/nonblocking-assignment/">ノンブロッキング代入</a>や<a class="term-link" href="/term/systemverilog/">SystemVerilog</a>のクロッキングブロックを使う、などで防ぎます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>Verilogでブロッキング代入とノンブロッキング代入はどう使い分けますか?</h3>
+  <p>クロック同期のalwaysブロック内のレジスタにはノンブロッキング代入を、組み合わせ回路のブロックや一時変数にはブロッキング代入を使います。同じ変数に両方の代入を混在させてはいけません。</p>
+  <h3>Verilogで書いたシフトレジスタが1クロック分しか遅延しないのはなぜですか?</h3>
+  <p>おそらく各段をブロッキング代入で書いているため、各段が前の行で更新されたばかりの値を受け取っています。ノンブロッキング代入に変えれば、各段がエッジ前の値を取り込むようになります。</p>
+  <h3>VHDLの変数代入はVerilogのブロッキング代入と同じですか?</h3>
+  <p>おおむね同じです。VHDLの変数代入はプロセス内ですぐに反映され、VHDLの信号代入は更新が予約されるため、ノンブロッキング代入に近い動作をします。</p>
+</section>
 <section>
   <h2>解説の中の「ブロッキング代入」</h2>
   <ul class="term-quotes"><li><p>ブロッキング代入では、1行目でq1がすぐにdの値に更新され、2行目のq2には更新後のq1、つまりdが入ります。</p><a href="/q/hdl-verification/hdl-verification-008/">2段のシフトレジスタのつもりで、上のようにブロッキング代入(=)で書いた。起こる問題として正しいものはどれか。</a></li><li><p>ブロッキング代入(=)で書くと、1行目でaが1になり、2行目のbには新しいaの1が入って、両方とも1になってしまいます。</p><a href="/q/hdl-verification/hdl-verification-007/">上の記述で、クロックの立ち上がりの直前にa=0、b=1だった。立ち上がりの後のaとbの値はどうなるか。</a></li><li><p>組み合わせ回路では、上から順に途中の値を計算していく書き方が自然なので、ブロッキング代入を使います。</p><a href="/q/hdl-verification/hdl-verification-009/">Verilogで代入の種類を使い分けるときの一般的なガイドラインとして正しいものはどれか。</a></li></ul>

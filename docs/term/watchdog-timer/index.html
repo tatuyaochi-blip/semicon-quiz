@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ウォッチドッグタイマ","item":"https://semiconroom.com/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ウォッチドッグタイマ","description":"決められた時間内にソフトウェアからリセット(キック)されないと、マイコンをリセットするタイマ。プログラムの暴走や停止から立ち直らせる。","url":"https://semiconroom.com/term/watchdog-timer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ウォッチドッグタイマ","item":"https://semiconroom.com/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ウォッチドッグタイマ","description":"決められた時間内にソフトウェアからリセット(キック)されないと、マイコンをリセットするタイマ。プログラムの暴走や停止から立ち直らせる。","url":"https://semiconroom.com/term/watchdog-timer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ウォッチドッグタイマを「キックする」とはどういう意味ですか?","acceptedAnswer":{"@type":"Answer","text":"ウォッチドッグの再ロード用(サービス用)レジスタに書き込み、カウンタが満了する前に再スタートさせることです。正常なソフトウェアはこれを定期的に行い、それが止まるとウォッチドッグがチップをリセットします。"}},{"@type":"Question","name":"ウォッチドッグはタイマ割り込みの中でキックしてもよいですか?","acceptedAnswer":{"@type":"Answer","text":"無条件にキックするのは避けるべきです。メインのコードが止まっていてもタイマ割り込みは動き続けるため異常が隠れてしまいます。メインループと各タスクが正常に1周したことを確認してからキックします。"}},{"@type":"Question","name":"ウィンドウウォッチドッグと通常のウォッチドッグの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"通常のウォッチドッグはキックが遅すぎたときだけリセットします。ウィンドウウォッチドッグは早すぎるキックも異常として扱うため、異常に速く回っているコードも検出できます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/embedded/">組込み・ファームウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ウォッチドッグの動作のしくみ</h2>
+  <p>ウォッチドッグタイマは、監視対象のプログラムとは独立して動くダウンカウンタです。ソフトウェアは定期的にこれを「キック」(「フィード」「サービス」とも呼びます)する必要があり、多くの場合は特定のキー値をレジスタに書き込むことでカウンタを再ロードします。コードがループで止まったり、フォールトハンドラに落ちたり、ノイズで誤動作したりしてカウンタがゼロに達すると、ウォッチドッグはリセットを発生させ(品種によってはその前に早期警告の<a class="term-link" href="/term/interrupt/">割り込み</a>を出します)、<a class="term-link" href="/term/microcontroller/">マイコン</a>は既知の状態から再起動します。専用の低速発振器で動かしておけば、メインクロックが止まってもウォッチドッグまで止まることはありません。</p>
+</section>
+<section class="term-about">
+  <h2>どこでキックするか</h2>
+  <p>ウォッチドッグの効果は、どこでキックするかで決まります。よくある失敗は、周期タイマ<a class="term-link" href="/term/interrupt/">割り込み</a>の中で無条件にキックすることです。メインループが止まっていても割り込みは発生し続けるため、カウンタは満了せず、ハングに気づけません。より良い方法は、各タスクやメインループの各段階がチェックイン用のフラグを立て、監視ルーチンが周期内にすべてのフラグがそろったときだけキックしてフラグをクリアするというものです。タイムアウト時間は、ループの最悪実行時間より長く、かつ復帰までの時間を抑えられる程度に短く設定します。</p>
+</section>
+<section class="term-about">
+  <h2>ウィンドウウォッチドッグと通常のウォッチドッグ</h2>
+  <p>通常のウォッチドッグが検出できるのは、キックが遅すぎる場合だけです。異常によってプログラムが本来の処理の大半を飛ばし、キックを含む短いループを回り続けると、タイマは想定より頻繁にキックされ、何も検出されません。ウィンドウウォッチドッグは下限を加えたもので、決められた時間窓の中のキックだけを受け付け、早すぎるキックもキックがない場合と同様に異常として扱います。これにより単純なタイムアウトでは見逃す制御フローの異常を検出できるため、機能安全の設計ではウィンドウウォッチドッグがよく使われます。</p>
+</section>
+<section class="term-about">
+  <h2>安全システムでの外付けウォッチドッグ</h2>
+  <p>車載機器や産業機器では、ウォッチドッグを独自のクロックで動く別の監視ICや電源管理ICに置くことがよくあります。こうすれば、発振器の故障のような共通原因でプロセッサと監視回路が同時に止まることを防げます。外付けの監視ICの中には、問いかけに対してプロセッサが時間窓内に正しい応答を返す必要がある、質問応答(Q&amp;A)方式を採用するものもあります。ウォッチドッグによるリセットの後、ファームウェアは通常リセット要因レジスタを読み出し、同じ現象が黙って繰り返されないよう、事象を記録して解析できるようにします。</p>
+</section>
 <section>
   <h2>ウォッチドッグタイマの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-044" data-cat="cpu" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 決められた時間の窓より遅すぎるキック(タイマのクリア)だけでなく、早すぎるキックも異常として検出する</p><p class="explanation">通常のウォッチドッグは、一定時間内にキックされないとリセットをかけます。しかし、プログラムが処理の一部を飛ばして短いループを回るような異常では、キックが早く来てしまい、見逃されることがあります。ウィンドウ型では、キックしてよい時間の窓を決め、窓より早すぎても遅すぎても異常とします。車載では、<a class="term-link" href="/term/microcontroller/">マイコン</a>とは別のクロックで動く外付けの監視ICにウォッチドッグを持たせ、共通の原因で両方が止まらないようにすることもあります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ウォッチドッグタイマを「キックする」とはどういう意味ですか?</h3>
+  <p>ウォッチドッグの再ロード用(サービス用)レジスタに書き込み、カウンタが満了する前に再スタートさせることです。正常なソフトウェアはこれを定期的に行い、それが止まるとウォッチドッグがチップをリセットします。</p>
+  <h3>ウォッチドッグはタイマ割り込みの中でキックしてもよいですか?</h3>
+  <p>無条件にキックするのは避けるべきです。メインのコードが止まっていてもタイマ割り込みは動き続けるため異常が隠れてしまいます。メインループと各タスクが正常に1周したことを確認してからキックします。</p>
+  <h3>ウィンドウウォッチドッグと通常のウォッチドッグの違いは何ですか?</h3>
+  <p>通常のウォッチドッグはキックが遅すぎたときだけリセットします。ウィンドウウォッチドッグは早すぎるキックも異常として扱うため、異常に速く回っているコードも検出できます。</p>
+</section>
 <section>
   <h2>解説の中の「ウォッチドッグタイマ」</h2>
   <ul class="term-quotes"><li><p>ウォッチドッグタイマは、正常なプログラムが定期的にクリアすることを前提にしたタイマーで、暴走や停止でクリアされないまま時間切れになるとマイコンをリセットします。</p><a href="/q/cpu/cpu-044/">マイコンに搭載されるウォッチドッグタイマの役割として正しいものはどれか。</a></li></ul>

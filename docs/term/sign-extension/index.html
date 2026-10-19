@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"符号拡張","item":"https://semiconroom.com/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"符号拡張","description":"少ないビット数の符号付き整数を多いビット数に広げるとき、最上位ビット(符号)を上の桁すべてにコピーすること。値を変えずに広げられる。上位を0で埋めるのはゼロ拡張。","url":"https://semiconroom.com/term/sign-extension/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"符号拡張","item":"https://semiconroom.com/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"符号拡張","description":"少ないビット数の符号付き整数を多いビット数に広げるとき、最上位ビット(符号)を上の桁すべてにコピーすること。値を変えずに広げられる。上位を0で埋めるのはゼロ拡張。","url":"https://semiconroom.com/term/sign-extension/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"符号拡張とゼロ拡張の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"符号拡張は新しく増えた上位ビットを元の最上位ビットのコピーで埋め、符号付きの数の値を保ちます。ゼロ拡張は上位ビットを0で埋め、符号なしの数の値を保ちます。"}},{"@type":"Question","name":"RISC-Vの addi が即値を符号拡張するのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"addi sp, sp, -16 のように、1命令で負の定数を加算できるようにするためです。これにより12ビットのフィールドで、0以上の値だけでなく −2048 から 2047 までを表せます。"}},{"@type":"Question","name":"C言語で値を符号拡張するにはどうしますか?","acceptedAnswer":{"@type":"Answer","text":"int8_t や int16_t など元の幅の符号付き型に値を格納し、それをより幅の広い符号付き型に代入します。この変換で自動的に符号拡張が行われ、コンパイラは対応する符号拡張命令を生成します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>符号ビットをコピーしても値が変わらない理由</h2>
+  <p>n ビットの<a class="term-link" href="/term/two-s-complement/">2の補数</a>表現では、最上位ビットの重みは −2^(n−1) で、ほかのビットは通常の正の重みを持ちます。負の数を1ビット拡張すると、重み −2^n の新しい最上位ビットが加わり、それまでの最上位ビットの重みは正の 2^(n−1) に変わります。両者を合わせた寄与は −2^(n−1) のままなので、値は変わりません。追加するビットごとにこれを繰り返せば、規則が正しいことがわかります。たとえば4ビットの 1010(−6)は8ビットの 11111010 になり、値は −6 のままです。</p>
+</section>
+<section class="term-about">
+  <h2>命令セットで符号拡張が行われる場所</h2>
+  <p>最もよくあるのは<a class="term-link" href="/term/immediate-operand/">即値</a>です。RISC-Vの12ビットのI形式即値は符号拡張されるので、addi は −2048 から 2047 までを受け付け、負の定数も別の減算命令なしで扱えます。ロード命令は対になっていて、lb と lh は符号拡張、lbu と lhu はゼロ拡張を行います。RV64では lw が32ビットの値を64ビットに符号拡張し、lwu はゼロ拡張します。また、addw などのワード命令は32ビットの結果を符号拡張します。x86には同じ目的の movsx と movzx があります。ハードウェアでは、符号拡張は最上位ビットを新しいすべての桁に配線するだけで、追加のコストはかかりません。</p>
+</section>
+<section class="term-about">
+  <h2>典型的な落とし穴:lui と addi</h2>
+  <p>32ビットの定数を作るとき、RISC-Vのコードでは上位20ビットに lui を、下位12ビットに addi を使います。addi は<a class="term-link" href="/term/immediate-operand/">即値</a>を符号拡張するので、下位部分が 0x800 以上だと負の数、つまり元の値から4096を引いた値として扱われます。<a class="term-link" href="/term/assembler/">アセンブラ</a>は定数のビット11が1のときに上位部分に1を足して補正しており、%hi と %lo の<a class="term-link" href="/term/relocation/">再配置</a>演算子はこれを自動で行います。定数を単純に分割する手書きのコードでは、値がちょうど4096ずれてしまいます。これはテストで見逃しやすいバグです。</p>
+</section>
+<section class="term-about">
+  <h2>C言語での符号拡張とゼロ拡張</h2>
+  <p>C言語では、拡張の方法は変換元の型で決まります。signed char や int16_t を int に変換すると符号拡張され、符号なしの型を変換するとゼロ拡張されます。修飾なしの char はプラットフォームによって符号付きにも符号なしにもなり、たとえばx86では符号付きですが、Armの多くのLinuxシステムでは符号なしです。そのため、0xFF というバイト値はターゲットによって −1 にも 255 にもなります。この違いは、バイトを定数と比較したり配列の添字に使ったりするときにバグの原因になります。生のバイトには unsigned char や uint8_t を使えば、この曖昧さを避けられます。</p>
+</section>
 <section>
   <h2>符号拡張の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-015" data-cat="isa-assembly" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. lui t0, 0x12346 の後に addi t0, t0, -1</p><p class="explanation">addiの<a class="term-link" href="/term/immediate-operand/">即値</a>は<a class="term-link" href="/term/sign-extension/">符号拡張</a>されるので、下位12ビットが0xFFF(最上位ビットが1)のときは-1として足されます。そこでluiで作る上位を1つ大きい0x12346にしておき、0x12346000に-1を足して0x12345FFFを得ます。下位12ビットのビット11が1のときは上位に1を足しておく、というこの補正は、<a class="term-link" href="/term/assembler/">アセンブラ</a>や<a class="term-link" href="/term/linker/">リンカ</a>が自動で行います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>符号拡張とゼロ拡張の違いは何ですか?</h3>
+  <p>符号拡張は新しく増えた上位ビットを元の最上位ビットのコピーで埋め、符号付きの数の値を保ちます。ゼロ拡張は上位ビットを0で埋め、符号なしの数の値を保ちます。</p>
+  <h3>RISC-Vの addi が即値を符号拡張するのはなぜですか?</h3>
+  <p>addi sp, sp, -16 のように、1命令で負の定数を加算できるようにするためです。これにより12ビットのフィールドで、0以上の値だけでなく −2048 から 2047 までを表せます。</p>
+  <h3>C言語で値を符号拡張するにはどうしますか?</h3>
+  <p>int8_t や int16_t など元の幅の符号付き型に値を格納し、それをより幅の広い符号付き型に代入します。この変換で自動的に符号拡張が行われ、コンパイラは対応する符号拡張命令を生成します。</p>
+</section>
 <section>
   <h2>解説の中の「符号拡張」</h2>
   <ul class="term-quotes"><li><p>即値は計算の前に32ビット(RV64では64ビット)に符号拡張されるので、負の数もそのまま足せます。</p><a href="/q/isa-assembly/isa-assembly-015/">RISC-Vのaddi命令の即値は12ビットの符号付き整数である。この即値で表せる範囲はどれか。</a></li><li><p>addiの即値は符号拡張されるので、下位12ビットが0xFFF(最上位ビットが1)のときは-1として足されます。</p><a href="/q/isa-assembly/isa-assembly-017/">RISC-Vで定数0x12345FFFをluiとaddiの2命令で作るとき、正しい組み合わせはどれか。</a></li><li><p>addiはこれを32ビットに符号拡張する、つまり最上位ビットの1を上の桁すべてにコピーするので0xFFFFFFFFになり、2の補数で-1を表します。</p><a href="/q/isa-assembly/isa-assembly-019/">RISC-V(RV32I)で「addi t0, zero, -1」を実行した後、t0に入っている32ビットの値はどれか。</a></li><li><p>lb(load byte)は読み込んだ1バイトを符号付きとみなし、最上位ビットを上位24ビットにコピーします(符号拡張)。</p><a href="/q/isa-assembly/isa-assembly-020/">メモリ上の1バイトに0x80が入っている。RISC-Vのlb命令とlbu命令でこのバイトを32ビットのレジスタに読み込…</a></li><li><p>RV64Iのlwは32ビットの値を符号拡張して64ビットのレジスタに入れ、符号なしで読むlwuは上位を0で埋めます。</p><a href="/q/isa-assembly/isa-assembly-048/">64ビットのRV64Iでlw命令を実行すると、読み込んだ32ビットの値は64ビットのレジスタにどのように入るか。</a></li></ul>

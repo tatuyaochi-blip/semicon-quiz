@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"PC相対アドレッシング","item":"https://semiconroom.com/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC相対アドレッシング","description":"今の命令の番地(PC)からの距離で、分岐先やデータの番地を表す方法。プログラムをどこに置いても距離は変わらないので、位置独立コードの土台になる。","url":"https://semiconroom.com/term/pc-relative-addressing/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"PC相対アドレッシング","item":"https://semiconroom.com/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC相対アドレッシング","description":"今の命令の番地(PC)からの距離で、分岐先やデータの番地を表す方法。プログラムをどこに置いても距離は変わらないので、位置独立コードの土台になる。","url":"https://semiconroom.com/term/pc-relative-addressing/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"RISC-Vの分岐命令が届く範囲はどれくらいですか?","acceptedAnswer":{"@type":"Answer","text":"beq などの条件分岐は2バイト単位の13ビット符号付きオフセットを持ち、分岐命令から約 ±4 KiB の範囲に届きます。jal は約 ±1 MiB、auipc と jalr を組み合わせると約 ±2 GiB に届きます。"}},{"@type":"Question","name":"x86-64がRIP相対アドレッシングを使うのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"現在の命令からの相対位置で大域データにアクセスできるので、位置独立コードでロード時の書き換えも専用のベースレジスタも不要になるからです。32ビットのx86には、データに対するこのようなモードがありませんでした。"}},{"@type":"Question","name":"共有ライブラリにPC相対アドレッシングは必須ですか?","acceptedAnswer":{"@type":"Answer","text":"実際上は必須です。共有ライブラリはプロセスごとに異なるアドレスにロードされますが、PC相対の分岐やデータ参照と、GOTのような表を介した間接参照により、同じコードページがどこでも動作します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>飛び先アドレスの計算方法</h2>
+  <p>命令には符号付きのオフセットが入っており、ハードウェアはそれを<a class="term-link" href="/term/sign-extension/">符号拡張</a>したうえで、プログラムカウンタ(PC)から得た基準アドレスに加算します。RISC-Vでは基準は分岐命令自身のアドレスです。条件分岐は13ビットの偶数オフセットを持ち、約 ±4 KiB の範囲に届きます。jal は21ビットのオフセットで約 ±1 MiB です。それより遠い場合は、auipc が20ビットの上位<a class="term-link" href="/term/immediate-operand/">即値</a>を12ビット左にシフトしてPCに加え、続く jalr、addi、ロード命令が下位12ビットを補うことで、合わせて約 ±2 GiB に届きます。ほかの命令セットでは基準点が異なり、たとえばx86では次の命令のアドレスです。</p>
+</section>
+<section class="term-about">
+  <h2>位置独立コードを可能にする理由</h2>
+  <p><a class="term-link" href="/term/position-independent-code/">位置独立コード</a>(PIC)は、どのアドレスにロードされても正しく動かなければなりません。絶対アドレスを使うと、<a class="term-link" href="/term/program-loader/">ローダ</a>はアドレスを指定しているすべての命令を書き換える必要があります。これには時間がかかり、プロセスごとにコードの中身が異なってしまい、同じ物理ページを複数のプロセスで共有できなくなります。同じイメージ内の部分どうしのPC相対オフセットは、イメージ全体が移動しても変わらないので、書き換えは不要です。<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>や、セキュリティのためにランダムなアドレスにロードされる実行ファイル(アドレス空間配置のランダム化、<a class="term-link" href="/term/address-space-layout-randomization/">ASLR</a>)はこの性質に頼っています。</p>
+</section>
+<section class="term-about">
+  <h2>コードだけでなくデータにも使う</h2>
+  <p>PC相対アドレッシングはデータに対しても同じくらい重要です。x86-64ではRIP相対アドレッシングが導入され、ロードやストアで大域変数を命令ポインタからの相対位置で指定できるようになりました。32ビットのx86にはこの機能がなく、PICを実現するにはcall命令を使ったトリックでPCを取得し、そのためにレジスタを1つ専用に割く必要がありました。別の<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>にある変数のように、最終的なアドレスが実行時にしかわからないシンボルには、<a class="term-link" href="/term/global-offset-table/">グローバルオフセットテーブル</a>(GOT)からのPC相対ロードを使います。GOTは、ロード時にダイナミックリンカが一度だけ埋めるアドレスの表です。</p>
+</section>
+<section class="term-about">
+  <h2>ほかのアドレッシングモードとの比較</h2>
+  <p>絶対アドレッシングは固定のアドレスを指定するので、コードが移動すれば<a class="term-link" href="/term/relocation/">再配置</a>が必要です。レジスタ間接アドレッシングはレジスタに入ったアドレスを通じてジャンプやロードを行います。飛び先がアセンブル時にはわからない関数ポインタ、仮想関数呼び出し、リターンはこの方式です。PC相対アドレッシングはその中間にある、コードから見た位置が固定された多くの対象を受け持ちます。ループの分岐、プログラム内の関数呼び出し、自身の定数や大域変数へのアクセスなどです。制約はオフセットのフィールド幅で、そのために auipc と jalr の組み合わせのような遠距離用の命令列が用意されています。</p>
+</section>
 <section>
   <h2>PC相対アドレッシングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-011" data-cat="isa-assembly" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. プログラムをメモリのどの番地に読み込んでも、命令を書き換えずに動かせる</p><p class="explanation">PC相対の分岐は「ここから何バイト先」という距離で行き先を表すので、プログラム全体を別の番地にずらしても距離は変わらず、そのまま動きます。これは<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>などで使う<a class="term-link" href="/term/position-independent-code/">位置独立コード</a>(PIC)の土台になります。ただし距離を表すビット数に限りがあるため、遠くへ飛ぶときはauipcとjalrを組み合わせます。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>の必要性は、表し方とは関係ありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>RISC-Vの分岐命令が届く範囲はどれくらいですか?</h3>
+  <p>beq などの条件分岐は2バイト単位の13ビット符号付きオフセットを持ち、分岐命令から約 ±4 KiB の範囲に届きます。jal は約 ±1 MiB、auipc と jalr を組み合わせると約 ±2 GiB に届きます。</p>
+  <h3>x86-64がRIP相対アドレッシングを使うのはなぜですか?</h3>
+  <p>現在の命令からの相対位置で大域データにアクセスできるので、位置独立コードでロード時の書き換えも専用のベースレジスタも不要になるからです。32ビットのx86には、データに対するこのようなモードがありませんでした。</p>
+  <h3>共有ライブラリにPC相対アドレッシングは必須ですか?</h3>
+  <p>実際上は必須です。共有ライブラリはプロセスごとに異なるアドレスにロードされますが、PC相対の分岐やデータ参照と、GOTのような表を介した間接参照により、同じコードページがどこでも動作します。</p>
+</section>
 <section>
   <h2>解説の中の「PC相対アドレッシング」</h2>
   <ul class="term-quotes"><li><p>これをPC相対アドレッシングと呼びます。</p><a href="/q/isa-assembly/isa-assembly-010/">RISC-Vの条件分岐命令「beq a0, a1, label」で、分岐先labelの番地はどのように表されているか。</a></li></ul>

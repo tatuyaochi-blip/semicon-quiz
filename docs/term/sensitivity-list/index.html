@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"センシティビティリスト","item":"https://semiconroom.com/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"センシティビティリスト","description":"Verilogのalwaysの後の@( )に書く、ブロックを実行するきっかけとなる信号の並び。組み合わせ回路で書き漏れるとシミュレーションと回路が食い違う。","url":"https://semiconroom.com/term/sensitivity-list/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"センシティビティリスト","item":"https://semiconroom.com/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"センシティビティリスト","description":"Verilogのalwaysの後の@( )に書く、ブロックを実行するきっかけとなる信号の並び。組み合わせ回路で書き漏れるとシミュレーションと回路が食い違う。","url":"https://semiconroom.com/term/sensitivity-list/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verilogのalways @(*)はどういう意味ですか?","acceptedAnswer":{"@type":"Answer","text":"ブロック内で読み出すいずれかの信号が変化するたびにブロックを実行するという意味で、組み合わせ回路として正しい動作です。アスタリスクを使えば、信号を手で並べて書き漏らす心配がなくなります。"}},{"@type":"Question","name":"論理合成ではセンシティビティリストは使われますか?","acceptedAnswer":{"@type":"Answer","text":"組み合わせ回路については合成ツールはほぼ無視して文から論理を作るため、リストが不完全だとシミュレーションとハードウェアの動作が食い違います。クロック同期ブロックのエッジ指定は、フリップフロップや非同期リセットの推論に使われます。"}},{"@type":"Question","name":"VHDLにもセンシティビティリストはありますか?","acceptedAnswer":{"@type":"Answer","text":"あります。VHDLのprocessでは、processキーワードの後のかっこ内にきっかけとなる信号を並べます。VHDL-2008ではVerilogの@(*)に相当するprocess(all)が追加されました。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/hdl-verification/">ハードウェア記述言語と検証</a></p>
 </article>
-
+<section class="term-about">
+  <h2>シミュレータでの使われ方</h2>
+  <p>イベント駆動型のシミュレータは、alwaysブロックを常に評価しているわけではありません。@( )のイベント制御で待機し、リストに書かれた信号が変化したとき、posedgeやnegedgeの指定であればそのエッジのときだけブロックを起動します。すべてはこの動作から説明できます。出力に影響する信号がリストから漏れていると、その信号が変化してもブロックは実行されず、リストにある別の信号が動くまで出力は古い値のままになります。</p>
+</section>
+<section class="term-about">
+  <h2>リストの不足とシミュレーション・合成の不一致</h2>
+  <p><a class="term-link" href="/term/logic-synthesis/">論理合成</a>ツールは、<a class="term-link" href="/term/combinational-circuit/">組み合わせ回路</a>ではリストをほぼ無視し、ブロック内の文からゲートを作ります。通常は警告が出るだけです。そのため「always @(a) y = a &amp; b;」は、yが両方の入力に追従するANDゲートとして合成されますが、シミュレータではaが変化したときしかyが更新されません。たまたまaを変化させるテストは通りますが、ハードウェアは<a class="term-link" href="/term/rtl/">RTL</a>シミュレーションとは違う動作をします。この不一致はRTL検証をすり抜け、<a class="term-link" href="/term/gate-level-simulation/">ゲートレベルシミュレーション</a>や実チップで初めて現れるため危険です。</p>
+</section>
+<section class="term-about">
+  <h2>@(*)とalways_comb</h2>
+  <p><a class="term-link" href="/term/verilog/">Verilog</a>-2001ではalways @(*)が導入され、ブロック内で読み出すすべての信号が自動的にリストに含まれるようになり、書き漏れの心配がなくなりました。<a class="term-link" href="/term/systemverilog/">SystemVerilog</a>のalways_combはさらに進んでおり、時刻0で一度実行されるので出力が最初から整合した状態になり、呼び出した関数内で読む信号にも反応し、ラッチが<a class="term-link" href="/term/ai-inference/">推論</a>されるブロックをツールが指摘できるようにもなっています。<a class="term-link" href="/term/combinational-circuit/">組み合わせ回路</a>のセンシティビティリストを手で書くのは、今では避けたほうがよい古い書き方です。</p>
+</section>
+<section class="term-about">
+  <h2>順序回路ブロックでのエッジ指定</h2>
+  <p><a class="term-link" href="/term/flip-flop/">フリップフロップ</a>では、リストにレベルではなくエッジを書きます。「always @(posedge clk)」はクロックの立ち上がりエッジで値を取り込むレジスタを表します。ここに「or negedge rst_n」を加えるとアクティブローの<a class="term-link" href="/term/asynchronous-reset/">非同期リセット</a>になり、rst_nが立ち下がった瞬間にもブロックが実行されるため、クロックを待たずに、クロックが止まっていても出力がクリアされます。末尾の「_n」はアクティブローの信号を示す一般的な命名規則です。ただしリセットの解除には注意が必要で、通常はリカバリ・リムーバルのタイミングを満たすようにクロックに同期化します。</p>
+</section>
 <section>
   <h2>センシティビティリストの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hdl-verification-010" data-cat="hdl-verification" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. シミュレーションをせずに記述を調べ、ビット幅の不一致や意図しないラッチ、合成できない書き方などの問題を見つける</p><p class="explanation"><a class="term-link" href="/term/lint-tool/">Lint</a>ツールは、HDLの記述を規則に照らして静的に調べ、文法上は正しくても問題になりやすい書き方を指摘します。例えば、幅の違う信号の代入、<a class="term-link" href="/term/sensitivity-list/">センシティビティリスト</a>の書き漏れ、ラッチの<a class="term-link" href="/term/ai-inference/">推論</a>、ブロッキングとノンブロッキングの混在、クロックの扱いの誤りなどです。テストを作らなくても実行できるので、設計の早い段階から使うと、後の検証の手間を減らせます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>Verilogのalways @(*)はどういう意味ですか?</h3>
+  <p>ブロック内で読み出すいずれかの信号が変化するたびにブロックを実行するという意味で、組み合わせ回路として正しい動作です。アスタリスクを使えば、信号を手で並べて書き漏らす心配がなくなります。</p>
+  <h3>論理合成ではセンシティビティリストは使われますか?</h3>
+  <p>組み合わせ回路については合成ツールはほぼ無視して文から論理を作るため、リストが不完全だとシミュレーションとハードウェアの動作が食い違います。クロック同期ブロックのエッジ指定は、フリップフロップや非同期リセットの推論に使われます。</p>
+  <h3>VHDLにもセンシティビティリストはありますか?</h3>
+  <p>あります。VHDLのprocessでは、processキーワードの後のかっこ内にきっかけとなる信号を並べます。VHDL-2008ではVerilogの@(*)に相当するprocess(all)が追加されました。</p>
+</section>
 <section>
   <h2>解説の中の「センシティビティリスト」</h2>
   <ul class="term-quotes"><li><p>alwaysの後の@( )の中はセンシティビティリストと呼ばれ、どの信号が変わったときにブロックを実行するかを指定します。</p><a href="/q/hdl-verification/hdl-verification-010/">Verilogで「always @(*)」と書く意味として正しいものはどれか。</a></li><li><p>シミュレータはセンシティビティリストに書かれた信号の変化でだけブロックを実行するので、bだけが変わったときはyが古いまま残ります。</p><a href="/q/hdl-verification/hdl-verification-011/">組み合わせ回路のつもりで上のように書いた。起こりうる問題として正しいものはどれか。</a></li><li><p>センシティビティリストに「negedge rst_n」が含まれているので、rst_nが1から0に変わった瞬間にもブロックが実行され、クロックに関係なくqが0になります。</p><a href="/q/hdl-verification/hdl-verification-017/">上の記述のリセットの種類と動作として正しいものはどれか。</a></li><li><p>例えば、幅の違う信号の代入、センシティビティリストの書き漏れ、ラッチの推論、ブロッキングとノンブロッキングの混在、クロックの扱いの誤りなどです。</p><a href="/q/hdl-verification/hdl-verification-045/">HDLの検証で使われるLintツールの役割として正しいものはどれか。</a></li></ul>

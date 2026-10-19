@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ブートローダ","item":"https://semiconroom.com/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ブートローダ","description":"電源を入れたときに最初に動く小さなプログラム。本体のファームウェアを確かめて起動したり、新しいファームウェアに書き換えたりする。","url":"https://semiconroom.com/term/bootloader/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ブートローダ","item":"https://semiconroom.com/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ブートローダ","description":"電源を入れたときに最初に動く小さなプログラム。本体のファームウェアを確かめて起動したり、新しいファームウェアに書き換えたりする。","url":"https://semiconroom.com/term/bootloader/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ブートローダとファームウェアの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ブートローダは最初に動き、何を起動するかを決める小さなプログラムで、めったに変更しません。アプリケーションのファームウェアはブートローダが検証して起動する本体のプログラムで、ブートローダは新しいアプリケーションのファームウェアを書き込む役割も持ちます。"}},{"@type":"Question","name":"OTAアップデートでファームウェアのスロットを2つ使うのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"古いイメージを残したまま新しいイメージを書き込んで検証できるようにするためです。更新が中断されたり新しいバージョンが動かなかったりしても、機器は元のスロットから起動できます。"}},{"@type":"Question","name":"セキュアブートにはCRCチェックだけで十分ですか?","acceptedAnswer":{"@type":"Answer","text":"十分ではありません。CRCは偶発的な破損を検出できますが、イメージを改変した人はCRCも計算し直せるため、セキュアブートには暗号学的な署名の検証が必要です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/embedded/">組込み・ファームウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>電源投入時に起きること</h2>
+  <p>リセット後、プロセッサは決まったアドレスから実行を始めます。多くの組込み機器では、そこに置かれているのはアプリケーションではなくブートローダです。ブートローダは必要最小限のハードウェアを初期化し、有効なアプリケーションイメージがあるかを、通常はヘッダとCRCまたは署名を検証して確認します。そのうえで、<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>と<a class="term-link" href="/term/interrupt-vector-table/">割り込みベクタテーブル</a>を設定してから、アプリケーションの<a class="term-link" href="/term/entry-point/">エントリポイント</a>にジャンプするのが一般的です。有効なイメージがない場合や更新が要求されている場合は、制御を渡さずに新しいファームウェアを待ちます。</p>
+</section>
+<section class="term-about">
+  <h2>出荷後の更新とブートローダの保護</h2>
+  <p>ブートローダは<a class="term-link" href="/term/uart/">UART</a>、USB、<a class="term-link" href="/term/can-bus/">CAN</a>、イーサネット、無線などでファームウェアを受け取ってフラッシュに書き込めるため、出荷後でもハードウェアの書き込み器なしで不具合を修正できます。ブートローダ自体が壊れると機器は復旧できない、いわゆる「文鎮化」した状態になるため、通常は書き込み保護されたフラッシュ領域に置き、更新の対象外にします。多くの<a class="term-link" href="/term/microcontroller/">マイコン</a>はベンダ製のブートローダをROMにも持っており、ブートモード端子で選択できます。これは最初の書き込みや、フラッシュが空または壊れたボードの復旧に便利です。</p>
+</section>
+<section class="term-about">
+  <h2>安全なOTA更新のためのA/Bスロット</h2>
+  <p>動作中のファームウェアをその場で上書きするのは危険です。途中で電源や通信が切れると、起動できるイメージがなくなってしまいます。そのためOTA(無線経由の更新)を行う設計では、フラッシュを2つのスロットに分けます。新しいイメージは使っていない側のスロットに書き込んで検証し、そのうえで初めてブートローダが起動するスロットを切り替えます。新しいバージョンが起動に失敗したり、正常であることを確認できなかったりした場合は、ブートローダが元のスロットにロールバックします。その代わり、ファームウェア用にほぼ2倍のフラッシュ容量が必要になります。</p>
+</section>
+<section class="term-about">
+  <h2>セキュアブートと信頼の連鎖</h2>
+  <p><a class="term-link" href="/term/secure-boot/">セキュアブート</a>では、書き換えできないROMのコードが第1段のブートローダのデジタル署名を検証し、その段が次の段やOSのカーネルを検証する、というように信頼の連鎖(チェーン・オブ・トラスト)を形づくります。検証に失敗すると起動が止まるため、改ざんされた起動コードは実行されません。CRCだけを確認するブートローダは偶発的な破損は検出できますが、意図的な改変は検出できません。攻撃者はCRCを計算し直せばよいからです。真正性を確かめるには、攻撃者が持っていない鍵で検証する署名が必要です。</p>
+</section>
 <section>
   <h2>ブートローダの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="embedded-037" data-cat="embedded" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 電源を入れたときに最初に動いて、本体のファームウェアを起動したり、新しいファームウェアに書き換えたりする</p><p class="explanation"><a class="term-link" href="/term/bootloader/">ブートローダ</a>は、フラッシュメモリの決まった場所に置かれた小さなプログラムで、電源を入れると最初に動きます。通常は本体のファームウェアが正しいかを確かめて起動しますが、<a class="term-link" href="/term/uart/">UART</a>やUSB、無線などで新しいファームウェアを受け取って書き換える機能も持ちます。ブートローダ自身を壊さないように、書き換えの対象から外して保護しておくのが一般的です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ブートローダとファームウェアの違いは何ですか?</h3>
+  <p>ブートローダは最初に動き、何を起動するかを決める小さなプログラムで、めったに変更しません。アプリケーションのファームウェアはブートローダが検証して起動する本体のプログラムで、ブートローダは新しいアプリケーションのファームウェアを書き込む役割も持ちます。</p>
+  <h3>OTAアップデートでファームウェアのスロットを2つ使うのはなぜですか?</h3>
+  <p>古いイメージを残したまま新しいイメージを書き込んで検証できるようにするためです。更新が中断されたり新しいバージョンが動かなかったりしても、機器は元のスロットから起動できます。</p>
+  <h3>セキュアブートにはCRCチェックだけで十分ですか?</h3>
+  <p>十分ではありません。CRCは偶発的な破損を検出できますが、イメージを改変した人はCRCも計算し直せるため、セキュアブートには暗号学的な署名の検証が必要です。</p>
+</section>
 <section>
   <h2>解説の中の「ブートローダ」</h2>
   <ul class="term-quotes"><li><p>ブートローダは、フラッシュメモリの決まった場所に置かれた小さなプログラムで、電源を入れると最初に動きます。</p><a href="/q/embedded/embedded-037/">組込み機器のブートローダの役割として正しいものはどれか。</a></li><li><p>新しい版で起動に失敗したら、ブートローダが元の面に戻します。</p><a href="/q/embedded/embedded-038/">無線でファームウェアを書き換える(OTA更新)機器で、フラッシュメモリにファームウェアを置く場所を2つ(A面とB面)用…</a></li><li><p>セキュアブートでは、書き換えられないROMのコードが最初のブートローダの署名を確かめ、そのブートローダが次の段階やOSのカーネルの署名を確かめる、というように、信頼の鎖をつないでいきます。</p><a href="/q/hw-security/hw-security-019/">セキュアブートの説明として正しいものはどれか。</a></li></ul>

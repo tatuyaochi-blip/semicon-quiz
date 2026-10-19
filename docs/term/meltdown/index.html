@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"Meltdown","item":"https://semiconroom.com/term/meltdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Meltdown","description":"一部のCPUで、権限の確認による例外の前に投機的にカーネルのメモリを読めてしまい、キャッシュの痕跡から値を推測できた脆弱性。KPTIなどで対策された。","url":"https://semiconroom.com/term/meltdown/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"Meltdown","item":"https://semiconroom.com/term/meltdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Meltdown","description":"一部のCPUで、権限の確認による例外の前に投機的にカーネルのメモリを読めてしまい、キャッシュの痕跡から値を推測できた脆弱性。KPTIなどで対策された。","url":"https://semiconroom.com/term/meltdown/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"MeltdownとSpectreは同じものですか?","acceptedAnswer":{"@type":"Answer","text":"違います。どちらも投機実行がキャッシュに残す痕跡からデータを漏らしますが、Meltdownは遅れて行われる権限チェックをすり抜けてカーネルメモリを読み、Spectreは被害者のプログラム自身の投機実行をだまして秘密のデータに触れさせます。"}},{"@type":"Question","name":"Meltdownのパッチを当てるとパソコンが遅くなるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"KPTIはユーザーモードとカーネルモードを行き来するたびにページテーブルを切り替えるため、システムコールや割り込みのたびにオーバーヘッドとTLBミスが増えるからです。システムコールを多く使うプログラムほど影響を受けます。"}},{"@type":"Question","name":"最近のCPUもMeltdownの脆弱性がありますか?","acceptedAnswer":{"@type":"Answer","text":"公表後に設計されたプロセッサは一般に、例外を起こしたデータが依存命令に渡らないようにしており、OSはそうしたCPUを検出してKPTIを省きます。影響を受ける古いCPUでは、引き続きソフトウェアによる対策が必要です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/hw-security/">ハードウェアセキュリティ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>攻撃のしくみ</h2>
+  <p>2018年に公表されたMeltdownは、<a class="term-link" href="/term/out-of-order-execution/">アウトオブオーダー実行</a>を悪用する攻撃です。ユーザープログラムがカーネルのアドレスからロードを行います。アーキテクチャ上は権限違反の例外が発生して何も返らないはずですが、影響を受けるプロセッサでは、例外が有効になる前にロードした値が後続の依存命令に渡っていました。これらの一時的に実行される命令は、秘密の1バイトをユーザー所有のプローブ配列のインデックスとして使い、特定の<a class="term-link" href="/term/cache-line/">キャッシュライン</a>をキャッシュに読み込ませます。最終的に例外が発生するとレジスタの結果は破棄されますが、キャッシュの状態は元に戻りません。</p>
+</section>
+<section class="term-about">
+  <h2>キャッシュを通じて秘密を読み取る</h2>
+  <p>攻撃者は次に、プローブ配列のすべての要素へのアクセス時間を測ります。DRAMまで取りに行く遅いアクセスではなく、キャッシュヒットで速く読める要素が1つだけあり、それが一時的に読み出された値を示します。このタイミングサイドチャネルは一般にFlush+Reloadという手法で構成され、1バイトずつ繰り返すことでカーネルメモリを丸ごと読み出せます。権限違反の例外自体はシグナルハンドラで捕まえるなどして抑え込めるため、実用的な速度で情報を漏えいさせることができます。</p>
+</section>
+<section class="term-about">
+  <h2>MeltdownとSpectreの違い</h2>
+  <p>どちらの攻撃も一時的な実行がキャッシュに残す痕跡を利用しますが、すり抜ける対象が異なります。Meltdownは、権限チェックの完了が遅すぎることを突いてユーザーとカーネルの間の特権境界を直接破るもので、一部のプロセッサ設計に見られる特定のマイクロアーキテクチャの動作に依存していました。一方<a class="term-link" href="/term/spectre/">Spectre</a>は<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器を誤って学習させ、正当な権限を持つ被害者自身のコードに、攻撃者が選んだデータへ投機的にアクセスさせます。Spectreは高性能な投機実行CPUのほぼすべてに影響し、完全に取り除くのがより難しい攻撃です。</p>
+</section>
+<section class="term-about">
+  <h2>KPTIとハードウェアでの修正</h2>
+  <p>主なソフトウェア対策である<a class="term-link" href="/term/kernel-page-table-isolation/">KPTI</a>(カーネルページテーブル分離)は、ユーザーコードの実行中に使う<a class="term-link" href="/term/page-table/">ページテーブル</a>に、カーネルメモリの大部分をマッピングしないようにします。マッピングを残すのは、カーネルに入るために必要な小さなスタブだけです。アドレス変換がなければ、一時的な実行であってもデータをロードできません。その代わり、<a class="term-link" href="/term/system-call/">システムコール</a>、<a class="term-link" href="/term/interrupt/">割り込み</a>、例外のたびにページテーブルの切り替えが発生し、システムコールの多い処理では目に見えて遅くなることがあります。PCID(プロセスコンテキスト識別子)を使うと<a class="term-link" href="/term/tlb/">TLB</a>フラッシュの損失を減らせます。ハードウェアで修正されたプロセッサではKPTIは不要です。</p>
+</section>
 <section>
   <h2>Meltdownの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hw-security-008" data-cat="hw-security" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ユーザのプログラムが動いている間は、カーネルのメモリのほとんどをページテーブルから外し、投機的にも読めないようにする</p><p class="explanation">従来のOSは、切り替えを速くするため、ユーザのプロセスの<a class="term-link" href="/term/page-table/">ページテーブル</a>にもカーネルのメモリを(アクセス禁止の印を付けて)載せていました。<a class="term-link" href="/term/meltdown/">Meltdown</a>では、その印の確認より先に投機的に読めてしまったので、<a class="term-link" href="/term/kernel-page-table-isolation/">KPTI</a>ではユーザのプログラムが動く間はカーネルのページを対応づけ自体から外しました。番地の変換ができなければ投機的にも読めません。ただし、<a class="term-link" href="/term/system-call/">システムコール</a>のたびにページテーブルを切り替えるので性能が下がります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>MeltdownとSpectreは同じものですか?</h3>
+  <p>違います。どちらも投機実行がキャッシュに残す痕跡からデータを漏らしますが、Meltdownは遅れて行われる権限チェックをすり抜けてカーネルメモリを読み、Spectreは被害者のプログラム自身の投機実行をだまして秘密のデータに触れさせます。</p>
+  <h3>Meltdownのパッチを当てるとパソコンが遅くなるのはなぜですか?</h3>
+  <p>KPTIはユーザーモードとカーネルモードを行き来するたびにページテーブルを切り替えるため、システムコールや割り込みのたびにオーバーヘッドとTLBミスが増えるからです。システムコールを多く使うプログラムほど影響を受けます。</p>
+  <h3>最近のCPUもMeltdownの脆弱性がありますか?</h3>
+  <p>公表後に設計されたプロセッサは一般に、例外を起こしたデータが依存命令に渡らないようにしており、OSはそうしたCPUを検出してKPTIを省きます。影響を受ける古いCPUでは、引き続きソフトウェアによる対策が必要です。</p>
+</section>
 <section>
   <h2>解説の中の「Meltdown」</h2>
   <ul class="term-quotes"><li><p>Meltdownでは、その印の確認より先に投機的に読めてしまったので、KPTIではユーザのプログラムが動く間はカーネルのページを対応づけ自体から外しました。</p><a href="/q/hw-security/hw-security-009/">Meltdownへのソフトウェアの対策として導入されたKPTI(カーネルページテーブル分離)の考え方として正しいものは…</a></li><li><p>2018年に公表されたSpectreやMeltdownは、投機的に実行した命令の結果は取り消されても、読み込んだデータがキャッシュに残ることを悪用し、アクセス時間の違い(サイドチャネル)から本来読めない秘密のデータを推測する攻撃です。</p><a href="/q/cpu/cpu-027/">投機的実行の痕跡がキャッシュに残ることを悪用し、本来アクセスできないデータを推測する攻撃が明らかになった脆弱性の例はど…</a></li></ul>

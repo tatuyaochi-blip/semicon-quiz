@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スラッシング","item":"https://semiconroom.com/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スラッシング","description":"物理メモリが足りず、ページの追い出しと読み込みが頻繁に繰り返されて、処理がほとんど進まなくなる状態。実行するプロセスを減らすかメモリを増やすと解消する。","url":"https://semiconroom.com/term/thrashing/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スラッシング","item":"https://semiconroom.com/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スラッシング","description":"物理メモリが足りず、ページの追い出しと読み込みが頻繁に繰り返されて、処理がほとんど進まなくなる状態。実行するプロセスを減らすかメモリを増やすと解消する。","url":"https://semiconroom.com/term/thrashing/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"OSでスラッシングが起こる原因は?","acceptedAnswer":{"@type":"Answer","text":"実行中のプロセスのワーキングセットの合計が物理メモリを超えることです。ページが追い出されてはすぐにまた必要になるため、システムは有用な処理ではなくページングI/Oに追われます。"}},{"@type":"Question","name":"スラッシングを解消するには?","acceptedAnswer":{"@type":"Answer","text":"動作中のプロセス数を減らすか、物理メモリを増やすか、各プロセスの実際の必要量に応じてフレームを割り当てるワーキングセット方式やページフォルト頻度方式を使います。"}},{"@type":"Question","name":"スラッシングとBéládyの異常の違いは?","acceptedAnswer":{"@type":"Answer","text":"スラッシングはメモリの過剰な割り当てによる性能の崩壊で、Béládyの異常はFIFO置き換えでフレームを増やすとかえってページフォルトが増えるという、直感に反する現象です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>スラッシングが起こる理由</h2>
+  <p>各プロセスには、短い時間内に実際に使うページの集合であるワーキングセットがあります。実行中の全プロセスのワーキングセットの合計が物理メモリを超えると、あるプロセスのためにページを読み込むたびに、別のプロセス、あるいは同じプロセスがすぐに必要とするページが追い出されます。そのページは再び<a class="term-link" href="/term/page-fault/">ページフォルト</a>で読み込まれ、さらに別の必要なページを追い出します。ページフォルトの処理はディスクやSSDへのアクセスとなり、DRAMの約 100 nsに対して数十 µsから数 msかかるため、システムはほとんどの時間をページングI/Oの待ちに費やします。</p>
+</section>
+<section class="term-about">
+  <h2>悪循環の罠</h2>
+  <p>教科書でおなじみのシナリオが、スラッシングが自らを悪化させる様子を示しています。プロセスが<a class="term-link" href="/term/page-fault/">ページフォルト</a>を待つ間、CPU使用率は下がります。単純なスケジューラが使用率を上げようとしてさらにプロセスを受け入れると、各プロセスが使えるメモリが減り、ページフォルトがますます増えて使用率はさらに下がります。こうして<a class="term-link" href="/term/throughput/">スループット</a>は緩やかに下がるのではなく崩壊します。症状としては、非常に高いページフォルト率、スワップI/Oの飽和、I/O待ち時間の増大が見られ、マシンは忙しそうに見えても有用な計算はほとんど進みません。</p>
+</section>
+<section class="term-about">
+  <h2>対策</h2>
+  <p>根本的な対策は、メモリの需要を物理メモリに収めることです。プロセス全体を一時停止したりスワップアウトしたりして同時に動かすプロセスを減らすか、物理メモリを増やします。ワーキングセットに基づく方式では、ワーキングセットを保持できる場合にだけプロセスを受け入れます。<a class="term-link" href="/term/page-fault/">ページフォルト</a>頻度(PFF)制御では、フォルト率が上限のしきい値を超えたプロセスにフレームを追加し、下限を下回ったプロセスからフレームを取り上げます。プログラム側でも、局所性を高めてワーキングセットを小さくすることで状況を改善できます。</p>
+</section>
+<section class="term-about">
+  <h2>関連用語との違い</h2>
+  <p>スラッシングは、メモリ不足によって<a class="term-link" href="/term/throughput/">スループット</a>が持続的に崩壊する現象です。FIFO置き換えでフレームを増やすとかえって<a class="term-link" href="/term/page-fault/">ページフォルト</a>が増えるという特定のケースであるBéládyの異常とは異なり、<a class="term-link" href="/term/lru-replacement/">LRU</a>のようなスタックアルゴリズムではこの異常は起こりません。また、各タスクがほかのタスクの持つ資源を待って止まってしまう<a class="term-link" href="/term/deadlock/">デッドロック</a>とも異なります。この言葉はキャッシュや<a class="term-link" href="/term/tlb/">TLB</a>にも使われ、キャッシュスラッシングはラインどうしが互いを繰り返し追い出す状態を指します。多くは同じセットに対応するアドレスどうしで起こり、同じパターンがより小さな規模で現れたものです。</p>
+</section>
 <section>
   <h2>スラッシングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-020" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. スラッシング</p><p class="explanation">同時に動くプロセスが使うページの合計(ワーキングセット)が物理メモリより大きくなると、必要なページを読み込むたびに別のプロセスが使うページを追い出し、すぐにまたそれが必要になる、という繰り返しが起こります。ディスクの読み書きを待つ時間ばかりになり、CPUの利用率も下がります。これが<a class="term-link" href="/term/thrashing/">スラッシング</a>で、実行するプロセスを減らすかメモリを増やすと解消します。<a class="term-link" href="/term/deadlock/">デッドロック</a>は互いの資源を待ち合って止まる状態です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>OSでスラッシングが起こる原因は?</h3>
+  <p>実行中のプロセスのワーキングセットの合計が物理メモリを超えることです。ページが追い出されてはすぐにまた必要になるため、システムは有用な処理ではなくページングI/Oに追われます。</p>
+  <h3>スラッシングを解消するには?</h3>
+  <p>動作中のプロセス数を減らすか、物理メモリを増やすか、各プロセスの実際の必要量に応じてフレームを割り当てるワーキングセット方式やページフォルト頻度方式を使います。</p>
+  <h3>スラッシングとBéládyの異常の違いは?</h3>
+  <p>スラッシングはメモリの過剰な割り当てによる性能の崩壊で、Béládyの異常はFIFO置き換えでフレームを増やすとかえってページフォルトが増えるという、直感に反する現象です。</p>
+</section>
 <section>
   <h2>解説の中の「スラッシング」</h2>
   <ul class="term-quotes"><li><p>スラッシングはメモリ不足で置き換えが続く状態、コピーオンライトは書き込み時に複製する方式です。</p><a href="/q/os-hardware/os-hardware-020/">ページ置き換えでFIFO方式を使うと、物理メモリのページ数を増やしたのにページフォルトが増える場合がある。この現象を何…</a></li><li><p>これがスラッシングで、実行するプロセスを減らすかメモリを増やすと解消します。</p><a href="/q/os-hardware/os-hardware-021/">物理メモリが足りず、ページの追い出しと読み込みばかりが続いて処理がほとんど進まなくなる状態を何と呼ぶか。</a></li></ul>

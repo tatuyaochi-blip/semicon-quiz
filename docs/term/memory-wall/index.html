@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリウォール","item":"https://semiconroom.com/term/memory-wall/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリウォール","description":"プロセッサの演算性能の向上に、メモリの帯域や遅延の改善が追いつかず、全体の性能が制限される問題。HBMやキャッシュの大容量化、先端パッケージなどで対策される。","url":"https://semiconroom.com/term/memory-wall/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリウォール","item":"https://semiconroom.com/term/memory-wall/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリウォール","description":"プロセッサの演算性能の向上に、メモリの帯域や遅延の改善が追いつかず、全体の性能が制限される問題。HBMやキャッシュの大容量化、先端パッケージなどで対策される。","url":"https://semiconroom.com/term/memory-wall/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"メモリウォールはレイテンシの問題ですか、帯域の問題ですか?","acceptedAnswer":{"@type":"Answer","text":"両方です。レイテンシは依存関係のあるメモリアクセスを行うプログラムを制限し、帯域は計算量に比べて大量のデータを流すプログラムを制限します。"}},{"@type":"Question","name":"HBMはメモリウォールにどう役立ちますか?","acceptedAnswer":{"@type":"Answer","text":"HBMはDRAMダイをプロセッサの隣に積層し、非常に幅の広いインターフェースを使うので、従来のDIMMよりはるかに高い帯域が得られます。主に帯域の側面への対策で、レイテンシは数十 nsの範囲のままです。"}},{"@type":"Question","name":"大規模言語モデルがメモリ律速になるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"小さなバッチサイズでの生成では、各重みをメモリから読み出しても数回の演算にしか使わないためです。アクセラレータの演算速度は、メモリが重みを供給できる速度をはるかに上回っています。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/dram/">DRAM</a></p>
 </article>
-
+<section class="term-about">
+  <h2>性能差が生まれた背景</h2>
+  <p>プロセッサの性能は数十年にわたり急速に向上してきました。初めはクロック周波数の向上により、その後はコア数の増加やベクトル演算器の幅の拡大によるものです。一方、DRAMは主に集積度とビットあたりのコストを重視して最適化されてきました。DRAMのアクセス遅延は数十 nsにとどまっているため、数 GHzのクロックでは主記憶へのキャッシュミス1回で数百サイクルを失います。メモリウォールという言葉は1990年代半ばに広まり、プロセッサコアではなくこの広がり続ける差こそが、最終的にシステム性能を制限すると警告しました。</p>
+</section>
+<section class="term-about">
+  <h2>レイテンシの壁と帯域の壁</h2>
+  <p>この問題には2つの側面があります。レイテンシは、連結構造をポインタでたどる処理のように、各ロードが終わるまで次のアドレスがわからない依存アクセスをもつコードに効いてきます。帯域は、演算1回あたりに大量のデータを扱うストリーミング型のコードに効いてきます。帯域の側面を表すのがルーフラインモデルで、達成可能な性能は、ピーク演算性能と「メモリ帯域×<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>」の小さいほうになります。演算強度とは、転送する1バイトあたりに行う演算の数です。演算強度が低いコードは、コアがいくつあってもピーク演算性能に届きません。</p>
+</section>
+<section class="term-about">
+  <h2>AIの処理が強く影響を受ける理由</h2>
+  <p>大規模なニューラルネットワークは数十億の重みをもち、小さな<a class="term-link" href="/term/batch-size/">バッチサイズ</a>で1トークンを生成するたびに、ほぼすべての重みを1回ずつ読み出しますが、各重みで行うのは乗算と加算だけです。16ビットの重みなら1バイトあたり約1演算ですが、最新のアクセラレータはメモリが供給する1バイトごとに数百回の演算をこなせます。そのため演算器はメモリを待つことになります。リクエストのバッチ化、重みの低ビットへの量子化、データのチップ上での保持は、いずれも<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>を高めるか、転送するバイト数を減らす手段です。</p>
+</section>
+<section class="term-about">
+  <h2>設計者の対抗策</h2>
+  <p>多階層のキャッシュは局所性を利用して大半のアクセスをDRAMまで届かせず、ハードウェアプリフェッチャは要求される前にデータを取ってきます。<a class="term-link" href="/term/out-of-order-execution/">アウトオブオーダー実行</a>のコアや数千スレッドをもつ<a class="term-link" href="/term/gpu/">GPU</a>は、多くのキャッシュミスを同時に処理中にしておくことでレイテンシを隠します。先端パッケージングでプロセッサの隣に置く<a class="term-link" href="/term/hbm/">HBM</a>(広帯域メモリ)や、ダイ上に積層した大容量キャッシュは、帯域を直接引き上げます。プロセッシングインメモリやニアメモリコンピューティングは逆の方向をとり、データを動かす代わりに、計算の一部をデータがある場所へ移します。</p>
+</section>
 <section>
   <h2>メモリウォールの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="dram-030" data-cat="dram" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. メモリウォール</p><p class="explanation">プロセッサの演算性能は年率50%以上で伸びた時期がありましたが、DRAMのアクセス遅延は数十nsからほとんど改善しておらず、CPUが数百サイクルもデータを待つことになりました。これが<a class="term-link" href="/term/memory-wall/">メモリウォール</a>です。対策として、多段のキャッシュ、メモリの並列アクセス、<a class="term-link" href="/term/prefetching/">プリフェッチ</a>、<a class="term-link" href="/term/hbm/">HBM</a>のような広帯域メモリ、演算をメモリの近くで行うプロセッシング・イン・メモリなどが進められています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>メモリウォールはレイテンシの問題ですか、帯域の問題ですか?</h3>
+  <p>両方です。レイテンシは依存関係のあるメモリアクセスを行うプログラムを制限し、帯域は計算量に比べて大量のデータを流すプログラムを制限します。</p>
+  <h3>HBMはメモリウォールにどう役立ちますか?</h3>
+  <p>HBMはDRAMダイをプロセッサの隣に積層し、非常に幅の広いインターフェースを使うので、従来のDIMMよりはるかに高い帯域が得られます。主に帯域の側面への対策で、レイテンシは数十 nsの範囲のままです。</p>
+  <h3>大規模言語モデルがメモリ律速になるのはなぜですか?</h3>
+  <p>小さなバッチサイズでの生成では、各重みをメモリから読み出しても数回の演算にしか使わないためです。アクセラレータの演算速度は、メモリが重みを供給できる速度をはるかに上回っています。</p>
+</section>
 <section>
   <h2>解説の中の「メモリウォール」</h2>
   <ul class="term-quotes"><li><p>これがメモリウォールです。</p><a href="/q/dram/dram-030/">プロセッサの性能向上に比べて、メモリの帯域や遅延の改善が追いつかないことによって生じる性能の制約を何と呼ぶか。</a></li></ul>

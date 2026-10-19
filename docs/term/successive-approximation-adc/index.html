@@ -16,7 +16,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"逐次比較型ADC","item":"https://semiconroom.com/term/successive-approximation-adc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"逐次比較型ADC","description":"内部のDACと比較器を使い、上位ビットから1ビットずつ決めていくADC。速度と精度、消費電力のバランスがよい。","url":"https://semiconroom.com/term/successive-approximation-adc/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"逐次比較型ADC","item":"https://semiconroom.com/term/successive-approximation-adc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"逐次比較型ADC","description":"内部のDACと比較器を使い、上位ビットから1ビットずつ決めていくADC。速度と精度、消費電力のバランスがよい。","url":"https://semiconroom.com/term/successive-approximation-adc/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"SAR型ADCの変換には何クロックかかりますか?","acceptedAnswer":{"@type":"Answer","text":"1ビットにつき少なくとも1回の比較が必要なので、NビットならNサイクルです。これにアクイジション時間が加わり、初期の判定誤りを補正する冗長ビットのために追加のサイクルが必要になる場合もあります。"}},{"@type":"Question","name":"SAR型ADCにドライバアンプが必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"スイッチで切り替わるサンプリングコンデンサがアクイジションのたびに電荷を一気に引き込み、高インピーダンスの信号源では時間内に正確に再充電できないからです。低インピーダンスのオペアンプとRCのチャージバケットフィルタを組み合わせることで解決します。"}},{"@type":"Question","name":"SAR型とデルタシグマ型のどちらを使えばよいですか?","acceptedAnswer":{"@type":"Answer","text":"SAR型は中〜高分解能で、レイテンシのない高速な変換やマルチプレクス入力が必要な場合に向いています。デルタシグマ型は、精密センサ計測やオーディオ計測のように、帯域が狭く非常に高い分解能が必要な用途に向いています。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>この用語の分野: <a href="/c/adc-dac/">AD/DA変換</a></p>
 </article>
+<section class="term-about">
+  <h2>1ステップごとに1ビットを決める二分探索</h2>
+  <p>逐次比較レジスタ(SAR)型ADCは、まず入力をホールドコンデンサにサンプリングします。次に制御ロジックが内部DACの最上位ビットを立ててフルスケールの中央値を出力し、入力がそれより高いか低いかを<a class="term-link" href="/term/comparator/">コンパレータ</a>が判定して、その結果に応じてビットを残すか消すかを決めます。続いて次のビットを試し、残りの範囲を毎回半分に絞っていきます。N回の比較を終えるとレジスタにNビットの結果が入るため、変換時間は分解能に対して直線的にしか増えません。</p>
+</section>
+<section class="term-about">
+  <h2>容量DAC</h2>
+  <p><a class="term-link" href="/term/cmos/">CMOS</a>のSAR型ADCの多くでは、DACは2進重み付けされたコンデンサのアレイで、これがサンプリングコンデンサも兼ねています。この方式を電荷再分配型と呼びます。変換中は各コンデンサの下部電極を基準電圧の間で切り替え、その結果生じる上部電極の電圧を<a class="term-link" href="/term/comparator/">コンパレータ</a>が監視します。アレイが電力を消費するのは主に切り替え時で、コンパレータも1個だけなので、消費電力はおおむねサンプルレートに比例します。そのためSAR型は<a class="term-link" href="/term/microcontroller/">マイコン</a>や電池駆動のセンサで広く使われています。</p>
+</section>
+<section class="term-about">
+  <h2>入力の駆動</h2>
+  <p>アクイジション(取り込み)の開始時、入力からは数pF〜数十pFのサンプリング容量が見え、これを短いアクイジション時間内に充電しなければなりません。Nビットの変換器で1/2 LSB以内に整定するには約(N+1)·ln2時定数かかり、16ビットではおよそ11.8時定数になります。高インピーダンスの信号源ではこれを満たせないため、出力インピーダンスの低い<a class="term-link" href="/term/operational-amplifier/">オペアンプ</a>のドライバと、瞬間的な電荷を供給するコンデンサ(チャージバケット)を持つRCフィルタを組み合わせて使います。</p>
+</section>
+<section class="term-about">
+  <h2>SAR型とフラッシュ型・デルタシグマ型の比較</h2>
+  <p><a class="term-link" href="/term/flash-adc/">フラッシュ型ADC</a>は2ᴺ − 1個の<a class="term-link" href="/term/comparator/">コンパレータ</a>を使って1ステップで変換するので非常に高速ですが、消費電力が大きく、分解能は低いものに限られます。デルタシグマ型ADCは<a class="term-link" href="/term/oversampling/">オーバーサンプリング</a>とデジタルフィルタで高分解能を実現しますが、帯域は狭く、デジタルフィルタによるレイテンシが生じます。SAR型はその中間に位置し、一般に約10〜18ビットの分解能を数MSPS程度までのサンプルレートで実現します。パイプライン遅延なしで毎回の結果が得られるため、マルチプレクスした多チャネル入力に向いています。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>SAR型ADCの変換には何クロックかかりますか?</h3>
+  <p>1ビットにつき少なくとも1回の比較が必要なので、NビットならNサイクルです。これにアクイジション時間が加わり、初期の判定誤りを補正する冗長ビットのために追加のサイクルが必要になる場合もあります。</p>
+  <h3>SAR型ADCにドライバアンプが必要なのはなぜですか?</h3>
+  <p>スイッチで切り替わるサンプリングコンデンサがアクイジションのたびに電荷を一気に引き込み、高インピーダンスの信号源では時間内に正確に再充電できないからです。低インピーダンスのオペアンプとRCのチャージバケットフィルタを組み合わせることで解決します。</p>
+  <h3>SAR型とデルタシグマ型のどちらを使えばよいですか?</h3>
+  <p>SAR型は中〜高分解能で、レイテンシのない高速な変換やマルチプレクス入力が必要な場合に向いています。デルタシグマ型は、精密センサ計測やオーディオ計測のように、帯域が狭く非常に高い分解能が必要な用途に向いています。</p>
+</section>
 
 
 <section class="books">

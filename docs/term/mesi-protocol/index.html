@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"MESIプロトコル","item":"https://semiconroom.com/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESIプロトコル","description":"キャッシュの各ラインをModified・Exclusive・Shared・Invalidの4つの状態で管理するコヒーレンシのプロトコル。書き込みのときにほかのコアのコピーを無効にする。","url":"https://semiconroom.com/term/mesi-protocol/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"MESIプロトコル","item":"https://semiconroom.com/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESIプロトコル","description":"キャッシュの各ラインをModified・Exclusive・Shared・Invalidの4つの状態で管理するコヒーレンシのプロトコル。書き込みのときにほかのコアのコピーを無効にする。","url":"https://semiconroom.com/term/mesi-protocol/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"MESIとMSIの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"MESIは、ほかのキャッシュが持っていないクリーンなライン用にExclusive状態を追加しています。これによりコアは、MSIでは必要になる無効化のブロードキャストをせずに、そのラインに書き込めます。"}},{"@type":"Question","name":"MESIのModified状態とはどういう意味ですか?","acceptedAnswer":{"@type":"Answer","text":"このキャッシュが唯一の有効なコピーを持っていて、それを変更済みのため、メインメモリの内容が古くなっている状態です。このラインは、追い出すときに書き戻すか、要求してきたほかのコアに供給しなければなりません。"}},{"@type":"Question","name":"フォールスシェアリングとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"別々のコアで動くスレッドが同じキャッシュラインにある別々の変数に書き込むことで、コヒーレンシプロトコルがそのラインをキャッシュ間で行き来させ、性能が落ちる現象です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -117,7 +117,22 @@
 </svg><figcaption class="fig-cap">MESIプロトコルの状態遷移 · <a href="/figures/#fig-mesi">図解集で見る</a></figcaption></figure>
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>4つの状態</h2>
+  <p>Modified(M)は、このキャッシュだけがコピーを持ち、しかも書き込み済みの状態です。メモリの内容は古いので、データは書き戻すか、ほかのキャッシュに供給しなければなりません。Exclusive(E)は唯一のコピーですが、メモリと同じ内容です。Shared(S)は変更されていないコピーで、ほかのキャッシュも持っている可能性があります。Invalid(I)は使えるデータがない状態です。このプロトコルは各ラインについて単一ライタ・複数リーダの規則を保証します。どの時点でも、1つのキャッシュだけが書き込める(MかE)か、任意の数のキャッシュが読める(S)かのどちらかで、両方が同時に成り立つことはありません。</p>
+</section>
+<section class="term-about">
+  <h2>主な状態遷移</h2>
+  <p>読み出しミスでは、キャッシュはラインを要求します。ほかのどのキャッシュも持っていなければEで、持っていればSで読み込みます。ほかのキャッシュがMで持っている場合は、そのキャッシュがデータを供給するか書き戻して、Sに移ります。Sのラインに書き込むには、まずほかのすべてのコピーを無効化するアップグレード要求を出してからMに移ります。書き込みミスでは、ラインの取得とほかのコピーの無効化を1回で行う所有権付き読み出し(RFO)を発行します。ほかのコアの書き込み要求を観測すると手元のコピーはIになり、Mのコピーなら先にデータを引き渡します。</p>
+</section>
+<section class="term-about">
+  <h2>E状態が重要な理由</h2>
+  <p>より単純な<a class="term-link" href="/term/message-signaled-interrupts/">MSI</a>プロトコルにはE状態がありません。そのため、コアが自分専用のデータを読んでから書き込むと、ほかのキャッシュがコピーを持っていなくても、バスに余分な無効化要求を出す必要があります。E状態はラインがクリーンで共有されていないことを記録しているので、後の書き込みでは何も通知せずにMへ移れます。多くのデータは1つのコアだけが使うため、これでコヒーレンシのトラフィックが大きく減ります。状態を増やした変種もあり、MOESIはOwned状態を加えて、ダーティなラインを先にメモリを更新せずに共有できるようにし、MESIFはForward状態を加えて、要求に応答する共有者を1つに決めます。</p>
+</section>
+<section class="term-about">
+  <h2>フォールスシェアリング</h2>
+  <p>コヒーレンシは変数単位ではなく、通常64バイトの<a class="term-link" href="/term/cache-line/">キャッシュライン</a>単位で管理されます。2つのコアが、たまたま同じラインにある別々の変数に繰り返し書き込むと、書き込みのたびに相手のコアのコピーを無効化しなければなりません。そのため、スレッドどうしは同じデータに一切触れていないのに、ラインが一方のキャッシュではM、他方ではIという状態を行き来します。このフォールスシェアリング(<a class="term-link" href="/term/false-sharing/">偽共有</a>)によって、並列化したコードが逐次実行より遅くなることさえあります。対策は、カウンタなどスレッドごとに頻繁に書き込むデータを、パディングやアラインメントで別々のラインに分けることです。</p>
+</section>
 <section>
   <h2>MESIプロトコルの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-003" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -131,7 +146,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. ほかのコアに知らせる必要がなく、そのままM状態に変わる</p><p class="explanation">E状態は、このコアだけがラインを持ち、内容が主記憶と同じ状態です。ほかのコアにコピーがないと分かっているので、書き込むときに無効化の通知をせずにM状態へ移れます。1つのコアだけが使うデータを読んでから書く、というよくある処理で通信を省けるのが、E状態を設ける利点です。S状態から書き込む場合は、ほかのコピーの無効化が必要です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>MESIとMSIの違いは何ですか?</h3>
+  <p>MESIは、ほかのキャッシュが持っていないクリーンなライン用にExclusive状態を追加しています。これによりコアは、MSIでは必要になる無効化のブロードキャストをせずに、そのラインに書き込めます。</p>
+  <h3>MESIのModified状態とはどういう意味ですか?</h3>
+  <p>このキャッシュが唯一の有効なコピーを持っていて、それを変更済みのため、メインメモリの内容が古くなっている状態です。このラインは、追い出すときに書き戻すか、要求してきたほかのコアに供給しなければなりません。</p>
+  <h3>フォールスシェアリングとは何ですか?</h3>
+  <p>別々のコアで動くスレッドが同じキャッシュラインにある別々の変数に書き込むことで、コヒーレンシプロトコルがそのラインをキャッシュ間で行き来させ、性能が落ちる現象です。</p>
+</section>
 <section>
   <h2>解説の中の「MESIプロトコル」</h2>
   <ul class="term-quotes"><li><p>コヒーレンシ制御は、各キャッシュラインに「変更済み・共有・無効」などの状態をもたせ(MESIプロトコルなど)、書き込み時に他のコアのコピーを無効にして一貫性を保ちます。</p><a href="/q/cpu/cpu-025/">マルチコアCPUで、各コアのキャッシュに同じアドレスのデータがあるとき、その内容の一貫性を保つ仕組みはどれか。</a></li></ul>

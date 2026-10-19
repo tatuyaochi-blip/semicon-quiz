@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"FMA(融合積和演算)","item":"https://semiconroom.com/term/fused-multiply-add/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FMA(融合積和演算)","description":"a × b + c を1つの命令で計算し、途中の積を丸めずに最後に1回だけ丸める演算。掛け算と足し算を別々に行うより速く、誤差も小さい。行列の計算などで多用される。","url":"https://semiconroom.com/term/fused-multiply-add/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"FMA(融合積和演算)","item":"https://semiconroom.com/term/fused-multiply-add/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FMA(融合積和演算)","description":"a × b + c を1つの命令で計算し、途中の積を丸めずに最後に1回だけ丸める演算。掛け算と足し算を別々に行うより速く、誤差も小さい。行列の計算などで多用される。","url":"https://semiconroom.com/term/fused-multiply-add/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"FMAを有効にすると浮動小数点の計算結果が変わるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"FMAは a × b + c を2回ではなく1回だけ丸めるので、乗算と加算を別々に行った場合と下位ビットが異なることがあるからです。通常はFMAの結果のほうが正確ですが、ビット単位では一致しません。"}},{"@type":"Question","name":"FMAは1 FLOPと2 FLOPのどちらで数えますか?","acceptedAnswer":{"@type":"Answer","text":"慣例では乗算1回と加算1回の2 FLOPと数えます。そのため、FMA演算器を持つハードウェアのピーク性能は、1秒あたりのFMA命令数の2倍の値になります。"}},{"@type":"Question","name":"C言語のfma関数は何をしますか?","acceptedAnswer":{"@type":"Answer","text":"math.h の fma(x, y, z) は、x × y + z を無限の精度で計算したかのように求め、結果の型に1回だけ丸めた値を返します。FMA命令を持たないハードウェアではソフトウェアでエミュレートされるため、遅くなることがあります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/computer-arithmetic/">計算機算術</a></p>
 </article>
-
+<section class="term-about">
+  <h2>丸めを2回から1回に</h2>
+  <p>p ビットの<a class="term-link" href="/term/significand/">仮数</a>どうしを掛けると、最大 2p ビットの正確な積ができます。乗算命令を単独で使うとこの積が p ビットに丸められ、続く加算でもう一度丸められます。FMA(融合積和演算)の演算器は全幅の積を保ったまま c と桁合わせをして加算し、丸めは1回だけ行うので、結果は a × b + c の厳密な値を正しく丸めたものになります。この演算は<a class="term-link" href="/term/ieee-754/">IEEE 754</a>-2008で標準化され、C言語ではfma関数として提供されています。現在のCPUや<a class="term-link" href="/term/gpu/">GPU</a>の命令セットの多くが備えており、たとえばRISC-VのF拡張とD拡張には fmadd.s と fmadd.d があります。</p>
+</section>
+<section class="term-about">
+  <h2>FMAが効く場面</h2>
+  <p>内積、行列積、畳み込みは積和の長い連鎖なので、FMAは命令数を半分にすると同時に精度も高めます。ホーナー法による多項式の評価は各段階が r = r × x + c の形で、FMAにぴったりです。反復法による除算や平方根のアルゴリズムは、残差を正確に求めるためにFMAに頼っています。巧妙な使い方として、p を a と b の積を丸めた値とすると、fma(a, b, -p) はその積の丸め誤差を正確に与えます。これは拡張精度演算の基本部品になります。浮動小数点のピーク性能の数値では、慣例としてFMA 1回を2演算と数えます。</p>
+</section>
+<section class="term-about">
+  <h2>再現性の落とし穴</h2>
+  <p>FMAは丸め方が異なるため、有効にすると、乗算と加算を別々に行う場合と比べて結果の下位ビットが変わることがあります。コンパイラは言語の規則やフラグに応じて a * b + c を自動的にFMAにまとめることがあり(GCCやClangでは -ffp-contract で制御します)、同じソースコードでもターゲットや最適化レベルによってわずかに異なる答えになりえます。FMAは期待される対称性を崩すこともあります。a が b と等しいとき、a * a - b * b を fma(a, a, -(b * b)) として計算すると、ちょうど0ではなく b * b の丸め誤差が返ります。</p>
+</section>
+<section class="term-about">
+  <h2>整数の積和演算との違い</h2>
+  <p>整数の積和命令も a × b + c を計算しますが、整数演算には丸めがないので、融合して得られるのは時間とレジスタの節約だけです。精度の面での利点は浮動小数点に特有のものです。デジタルシグナルプロセッサ(DSP)やAIアクセラレータでは、幅の広いアキュムレータが同様の役割を果たします。幅の狭い値どうしの積をより幅の広いレジスタで足し合わせることで、各段階で精度を失わないようにし、最終的な合計だけを丸めたりスケールを落としたりします。</p>
+</section>
 <section>
   <h2>FMA(融合積和演算)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="computer-arithmetic-025" data-cat="computer-arithmetic" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 途中の積を丸めず最後に1回だけ丸めるので、誤差が小さく速い</p><p class="explanation">掛け算と足し算を別々の命令で行うと、a × b の結果をいったん丸め、さらに c を足した結果を丸めるので、丸めが2回起こります。<a class="term-link" href="/term/fused-multiply-add/">FMA</a>は積を丸めずに内部で保持したまま c を足し、最後に1回だけ丸めるので、誤差が小さくなります。1命令で済むため速く、行列の積や多項式の計算、AIの計算などで多用されます。積を整数にするわけでも、足し算を省くわけでもありません。ただし丸めの回数が違うため、別々に計算した結果とわずかに異なることがあります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>FMAを有効にすると浮動小数点の計算結果が変わるのはなぜですか?</h3>
+  <p>FMAは a × b + c を2回ではなく1回だけ丸めるので、乗算と加算を別々に行った場合と下位ビットが異なることがあるからです。通常はFMAの結果のほうが正確ですが、ビット単位では一致しません。</p>
+  <h3>FMAは1 FLOPと2 FLOPのどちらで数えますか?</h3>
+  <p>慣例では乗算1回と加算1回の2 FLOPと数えます。そのため、FMA演算器を持つハードウェアのピーク性能は、1秒あたりのFMA命令数の2倍の値になります。</p>
+  <h3>C言語のfma関数は何をしますか?</h3>
+  <p>math.h の fma(x, y, z) は、x × y + z を無限の精度で計算したかのように求め、結果の型に1回だけ丸めた値を返します。FMA命令を持たないハードウェアではソフトウェアでエミュレートされるため、遅くなることがあります。</p>
+</section>
 <section>
   <h2>解説の中の「FMA(融合積和演算)」</h2>
   <ul class="term-quotes"><li><p>FMAは積を丸めずに内部で保持したまま c を足し、最後に1回だけ丸めるので、誤差が小さくなります。</p><a href="/q/computer-arithmetic/computer-arithmetic-025/">FMA(融合積和演算)命令で a × b + c を計算する利点として正しいものはどれか。</a></li><li><p>同じ計算でもCPUによって使える命令は異なり、例えば a * b + c を、CPUに積和演算(FMA)の命令があれば1命令で、なければ掛け算と足し算の2命令で実現します。</p><a href="/q/compiler/compiler-047/">コード生成の段階の一つである命令選択(インストラクションセレクション)の説明として正しいものはどれか。</a></li></ul>

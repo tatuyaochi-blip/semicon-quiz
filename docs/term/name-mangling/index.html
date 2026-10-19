@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"名前修飾","item":"https://semiconroom.com/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"名前修飾","description":"C++のコンパイラが、関数名に引数の型や名前空間の情報を埋め込んでシンボル名を作ること。マングリングとも呼ぶ。オーバーロードした関数をリンカが区別できる。","url":"https://semiconroom.com/term/name-mangling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"名前修飾","item":"https://semiconroom.com/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"名前修飾","description":"C++のコンパイラが、関数名に引数の型や名前空間の情報を埋め込んでシンボル名を作ること。マングリングとも呼ぶ。オーバーロードした関数をリンカが区別できる。","url":"https://semiconroom.com/term/name-mangling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"C++のシンボル名をデマングルするにはどうしますか?","acceptedAnswer":{"@type":"Answer","text":"c++filt に通します。たとえば echo _Z5printi | c++filt を実行すると print(int) と表示されます。nm -C や objdump -C は、シンボルを一覧表示すると同時にデマングルします。"}},{"@type":"Question","name":"C++の extern \"C\" は何をするものですか?","acceptedAnswer":{"@type":"Answer","text":"宣言した関数にCリンケージを与え、コンパイラが修飾なしの名前をそのまま使うようにします。これにより、C++のコードからCのライブラリを呼べるようになり、この方法で公開したC++の関数をCのコードから呼ぶこともできます。"}},{"@type":"Question","name":"関数のマングル名に戻り値の型が含まれないのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"C++のオーバーロードは引数で区別しなければならないので、引数だけで関数を特定できるからです。例外は関数テンプレートのインスタンスで、戻り値の型も符号化されます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>何が埋め込まれるか</h2>
+  <p>修飾された名前(マングル名)は、ソース上で同じ名前を持つC++の要素どうしを区別する情報を、すべて1つの<a class="term-link" href="/term/linker/">リンカ</a>用シンボルに詰め込んだものです。囲んでいる名前空間やクラス、関数名、引数の型、メンバ関数の const や volatile 修飾、テンプレート引数が含まれます。オーバーロードは戻り値の型だけでは区別できないので、戻り値の型は通常含まれませんが、関数テンプレートのインスタンスでは含まれます。LinuxをはじめGCCやClangの多くのプラットフォームで使われるItanium C++ <a class="term-link" href="/term/application-binary-interface/">ABI</a>では、print(int) は _Z5printi に、ns::f(double) は _ZN2ns1fEd になります。各名前の前にその長さが付き、組み込み型は1文字で表されます。</p>
+</section>
+<section class="term-about">
+  <h2>extern &quot;C&quot; と言語の混在</h2>
+  <p>C言語にはオーバーロードがないため、Cのコンパイラは関数名をそのままシンボルにします。C++のコードからCのライブラリを呼ぶときは、宣言を extern &quot;C&quot; で囲み、C++のコンパイラが修飾されていない名前を探すようにしなければなりません。そうしないと _Z3fooi のような名前を探して foo しか見つからず、未定義参照でリンクに失敗します。両方の言語で共有するヘッダでは、__cplusplus マクロの有無を確かめたうえで、宣言を extern &quot;C&quot; で囲むのが一般的です。extern &quot;C&quot; と宣言した関数はオーバーロードできません。2つあると同じシンボルに対応してしまうからです。</p>
+</section>
+<section class="term-about">
+  <h2>マングル名を読む</h2>
+  <p>マングル名は nm の出力、逆アセンブル結果、クラッシュレポート、<a class="term-link" href="/term/linker/">リンカ</a>のエラーなどに現れます。c++filt ツールを使えば読みやすい宣言に戻せ、nm -C は一覧表示の際に同じ変換を行います。多くのデバッガやリンカも、診断メッセージを表示するときに自動でデマングルします。それでも生の形を読めると役に立ちます。デマングルすると同じに見える2つのシンボルが const 修飾や引数の型で異なっていることがあり、ヘッダの宣言と実際にコンパイルされた定義が一致していないとわかるからです。</p>
+</section>
+<section class="term-about">
+  <h2>名前修飾はABIの一部</h2>
+  <p>名前修飾の方式はコンパイラの系統ごとに定められており、MicrosoftのコンパイラはItanium <a class="term-link" href="/term/application-binary-interface/">ABI</a>とはまったく異なる符号化を使います。この方式はアプリケーションバイナリインタフェース(ABI)の一部なので、方式の異なるコンパイラで作った<a class="term-link" href="/term/object-file/">オブジェクトファイル</a>は、ソースが同じでも直接リンクできません。引数の型を変えるなど、ライブラリのC++インタフェースを変更するとマングル名が変わり、古い版に対してビルドしたプログラムとのバイナリ互換性が失われます。Rustなど、オーバーロードやモジュールを持つほかの言語も、同じ理由で名前修飾を行います。</p>
+</section>
 <section>
   <h2>名前修飾の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-035" data-cat="linker-loader" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 同じ名前で引数の型が違う関数(オーバーロード)や名前空間を、リンカが区別できるようにする</p><p class="explanation"><a class="term-link" href="/term/linker/">リンカ</a>はシンボルを名前の文字列だけで照合します。C++では「print(int)」と「print(double)」のように同じ名前の関数を作れるので、そのままでは区別できません。そこでコンパイラは「_Z5printi」のように引数の型などを名前に埋め込みます。C言語の関数は修飾されないので、C++からCの関数を呼ぶときは「extern &quot;C&quot;」を付けて修飾をやめさせます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>C++のシンボル名をデマングルするにはどうしますか?</h3>
+  <p>c++filt に通します。たとえば echo _Z5printi | c++filt を実行すると print(int) と表示されます。nm -C や objdump -C は、シンボルを一覧表示すると同時にデマングルします。</p>
+  <h3>C++の extern &quot;C&quot; は何をするものですか?</h3>
+  <p>宣言した関数にCリンケージを与え、コンパイラが修飾なしの名前をそのまま使うようにします。これにより、C++のコードからCのライブラリを呼べるようになり、この方法で公開したC++の関数をCのコードから呼ぶこともできます。</p>
+  <h3>関数のマングル名に戻り値の型が含まれないのはなぜですか?</h3>
+  <p>C++のオーバーロードは引数で区別しなければならないので、引数だけで関数を特定できるからです。例外は関数テンプレートのインスタンスで、戻り値の型も符号化されます。</p>
+</section>
 <section>
   <h2>解説の中の「名前修飾」</h2>
   <ul class="term-quotes"><li><p>定義したファイルをリンクし忘れた、ライブラリを指定し忘れた(-lm など)、名前のつづりが違う、C++で書いた関数をextern &quot;C&quot;なしで呼んでいて名前修飾で別の名前になっている、といった原因がよくあります。</p><a href="/q/linker-loader/linker-loader-005/">C言語のプログラムをリンクしたときに「undefined reference to `foo&#39;」(fooへの未定義の参…</a></li></ul>

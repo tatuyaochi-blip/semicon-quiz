@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"FP8","item":"https://semiconroom.com/term/fp8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FP8","description":"8ビットの浮動小数点の形式。指数4ビット・仮数3ビットのE4M3と、指数5ビット・仮数2ビットのE5M2があり、精度と範囲を使い分ける。AIの学習や推論を速く、省電力にするために使われる。","url":"https://semiconroom.com/term/fp8/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"FP8","item":"https://semiconroom.com/term/fp8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FP8","description":"8ビットの浮動小数点の形式。指数4ビット・仮数3ビットのE4M3と、指数5ビット・仮数2ビットのE5M2があり、精度と範囲を使い分ける。AIの学習や推論を速く、省電力にするために使われる。","url":"https://semiconroom.com/term/fp8/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"E4M3とE5M2の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"E4M3は指数4ビット・仮数3ビットで、精度が高い代わりに範囲が狭く、最大値は448です。E5M2は指数5ビット・仮数2ビットで、範囲ははるかに広いものの刻みが粗くなります。"}},{"@type":"Question","name":"FP8での学習にスケーリング係数が必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"FP8で表せる範囲は非常に狭く、スケーリングしないとテンソルの値がオーバーフローやアンダーフローを起こすからです。テンソルごとまたはブロックごとのスケーリング係数で変換前に値を使える範囲へ移し、計算後にそれを取り除きます。"}},{"@type":"Question","name":"推論にはFP8とINT8のどちらが優れていますか?","acceptedAnswer":{"@type":"Answer","text":"一概には言えません。FP8は外れ値の多い広い値の分布を少ないキャリブレーションで扱えますが、INT8は広くサポートされており、丁寧に量子化すれば多くのモデルで高い精度が得られます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/computer-arithmetic/">計算機算術</a></p>
 </article>
-
+<section class="term-about">
+  <h2>2種類のビット配置</h2>
+  <p>どちらのFP8形式にも符号ビットが1つあり、残りの7ビットの分け方が異なります。E4M3は指数4ビット・仮数3ビットで、広く使われている定義では無限大を持たず、<a class="term-link" href="/term/nan/">NaN</a>のビットパターンも符号ごとに1つだけにすることで、有限の最大値を448まで広げています。E5M2は指数5ビット・仮数2ビットで、無限大とNaNを含めて<a class="term-link" href="/term/ieee-754/">IEEE 754</a>の慣例に従い、最大値は約57344です。<a class="term-link" href="/term/significand/">仮数</a>が3ビットのE4M3では、同じ2のべき乗の区間(ビネード)内で隣り合う値の差が区間の下限の12.5%、仮数2ビットのE5M2では25%になります。</p>
+</section>
+<section class="term-about">
+  <h2>テンソルごとの形式の選び方</h2>
+  <p>学習済みネットワークの重みや活性化は、値の大きさの広がりがある程度予測できるため、範囲の広さよりもE4M3の精度の高さのほうが役に立ちます。一方、誤差<a class="term-link" href="/term/backpropagation/">逆伝播</a>中の勾配は、層やステップによって何桁も変動することがあるので、E5M2の1ビット多い指数がより重要になります。そこで、順伝播にはE4M3、勾配にはE5M2を使うのが一般的なやり方ですが、すべてE4M3で通すシステムもあります。いずれの場合もFP8になるのは行列積の入力だけで、マスター重み、オプティマイザの状態、精度に敏感な多くの演算はより高い精度のまま残ります。</p>
+</section>
+<section class="term-about">
+  <h2>スケーリング係数が欠かせない</h2>
+  <p>8ビットでは、何の工夫もなしに実際のテンソルの値を表しきれません。ソフトウェアは変換の前に、各テンソルまたはテンソルの各ブロックに、直近に観測した絶対値の最大値から決めたスケーリング係数を掛けます。こうして最大の要素がFP8の範囲の上端近くに来るようにし、小さな要素が0に切り捨てられないようにします。スケーリング係数はより高い精度で保持され、行列積の後で割り戻されます。行列演算ユニットはFP8の入力どうしを掛けますが、積の累積はFP16やFP32などの幅の広い形式で行うので、長い内積でも1ステップごとに精度が失われていくことはありません。</p>
+</section>
+<section class="term-about">
+  <h2>FP8とINT8の違い</h2>
+  <p><a class="term-link" href="/term/int8/">INT8</a>量子化では256個の値が等間隔に並びます。これは範囲が限られて均等に分布するテンソルには合いますが、少数の外れ値がスケールを決めてしまうと分解能が無駄になります。FP8の値はほぼ対数的な間隔で並び、0付近では刻みが細かく、大きな値では粗くなります。これはニューラルネットワークによく見られる裾の長い釣り鐘形の分布によく合い、キャリブレーションの手間を減らせることが多くあります。どちらも16ビット形式に比べてメモリと帯域幅を半分にし、面積あたり・電力あたりにより多くの積和演算器を載せられます。どちらが高い精度になるかはモデルによります。</p>
+</section>
 <section>
   <h2>FP8の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="computer-arithmetic-029" data-cat="computer-arithmetic" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 重みや活性化にE4M3、勾配にE5M2を使う</p><p class="explanation">8ビットという限られたビットを、<a class="term-link" href="/term/exponent-field/">指数部</a>と<a class="term-link" href="/term/significand/">仮数</a>にどう分けるかで性質が変わります。E4M3は仮数が1ビット多く精度が高い代わりに範囲が狭く、E5M2は指数部が1ビット多く範囲が広い代わりに精度が低くなります。そのため、値の大きさがある程度そろっている重みや活性化にはE4M3、値の大きさが大きくばらつく勾配にはE5M2を使うのが一般的です。どちらも浮動小数点の形式で、整数ではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>E4M3とE5M2の違いは何ですか?</h3>
+  <p>E4M3は指数4ビット・仮数3ビットで、精度が高い代わりに範囲が狭く、最大値は448です。E5M2は指数5ビット・仮数2ビットで、範囲ははるかに広いものの刻みが粗くなります。</p>
+  <h3>FP8での学習にスケーリング係数が必要なのはなぜですか?</h3>
+  <p>FP8で表せる範囲は非常に狭く、スケーリングしないとテンソルの値がオーバーフローやアンダーフローを起こすからです。テンソルごとまたはブロックごとのスケーリング係数で変換前に値を使える範囲へ移し、計算後にそれを取り除きます。</p>
+  <h3>推論にはFP8とINT8のどちらが優れていますか?</h3>
+  <p>一概には言えません。FP8は外れ値の多い広い値の分布を少ないキャリブレーションで扱えますが、INT8は広くサポートされており、丁寧に量子化すれば多くのモデルで高い精度が得られます。</p>
+</section>
 <section>
   <h2>解説の中の「FP8」</h2>
   <ul class="term-quotes"><li><p>FP16やBF16、FP8、INT8などの低い精度で使うことが多く、ニューラルネットワークの学習と推論の大部分を占める行列の積を大きく速くします。</p><a href="/q/gpu-programming/gpu-programming-039/">最近のGPUに搭載されているテンソルコア(行列演算ユニット)の特徴として正しいものはどれか。</a></li></ul>

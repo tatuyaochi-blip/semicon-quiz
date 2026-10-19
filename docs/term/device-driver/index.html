@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"デバイスドライバ","item":"https://semiconroom.com/term/device-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"デバイスドライバ","description":"特定の周辺装置を動かすためのOSの部品。装置のレジスタの操作や割り込みの処理を受け持ち、アプリケーションには共通の手順で装置を使えるようにする。","url":"https://semiconroom.com/term/device-driver/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"デバイスドライバ","item":"https://semiconroom.com/term/device-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"デバイスドライバ","description":"特定の周辺装置を動かすためのOSの部品。装置のレジスタの操作や割り込みの処理を受け持ち、アプリケーションには共通の手順で装置を使えるようにする。","url":"https://semiconroom.com/term/device-driver/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"デバイスドライバはOSの一部ですか?","acceptedAnswer":{"@type":"Answer","text":"通常はそうです。ほとんどのドライバはカーネル権限で動くカーネルモジュールで、OSのデバイスフレームワークに組み込まれます。ただし、ユーザー空間のプロセスとして動くドライバに対応したシステムもあります。"}},{"@type":"Question","name":"ドライバとファームウェアの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ファームウェアは装置内部のプロセッサで動き、ハードウェアを直接制御します。ドライバはOSの一部としてホストのCPUで動き、レジスタ、DMAバッファ、割り込みを通じて装置やそのファームウェアとやり取りします。"}},{"@type":"Question","name":"ドライバの不具合でコンピュータ全体が落ちるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"カーネルモードのドライバはカーネルのアドレス空間と権限を共有しているため、バグがあるとカーネルのどのデータでも上書きしたり、ハードウェアを不整合な状態のまま残したりするおそれがあります。これに対し、ユーザープログラムのバグの影響はそのプロセスの中にとどまります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ドライバが実際に行う処理</h2>
+  <p>ドライバは、カーネルからの汎用的な要求を、個々の装置が求める正確な手順に変換します。起動時には装置を検出し、そのレジスタをアドレス空間に割り当て(<a class="term-link" href="/term/memory-mapped-i-o/">メモリマップドI/O</a>)、ハードウェアを既知の状態に初期化します。動作中はコマンドレジスタやステータスレジスタに書き込み、CPUがコピーしなくても装置がメモリとの間でデータを転送できるように<a class="term-link" href="/term/dma/">DMA(ダイレクトメモリアクセス)</a>のディスクリプタを用意し、処理の完了時に装置が発生させる<a class="term-link" href="/term/interrupt/">割り込み</a>を処理します。上位側ではブロックデバイス、ネットワーク、キャラクタデバイスといった共通のフレームワークに接続するので、アプリケーションからは通常の読み出し、書き込み、制御の呼び出しとして見えます。</p>
+</section>
+<section class="term-about">
+  <h2>割り込み処理と後回しにする処理</h2>
+  <p><a class="term-link" href="/term/interrupt-handler/">割り込みハンドラ</a>は、そのCPUでの通常の処理を中断した状態で実行されるため、ドライバはハンドラを短く保ちます。装置への応答、起きた事象の記録、残りの処理の予約だけを行います。受信パケットをプロトコルスタックの上位へ渡す処理やディスク要求の完了処理といった重い処理は、後でスケジュール可能なコンテキストで実行します。この分担はトップハーフとボトムハーフと呼ばれます。高速なネットワークカードのように事象の頻度が非常に高い装置では、負荷が高いときに事象ごとの<a class="term-link" href="/term/interrupt/">割り込み</a>から<a class="term-link" href="/term/polling/">ポーリング</a>に切り替えることがあります。パケットごとに割り込みを受けると、ループでキューを確認するよりも多くの<a class="term-link" href="/term/cpu-time/">CPU時間</a>を浪費するためです。</p>
+</section>
+<section class="term-about">
+  <h2>ドライバのバグが危険な理由</h2>
+  <p>ほとんどのドライバはカーネルモードで、カーネルの他の部分と同じ権限で動作します。そのため、誤ったポインタ、ロックの取り忘れ、誤ったアドレスを設定した<a class="term-link" href="/term/dma/">DMA</a>バッファがあると、1つのプログラムにとどまらず、メモリのどこでも破壊したり、システム全体をクラッシュさせたりするおそれがあります。このためドライバは、システムの不安定さやセキュリティ上の欠陥の原因になりやすい部分です。ドライバをユーザー空間のプロセスに移す設計もあり、<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>が増える代わりに分離が得られます。また、<a class="term-link" href="/term/iommu/">IOMMU</a>を使えば、ドライバが誤動作しても装置がアクセスできるメモリの範囲を制限できます。</p>
+</section>
+<section class="term-about">
+  <h2>ドライバとファームウェア、ハイパーバイザの違い</h2>
+  <p>ファームウェアは装置そのものの上で動くコードで、たとえばSSDやネットワークカードに内蔵されたコントローラで実行されます。ドライバはホストのCPU上で動き、レジスタや共有メモリを通じてそのファームウェアとやり取りします。<a class="term-link" href="/term/hypervisor/">ハイパーバイザ</a>はOS全体よりもさらに下の層にあり、ハードウェアを複数の仮想マシンで共有させます。仮想マシンの中では、ゲストはハイパーバイザと効率よく通信する準仮想化ドライバを使うか、デバイス割り当てによって渡された実際の装置に対して通常のドライバを動かします。</p>
+</section>
 <section>
   <h2>デバイスドライバの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-031" data-cat="os-hardware" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 装置ごとの操作を引き受け、共通の手順で使えるようにする</p><p class="explanation">装置ごとにレジスタの配置や操作の手順は違います。<a class="term-link" href="/term/device-driver/">デバイスドライバ</a>はその違いを引き受けるOSの部品で、装置の初期化、レジスタの読み書き、<a class="term-link" href="/term/dma/">DMA</a>の設定、<a class="term-link" href="/term/interrupt/">割り込み</a>の処理を行い、上位にはファイルの読み書きのような共通の手順を提供します。そのため、アプリケーションは装置の細かい違いを知らずに使えます。装置の回路の設計や画面の見た目の変更は、ドライバの仕事ではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>デバイスドライバはOSの一部ですか?</h3>
+  <p>通常はそうです。ほとんどのドライバはカーネル権限で動くカーネルモジュールで、OSのデバイスフレームワークに組み込まれます。ただし、ユーザー空間のプロセスとして動くドライバに対応したシステムもあります。</p>
+  <h3>ドライバとファームウェアの違いは何ですか?</h3>
+  <p>ファームウェアは装置内部のプロセッサで動き、ハードウェアを直接制御します。ドライバはOSの一部としてホストのCPUで動き、レジスタ、DMAバッファ、割り込みを通じて装置やそのファームウェアとやり取りします。</p>
+  <h3>ドライバの不具合でコンピュータ全体が落ちるのはなぜですか?</h3>
+  <p>カーネルモードのドライバはカーネルのアドレス空間と権限を共有しているため、バグがあるとカーネルのどのデータでも上書きしたり、ハードウェアを不整合な状態のまま残したりするおそれがあります。これに対し、ユーザープログラムのバグの影響はそのプロセスの中にとどまります。</p>
+</section>
 <section>
   <h2>解説の中の「デバイスドライバ」</h2>
   <ul class="term-quotes"><li><p>デバイスドライバはその違いを引き受けるOSの部品で、装置の初期化、レジスタの読み書き、DMAの設定、割り込みの処理を行い、上位にはファイルの読み書きのような共通の手順を提供します。</p><a href="/q/os-hardware/os-hardware-031/">デバイスドライバの役割として正しいものはどれか。</a></li><li><p>コンパイラはプログラムの翻訳、デバイスドライバは装置の操作を担います。</p><a href="/q/os-hardware/os-hardware-033/">1台のコンピュータの上で、複数のOSをそれぞれ独立した仮想マシンとして同時に動かすためのソフトウェアを何と呼ぶか。</a></li></ul>

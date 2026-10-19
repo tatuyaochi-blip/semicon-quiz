@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"マルチサイクルパス","item":"https://semiconroom.com/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"マルチサイクルパス","description":"データの受け渡しに複数のクロックサイクルを使ってよい経路を、STAに伝えるタイミング例外。セットアップをNサイクルにしたときは、ホールドも通常N − 1を指定して、確認するエッジを元の位置に戻す。","url":"https://semiconroom.com/term/multicycle-path/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"マルチサイクルパス","item":"https://semiconroom.com/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"マルチサイクルパス","description":"データの受け渡しに複数のクロックサイクルを使ってよい経路を、STAに伝えるタイミング例外。セットアップをNサイクルにしたときは、ホールドも通常N − 1を指定して、確認するエッジを元の位置に戻す。","url":"https://semiconroom.com/term/multicycle-path/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"セットアップのマルチサイクルをNにするとき、ホールドにN − 1を設定するのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"セットアップのキャプチャエッジを移すと、標準のホールドチェックも後ろにずれ、ホールドをほぼ満たせなくなるからです。ホールドにN − 1を設定すると、ホールドチェックが元のエッジに戻ります。"}},{"@type":"Question","name":"マルチサイクルパスとフォールスパスの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"マルチサイクルパスは複数のクロック周期を与えられたうえで解析されます。フォールスパスはまったく解析されないため、機能上決して信号が伝わらない経路にだけ使うべきです。"}},{"@type":"Question","name":"マルチサイクルパスを設定してもよいのはどんなときですか?","acceptedAnswer":{"@type":"Answer","text":"イネーブルなどによって受け側がNサイクルごとにデータをサンプリングすることが設計上保証され、検証でもその動作が確認できている場合だけです。そうでなければ、緩めたチェックが実在するタイミング不良を隠してしまいます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>本当に時間に余裕がある経路</h2>
+  <p>経路によっては、受け側がNサイクルに1回しかデータを取り込まないため、1クロック周期以内にデータを届ける必要がないものがあります。例えば、1サイクルおきにアサートされるイネーブルで値をロードするレジスタや、入力が変わってから2サイクル後に結果をサンプリングする低速な演算ブロックなどです。<a class="term-link" href="/term/sta/">STA</a>は標準では1サイクルでの転送を前提とするため、違反として報告します。<a class="term-link" href="/term/sdc/">SDC</a>のset_multicycle_pathで指定するマルチサイクルパスのタイミング例外は、キャプチャエッジがランチから1周期後ではなくN周期後であることをツールに伝えます。</p>
+</section>
+<section class="term-about">
+  <h2>セットアップの計算</h2>
+  <p>クロック周期2.0 ns、データ到着時刻3.3 ns、セットアップ時間0.1 nsのとき、標準の1サイクルのチェックでは要求時刻が1.9 nsとなり、<a class="term-link" href="/term/slack/">スラック</a>は−1.4 nsです。セットアップのマルチサイクルを2にするとキャプチャが4.0 nsに移るため、要求時刻は3.9 ns、スラックは+0.6 nsになります。この例外が正しいのは、論理回路が2サイクルに1回の取り込みを本当に保証している場合だけです。そうでなければ実在する不具合を隠すことになり、それは実チップで現れます。</p>
+</section>
+<section class="term-about">
+  <h2>ホールドにN − 1が必要な理由</h2>
+  <p><a class="term-link" href="/term/sta/">STA</a>は、セットアップのキャプチャエッジの1周期前のエッジに対してホールドをチェックします。そのため、セットアップのキャプチャをN周期後に移すと、ホールドチェックもランチからN − 1周期後に引きずられます。これは新しいデータが少なくともそれだけ遅れて到着することを求める、ありえないほど厳しい条件で、通常は違反になります。ホールドのマルチサイクルにN − 1を追加すると、ホールドチェックが時刻0のランチエッジに戻り、通常のホールド条件に戻ります。ホールドチェックをなくすわけではありません。</p>
+</section>
+<section class="term-about">
+  <h2>マルチサイクルパスとフォールスパスの違い</h2>
+  <p>マルチサイクルパスは、時間の枠が長くなるだけでタイミング解析の対象には残ります。set_false_pathで指定する<a class="term-link" href="/term/false-path/">フォールスパス</a>は解析から完全に除外されるもので、構造上はつながっていても意味のある遷移が決して伝わらない経路、例えば選択条件が互いに排他的な2つの<a class="term-link" href="/term/multiplexer/">マルチプレクサ</a>を通る経路のために使います。タイミングを収束させにくいという理由だけで経路をフォールスパスにすると実在するバグを隠し、本当のマルチサイクルパスをフォールスパスにすると、まだ必要なチェックまで外してしまいます。</p>
+</section>
 <section>
   <h2>マルチサイクルパスの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sta-cdc-014" data-cat="sta-cdc" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ホールドの確認エッジもセットアップと一緒に後ろへずれて厳しくなりすぎるので、元の位置に戻すため</p><p class="explanation"><a class="term-link" href="/term/sta/">STA</a>の既定では、ホールドはセットアップの取り込みエッジの1つ前のエッジで確認します。セットアップを2サイクルにすると、ホールドの確認エッジも時刻0から1周期後に移り、周期が 2.0 ns なら、データが 2.0 ns 以上遅れて着かないと違反になってしまいます。ホールドの<a class="term-link" href="/term/multicycle-path/">マルチサイクルパス</a>を N − 1 = 1 に指定すると、確認エッジが時刻0に戻り、通常の経路と同じ条件になります。ホールドのチェックを外すわけではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>セットアップのマルチサイクルをNにするとき、ホールドにN − 1を設定するのはなぜですか?</h3>
+  <p>セットアップのキャプチャエッジを移すと、標準のホールドチェックも後ろにずれ、ホールドをほぼ満たせなくなるからです。ホールドにN − 1を設定すると、ホールドチェックが元のエッジに戻ります。</p>
+  <h3>マルチサイクルパスとフォールスパスの違いは何ですか?</h3>
+  <p>マルチサイクルパスは複数のクロック周期を与えられたうえで解析されます。フォールスパスはまったく解析されないため、機能上決して信号が伝わらない経路にだけ使うべきです。</p>
+  <h3>マルチサイクルパスを設定してもよいのはどんなときですか?</h3>
+  <p>イネーブルなどによって受け側がNサイクルごとにデータをサンプリングすることが設計上保証され、検証でもその動作が確認できている場合だけです。そうでなければ、緩めたチェックが実在するタイミング不良を隠してしまいます。</p>
+</section>
 <section>
   <h2>解説の中の「マルチサイクルパス」</h2>
   <ul class="term-quotes"><li><p>マルチサイクルパスを2にすると、取り込みのエッジが1周期後ではなく2周期後になります。</p><a href="/q/sta-cdc/sta-cdc-014/">周期 2.0 ns のクロックで動く回路で、データの到着時刻(クロック→出力遅延と組み合わせ回路の遅延の合計)が 3.…</a></li><li><p>ホールドのマルチサイクルパスを N − 1 = 1 に指定すると、確認エッジが時刻0に戻り、通常の経路と同じ条件になります。</p><a href="/q/sta-cdc/sta-cdc-015/">セットアップのマルチサイクルパスを N(N ≥ 2)に設定したとき、ホールドについても通常マルチサイクルパスを N −…</a></li><li><p>2サイクルに1回取り込む経路は、マルチサイクルパスとして時間を延ばして解析を続けるべきです。</p><a href="/q/sta-cdc/sta-cdc-016/">フォールスパス(set_false_path)を設定するのが適切な経路はどれか。</a></li></ul>

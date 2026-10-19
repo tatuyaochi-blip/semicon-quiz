@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"仮想記憶","item":"https://semiconroom.com/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"仮想記憶","description":"プログラムが使うアドレス(仮想アドレス)を、OSとハードウェアが実際のメモリの番地(物理アドレス)に対応させる仕組み。各プログラムが広く独立したメモリ空間を使える。","url":"https://semiconroom.com/term/virtual-memory/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"仮想記憶","item":"https://semiconroom.com/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"仮想記憶","description":"プログラムが使うアドレス(仮想アドレス)を、OSとハードウェアが実際のメモリの番地(物理アドレス)に対応させる仕組み。各プログラムが広く独立したメモリ空間を使える。","url":"https://semiconroom.com/term/virtual-memory/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ページテーブルとTLBの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ページテーブルは仮想ページから物理ページへの完全な対応表で、メモリ上に置かれOSが管理します。TLBはCPU内の小さなハードウェアキャッシュで、最近使ったエントリを保持し、大半の変換でテーブルをたどらずに済むようにします。"}},{"@type":"Question","name":"ページフォールトが起きると何が行われますか?","acceptedAnswer":{"@type":"Answer","text":"CPUはフォールトを起こした命令を止めてOSに制御を渡します。OSは、ディスクから読み込むなどして有効なページを割り当てて命令を再実行させるか、不正なアクセスであればプロセスを終了させます。"}},{"@type":"Question","name":"ヒュージページを使うのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"TLBの1エントリがはるかに広いメモリをカバーするようになり、ワーキングセットの大きいプログラムでTLBミスやテーブルウォークが減るからです。データベースや仮想マシンでよく使われます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>アドレス変換の仕組み</h2>
+  <p>メモリは固定サイズのページ、一般には4 KBに分割されます。仮想アドレスは仮想ページ番号とページ内オフセットに分かれ、4 KBページならオフセットは12ビットです。MMU(メモリ管理ユニット)は<a class="term-link" href="/term/page-table/">ページテーブル</a>で仮想ページ番号を引き、物理フレーム番号と、存在・書き込み可・実行可・ユーザーアクセス可などの権限ビットを得ます。オフセットはそのままコピーされます。テーブルを小さく保つために木構造で構成され、48ビット仮想アドレスのx86-64では4段で、各段は9ビットのアドレスでインデックスされます。</p>
+</section>
+<section class="term-about">
+  <h2>TLBとヒュージページ</h2>
+  <p>4段のテーブルをたどると、ロード1回につき4回のメモリアクセスがかかりかねません。そこで<a class="term-link" href="/term/tlb/">TLB(変換索引バッファ)</a>が最近の変換結果をキャッシュし、大半のアクセスはそこでヒットします。TLBのエントリ数は数十から数千程度しかなく、カバーできる範囲はエントリ数×ページサイズです。4 KBのエントリ約1000個では4 MBしかカバーできません。ワーキングセットが大きいプログラムはミスが多くなるため、OSは2 MBなどのヒュージページを提供し、同じエントリ数でGB単位をカバーできるようにしています。<a class="term-link" href="/term/asid/">アドレス空間識別子</a>を使うと、TLBは複数のプロセスのエントリを同時に保持できます。</p>
+</section>
+<section class="term-about">
+  <h2>ページフォールトとデマンドページング</h2>
+  <p>エントリが「存在しない」とされていると、アクセスはページフォールトを起こし、OSが処理を引き継ぎます。OSは、ゼロで初期化した新しいページを割り当てる、ファイルやスワップ領域からページを読み込む、あるいは不正なアクセスを検出してセグメンテーション違反としてプログラムを終了させる、のいずれかを行います。これにより、触れたときだけページを読み込む<a class="term-link" href="/term/demand-paging/">デマンドページング</a>、メモリマップトファイル、どれかが書き込むまでプロセス間でページを共有する<a class="term-link" href="/term/copy-on-write/">コピーオンライト</a>が可能になります。ワーキングセットが物理メモリを大幅に超えると、スワップが絶え間なく起こる<a class="term-link" href="/term/thrashing/">スラッシング</a>が発生し、システムは極端に遅くなります。</p>
+</section>
+<section class="term-about">
+  <h2>仮想記憶とキャッシュの違い</h2>
+  <p>キャッシュと仮想記憶はどちらもメモリ階層に関わるため混同されがちですが、役割は異なります。キャッシュは最近使ったデータのハードウェア管理のコピーで、純粋に速度のためにあり、ソフトウェアからは見えません。仮想記憶はOSが管理する対応付けで、各プロセスに独自のアドレス空間を与え、プロセス間やカーネルとの保護を強制し、共通ライブラリのように物理ページを共有できるようにします。日常的には仮想記憶がスワップファイルだけを指すこともありますが、それは仮想記憶が可能にする機能の一つにすぎません。</p>
+</section>
 <section>
   <h2>仮想記憶の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-014" data-cat="cpu" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 仮想アドレスのページ番号を、物理アドレスのページ番号に対応づける</p><p class="explanation"><a class="term-link" href="/term/virtual-memory/">仮想記憶</a>では、プログラムが使う仮想アドレスを、実際の物理メモリのアドレスに変換して使います。<a class="term-link" href="/term/page-table/">ページテーブル</a>は、仮想ページの番号ごとに、対応する物理ページの番号と、読み書きの許可などの保護の情報を記録した表で、OSがプロセスごとに作り、CPUのMMUが参照します。よく使う変換結果は<a class="term-link" href="/term/tlb/">TLB</a>に保持されます。データの内容そのものを複製したり、プロセスの優先度を管理したりする表ではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ページテーブルとTLBの違いは何ですか?</h3>
+  <p>ページテーブルは仮想ページから物理ページへの完全な対応表で、メモリ上に置かれOSが管理します。TLBはCPU内の小さなハードウェアキャッシュで、最近使ったエントリを保持し、大半の変換でテーブルをたどらずに済むようにします。</p>
+  <h3>ページフォールトが起きると何が行われますか?</h3>
+  <p>CPUはフォールトを起こした命令を止めてOSに制御を渡します。OSは、ディスクから読み込むなどして有効なページを割り当てて命令を再実行させるか、不正なアクセスであればプロセスを終了させます。</p>
+  <h3>ヒュージページを使うのはなぜですか?</h3>
+  <p>TLBの1エントリがはるかに広いメモリをカバーするようになり、ワーキングセットの大きいプログラムでTLBミスやテーブルウォークが減るからです。データベースや仮想マシンでよく使われます。</p>
+</section>
 <section>
   <h2>解説の中の「仮想記憶」</h2>
   <ul class="term-quotes"><li><p>仮想記憶では、プログラムが使う仮想アドレスを物理アドレスに変換する必要があり、変換表(ページテーブル)はメモリ上にあるため、毎回参照すると何度もメモリにアクセスすることになります。</p><a href="/q/cpu/cpu-014/">仮想アドレスから物理アドレスへの変換結果を保持し、アドレス変換を高速化するキャッシュはどれか。</a></li><li><p>仮想記憶では、プログラムが使う仮想アドレスを、実際の物理メモリのアドレスに変換して使います。</p><a href="/q/os-hardware/os-hardware-010/">ページテーブルの役割として正しいものはどれか。</a></li></ul>

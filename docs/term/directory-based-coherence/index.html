@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ディレクトリ方式","item":"https://semiconroom.com/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ディレクトリ方式","description":"各ラインをどのコアが持っているかを表に記録し、関係するコアにだけ通知するコヒーレンシの方式。コアの数が多いシステムで使われる。","url":"https://semiconroom.com/term/directory-based-coherence/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ディレクトリ方式","item":"https://semiconroom.com/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ディレクトリ方式","description":"各ラインをどのコアが持っているかを表に記録し、関係するコアにだけ通知するコヒーレンシの方式。コアの数が多いシステムで使われる。","url":"https://semiconroom.com/term/directory-based-coherence/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ディレクトリ方式がスヌープ方式よりスケールしやすいのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"すべてのキャッシュにブロードキャストする代わりに、実際にラインを持っているキャッシュにだけ無効化や要求を送るからです。そのため、トラフィックはコア数とともに増えるのではなく、実際の共有の度合いに応じたものになります。"}},{"@type":"Question","name":"ディレクトリ方式はスヌープ方式より遅いですか?","acceptedAnswer":{"@type":"Answer","text":"ホームのディレクトリを参照したり要求が転送されたりするため、ミス1回あたりの時間は長くなることがあります。しかし大規模なシステムでは、トラフィックと競合が減る効果のほうが、通常はその遅延の増加を上回ります。"}},{"@type":"Question","name":"スヌープフィルタとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"各ラインをどのキャッシュが持っている可能性があるかを記録し、コヒーレンシ要求をそのキャッシュにだけ送るための仕組みです。スヌープ型の設計でブロードキャストのトラフィックを減らすために使う、実質的なディレクトリです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ディレクトリに記録される情報</h2>
+  <p>メモリの各ラインには、通常はアドレスで決まるホームノードがあり、ホームがそのラインのディレクトリエントリを管理します。エントリには、キャッシュされていない、共有、排他といったコヒーレンシの状態と、どのキャッシュがコピーを持っているかの記録が入ります。最も単純な記録方法は、コアまたはキャッシュごとに1ビットを割り当てる完全なビットベクタです。エントリはメモリコントローラの近くや、共有のラストレベルキャッシュに置かれます。要求は全員ではなく1つのホームに送られるので、相互接続網はブロードキャスト型のバスではなく、1対1のリンクをつないだメッシュにできます。</p>
+</section>
+<section class="term-about">
+  <h2>書き込みの流れ</h2>
+  <p>所有していないラインに書き込みたいコアは、そのラインのホームに要求を送ります。ホームはディレクトリを調べ、共有者として記録されているキャッシュにだけ無効化を送ります。それらのキャッシュはコピーを破棄し、ホームか要求元に直接、確認応答を返します。すべての確認応答がそろうと、要求元は排他的な所有権を得て、ディレクトリはそれを所有者として記録します。ほかのキャッシュがラインを変更済みの状態で持っていた場合は、ホームが要求をその所有者に転送し、所有者が要求元にデータを送ります。これがいわゆる3ホップのトランザクションです。</p>
+</section>
+<section class="term-about">
+  <h2>スヌープ方式とディレクトリ方式の比較</h2>
+  <p>スヌープ方式はすべてのミスをすべてのキャッシュにブロードキャストします。余分な参照がないので遅延は小さいものの、トラフィックとスヌープ処理の量がコア数とともに増えるため、小規模なシステムに限られます。ディレクトリ方式ではホームでの参照の遅延が加わり、ホップが1回増えることもありますが、メッセージを必要な相手にだけ送るので、トラフィックはコア数ではなく実際の共有の度合いに応じて増えます。そのため大規模なマルチコアチップやマルチソケットのシステムでは、ディレクトリ方式か、ラインを持っている可能性のあるキャッシュを記録してほとんどのブロードキャストを省くスヌープフィルタのような混合方式が使われます。</p>
+</section>
+<section class="term-about">
+  <h2>ディレクトリ自体を小さく保つ工夫</h2>
+  <p>コア数が増えると、メモリの全ラインに完全なビットベクタを持たせるのは記憶容量の負担が大きすぎるため、実用的な設計では節約の工夫をします。限定ポインタ方式は共有者のIDを数個だけ記録し、それより多くのキャッシュが共有したらブロードキャストに切り替えます。粗いベクタ方式はコアのグループごとに1ビットを使います。スパースディレクトリは実際にキャッシュされているラインだけを追跡し、それ自体がキャッシュのような構成をとります。スパースディレクトリはエントリが足りなくなると1つを追い出す必要があり、そのラインを持つすべてのキャッシュで無効化が起きるので、追跡するキャッシュに対して容量に十分な余裕を持たせます。</p>
+</section>
 <section>
   <h2>ディレクトリ方式の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-008" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 各ラインをどのコアが持っているかを記録しておき、関係するコアにだけ通知することで通信を減らせるから</p><p class="explanation"><a class="term-link" href="/term/directory-based-coherence/">ディレクトリ方式</a>では、各ラインについて、どのコアがコピーを持ち、どの状態かを記録した表(ディレクトリ)を持ちます。書き込みがあると、ディレクトリを見てコピーを持つコアにだけ無効化の要求を送ります。すべてのキャッシュへ一斉に知らせる<a class="term-link" href="/term/bus-snooping/">スヌーピング</a>に比べて通信が少ないので、コアが数十以上あるサーバ向けのCPUなどで使われます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ディレクトリ方式がスヌープ方式よりスケールしやすいのはなぜですか?</h3>
+  <p>すべてのキャッシュにブロードキャストする代わりに、実際にラインを持っているキャッシュにだけ無効化や要求を送るからです。そのため、トラフィックはコア数とともに増えるのではなく、実際の共有の度合いに応じたものになります。</p>
+  <h3>ディレクトリ方式はスヌープ方式より遅いですか?</h3>
+  <p>ホームのディレクトリを参照したり要求が転送されたりするため、ミス1回あたりの時間は長くなることがあります。しかし大規模なシステムでは、トラフィックと競合が減る効果のほうが、通常はその遅延の増加を上回ります。</p>
+  <h3>スヌープフィルタとは何ですか?</h3>
+  <p>各ラインをどのキャッシュが持っている可能性があるかを記録し、コヒーレンシ要求をそのキャッシュにだけ送るための仕組みです。スヌープ型の設計でブロードキャストのトラフィックを減らすために使う、実質的なディレクトリです。</p>
+</section>
 <section>
   <h2>解説の中の「ディレクトリ方式」</h2>
   <ul class="term-quotes"><li><p>ディレクトリ方式では、各ラインについて、どのコアがコピーを持ち、どの状態かを記録した表(ディレクトリ)を持ちます。</p><a href="/q/multicore-sync/multicore-sync-008/">コアの数が多いシステムで、スヌーピング方式の代わりにディレクトリ方式のコヒーレンシが使われる理由として正しいものはどれ…</a></li><li><p>コア数が多いと通信量が増えるため、ディレクトリ方式などで効率化します。</p><a href="/q/cpu/cpu-025/">マルチコアCPUで、各コアのキャッシュに同じアドレスのデータがあるとき、その内容の一貫性を保つ仕組みはどれか。</a></li><li><p>しかしコアの数が増えると、すべての要求をすべてのキャッシュに届ける通信が多くなりすぎるため、大規模なシステムではディレクトリ方式が使われます。</p><a href="/q/multicore-sync/multicore-sync-007/">キャッシュコヒーレンシのスヌーピング方式の説明として正しいものはどれか。</a></li></ul>

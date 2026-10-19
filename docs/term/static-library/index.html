@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"静的ライブラリ","item":"https://semiconroom.com/term/static-library/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"静的ライブラリ","description":"多くのオブジェクトファイルを1つにまとめたアーカイブ(Linuxでは.a)。静的リンクのとき、リンカは必要なオブジェクトだけを取り出して実行ファイルに組み込む。","url":"https://semiconroom.com/term/static-library/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"静的ライブラリ","item":"https://semiconroom.com/term/static-library/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"静的ライブラリ","description":"多くのオブジェクトファイルを1つにまとめたアーカイブ(Linuxでは.a)。静的リンクのとき、リンカは必要なオブジェクトだけを取り出して実行ファイルに組み込む。","url":"https://semiconroom.com/term/static-library/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Linuxで静的ライブラリを作るにはどうしますか?","acceptedAnswer":{"@type":"Answer","text":"gcc -c でソースをオブジェクトファイルにコンパイルし、ar rcs libname.a file1.o file2.o でまとめます。リンクするときは -L でそのディレクトリを指定し、-lname を付けます。"}},{"@type":"Question","name":".a ファイルと .so ファイルの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":".a ファイルはオブジェクトファイルのアーカイブで、必要なメンバがリンク時に実行ファイルへコピーされます。.so ファイルは実行時にロードされ、プロセス間で共有される共有ライブラリです。"}},{"@type":"Question","name":"ライブラリをリンクしたのに undefined reference エラーが出るのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"GNUのリンカで最も多い原因は順序で、ライブラリがそれを使うオブジェクトファイルより前に書かれています。-lname をオブジェクトの後ろに移し、ライブラリが実際にそのシンボルを定義しているかを nm で確認してください。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>.a ファイルの中身</h2>
+  <p>Unix系のシステムでは、静的ライブラリは ar ツールで作るアーカイブで、たとえば ar rcs libfoo.a a.o b.o のように作成します。中身は、<a class="term-link" href="/term/object-file/">オブジェクトファイル</a>をヘッダ付きで連結したものに、定義されている各グローバルシンボルとそれを定義するメンバを対応付けたインデックスを加えた程度のものです。このインデックスにより、<a class="term-link" href="/term/linker/">リンカ</a>はすべてのメンバを調べなくても定義を見つけられます。オプション -lfoo を指定すると、リンカはライブラリの検索パスから libfoo.so か libfoo.a を探します。両方ある場合、<a class="term-link" href="/term/static-linking/">静的リンク</a>を指定しない限りGNU ldは共有版を優先します。Windowsのツールチェーンでは、同じ目的で .lib ファイルを使います。</p>
+</section>
+<section class="term-about">
+  <h2>取り出しの単位はオブジェクトファイル</h2>
+  <p>あるメンバが必要になると、<a class="term-link" href="/term/linker/">リンカ</a>は参照された1つの関数だけでなく、その<a class="term-link" href="/term/object-file/">オブジェクトファイル</a>全体を取り込みます。ライブラリの1つのソースファイルが20個の関数を定義していて、プログラムがそのうち1つしか呼ばなくても、20個すべてが、それらがさらに参照するものと一緒に実行ファイルに入ります。そのため、C標準ライブラリのようなライブラリは多数の小さなソースファイルから作られることが多く、1ファイルに1関数ということもあります。別の方法として、-ffunction-sections と -fdata-sections を付けてコンパイルし、--gc-sections を付けてリンクすれば、リンカはメンバ内の参照されない関数を取り除けます。</p>
+</section>
+<section class="term-about">
+  <h2>リンク順序と循環依存</h2>
+  <p>GNUの<a class="term-link" href="/term/linker/">リンカ</a>は入力を左から右へ走査し、アーカイブに到達すると、その時点で未定義の参照を解決するメンバだけを取り出し、その後はそのアーカイブに戻りません。したがって、ライブラリはそれを使うオブジェクトより後に置き、別のライブラリに依存するライブラリはその依存先より前に置く必要があります。2つのライブラリが互いに依存している場合は、一方を2回並べるか、両方を --start-group と --end-group で囲み、新たに解決されるものがなくなるまでリンカに繰り返し走査させるのが一般的な対処です。<a class="term-link" href="/term/llvm/">LLVM</a>の lld のように、すべてのアーカイブのシンボルを覚えていて、この順序を必要としないリンカもあります。</p>
+</section>
+<section class="term-about">
+  <h2>静的ライブラリと共有ライブラリの比較</h2>
+  <p>静的ライブラリはビルド時にだけ使われます。そのコードは各実行ファイルにコピーされ、プログラムの実行時には .a ファイルは不要です。<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>(Linuxでは .so、Windowsでは .dll)は、<a class="term-link" href="/term/position-independent-code/">位置独立コード</a>としてビルドされたリンク済みの1つのファイルで、実行時にロードされ、そのページは利用するすべてのプロセスで共有されます。静的ライブラリは自己完結した配布や組み込み機器のファームウェアに向いています。一方、共有ライブラリはディスクとメモリを節約でき、ファイルを1つ差し替えるだけで修正をすべてのプログラムに行き渡らせることができます。</p>
+</section>
 <section>
   <h2>静的ライブラリの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-022" data-cat="linker-loader" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. リンカは左から順に処理し、ライブラリを読む時点でまだ参照されていない関数は取り出さないから</p><p class="explanation">GNUの<a class="term-link" href="/term/linker/">リンカ</a>は、コマンドラインに書かれた順にファイルを処理し、<a class="term-link" href="/term/static-library/">静的ライブラリ</a>に出会った時点で「まだ定義が見つかっていない参照」を解決するオブジェクトだけを取り出します。ライブラリを先に書くと、その時点ではmain.oの参照がまだないので何も取り出されず、後からmain.oを読んでも戻って探しません。そのため、ライブラリは使う側の後ろに書くのが原則です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>Linuxで静的ライブラリを作るにはどうしますか?</h3>
+  <p>gcc -c でソースをオブジェクトファイルにコンパイルし、ar rcs libname.a file1.o file2.o でまとめます。リンクするときは -L でそのディレクトリを指定し、-lname を付けます。</p>
+  <h3>.a ファイルと .so ファイルの違いは何ですか?</h3>
+  <p>.a ファイルはオブジェクトファイルのアーカイブで、必要なメンバがリンク時に実行ファイルへコピーされます。.so ファイルは実行時にロードされ、プロセス間で共有される共有ライブラリです。</p>
+  <h3>ライブラリをリンクしたのに undefined reference エラーが出るのはなぜですか?</h3>
+  <p>GNUのリンカで最も多い原因は順序で、ライブラリがそれを使うオブジェクトファイルより前に書かれています。-lname をオブジェクトの後ろに移し、ライブラリが実際にそのシンボルを定義しているかを nm で確認してください。</p>
+</section>
 <section>
   <h2>解説の中の「静的ライブラリ」</h2>
   <ul class="term-quotes"><li><p>静的ライブラリは、たくさんのオブジェクトファイルを1つにまとめたアーカイブです。</p><a href="/q/linker-loader/linker-loader-022/">静的ライブラリ(.aファイル)と一緒にリンクするとき、リンカが実行ファイルに組み込むものとして正しいものはどれか。</a></li><li><p>GNUのリンカは、コマンドラインに書かれた順にファイルを処理し、静的ライブラリに出会った時点で「まだ定義が見つかっていない参照」を解決するオブジェクトだけを取り出します。</p><a href="/q/linker-loader/linker-loader-023/">GNUのリンカで「gcc -lmylib main.o」のように、静的ライブラリをそれを使うオブジェクトファイルより前…</a></li><li><p>静的リンクでは、リンカが静的ライブラリ(Linuxでは.aファイル)から必要な関数を取り出して実行ファイルに組み込みます。</p><a href="/q/linker-loader/linker-loader-019/">静的リンクの説明として正しいものはどれか。</a></li></ul>
