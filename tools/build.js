@@ -55,6 +55,9 @@ const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新�
 const numbers = readOpt('data/numbers.json', []);
 const numbersLang = 'en';
 const numbersQ = [...new Set(numbers.flatMap(g => g.items.flatMap(x => x.questions ?? [])))];
+// ダイ数・歩留まり計算ツール(/tools/{slug}/)。文言は言語ごと(訳のある言語だけページを作る)
+const dieYield = readOpt('data/tools/die-yield.json', null);
+const dyLangs = code => (dieYield?.text[code] ? dieYield.text[code] : null);
 const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 const figs = figures();
 // 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
@@ -461,7 +464,8 @@ function buildLang(L) {
     // PC: Home / Topics / Resources(用語集・比較・図解をまとめたメニュー) / Progress。スマートフォン: 同じリンクを Menu に縦に並べる
     const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
     const resources = [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
-      ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : [])];
+      ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : []),
+      ...(dyLangs(code) ? [[`tools/${dieYield.slug}/`, dyLangs(code).nav]] : [])];
     const inResources = resources.some(([sub]) => p === L.path + sub);
     const headerNav = [navLink(['', S.nav_home]), navLink(['#topics', S.nav_topics]),
       `<details class="menu"><summary${inResources ? ' aria-current="page"' : ''}>${esc(S.nav_resources)}</summary><div class="menu-panel">${resources.map(navLink).join('')}</div></details>`,
@@ -528,7 +532,9 @@ function buildLang(L) {
           .replace('<div class="mode-grid">', `<div class="mode-grid">
   <a class="mode-card primary" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow">
     <strong>${esc(t('practice_10'))}</strong><span>${esc(t('practice_10_desc'))}</span>
-  </a>`) : `<p class="muted">${esc(t('preparing'))}</p>`,
+  </a>`) + (dyLangs(code) && ['yield', 'wafer', 'industry'].includes(c.id)
+          ? `\n<p><a class="btn btn-ghost" href="${home}tools/${dieYield.slug}/">${esc(dyLangs(code).nav)} →</a></p>` : '')
+          : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
         compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id)),
         books: bookSection(c),
@@ -643,6 +649,82 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
 </section>`).join('\n')}
 <p class="muted">Every value on this page also appears in at least one question on this site. Found an error? Let us know via the <a href="${home}contact/">contact page</a>.</p>
 <div data-ad="numbers"></div>`,
+    });
+  }
+
+  // ダイ数・歩留まり計算ツール。計算は die-yield.js(ブラウザ)で行い、HTMLには入力欄・結果の枠・解説を置く
+  const dy = dyLangs(code);
+  if (dy) {
+    const dyPath = x => `${x.path}tools/${dieYield.slug}/`;
+    const field = (name, label, value, attrs = '') => `<label class="dy-field"><span>${esc(label)}</span><input name="${name}" type="number" inputmode="decimal" value="${value}" ${attrs}></label>`;
+    const models = ['poisson', 'murphy', 'negbin'];
+    const dyQs = dieYield.questions.map(id => qById.get(id)).filter(Boolean);
+    const dyTerms = dieYield.terms.map(k => terms.find(x => x.key === k)).filter(Boolean);
+    const dyCat = catOf(dieYield.cat);
+    page({
+      path: dyPath(L),
+      alt: Object.fromEntries(langs.filter(x => dyLangs(x.code)).map(x => [x.code, dyPath(x)])),
+      title: dy.title,
+      description: dy.description,
+      scripts: ['die-yield.js', 'answer.js'],
+      jsonld: [
+        crumbs([t('breadcrumb_top'), home], [dy.h1, dyPath(L)]),
+        { '@context': 'https://schema.org', '@type': 'WebApplication', name: dy.h1, description: dy.description, url: abs(dyPath(L)), inLanguage: L.htmlLang,
+          applicationCategory: 'EducationalApplication', operatingSystem: 'Any', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
+        { '@context': 'https://schema.org', '@type': 'FAQPage',
+          mainEntity: dy.faq.map(x => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) },
+      ],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(dy.h1)}</h1>
+<p class="lead">${esc(dy.lead)}</p>
+<div class="dy">
+  <form id="dy-form" class="dy-form">
+    <h2>${esc(dy.in_heading)}</h2>
+    <label class="dy-field"><span>${esc(dy.wafer)}</span><select name="d">${[150, 200, 300, 450].map(v => `<option value="${v}"${v === 300 ? ' selected' : ''}>${v} mm</option>`).join('')}</select></label>
+    ${field('w', dy.die_w, 10, 'min="0.1" step="0.1"')}
+    ${field('h', dy.die_h, 10, 'min="0.1" step="0.1"')}
+    ${field('scribe', dy.scribe, 100, 'min="0" step="10"')}
+    ${field('edge', dy.edge, 3, 'min="0" step="0.5"')}
+    ${field('d0', dy.d0, 0.1, 'min="0" step="0.01"')}
+    ${field('alpha', dy.alpha, 3, 'min="0.1" step="0.5"')}
+    ${field('cost', dy.cost, 10000, 'min="0" step="100"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(dy.out_heading)}</h2>
+    <dl class="dy-stats">
+      <div><dt>${esc(dy.area)}</dt><dd data-out="area">–</dd></div>
+      <div><dt>${esc(dy.gross)}</dt><dd data-out="gross">–</dd></div>
+      <div><dt>${esc(dy.gross_formula)}</dt><dd data-out="formula">–</dd></div>
+    </dl>
+    <div class="table-wrap"><table class="dy-table">
+      <thead><tr><th scope="col">${esc(dy.model)}</th><th scope="col">${esc(dy.yield)}</th><th scope="col">${esc(dy.good)}</th><th scope="col">${esc(dy.cpgd)}</th></tr></thead>
+      <tbody>${models.map(m => `<tr><th scope="row">${esc(dy[m])}</th><td data-out="${m}-y">–</td><td data-out="${m}-good">–</td><td data-out="${m}-cost">–</td></tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+  <section class="dy-map">
+    <h2>${esc(dy.map_heading)}</h2>
+    <canvas id="dy-map" width="320" height="320" role="img" aria-label="${esc(dy.map_heading)}"></canvas>
+    <p class="dy-legend"><span class="dy-key ok"></span>${esc(dy.legend_good)} <span class="dy-key ng"></span>${esc(dy.legend_bad)} · ${esc(dy.legend_sim)}: <b data-out="sim">–</b></p>
+    <p><button type="button" class="btn btn-ghost btn-small" id="dy-rerun">${esc(dy.rerun)}</button></p>
+    <p class="muted">${esc(dy.map_note)}</p>
+  </section>
+</div>
+${dy.sections.map(x => `<section class="term-about">
+  <h2>${esc(x.h)}</h2>
+  <p>${linked(x.p)}</p>
+</section>`).join('\n')}
+${dyCat && qs[dyCat.id]?.length ? `<p><a class="btn btn-primary" href="${home}quiz/?mode=category&amp;c=${dyCat.id}&amp;n=10" rel="nofollow">${esc(dy.practice)}</a></p>` : ''}
+${dyQs.length ? `<section>${dyQs.map(miniQ).join('')}</section>` : ''}
+<section class="faq">
+  <h2>${esc(t('compare_faq'))}</h2>${dy.faq.map(x => `
+  <h3>${esc(x.q)}</h3>
+  <p>${esc(x.a)}</p>`).join('')}
+</section>
+<div data-ad="tool"></div>
+${dyTerms.length ? `<section>
+  <h2>${esc(dy.related)}</h2>
+  <p class="term-chips">${dyTerms.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
+</section>` : ''}`,
     });
   }
 
