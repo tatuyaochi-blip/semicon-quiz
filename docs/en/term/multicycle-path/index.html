@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Multicycle path","item":"https://semiconroom.com/en/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Multicycle path","description":"A timing exception telling STA that a path may take several clock cycles to transfer data. When setup is set to N cycles, hold is usually set to N − 1 to move the hold check edge back to its original position.","url":"https://semiconroom.com/en/term/multicycle-path/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Multicycle path","item":"https://semiconroom.com/en/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Multicycle path","description":"A timing exception telling STA that a path may take several clock cycles to transfer data. When setup is set to N cycles, hold is usually set to N − 1 to move the hold check edge back to its original position.","url":"https://semiconroom.com/en/term/multicycle-path/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is a hold multicycle of N − 1 set with a setup multicycle of N?","acceptedAnswer":{"@type":"Answer","text":"Moving the setup capture edge also moves the default hold check later, making hold nearly impossible to meet. The N − 1 hold setting returns the hold check to its original edge."}},{"@type":"Question","name":"What is the difference between a multicycle path and a false path?","acceptedAnswer":{"@type":"Answer","text":"A multicycle path is still analyzed but given several clock periods. A false path is not analyzed at all and should be used only for paths that can never functionally propagate."}},{"@type":"Question","name":"When is it safe to set a multicycle path?","acceptedAnswer":{"@type":"Answer","text":"Only when the design guarantees the destination samples the data every N cycles, for example through an enable, and verification confirms that behavior. Otherwise the relaxed check can mask a real timing failure."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/sta-cdc/">Timing analysis and CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>When a path really has more time</h2>
+  <p>Some paths need not deliver data within one clock period because the destination captures only every N cycles, for example a register loaded through an enable that is asserted every other cycle, or a slow arithmetic block whose result is sampled two cycles after its inputs change. By default <a class="term-link" href="/en/term/sta/">STA</a> assumes single-cycle transfer and reports a violation. A multicycle path exception, set_multicycle_path in <a class="term-link" href="/en/term/sdc/">SDC</a>, tells the tool that the capture edge is N periods after launch instead of one.</p>
+</section>
+<section class="term-about">
+  <h2>Setup arithmetic</h2>
+  <p>With a 2.0 ns clock, a data arrival time of 3.3 ns and a 0.1 ns <a class="term-link" href="/en/term/setup-time/">setup time</a>, the default single-cycle check gives a required time of 1.9 ns and a <a class="term-link" href="/en/term/slack/">slack</a> of −1.4 ns. A setup multicycle of 2 moves capture to 4.0 ns, so the required time becomes 3.9 ns and the slack +0.6 ns. The exception is valid only if the logic truly guarantees capture every second cycle; otherwise it hides a real failure that will appear in silicon.</p>
+</section>
+<section class="term-about">
+  <h2>Why hold needs N − 1</h2>
+  <p><a class="term-link" href="/en/term/sta/">STA</a> checks hold against the edge one period before the setup capture edge. Moving setup capture to N periods therefore also drags the hold check to N − 1 periods after launch, which would demand that new data arrive at least that late, an absurdly strict requirement that usually fails. Adding a hold multicycle of N − 1 moves the hold check back to the launch edge at time zero, restoring the ordinary hold condition. It does not remove the hold check.</p>
+</section>
+<section class="term-about">
+  <h2>Multicycle path vs. false path</h2>
+  <p>A multicycle path stays timed, just with a longer budget. A <a class="term-link" href="/en/term/false-path/">false path</a>, set with set_false_path, is excluded from analysis entirely and is meant for paths that are structurally connected but can never carry a meaningful transition, for example through two multiplexers whose select conditions are mutually exclusive. Declaring a path false merely because it is hard to close hides real bugs, and declaring a genuine multicycle path false removes a check it still needs.</p>
+</section>
 <section>
   <h2>Try it: questions about Multicycle path</h2>
   <article class="q-mini" data-qid="sta-cdc-014" data-cat="sta-cdc" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Because the hold check edge also shifts later along with setup and becomes far too strict, so it must be moved back to its original position</p><p class="explanation">By default, <a class="term-link" href="/en/term/sta/">STA</a> checks hold at the edge one before the setup capture edge. Making setup two cycles moves the hold check edge from time 0 to one period later, so with a 2.0 ns period the data would violate hold unless it arrived 2.0 ns or more late. Specifying a hold <a class="term-link" href="/en/term/multicycle-path/">multicycle path</a> of N − 1 = 1 moves the check edge back to time 0, giving the same conditions as an ordinary path. It does not remove the hold check.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why is a hold multicycle of N − 1 set with a setup multicycle of N?</h3>
+  <p>Moving the setup capture edge also moves the default hold check later, making hold nearly impossible to meet. The N − 1 hold setting returns the hold check to its original edge.</p>
+  <h3>What is the difference between a multicycle path and a false path?</h3>
+  <p>A multicycle path is still analyzed but given several clock periods. A false path is not analyzed at all and should be used only for paths that can never functionally propagate.</p>
+  <h3>When is it safe to set a multicycle path?</h3>
+  <p>Only when the design guarantees the destination samples the data every N cycles, for example through an enable, and verification confirms that behavior. Otherwise the relaxed check can mask a real timing failure.</p>
+</section>
 <section>
   <h2>Multicycle path in the explanations</h2>
   <ul class="term-quotes"><li><p>A multicycle path of 2 moves the capturing edge from one period later to two periods later.</p><a href="/en/q/sta-cdc/sta-cdc-014/">In a circuit running on a 2.0 ns clock, a path has a data a…</a></li><li><p>Specifying a hold multicycle path of N − 1 = 1 moves the check edge back to time 0, giving the same conditions as an ordinary path.</p><a href="/en/q/sta-cdc/sta-cdc-015/">When a setup multicycle path of N (N ≥ 2) is set, a hold mu…</a></li><li><p>A path that captures once every two cycles should stay in the analysis as a multicycle path with extended time.</p><a href="/en/q/sta-cdc/sta-cdc-016/">For which path is it appropriate to set a false path (set_f…</a></li></ul>

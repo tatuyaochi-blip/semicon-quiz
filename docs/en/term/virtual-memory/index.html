@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Virtual memory","item":"https://semiconroom.com/en/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Virtual memory","description":"A system in which the OS and hardware map the addresses a program uses (virtual addresses) to physical memory addresses. Each program gets a large, independent address space.","url":"https://semiconroom.com/en/term/virtual-memory/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Virtual memory","item":"https://semiconroom.com/en/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Virtual memory","description":"A system in which the OS and hardware map the addresses a program uses (virtual addresses) to physical memory addresses. Each program gets a large, independent address space.","url":"https://semiconroom.com/en/term/virtual-memory/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a page table and a TLB?","acceptedAnswer":{"@type":"Answer","text":"The page table is the complete mapping from virtual to physical pages, stored in memory and maintained by the OS. The TLB is a small hardware cache inside the CPU that holds recently used entries so most translations avoid a table walk."}},{"@type":"Question","name":"What happens during a page fault?","acceptedAnswer":{"@type":"Answer","text":"The CPU stops the faulting instruction and hands control to the operating system, which either maps a valid page, for example by loading it from disk, and retries the instruction, or kills the process if the access was illegal."}},{"@type":"Question","name":"Why use huge pages?","acceptedAnswer":{"@type":"Answer","text":"Each TLB entry then covers much more memory, so programs with large working sets suffer fewer TLB misses and table walks. Databases and virtual machines commonly use them."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/cpu/">CPUs and architecture</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How address translation works</h2>
+  <p>Memory is divided into fixed-size pages, commonly 4 KB. A virtual address splits into a virtual page number and an offset within the page, 12 bits for 4 KB pages. The memory management unit (MMU) looks up the virtual page number in the <a class="term-link" href="/en/term/page-table/">page table</a>, which supplies the physical frame number plus permission bits such as present, writable, executable and user-accessible. The offset is copied unchanged. To keep tables compact, they are organized as a tree: x86-64 with 48-bit virtual addresses uses four levels, each indexed by 9 address bits.</p>
+</section>
+<section class="term-about">
+  <h2>The TLB and huge pages</h2>
+  <p>Walking a four-level table could cost four memory accesses per load, so the <a class="term-link" href="/en/term/tlb/">translation lookaside buffer</a> (TLB) caches recent translations and most accesses hit in it. TLBs hold only tens to a few thousand entries, and their reach is entries times page size: about 1000 entries of 4 KB cover only 4 MB. Programs with larger working sets miss often, which is why operating systems offer huge pages, such as 2 MB, that extend the same entries to cover gigabytes. Address-space identifiers let the TLB keep entries from several processes at once.</p>
+</section>
+<section class="term-about">
+  <h2>Page faults and demand paging</h2>
+  <p>If an entry is marked not present, the access raises a <a class="term-link" href="/en/term/page-fault/">page fault</a> and the operating system takes over. It may allocate a fresh zeroed page, read the page from a file or swap space, or detect an illegal access and terminate the program with a segmentation fault. This allows <a class="term-link" href="/en/term/demand-paging/">demand paging</a>, where pages are loaded only when touched, memory-mapped files, and <a class="term-link" href="/en/term/copy-on-write/">copy-on-write</a>, where processes share pages until one writes. When the working set far exceeds physical memory, constant swapping, called <a class="term-link" href="/en/term/thrashing/">thrashing</a>, makes the system crawl.</p>
+</section>
+<section class="term-about">
+  <h2>Virtual memory vs. caches</h2>
+  <p>Caches and virtual memory are often confused because both involve memory hierarchy, but their jobs differ. A cache is a hardware-managed copy of recently used data that exists purely for speed and is invisible to software. Virtual memory is a mapping managed by the operating system that gives each process its own address space, enforces protection between processes and the kernel, and lets physical pages be shared, as with common libraries. In everyday usage, virtual memory sometimes refers only to the swap file, which is just one feature it enables.</p>
+</section>
 <section>
   <h2>Try it: questions about Virtual memory</h2>
   <article class="q-mini" data-qid="cpu-014" data-cat="cpu" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Mapping virtual page numbers to physical page numbers</p><p class="explanation">With <a class="term-link" href="/en/term/virtual-memory/">virtual memory</a>, the virtual addresses programs use are translated into actual physical memory addresses. A <a class="term-link" href="/en/term/page-table/">page table</a> records, for each virtual page number, the corresponding physical page number and protection information such as read/write permissions; the OS builds one per process and the CPU&#39;s MMU walks it. Frequently used translations are cached in the <a class="term-link" href="/en/term/tlb/">TLB</a>. It neither copies data contents nor manages process priorities.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a page table and a TLB?</h3>
+  <p>The page table is the complete mapping from virtual to physical pages, stored in memory and maintained by the OS. The TLB is a small hardware cache inside the CPU that holds recently used entries so most translations avoid a table walk.</p>
+  <h3>What happens during a page fault?</h3>
+  <p>The CPU stops the faulting instruction and hands control to the operating system, which either maps a valid page, for example by loading it from disk, and retries the instruction, or kills the process if the access was illegal.</p>
+  <h3>Why use huge pages?</h3>
+  <p>Each TLB entry then covers much more memory, so programs with large working sets suffer fewer TLB misses and table walks. Databases and virtual machines commonly use them.</p>
+</section>
 <section>
   <h2>Virtual memory in the explanations</h2>
   <ul class="term-quotes"><li><p>Virtual memory must translate the virtual addresses programs use into physical addresses, and since page tables live in memory, walking them each time would cost several memory accesses.</p><a href="/en/q/cpu/cpu-014/">Which cache holds the results of translating virtual addres…</a></li><li><p>With virtual memory, the virtual addresses programs use are translated into actual physical memory addresses.</p><a href="/en/q/os-hardware/os-hardware-010/">What is the role of a page table?</a></li></ul>

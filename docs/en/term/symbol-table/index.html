@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Symbol table","item":"https://semiconroom.com/en/term/symbol-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Symbol table","description":"The list of function and variable names, with their addresses and attributes, contained in object files and executables. Used for linking and debugging; strip can remove it.","url":"https://semiconroom.com/en/term/symbol-table/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Symbol table","item":"https://semiconroom.com/en/term/symbol-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Symbol table","description":"The list of function and variable names, with their addresses and attributes, contained in object files and executables. Used for linking and debugging; strip can remove it.","url":"https://semiconroom.com/en/term/symbol-table/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I view the symbol table of an executable or object file?","acceptedAnswer":{"@type":"Answer","text":"On Linux, nm lists symbols with a one-letter type, and readelf -s shows the full ELF symbol tables including size, type and binding. objdump -t is another option."}},{"@type":"Question","name":"What do T and U mean in nm output?","acceptedAnswer":{"@type":"Answer","text":"T marks a symbol defined in the text (code) section, typically a global function, and U marks an undefined symbol that this file references but does not define. Lowercase letters indicate local symbols."}},{"@type":"Question","name":"Can a stripped binary still be debugged?","acceptedAnswer":{"@type":"Answer","text":"Yes, but stack traces show addresses instead of function names unless separately saved debug information or symbol files are available to the debugger."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What an entry holds</h2>
+  <p>Each symbol table entry describes one named entity. In the <a class="term-link" href="/en/term/executable-and-linkable-format/">ELF</a> (Executable and Linkable Format) used on Linux, an entry records the name (as an offset into a string table), the value (an address, or an offset within a section in an <a class="term-link" href="/en/term/object-file/">object file</a>), the size, the type such as function or data object, the binding (local, global or weak) and the section where the symbol is defined. A symbol that is referenced but not defined in this file is marked undefined; these are the references the <a class="term-link" href="/en/term/linker/">linker</a> must satisfy from other object files or libraries.</p>
+</section>
+<section class="term-about">
+  <h2>How the linker uses it</h2>
+  <p>Linking starts with <a class="term-link" href="/en/term/symbol-resolution/">symbol resolution</a>: the <a class="term-link" href="/en/term/linker/">linker</a> collects the symbol tables of all input files and matches every undefined reference with exactly one definition. Two strong global definitions of the same name produce a multiple-definition error, a weak definition yields to a strong one, and a reference with no definition produces an undefined-reference error. Once each symbol has a final address, the linker processes <a class="term-link" href="/en/term/relocation/">relocation</a> entries, patching every instruction and data word that refers to a symbol. Local symbols, such as static functions in C, never take part in cross-file matching.</p>
+</section>
+<section class="term-about">
+  <h2>Static symbols, dynamic symbols and strip</h2>
+  <p><a class="term-link" href="/en/term/executable-and-linkable-format/">ELF</a> files carry two symbol tables. The full table (.symtab) serves the static <a class="term-link" href="/en/term/linker/">linker</a> and debuggers; the dynamic table (.dynsym) lists only the symbols that must be resolved at load time between an executable and its shared libraries. Running strip removes .symtab and debug sections such as DWARF line information, shrinking the file, but leaves .dynsym because the program cannot run without it. Developers often save the debug information to a separate file before stripping so that crashes in shipped binaries can still be symbolized. Tools such as nm and readelf -s list a file&#39;s symbols.</p>
+</section>
+<section class="term-about">
+  <h2>The compiler&#39;s symbol table</h2>
+  <p>The same term also names a different structure inside the compiler. During semantic analysis, the compiler keeps a table, typically hash tables organized by nested scope, that maps each identifier to its declaration, type and storage. It answers questions such as which variable x means at this point and whether a function was declared with matching arguments. That table exists only while compiling. The object-file symbol table is its persistent output, containing just the names that matter for linking, <a class="term-link" href="/en/term/relocation/">relocation</a> and debugging.</p>
+</section>
 <section>
   <h2>Try it: questions about Symbol table</h2>
   <article class="q-mini" data-qid="linker-loader-001" data-cat="linker-loader" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Symbol tables and debug information are removed; the file shrinks, but debuggers can no longer show function names and the like easily</p><p class="explanation">An executable may contain a <a class="term-link" href="/en/term/symbol-table/">symbol table</a> listing function and variable names, and debug information mapping code to source lines. These are not needed to run, so removing them with strip makes the file smaller. Function names and line numbers are then unavailable when investigating bugs, so the information is sometimes kept separately before stripping. Symbols needed for <a class="term-link" href="/en/term/dynamic-linking/">dynamic linking</a> remain.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do I view the symbol table of an executable or object file?</h3>
+  <p>On Linux, nm lists symbols with a one-letter type, and readelf -s shows the full ELF symbol tables including size, type and binding. objdump -t is another option.</p>
+  <h3>What do T and U mean in nm output?</h3>
+  <p>T marks a symbol defined in the text (code) section, typically a global function, and U marks an undefined symbol that this file references but does not define. Lowercase letters indicate local symbols.</p>
+  <h3>Can a stripped binary still be debugged?</h3>
+  <p>Yes, but stack traces show addresses instead of function names unless separately saved debug information or symbol files are available to the debugger.</p>
+</section>
 <section>
   <h2>Symbol table in the explanations</h2>
   <ul class="term-quotes"><li><p>An object file holds the machine code translated from that file&#39;s functions, initial values of variables, a list of names it defines and references (the symbol table) and a list of places whose addresses must be filled in later (relocation entries).</p><a href="/en/q/linker-loader/linker-loader-001/">Which statement is correct about the object file (.o) a com…</a></li><li><p>An executable may contain a symbol table listing function and variable names, and debug information mapping code to source lines.</p><a href="/en/q/linker-loader/linker-loader-033/">What happens when the strip command is applied to an execut…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Strength reduction","item":"https://semiconroom.com/en/term/strength-reduction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Strength reduction","description":"Replacing expensive operations such as multiplication with cheaper ones such as addition or shifts, for example adding 4 each iteration instead of computing i * 4 every time.","url":"https://semiconroom.com/en/term/strength-reduction/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Strength reduction","item":"https://semiconroom.com/en/term/strength-reduction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Strength reduction","description":"Replacing expensive operations such as multiplication with cheaper ones such as addition or shifts, for example adding 4 each iteration instead of computing i * 4 every time.","url":"https://semiconroom.com/en/term/strength-reduction/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Should I write x shifted left by 1 instead of x * 2 for speed?","acceptedAnswer":{"@type":"Answer","text":"Generally no. Compilers apply this strength reduction automatically when it is profitable, and writing the multiplication keeps the code clear. Hand-written shifts on signed values can even change results for negative numbers in the division case."}},{"@type":"Question","name":"What is an induction variable?","acceptedAnswer":{"@type":"Answer","text":"A variable whose value changes by a constant amount on every loop iteration, such as a loop counter or a pointer stepped by a fixed stride. Strength reduction targets expressions that are linear functions of induction variables."}},{"@type":"Question","name":"Does strength reduction change program results?","acceptedAnswer":{"@type":"Answer","text":"For integer arithmetic with the language's overflow rules it gives identical results. For floating point, compilers only apply it when exact, such as multiplication by a power of two, unless relaxed math options are enabled."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,9 +77,32 @@
   
   <p>Field: <a href="/en/c/compiler/">Compilers</a></p>
 </article>
+<section class="term-about">
+  <h2>Loop strength reduction</h2>
+  <p>The classic case is an expression that grows linearly with a loop counter, such as the byte offset i * 4 for an array of 4-byte elements. The compiler recognizes i as an induction variable, one that changes by a fixed amount each iteration, and introduces a new variable that starts at 0 and has 4 added each time round. The multiplication disappears from the loop body. Often the original counter then becomes unnecessary except for the exit test, and induction-variable elimination rewrites that test against the new variable so the old one can be removed.</p>
+</section>
+<section class="term-about">
+  <h2>Local replacements of expensive operations</h2>
+  <p>Strength reduction also applies to single operations with constant operands. Multiplying by a power of two becomes a left shift, and x * 2 can become x + x. Unsigned division by a power of two becomes a logical right shift and unsigned remainder becomes a bitwise AND with a mask. Signed division needs a small correction, because division in C rounds toward zero while an <a class="term-link" href="/en/term/arithmetic-shift/">arithmetic shift</a> rounds toward negative infinity. Division by other constants is commonly replaced with multiplication by a precomputed fixed-point reciprocal followed by a shift.</p>
+</section>
+<section class="term-about">
+  <h2>Strength reduction vs. related optimizations</h2>
+  <p>Strength reduction keeps the same number of computations but makes each one cheaper. <a class="term-link" href="/en/term/common-subexpression-elimination/">Common subexpression elimination</a> is different: it removes repeated evaluations of the same expression by computing it once into a temporary. <a class="term-link" href="/en/term/loop-unrolling/">Loop unrolling</a> is different again: it replicates the loop body to cut per-iteration overhead and expose parallelism. In practice they interact; after unrolling, for example, several strength-reduced address computations can share one base pointer with different constant offsets folded into the load instructions.</p>
+</section>
+<section class="term-about">
+  <h2>When it pays off</h2>
+  <p>On modern processors integer multiplication is pipelined and typically takes only a few cycles, so replacing it inside a loop gains less than it once did, though it can still shorten dependency chains and free multiplier units. Integer division remains much slower, often tens of cycles, so turning division by a constant into multiply and shift is still valuable. For floating point, care is needed: multiplying by 0.5 instead of dividing by 2.0 gives identical results, but replacing division by a general constant with multiplication by its rounded reciprocal can change the last bit.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Should I write x shifted left by 1 instead of x * 2 for speed?</h3>
+  <p>Generally no. Compilers apply this strength reduction automatically when it is profitable, and writing the multiplication keeps the code clear. Hand-written shifts on signed values can even change results for negative numbers in the division case.</p>
+  <h3>What is an induction variable?</h3>
+  <p>A variable whose value changes by a constant amount on every loop iteration, such as a loop counter or a pointer stepped by a fixed stride. Strength reduction targets expressions that are linear functions of induction variables.</p>
+  <h3>Does strength reduction change program results?</h3>
+  <p>For integer arithmetic with the language&#39;s overflow rules it gives identical results. For floating point, compilers only apply it when exact, such as multiplication by a power of two, unless relaxed math options are enabled.</p>
+</section>
 <section>
   <h2>Strength reduction in the explanations</h2>
   <ul class="term-quotes"><li><p>Strength reduction replaces expensive operations with cheaper ones.</p><a href="/en/q/compiler/compiler-017/">In the loop above, which transformation applies strength re…</a></li><li><p>Replacing multiplication with cheaper operations is a different optimization, strength reduction.</p><a href="/en/q/compiler/compiler-012/">Which describes applying common subexpression elimination t…</a></li></ul>

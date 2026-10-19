@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Blocking assignment","item":"https://semiconroom.com/en/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blocking assignment","description":"Verilog's \"=\" assignment, which updates the left side immediately so the next statement sees the new value. Used in combinational always blocks and testbenches.","url":"https://semiconroom.com/en/term/blocking-assignment/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Blocking assignment","item":"https://semiconroom.com/en/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blocking assignment","description":"Verilog's \"=\" assignment, which updates the left side immediately so the next statement sees the new value. Used in combinational always blocks and testbenches.","url":"https://semiconroom.com/en/term/blocking-assignment/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"When should I use blocking vs nonblocking assignment in Verilog?","acceptedAnswer":{"@type":"Answer","text":"Use nonblocking assignment for registers in clocked always blocks and blocking assignment in combinational blocks and for temporary variables. Do not mix both kinds on the same variable."}},{"@type":"Question","name":"Why does my Verilog shift register only delay by one clock?","acceptedAnswer":{"@type":"Answer","text":"Most likely the stages are written with blocking assignments, so each stage receives the value the previous line just updated. Switching to nonblocking assignments makes every stage take the pre-edge value."}},{"@type":"Question","name":"Is a VHDL variable assignment like a Verilog blocking assignment?","acceptedAnswer":{"@type":"Answer","text":"Yes, roughly: a VHDL variable assignment takes effect immediately within the process, while a VHDL signal assignment is scheduled and behaves more like a nonblocking assignment."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/hdl-verification/">HDL &amp; Verification</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How blocking assignment works</h2>
+  <p>A blocking assignment, written with a single equals sign, evaluates its right-hand side and updates the left-hand variable before the next statement in the same procedural block runs, much like assignment in C. Statements therefore act in order, and a later line sees the value an earlier line just wrote. A <a class="term-link" href="/en/term/nonblocking-assignment/">nonblocking assignment</a>, by contrast, evaluates every right-hand side first and applies all the updates together later in the time step, so each statement sees the values from before the clock edge.</p>
+</section>
+<section class="term-about">
+  <h2>Why it breaks clocked logic</h2>
+  <p>Inside a clocked always block, blocking assignments let one register see another&#39;s new value within the same edge. Writing &quot;q1 = d; q2 = q1;&quot; for a two-stage <a class="term-link" href="/en/term/shift-register/">shift register</a> gives q2 the freshly updated q1, which is d, so both simulation and the synthesized circuit delay by only one stage. Likewise &quot;a = b; b = a;&quot; leaves both equal to the old b instead of swapping them. Using nonblocking assignments for every register in a clocked block makes the code behave like parallel flip-flops regardless of statement order.</p>
+</section>
+<section class="term-about">
+  <h2>Where blocking is the right choice</h2>
+  <p>Blocking assignment belongs in combinational always blocks, written as always @(*) or <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a> always_comb, where an intermediate variable computed on one line feeds the next and the result describes a chain of gates. It is also natural in <a class="term-link" href="/en/term/testbench/">testbench</a> procedural code and for temporary variables inside functions and tasks. The widely followed rules are: nonblocking for clocked logic, blocking for combinational logic, and never assign the same variable with both kinds.</p>
+</section>
+<section class="term-about">
+  <h2>Races in testbenches</h2>
+  <p>Driving a design input with a blocking assignment at exactly the same simulation time as the active clock edge creates a race: whether the design&#39;s flip-flops capture the old or the new value depends on which process the simulator happens to execute first, and results can differ between simulators. Common fixes are changing stimulus on the opposite clock edge or a short delay after the active edge, driving inputs with nonblocking assignments, or using <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a> clocking blocks.</p>
+</section>
 <section>
   <h2>Try it: questions about Blocking assignment</h2>
   <article class="q-mini" data-qid="hdl-verification-034" data-cat="hdl-verification" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Whether the design captures the old or new value depends on execution order (a race); change inputs away from the clock edge or with nonblocking assignments</p><p class="explanation">When the <a class="term-link" href="/en/term/testbench/">testbench</a> updates an input at the same instant the design&#39;s flip-flops sample it, the captured value can be old or new depending on which the simulator executes first. This is a simulation race, and results may even differ between simulators. It is prevented by changing inputs on the falling edge or slightly after the edge, or by using nonblocking assignments or <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a> clocking blocks.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>When should I use blocking vs nonblocking assignment in Verilog?</h3>
+  <p>Use nonblocking assignment for registers in clocked always blocks and blocking assignment in combinational blocks and for temporary variables. Do not mix both kinds on the same variable.</p>
+  <h3>Why does my Verilog shift register only delay by one clock?</h3>
+  <p>Most likely the stages are written with blocking assignments, so each stage receives the value the previous line just updated. Switching to nonblocking assignments makes every stage take the pre-edge value.</p>
+  <h3>Is a VHDL variable assignment like a Verilog blocking assignment?</h3>
+  <p>Yes, roughly: a VHDL variable assignment takes effect immediately within the process, while a VHDL signal assignment is scheduled and behaves more like a nonblocking assignment.</p>
+</section>
 <section>
   <h2>Blocking assignment in the explanations</h2>
   <ul class="term-quotes"><li><p>With blocking assignment (=), line 1 sets a to 1, and line 2 gives b the new a, 1, so both end up as 1.</p><a href="/en/q/hdl-verification/hdl-verification-007/">In the code above, a = 0 and b = 1 just before a rising clo…</a></li><li><p>With blocking assignment, line 1 immediately updates q1 to d, and line 2 gives q2 the updated q1, which is d.</p><a href="/en/q/hdl-verification/hdl-verification-008/">Intending a two-stage shift register, someone wrote the cod…</a></li></ul>

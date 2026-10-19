@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU","item":"https://semiconroom.com/en/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU","description":"A unit that translates and protects the addresses peripherals use for DMA. It keeps devices from writing to unauthorized memory and is also used when assigning devices to virtual machines.","url":"https://semiconroom.com/en/term/iommu/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU","item":"https://semiconroom.com/en/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU","description":"A unit that translates and protects the addresses peripherals use for DMA. It keeps devices from writing to unauthorized memory and is also used when assigning devices to virtual machines.","url":"https://semiconroom.com/en/term/iommu/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do I need an IOMMU for GPU passthrough?","acceptedAnswer":{"@type":"Answer","text":"Yes. Passing a physical device to a virtual machine relies on the IOMMU to translate the guest's DMA addresses and to keep the device from reaching memory outside that VM, so it must be supported and enabled in firmware and the OS."}},{"@type":"Question","name":"Does enabling the IOMMU slow down I/O?","acceptedAnswer":{"@type":"Answer","text":"It adds some cost for translation misses and for creating and removing mappings, which can matter for very high-rate devices. Caching in the IOTLB and longer-lived mappings keep the overhead modest in most workloads."}},{"@type":"Question","name":"What is the difference between an IOMMU and an MMU?","acceptedAnswer":{"@type":"Answer","text":"The MMU translates addresses issued by the CPU on behalf of processes, while the IOMMU translates addresses issued by devices doing DMA. Both use page tables and permission bits, but the IOMMU's tables are per device or device group."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How an IOMMU translates DMA</h2>
+  <p>With an IOMMU (input-output memory management unit), a device no longer issues raw physical addresses. Its <a class="term-link" href="/en/term/dma/">DMA</a> requests carry I/O virtual addresses, and the IOMMU looks them up in page tables that the OS has set up for that device or group of devices, identified on PCIe by the requester&#39;s bus, device and function numbers. Recent translations are cached in an IOTLB (I/O <a class="term-link" href="/en/term/tlb/">translation lookaside buffer</a>). An access to an address with no valid mapping, or with the wrong read/write permission, is blocked and reported to the OS as a fault instead of reaching memory.</p>
+</section>
+<section class="term-about">
+  <h2>IOMMU vs. MMU</h2>
+  <p>Both translate addresses through page tables, but they serve different masters. The CPU&#39;s MMU translates virtual addresses for each process so that programs are isolated from one another. The IOMMU translates addresses for each device, so that <a class="term-link" href="/en/term/dma/">DMA</a> engines are confined to the buffers their driver mapped. Because the mappings are independent, the OS can hand a device a buffer that is scattered across many physical pages but appears contiguous in the device&#39;s address space, which simplifies devices that cannot do scatter-gather transfers themselves.</p>
+</section>
+<section class="term-about">
+  <h2>Blocking DMA attacks</h2>
+  <p><a class="term-link" href="/en/term/dma/">DMA</a> bypasses the CPU and its memory protection, so without an IOMMU any device that can master the bus can read keys or patch kernel code. This is a practical risk with external ports that expose PCIe-style DMA to plugged-in hardware. With the IOMMU enabled, the OS maps only the specific buffers each driver uses, typically for the duration of each transfer, and everything else is unreachable from that device. Many platforms also use the IOMMU to remap device interrupts so that a device cannot forge arbitrary <a class="term-link" href="/en/term/interrupt/">interrupt</a> messages.</p>
+</section>
+<section class="term-about">
+  <h2>Device assignment to virtual machines</h2>
+  <p>A guest OS programs a device with what it believes are physical addresses, but they are really guest-physical addresses. When a <a class="term-link" href="/en/term/hypervisor/">hypervisor</a> passes a real device such as a <a class="term-link" href="/en/term/gpu/">GPU</a> or network card straight through to a virtual machine, it configures the IOMMU to translate those guest-physical addresses to the host-physical pages backing that VM. The device can then use <a class="term-link" href="/en/term/dma/">DMA</a> at full speed without the hypervisor intercepting each transfer, while remaining unable to touch other VMs&#39; memory. The price is some translation overhead, mainly IOTLB misses and the cost of mapping and unmapping buffers.</p>
+</section>
 <section>
   <h2>Try it: questions about IOMMU</h2>
   <article class="q-mini" data-qid="os-hardware-030" data-cat="os-hardware" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Translating device DMA addresses and blocking illegal access</p><p class="explanation">Devices using <a class="term-link" href="/en/term/dma/">DMA</a> can read and write main memory directly, so a malfunctioning or malicious device could overwrite OS memory. Like an MMU for the CPU, an <a class="term-link" href="/en/term/iommu/">IOMMU</a> translates device addresses into physical addresses and blocks access outside permitted ranges. It can also present scattered physical memory as contiguous to a device and is used when assigning devices directly to virtual machines. It neither translates instructions nor controls power.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Do I need an IOMMU for GPU passthrough?</h3>
+  <p>Yes. Passing a physical device to a virtual machine relies on the IOMMU to translate the guest&#39;s DMA addresses and to keep the device from reaching memory outside that VM, so it must be supported and enabled in firmware and the OS.</p>
+  <h3>Does enabling the IOMMU slow down I/O?</h3>
+  <p>It adds some cost for translation misses and for creating and removing mappings, which can matter for very high-rate devices. Caching in the IOTLB and longer-lived mappings keep the overhead modest in most workloads.</p>
+  <h3>What is the difference between an IOMMU and an MMU?</h3>
+  <p>The MMU translates addresses issued by the CPU on behalf of processes, while the IOMMU translates addresses issued by devices doing DMA. Both use page tables and permission bits, but the IOMMU&#39;s tables are per device or device group.</p>
+</section>
 <section>
   <h2>IOMMU in the explanations</h2>
   <ul class="term-quotes"><li><p>Like an MMU for the CPU, an IOMMU translates device addresses into physical addresses and blocks access outside permitted ranges.</p><a href="/en/q/os-hardware/os-hardware-030/">What is the main role of an IOMMU?</a></li><li><p>With an IOMMU, the OS restricts each device to the addresses it has allowed, and DMA to other locations is rejected.</p><a href="/en/q/hw-security/hw-security-047/">What countermeasure protects against external devices conne…</a></li></ul>

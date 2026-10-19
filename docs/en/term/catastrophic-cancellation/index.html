@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Catastrophic cancellation","item":"https://semiconroom.com/en/term/catastrophic-cancellation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Catastrophic cancellation","description":"Loss of significant digits when subtracting two nearly equal numbers, as their leading digits cancel and the relative weight of existing rounding error grows. It is avoided by rearranging formulas.","url":"https://semiconroom.com/en/term/catastrophic-cancellation/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Catastrophic cancellation","item":"https://semiconroom.com/en/term/catastrophic-cancellation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Catastrophic cancellation","description":"Loss of significant digits when subtracting two nearly equal numbers, as their leading digits cancel and the relative weight of existing rounding error grows. It is avoided by rearranging formulas.","url":"https://semiconroom.com/en/term/catastrophic-cancellation/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does subtracting nearly equal floating-point numbers lose precision?","acceptedAnswer":{"@type":"Answer","text":"The matching leading digits cancel, leaving a small result made mostly of the low-order digits, which are the ones already contaminated by rounding error. The absolute error stays the same while the value shrinks, so the relative error grows sharply."}},{"@type":"Question","name":"Does switching from float to double fix catastrophic cancellation?","acceptedAnswer":{"@type":"Answer","text":"It helps by giving more digits to lose, but the same cancellation reappears when the operands are closer still. Rewriting the formula to avoid the subtraction is the real fix."}},{"@type":"Question","name":"How do you avoid cancellation in the quadratic formula?","acceptedAnswer":{"@type":"Answer","text":"Compute the root in which -b and the square root term have the same sign, so they add rather than cancel, then get the other root from the relation that the product of the roots equals c / a."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>The subtraction is not the culprit</h2>
+  <p>Surprisingly, subtracting two nearby floating-point numbers is usually exact: if x and y are within a factor of two of each other, x minus y is exactly representable and the hardware returns it without rounding (a result known as Sterbenz&#39;s lemma). The damage comes from errors already present in the operands, from earlier rounding, measurement or conversion. When the leading digits cancel, those small absolute errors remain while the result itself becomes tiny, so the relative error is magnified. Cancellation exposes old errors rather than creating new ones.</p>
+</section>
+<section class="term-about">
+  <h2>How large the amplification is</h2>
+  <p>If a and b each carry a relative error of about e, the error in a minus b is roughly e multiplied by (|a| + |b|) / |a - b|. Subtracting numbers that agree in their first six significant digits therefore amplifies the relative error by about a million, which consumes six decimal digits of a double&#39;s roughly sixteen. If the operands agree to all their digits, the result can be pure noise or exactly zero. This ratio is the condition number of subtraction, and it explains why the effect depends on how close the inputs are, not on the format alone.</p>
+</section>
+<section class="term-about">
+  <h2>Standard rewrites</h2>
+  <p>The cure is algebra that avoids subtracting close values. Rationalizing turns √(x + 1) − √x into 1 / (√(x + 1) + √x). In the quadratic formula, when b² is much larger than 4ac, one root suffers cancellation; computing the other root first and obtaining the troublesome one from the product of roots, c / a divided by the first root, avoids it. For small x, 1 − cos x becomes 2 sin²(x / 2), and math libraries provide expm1(x) and log1p(x) to compute exp(x) − 1 and log(1 + x) accurately near zero.</p>
+</section>
+<section class="term-about">
+  <h2>Cancellation vs. absorption</h2>
+  <p>Cancellation and absorption are the two classic ways floating point loses information, and they are easily confused. Cancellation happens when subtracting nearly equal numbers and leaves too few meaningful digits in the result. Absorption happens when adding numbers of very different magnitude: the smaller operand&#39;s low digits fall off the end of the <a class="term-link" href="/en/term/significand/">significand</a>, as when 1.0e16 + 1 evaluates to exactly 1.0e16 in double precision. Moving to a wider format postpones both problems but does not remove them; reformulating the computation does.</p>
+</section>
 <section>
   <h2>Try it: questions about Catastrophic cancellation</h2>
   <article class="q-mini" data-qid="computer-arithmetic-022" data-cat="computer-arithmetic" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Compute 1 ÷ (√(x + 1) + √x)</p><p class="explanation">√(x + 1) and √x are nearly equal, so subtracting them directly cancels the leading digits. Multiplying numerator and denominator by √(x + 1) + √x gives (x + 1 − x) ÷ (√(x + 1) + √x) = 1 ÷ (√(x + 1) + √x), eliminating the subtraction of close values. √(x + 1 − x) equals 1 and is simply wrong. Switching to double helps, but the same problem returns for larger x, so it is not a fundamental fix.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does subtracting nearly equal floating-point numbers lose precision?</h3>
+  <p>The matching leading digits cancel, leaving a small result made mostly of the low-order digits, which are the ones already contaminated by rounding error. The absolute error stays the same while the value shrinks, so the relative error grows sharply.</p>
+  <h3>Does switching from float to double fix catastrophic cancellation?</h3>
+  <p>It helps by giving more digits to lose, but the same cancellation reappears when the operands are closer still. Rewriting the formula to avoid the subtraction is the real fix.</p>
+  <h3>How do you avoid cancellation in the quadratic formula?</h3>
+  <p>Compute the root in which -b and the square root term have the same sign, so they add rather than cancel, then get the other root from the relation that the product of the roots equals c / a.</p>
+</section>
 <section>
   <h2>Catastrophic cancellation in the explanations</h2>
   <ul class="term-quotes"><li><p>This is catastrophic cancellation, countered by rearranging formulas to avoid subtracting close values.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-021/">What is the phenomenon called in which subtracting two near…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SSA form","item":"https://semiconroom.com/en/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA form","description":"An IR form in which variables are renamed so each is assigned exactly once, with φ functions selecting values at join points. Clear definition-use relationships make optimization easier.","url":"https://semiconroom.com/en/term/ssa-form/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SSA form","item":"https://semiconroom.com/en/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA form","description":"An IR form in which variables are renamed so each is assigned exactly once, with φ functions selecting values at join points. Clear definition-use relationships make optimization easier.","url":"https://semiconroom.com/en/term/ssa-form/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does SSA stand for in compilers?","acceptedAnswer":{"@type":"Answer","text":"Static single assignment. Each variable in the IR is assigned in exactly one place in the program text, and φ functions merge values where control-flow paths join."}},{"@type":"Question","name":"How can SSA work with loops if a variable can only be assigned once?","acceptedAnswer":{"@type":"Answer","text":"The single assignment is static, not dynamic. A φ function at the loop header merges the value entering the loop with the value computed in the previous iteration, and that one definition executes on every iteration."}},{"@type":"Question","name":"Where are φ functions placed?","acceptedAnswer":{"@type":"Answer","text":"At the beginning of blocks where different definitions of the same original variable can arrive along different incoming edges. Algorithms based on dominance frontiers find these points without inserting unnecessary φs."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/compiler/">Compilers</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Renaming: one definition per name</h2>
+  <p>SSA (static single assignment) form gives every assignment its own variable name. In straight-line code this is just renaming: x = 1; x = x + 2 becomes x1 = 1; x2 = x1 + 2, and each later use refers to whichever version reaches it. The word static matters: each name has exactly one assignment in the program text, even if that assignment executes many times in a loop. Because every use has exactly one definition, the definition-use relationships that optimizers need are explicit in the names themselves rather than computed by separate analysis.</p>
+</section>
+<section class="term-about">
+  <h2>φ functions at join points</h2>
+  <p>Renaming alone fails where control flow merges, because the value of x after an if-else depends on which branch ran. SSA inserts a φ (phi) function at the start of the join block, x3 = φ(x1, x2), with one argument per incoming edge; it yields the argument for the edge actually taken. Loops need the same thing at the loop header, merging the initial value with the value from the previous iteration. Standard construction algorithms place φ functions only where definitions from different paths actually meet, using the <a class="term-link" href="/en/term/control-flow-graph/">control-flow graph</a>&#39;s dominance information.</p>
+</section>
+<section class="term-about">
+  <h2>Why optimizers like SSA</h2>
+  <p>With a single definition per name, many optimizations become simple and fast. Constant propagation just follows each definition to its uses; dead-code elimination removes definitions with no uses; global value numbering detects redundant computations by comparing operations on the same named values. Analyses can be sparse, working along definition-use edges instead of iterating over every program point. For these reasons the IRs of many production compilers, <a class="term-link" href="/en/term/llvm/">LLVM</a> IR among them, are in SSA form, usually for scalar values held in virtual registers while memory is accessed through explicit loads and stores.</p>
+</section>
+<section class="term-about">
+  <h2>Leaving SSA</h2>
+  <p>Processors have no φ instruction, so before or during <a class="term-link" href="/en/term/register-allocation/">register allocation</a> the compiler converts out of SSA. Each φ is replaced by copy instructions at the end of the predecessor blocks, so every incoming path writes the chosen value into a common location. Edges that leave a block with several successors and enter one with several predecessors may need to be split to have a place for those copies. Register allocation then tries to coalesce the copies, assigning both sides the same register so that most of them disappear.</p>
+</section>
 <section>
   <h2>Try it: questions about SSA form</h2>
   <article class="q-mini" data-qid="compiler-008" data-cat="compiler" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Each variable is assigned exactly once in the program</p><p class="explanation">In <a class="term-link" href="/en/term/ssa-form/">SSA form</a>, variables are renamed so each is assigned only once, and φ functions select values at join points. If x is assigned twice, for example, it is split into x1 and x2, making clear which one each use refers to. The clear definition-use relationships make optimizations such as constant propagation and dead-code elimination easier. Branches are handled with φ functions, so branch instructions do not disappear. Variables are not forced into memory; most are treated as register candidates.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does SSA stand for in compilers?</h3>
+  <p>Static single assignment. Each variable in the IR is assigned in exactly one place in the program text, and φ functions merge values where control-flow paths join.</p>
+  <h3>How can SSA work with loops if a variable can only be assigned once?</h3>
+  <p>The single assignment is static, not dynamic. A φ function at the loop header merges the value entering the loop with the value computed in the previous iteration, and that one definition executes on every iteration.</p>
+  <h3>Where are φ functions placed?</h3>
+  <p>At the beginning of blocks where different definitions of the same original variable can arrive along different incoming edges. Algorithms based on dominance frontiers find these points without inserting unnecessary φs.</p>
+</section>
 <section>
   <h2>SSA form in the explanations</h2>
   <ul class="term-quotes"><li><p>In SSA form, variables are renamed so each is assigned only once, and φ functions select values at join points.</p><a href="/en/q/compiler/compiler-008/">Which is a characteristic of an IR in SSA form?</a></li><li><p>In SSA form the then-branch assignment becomes x1 and the else-branch assignment x2, so after the join the computation of y must specify which x to use.</p><a href="/en/q/compiler/compiler-009/">Converting the code above to SSA form inserts an expression…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Compare-and-swap","item":"https://semiconroom.com/en/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Compare-and-swap","description":"An atomic instruction that writes a new value only if memory still holds an expected value. Wrapped in a retry loop, it enables lock-free updates.","url":"https://semiconroom.com/en/term/compare-and-swap/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Compare-and-swap","item":"https://semiconroom.com/en/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Compare-and-swap","description":"An atomic instruction that writes a new value only if memory still holds an expected value. Wrapped in a retry loop, it enables lock-free updates.","url":"https://semiconroom.com/en/term/compare-and-swap/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the ABA problem in compare-and-swap?","acceptedAnswer":{"@type":"Answer","text":"A CAS succeeds because the location holds the expected value again, even though it was changed to something else and back in between. This can corrupt lock-free structures that reuse memory, and is usually prevented with version counters or safe memory reclamation."}},{"@type":"Question","name":"Is a CAS loop lock-free or wait-free?","acceptedAnswer":{"@type":"Answer","text":"Lock-free. Apart from spurious failures of weak forms, a CAS fails only because another thread's update succeeded, so the system progresses, but an individual thread has no bound on how many retries it may need."}},{"@type":"Question","name":"What is the difference between compare_exchange_weak and compare_exchange_strong?","acceptedAnswer":{"@type":"Answer","text":"The weak form may fail even when the value matches, which lets it map directly to LL/SC instructions and suits retry loops. The strong form fails only on a real mismatch, at the cost of an internal loop on LL/SC machines."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What CAS guarantees</h2>
+  <p>CAS (compare-and-swap) takes an address, an expected value and a new value. In one indivisible step it reads the location, compares it with the expected value and, only if they match, stores the new value; it reports success or failure, often by returning the value it found. On x86 this is the lock cmpxchg instruction. C11 exposes it as atomic_compare_exchange_strong and _weak, and C++ as compare_exchange_strong and compare_exchange_weak on std::atomic. In hardware, the core obtains the <a class="term-link" href="/en/term/cache-line/">cache line</a> in an exclusive state so no other core can write it during the operation.</p>
+</section>
+<section class="term-about">
+  <h2>The retry loop</h2>
+  <p>A lock-free update reads the current value, computes the new value from it and attempts a CAS with the value read as the expected value. If another thread changed the location in the meantime, the CAS fails and the loop rereads and tries again. Some thread always succeeds, so the system as a whole makes progress without locks, which makes such code lock-free but not wait-free: one unlucky thread can retry indefinitely. Under heavy contention many retries and the <a class="term-link" href="/en/term/cache-line/">cache line</a> bouncing between cores can make a CAS loop slower than a simple lock.</p>
+</section>
+<section class="term-about">
+  <h2>The ABA problem</h2>
+  <p>CAS checks only that the value is equal, not that it was never changed. If a location changes from A to B and back to A between a thread&#39;s read and its CAS, the CAS succeeds even though the data structure may now be different. The classic case is a lock-free stack where a node is popped, freed and reallocated at the same address before another thread&#39;s pop completes. Common remedies are pairing the pointer with a version counter updated on every change, and safe memory reclamation schemes such as hazard pointers or epoch-based reclamation.</p>
+</section>
+<section class="term-about">
+  <h2>CAS vs. LL/SC and fetch-and-add</h2>
+  <p>Many RISC architectures provide load-linked/store-conditional (LL/SC) instead: in RISC-V, lr reserves an address and sc stores only if no other write to it has occurred since, failing otherwise. Because it detects any intervening write rather than comparing values, it avoids ABA in principle, but the reservation can be lost for unrelated reasons, which is why compare_exchange_weak is allowed to fail spuriously. For simple operations such as counters, atomic fetch-and-add, or RISC-V AMO instructions like amoadd, is better than a CAS loop because it never needs to retry.</p>
+</section>
 <section>
   <h2>Try it: questions about Compare-and-swap</h2>
   <article class="q-mini" data-qid="multicore-sync-015" data-cat="multicore-sync" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. It writes a new value only if memory equals an expected value, and reports whether it succeeded</p><p class="explanation">CAS atomically performs &quot;if the value at this address is still the expected value, change it to the new value&quot;. If another thread changed the value between the read and the write, it fails, so updates proceed only when nothing has interfered. Wrapping it in a loop that rereads, recomputes and retries on failure lets shared values be updated safely without a lock. x86&#39;s cmpxchg instruction is an example.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the ABA problem in compare-and-swap?</h3>
+  <p>A CAS succeeds because the location holds the expected value again, even though it was changed to something else and back in between. This can corrupt lock-free structures that reuse memory, and is usually prevented with version counters or safe memory reclamation.</p>
+  <h3>Is a CAS loop lock-free or wait-free?</h3>
+  <p>Lock-free. Apart from spurious failures of weak forms, a CAS fails only because another thread&#39;s update succeeded, so the system progresses, but an individual thread has no bound on how many retries it may need.</p>
+  <h3>What is the difference between compare_exchange_weak and compare_exchange_strong?</h3>
+  <p>The weak form may fail even when the value matches, which lets it map directly to LL/SC instructions and suits retry loops. The strong form fails only on a real mismatch, at the cost of an internal loop on LL/SC machines.</p>
+</section>
 <section>
   <h2>Compare-and-swap in the explanations</h2>
   <ul class="term-quotes"><li><p>Examples include CAS (compare-and-swap), fetch-and-add and RISC-V&#39;s LR/SC and AMO instructions, which are the building blocks of locks and lock-free data structures.</p><a href="/en/q/multicore-sync/multicore-sync-014/">Which describes an atomic instruction?</a></li></ul>

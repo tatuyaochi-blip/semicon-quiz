@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"MESI protocol","item":"https://semiconroom.com/en/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESI protocol","description":"A coherence protocol that tracks each cache line in one of four states: Modified, Exclusive, Shared or Invalid. On a write it invalidates other cores' copies.","url":"https://semiconroom.com/en/term/mesi-protocol/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"MESI protocol","item":"https://semiconroom.com/en/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESI protocol","description":"A coherence protocol that tracks each cache line in one of four states: Modified, Exclusive, Shared or Invalid. On a write it invalidates other cores' copies.","url":"https://semiconroom.com/en/term/mesi-protocol/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between MESI and MSI?","acceptedAnswer":{"@type":"Answer","text":"MESI adds the Exclusive state for clean lines that no other cache holds. A core can then write such a line without broadcasting an invalidation, which MSI would require."}},{"@type":"Question","name":"What does the Modified state mean in MESI?","acceptedAnswer":{"@type":"Answer","text":"This cache has the only valid copy and has changed it, so main memory is out of date. The line must be written back on eviction or supplied to another core that requests it."}},{"@type":"Question","name":"What is false sharing?","acceptedAnswer":{"@type":"Answer","text":"A slowdown that occurs when threads on different cores write separate variables located in the same cache line, forcing the coherence protocol to move the line back and forth between their caches."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -116,7 +116,22 @@
 </svg><figcaption class="fig-cap">MESI protocol state transitions · <a href="/en/figures/#fig-mesi">View in diagrams</a></figcaption></figure>
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>The four states</h2>
+  <p>Modified (M): this cache holds the only copy and has written it, so memory is stale and the data must be written back or supplied to others. Exclusive (E): the only copy, but identical to memory. Shared (S): an unmodified copy that other caches may also hold. Invalid (I): the line holds no usable data. The protocol guarantees a single-writer, multiple-reader rule for each line: at any time either one cache may write it (M or E) or any number may read it (S), never both.</p>
+</section>
+<section class="term-about">
+  <h2>Key transitions</h2>
+  <p>On a read miss the cache requests the line; if no other cache has it, it is loaded in E, otherwise in S. If another cache holds it in M, that cache supplies the data or writes it back and drops to S. A write to an S line must first invalidate all other copies, an upgrade request, before moving to M. A write miss issues a read-for-ownership that fetches the line and invalidates other copies in one step. When another core&#39;s write request is observed, any local copy goes to I, and an M copy hands over its data first.</p>
+</section>
+<section class="term-about">
+  <h2>Why the E state matters</h2>
+  <p>The simpler <a class="term-link" href="/en/term/message-signaled-interrupts/">MSI</a> protocol has no E state, so a core that reads private data and then writes it must send an extra invalidation on the bus even though no other cache holds a copy. E records that the line is clean and unshared, allowing the later write to move silently to M. Since much data is private to one core, this saves a large amount of coherence traffic. Variants add more states: MOESI adds Owned, letting a dirty line be shared without first updating memory, and MESIF adds Forward, naming the one sharer that answers requests.</p>
+</section>
+<section class="term-about">
+  <h2>False sharing</h2>
+  <p>Coherence works per <a class="term-link" href="/en/term/cache-line/">cache line</a>, typically 64 bytes, not per variable. If two cores repeatedly write different variables that happen to share a line, each write must invalidate the other core&#39;s copy, so the line bounces between M in one cache and I in the other even though the threads never touch the same data. This <a class="term-link" href="/en/term/false-sharing/">false sharing</a> can make parallel code slower than sequential code. The fix is to separate frequently written per-thread data, such as counters, onto different lines by padding or alignment.</p>
+</section>
 <section>
   <h2>Try it: questions about MESI protocol</h2>
   <article class="q-mini" data-qid="multicore-sync-003" data-cat="multicore-sync" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -130,7 +145,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. No other core needs to be notified, and the line simply becomes M</p><p class="explanation">The E state means only this core holds the line and its contents match main memory. Since there are known to be no other copies, the core can move to M on a write without sending invalidations. The benefit of having E is saving that communication in the common pattern of reading and then writing data used by a single core. Writing from S, by contrast, requires invalidating other copies.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between MESI and MSI?</h3>
+  <p>MESI adds the Exclusive state for clean lines that no other cache holds. A core can then write such a line without broadcasting an invalidation, which MSI would require.</p>
+  <h3>What does the Modified state mean in MESI?</h3>
+  <p>This cache has the only valid copy and has changed it, so main memory is out of date. The line must be written back on eviction or supplied to another core that requests it.</p>
+  <h3>What is false sharing?</h3>
+  <p>A slowdown that occurs when threads on different cores write separate variables located in the same cache line, forcing the coherence protocol to move the line back and forth between their caches.</p>
+</section>
 
 <section>
   <h2>Questions that mention MESI protocol (2)</h2>

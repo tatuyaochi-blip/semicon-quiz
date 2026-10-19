@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/en/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"A format for timing constraints that describes clock periods and waveforms, input and output delays, timing exceptions and so on. Written as Tcl commands, it is shared by logic synthesis, place-and-route and STA tools.","url":"https://semiconroom.com/en/term/sdc/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/en/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"A format for timing constraints that describes clock periods and waveforms, input and output delays, timing exceptions and so on. Written as Tcl commands, it is shared by logic synthesis, place-and-route and STA tools.","url":"https://semiconroom.com/en/term/sdc/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does SDC stand for in VLSI?","acceptedAnswer":{"@type":"Answer","text":"Synopsys Design Constraints, a Tcl-based format for timing constraints such as clocks, input and output delays and timing exceptions, shared by synthesis, place-and-route and STA tools."}},{"@type":"Question","name":"What is the difference between SDC and SDF?","acceptedAnswer":{"@type":"Answer","text":"SDC describes the timing requirements the design must meet, while SDF carries calculated cell and interconnect delays, mainly for back-annotated gate-level simulation."}},{"@type":"Question","name":"When do I need create_generated_clock?","acceptedAnswer":{"@type":"Answer","text":"Whenever a clock is derived inside the design, for example by a divider or clock multiplexer. Without it, the derived net is not treated as a clock and the logic it drives is not timed correctly."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/sta-cdc/">Timing analysis and CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What an SDC file contains</h2>
+  <p>SDC (Synopsys Design Constraints) is a Tcl-based format that originated at Synopsys and is now read by most synthesis, place-and-route and <a class="term-link" href="/en/term/sta/">static timing analysis</a> tools. Typical commands define clocks (create_clock with period and waveform), derived clocks (create_generated_clock), external timing at the ports (set_input_delay, set_output_delay), the electrical environment (set_load, set_driving_cell), clock quality (set_clock_uncertainty, set_clock_latency) and timing exceptions (set_false_path, set_multicycle_path, set_max_delay, set_clock_groups).</p>
+</section>
+<section class="term-about">
+  <h2>Clock uncertainty and generated clocks</h2>
+  <p>set_clock_uncertainty subtracts margin for <a class="term-link" href="/en/term/jitter/">jitter</a> and, before clock-tree synthesis (CTS), for expected skew: with a 1 ns period and 50 ps of uncertainty, data must arrive within 0.95 ns. After CTS the tool computes the real skew from the built tree, so the uncertainty is reduced to jitter plus any deliberate margin. A divided clock must be declared with create_generated_clock relative to its source, for example divide-by-2 turning 500 MHz into 250 MHz, so the flip-flops it drives are analyzed with the correct period and phase relationship.</p>
+</section>
+<section class="term-about">
+  <h2>Why constraints are a sign-off risk</h2>
+  <p>Tools optimize and verify only what the constraints describe. A missing clock leaves flip-flops unanalyzed, an over-broad <a class="term-link" href="/en/term/false-path/">false path</a> silences real violations, and declaring synchronous clocks asynchronous drops paths that must be checked. Such a design can pass every tool report and still fail in silicon. Constraints are therefore reviewed as carefully as <a class="term-link" href="/en/term/rtl/">RTL</a>, checked with constraint-linting tools for unclocked registers and unconstrained ports, and kept consistent between synthesis, implementation and sign-off.</p>
+</section>
+<section class="term-about">
+  <h2>SDC vs. related formats</h2>
+  <p>SDC states requirements, not results. Calculated delays are exchanged in SDF (Standard Delay Format) for back-annotated <a class="term-link" href="/en/term/gate-level-simulation/">gate-level simulation</a>, and extracted parasitics in SPEF (Standard Parasitic Exchange Format). <a class="term-link" href="/en/term/fpga/">FPGA</a> tools use SDC or close derivatives that add physical constraints such as pin assignments. Because SDC is Tcl, variables and loops can generate constraints compactly, though heavily scripted files become harder to review.</p>
+</section>
 <section>
   <h2>Try it: questions about SDC</h2>
   <article class="q-mini" data-qid="eda-047" data-cat="eda" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Define the divider output as a generated clock, specifying its relationship to the source clock (divide-by-2)</p><p class="explanation"><a class="term-link" href="/en/term/sdc/">SDC</a> is the timing constraint description that tells the tool the clock periods and waveforms, input/output delays, exception paths and so on. If nothing is defined, the divider output is not treated as a clock and the flip-flops beyond it are not analyzed correctly. Defined as a generated clock, it is analyzed as 250 MHz when the source clock is 500 MHz, including its phase relationship to the source clock. The two are synchronous, so treating them as asynchronous drops paths that should be checked from the analysis.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does SDC stand for in VLSI?</h3>
+  <p>Synopsys Design Constraints, a Tcl-based format for timing constraints such as clocks, input and output delays and timing exceptions, shared by synthesis, place-and-route and STA tools.</p>
+  <h3>What is the difference between SDC and SDF?</h3>
+  <p>SDC describes the timing requirements the design must meet, while SDF carries calculated cell and interconnect delays, mainly for back-annotated gate-level simulation.</p>
+  <h3>When do I need create_generated_clock?</h3>
+  <p>Whenever a clock is derived inside the design, for example by a divider or clock multiplexer. Without it, the derived net is not treated as a clock and the logic it drives is not timed correctly.</p>
+</section>
 <section>
   <h2>SDC in the explanations</h2>
   <ul class="term-quotes"><li><p>SDC is the timing constraint description that tells the tool the clock periods and waveforms, input/output delays, exception paths and so on.</p><a href="/en/q/sta-cdc/sta-cdc-024/">When a clock is divided by two with a divider circuit and u…</a></li><li><p>Timing constraints specify clock periods and waveforms, I/O port delays, and paths to exclude (false paths) or allow multiple cycles, typically written in SDC format.</p><a href="/en/q/eda/eda-027/">In logic synthesis and static timing analysis, what is the …</a></li></ul>

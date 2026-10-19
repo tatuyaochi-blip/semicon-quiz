@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Sample-and-hold circuit","item":"https://semiconroom.com/en/term/sample-and-hold-circuit/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sample-and-hold circuit","description":"A circuit that captures (samples) the input voltage at an instant and holds it constant until AD conversion finishes. It is built from a switch and a capacitor.","url":"https://semiconroom.com/en/term/sample-and-hold-circuit/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Sample-and-hold circuit","item":"https://semiconroom.com/en/term/sample-and-hold-circuit/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sample-and-hold circuit","description":"A circuit that captures (samples) the input voltage at an instant and holds it constant until AD conversion finishes. It is built from a switch and a capacitor.","url":"https://semiconroom.com/en/term/sample-and-hold-circuit/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between track-and-hold and sample-and-hold?","acceptedAnswer":{"@type":"Answer","text":"A track-and-hold output follows the input continuously during the track phase, while a strict sample-and-hold takes a brief sample and presents only held values. In practice the terms are used almost interchangeably for ADC front ends."}},{"@type":"Question","name":"Why does high source impedance cause ADC errors?","acceptedAnswer":{"@type":"Answer","text":"The hold capacitor must charge through the source resistance during the acquisition window. A larger resistance lengthens the RC time constant, so the capacitor may not settle fully and the reading carries an error or residue from the previous channel."}},{"@type":"Question","name":"What is aperture jitter?","acceptedAnswer":{"@type":"Answer","text":"It is random variation in the exact moment the sampling switch opens. Because a fast-changing input moves during that uncertainty, jitter adds noise that grows with input frequency."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/adc-dac/">A/D and D/A conversion</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Track and hold phases</h2>
+  <p>The core of the circuit is an analog switch, usually a MOSFET or a <a class="term-link" href="/en/term/cmos/">CMOS</a> <a class="term-link" href="/en/term/transmission-gate/">transmission gate</a>, in series with a capacitor, often followed by a buffer. In track mode the switch is closed and the capacitor voltage follows the input. At the sampling instant the switch opens, and the capacitor holds the voltage present at that moment while the converter works on it. Because the output follows the input during tracking, many circuits are more precisely called track-and-hold; in successive-approximation (SAR) ADCs the capacitive DAC array itself performs this function.</p>
+</section>
+<section class="term-about">
+  <h2>Why a converter needs one</h2>
+  <p>Most converters take some time to produce a result, and if the input moves by more than about half a least-significant bit (LSB) during that time, the code is wrong. A full-scale 10 kHz sine wave has a maximum slope of π × 10 kHz × full scale, so staying within half an LSB at 12 bits leaves only about 4 ns. A sample-and-hold freezes the input so the conversion time no longer matters; what matters instead is how precisely the switch opens, set by aperture delay and aperture <a class="term-link" href="/en/term/jitter/">jitter</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Acquisition time and hold-mode errors</h2>
+  <p>Acquisition time is the time needed in track mode for the capacitor to settle to the input within a specified error. It is RC settling through the source and switch resistance, so reaching half an LSB takes (N+1)·ln2 time constants, about nine at 12 bits; too short a time leaves part of the previous sample behind, causing <a class="term-link" href="/en/term/crosstalk/">crosstalk</a> between multiplexed channels. In hold mode, leakage causes droop at a rate of leakage current divided by capacitance, and charge injection from the opening switch adds a small step called pedestal error.</p>
+</section>
+<section class="term-about">
+  <h2>Choosing the hold capacitor</h2>
+  <p>The capacitor size is a trade-off. Sampling freezes <a class="term-link" href="/en/term/thermal-noise/">thermal noise</a> with an RMS value of √(kT/C), about 64 µV for 1 pF at room temperature, so higher resolution needs larger capacitance. A larger capacitor also reduces droop and the relative size of the pedestal step. On the other hand, it takes longer to charge, demands more current from the driving amplifier and widens the kickback seen by the source at each sampling instant. High-speed designs often use bootstrapped switches whose <a class="term-link" href="/en/term/on-resistance/">on-resistance</a> stays nearly constant over the signal range.</p>
+</section>
 <section>
   <h2>Try it: questions about Sample-and-hold circuit</h2>
   <article class="q-mini" data-qid="adc-dac-010" data-cat="adc-dac" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. The time, in track mode, for the hold capacitor voltage to settle to the input within the required accuracy</p><p class="explanation">Acquisition time is the time needed in track mode for the hold capacitor&#39;s voltage to approach the input within a specified error. It is RC settling, so reaching 1/2 LSB takes (N+1)·ln2 time constants—about nine for 12 bits. If it is too short, the previous sample&#39;s influence remains, causing <a class="term-link" href="/en/term/crosstalk/">crosstalk</a> when multiplexing channels. Higher source resistance requires longer acquisition time.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between track-and-hold and sample-and-hold?</h3>
+  <p>A track-and-hold output follows the input continuously during the track phase, while a strict sample-and-hold takes a brief sample and presents only held values. In practice the terms are used almost interchangeably for ADC front ends.</p>
+  <h3>Why does high source impedance cause ADC errors?</h3>
+  <p>The hold capacitor must charge through the source resistance during the acquisition window. A larger resistance lengthens the RC time constant, so the capacitor may not settle fully and the reading carries an error or residue from the previous channel.</p>
+  <h3>What is aperture jitter?</h3>
+  <p>It is random variation in the exact moment the sampling switch opens. Because a fast-changing input moves during that uncertainty, jitter adds noise that grows with input frequency.</p>
+</section>
 
 <section>
   <h2>Questions that mention Sample-and-hold circuit (2)</h2>

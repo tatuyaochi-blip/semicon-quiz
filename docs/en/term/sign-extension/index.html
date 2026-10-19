@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Sign extension","item":"https://semiconroom.com/en/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sign extension","description":"Widening a signed integer to more bits by copying its top (sign) bit into all the new upper bits, which preserves its value. Filling the upper bits with zeros is zero extension.","url":"https://semiconroom.com/en/term/sign-extension/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Sign extension","item":"https://semiconroom.com/en/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sign extension","description":"Widening a signed integer to more bits by copying its top (sign) bit into all the new upper bits, which preserves its value. Filling the upper bits with zeros is zero extension.","url":"https://semiconroom.com/en/term/sign-extension/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between sign extension and zero extension?","acceptedAnswer":{"@type":"Answer","text":"Sign extension fills the new upper bits with copies of the original top bit, preserving the value of a signed number. Zero extension fills them with zeros, preserving the value of an unsigned number."}},{"@type":"Question","name":"Why does RISC-V addi sign-extend its immediate?","acceptedAnswer":{"@type":"Answer","text":"So that a single instruction can add negative constants, such as addi sp, sp, -16. The 12-bit field then covers -2048 to 2047 rather than only non-negative values."}},{"@type":"Question","name":"How do I sign-extend a value in C?","acceptedAnswer":{"@type":"Answer","text":"Store it in a signed type of the original width, such as int8_t or int16_t, and assign it to a wider signed type; the conversion sign-extends automatically and compilers emit the matching sign-extending instruction."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/isa-assembly/">ISA &amp; Assembly</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why copying the sign bit preserves the value</h2>
+  <p>In n-bit <a class="term-link" href="/en/term/two-s-complement/">two&#39;s complement</a>, the top bit carries a weight of minus 2 to the power n-1 and the others carry their usual positive weights. Extending a negative number by one bit adds a new top bit worth minus 2 to the power n and turns the old top bit into a positive 2 to the power n-1; together they still contribute minus 2 to the power n-1, so the value is unchanged. Repeating this for every added bit justifies the rule. For example, 4-bit 1010 (-6) becomes 8-bit 11111010, still -6.</p>
+</section>
+<section class="term-about">
+  <h2>Where ISAs sign-extend</h2>
+  <p>Immediates are the most common case: RISC-V&#39;s 12-bit I-type immediate is sign-extended, so addi accepts -2048 to 2047 and negative constants work without a separate subtract instruction. Loads come in pairs, lb and lh sign-extend while lbu and lhu zero-extend. On RV64, lw sign-extends a 32-bit value to 64 bits and lwu zero-extends it, and word instructions such as addw sign-extend their 32-bit results. x86 provides movsx and movzx for the same purpose. In hardware, sign extension costs nothing more than wiring the top bit to all the new positions.</p>
+</section>
+<section class="term-about">
+  <h2>A classic pitfall: lui plus addi</h2>
+  <p>To build a 32-bit constant, RISC-V code uses lui for the upper 20 bits and addi for the lower 12. Because addi sign-extends its immediate, a low part of 0x800 or more is treated as a negative number, its value minus 4096. Assemblers compensate by adding 1 to the upper part whenever bit 11 of the constant is set, and the %hi and %lo <a class="term-link" href="/en/term/relocation/">relocation</a> operators do this automatically. Hand-written code that splits the constant naively produces a value that is off by exactly 4096, a bug that is easy to miss in testing.</p>
+</section>
+<section class="term-about">
+  <h2>Sign vs. zero extension in C</h2>
+  <p>C chooses the extension from the source type: converting a signed char or int16_t to int sign-extends, while converting an unsigned type zero-extends. Plain char is signed on some platforms and unsigned on others, for example signed on x86 but unsigned on most Arm Linux systems, so a byte value of 0xFF may become -1 or 255 depending on the target. That difference causes bugs when bytes are compared with constants or used as array indices. Using unsigned char or uint8_t for raw bytes avoids the ambiguity.</p>
+</section>
 <section>
   <h2>Try it: questions about Sign extension</h2>
   <article class="q-mini" data-qid="isa-assembly-019" data-cat="isa-assembly" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. lb gives 0xFFFFFF80 (-128); lbu gives 0x00000080 (128)</p><p class="explanation">lb (load byte) treats the byte as signed and copies its top bit into the upper 24 bits (<a class="term-link" href="/en/term/sign-extension/">sign extension</a>). 0x80 has a top bit of 1, so the result is 0xFFFFFF80, which is -128. lbu (load byte unsigned) fills the upper bits with zeros (zero extension), giving 128. When C code reads a signed char versus an unsigned char, the compiler chooses between these two instructions.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between sign extension and zero extension?</h3>
+  <p>Sign extension fills the new upper bits with copies of the original top bit, preserving the value of a signed number. Zero extension fills them with zeros, preserving the value of an unsigned number.</p>
+  <h3>Why does RISC-V addi sign-extend its immediate?</h3>
+  <p>So that a single instruction can add negative constants, such as addi sp, sp, -16. The 12-bit field then covers -2048 to 2047 rather than only non-negative values.</p>
+  <h3>How do I sign-extend a value in C?</h3>
+  <p>Store it in a signed type of the original width, such as int8_t or int16_t, and assign it to a wider signed type; the conversion sign-extends automatically and compilers emit the matching sign-extending instruction.</p>
+</section>
 <section>
   <h2>Sign extension in the explanations</h2>
   <ul class="term-quotes"><li><p>Thanks to sign extension, adding a negative immediate performs subtraction.</p><a href="/en/q/isa-assembly/isa-assembly-019/">On RISC-V RV32I, what 32-bit value is in t0 after &quot;addi t0,…</a></li><li><p>lb (load byte) treats the byte as signed and copies its top bit into the upper 24 bits (sign extension).</p><a href="/en/q/isa-assembly/isa-assembly-020/">A byte in memory holds 0x80. Which pair correctly gives the…</a></li></ul>

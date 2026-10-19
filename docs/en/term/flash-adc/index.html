@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Flash ADC","item":"https://semiconroom.com/en/term/flash-adc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Flash ADC","description":"The fastest type of ADC, which compares the input against many comparators at once. N bits need 2ᴺ − 1 comparators, so the circuit grows rapidly with resolution.","url":"https://semiconroom.com/en/term/flash-adc/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Flash ADC","item":"https://semiconroom.com/en/term/flash-adc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Flash ADC","description":"The fastest type of ADC, which compares the input against many comparators at once. N bits need 2ᴺ − 1 comparators, so the circuit grows rapidly with resolution.","url":"https://semiconroom.com/en/term/flash-adc/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many comparators does an N-bit flash ADC need?","acceptedAnswer":{"@type":"Answer","text":"It needs 2ᴺ − 1 comparators, one for each threshold between adjacent codes. A 3-bit flash ADC uses 7, and an 8-bit one uses 255."}},{"@type":"Question","name":"Why are flash ADCs limited to low resolution?","acceptedAnswer":{"@type":"Answer","text":"Comparator count, power, area and input capacitance double with every bit, while comparator offsets must shrink with the LSB. Beyond roughly 8 bits, pipelined or SAR architectures are more practical."}},{"@type":"Question","name":"What is a thermometer code in an ADC?","acceptedAnswer":{"@type":"Answer","text":"It is the raw output of the comparator bank, a string of 1s up to the input level followed by 0s above it. An encoder converts it into a binary number."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/adc-dac/">A/D and D/A conversion</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a flash converter works</h2>
+  <p>A flash analog-to-digital converter (ADC) uses a resistor ladder to generate 2ᴺ − 1 reference voltages spaced one least-significant bit (LSB) apart and gives each tap its own <a class="term-link" href="/en/term/comparator/">comparator</a>. All comparators see the input at the same instant, so every comparator below the input level outputs 1 and every one above outputs 0. This pattern is a thermometer code, which an encoder converts to an N-bit binary word. The whole conversion takes one comparator decision plus encoding, which is why flash converters reach several gigasamples per second.</p>
+</section>
+<section class="term-about">
+  <h2>Why it scales poorly with resolution</h2>
+  <p>Every extra bit doubles the number of comparators: 7 for 3 bits, 255 for 8 bits and 1023 for 10 bits. Area and power grow in proportion, and the combined input capacitance of all those comparators makes the converter hard to drive at high frequency. Accuracy also gets harder, because each <a class="term-link" href="/en/term/comparator/">comparator</a>&#39;s offset must stay well below 1 LSB, and the LSB halves with every added bit. In practice, standalone flash converters are therefore limited to about 6–8 bits.</p>
+</section>
+<section class="term-about">
+  <h2>Bubbles and metastability</h2>
+  <p><a class="term-link" href="/en/term/comparator/">Comparator</a> offsets and small timing mismatches can leave an isolated 0 inside the run of 1s in the thermometer code, an error called a bubble. A naive encoder can turn a bubble into a large output error, so practical designs add bubble-correction logic, for example by checking three adjacent comparators, or encode through <a class="term-link" href="/en/term/gray-code/">Gray code</a> to limit the damage. A comparator whose input sits almost exactly on its threshold may also take too long to resolve, a <a class="term-link" href="/en/term/metastability/">metastability</a> problem that latches and <a class="term-link" href="/en/term/pipelining/">pipelining</a> help contain.</p>
+</section>
+<section class="term-about">
+  <h2>Flash vs. other architectures</h2>
+  <p>A successive-approximation (SAR) ADC uses one <a class="term-link" href="/en/term/comparator/">comparator</a> and N clock cycles to perform a binary search, trading speed for low power and area. Pipelined and subranging ADCs split the conversion into stages, each containing a small flash sub-converter of a few bits, reaching higher resolution at high speed with far fewer comparators. Delta-sigma converters go further toward resolution and lower bandwidth. The flash converter thus survives both as the fastest standalone option at low resolution and as a building block inside other architectures.</p>
+</section>
 <section>
   <h2>Try it: questions about Flash ADC</h2>
   <article class="q-mini" data-qid="adc-dac-003" data-cat="adc-dac" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. 7</p><p class="explanation">A <a class="term-link" href="/en/term/flash-adc/">flash ADC</a> compares the input with every threshold simultaneously, so N bits need 2ᴺ − 1 comparators—seven for 3 bits. The <a class="term-link" href="/en/term/comparator/">comparator</a> outputs form a thermometer code (all 1s up to a point, all 0s above), which an encoder converts to binary. At 8 bits there are 255 comparators, with large input capacitance and power, so the approach does not suit high resolution.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How many comparators does an N-bit flash ADC need?</h3>
+  <p>It needs 2ᴺ − 1 comparators, one for each threshold between adjacent codes. A 3-bit flash ADC uses 7, and an 8-bit one uses 255.</p>
+  <h3>Why are flash ADCs limited to low resolution?</h3>
+  <p>Comparator count, power, area and input capacitance double with every bit, while comparator offsets must shrink with the LSB. Beyond roughly 8 bits, pipelined or SAR architectures are more practical.</p>
+  <h3>What is a thermometer code in an ADC?</h3>
+  <p>It is the raw output of the comparator bank, a string of 1s up to the input level followed by 0s above it. An encoder converts it into a binary number.</p>
+</section>
 <section>
   <h2>Flash ADC in the explanations</h2>
   <ul class="term-quotes"><li><p>A flash ADC compares the input against every threshold at once using 2ᴺ−1 comparators, so conversion finishes in a single comparison—the fastest architecture (several GS/s).</p><a href="/en/q/adc-dac/adc-dac-003/">Which is a characteristic of a flash ADC?</a></li><li><p>A flash ADC compares the input with every threshold simultaneously, so N bits need 2ᴺ − 1 comparators—seven for 3 bits.</p><a href="/en/q/adc-dac/adc-dac-041/">How many comparators does a 3-bit flash ADC need?</a></li></ul>

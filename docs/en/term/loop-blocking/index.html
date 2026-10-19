@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Loop blocking","item":"https://semiconroom.com/en/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop blocking","description":"An optimization that processes large arrays in small blocks that fit in the cache so loaded data is reused many times before eviction. Very effective for matrix multiplication.","url":"https://semiconroom.com/en/term/loop-blocking/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Loop blocking","item":"https://semiconroom.com/en/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop blocking","description":"An optimization that processes large arrays in small blocks that fit in the cache so loaded data is reused many times before eviction. Very effective for matrix multiplication.","url":"https://semiconroom.com/en/term/loop-blocking/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is loop tiling used for?","acceptedAnswer":{"@type":"Answer","text":"It restructures loops to work on cache-sized blocks of data so that each loaded element is reused many times before eviction, sharply reducing capacity misses and memory traffic."}},{"@type":"Question","name":"How do you choose the block size for matrix multiplication?","acceptedAnswer":{"@type":"Answer","text":"Start with a size where the working tiles fit in the target cache, for example three b × b tiles of doubles in a 32 KB L1 gives b around 32, then tune empirically for conflicts, TLB and prefetching."}},{"@type":"Question","name":"Is loop blocking the same as loop unrolling?","acceptedAnswer":{"@type":"Answer","text":"No. Unrolling reduces loop overhead and branches, while blocking reorders iterations to improve cache reuse."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why naive matrix multiplication misses</h2>
+  <p>Consider C = A × B for N × N matrices of doubles with the textbook triple loop. Each element of C needs a full row of A and a full column of B, and walking down a column of B in row-major storage touches a different <a class="term-link" href="/en/term/cache-line/">cache line</a> for every element. When N is large, a column of B and the rows of A do not stay in cache long enough to be reused, so the same data is reloaded from main memory again and again. These are capacity misses: making the cache more associative does not help, because the working set is simply too big.</p>
+</section>
+<section class="term-about">
+  <h2>How blocking works</h2>
+  <p>Loop blocking, or tiling, splits each matrix into b × b tiles and reorders the loops so that one tile product, C-tile += A-tile × B-tile, is completed while all three tiles are resident in cache. Each loaded element is then reused about b times before eviction, and memory traffic falls from on the order of N³ elements to about N³/b. The arithmetic and the total memory footprint are unchanged; only the order of operations changes. <a class="term-link" href="/en/term/arithmetic-intensity/">Arithmetic intensity</a>, operations per byte moved, rises roughly in proportion to the tile size.</p>
+</section>
+<section class="term-about">
+  <h2>Choosing a tile size</h2>
+  <p>A first estimate is that three tiles must fit in the target cache: 3 × b² × 8 bytes for doubles. For a 32 KB L1 cache that gives b of about 36, so a tile of around 32 is a natural choice, leaving room for other data. In practice, conflict misses from power-of-two strides, <a class="term-link" href="/en/term/tlb/">TLB</a> reach and hardware <a class="term-link" href="/en/term/prefetching/">prefetching</a> also matter, so tile sizes are tuned empirically, and tiles are sometimes copied into contiguous buffers. High-performance libraries block at several levels at once: registers, L1, L2 and L3.</p>
+</section>
+<section class="term-about">
+  <h2>Blocking vs. other loop transformations</h2>
+  <p><a class="term-link" href="/en/term/loop-unrolling/">Loop unrolling</a> replicates the loop body to cut loop overhead and expose instruction-level parallelism; it does not improve cache reuse by itself. Loop interchange swaps nesting order so the innermost loop walks memory contiguously, improving <a class="term-link" href="/en/term/spatial-locality/">spatial locality</a>. Blocking targets <a class="term-link" href="/en/term/temporal-locality/">temporal locality</a> across large data sets and is often combined with both. The same idea appears on GPUs, where tiles are staged in on-chip shared memory, and in stencil codes, convolutions and many dense linear-algebra kernels.</p>
+</section>
 <section>
   <h2>Try it: questions about Loop blocking</h2>
   <article class="q-mini" data-qid="memory-hierarchy-018" data-cat="memory-hierarchy" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. To compute in small cache-sized blocks and increase data reuse</p><p class="explanation">Computing a large matrix product directly evicts elements before they are reused, forcing repeated reloads from main memory. <a class="term-link" href="/en/term/loop-blocking/">Loop blocking</a> splits the matrices into small blocks that fit in the cache and finishes the work within each block, reusing loaded data many times and sharply reducing capacity misses. Reducing branches is the goal of <a class="term-link" href="/en/term/loop-unrolling/">loop unrolling</a>, and total memory usage does not change.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is loop tiling used for?</h3>
+  <p>It restructures loops to work on cache-sized blocks of data so that each loaded element is reused many times before eviction, sharply reducing capacity misses and memory traffic.</p>
+  <h3>How do you choose the block size for matrix multiplication?</h3>
+  <p>Start with a size where the working tiles fit in the target cache, for example three b × b tiles of doubles in a 32 KB L1 gives b around 32, then tune empirically for conflicts, TLB and prefetching.</p>
+  <h3>Is loop blocking the same as loop unrolling?</h3>
+  <p>No. Unrolling reduces loop overhead and branches, while blocking reorders iterations to improve cache reuse.</p>
+</section>
 <section>
   <h2>Loop blocking in the explanations</h2>
   <ul class="term-quotes"><li><p>Loop blocking splits the matrices into small blocks that fit in the cache and finishes the work within each block, reusing loaded data many times and sharply reducing capacity misses.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-018/">What is the main purpose of loop blocking (tiling), used fo…</a></li><li><p>These are capacity misses, which require a larger cache or a smaller reuse footprint through techniques such as loop blocking.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-009/">Which misses are not reduced even by making a cache fully a…</a></li></ul>

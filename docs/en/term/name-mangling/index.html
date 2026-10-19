@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Name mangling","item":"https://semiconroom.com/en/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Name mangling","description":"A C++ compiler's encoding of argument types and namespaces into a function's symbol name, so the linker can tell overloaded functions apart.","url":"https://semiconroom.com/en/term/name-mangling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Name mangling","item":"https://semiconroom.com/en/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Name mangling","description":"A C++ compiler's encoding of argument types and namespaces into a function's symbol name, so the linker can tell overloaded functions apart.","url":"https://semiconroom.com/en/term/name-mangling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I demangle a C++ symbol name?","acceptedAnswer":{"@type":"Answer","text":"Pipe it through c++filt, for example echo _Z5printi | c++filt prints print(int). nm -C and objdump -C demangle while listing symbols."}},{"@type":"Question","name":"What does extern \"C\" do in C++?","acceptedAnswer":{"@type":"Answer","text":"It gives the declared functions C linkage, so the compiler uses the plain unmangled name. This lets C++ code call C libraries and lets C code call C++ functions exported this way."}},{"@type":"Question","name":"Why is the return type not part of a mangled function name?","acceptedAnswer":{"@type":"Answer","text":"C++ overloads must differ in their parameters, so the parameters alone identify the function. Function template instances are the exception and do encode the return type."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What gets encoded</h2>
+  <p>A mangled name packs into one <a class="term-link" href="/en/term/linker/">linker</a> symbol everything that distinguishes C++ entities sharing a source-level name: enclosing namespaces and classes, the function name, the parameter types, const or volatile qualification of member functions and template arguments. The return type is normally omitted, since overloads cannot differ only by return type, although function template instances do include it. Under the Itanium C++ <a class="term-link" href="/en/term/application-binary-interface/">ABI</a>, used by GCC and Clang on Linux and many other platforms, print(int) becomes _Z5printi and ns::f(double) becomes _ZN2ns1fEd, where lengths prefix each name and single letters encode built-in types.</p>
+</section>
+<section class="term-about">
+  <h2>extern &quot;C&quot; and mixing languages</h2>
+  <p>C has no overloading, so C compilers emit plain function names. When C++ code calls a C library, its declarations must be wrapped in extern &quot;C&quot; so that the C++ compiler looks for the unmangled name; otherwise it looks for something like _Z3fooi, finds only foo, and the link fails with an undefined reference. Headers shared between the languages usually wrap their declarations in extern &quot;C&quot; guarded by a check for the __cplusplus macro. Functions declared extern &quot;C&quot; cannot be overloaded, because two of them would map to the same symbol.</p>
+</section>
+<section class="term-about">
+  <h2>Reading mangled names</h2>
+  <p>Mangled names show up in nm output, disassembly, crash reports and <a class="term-link" href="/en/term/linker/">linker</a> errors. The c++filt tool converts them back to readable declarations, nm -C does the same in its listing, and most debuggers and linkers demangle automatically when printing diagnostics. Being able to read the raw form still helps: two symbols that look identical once demangled may differ in a const qualifier or a parameter type, which reveals that a declaration in a header does not match the definition that was actually compiled.</p>
+</section>
+<section class="term-about">
+  <h2>Mangling is part of the ABI</h2>
+  <p>Each compiler family defines its own scheme, and Microsoft&#39;s compiler uses a completely different encoding from the Itanium <a class="term-link" href="/en/term/application-binary-interface/">ABI</a>. The scheme is part of the application binary interface (ABI), so object files from compilers with different schemes cannot be linked directly even if the source is identical. Changes to a library&#39;s C++ interface, such as altering a parameter type, change the mangled names and break binary compatibility with programs built against the old version. Other languages with overloading or modules, such as Rust, mangle names for the same reasons.</p>
+</section>
 <section>
   <h2>Try it: questions about Name mangling</h2>
   <article class="q-mini" data-qid="linker-loader-035" data-cat="linker-loader" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. To let the linker distinguish overloaded functions with the same name but different argument types, and namespaces</p><p class="explanation">The <a class="term-link" href="/en/term/linker/">linker</a> matches symbols purely by their name strings. C++ allows functions with the same name, such as print(int) and print(double), which would otherwise be indistinguishable. So the compiler embeds the argument types and more into the name, as in &quot;_Z5printi&quot;. C functions are not mangled, so when C++ calls a C function, it is declared extern &quot;C&quot; to turn mangling off.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do I demangle a C++ symbol name?</h3>
+  <p>Pipe it through c++filt, for example echo _Z5printi | c++filt prints print(int). nm -C and objdump -C demangle while listing symbols.</p>
+  <h3>What does extern &quot;C&quot; do in C++?</h3>
+  <p>It gives the declared functions C linkage, so the compiler uses the plain unmangled name. This lets C++ code call C libraries and lets C code call C++ functions exported this way.</p>
+  <h3>Why is the return type not part of a mangled function name?</h3>
+  <p>C++ overloads must differ in their parameters, so the parameters alone identify the function. Function template instances are the exception and do encode the return type.</p>
+</section>
 <section>
   <h2>Name mangling in the explanations</h2>
   <ul class="term-quotes"><li><p>Common causes are forgetting to link the defining file, forgetting a library option (such as -lm), a misspelled name, or calling a function compiled as C++ without extern &quot;C&quot;, so that name mangling gives it a different name.</p><a href="/en/q/linker-loader/linker-loader-005/">Linking a C program gives &quot;undefined reference to `foo&#39;&quot;. W…</a></li></ul>

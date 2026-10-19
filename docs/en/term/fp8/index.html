@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"FP8","item":"https://semiconroom.com/en/term/fp8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FP8","description":"8-bit floating-point formats: E4M3 (4 exponent, 3 significand bits) and E5M2 (5 exponent, 2 significand bits), chosen to trade precision against range. Used to make AI training and inference faster and more power-efficient.","url":"https://semiconroom.com/en/term/fp8/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"FP8","item":"https://semiconroom.com/en/term/fp8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FP8","description":"8-bit floating-point formats: E4M3 (4 exponent, 3 significand bits) and E5M2 (5 exponent, 2 significand bits), chosen to trade precision against range. Used to make AI training and inference faster and more power-efficient.","url":"https://semiconroom.com/en/term/fp8/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between E4M3 and E5M2?","acceptedAnswer":{"@type":"Answer","text":"E4M3 uses 4 exponent bits and 3 significand bits, giving more precision but a smaller range, with a maximum of 448. E5M2 uses 5 exponent bits and 2 significand bits, giving a much wider range but coarser steps."}},{"@type":"Question","name":"Why does FP8 training need scaling factors?","acceptedAnswer":{"@type":"Answer","text":"FP8's representable range is so narrow that unscaled tensors would overflow or underflow. A per-tensor or per-block scale shifts the values into the usable range before conversion and is removed after the computation."}},{"@type":"Question","name":"Is FP8 better than INT8 for inference?","acceptedAnswer":{"@type":"Answer","text":"Not universally. FP8 handles wide, outlier-prone value distributions with less calibration, while INT8 is widely supported and accurate for many models when quantized carefully."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>The two layouts</h2>
+  <p>Both FP8 formats have a sign bit; they differ in how the other seven bits are split. E4M3 has a 4-bit exponent and 3-bit <a class="term-link" href="/en/term/significand/">significand</a>; in the widely used definition it gives up infinities and keeps only one <a class="term-link" href="/en/term/nan/">NaN</a> pattern per sign in order to extend its largest finite value to 448. E5M2 has a 5-bit exponent and 2-bit significand and follows <a class="term-link" href="/en/term/ieee-754/">IEEE 754</a> conventions with infinities and NaNs, reaching about 57344. With 3 significand bits, adjacent E4M3 values within a binade differ by 12.5 percent of the binade&#39;s lower bound; with 2 bits, E5M2 steps are 25 percent.</p>
+</section>
+<section class="term-about">
+  <h2>Which format for which tensor</h2>
+  <p>Weights and activations in a trained network usually have a fairly predictable spread of magnitudes, so the extra precision of E4M3 is worth more than range. Gradients during <a class="term-link" href="/en/term/backpropagation/">backpropagation</a> can vary over many orders of magnitude between layers and steps, so E5M2&#39;s extra exponent bit matters more there. A common recipe is therefore E4M3 for the forward pass and E5M2 for gradients, though some systems use E4M3 throughout. Either way, only the matrix multiply inputs are FP8; master weights, optimizer state and many sensitive operations remain in higher precision.</p>
+</section>
+<section class="term-about">
+  <h2>Scaling factors are essential</h2>
+  <p>Eight bits cannot cover the values of a real tensor without help. Before casting, software multiplies each tensor, or each block of a tensor, by a scale factor chosen from its recently observed maximum absolute value, so that the largest elements land near the top of the FP8 range and small ones are not flushed to zero. The scale is stored in higher precision and divided out after the matrix multiply. Matrix units multiply the FP8 inputs but accumulate products in a wider format, such as FP16 or FP32, so long dot products do not lose precision step by step.</p>
+</section>
+<section class="term-about">
+  <h2>FP8 vs. INT8</h2>
+  <p><a class="term-link" href="/en/term/int8/">INT8</a> quantization spaces its 256 values uniformly, which suits tensors with a bounded, even distribution but wastes resolution when a few outliers set the scale. FP8 values are spaced roughly logarithmically, with fine steps near zero and coarse steps for large magnitudes, which better matches the bell-shaped distributions with long tails common in neural networks and often reduces calibration effort. Both halve memory and bandwidth relative to 16-bit formats and allow more multiply-accumulate units per area and watt. Which is more accurate depends on the model.</p>
+</section>
 <section>
   <h2>Try it: questions about FP8</h2>
   <article class="q-mini" data-qid="computer-arithmetic-029" data-cat="computer-arithmetic" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. E4M3 for weights and activations, E5M2 for gradients</p><p class="explanation">How the scarce 8 bits are split between exponent and <a class="term-link" href="/en/term/significand/">significand</a> determines the format&#39;s character. E4M3 has one more significand bit, giving more precision but less range; E5M2 has one more exponent bit, giving more range but less precision. E4M3 is therefore typically used for weights and activations, whose magnitudes are fairly uniform, and E5M2 for gradients, whose magnitudes vary widely. Both are floating-point formats, not integers.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between E4M3 and E5M2?</h3>
+  <p>E4M3 uses 4 exponent bits and 3 significand bits, giving more precision but a smaller range, with a maximum of 448. E5M2 uses 5 exponent bits and 2 significand bits, giving a much wider range but coarser steps.</p>
+  <h3>Why does FP8 training need scaling factors?</h3>
+  <p>FP8&#39;s representable range is so narrow that unscaled tensors would overflow or underflow. A per-tensor or per-block scale shifts the values into the usable range before conversion and is removed after the computation.</p>
+  <h3>Is FP8 better than INT8 for inference?</h3>
+  <p>Not universally. FP8 handles wide, outlier-prone value distributions with less calibration, while INT8 is widely supported and accurate for many models when quantized carefully.</p>
+</section>
 <section>
   <h2>FP8 in the explanations</h2>
   <ul class="term-quotes"><li><p>It is mostly used with low precisions such as FP16, BF16, FP8 and INT8, greatly speeding up the matrix products that dominate neural network training and inference.</p><a href="/en/q/gpu-programming/gpu-programming-039/">What is a characteristic of the tensor cores (matrix units)…</a></li></ul>

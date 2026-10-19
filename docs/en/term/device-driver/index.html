@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Device driver","item":"https://semiconroom.com/en/term/device-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Device driver","description":"An OS component that operates a specific peripheral. It handles the device's registers and interrupts and lets applications use the device through a common interface.","url":"https://semiconroom.com/en/term/device-driver/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Device driver","item":"https://semiconroom.com/en/term/device-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Device driver","description":"An OS component that operates a specific peripheral. It handles the device's registers and interrupts and lets applications use the device through a common interface.","url":"https://semiconroom.com/en/term/device-driver/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is a device driver part of the operating system?","acceptedAnswer":{"@type":"Answer","text":"Usually yes. Most drivers are kernel modules that run with kernel privileges and plug into the OS's device frameworks, although some systems also support drivers that run as user-space processes."}},{"@type":"Question","name":"What is the difference between a driver and firmware?","acceptedAnswer":{"@type":"Answer","text":"Firmware runs on a processor inside the device and controls the hardware directly. The driver runs on the host CPU as part of the OS and communicates with the device and its firmware through registers, DMA buffers and interrupts."}},{"@type":"Question","name":"Why can a bad driver crash the whole computer?","acceptedAnswer":{"@type":"Answer","text":"Kernel-mode drivers share the kernel's address space and privileges, so a bug can overwrite any kernel data or leave hardware in an inconsistent state. A user program's bug, by contrast, is confined to its own process."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What a driver actually does</h2>
+  <p>A driver translates generic requests from the kernel into the exact sequence a particular device expects. At start-up it probes the device, maps its registers into the address space (<a class="term-link" href="/en/term/memory-mapped-i-o/">memory-mapped I/O</a>) and puts the hardware into a known state. During operation it writes command and status registers, prepares <a class="term-link" href="/en/term/dma/">DMA (direct memory access)</a> descriptors so the device can move data to and from memory without the CPU copying it, and services the interrupts the device raises when work completes. Upward it plugs into a common framework, such as a block, network or character-device interface, so applications see ordinary reads, writes and control calls.</p>
+</section>
+<section class="term-about">
+  <h2>Interrupt handling and deferred work</h2>
+  <p><a class="term-link" href="/en/term/interrupt/">Interrupt</a> handlers run while normal work on that CPU is suspended, so drivers keep them short: acknowledge the device, note what happened and schedule the rest. The heavier processing, such as passing received packets up the protocol stack or completing a disk request, runs later in a context that can be scheduled. This split is often called top half and bottom half. Very high-rate devices such as fast network cards may switch from one interrupt per event to <a class="term-link" href="/en/term/polling/">polling</a> under load, because taking an interrupt for every packet would waste more <a class="term-link" href="/en/term/cpu-time/">CPU time</a> than checking a queue in a loop.</p>
+</section>
+<section class="term-about">
+  <h2>Why driver bugs are dangerous</h2>
+  <p>Most drivers run in kernel mode with the same privileges as the rest of the kernel. A stray pointer, a missed lock or a <a class="term-link" href="/en/term/dma/">DMA</a> buffer programmed with the wrong address can therefore corrupt memory anywhere or crash the whole system rather than just one program. For this reason drivers are a common source of system instability and security flaws. Some designs move drivers into user-space processes, trading extra context switches for isolation, and an <a class="term-link" href="/en/term/iommu/">IOMMU</a> can limit which memory a device is allowed to reach even when its driver misbehaves.</p>
+</section>
+<section class="term-about">
+  <h2>Driver vs. firmware vs. hypervisor</h2>
+  <p>Firmware is code that runs on the device itself, for example on a controller inside an SSD or a network card; the driver runs on the host CPU and talks to that firmware through registers and shared memory. A <a class="term-link" href="/en/term/hypervisor/">hypervisor</a> sits below whole operating systems and shares hardware among virtual machines. Inside a virtual machine, the guest either uses paravirtual drivers that talk efficiently to the hypervisor, or, with device assignment, runs the ordinary driver for a real device handed to it.</p>
+</section>
 <section>
   <h2>Try it: questions about Device driver</h2>
   <article class="q-mini" data-qid="os-hardware-031" data-cat="os-hardware" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Handling device-specific operations behind a common interface</p><p class="explanation">Each device has its own register layout and operating procedure. A <a class="term-link" href="/en/term/device-driver/">device driver</a> is the OS component that absorbs these differences: it initializes the device, reads and writes registers, sets up <a class="term-link" href="/en/term/dma/">DMA</a> and handles interrupts, while offering upper layers a common interface such as file-style reads and writes. Applications can then use devices without knowing their details. Circuit design and screen appearance are not a driver&#39;s job.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is a device driver part of the operating system?</h3>
+  <p>Usually yes. Most drivers are kernel modules that run with kernel privileges and plug into the OS&#39;s device frameworks, although some systems also support drivers that run as user-space processes.</p>
+  <h3>What is the difference between a driver and firmware?</h3>
+  <p>Firmware runs on a processor inside the device and controls the hardware directly. The driver runs on the host CPU as part of the OS and communicates with the device and its firmware through registers, DMA buffers and interrupts.</p>
+  <h3>Why can a bad driver crash the whole computer?</h3>
+  <p>Kernel-mode drivers share the kernel&#39;s address space and privileges, so a bug can overwrite any kernel data or leave hardware in an inconsistent state. A user program&#39;s bug, by contrast, is confined to its own process.</p>
+</section>
 <section>
   <h2>Device driver in the explanations</h2>
   <ul class="term-quotes"><li><p>A device driver is the OS component that absorbs these differences: it initializes the device, reads and writes registers, sets up DMA and handles interrupts, while offering upper layers a common interface such as file-style reads and writes.</p><a href="/en/q/os-hardware/os-hardware-031/">What is the role of a device driver?</a></li><li><p>A compiler translates programs, and a device driver operates devices.</p><a href="/en/q/os-hardware/os-hardware-033/">What is the software called that runs multiple operating sy…</a></li></ul>

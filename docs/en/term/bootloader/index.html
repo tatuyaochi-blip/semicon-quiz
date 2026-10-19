@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Bootloader","item":"https://semiconroom.com/en/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bootloader","description":"A small program that runs first at power-on, verifying and starting the main firmware or updating it with new firmware.","url":"https://semiconroom.com/en/term/bootloader/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Bootloader","item":"https://semiconroom.com/en/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bootloader","description":"A small program that runs first at power-on, verifying and starting the main firmware or updating it with new firmware.","url":"https://semiconroom.com/en/term/bootloader/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a bootloader and firmware?","acceptedAnswer":{"@type":"Answer","text":"The bootloader is a small, rarely changed program that runs first and decides what to start; the application firmware is the main program it verifies and launches. The bootloader can also install new application firmware."}},{"@type":"Question","name":"Why do OTA updates use two firmware slots?","acceptedAnswer":{"@type":"Answer","text":"So the new image can be written and verified while the old one stays intact. If the update is interrupted or the new version fails, the device still boots from the original slot."}},{"@type":"Question","name":"Is a CRC check enough for secure boot?","acceptedAnswer":{"@type":"Answer","text":"No. A CRC catches accidental corruption, but anyone who modifies the image can recompute it; secure boot requires verifying a cryptographic signature."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What happens at power-on</h2>
+  <p>After reset, a processor starts executing from a fixed address, and in many embedded devices the code there is the bootloader rather than the application. It initializes the minimum hardware it needs, checks whether a valid application image is present, usually by validating a header plus a CRC or signature, and then jumps to the application&#39;s <a class="term-link" href="/en/term/entry-point/">entry point</a>, typically after setting up the <a class="term-link" href="/en/term/stack-pointer/">stack pointer</a> and <a class="term-link" href="/en/term/interrupt-vector-table/">interrupt vector table</a>. If no valid image exists, or an update has been requested, it stays in control and waits for new firmware instead.</p>
+</section>
+<section class="term-about">
+  <h2>Field updates and protecting the bootloader</h2>
+  <p>A bootloader can receive firmware over <a class="term-link" href="/en/term/uart/">UART</a>, USB, CAN, Ethernet or a radio link and write it into flash, so products can be fixed after shipping without a hardware programmer. Because a corrupted bootloader would leave the device unrecoverable, or &quot;bricked&quot;, it normally sits in a write-protected flash region and is excluded from updates. Many microcontrollers also contain a vendor bootloader in ROM, selected with a boot-mode pin, which is handy for first programming and for recovering a board whose flash is blank or damaged.</p>
+</section>
+<section class="term-about">
+  <h2>A/B slots for safe OTA updates</h2>
+  <p>Overwriting the running firmware in place is risky: losing power or connectivity halfway leaves no bootable image. Over-the-air (OTA) designs therefore split flash into two slots. The new image is written into the inactive slot and verified, and only then does the bootloader switch which slot it boots. If the new version fails to start or never confirms that it is healthy, the bootloader rolls back to the previous slot. The price is roughly twice the flash space for firmware.</p>
+</section>
+<section class="term-about">
+  <h2>Secure boot and the chain of trust</h2>
+  <p>In <a class="term-link" href="/en/term/secure-boot/">secure boot</a>, immutable ROM code verifies the digital signature of the first-stage bootloader, that stage verifies the next stage or the operating-system kernel, and so on, forming a chain of trust. A failed check stops the boot, so tampered boot code never runs. A bootloader that checks only a CRC detects accidental corruption but not deliberate modification, because an attacker can simply recompute the CRC; authenticity needs a signature verified with a key the attacker does not have.</p>
+</section>
 <section>
   <h2>Try it: questions about Bootloader</h2>
   <article class="q-mini" data-qid="embedded-037" data-cat="embedded" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. It runs first at power-on, starting the main firmware or updating it with new firmware</p><p class="explanation">A <a class="term-link" href="/en/term/bootloader/">bootloader</a> is a small program stored at a fixed location in flash that runs first at power-on. Normally it verifies the main firmware and starts it, but it can also receive new firmware over <a class="term-link" href="/en/term/uart/">UART</a>, USB, radio and so on and write it to flash. It is usually excluded from updates and protected so that the bootloader itself is never corrupted.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a bootloader and firmware?</h3>
+  <p>The bootloader is a small, rarely changed program that runs first and decides what to start; the application firmware is the main program it verifies and launches. The bootloader can also install new application firmware.</p>
+  <h3>Why do OTA updates use two firmware slots?</h3>
+  <p>So the new image can be written and verified while the old one stays intact. If the update is interrupted or the new version fails, the device still boots from the original slot.</p>
+  <h3>Is a CRC check enough for secure boot?</h3>
+  <p>No. A CRC catches accidental corruption, but anyone who modifies the image can recompute it; secure boot requires verifying a cryptographic signature.</p>
+</section>
 <section>
   <h2>Bootloader in the explanations</h2>
   <ul class="term-quotes"><li><p>A bootloader is a small program stored at a fixed location in flash that runs first at power-on.</p><a href="/en/q/embedded/embedded-037/">What is the role of a bootloader in an embedded device?</a></li><li><p>If the new version fails to boot, the bootloader reverts to the original slot.</p><a href="/en/q/embedded/embedded-038/">In devices updated over the air (OTA), why is flash divided…</a></li><li><p>In secure boot, immutable ROM code verifies the first bootloader&#39;s signature, that bootloader verifies the next stage or the OS kernel, and so on, forming a chain of trust.</p><a href="/en/q/hw-security/hw-security-019/">Which describes secure boot?</a></li></ul>

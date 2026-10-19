@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/en/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"A 16-bit floating-point format with 1 sign, 8 exponent and 7 significand bits. Sharing FP32's exponent width gives it a wide range, so despite low precision it is used for AI training. FP16, with 5 exponent and 10 significand bits, is more precise but has a narrow range.","url":"https://semiconroom.com/en/term/bfloat16/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/en/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"A 16-bit floating-point format with 1 sign, 8 exponent and 7 significand bits. Sharing FP32's exponent width gives it a wide range, so despite low precision it is used for AI training. FP16, with 5 exponent and 10 significand bits, is more precise but has a narrow range.","url":"https://semiconroom.com/en/term/bfloat16/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is bfloat16 the same as FP16?","acceptedAnswer":{"@type":"Answer","text":"No. Both are 16 bits, but bfloat16 has an 8-bit exponent and 7-bit significand, while FP16 has a 5-bit exponent and 10-bit significand. bfloat16 trades precision for FP32's range."}},{"@type":"Question","name":"How do you convert FP32 to bfloat16?","acceptedAnswer":{"@type":"Answer","text":"Keep the top 16 bits of the FP32 bit pattern, ideally rounding to nearest even based on the discarded 16 bits rather than just truncating. Converting back is exact: append 16 zero bits."}},{"@type":"Question","name":"Why does bfloat16 training usually not need loss scaling?","acceptedAnswer":{"@type":"Answer","text":"Loss scaling exists to keep small gradients from underflowing in FP16's narrow range. bfloat16 has the same exponent range as FP32, so such gradients normally remain representable."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What the bit layout implies</h2>
+  <p>bfloat16 (brain floating point) is simply the upper 16 bits of an FP32 number: the same sign bit and 8-bit exponent, with the <a class="term-link" href="/en/term/significand/">significand</a> cut from 23 bits to 7. Converting from bfloat16 to FP32 is exact, done by appending 16 zero bits, and converting the other way only requires rounding off the low 16 bits. The range matches FP32, roughly 1e-38 to 3e38 for normal numbers, but with 8 significant bits including the hidden bit, values carry only about two to three decimal digits; the spacing just above 1.0 is 2 to the power -7, about 0.0078.</p>
+</section>
+<section class="term-about">
+  <h2>bfloat16 vs. FP16</h2>
+  <p>FP16 spends its bits the other way, with a 5-bit exponent and a 10-bit <a class="term-link" href="/en/term/significand/">significand</a>. It is more precise, about three decimal digits, but its largest value is 65504 and its smallest normal value is about 6e-5. In training, small gradients can underflow to zero in FP16, so FP16 training usually needs loss scaling, multiplying the loss by a large factor and later dividing the gradients back. bfloat16&#39;s FP32-sized range generally makes that unnecessary and makes conversion from existing FP32 models straightforward, which is why it is popular for training.</p>
+</section>
+<section class="term-about">
+  <h2>Why master weights stay in FP32</h2>
+  <p>Low precision fails when tiny updates are added to large values. With a weight of 1.0 stored in bfloat16, the next representable value is 1.0078125, so an update of 0.001 is less than half a step and the sum rounds back to exactly 1.0: the update is absorbed. Mixed-precision training therefore keeps master weights and optimizer state in FP32 and uses bfloat16 copies for the forward and backward passes. Matrix units likewise typically multiply bfloat16 inputs but accumulate the products in FP32, so long sums do not lose their small contributions.</p>
+</section>
+<section class="term-about">
+  <h2>Where you will meet it</h2>
+  <p>bfloat16 is supported by the matrix units of many current GPUs and AI accelerators, and by vector extensions on some CPUs, for both training and inference. Halving the size of each value relative to FP32 halves memory capacity and bandwidth needs and allows more multipliers per unit of chip area. It is not a good general-purpose format, though: with so few <a class="term-link" href="/en/term/significand/">significand</a> bits, sums of many values, small differences and anything needing more than a few digits of accuracy must be done in a wider type.</p>
+</section>
 <section>
   <h2>Try it: questions about bfloat16</h2>
   <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. When small updates are added to weights, a low-precision format would lose them to absorption</p><p class="explanation">Training repeatedly adds very small amounts, learning rate × gradient, to the weights. FP16 and <a class="term-link" href="/en/term/bfloat16/">bfloat16</a> have short significands, so if an update is too small relative to the weight, the rounded sum equals the old weight and the update vanishes (absorption). Weights are therefore kept in FP32 so updates accumulate correctly, while lower-precision copies are used for the forward and backward passes. Lower precision computes faster, and low-precision values can certainly be stored.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is bfloat16 the same as FP16?</h3>
+  <p>No. Both are 16 bits, but bfloat16 has an 8-bit exponent and 7-bit significand, while FP16 has a 5-bit exponent and 10-bit significand. bfloat16 trades precision for FP32&#39;s range.</p>
+  <h3>How do you convert FP32 to bfloat16?</h3>
+  <p>Keep the top 16 bits of the FP32 bit pattern, ideally rounding to nearest even based on the discarded 16 bits rather than just truncating. Converting back is exact: append 16 zero bits.</p>
+  <h3>Why does bfloat16 training usually not need loss scaling?</h3>
+  <p>Loss scaling exists to keep small gradients from underflowing in FP16&#39;s narrow range. bfloat16 has the same exponent range as FP32, so such gradients normally remain representable.</p>
+</section>
 <section>
   <h2>bfloat16 in the explanations</h2>
   <ul class="term-quotes"><li><p>bfloat16 is a 16-bit format with 1 sign, 8 exponent and 7 significand bits.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-026/">What is the main reason bfloat16 is used for AI training?</a></li><li><p>FP16 and bfloat16 have short significands, so if an update is too small relative to the weight, the rounded sum equals the old weight and the update vanishes (absorption).</p><a href="/en/q/computer-arithmetic/computer-arithmetic-050/">In mixed-precision AI training, why are master weights kept…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Thrashing","item":"https://semiconroom.com/en/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Thrashing","description":"A state in which physical memory is so short that pages are constantly evicted and reloaded, and little useful work gets done. It is relieved by running fewer processes or adding memory.","url":"https://semiconroom.com/en/term/thrashing/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Thrashing","item":"https://semiconroom.com/en/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Thrashing","description":"A state in which physical memory is so short that pages are constantly evicted and reloaded, and little useful work gets done. It is relieved by running fewer processes or adding memory.","url":"https://semiconroom.com/en/term/thrashing/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What causes thrashing in an operating system?","acceptedAnswer":{"@type":"Answer","text":"Running processes whose combined working sets exceed physical memory, so pages are evicted and then needed again almost immediately, keeping the system busy with paging I/O instead of useful work."}},{"@type":"Question","name":"How do you stop thrashing?","acceptedAnswer":{"@type":"Answer","text":"Reduce the number of active processes, add physical memory, or use working-set or page-fault-frequency policies that allocate frames according to each process's actual needs."}},{"@type":"Question","name":"What is the difference between thrashing and Bélády's anomaly?","acceptedAnswer":{"@type":"Answer","text":"Thrashing is performance collapse from memory overcommitment, while Bélády's anomaly is the counterintuitive case where FIFO replacement causes more page faults when more frames are available."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why it happens</h2>
+  <p>Each process has a working set, the pages it actively uses over a short time window. When the combined working sets of all running processes exceed physical memory, loading a page for one process evicts a page that another, or the same, process will need almost immediately. That page then faults back in, evicting yet another needed page. Page faults go to disk or SSD, which takes from tens of microseconds to milliseconds, compared with around 100 ns for DRAM, so the system spends nearly all its time waiting for paging I/O.</p>
+</section>
+<section class="term-about">
+  <h2>The feedback trap</h2>
+  <p>A classic textbook scenario shows how thrashing can feed itself. As processes wait on page faults, CPU utilization drops. A naive scheduler that tries to raise utilization by admitting more processes shrinks the memory available to each one, causing even more faults and lower utilization. <a class="term-link" href="/en/term/throughput/">Throughput</a> collapses rather than degrading gracefully. The symptoms are a very high page-fault rate, saturated swap I/O, high time spent waiting on I/O and little useful computation, even though the machine appears busy.</p>
+</section>
+<section class="term-about">
+  <h2>Remedies</h2>
+  <p>The fundamental cure is to make memory demand fit: run fewer processes at once by suspending or swapping out entire processes, or add physical memory. Working-set based policies admit a process only when its working set can be held. Page-fault-frequency control gives a process more frames when its fault rate exceeds an upper threshold and takes frames away when it falls below a lower one. Programs can help themselves by improving locality so their working sets are smaller.</p>
+</section>
+<section class="term-about">
+  <h2>Thrashing vs. related terms</h2>
+  <p>Thrashing is a sustained <a class="term-link" href="/en/term/throughput/">throughput</a> collapse due to memory shortage. It differs from Bélády&#39;s anomaly, the specific case where FIFO replacement produces more faults when given more frames; stack algorithms such as LRU cannot show that anomaly. It also differs from <a class="term-link" href="/en/term/deadlock/">deadlock</a>, where tasks stop because each waits for resources another holds. The word is also used for caches and TLBs: cache thrashing describes lines repeatedly evicting each other, often addresses mapping to the same set, which is the same pattern at a smaller scale.</p>
+</section>
 <section>
   <h2>Try it: questions about Thrashing</h2>
   <article class="q-mini" data-qid="os-hardware-020" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Thrashing</p><p class="explanation">When the combined working sets of running processes exceed physical memory, loading a needed page evicts a page another process needs, which is then needed again almost immediately. Time is spent waiting on disk I/O and CPU utilization falls. This is <a class="term-link" href="/en/term/thrashing/">thrashing</a>, relieved by running fewer processes or adding memory. <a class="term-link" href="/en/term/deadlock/">Deadlock</a> is when tasks stop because each waits for resources held by the other.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What causes thrashing in an operating system?</h3>
+  <p>Running processes whose combined working sets exceed physical memory, so pages are evicted and then needed again almost immediately, keeping the system busy with paging I/O instead of useful work.</p>
+  <h3>How do you stop thrashing?</h3>
+  <p>Reduce the number of active processes, add physical memory, or use working-set or page-fault-frequency policies that allocate frames according to each process&#39;s actual needs.</p>
+  <h3>What is the difference between thrashing and Bélády&#39;s anomaly?</h3>
+  <p>Thrashing is performance collapse from memory overcommitment, while Bélády&#39;s anomaly is the counterintuitive case where FIFO replacement causes more page faults when more frames are available.</p>
+</section>
 <section>
   <h2>Thrashing in the explanations</h2>
   <ul class="term-quotes"><li><p>Thrashing is constant replacement from memory shortage, and copy-on-write copies pages on write.</p><a href="/en/q/os-hardware/os-hardware-020/">With FIFO page replacement, adding physical pages can somet…</a></li><li><p>This is thrashing, relieved by running fewer processes or adding memory.</p><a href="/en/q/os-hardware/os-hardware-021/">What is the state called in which physical memory is so sho…</a></li></ul>

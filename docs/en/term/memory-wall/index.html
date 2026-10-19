@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Memory wall","item":"https://semiconroom.com/en/term/memory-wall/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory wall","description":"The problem that memory bandwidth and latency improve more slowly than processor performance, limiting overall performance. HBM, larger caches and advanced packaging are used to address it.","url":"https://semiconroom.com/en/term/memory-wall/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Memory wall","item":"https://semiconroom.com/en/term/memory-wall/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory wall","description":"The problem that memory bandwidth and latency improve more slowly than processor performance, limiting overall performance. HBM, larger caches and advanced packaging are used to address it.","url":"https://semiconroom.com/en/term/memory-wall/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the memory wall about latency or bandwidth?","acceptedAnswer":{"@type":"Answer","text":"Both. Latency limits programs that make dependent memory accesses, while bandwidth limits programs that stream large amounts of data relative to the computation they do."}},{"@type":"Question","name":"How does HBM help with the memory wall?","acceptedAnswer":{"@type":"Answer","text":"HBM stacks DRAM dies next to the processor and uses a very wide interface, giving much higher bandwidth than conventional DIMMs. It mainly attacks the bandwidth side; latency stays in the same tens-of-nanoseconds range."}},{"@type":"Question","name":"Why are large language models memory-bound?","acceptedAnswer":{"@type":"Answer","text":"During generation at small batch sizes, each weight is fetched from memory and used for only a couple of operations. The accelerator can compute far faster than memory can supply the weights."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/dram/">DRAM</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Where the gap comes from</h2>
+  <p>Processor performance grew quickly for decades, first through clock speed and later through more cores and wider vector units, while DRAM was optimized mainly for density and cost per bit. DRAM access latency has stayed in the tens of nanoseconds, so at clock rates of several gigahertz a miss to main memory costs hundreds of cycles. The phrase memory wall was popularized in the mid-1990s to warn that this widening gap, not the processor core, would ultimately limit system performance.</p>
+</section>
+<section class="term-about">
+  <h2>Latency wall vs. bandwidth wall</h2>
+  <p>The problem has two faces. Latency hurts code with dependent accesses, such as following pointers through a linked structure, where each load must finish before the next address is known. Bandwidth hurts streaming code that touches lots of data per operation. The <a class="term-link" href="/en/term/roofline-model/">roofline model</a> captures the bandwidth side: attainable performance is the lower of peak compute and memory bandwidth multiplied by <a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a>, the number of operations performed per byte moved. Code with low arithmetic intensity never reaches peak compute, however many cores are available.</p>
+</section>
+<section class="term-about">
+  <h2>Why AI workloads hit it hard</h2>
+  <p>Large neural networks hold billions of weights, and generating one token at small batch sizes reads essentially every weight once while doing only a multiply and an add with each. With 16-bit weights that is about one operation per byte, while modern accelerators can perform hundreds of operations for each byte their memory delivers. The compute units therefore wait on memory. Batching requests, quantizing weights to fewer bits and keeping data on chip all raise <a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a> or cut the bytes moved.</p>
+</section>
+<section class="term-about">
+  <h2>How designers push back</h2>
+  <p>Multilevel caches exploit locality so most accesses never reach DRAM, and hardware prefetchers fetch data before it is requested. Out-of-order cores and GPUs with thousands of threads keep many misses in flight to hide latency. High-bandwidth memory (<a class="term-link" href="/en/term/hbm/">HBM</a>) placed beside the processor with advanced packaging, and large caches stacked on the die, raise bandwidth directly. Processing-in-memory and near-memory computing take the opposite route, moving some computation to where the data already lives instead of moving the data.</p>
+</section>
 <section>
   <h2>Try it: questions about Memory wall</h2>
   <article class="q-mini" data-qid="dram-030" data-cat="dram" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. The memory wall</p><p class="explanation">Processor compute performance has grown rapidly, but bandwidth to memory has grown more slowly, so compute units spend more time waiting for data. This is the <a class="term-link" href="/en/term/memory-wall/">memory wall</a>. It is especially severe for large AI models, which read huge numbers of weights for every computation, and advanced packaging that places <a class="term-link" href="/en/term/hbm/">HBM</a> next to the processor, along with stacked large caches, are countermeasures.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is the memory wall about latency or bandwidth?</h3>
+  <p>Both. Latency limits programs that make dependent memory accesses, while bandwidth limits programs that stream large amounts of data relative to the computation they do.</p>
+  <h3>How does HBM help with the memory wall?</h3>
+  <p>HBM stacks DRAM dies next to the processor and uses a very wide interface, giving much higher bandwidth than conventional DIMMs. It mainly attacks the bandwidth side; latency stays in the same tens-of-nanoseconds range.</p>
+  <h3>Why are large language models memory-bound?</h3>
+  <p>During generation at small batch sizes, each weight is fetched from memory and used for only a couple of operations. The accelerator can compute far faster than memory can supply the weights.</p>
+</section>
 <section>
   <h2>Memory wall in the explanations</h2>
   <ul class="term-quotes"><li><p>Processor performance at times grew more than 50% per year, but DRAM access latency has stayed at tens of nanoseconds, leaving CPUs waiting hundreds of cycles for data—the memory wall.</p><a href="/en/q/dram/dram-030/">What is the performance limitation called that arises becau…</a></li><li><p>This is the memory wall.</p><a href="/en/q/advanced-packaging/advanced-packaging-032/">What is the problem called in which the speed of supplying …</a></li></ul>

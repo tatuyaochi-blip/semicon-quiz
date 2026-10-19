@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Directory-based coherence","item":"https://semiconroom.com/en/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Directory-based coherence","description":"A coherence approach that records in a table which cores hold each line and notifies only those cores. Used in systems with many cores.","url":"https://semiconroom.com/en/term/directory-based-coherence/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Directory-based coherence","item":"https://semiconroom.com/en/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Directory-based coherence","description":"A coherence approach that records in a table which cores hold each line and notifies only those cores. Used in systems with many cores.","url":"https://semiconroom.com/en/term/directory-based-coherence/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does directory-based coherence scale better than snooping?","acceptedAnswer":{"@type":"Answer","text":"It sends invalidations and requests only to the caches that actually hold a line instead of broadcasting to all of them. Traffic therefore follows real sharing rather than growing with the number of cores."}},{"@type":"Question","name":"Is directory-based coherence slower than snooping?","acceptedAnswer":{"@type":"Answer","text":"Each miss may take longer because the home's directory must be consulted and requests may be forwarded, but in large systems the reduced traffic and contention usually outweigh that added latency."}},{"@type":"Question","name":"What is a snoop filter?","acceptedAnswer":{"@type":"Answer","text":"A structure that records which caches might hold each line so that coherence requests are sent only to those caches. It is essentially a directory used to cut broadcast traffic in a snooping-style design."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What the directory stores</h2>
+  <p>Every memory line has a home node, usually determined by its address, and the home keeps a directory entry for it: a coherence state such as uncached, shared or exclusive, plus a record of which caches hold copies. The simplest record is a full bit vector with one bit per core or cache. Entries live beside the memory controllers or in the shared last-level cache. Since requests go to one home rather than to everyone, the interconnect can be a mesh of point-to-point links rather than a broadcast bus.</p>
+</section>
+<section class="term-about">
+  <h2>A write, step by step</h2>
+  <p>A core that wants to write a line it does not own sends a request to the line&#39;s home. The home consults the directory and sends invalidations only to the caches marked as sharers; they drop their copies and acknowledge, either to the home or directly to the requester. Once all acknowledgments arrive, the requester gets exclusive ownership and the directory records it as the owner. If another cache held the line modified, the home forwards the request to that owner, which sends the data to the requester, a so-called three-hop transaction.</p>
+</section>
+<section class="term-about">
+  <h2>Snooping vs. directory</h2>
+  <p>Snooping broadcasts every miss to every cache, giving low latency because there is no extra lookup, but traffic and snoop work grow with the number of cores, which limits it to small systems. A directory adds the latency of a lookup at the home and sometimes an extra hop, but sends messages only where needed, so traffic grows with actual sharing rather than with core count. Large multicore chips and multi-socket systems therefore use directories or hybrids, such as snoop filters that track which caches might hold a line so that most broadcasts can be skipped.</p>
+</section>
+<section class="term-about">
+  <h2>Keeping the directory itself small</h2>
+  <p>A full bit vector for every memory line would cost too much storage as core counts rise, so practical designs economize. Limited-pointer schemes store a few sharer IDs and fall back to broadcast if more caches share the line; coarse vectors use one bit per group of cores. Sparse directories track only lines that are actually cached, organized like a cache themselves. When a sparse directory runs out of entries it must evict one, which forces invalidation of that line in every cache that holds it, so its capacity must be sized generously relative to the caches it tracks.</p>
+</section>
 <section>
   <h2>Try it: questions about Directory-based coherence</h2>
   <article class="q-mini" data-qid="multicore-sync-008" data-cat="multicore-sync" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Recording which cores hold each line lets notices go only to the cores involved, reducing traffic</p><p class="explanation"><a class="term-link" href="/en/term/directory-based-coherence/">Directory-based coherence</a> keeps a table (the directory) recording, for each line, which cores hold copies and in what state. On a write, it consults the directory and sends invalidations only to the cores holding copies. With less traffic than snooping, which notifies all caches at once, it is used in CPUs with dozens of cores or more, such as server processors.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does directory-based coherence scale better than snooping?</h3>
+  <p>It sends invalidations and requests only to the caches that actually hold a line instead of broadcasting to all of them. Traffic therefore follows real sharing rather than growing with the number of cores.</p>
+  <h3>Is directory-based coherence slower than snooping?</h3>
+  <p>Each miss may take longer because the home&#39;s directory must be consulted and requests may be forwarded, but in large systems the reduced traffic and contention usually outweigh that added latency.</p>
+  <h3>What is a snoop filter?</h3>
+  <p>A structure that records which caches might hold each line so that coherence requests are sent only to those caches. It is essentially a directory used to cut broadcast traffic in a snooping-style design.</p>
+</section>
 <section>
   <h2>Directory-based coherence in the explanations</h2>
   <ul class="term-quotes"><li><p>Directory-based coherence keeps a table (the directory) recording, for each line, which cores hold copies and in what state.</p><a href="/en/q/multicore-sync/multicore-sync-008/">Why do systems with many cores use directory-based coherenc…</a></li><li><p>As cores increase, broadcasting every request to every cache generates too much traffic, so large systems use directory-based coherence.</p><a href="/en/q/multicore-sync/multicore-sync-007/">Which describes the snooping approach to cache coherence?</a></li></ul>

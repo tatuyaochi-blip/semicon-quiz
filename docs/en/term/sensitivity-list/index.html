@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Sensitivity list","item":"https://semiconroom.com/en/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sensitivity list","description":"The list in @( ) after a Verilog always that names the signals triggering the block. Omissions in combinational logic make simulation and hardware disagree.","url":"https://semiconroom.com/en/term/sensitivity-list/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Sensitivity list","item":"https://semiconroom.com/en/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sensitivity list","description":"The list in @( ) after a Verilog always that names the signals triggering the block. Omissions in combinational logic make simulation and hardware disagree.","url":"https://semiconroom.com/en/term/sensitivity-list/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does always @(*) mean in Verilog?","acceptedAnswer":{"@type":"Answer","text":"The block runs whenever any signal it reads changes, which is the correct behavior for combinational logic. The asterisk saves you from listing signals by hand and missing one."}},{"@type":"Question","name":"Does synthesis use the sensitivity list?","acceptedAnswer":{"@type":"Answer","text":"For combinational logic, synthesis tools essentially ignore it and build logic from the statements, so an incomplete list causes simulation to disagree with the hardware. Edge keywords in clocked blocks are used to infer flip-flops and asynchronous resets."}},{"@type":"Question","name":"Does VHDL have a sensitivity list too?","acceptedAnswer":{"@type":"Answer","text":"Yes. A VHDL process lists its triggering signals in parentheses after the process keyword, and VHDL-2008 adds process(all), the counterpart of Verilog's @(*)."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/hdl-verification/">HDL &amp; Verification</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the simulator uses it</h2>
+  <p>An event-driven simulator does not evaluate an always block continuously. It waits at the @( ) event control and wakes the block only when a listed signal changes, or, for posedge and negedge entries, only on that particular edge. Everything follows from this: if a signal that affects the outputs is missing from the list, the block simply does not run when that signal changes, and the outputs keep stale values until some listed signal moves.</p>
+</section>
+<section class="term-about">
+  <h2>Incomplete lists and simulation-synthesis mismatch</h2>
+  <p>Synthesis tools largely ignore the list for combinational logic and build gates from the block&#39;s statements, typically with only a warning. So &quot;always @(a) y = a &amp; b;&quot; synthesizes to an AND gate in which y follows both inputs, while the simulator updates y only when a changes. Tests that happen to toggle a will pass, yet the hardware behaves differently from the <a class="term-link" href="/en/term/rtl/">RTL</a> simulation. The mismatch is dangerous because it survives RTL verification and appears only in <a class="term-link" href="/en/term/gate-level-simulation/">gate-level simulation</a> or silicon.</p>
+</section>
+<section class="term-about">
+  <h2>@(*) and always_comb</h2>
+  <p><a class="term-link" href="/en/term/verilog/">Verilog</a>-2001 introduced always @(*), which automatically includes every signal read inside the block and removes the risk of omissions. <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a>&#39;s always_comb goes further: it also executes once at time zero so outputs start consistent, is sensitive to signals read inside called functions, and lets tools flag blocks that would infer a latch. Hand-written sensitivity lists for combinational logic are now a legacy style best avoided.</p>
+</section>
+<section class="term-about">
+  <h2>Edges in sequential blocks</h2>
+  <p>For flip-flops the list names edges rather than levels. &quot;always @(posedge clk)&quot; describes a register that samples on the rising clock edge. Adding &quot;or negedge rst_n&quot; gives an asynchronous active-low reset: the block also runs the instant rst_n falls, so the output clears without waiting for a clock, even when the clock is stopped. The &quot;_n&quot; suffix is a common convention for active-low signals. The reset&#39;s release still needs care, usually by synchronizing it to the clock to meet recovery and removal timing.</p>
+</section>
 <section>
   <h2>Try it: questions about Sensitivity list</h2>
   <article class="q-mini" data-qid="hdl-verification-010" data-cat="hdl-verification" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. It runs whenever any signal read inside the block changes, describing combinational logic</p><p class="explanation">The list inside @( ) after always is called the <a class="term-link" href="/en/term/sensitivity-list/">sensitivity list</a> and specifies which signal changes trigger the block. Writing &quot;*&quot; automatically includes every signal read in the block, correctly describing combinational logic. Listing signals by hand invites omissions, so &quot;@(*)&quot; or <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a>&#39;s always_comb is the safe choice for combinational logic.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does always @(*) mean in Verilog?</h3>
+  <p>The block runs whenever any signal it reads changes, which is the correct behavior for combinational logic. The asterisk saves you from listing signals by hand and missing one.</p>
+  <h3>Does synthesis use the sensitivity list?</h3>
+  <p>For combinational logic, synthesis tools essentially ignore it and build logic from the statements, so an incomplete list causes simulation to disagree with the hardware. Edge keywords in clocked blocks are used to infer flip-flops and asynchronous resets.</p>
+  <h3>Does VHDL have a sensitivity list too?</h3>
+  <p>Yes. A VHDL process lists its triggering signals in parentheses after the process keyword, and VHDL-2008 adds process(all), the counterpart of Verilog&#39;s @(*).</p>
+</section>
 <section>
   <h2>Sensitivity list in the explanations</h2>
   <ul class="term-quotes"><li><p>The list inside @( ) after always is called the sensitivity list and specifies which signal changes trigger the block.</p><a href="/en/q/hdl-verification/hdl-verification-010/">What does writing &quot;always @(*)&quot; mean in Verilog?</a></li><li><p>A simulator runs the block only when a signal in the sensitivity list changes, so when only b changes, y keeps its stale value.</p><a href="/en/q/hdl-verification/hdl-verification-011/">Intending combinational logic, someone wrote the code above…</a></li><li><p>Because &quot;negedge rst_n&quot; is in the sensitivity list, the block also runs the instant rst_n falls from 1 to 0, and q becomes 0 regardless of the clock.</p><a href="/en/q/hdl-verification/hdl-verification-017/">What type of reset does the code above have, and how does i…</a></li></ul>

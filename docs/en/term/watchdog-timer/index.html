@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Watchdog timer","item":"https://semiconroom.com/en/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Watchdog timer","description":"A timer that resets the microcontroller if software does not kick it within a set time, recovering from runaway or hung programs.","url":"https://semiconroom.com/en/term/watchdog-timer/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Watchdog timer","item":"https://semiconroom.com/en/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Watchdog timer","description":"A timer that resets the microcontroller if software does not kick it within a set time, recovering from runaway or hung programs.","url":"https://semiconroom.com/en/term/watchdog-timer/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does it mean to kick or feed a watchdog timer?","acceptedAnswer":{"@type":"Answer","text":"It means writing to the watchdog's reload or service register so its counter restarts before it expires. Healthy software does this periodically; if it stops doing so, the watchdog resets the chip."}},{"@type":"Question","name":"Should I kick the watchdog inside a timer interrupt?","acceptedAnswer":{"@type":"Answer","text":"Not unconditionally. A timer interrupt keeps running even when the main code is hung, so it would hide the fault; kick only after confirming that the main loop and each task have completed a normal cycle."}},{"@type":"Question","name":"What is the difference between a window watchdog and a normal watchdog?","acceptedAnswer":{"@type":"Answer","text":"A normal watchdog resets only when the kick comes too late. A window watchdog also treats a kick that arrives too early as a fault, catching code that is looping abnormally fast."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a watchdog works</h2>
+  <p>A watchdog is a down-counter that runs independently of the program it supervises. Software must periodically &quot;kick&quot;, &quot;feed&quot; or &quot;service&quot; it, typically by writing a specific key value to a register, which reloads the counter. If the counter reaches zero because the code has hung in a loop, crashed into a fault handler or been upset by noise, the watchdog asserts a reset (on some parts, first an early-warning <a class="term-link" href="/en/term/interrupt/">interrupt</a>) and the <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> restarts from a known state. Clocking it from its own low-speed oscillator means a failed main clock does not silence it as well.</p>
+</section>
+<section class="term-about">
+  <h2>Where to kick it</h2>
+  <p>A watchdog is only as good as the place where it is kicked. Kicking it unconditionally inside a periodic timer <a class="term-link" href="/en/term/interrupt/">interrupt</a> is a classic mistake: the interrupt keeps firing even when the main loop is stuck, so the counter never expires and the hang goes unnoticed. A better pattern has each task or main-loop stage set a check-in flag, and a supervisor routine kicks the watchdog only when every flag has been set within the period, then clears them. The timeout is chosen longer than the worst-case loop time but short enough to bound recovery time.</p>
+</section>
+<section class="term-about">
+  <h2>Window watchdog vs. standard watchdog</h2>
+  <p>A standard watchdog only catches kicks that arrive too late. If a fault makes the program skip most of its work and spin in a short loop that still contains the kick, the timer is serviced more often than expected and nothing is detected. A window watchdog adds a lower bound: kicks are accepted only inside a defined time window, and a kick that comes too early is treated as a fault just like a missing one. This catches control-flow errors that a simple timeout misses, which is why window watchdogs are common in functional-safety designs.</p>
+</section>
+<section class="term-about">
+  <h2>External watchdogs in safety systems</h2>
+  <p>In automotive and industrial equipment the watchdog is often placed in a separate supervisor or power-management IC running on its own clock, so a common cause such as a failed oscillator cannot stop both the processor and its monitor. Some external monitors use question-and-answer schemes in which the processor must return the correct response to a challenge within a time window. After a watchdog reset, firmware usually reads a reset-cause register so the event can be logged and analyzed instead of silently repeating.</p>
+</section>
 <section>
   <h2>Try it: questions about Watchdog timer</h2>
   <article class="q-mini" data-qid="cpu-044" data-cat="cpu" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. It detects as an anomaly not only kicks (timer clears) that come too late relative to a defined time window but also kicks that come too early</p><p class="explanation">An ordinary watchdog issues a reset if it is not kicked within a certain time. However, in anomalies where the program skips part of its processing and runs in a short loop, kicks arrive early and may go unnoticed. A window watchdog defines a time window in which kicking is allowed and treats kicks that are too early or too late as anomalies. In automotive systems, the watchdog is sometimes placed in an external monitoring IC running on a clock separate from the <a class="term-link" href="/en/term/microcontroller/">microcontroller</a>, so that a common cause does not stop both.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does it mean to kick or feed a watchdog timer?</h3>
+  <p>It means writing to the watchdog&#39;s reload or service register so its counter restarts before it expires. Healthy software does this periodically; if it stops doing so, the watchdog resets the chip.</p>
+  <h3>Should I kick the watchdog inside a timer interrupt?</h3>
+  <p>Not unconditionally. A timer interrupt keeps running even when the main code is hung, so it would hide the fault; kick only after confirming that the main loop and each task have completed a normal cycle.</p>
+  <h3>What is the difference between a window watchdog and a normal watchdog?</h3>
+  <p>A normal watchdog resets only when the kick comes too late. A window watchdog also treats a kick that arrives too early as a fault, catching code that is looping abnormally fast.</p>
+</section>
 <section>
   <h2>Watchdog timer in the explanations</h2>
   <ul class="term-quotes"><li><p>A watchdog timer expects healthy software to reset it periodically; if a crash or hang lets it expire, it resets the microcontroller.</p><a href="/en/q/cpu/cpu-044/">What is the role of the watchdog timer built into microcont…</a></li></ul>

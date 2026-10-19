@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Gate driver","item":"https://semiconroom.com/en/term/gate-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Gate driver","description":"A circuit that receives control signals and drives a power device's gate with the right voltage and enough current. Many include isolation or level shifting to drive high-side switches.","url":"https://semiconroom.com/en/term/gate-driver/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Gate driver","item":"https://semiconroom.com/en/term/gate-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Gate driver","description":"A circuit that receives control signals and drives a power device's gate with the right voltage and enough current. Many include isolation or level shifting to drive high-side switches.","url":"https://semiconroom.com/en/term/gate-driver/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does a MOSFET need a gate driver?","acceptedAnswer":{"@type":"Answer","text":"Switching quickly requires charging and discharging the gate capacitance with amperes of current at the correct voltage, which logic outputs cannot supply. Slow switching increases losses and heat in the power device."}},{"@type":"Question","name":"What is a bootstrap gate driver?","acceptedAnswer":{"@type":"Answer","text":"It powers the high-side gate driver from a capacitor that is recharged through a diode each time the low-side switch conducts. It is simple and cheap but cannot hold the high-side switch on indefinitely."}},{"@type":"Question","name":"Why do SiC MOSFETs use a negative gate voltage to turn off?","acceptedAnswer":{"@type":"Answer","text":"Their threshold voltage is relatively low, and fast voltage transitions can couple charge into the gate and cause false turn-on. A negative off-bias adds margin against this parasitic turn-on."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/power/">Power semiconductors</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why a logic pin is not enough</h2>
+  <p>A <a class="term-link" href="/en/term/power-mosfet/">power MOSFET</a> or insulated-gate bipolar transistor (<a class="term-link" href="/en/term/igbt/">IGBT</a>) gate behaves like a capacitor of several nanofarads, so what matters is the total gate charge needed to switch it. Average gate current equals charge divided by switching time: moving 100 nC in 50 ns takes about 2 A, far beyond the few milliamps a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> pin can supply. During the drain-voltage transition, the gate voltage stalls on the Miller plateau while the gate-drain capacitance charges, so drive current directly sets the voltage <a class="term-link" href="/en/term/slew-rate/">slew rate</a>. Drive power is roughly gate charge times drive voltage times switching frequency.</p>
+</section>
+<section class="term-about">
+  <h2>Gate voltages by device type</h2>
+  <p>Different devices need different drive levels. Silicon power MOSFETs are commonly driven at about 10–12 V, or around 5 V for logic-level parts. IGBTs typically use +15 V to turn on and often a negative voltage to stay firmly off. <a class="term-link" href="/en/term/sic/">Silicon carbide</a> (SiC) MOSFETs need roughly +15–18 V for low <a class="term-link" href="/en/term/on-resistance/">on-resistance</a> and a few volts negative when off. Enhancement-mode <a class="term-link" href="/en/term/gan/">gallium nitride</a> (GaN) transistors need only about 5–6 V but tolerate little overshoot, while normally-on GaN is often paired in cascode with a low-voltage silicon MOSFET so a standard driver can be used.</p>
+</section>
+<section class="term-about">
+  <h2>High-side driving and isolation</h2>
+  <p>In a half-bridge, the upper switch&#39;s source moves between ground and the full bus voltage, so its gate must be driven relative to that floating node. A bootstrap circuit is the low-cost solution: a diode charges a capacitor whenever the lower switch is on, and the capacitor powers the high-side driver, though the low side must turn on regularly to recharge it. Isolated drivers transfer the signal through optocouplers, transformers or capacitive barriers, which also provides safety isolation. With fast <a class="term-link" href="/en/term/sic/">SiC</a> and <a class="term-link" href="/en/term/gan/">GaN</a> edges, common-mode transient immunity, measured in kV/µs, becomes a key rating.</p>
+</section>
+<section class="term-about">
+  <h2>Protection and layout</h2>
+  <p>Gate drivers usually include undervoltage lockout, which holds the switch off if the drive supply is too low to turn it on fully, preventing operation in the lossy linear region. Desaturation detection senses an abnormally high on-state voltage during a short circuit and turns the device off within microseconds, often softly to limit voltage overshoot. A Miller clamp holds the gate low against current injected through the gate-drain capacitance by fast dv/dt. External gate resistors trade <a class="term-link" href="/en/term/switching-loss/">switching loss</a> against ringing and electromagnetic interference, and a short, low-inductance gate loop is essential.</p>
+</section>
 <section>
   <h2>Try it: questions about Gate driver</h2>
   <article class="q-mini" data-qid="power-011" data-cat="power" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. To receive signals from the control circuit and drive the power device&#39;s gate with the right voltage and enough current</p><p class="explanation">Power device gates present large capacitances of several nF, so fast switching needs amperes of current to charge and discharge them quickly. A <a class="term-link" href="/en/term/gate-driver/">gate driver</a> takes a few-mA signal from a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> and delivers this drive at the proper gate voltages (e.g., +15–18 V and a negative off-bias for <a class="term-link" href="/en/term/sic/">SiC</a>). Many include isolation for driving high-side devices and protection that detects short circuits and shuts down quickly.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does a MOSFET need a gate driver?</h3>
+  <p>Switching quickly requires charging and discharging the gate capacitance with amperes of current at the correct voltage, which logic outputs cannot supply. Slow switching increases losses and heat in the power device.</p>
+  <h3>What is a bootstrap gate driver?</h3>
+  <p>It powers the high-side gate driver from a capacitor that is recharged through a diode each time the low-side switch conducts. It is simple and cheap but cannot hold the high-side switch on indefinitely.</p>
+  <h3>Why do SiC MOSFETs use a negative gate voltage to turn off?</h3>
+  <p>Their threshold voltage is relatively low, and fast voltage transitions can couple charge into the gate and cause false turn-on. A negative off-bias adds margin against this parasitic turn-on.</p>
+</section>
 <section>
   <h2>Gate driver in the explanations</h2>
   <ul class="term-quotes"><li><p>A gate driver takes a few-mA signal from a microcontroller and delivers this drive at the proper gate voltages (e.g., +15–18 V and a negative off-bias for SiC).</p><a href="/en/q/power/power-011/">What is the main role of a gate driver for power semiconduc…</a></li><li><p>Turning the MOSFET off negatively biases the HEMT gate, switching it off automatically, so the pair behaves as a normally-off device driven by a standard silicon MOSFET gate driver.</p><a href="/en/q/compound/compound-044/">Which configuration combines a normally-on GaN HEMT in seri…</a></li></ul>

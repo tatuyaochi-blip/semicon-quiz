@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Round half to even","item":"https://semiconroom.com/en/term/round-half-to-even/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Round half to even","description":"Rounding to the nearest representable value and, on an exact tie, to the one whose last bit is even (0). It is the IEEE 754 default and keeps rounding errors from accumulating in one direction.","url":"https://semiconroom.com/en/term/round-half-to-even/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Round half to even","item":"https://semiconroom.com/en/term/round-half-to-even/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Round half to even","description":"Rounding to the nearest representable value and, on an exact tie, to the one whose last bit is even (0). It is the IEEE 754 default and keeps rounding errors from accumulating in one direction.","url":"https://semiconroom.com/en/term/round-half-to-even/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does Python round(2.5) return 2?","acceptedAnswer":{"@type":"Answer","text":"Python 3 rounds exact ties to the nearest even value, the same rule IEEE 754 uses by default, so 2.5 goes to 2 and 3.5 goes to 4. This avoids a systematic upward bias when many values are rounded."}},{"@type":"Question","name":"Is banker's rounding the same as round half to even?","acceptedAnswer":{"@type":"Answer","text":"Yes. Both names describe rounding to the nearest value and, on an exact tie, choosing the neighbor with an even last digit or bit."}},{"@type":"Question","name":"What is the default rounding mode in IEEE 754?","acceptedAnswer":{"@type":"Answer","text":"Round to nearest, ties to even. Directed modes toward zero, positive infinity and negative infinity are available but must be selected explicitly."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How hardware detects a tie</h2>
+  <p>An exact result usually has more <a class="term-link" href="/en/term/significand/">significand</a> bits than the destination format can hold. Besides the bits it keeps, the hardware tracks the first discarded bit, called the round (or guard) bit, and a sticky bit that is the OR of all bits below it. If the round bit is 0 the result is truncated; if the round bit is 1 and the sticky bit is 1, the result is rounded up in magnitude. Only when the round bit is 1 and the sticky bit is 0 is the value exactly halfway, and then the last kept bit decides: if it is 1, round up to make it 0.</p>
+</section>
+<section class="term-about">
+  <h2>Why ties go to even</h2>
+  <p>Rounding every tie upward adds a small positive error each time, and over many operations those errors pile up in one direction. Sending ties to the even neighbor rounds them up about half the time and down the other half, so the errors tend to cancel. In decimal terms, 2.5 becomes 2 and 3.5 becomes 4, preserving their sum of 6, whereas always rounding up would give 7. The method is also called banker&#39;s rounding, and in binary floating point the even choice is the one whose least significant <a class="term-link" href="/en/term/significand/">significand</a> bit is 0.</p>
+</section>
+<section class="term-about">
+  <h2>The other IEEE 754 rounding modes</h2>
+  <p><a class="term-link" href="/en/term/ieee-754/">IEEE 754</a> also defines directed rounding: toward zero (truncation), toward positive infinity and toward negative infinity. These are selected explicitly for special purposes; for example, interval arithmetic computes a lower bound rounded down and an upper bound rounded up so the true result is guaranteed to lie between them. The 2008 revision added round half away from zero for ties, required mainly for decimal formats. Round half to even remains the default for both arithmetic and conversions, and correctly rounded operations are defined as the exact result rounded in the current mode.</p>
+</section>
+<section class="term-about">
+  <h2>Where it surprises programmers</h2>
+  <p>Python 3&#39;s built-in round follows ties-to-even, so round(2.5) returns 2, which looks like a bug to anyone expecting school rounding. A second surprise comes from representation: a decimal value such as 2.675 cannot be stored exactly in binary, and the nearest double is slightly below it, so rounding to two decimal places gives 2.67 regardless of the tie rule. When results must follow a specific decimal rounding convention, such as in financial calculations, decimal arithmetic types with an explicit rounding mode are the usual solution.</p>
+</section>
 <section>
   <h2>Try it: questions about Round half to even</h2>
   <article class="q-mini" data-qid="computer-arithmetic-020" data-cat="computer-arithmetic" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. 2 and 4</p><p class="explanation">Both are exact ties, so each rounds to the even neighbor: 2.5, halfway between 2 and 3, goes to 2; 3.5, halfway between 3 and 4, goes to 4. Always rounding ties up would give 3 and 4, summing to 7, one more than the original sum of 6, whereas rounding to even gives 2 + 4 = 6, preserving the sum. 2 and 3 result from always rounding ties down. Avoiding biased rounding error is the method&#39;s strength.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does Python round(2.5) return 2?</h3>
+  <p>Python 3 rounds exact ties to the nearest even value, the same rule IEEE 754 uses by default, so 2.5 goes to 2 and 3.5 goes to 4. This avoids a systematic upward bias when many values are rounded.</p>
+  <h3>Is banker&#39;s rounding the same as round half to even?</h3>
+  <p>Yes. Both names describe rounding to the nearest value and, on an exact tie, choosing the neighbor with an even last digit or bit.</p>
+  <h3>What is the default rounding mode in IEEE 754?</h3>
+  <p>Round to nearest, ties to even. Directed modes toward zero, positive infinity and negative infinity are available but must be selected explicitly.</p>
+</section>
 <section>
   <h2>Round half to even in the explanations</h2>
   <ul class="term-quotes"><li><p>The IEEE 754 default is round half to even: round to the nearest representable value, and on an exact tie choose the one whose last bit is 0 (even).</p><a href="/en/q/computer-arithmetic/computer-arithmetic-019/">Which rounding method does IEEE 754 specify as the default?</a></li></ul>
