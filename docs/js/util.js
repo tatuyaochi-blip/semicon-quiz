@@ -35,6 +35,9 @@ export function termMatcher(terms) {
   return { keys, re: new RegExp(`(?<![A-Za-z0-9])(${words.join('|')})(?![A-Za-z0-9])`, 'gi') };
 }
 
+// 同じ略語の別の意味。「HBM(人体モデル)」は静電気試験のモデルで、メモリのHBMではない
+const OTHER_MEANING = /^\s*[(（]\s*(人体|人體|인체|human body|modèle du corps)/i;
+
 // 文章を [文字列 | { text, id }] に分ける。各用語は最初の1回だけ
 export function linkTerms(text, { keys, re }) {
   const parts = [];
@@ -46,7 +49,8 @@ export function linkTerms(text, { keys, re }) {
     const end = m.index + m[0].length;
     const acronym = /^[A-Z0-9]+$/.test(m[0]);
     if (used.has(id) || (acronym && (/^-[A-Z0-9]{2,}(?![a-z])/.test(text.slice(end, end + 12))
-      || /(?:^|[^A-Za-z0-9])[A-Z0-9]{2,}-$/.test(text.slice(Math.max(0, m.index - 12), m.index))))) continue;
+      || /(?:^|[^A-Za-z0-9])[A-Z0-9]{2,}-$/.test(text.slice(Math.max(0, m.index - 12), m.index))
+      || OTHER_MEANING.test(text.slice(end, end + 24))))) continue;
     used.add(id);
     parts.push(text.slice(last, m.index), { text: m[0], id });
     last = m.index + m[0].length;
