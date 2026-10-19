@@ -28,3 +28,16 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: 逆バイアスや不純物濃度を変えたときの空乏層幅など
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['vr', 'nd', 'na'], outputs: ['w', 'cj', 'emax', 'vbi'], defaults: { x: 'vr', y: 'w' }, ranges: { vr: [0, 10] },
+  calc: v => {
+    const [ni, er] = MAT[v.mat] ?? MAT.si;
+    const es = er * e0, vbi = kT * Math.log((v.na * v.nd) / (ni * ni)), vt = vbi + v.vr;
+    if (!(vt > 0)) return { vbi };
+    const wd = Math.sqrt(((2 * es * vt) / q) * (1 / v.na + 1 / v.nd)), xn = (wd * v.na) / (v.na + v.nd);
+    return { w: wd * 1e4, cj: (es / wd) * 1e9, emax: (q * v.nd * xn) / es / 1e3, vbi };
+  },
+});

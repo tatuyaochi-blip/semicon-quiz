@@ -91,3 +91,13 @@ form.addEventListener('submit', e => e.preventDefault());
 document.getElementById('dy-rerun').addEventListener('click', draw);
 window.addEventListener('resize', () => last && draw());
 update();
+
+// グラフで見る: チップの大きさや欠陥密度を変えたときの良品数・コスト
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['w', 'h', 'd0', 'alpha', 'scribe', 'edge', 'cost'], outputs: ['poisson-cost', 'negbin-cost', 'poisson-good', 'gross', 'poisson-y'], defaults: { x: 'w', y: 'poisson-cost' },
+  calc: v => {
+    const c = compute({ ...v, d: Number(v.d) });
+    return { 'poisson-cost': c.poisson.cost, 'negbin-cost': c.negbin.cost, 'poisson-good': c.poisson.good, gross: c.grid.n, 'poisson-y': c.poisson.y * 100 };
+  },
+});

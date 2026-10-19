@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMOSの消費電力の計算ツール(動的電力 αCV²f・リーク電力・DVFS) | 半導体教室</title>
+<meta name="description" content="活動率α、スイッチング容量C、電源電圧V、周波数f、リーク電流から、CMOS回路の動的消費電力 P = αCV²f と静的消費電力、全体に占める静的電力の割合を計算します。DVFSで電圧と周波数を下げたときの電力も見積もれます。">
+<link rel="canonical" href="https://semiconroom.com/tools/cmos-power-calculator/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/tools/cmos-power-calculator/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/tools/cmos-power-calculator/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/tools/cmos-power-calculator/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CMOSの消費電力の計算ツール(動的電力 αCV²f・リーク電力・DVFS) | 半導体教室">
+<meta property="og:description" content="活動率α、スイッチング容量C、電源電圧V、周波数f、リーク電流から、CMOS回路の動的消費電力 P = αCV²f と静的消費電力、全体に占める静的電力の割合を計算します。DVFSで電圧と周波数を下げたときの電力も見積もれます。">
+<meta property="og:url" content="https://semiconroom.com/tools/cmos-power-calculator/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"半導体の計算ツール","item":"https://semiconroom.com/tools/"},{"@type":"ListItem","position":3,"name":"CMOS回路の消費電力(動的電力と静的電力)","item":"https://semiconroom.com/tools/cmos-power-calculator/"}]},{"@context":"https://schema.org","@type":"WebApplication","name":"CMOS回路の消費電力(動的電力と静的電力)","description":"活動率α、スイッチング容量C、電源電圧V、周波数f、リーク電流から、CMOS回路の動的消費電力 P = αCV²f と静的消費電力、全体に占める静的電力の割合を計算します。DVFSで電圧と周波数を下げたときの電力も見積もれます。","url":"https://semiconroom.com/tools/cmos-power-calculator/","inLanguage":"ja","applicationCategory":"EducationalApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"電源電圧を10%下げると、動的消費電力はどれだけ減りますか?","acceptedAnswer":{"@type":"Answer","text":"動的電力は電圧の2乗に比例するので、周波数が同じなら 0.9² = 0.81倍、つまり約19%減ります。周波数も同じ割合で下げれば 0.9³ ≈ 0.73倍となり、約27%減ります。"}},{"@type":"Question","name":"P = αCV²f と P = ½αCV²f はどちらが正しいですか?","acceptedAnswer":{"@type":"Answer","text":"どちらも正しく、αの定義が違います。αを1クロックあたりに0→1の切り替えが起こる確率とすると αCV²f、0→1と1→0の両方を数えた切り替えの割合とすると、1回の切り替えあたり ½CV² なので ½αCV²f になります。問題を解くときは、αがどちらの意味かを確かめてください。"}},{"@type":"Question","name":"静的消費電力はどうすれば減らせますか?","acceptedAnswer":{"@type":"Answer","text":"使わないブロックの電源を切るパワーゲーティング、しきい値電圧の高いトランジスタの利用、電源電圧を下げること、チップの温度を下げることが効きます。クロックゲーティングは動的電力を減らす方法で、リーク電流は減らせません。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/tools/cmos-power-calculator/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/">ホーム</a><a href="/#topics">分野</a><details class="menu"><summary>資料</summary><div class="menu-panel"><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a></div></details><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true">日本語</span><a href="/en/tools/cmos-power-calculator/" hreflang="en" lang="en">English</a><a href="/zh-hant/tools/" lang="zh-Hant">繁體中文</a><a href="/ko/tools/" lang="ko">한국어</a><a href="/de/tools/" lang="de">Deutsch</a><a href="/nl/tools/" lang="nl">Nederlands</a><a href="/fr/tools/" lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/stats/">成績</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/tools/">半導体の計算ツール</a></nav>
+<h1>CMOS回路の消費電力(動的電力と静的電力)</h1>
+<p class="lead">活動率、切り替わる容量の合計、電源電圧、クロック周波数、リーク電流を入れると、CMOS回路の動的消費電力と静的消費電力を計算します。電圧と周波数を同じ割合で下げるDVFSを使ったとき、全体の電力がどこまで減るかも比べられます。</p>
+<div class="dy">
+  <form id="cp-form" class="dy-form">
+    <h2>条件</h2>
+    <label class="dy-field"><span>活動率 α</span><input name="alpha" type="number" inputmode="decimal" value="0.1" min="0" max="1" step="0.01"></label>
+    <label class="dy-field"><span>スイッチング容量の合計 C (nF)</span><input name="c" type="number" inputmode="decimal" value="1" min="0" step="0.1"></label>
+    <label class="dy-field"><span>電源電圧 V (V)</span><input name="v" type="number" inputmode="decimal" value="1" min="0" step="0.05"></label>
+    <label class="dy-field"><span>周波数 f (GHz)</span><input name="f" type="number" inputmode="decimal" value="2" min="0" step="0.1"></label>
+    <label class="dy-field"><span>リーク電流 (mA)</span><input name="ileak" type="number" inputmode="decimal" value="100" min="0" step="10"></label>
+    <label class="dy-field"><span>DVFS後の V と f の割合 (%)</span><input name="scale" type="number" inputmode="decimal" value="80" min="10" max="100" step="5"></label>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>結果</h2>
+    <dl class="dy-stats"><div><dt>動的消費電力 αCV²f</dt><dd data-out="dyn">–</dd></div><div><dt>静的消費電力 Ileak × V</dt><dd data-out="stat">–</dd></div><div><dt>合計の消費電力</dt><dd data-out="total">–</dd></div><div><dt>静的電力の割合</dt><dd data-out="share">–</dd></div><div><dt>DVFS後の合計電力</dt><dd data-out="dvfs">–</dd></div><div><dt>DVFS後の電力(元に対する割合)</dt><dd data-out="dvfs-ratio">–</dd></div></dl>
+    <p class="muted">動的消費電力は P = αCV²f で、αは1クロックあたりに出力が0から1へ切り替わる確率としています(αを切り替わり全体の割合とする教科書では ½αCV²f と書きます)。静的電力は Ileak × V で見積もり、DVFSの計算ではリーク電流そのものは電圧によらず一定とし、×V の分だけ下がるとしています。短絡電流による電力は含めていません。</p>
+  </section>
+  <section class="dy-out" id="sweep" hidden>
+    <h2>グラフで見る</h2>
+    <div class="sweep-pick">
+      <label class="dy-field"><span>横軸にする入力</span><select name="sweep-x"></select></label>
+      <label class="dy-field"><span>縦軸にする結果</span><select name="sweep-y"></select></label>
+    </div>
+    <svg class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="グラフで見る"></svg>
+    <p class="muted">ほかの入力は今の値のまま、選んだ入力だけを今の値の1/4〜4倍の範囲で変えたときの結果です。赤い点が今の値です。</p>
+  </section>
+</div>
+<section class="term-about">
+  <h2>動的消費電力 αCV²f の意味</h2>
+  <p><a class="term-link" href="/term/cmos/">CMOS</a>回路では、ゲートの出力が0から1に変わるたびに、負荷の容量Cが電源から CV² のエネルギーを受け取ります。その半分は充電の途中にpMOSで熱になり、容量にたまった残りの半分は、次に1から0に変わるときにnMOSで熱になります。1クロックあたりに0→1の切り替えが起こる確率を<a class="term-link" href="/term/activity-factor/">活動率</a>αとすると、<a class="term-link" href="/term/dynamic-power/">動的消費電力</a>は P = αCV²f です。既定値の α = 0.1、C = 1 nF、V = 1.0 V、f = 2 GHz では、0.1 × 10⁻⁹ × 1² × 2 × 10⁹ = 0.2 W となります。</p>
+</section>
+<section class="term-about">
+  <h2>静的消費電力とその割合</h2>
+  <p>トランジスタがオフでも、しきい値以下で流れるサブスレッショルド電流、薄いゲート絶縁膜を通るトンネル電流、接合のリーク電流などが流れ続けます。これによる電力が<a class="term-link" href="/term/static-power/">静的消費電力</a>で、ここでは Ileak × V で見積もります。既定値では 100 mA × 1.0 V = 0.1 W で、合計0.3 Wのうち33.3%を占めます。サブスレッショルド電流は、<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>を下げると指数関数的に増え、温度が上がっても大きく増えます。微細化に合わせてしきい値電圧を下げてきた結果、静的電力は全体の中で無視できない割合を占めるようになりました。</p>
+</section>
+<section class="term-about">
+  <h2>DVFSで電力が大きく減る理由</h2>
+  <p>電源電圧を下げると回路の遅延が大きくなるため、周波数を下げれば、そのぶん電圧も下げられます。電圧と周波数をともにs倍にすると、動的電力は V²f に比例するので s³ 倍になります。既定値で80%にすると、動的電力は 0.8³ = 0.512倍の約0.102 W、静的電力は0.08 Wとなり、合計は0.1824 W(元の60.8%)です。ただし、同じ計算を終える時間は 1/s 倍に延びるので、1回の計算に使う動的なエネルギーは s² 倍の減少にとどまります。静的電力の割合が大きいと、ゆっくり動くぶんリークで失うエネルギーが増える点にも注意が必要です。</p>
+</section>
+<section class="term-about">
+  <h2>設計で電力を減らす方法</h2>
+  <p>式の各項は、それぞれ省電力の手段に対応します。αは使っていない回路のクロックを止める<a class="term-link" href="/term/clock-gating/">クロックゲーティング</a>で下げ、Cは配線を短くしたり小さなトランジスタを使ったりして減らします。Vは2乗で効くため効果が最も大きく、負荷に応じて電圧と周波数を変える<a class="term-link" href="/term/dvfs/">DVFS</a>が広く使われています。静的電力には、使わないブロックの電源を切る<a class="term-link" href="/term/power-gating/">パワーゲーティング</a>や、速さが必要ない経路に<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>の高いトランジスタを使う方法が効きます。リークを抑えるためにしきい値電圧を下げられなくなったことが、電源電圧の低下が止まった大きな理由です。</p>
+</section>
+<p><a class="btn btn-primary" href="/quiz/?mode=category&amp;c=power-management&amp;n=10" rel="nofollow">電力管理の問題を解く</a></p>
+<section>
+  <article class="q-mini" data-qid="power-management-001" data-cat="power-management" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/power-management/power-management-001/">CMOS回路の動的消費電力の式 P = αCV²f で、αが表すものとして正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">トランジスタの数</span></li><li><span class="choice-mark">B</span><span class="choice-text">1クロックあたりに信号が切り替わる割合(活動率)</span></li><li><span class="choice-mark">C</span><span class="choice-text">チップの温度</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 1クロックあたりに信号が切り替わる割合(活動率)</p><p class="explanation"><a class="term-link" href="/term/dynamic-power/">動的消費電力</a>は、配線やゲートの容量を充電したり放電したりするときに使われる電力です。Cは切り替わる部分の容量、Vは電源電圧、fはクロックの周波数で、αは1クロックの間にどれだけの割合の信号が切り替わるかを表す<a class="term-link" href="/term/activity-factor/">活動率</a>です。データが変わらない部分や、クロックを止めた部分は切り替わらないので、αを小さくすることも省電力の大切な手段です。</p></details>
+  </article>
+  <article class="q-mini" data-qid="power-management-002" data-cat="power-management" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/power-management/power-management-002/">活動率α=0.1、切り替わる容量C=1 nF、電源電圧V=1 V、周波数f=1 GHzの回路の動的消費電力はいくらか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">1 W</span></li><li><span class="choice-mark">B</span><span class="choice-text">0.1 W</span></li><li><span class="choice-mark">C</span><span class="choice-text">10 W</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 0.1 W</p><p class="explanation">P = αCV²fに値を入れると、0.1×1×10⁻⁹ F×(1 V)²×1×10⁹ Hz=0.1 Wです。容量の単位のナノ(10⁻⁹)と周波数のギガ(10⁹)が打ち消し合うので、計算は簡単になります。実際のチップでは、切り替わる容量は回路の規模に比例して大きくなり、全体の<a class="term-link" href="/term/dynamic-power/">動的消費電力</a>は数十〜数百Wに達することもあります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="power-management-004" data-cat="power-management" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/power-management/power-management-004/">DVFSで、電源電圧を周波数に比例して下げられるとする。周波数を半分にしたとき、動的な電力と、決まった量の計算に使う動的なエネルギーはおよそどうなるか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">電力は8分の1、エネルギーは4分の1になる</span></li><li><span class="choice-mark">B</span><span class="choice-text">電力もエネルギーも半分になる</span></li><li><span class="choice-mark">C</span><span class="choice-text">電力は4分の1、エネルギーは変わらない</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 電力は8分の1、エネルギーは4分の1になる</p><p class="explanation">電力はV²fに比例するので、Vとfがともに半分なら(1/2)²×1/2=1/8になります。計算にかかる時間は2倍になるので、エネルギーは1/8×2=1/4です。1回の切り替えのエネルギーがCV²に比例するので、エネルギーは電圧の2乗で決まると考えても同じ結果になります。実際には電圧を下げられる範囲に限りがあり、静的な電力もあるので、ここまで理想的には減りません。</p></details>
+  </article>
+  <article class="q-mini" data-qid="power-management-050" data-cat="power-management" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/power-management/power-management-050/">電源電圧だけを10%下げたとき(ほかの条件は同じとする)、動的消費電力はおよそ何%減るか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">約19%</span></li><li><span class="choice-mark">B</span><span class="choice-text">約10%</span></li><li><span class="choice-mark">C</span><span class="choice-text">約50%</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 約19%</p><p class="explanation"><a class="term-link" href="/term/dynamic-power/">動的消費電力</a>は電圧の2乗に比例するので、電圧を0.9倍にすると電力は0.9²=0.81倍、つまり約19%減ります。わずかな電圧の変化でも電力への効果が大きいので、電圧を下げることは最も効く省電力の手段の1つです。ただし電圧を下げると回路は遅くなるので、必要な速さを保てる範囲で下げる必要があり、それを負荷に応じて行うのが<a class="term-link" href="/term/dvfs/">DVFS</a>です。</p></details>
+  </article></section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>電源電圧を10%下げると、動的消費電力はどれだけ減りますか?</h3>
+  <p>動的電力は電圧の2乗に比例するので、周波数が同じなら 0.9² = 0.81倍、つまり約19%減ります。周波数も同じ割合で下げれば 0.9³ ≈ 0.73倍となり、約27%減ります。</p>
+  <h3>P = αCV²f と P = ½αCV²f はどちらが正しいですか?</h3>
+  <p>どちらも正しく、αの定義が違います。αを1クロックあたりに0→1の切り替えが起こる確率とすると αCV²f、0→1と1→0の両方を数えた切り替えの割合とすると、1回の切り替えあたり ½CV² なので ½αCV²f になります。問題を解くときは、αがどちらの意味かを確かめてください。</p>
+  <h3>静的消費電力はどうすれば減らせますか?</h3>
+  <p>使わないブロックの電源を切るパワーゲーティング、しきい値電圧の高いトランジスタの利用、電源電圧を下げること、チップの温度を下げることが効きます。クロックゲーティングは動的電力を減らす方法で、リーク電流は減らせません。</p>
+</section>
+<div data-ad="tool"></div>
+<section>
+  <h2>関連する用語</h2>
+  <p class="term-chips"><a class="chip" href="/term/dynamic-power/">動的消費電力</a> <a class="chip" href="/term/static-power/">静的消費電力</a> <a class="chip" href="/term/activity-factor/">活動率</a> <a class="chip" href="/term/dvfs/">DVFS(動的電圧・周波数制御)</a> <a class="chip" href="/term/clock-gating/">クロックゲーティング</a> <a class="chip" href="/term/power-gating/">パワーゲーティング</a></p>
+</section>
+<section>
+  <h2>半導体の計算ツール</h2>
+  <div class="mode-grid compact"><a class="mode-card" href="/tools/die-yield-calculator/"><strong>ダイ数・歩留まり計算ツール</strong><span>ウエハ径・チップサイズ・欠陥密度から、ダイ数・歩留まり・良品1個のコストを計算</span></a><a class="mode-card" href="/tools/lithography-resolution-calculator/"><strong>露光の解像度・焦点深度の計算</strong><span>波長・NA・k1から、解像できる線幅と焦点深度、必要なパターン分割の回数を計算</span></a><a class="mode-card" href="/tools/setup-hold-timing-calculator/"><strong>セットアップ・ホールドのタイミング計算</strong><span>クロック周期と遅延から、セットアップ・ホールドの余裕(スラック)と最大周波数を計算</span></a><a class="mode-card" href="/tools/mosfet-iv-curve-calculator/"><strong>MOSFETの電流-電圧特性(ID–VDS)</strong><span>しきい値電圧やW/Lを変えて、ID–VDS特性と動作点(領域・ID・gm・ro)を確かめる</span></a><a class="mode-card" href="/tools/quiz-set-builder/"><strong>問題セットを作る</strong><span>分野と問題数を選ぶだけで、授業や研修で配れるクイズのURLを発行</span></a><a class="mode-card" href="/tools/junction-temperature-calculator/"><strong>接合温度(Tj)と熱抵抗の計算</strong><span>消費電力と熱抵抗から、チップの接合温度、最大接合温度までの余裕、使える最大電力を計算</span></a><a class="mode-card" href="/tools/memory-bandwidth-calculator/"><strong>メモリ帯域幅の計算</strong><span>転送レートとバス幅から、DDR・LPDDR・GDDR・HBMのピーク帯域と実効帯域の目安を計算</span></a><a class="mode-card" href="/tools/adc-snr-enob-calculator/"><strong>ADコンバータのSN比と有効ビット数(ENOB)</strong><span>分解能、クロックジッタ、オーバーサンプリングから、ADコンバータのSN比と有効ビット数を計算</span></a><a class="mode-card" href="/tools/amdahl-law-speedup-calculator/"><strong>アムダールの法則と並列化の速度向上</strong><span>並列化できる割合とプロセッサ数から、アムダールの法則とグスタフソンの法則で速度向上率と並列効率を計算</span></a><a class="mode-card" href="/tools/cache-address-amat-calculator/"><strong>キャッシュのアドレス分割と平均メモリアクセス時間</strong><span>容量・ラインサイズ・連想度から、タグ・インデックス・オフセットのビット数と平均メモリアクセス時間を計算</span></a><a class="mode-card" href="/tools/pn-junction-depletion-calculator/"><strong>PN接合の内蔵電位と空乏層幅</strong><span>不純物濃度と逆バイアス電圧から、PN接合の内蔵電位、空乏層幅、最大電界、接合容量を計算</span></a></div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/cmos-power.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

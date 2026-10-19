@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPU・GPU・NPUの違い：設計思想・演算器・データ型・電力効率を比較 | 半導体教室</title>
+<meta name="description" content="CPU・GPU・NPUを、設計思想・演算器の構成・制御のしかた・メモリ・データ型(INT8やFP16など)・性能の表し方・電力効率・柔軟性・プログラミングの観点で比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/cpu-vs-gpu-vs-npu/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/cpu-vs-gpu-vs-npu/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CPU・GPU・NPUの違い：設計思想・演算器・データ型・電力効率を比較 | 半導体教室">
+<meta property="og:description" content="CPU・GPU・NPUを、設計思想・演算器の構成・制御のしかた・メモリ・データ型(INT8やFP16など)・性能の表し方・電力効率・柔軟性・プログラミングの観点で比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/cpu-vs-gpu-vs-npu/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"CPU・GPU・NPUの違い：設計思想・演算器・データ型・電力効率を比較","item":"https://semiconroom.com/compare/cpu-vs-gpu-vs-npu/"}]},{"@context":"https://schema.org","@type":"Article","headline":"CPU・GPU・NPUの違い：設計思想・演算器・データ型・電力効率を比較","description":"CPU・GPU・NPUを、設計思想・演算器の構成・制御のしかた・メモリ・データ型(INT8やFP16など)・性能の表し方・電力効率・柔軟性・プログラミングの観点で比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/cpu-vs-gpu-vs-npu/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"NPUとGPUは、何が違うのですか？","acceptedAnswer":{"@type":"Answer","text":"GPUは、多数の演算器をプログラムで柔軟に使える汎用の並列プロセッサで、グラフィックスや学習にも使えます。NPUは、ニューラルネットワークの推論の積和演算に絞り、低い精度の演算器とチップ内のメモリを中心に作られているので、対応する処理では電力効率が高い一方、それ以外の処理は苦手です。"}},{"@type":"Question","name":"NPUの電力効率が高いのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"CPUは命令ごとに分岐予測や命令の並べ替えなど多くの回路を動かしますが、NPUはその多くを省き、INT8などの小さな積和演算器を多数並べているからです。さらに、重みや中間データをチップ内のSRAMで使い回し、エネルギーを多く使う外部メモリへのアクセスを減らしています。"}},{"@type":"Question","name":"NPUで学習もできますか？","acceptedAnswer":{"@type":"Answer","text":"スマートフォンやパソコンのNPUは、主に推論向けに作られています。学習には、勾配の計算や高い精度が必要で、GPUや、データセンター向けの学習用アクセラレータが使われるのが一般的です。"}},{"@type":"Question","name":"TOPSの数字が大きいNPUほど速いですか？","acceptedAnswer":{"@type":"Answer","text":"そうとは限りません。TOPSは多くの場合、INT8などで数えた理論上の最大値で、疎なデータを前提にした値のこともあります。実際の速さは、メモリ帯域、演算器の利用率、モデルの演算がNPUに対応しているかどうかで大きく変わります。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/">ホーム</a><a href="/#topics">分野</a><details class="menu"><summary>資料</summary><div class="menu-panel"><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a></div></details><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true">日本語</span><a href="/en/compare/" lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant">繁體中文</a><a href="/ko/compare/" lang="ko">한국어</a><a href="/de/compare/" lang="de">Deutsch</a><a href="/nl/compare/" lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/stats/">成績</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>CPU・GPU・NPUの違い：設計思想・演算器・データ型・電力効率を比較</h1>
+  <p class="lead">CPUは何でも実行できる汎用のプロセッサで、少数の複雑なコアで1つの処理を速く終わらせます。GPUは多数の演算器で大量のデータを並列に処理し、グラフィックスやAIの学習など幅広い並列計算に使われます。NPUは、ニューラルネットワークの計算の大部分を占める行列の積和演算に特化した専用回路で、INT8などの低い精度の演算器を多数並べ、データをチップ内のメモリで使い回すことで、推論を非常に高い電力効率で行います。そのかわり、対応している演算以外は苦手です。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">CPU</th><th scope="col">GPU</th><th scope="col">NPU</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">設計思想</th><td>汎用・低遅延。1つの処理をできるだけ速く終わらせる</td><td>高スループット。大量の並列な計算をまとめてこなす</td><td>ニューラルネットワークの演算(主に推論)に特化し、電力あたりの性能を高める</td></tr>
+        <tr><th scope="row">演算器の構成</th><td>複雑なコアが数個〜数百個。各コアにSIMDの演算器</td><td>単純な演算器が数千個。行列演算ユニットを持つものも多い</td><td>積和演算器の大きな配列(シストリックアレイなど)と、活性化関数などのためのベクトル演算器</td></tr>
+        <tr><th scope="row">制御のしかた</th><td>命令ごとに分岐予測や投機実行(アウトオブオーダー)を行う</td><td>多数のスレッドを切り替えてメモリの待ち時間を隠す</td><td>多くは、コンパイラが事前に決めたデータの流れに沿って動き、命令ごとの制御は少ない</td></tr>
+        <tr><th scope="row">得意な処理</th><td>分岐の多い処理、OS、アプリケーションのロジック</td><td>グラフィックス、AIの学習と推論、科学技術計算</td><td>畳み込みや行列の積を中心とするAIの推論</td></tr>
+        <tr><th scope="row">メモリ</th><td>大きなキャッシュとDDRなどのメインメモリ</td><td>GDDRやHBMなどの高い帯域のメモリ</td><td>チップ内のSRAMのバッファで重みや中間データを使い回す。SoC内蔵ではCPUとメインメモリを共有</td></tr>
+        <tr><th scope="row">主なデータ型</th><td>FP64・FP32と整数を中心に、ほぼ何でも</td><td>FP32・FP16・BF16が中心。学習向けにFP8なども</td><td>INT8・INT4やFP16などの低い精度が中心</td></tr>
+        <tr><th scope="row">性能の表し方</th><td>クロック周波数、コア数、IPC</td><td>FLOPS(TFLOPSなど)</td><td>TOPS(多くはINT8で数えた理論上の最大値)</td></tr>
+        <tr><th scope="row">AIの推論での電力効率</th><td>低い</td><td>高い</td><td>最も高い。CPUより1桁以上高いことがある</td></tr>
+        <tr><th scope="row">柔軟性</th><td>最も高い。どんなプログラムも動く</td><td>高い。並列化できる処理なら幅広く使える</td><td>低い。対応していない演算はCPUやGPUに戻して実行する</td></tr>
+        <tr><th scope="row">プログラミング</th><td>一般のプログラミング言語とコンパイラ</td><td>GPU向けの並列プログラミングモデルでカーネルを書く</td><td>学習済みのモデルを、AIコンパイラや推論ランタイムで変換して実行する。直接プログラムすることは少ない</td></tr>
+        <tr><th scope="row">置かれる場所</th><td>あらゆるコンピュータ</td><td>単体のカード、またはSoCに内蔵</td><td>スマートフォンやパソコンのSoCに内蔵されることが多い。データセンター向けの専用チップもある</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>CPU</dt><dd>分岐が多く逐次的な処理や、システム全体の制御。小さなモデルや、NPUが対応していない演算の実行にも使います。</dd>
+    <dt>GPU</dt><dd>AIの学習や大きなモデルの推論、グラフィックス、科学技術計算など、精度の選択肢と柔軟性が必要な大規模な並列計算。</dd>
+    <dt>NPU</dt><dd>スマートフォンやパソコンで、写真の補正、音声認識、翻訳などの推論を、電池を減らさずに常に動かしたいとき。モデルを量子化して、NPUが得意なINT8などで実行します。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>NPUとGPUは、何が違うのですか？</h3>
+  <p>GPUは、多数の演算器をプログラムで柔軟に使える汎用の並列プロセッサで、グラフィックスや学習にも使えます。NPUは、ニューラルネットワークの推論の積和演算に絞り、低い精度の演算器とチップ内のメモリを中心に作られているので、対応する処理では電力効率が高い一方、それ以外の処理は苦手です。</p>
+  <h3>NPUの電力効率が高いのはなぜですか？</h3>
+  <p>CPUは命令ごとに分岐予測や命令の並べ替えなど多くの回路を動かしますが、NPUはその多くを省き、INT8などの小さな積和演算器を多数並べているからです。さらに、重みや中間データをチップ内のSRAMで使い回し、エネルギーを多く使う外部メモリへのアクセスを減らしています。</p>
+  <h3>NPUで学習もできますか？</h3>
+  <p>スマートフォンやパソコンのNPUは、主に推論向けに作られています。学習には、勾配の計算や高い精度が必要で、GPUや、データセンター向けの学習用アクセラレータが使われるのが一般的です。</p>
+  <h3>TOPSの数字が大きいNPUほど速いですか？</h3>
+  <p>そうとは限りません。TOPSは多くの場合、INT8などで数えた理論上の最大値で、疎なデータを前提にした値のこともあります。実際の速さは、メモリ帯域、演算器の利用率、モデルの演算がNPUに対応しているかどうかで大きく変わります。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="ai-stack-042" data-cat="ai-stack" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/ai-stack/ai-stack-042/">スマートフォンのSoCに載るNPUが、AIの推論でCPUより電力の効率が高い主な理由はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">NPUは電気を使わずに光で計算するから</span></li><li><span class="choice-mark">B</span><span class="choice-text">INT8などの低い精度の積和の演算器を多数並べ、AIの計算に必要のない汎用の回路を省いているから</span></li><li><span class="choice-mark">C</span><span class="choice-text">NPUはCPUより必ず高いクロックで動くから</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. INT8などの低い精度の積和の演算器を多数並べ、AIの計算に必要のない汎用の回路を省いているから</p><p class="explanation">CPUは何でも実行できるよう、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>や命令の並べ替えなど、命令ごとに多くの回路を動かします。<a class="term-link" href="/term/npu/">NPU</a>は行列の積和に特化し、低い精度の演算器を多数並べて、データをチップの中で使い回すように作られているので、1回の演算にかかるエネルギーが桁違いに小さくなります。その分、AI以外の処理や、対応していない演算には向きません。</p></details>
+  </article>
+  <article class="q-mini" data-qid="cpu-015" data-cat="cpu" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/cpu/cpu-015/">AIの推論処理を高速かつ低い消費電力で行うために、スマートフォン用のSoCなどに搭載される専用回路はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">PLL(位相同期回路)</span></li><li><span class="choice-mark">B</span><span class="choice-text">ADコンバータ</span></li><li><span class="choice-mark">C</span><span class="choice-text">NPU(ニューラルプロセッシングユニット)</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. NPU(ニューラルプロセッシングユニット)</p><p class="explanation"><a class="term-link" href="/term/npu/">NPU</a>は、ニューラルネットワークの計算の大部分を占める積和演算を、8ビット以下の整数など低い精度で大量に並列処理する専用回路です。汎用CPUより電力あたりの性能が1桁以上高く、写真の補正、音声認識、翻訳などをスマートフォンの中で処理できます。性能は<a class="term-link" href="/term/tops/">TOPS</a>(1秒あたりの兆回の演算)で表され、パソコン向けの<a class="term-link" href="/term/soc/">SoC</a>にも搭載が広がっています。</p></details>
+  </article>
+  <article class="q-mini" data-qid="cpu-049" data-cat="cpu" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/cpu/cpu-049/">AI向けのアクセラレータなどで、多数の積和演算器を格子状に並べ、データを隣の演算器へ順に流しながら行列の積を計算する構成はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">シストリックアレイ</span></li><li><span class="choice-mark">B</span><span class="choice-text">クロスバースイッチ</span></li><li><span class="choice-mark">C</span><span class="choice-text">リングバッファ</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. シストリックアレイ</p><p class="explanation"><a class="term-link" href="/term/systolic-array/">シストリックアレイ</a>は、積和演算器(MAC)を2次元に並べ、データを隣の演算器へ規則的に送りながら計算する構成で、血液を送り出す心臓の収縮(シストール)になぞらえた名前です。一度読み込んだデータを多くの演算器で再利用できるため、メモリへのアクセスを減らして行列演算を効率よく行えます。GoogleのTPUは128×128などの大きなアレイを備えています。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/ai-stack/ai-stack-038/">AI向けのアクセラレータで使われるシストリックアレイが、行列の積を効率よく計算できる主な理由はどれか。</a></li>
+  <li data-level="1"><a href="/q/computer-arithmetic/computer-arithmetic-030/">AIの推論で、重みをFP32からINT8に変換(量子化)する主な利点はどれか。</a></li>
+  <li data-level="2"><a href="/q/ai-stack/ai-stack-043/">AIのアクセラレータの性能として示される「○○ TOPS」という値について注意すべき点として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/ai-stack/">AIハードウェアとソフトウェアスタックの練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/npu/">NPU(ニューラルプロセッシングユニット)</a></dt><dd>AIのニューラルネットワークの推論処理を、高速かつ低い消費電力で行うための専用回路。スマートフォンやパソコンのSoCに搭載されている。</dd></div>
+    <div class="term"><dt><a href="/term/gpu/">GPU</a></dt><dd>Graphics Processing Unit の略。単純な演算器を多数もち、大量のデータを並列に処理するプロセッサ。画像処理のほか、AIの学習や推論に広く使われている。</dd></div>
+    <div class="term"><dt><a href="/term/systolic-array/">シストリックアレイ</a></dt><dd>多数の積和演算器を格子状に並べ、データを隣の演算器へ順に流しながら行列の積を計算する構成。AI向けのアクセラレータで使われる。</dd></div>
+    <div class="term"><dt><a href="/term/int8/">INT8</a></dt><dd>8ビットの符号付き整数(−128〜127)。AIの推論で、重みや活性化の値をスケールを掛けてINT8に変換(量子化)すると、計算とメモリが大きく減り、整数の小さな回路で高速に処理できる。</dd></div>
+    <div class="term"><dt><a href="/term/tops/">TOPS</a></dt><dd>1秒あたりの演算の回数を兆(テラ)の単位で表したAIのアクセラレータの性能の指標。多くは低い精度で数えた理論上の最大値。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu/"><strong>CPUとGPUの違い：構造・得意な処理・用途を比較</strong><span>CPUとGPUを、設計の目的・コア数・実行モデル・キャッシュ・メモリ帯域・分岐・データ転送・得意な処理の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/i2c-vs-spi-vs-uart/"><strong>I2C・SPI・UARTの違い：配線・速度・使い分けを比較</strong><span>I2C、SPI、UARTを、配線の数・クロック・速度・接続形態・アドレス・誤り検出・マイコンでの主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/verilog-vs-vhdl/"><strong>VerilogとVHDLの違い：2つのハードウェア記述言語を比較</strong><span>VerilogとVHDLを、成り立ち・文法・型・大文字小文字・検証機能・使われる分野・選び方の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/nvme-vs-sata-ssd/"><strong>NVMeとSATAのSSDの違い：速度・インターフェース・選び方</strong><span>NVMeとSATAのSSDを、インターフェース・速度・遅延・コマンドキュー・形状・消費電力・互換性・価格・向いている人の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/mcu-vs-mpu/"><strong>MCUとMPUの違い：マイコンとマイクロプロセッサを比較</strong><span>MCUとMPUを、集積度・クロック・メモリ・OS・リアルタイム性・消費電力・起動時間・コスト・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/process-vs-thread/"><strong>プロセスとスレッドの違い：メモリ・切り替え・使い分けを比較</strong><span>プロセスとスレッドを、メモリ・作成のコスト・コンテキストスイッチ・通信・分離・同期・用途の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

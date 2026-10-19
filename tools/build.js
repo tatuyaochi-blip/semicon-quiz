@@ -915,6 +915,15 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
 <p class="lead">${esc(x.lead)}</p>
 <div class="dy">
   ${toolBody[tool.id](x)}
+  <section class="dy-out" id="sweep" hidden>
+    <h2>${esc(S.sweep_heading)}</h2>
+    <div class="sweep-pick">
+      <label class="dy-field"><span>${esc(S.sweep_x)}</span><select name="sweep-x"></select></label>
+      <label class="dy-field"><span>${esc(S.sweep_y)}</span><select name="sweep-y"></select></label>
+    </div>
+    <svg class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(S.sweep_heading)}"></svg>
+    <p class="muted">${esc(S.sweep_note)}</p>
+  </section>
 </div>
 ${x.sections.map(sec => `<section class="term-about">
   <h2>${esc(sec.h)}</h2>

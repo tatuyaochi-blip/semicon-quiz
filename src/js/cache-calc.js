@@ -28,3 +28,15 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: ミス率やミスペナルティを変えたときの平均メモリアクセス時間など
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['miss', 'penalty', 'hit', 'size', 'line', 'ways'], outputs: ['amat', 'tag', 'index', 'sets'], defaults: { x: 'miss', y: 'amat' }, ranges: { miss: [0, 20] },
+  calc: v => {
+    const size = v.size * 1024, lines = size / v.line, sets = lines / v.ways;
+    const ok = pow2(size) && pow2(v.line) && pow2(v.ways) && Number.isInteger(sets) && sets >= 1;
+    const idx = ok ? Math.log2(sets) : NaN;
+    return { amat: v.hit + (v.miss / 100) * v.penalty, sets: ok ? sets : NaN, index: idx, tag: ok ? v.abits - Math.log2(v.line) - idx : NaN };
+  },
+});

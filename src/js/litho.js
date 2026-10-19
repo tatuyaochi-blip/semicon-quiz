@@ -27,3 +27,13 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: NA や k1 を変えたときの解像度・焦点深度
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['na', 'k1', 'k2', 'pitch'], outputs: ['hp', 'dof', 'passes'], defaults: { x: 'na', y: 'hp' },
+  calc: v => {
+    const l = Number(v.lambda), hp = (v.k1 * l) / v.na;
+    return { hp, dof: (v.k2 * l) / v.na ** 2, passes: Math.max(1, Math.ceil((2 * hp) / v.pitch - 1e-9)) };
+  },
+});

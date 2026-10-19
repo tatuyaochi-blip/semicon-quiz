@@ -23,3 +23,15 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: 入力周波数やジッタを変えたときのSN比・有効ビット数
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['fin', 'jitter', 'bits', 'osr', 'fs'], outputs: ['enob', 'snr', 'snr-j', 'snr-q', 'lsb'], defaults: { x: 'fin', y: 'enob' },
+  calc: v => {
+    const q = 6.02 * v.bits + 1.76 + 10 * Math.log10(Math.max(v.osr, 1));
+    const j = v.fin > 0 && v.jitter > 0 ? -20 * Math.log10(2 * Math.PI * v.fin * 1e6 * v.jitter * 1e-12) : Infinity;
+    const total = -10 * Math.log10(10 ** (-q / 10) + (Number.isFinite(j) ? 10 ** (-j / 10) : 0));
+    return { enob: enob(total), snr: total, 'snr-j': j, 'snr-q': q, lsb: (v.fs / 2 ** v.bits) * 1e3 };
+  },
+});

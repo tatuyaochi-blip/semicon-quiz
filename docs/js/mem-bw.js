@@ -27,3 +27,10 @@ function update() {
 form.addEventListener('input', e => { if (e.target !== sel) update(); });
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: 転送レートやバス幅を変えたときの帯域
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['rate', 'width', 'count', 'eff'], outputs: ['peak', 'eff'], defaults: { x: 'rate', y: 'peak' },
+  calc: v => { const peak = gbs(v.rate, v.width, v.count); return { peak, eff: (peak * v.eff) / 100 }; },
+});

@@ -38,3 +38,14 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+
+// グラフで見る: 温度などを変えたときの酸化膜厚
+import { initSweep } from './sweep.js';
+initSweep({
+  form, inputs: ['temp', 'time', 'xi'], outputs: ['x', 'grown', 'b', 'ba'], defaults: { x: 'temp', y: 'x' }, ranges: { temp: [800, 1200] },
+  calc: v => {
+    const c = coeff(v.kind, v.temp, v.orient), xi = v.xi / 1000;
+    const x = thick(c, v.time, (xi * xi + c.A * xi) / c.B);
+    return { x: x * 1000, grown: (x - xi) * 1000, b: c.B, ba: c.BA };
+  },
+});

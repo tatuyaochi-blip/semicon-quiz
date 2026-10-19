@@ -1,0 +1,141 @@
+{
+  "id": "cmos-power",
+  "order": 11,
+  "slug": "cmos-power-calculator",
+  "cats": [
+    "power-management",
+    "logic",
+    "mosfet"
+  ],
+  "cat": "power-management",
+  "terms": [
+    "動的消費電力",
+    "静的消費電力",
+    "活動率",
+    "DVFS(動的電圧・周波数制御)",
+    "クロックゲーティング",
+    "パワーゲーティング"
+  ],
+  "questions": [
+    "power-management-001",
+    "power-management-002",
+    "power-management-004",
+    "power-management-050"
+  ],
+  "text": {
+    "ja": {
+      "nav": "CMOSの消費電力",
+      "card": "活動率・容量・電圧・周波数とリーク電流から、動的電力と静的電力、DVFSで電圧と周波数を下げたときの電力を計算",
+      "title": "CMOSの消費電力の計算ツール(動的電力 αCV²f・リーク電力・DVFS)",
+      "description": "活動率α、スイッチング容量C、電源電圧V、周波数f、リーク電流から、CMOS回路の動的消費電力 P = αCV²f と静的消費電力、全体に占める静的電力の割合を計算します。DVFSで電圧と周波数を下げたときの電力も見積もれます。",
+      "h1": "CMOS回路の消費電力(動的電力と静的電力)",
+      "lead": "活動率、切り替わる容量の合計、電源電圧、クロック周波数、リーク電流を入れると、CMOS回路の動的消費電力と静的消費電力を計算します。電圧と周波数を同じ割合で下げるDVFSを使ったとき、全体の電力がどこまで減るかも比べられます。",
+      "in_heading": "条件",
+      "alpha": "活動率 α",
+      "c": "スイッチング容量の合計 C (nF)",
+      "v": "電源電圧 V (V)",
+      "f": "周波数 f (GHz)",
+      "ileak": "リーク電流 (mA)",
+      "scale": "DVFS後の V と f の割合 (%)",
+      "out_heading": "結果",
+      "dyn": "動的消費電力 αCV²f",
+      "stat": "静的消費電力 Ileak × V",
+      "total": "合計の消費電力",
+      "share": "静的電力の割合",
+      "dvfs": "DVFS後の合計電力",
+      "dvfs_ratio": "DVFS後の電力(元に対する割合)",
+      "note": "動的消費電力は P = αCV²f で、αは1クロックあたりに出力が0から1へ切り替わる確率としています(αを切り替わり全体の割合とする教科書では ½αCV²f と書きます)。静的電力は Ileak × V で見積もり、DVFSの計算ではリーク電流そのものは電圧によらず一定とし、×V の分だけ下がるとしています。短絡電流による電力は含めていません。",
+      "sections": [
+        {
+          "h": "動的消費電力 αCV²f の意味",
+          "p": "CMOS回路では、ゲートの出力が0から1に変わるたびに、負荷の容量Cが電源から CV² のエネルギーを受け取ります。その半分は充電の途中にpMOSで熱になり、容量にたまった残りの半分は、次に1から0に変わるときにnMOSで熱になります。1クロックあたりに0→1の切り替えが起こる確率を活動率αとすると、動的消費電力は P = αCV²f です。既定値の α = 0.1、C = 1 nF、V = 1.0 V、f = 2 GHz では、0.1 × 10⁻⁹ × 1² × 2 × 10⁹ = 0.2 W となります。"
+        },
+        {
+          "h": "静的消費電力とその割合",
+          "p": "トランジスタがオフでも、しきい値以下で流れるサブスレッショルド電流、薄いゲート絶縁膜を通るトンネル電流、接合のリーク電流などが流れ続けます。これによる電力が静的消費電力で、ここでは Ileak × V で見積もります。既定値では 100 mA × 1.0 V = 0.1 W で、合計0.3 Wのうち33.3%を占めます。サブスレッショルド電流は、しきい値電圧を下げると指数関数的に増え、温度が上がっても大きく増えます。微細化に合わせてしきい値電圧を下げてきた結果、静的電力は全体の中で無視できない割合を占めるようになりました。"
+        },
+        {
+          "h": "DVFSで電力が大きく減る理由",
+          "p": "電源電圧を下げると回路の遅延が大きくなるため、周波数を下げれば、そのぶん電圧も下げられます。電圧と周波数をともにs倍にすると、動的電力は V²f に比例するので s³ 倍になります。既定値で80%にすると、動的電力は 0.8³ = 0.512倍の約0.102 W、静的電力は0.08 Wとなり、合計は0.1824 W(元の60.8%)です。ただし、同じ計算を終える時間は 1/s 倍に延びるので、1回の計算に使う動的なエネルギーは s² 倍の減少にとどまります。静的電力の割合が大きいと、ゆっくり動くぶんリークで失うエネルギーが増える点にも注意が必要です。"
+        },
+        {
+          "h": "設計で電力を減らす方法",
+          "p": "式の各項は、それぞれ省電力の手段に対応します。αは使っていない回路のクロックを止めるクロックゲーティングで下げ、Cは配線を短くしたり小さなトランジスタを使ったりして減らします。Vは2乗で効くため効果が最も大きく、負荷に応じて電圧と周波数を変えるDVFSが広く使われています。静的電力には、使わないブロックの電源を切るパワーゲーティングや、速さが必要ない経路にしきい値電圧の高いトランジスタを使う方法が効きます。リークを抑えるためにしきい値電圧を下げられなくなったことが、電源電圧の低下が止まった大きな理由です。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "電源電圧を10%下げると、動的消費電力はどれだけ減りますか?",
+          "a": "動的電力は電圧の2乗に比例するので、周波数が同じなら 0.9² = 0.81倍、つまり約19%減ります。周波数も同じ割合で下げれば 0.9³ ≈ 0.73倍となり、約27%減ります。"
+        },
+        {
+          "q": "P = αCV²f と P = ½αCV²f はどちらが正しいですか?",
+          "a": "どちらも正しく、αの定義が違います。αを1クロックあたりに0→1の切り替えが起こる確率とすると αCV²f、0→1と1→0の両方を数えた切り替えの割合とすると、1回の切り替えあたり ½CV² なので ½αCV²f になります。問題を解くときは、αがどちらの意味かを確かめてください。"
+        },
+        {
+          "q": "静的消費電力はどうすれば減らせますか?",
+          "a": "使わないブロックの電源を切るパワーゲーティング、しきい値電圧の高いトランジスタの利用、電源電圧を下げること、チップの温度を下げることが効きます。クロックゲーティングは動的電力を減らす方法で、リーク電流は減らせません。"
+        }
+      ],
+      "practice": "電力管理の問題を解く",
+      "related": "関連する用語"
+    },
+    "en": {
+      "nav": "CMOS power",
+      "card": "Dynamic and static power from activity factor, capacitance, voltage, frequency and leakage, plus the power after DVFS",
+      "title": "CMOS Power Calculator (Dynamic Power αCV²f, Leakage and DVFS)",
+      "description": "Calculate the dynamic power P = αCV²f, the static power and the static share of a CMOS circuit from the activity factor α, switched capacitance C, supply voltage V, frequency f and leakage current, and estimate the power after scaling voltage and frequency with DVFS.",
+      "h1": "CMOS power consumption (dynamic and static)",
+      "lead": "Enter the activity factor, total switched capacitance, supply voltage, clock frequency and leakage current to calculate the dynamic and static power of a CMOS circuit. You can also see how far the total power falls when DVFS lowers the voltage and frequency by the same ratio.",
+      "in_heading": "Inputs",
+      "alpha": "Activity factor α",
+      "c": "Total switched capacitance C (nF)",
+      "v": "Supply voltage V (V)",
+      "f": "Frequency f (GHz)",
+      "ileak": "Leakage current (mA)",
+      "scale": "V and f after DVFS (% of original)",
+      "out_heading": "Results",
+      "dyn": "Dynamic power αCV²f",
+      "stat": "Static power Ileak × V",
+      "total": "Total power",
+      "share": "Static share",
+      "dvfs": "Total power after DVFS",
+      "dvfs_ratio": "Power after DVFS (% of original)",
+      "note": "Dynamic power is P = αCV²f, with α the probability per clock cycle that a node switches from 0 to 1 (texts that define α as the fraction of all transitions write ½αCV²f). Static power is estimated as Ileak × V; in the DVFS estimate the leakage current itself is assumed independent of voltage, so only the × V factor scales. Short-circuit power is not included.",
+      "sections": [
+        {
+          "h": "What αCV²f means",
+          "p": "Each time a CMOS gate output rises from 0 to 1, the load capacitance C draws CV² of energy from the supply. Half is lost as heat in the pMOS while charging, and the half stored on the capacitor is dissipated in the nMOS on the next 1-to-0 transition. If α is the probability of a 0-to-1 transition per clock cycle, dynamic power is P = αCV²f. With the defaults of α = 0.1, C = 1 nF, V = 1.0 V and f = 2 GHz, P = 0.1 × 10⁻⁹ × 1² × 2 × 10⁹ = 0.2 W."
+        },
+        {
+          "h": "Static power and its share",
+          "p": "Even when transistors are off, current keeps flowing as subthreshold current, tunneling through the thin gate dielectric and junction leakage. The resulting static power is estimated here as Ileak × V. With the defaults it is 100 mA × 1.0 V = 0.1 W, or 33.3% of the 0.3 W total. Subthreshold current grows exponentially as the threshold voltage is lowered and rises steeply with temperature. Because scaling pushed threshold voltages down, static power became a significant part of the total."
+        },
+        {
+          "h": "Why DVFS saves so much",
+          "p": "Lowering the supply voltage slows the logic, so a lower frequency allows a lower voltage. Scaling both by s multiplies dynamic power, which goes as V²f, by s³. At 80% with the defaults, dynamic power falls by 0.8³ = 0.512 to about 0.102 W and static power to 0.08 W, for a total of 0.1824 W, or 60.8% of the original. A fixed task now takes 1/s times longer, though, so its dynamic energy falls only by s². When static power is large, running slowly also wastes more leakage energy."
+        },
+        {
+          "h": "How designs reduce power",
+          "p": "Each term in the formula maps to a power-saving technique. Clock gating stops the clock to idle logic and lowers α; shorter wires and smaller transistors reduce C. Voltage acts as a square, so it has the largest effect, and DVFS, which adjusts voltage and frequency to the load, is widely used. For static power, power gating switches off idle blocks, and high-threshold transistors are used on paths that do not need speed. Being unable to lower the threshold voltage further without excessive leakage is a major reason supply voltages stopped falling."
+        }
+      ],
+      "faq": [
+        {
+          "q": "How much does dynamic power drop if the supply voltage is lowered by 10%?",
+          "a": "Dynamic power scales with the square of the voltage, so at the same frequency it becomes 0.9² = 0.81 times, a drop of about 19%. If the frequency is also lowered by 10%, it becomes 0.9³ ≈ 0.73 times, a drop of about 27%."
+        },
+        {
+          "q": "Which is correct, P = αCV²f or P = ½αCV²f?",
+          "a": "Both, with different definitions of α. If α is the probability of a 0-to-1 transition per clock cycle, P = αCV²f. If α counts both rising and falling transitions, each one dissipates ½CV², so P = ½αCV²f. Check which meaning a problem uses."
+        },
+        {
+          "q": "How can static power be reduced?",
+          "a": "Power gating idle blocks, using high-threshold transistors, lowering the supply voltage and keeping the chip cooler all help. Clock gating reduces dynamic power and does not cut leakage current."
+        }
+      ],
+      "practice": "Practice power management questions",
+      "related": "Related terms"
+    }
+  }
+}
