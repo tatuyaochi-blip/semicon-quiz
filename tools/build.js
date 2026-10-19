@@ -873,6 +873,63 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <svg id="ox-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    'interconnect-rc': x => `<form id="rc-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('metal', x.metal, [['cu', 'Cu', 1.7], ['al', 'Al', 2.7], ['w', 'W', 5.3], ['co', 'Co', 6.2], ['ru', 'Ru', 7.1]].map(([v, name, rho]) => [v, `${name} ${rho} µΩ·cm`]), 'cu')}
+    ${field('rhox', x.rhox, 1, 'min="1" step="0.1"')}
+    ${field('w', x.w, 50, 'min="1" step="5"')}
+    ${field('t', x.t, 100, 'min="1" step="5"')}
+    ${field('s', x.s, 50, 'min="1" step="5"')}
+    ${field('h', x.h, 100, 'min="1" step="5"')}
+    ${field('k', x.k, 2.7, 'min="1" step="0.1"')}
+    ${field('len', x.len, 1000, 'min="1" step="100"')}
+    ${field('rdrv', x.rdrv, 1000, 'min="0" step="100"')}
+    ${field('cl', x.cl, 10, 'min="0" step="1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('r-len', x.r_len)}${stat('r', x.r)}${stat('c-len', x.c_len)}${stat('c', x.c)}${stat('cc-share', x.cc_share)}${stat('wire', x.wire)}${stat('total', x.total)}</dl>
+    <svg id="rc-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    jitter: x => `<form id="jt-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('f0', x.f0, 100, 'min="0.001" step="any"')}
+    ${field('lo', x.lo, 12, 'min="0.001" step="any"')}
+    ${field('hi', x.hi, 20, 'min="0.001" step="any"')}
+    ${[['1 kHz', -110], ['10 kHz', -120], ['100 kHz', -130], ['1 MHz', -145], ['10 MHz', -155], ['20 MHz', -155]].map(([f, v], i) => field(`p${i}`, x.pn_at.replace('{f}', f), v, 'max="0" step="1"')).join('\n    ')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p id="jt-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('integ', x.integ)}${stat('mrad', x.mrad)}${stat('deg', x.deg)}${stat('jitter', x.jitter)}</dl>
+    <svg id="jt-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <div class="table-wrap"><table class="dy-table">
+      <thead><tr><th scope="col">${esc(x.col_seg)}</th><th scope="col">${esc(x.col_share)}</th></tr></thead>
+      <tbody>${['1 kHz – 10 kHz', '10 kHz – 100 kHz', '100 kHz – 1 MHz', '1 MHz – 10 MHz', '10 MHz – 20 MHz', x.row_out].map((r, i) => `<tr><th scope="row">${esc(r)}</th><td data-out="seg${i}">–</td></tr>`).join('')}</tbody>
+    </table></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    pdn: x => `<form id="pdn-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('v', x.v, 1.0, 'min="0.01" step="0.05"')}
+    ${field('ripple', x.ripple, 5, 'min="0.1" step="0.5"')}
+    ${field('di', x.di, 10, 'min="0.001" step="1"')}
+    ${field('c', x.c, 1, 'min="0.0001" step="any"')}
+    ${field('esr', x.esr, 10, 'min="0.01" step="1"')}
+    ${field('esl', x.esl, 0.5, 'min="0.001" step="0.05"')}
+    ${field('n', x.n, 10, 'min="1" step="1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('zt', x.zt)}${stat('srf', x.srf)}${stat('zsrf', x.zsrf)}${stat('flo', x.flo)}${stat('fhi', x.fhi)}${stat('nmin', x.nmin)}</dl>
+    <p id="pdn-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <svg id="pdn-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
     <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>

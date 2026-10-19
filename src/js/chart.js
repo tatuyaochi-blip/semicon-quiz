@@ -1,6 +1,7 @@
 // 計算ツール用の簡単な折れ線グラフ(SVG)。series: [{ points: [[x, y], ...], cls: 'ac'|'ac2'|'dash', label }]
 // xlog / ylog で対数軸。marks: [[x, y, 文字]] は点と注記
-const fmtTick = (v, lang) => (Math.abs(v) >= 1000 || (Math.abs(v) < 0.01 && v !== 0) ? v.toExponential(0) : v.toLocaleString(lang, { maximumFractionDigits: 2 }));
+// 指数表記は必要な桁だけ出す(1500 を 2e+3 と丸めないように)
+const fmtTick = (v, lang) => (Math.abs(v) >= 1000 || (Math.abs(v) < 0.01 && v !== 0) ? Number(v.toPrecision(3)).toExponential() : v.toLocaleString(lang, { maximumFractionDigits: 2 }));
 
 export function lineChart(svg, { series, xlabel, ylabel, xlog = false, ylog = false, marks = [], ymin }) {
   const lang = document.documentElement.lang || 'en';
