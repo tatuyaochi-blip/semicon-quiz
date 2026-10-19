@@ -78,7 +78,7 @@ async function start(retry) {
     try {
       const pool = (await Promise.all(ids.map(id =>
         getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
-      qs = mode.pick(pool, params, { store }).map(shuffleChoices);
+      qs = mode.pick(pool, params, { store, index }).map(shuffleChoices);
     } catch {
       qs = []; // 問題データを読めない(オフラインで未保存など)
       loadError = true;

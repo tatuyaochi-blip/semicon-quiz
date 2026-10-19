@@ -51,6 +51,10 @@ const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
 const courses = readOpt('data/courses.json', []);
 const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
+// 「Numbers Every Chip Engineer Should Know」(英語のみ。/en/numbers/)。各数値に根拠の問題IDを付ける
+const numbers = readOpt('data/numbers.json', []);
+const numbersLang = 'en';
+const numbersQ = [...new Set(numbers.flatMap(g => g.items.flatMap(x => x.questions ?? [])))];
 const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 const figs = figures();
 // 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
@@ -165,6 +169,7 @@ function buildLang(L) {
     exams: exams.map(e => ({ id: e.id, name: exName(e), groups: e.groups.map(g => ({ id: g.id, name: grName(e, g) })) })),
     categories: live.map(c => ({ id: c.id, exam: c.exam, group: c.group, name: c.name, count: qs[c.id].length })),
     glossary: glossaryIndex,
+    numbersQ,
     modes: Object.fromEntries(modes.map(m => [m.id, { label: modeText(m, 'label'), empty: modeText(m, 'empty') ?? null }])),
     reportFormUrl: config.reportFormUrl ?? null,
   }));
@@ -434,7 +439,8 @@ function buildLang(L) {
     // ヘッダーのナビ(いまいるページには aria-current を付ける)。
     // PC: Home / Topics / Resources(用語集・比較・図解をまとめたメニュー) / Progress。スマートフォン: 同じリンクを Menu に縦に並べる
     const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
-    const resources = [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures]];
+    const resources = [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
+      ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : [])];
     const inResources = resources.some(([sub]) => p === L.path + sub);
     const headerNav = [navLink(['', S.nav_home]), navLink(['#topics', S.nav_topics]),
       `<details class="menu"><summary${inResources ? ' aria-current="page"' : ''}>${esc(S.nav_resources)}</summary><div class="menu-panel">${resources.map(navLink).join('')}</div></details>`,
@@ -591,6 +597,33 @@ function buildLang(L) {
     <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
     <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
   </article>`;
+
+  // 数値のページ /en/numbers/(英語版のみ)。数値ごとに根拠の問題へリンクし、上部から10問のドリルへ
+  if (numbers.length && code === numbersLang) {
+    const qLink = id => qById.get(id) ? `<a href="${base}${qUrl(qById.get(id).cat, id)}">Practice</a>` : '';
+    page({
+      path: `${L.path}numbers/`,
+      alt: { [code]: `${L.path}numbers/` },
+      title: 'Numbers Every Chip Engineer Should Know',
+      description: 'The orders of magnitude every semiconductor and computer engineer should know: band gaps, thermal voltage, DRAM refresh, EUV wavelength, cache latencies and more, each linked to a practice question.',
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>Numbers Every Chip Engineer Should Know</h1>
+<p class="lead">The orders of magnitude worth carrying in your head, from silicon's band gap to DRAM latency. Each value links to a practice question with a full explanation. Values are typical figures; the notes give the conditions.</p>
+<p><a class="btn btn-primary" href="${home}quiz/?mode=numbers" rel="nofollow">Test yourself: 10 questions</a></p>
+<nav class="glossary-nav" aria-label="Groups"><p>${numbers.map((g, i) => `<a class="chip" href="#n${i + 1}">${esc(g.group)}</a>`).join(' ')}</p></nav>
+${numbers.map((g, i) => `<section id="n${i + 1}">
+  <h2>${esc(g.group)}</h2>
+  <div class="table-wrap"><table class="numbers">
+    <thead><tr><th scope="col">Quantity</th><th scope="col">Value</th><th scope="col"><span class="visually-hidden">Practice</span></th></tr></thead>
+    <tbody>${g.items.map(x => `
+      <tr id="${esc(x.id)}"><th scope="row">${esc(x.label)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</th><td class="num-value">${esc(x.value)}</td><td class="num-q">${(x.questions ?? []).slice(0, 1).map(qLink).join('')}</td></tr>`).join('')}
+    </tbody>
+  </table></div>
+</section>`).join('\n')}
+<p class="muted">Every value on this page also appears in at least one question on this site. Found an error? Let us know via the <a href="${home}contact/">contact page</a>.</p>
+<div data-ad="numbers"></div>`,
+    });
+  }
 
   // 比較ページ /compare/ と /compare/{slug}/
   const cmpLangs = slug => langs.filter(x => x.code === defLang || readOpt(`data/i18n/${x.code}/compare.json`, {})[slug]);
