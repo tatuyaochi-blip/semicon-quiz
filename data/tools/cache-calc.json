@@ -143,6 +143,306 @@
       ],
       "practice": "Practice memory hierarchy questions",
       "related": "Related terms"
+    },
+    "zh-hant": {
+      "nav": "快取位址分割",
+      "card": "由快取容量、快取行大小與相聯度計算標籤、索引、偏移位元數及平均記憶體存取時間",
+      "title": "快取標籤、索引與偏移計算器（組數與 AMAT）",
+      "description": "由位址寬度、快取容量、快取行大小與相聯度計算快取行數、組數及標籤、索引、偏移的位元數，並由命中時間、失誤率與失誤懲罰求出平均記憶體存取時間（AMAT）。",
+      "h1": "快取位址分割與平均記憶體存取時間",
+      "lead": "輸入快取容量、快取行大小與相聯度，即可看出位址如何分割為標籤、索引與偏移，並以位元數和長條圖顯示。本計算器也會由命中時間、失誤率與失誤懲罰計算平均記憶體存取時間（AMAT），讓你了解快取組織方式如何影響效能。",
+      "in_heading": "快取組態",
+      "abits": "位址寬度（位元）",
+      "size": "快取容量（KB）",
+      "line": "快取行大小（B）",
+      "ways": "相聯度（路）",
+      "hit": "命中時間（週期）",
+      "miss": "失誤率（%）",
+      "penalty": "失誤懲罰（週期）",
+      "out_heading": "計算結果",
+      "bar_heading": "位址分割（左側為最高有效位元）",
+      "tag": "標籤",
+      "index": "索引",
+      "offset": "偏移",
+      "cycles": "週期",
+      "warn": "快取容量、快取行大小與相聯度請輸入 2 的冪次，且容量須能被「快取行大小 × 路數」整除。若偏移與索引的位元數合計超過位址寬度，也無法計算分割。",
+      "lines": "快取行數",
+      "sets": "組數",
+      "amat": "平均記憶體存取時間（AMAT）",
+      "sections": [
+        {
+          "h": "將位址分成三個欄位",
+          "p": "快取以稱為快取行（區塊）的單位保存主記憶體的資料。快取行數為容量 ÷ 快取行大小，組數為快取行數 ÷ 相聯度。從位址的低位元開始，偏移用來選擇快取行內的位元組，佔 log₂(快取行大小) 位元；索引用來選擇組，佔 log₂(組數) 位元；其餘的高位元則構成標籤。以預設值 32 位元、32 KB、64 B、8 路計算，共有 512 個快取行與 64 組，得到 6 位元偏移、6 位元索引，以及 32 − 6 − 6 = 20 位元的標籤。"
+        },
+        {
+          "h": "改變相聯度會有什麼影響",
+          "p": "在容量與快取行大小相同時，相聯度加倍會使組數減半，因此索引少 1 位元、標籤多 1 位元。1 路即為直接映射快取；將路數設為與快取行數相同（預設值下為 512）則成為只有 1 組、索引為 0 位元的全相聯快取。較高的相聯度可減少因位址集中在同一組而造成的衝突失誤，但必須平行比較更多標籤，會增加比較器面積、功耗與命中時間。"
+        },
+        {
+          "h": "平均記憶體存取時間（AMAT）",
+          "p": "比較快取時應看平均記憶體存取時間，而非只看失誤率。AMAT = 命中時間 + 失誤率 × 失誤懲罰，以預設值計算為 4 + 0.05 × 100 = 9 週期。由於失誤懲罰很大，即使失誤率只有 5%，平均值也會變成兩倍以上。若以更大或相聯度更高的快取降低失誤率，卻使命中時間增加，就不一定有利，因為每次存取都要付出命中時間。對於多層快取，請將 L1 的失誤懲罰替換為 L2 命中時間 + L2 失誤率 × L2 失誤懲罰。"
+        },
+        {
+          "h": "設計上的運用與注意事項",
+          "p": "較大的快取行能利用空間局部性降低失誤率，但每次失誤要搬移更多資料，使失誤懲罰增加，且快取行數減少也會增加衝突；目前多數 CPU 採用 64 B。L1 快取常採用虛擬索引、實體標籤（VIPT）設計，在 TLB 轉換位址的同時讀取組。若要讓索引與偏移落在頁內偏移的範圍內，容量會被限制為頁面大小 × 相聯度，例如 4 KB × 8 路 = 32 KB。標籤寬度也決定了標籤儲存區的大小。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "快取行 64 B、位址 32 位元、容量 32 KB 的直接映射快取，標籤有幾位元？",
+          "a": "偏移為 log₂64 = 6 位元，32 KB ÷ 64 B = 512 個快取行，因此索引為 9 位元，標籤為 32 − 9 − 6 = 17 位元。若改為 8 路，組數減為 64，索引為 6 位元、標籤為 20 位元。"
+        },
+        {
+          "q": "全相聯快取的索引有幾位元？",
+          "a": "0 位元。由於只有 1 組，偏移以外的所有位元都是標籤，且標籤要與每一個快取行比較。在本計算器中將相聯度設為與快取行數相同即可確認。"
+        },
+        {
+          "q": "將失誤率減半與將命中時間縮短 1 週期，哪個效果較大？",
+          "a": "以預設值（命中時間 4 週期、失誤率 5%、失誤懲罰 100 週期）計算，失誤率降為 2.5% 時 AMAT 由 9 降至 6.5 週期，而命中時間改為 3 週期則為 8 週期，因此這裡失誤率的影響較大。若失誤懲罰較小，結論可能相反，請用 AMAT 公式比較。"
+        }
+      ],
+      "practice": "練習記憶體階層題目",
+      "related": "相關術語"
+    },
+    "ko": {
+      "nav": "캐시 주소 분할",
+      "card": "캐시 크기, 라인 크기, 연관도로 태그·인덱스·오프셋 비트 수와 평균 메모리 접근 시간 계산",
+      "title": "캐시 태그·인덱스·오프셋 계산기 (세트 수, AMAT)",
+      "description": "주소 폭, 캐시 크기, 라인 크기, 연관도로 라인 수와 세트 수, 태그·인덱스·오프셋의 비트 폭을 계산하고, 히트 시간, 미스율, 미스 페널티로 평균 메모리 접근 시간(AMAT)을 구합니다.",
+      "h1": "캐시 주소 분할과 평균 메모리 접근 시간",
+      "lead": "캐시 크기, 라인 크기, 연관도를 입력하면 주소가 태그, 인덱스, 오프셋으로 어떻게 나뉘는지를 비트 수와 막대로 보여 줍니다. 히트 시간, 미스율, 미스 페널티로 평균 메모리 접근 시간(AMAT)도 계산하므로 캐시 구성이 성능에 어떤 영향을 주는지 확인할 수 있습니다.",
+      "in_heading": "캐시 구성",
+      "abits": "주소 폭 (비트)",
+      "size": "캐시 크기 (KB)",
+      "line": "라인 크기 (B)",
+      "ways": "연관도 (웨이 수)",
+      "hit": "히트 시간 (사이클)",
+      "miss": "미스율 (%)",
+      "penalty": "미스 페널티 (사이클)",
+      "out_heading": "결과",
+      "bar_heading": "주소 분할 (왼쪽이 상위 비트)",
+      "tag": "태그",
+      "index": "인덱스",
+      "offset": "오프셋",
+      "cycles": "사이클",
+      "warn": "캐시 크기, 라인 크기, 연관도에는 2의 거듭제곱을 입력하고, 크기가 라인 크기 × 웨이 수로 나누어떨어지도록 하십시오. 오프셋 비트와 인덱스 비트의 합이 주소 폭을 넘는 경우에도 분할을 계산할 수 없습니다.",
+      "lines": "라인 수",
+      "sets": "세트 수",
+      "amat": "평균 메모리 접근 시간 (AMAT)",
+      "sections": [
+        {
+          "h": "주소를 세 개의 필드로 나누기",
+          "p": "캐시는 메인 메모리의 데이터를 라인(블록)이라는 단위로 보관합니다. 라인 수는 크기 ÷ 라인 크기이고, 세트 수는 라인 수 ÷ 연관도입니다. 주소의 하위 비트부터 보면, 오프셋은 라인 안의 바이트를 선택하며 log₂(라인 크기) 비트를 차지하고, 인덱스는 세트를 선택하며 log₂(세트 수) 비트를 차지하며, 나머지 상위 비트가 태그가 됩니다. 기본값인 32비트, 32 KB, 64 B, 8웨이에서는 라인이 512개, 세트가 64개이므로 오프셋 6비트, 인덱스 6비트, 태그 32 − 6 − 6 = 20비트가 됩니다."
+        },
+        {
+          "h": "연관도가 바꾸는 것",
+          "p": "크기와 라인 크기가 같을 때 연관도를 두 배로 하면 세트 수가 절반이 되므로 인덱스는 1비트 줄고 태그는 1비트 늘어납니다. 1웨이는 다이렉트 매핑 캐시이고, 웨이 수를 라인 수(기본값에서는 512)와 같게 하면 세트가 하나뿐이고 인덱스가 0비트인 풀 연관 캐시가 됩니다. 연관도를 높이면 주소가 같은 세트에 몰려서 생기는 충돌 미스가 줄어들지만, 더 많은 태그를 병렬로 비교해야 하므로 비교기의 면적, 전력, 히트 시간이 늘어납니다."
+        },
+        {
+          "h": "평균 메모리 접근 시간 (AMAT)",
+          "p": "캐시는 미스율만이 아니라 평균 메모리 접근 시간으로 비교해야 합니다. AMAT = 히트 시간 + 미스율 × 미스 페널티이며, 기본값에서는 4 + 0.05 × 100 = 9사이클입니다. 미스율이 5%에 불과해도 페널티가 크기 때문에 평균은 두 배 넘게 늘어납니다. 캐시를 키우거나 연관도를 높여 미스율을 낮추더라도 히트 시간이 늘어나면 모든 접근이 그 비용을 치르므로 효과가 없습니다. 다단 캐시에서는 L1 미스 페널티를 L2 히트 시간 + L2 미스율 × L2 미스 페널티로 바꾸어 계산합니다."
+        },
+        {
+          "h": "설계에서의 활용과 주의점",
+          "p": "라인을 크게 하면 공간적 지역성을 활용해 미스율이 낮아지지만, 미스 한 번에 옮기는 데이터가 많아져 미스 페널티가 커지고 라인 수가 줄어 충돌이 늘어나므로, 현재 대부분의 CPU는 64 B를 사용합니다. L1 캐시는 TLB가 주소를 변환하는 동안 세트를 읽는 VIPT(가상 인덱스·물리 태그) 방식을 사용하는 경우가 많습니다. 인덱스와 오프셋을 페이지 오프셋 안에 두려면 크기가 페이지 크기 × 연관도로 제한되며, 예를 들어 4 KB × 8웨이 = 32 KB입니다. 태그 폭은 태그 저장 영역의 크기도 결정합니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "라인 크기 64 B, 32비트 주소인 32 KB 다이렉트 매핑 캐시의 태그는 몇 비트입니까?",
+          "a": "오프셋은 log₂64 = 6비트이고, 32 KB ÷ 64 B = 512라인이므로 인덱스는 9비트가 되어 태그는 32 − 9 − 6 = 17비트입니다. 8웨이로 하면 세트가 64개로 줄어 인덱스는 6비트, 태그는 20비트가 됩니다."
+        },
+        {
+          "q": "풀 연관 캐시의 인덱스는 몇 비트입니까?",
+          "a": "0비트입니다. 세트가 하나뿐이므로 오프셋을 제외한 모든 비트가 태그이며, 태그를 모든 라인과 비교합니다. 이 계산기에서 연관도를 라인 수와 같게 설정하면 확인할 수 있습니다."
+        },
+        {
+          "q": "미스율을 절반으로 줄이는 것과 히트 시간을 1사이클 줄이는 것 중 어느 쪽이 더 효과적입니까?",
+          "a": "기본값(히트 시간 4사이클, 미스율 5%, 미스 페널티 100사이클)에서 미스율을 2.5%로 하면 AMAT가 9사이클에서 6.5사이클로 줄고, 히트 시간을 3사이클로 하면 8사이클이 되므로 여기서는 미스율 쪽이 더 중요합니다. 미스 페널티가 작으면 결과가 뒤바뀔 수 있으므로 AMAT 공식으로 비교하십시오."
+        }
+      ],
+      "practice": "메모리 계층 문제 풀어 보기",
+      "related": "관련 용어"
+    },
+    "de": {
+      "nav": "Cache-Adressaufteilung",
+      "card": "Tag-, Index- und Offset-Bits sowie mittlere Speicherzugriffszeit aus Cache-Größe, Zeilengröße und Assoziativität",
+      "title": "Cache-Rechner für Tag, Index und Offset (Sets und AMAT)",
+      "description": "Anzahl der Zeilen und Sets sowie die Bitbreiten von Tag, Index und Offset aus Adressbreite, Cache-Größe, Zeilengröße und Assoziativität berechnen, dazu die mittlere Speicherzugriffszeit (AMAT) aus Trefferzeit, Fehlzugriffsrate und Miss Penalty.",
+      "h1": "Cache-Adressaufteilung und mittlere Speicherzugriffszeit",
+      "lead": "Geben Sie Cache-Größe, Zeilengröße und Assoziativität ein, um zu sehen, wie sich eine Adresse in Tag, Index und Offset aufteilt, dargestellt als Bitanzahl und als Balken. Zusätzlich berechnet der Rechner die mittlere Speicherzugriffszeit (AMAT) aus Trefferzeit, Fehlzugriffsrate und Miss Penalty, sodass Sie sehen, wie sich die Cache-Organisation auf die Leistung auswirkt.",
+      "in_heading": "Cache-Organisation",
+      "abits": "Adressbreite (Bit)",
+      "size": "Cache-Größe (KB)",
+      "line": "Zeilengröße (B)",
+      "ways": "Assoziativität (Wege)",
+      "hit": "Trefferzeit (Zyklen)",
+      "miss": "Fehlzugriffsrate (%)",
+      "penalty": "Miss Penalty (Zyklen)",
+      "out_heading": "Ergebnisse",
+      "bar_heading": "Adressaufteilung (höchstwertige Bits links)",
+      "tag": "Tag",
+      "index": "Index",
+      "offset": "Offset",
+      "cycles": "Zyklen",
+      "warn": "Geben Sie für Cache-Größe, Zeilengröße und Assoziativität Zweierpotenzen ein, wobei die Größe durch Zeilengröße × Wege teilbar sein muss. Die Aufteilung lässt sich außerdem nicht berechnen, wenn Offset- und Index-Bits zusammen die Adressbreite überschreiten.",
+      "lines": "Zeilen",
+      "sets": "Sets",
+      "amat": "Mittlere Speicherzugriffszeit (AMAT)",
+      "sections": [
+        {
+          "h": "Eine Adresse in drei Felder aufteilen",
+          "p": "Ein Cache hält Daten des Hauptspeichers in Einheiten, die Zeilen (Blöcke) heißen. Die Anzahl der Zeilen ist Größe ÷ Zeilengröße, die Anzahl der Sets ist Zeilen ÷ Assoziativität. Vom niederwertigen Ende der Adresse aus wählt der Offset ein Byte innerhalb der Zeile und belegt log₂(Zeilengröße) Bits, der Index wählt ein Set und belegt log₂(Sets) Bits, und die übrigen oberen Bits bilden den Tag. Mit den Standardwerten 32 Bit, 32 KB, 64 B und 8 Wegen gibt es 512 Zeilen und 64 Sets; das ergibt einen 6-Bit-Offset, einen 6-Bit-Index und einen Tag mit 32 − 6 − 6 = 20 Bit."
+        },
+        {
+          "h": "Was die Assoziativität verändert",
+          "p": "Verdoppelt man die Assoziativität bei gleicher Größe und Zeilengröße, halbiert sich die Anzahl der Sets: Der Index verliert ein Bit, der Tag gewinnt eines. Ein Weg entspricht einem direkt abgebildeten Cache (Direct-Mapped); setzt man die Wegzahl gleich der Zeilenzahl (512 bei den Standardwerten), erhält man einen voll assoziativen Cache mit einem einzigen Set und einem 0-Bit-Index. Höhere Assoziativität verringert Konfliktfehlzugriffe (Conflict Misses), die entstehen, wenn sich Adressen im selben Set drängen, doch dann müssen mehr Tags parallel verglichen werden, was Komparatorfläche, Leistung und Trefferzeit kostet."
+        },
+        {
+          "h": "Mittlere Speicherzugriffszeit (AMAT)",
+          "p": "Caches sollte man anhand der mittleren Speicherzugriffszeit vergleichen, nicht allein anhand der Fehlzugriffsrate. Es gilt AMAT = Trefferzeit + Fehlzugriffsrate × Miss Penalty, mit den Standardwerten also 4 + 0,05 × 100 = 9 Zyklen. Schon eine Fehlzugriffsrate von 5 % lässt den Mittelwert auf mehr als das Doppelte steigen, weil die Miss Penalty groß ist. Eine niedrigere Fehlzugriffsrate durch einen größeren oder stärker assoziativen Cache nützt nichts, wenn dabei die Trefferzeit steigt, denn sie fällt bei jedem Zugriff an. Bei mehrstufigen Caches ersetzt man die L1-Miss-Penalty durch L2-Trefferzeit + L2-Fehlzugriffsrate × L2-Miss-Penalty."
+        },
+        {
+          "h": "Einsatz im Design und Fallstricke",
+          "p": "Größere Zeilen nutzen die räumliche Lokalität und senken die Fehlzugriffsrate, doch jeder Fehlzugriff bewegt mehr Daten, was die Miss Penalty erhöht, und weniger Zeilen bedeuten mehr Konflikte; die meisten aktuellen CPUs verwenden 64 B. L1-Caches sind oft virtuell indiziert und physisch getaggt (VIPT): Das Set wird gelesen, während der TLB die Adresse übersetzt. Damit Index und Offset innerhalb des Seitenoffsets bleiben, ist die Größe auf Seitengröße × Assoziativität begrenzt, zum Beispiel 4 KB × 8 Wege = 32 KB. Die Tag-Breite bestimmt außerdem die Größe des Tag-Speichers."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Wie viele Tag-Bits hat ein direkt abgebildeter 32-KB-Cache mit 64-B-Zeilen und 32-Bit-Adressen?",
+          "a": "Der Offset hat log₂64 = 6 Bit, und 32 KB ÷ 64 B = 512 Zeilen ergeben einen 9-Bit-Index, also hat der Tag 32 − 9 − 6 = 17 Bit. Bei 8-fach-Assoziativität sinkt die Zahl der Sets auf 64, was einen 6-Bit-Index und einen 20-Bit-Tag ergibt."
+        },
+        {
+          "q": "Wie viele Index-Bits hat ein voll assoziativer Cache?",
+          "a": "Null. Es gibt nur ein Set, daher gehört jedes Bit außer dem Offset zum Tag, und der Tag wird mit jeder Zeile verglichen. Sie können das hier prüfen, indem Sie die Assoziativität gleich der Zeilenzahl setzen."
+        },
+        {
+          "q": "Was bringt mehr: die Fehlzugriffsrate halbieren oder die Trefferzeit um einen Zyklus verkürzen?",
+          "a": "Mit den Standardwerten (4 Zyklen Trefferzeit, 5 % Fehlzugriffsrate, 100 Zyklen Miss Penalty) senkt eine Fehlzugriffsrate von 2,5 % die AMAT von 9 auf 6,5 Zyklen, während eine Trefferzeit von 3 Zyklen 8 Zyklen ergibt; hier zählt also die Fehlzugriffsrate mehr. Bei kleiner Miss Penalty kann sich das umkehren, vergleichen Sie daher mit der AMAT-Formel."
+        }
+      ],
+      "practice": "Übungsfragen zur Speicherhierarchie",
+      "related": "Verwandte Begriffe"
+    },
+    "nl": {
+      "nav": "Cacheadres opsplitsen",
+      "card": "Tag-, index- en offsetbits en gemiddelde geheugentoegangstijd uit cachegrootte, regelgrootte en associativiteit",
+      "title": "Cache-tag, index en offset berekenen (sets en AMAT)",
+      "description": "Aantal regels en sets en de breedte van tag, index en offset uit adresbreedte, cachegrootte, regelgrootte en associativiteit, plus de AMAT uit hittijd, missrate en miss penalty.",
+      "h1": "Cacheadres opsplitsen en gemiddelde geheugentoegangstijd",
+      "lead": "Voer de cachegrootte, regelgrootte en associativiteit in om te zien hoe een adres wordt opgesplitst in tag, index en offset, weergegeven als aantallen bits en als balk. De calculator berekent ook de gemiddelde geheugentoegangstijd (AMAT) uit hittijd, missrate en miss penalty, zodat je ziet hoe de cache-organisatie de prestaties beïnvloedt.",
+      "in_heading": "Cache-organisatie",
+      "abits": "Adresbreedte (bits)",
+      "size": "Cachegrootte (KB)",
+      "line": "Regelgrootte (B)",
+      "ways": "Associativiteit (ways)",
+      "hit": "Hittijd (cycli)",
+      "miss": "Missrate (%)",
+      "penalty": "Miss penalty (cycli)",
+      "out_heading": "Resultaten",
+      "bar_heading": "Adresopbouw (meest significante bits links)",
+      "tag": "Tag",
+      "index": "Index",
+      "offset": "Offset",
+      "cycles": "cycli",
+      "warn": "Voer machten van twee in voor cachegrootte, regelgrootte en associativiteit, waarbij de grootte deelbaar moet zijn door regelgrootte × ways. De opsplitsing kan ook niet worden berekend als offset- en indexbits samen de adresbreedte overschrijden.",
+      "lines": "Regels",
+      "sets": "Sets",
+      "amat": "Gemiddelde geheugentoegangstijd (AMAT)",
+      "sections": [
+        {
+          "h": "Een adres opsplitsen in drie velden",
+          "p": "Een cache bewaart data uit het hoofdgeheugen in eenheden die regels (blokken) heten. Het aantal regels is grootte ÷ regelgrootte, en het aantal sets is regels ÷ associativiteit. Vanaf de onderkant van het adres kiest de offset een byte binnen de regel en beslaat log₂(regelgrootte) bits, kiest de index een set en beslaat log₂(sets) bits, en vormen de resterende hogere bits de tag. Met de standaardwaarden 32 bits, 32 KB, 64 B en 8 ways zijn er 512 regels en 64 sets, wat een offset van 6 bits, een index van 6 bits en een tag van 32 − 6 − 6 = 20 bits geeft."
+        },
+        {
+          "h": "Wat associativiteit verandert",
+          "p": "Een verdubbeling van de associativiteit bij gelijke grootte en regelgrootte halveert het aantal sets, zodat de index één bit verliest en de tag er één bij krijgt. Eén way is een direct-mapped cache, en het aantal ways gelijk maken aan het aantal regels (512 bij de standaardwaarden) geeft een fully associative cache met één set en een index van 0 bits. Hogere associativiteit vermindert conflictmisses, die ontstaan doordat adressen zich in dezelfde set opeenhopen, maar er moeten meer tags parallel worden vergeleken, wat comparatoroppervlak, vermogen en hittijd kost."
+        },
+        {
+          "h": "Gemiddelde geheugentoegangstijd (AMAT)",
+          "p": "Caches vergelijk je op gemiddelde geheugentoegangstijd, niet alleen op missrate. AMAT = hittijd + missrate × miss penalty, wat met de standaardwaarden 4 + 0,05 × 100 = 9 cycli is. Zelfs een missrate van 5% maakt het gemiddelde ruim twee keer zo groot, omdat de penalty groot is. Een lagere missrate dankzij een grotere of meer associatieve cache helpt niet als de hittijd toeneemt, want die betaalt elke toegang. Bij caches met meerdere niveaus vervang je de L1-miss penalty door L2-hittijd + L2-missrate × L2-miss penalty."
+        },
+        {
+          "h": "Gebruik in ontwerpen en valkuilen",
+          "p": "Grotere regels benutten ruimtelijke lokaliteit en verlagen de missrate, maar elke miss verplaatst meer data, wat de miss penalty verhoogt, en minder regels betekenen meer conflicten; de meeste huidige CPU's gebruiken 64 B. L1-caches gebruiken vaak een virtually indexed, physically tagged (VIPT) ontwerp dat de set uitleest terwijl de TLB het adres vertaalt. Als index en offset binnen de pagina-offset moeten blijven, is de grootte beperkt tot paginagrootte × associativiteit, bijvoorbeeld 4 KB × 8 ways = 32 KB. De tagbreedte bepaalt ook de grootte van de tagopslag."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Hoeveel tagbits heeft een direct-mapped cache van 32 KB met regels van 64 B en 32-bits adressen?",
+          "a": "De offset is log₂64 = 6 bits, en 32 KB ÷ 64 B = 512 regels geeft een index van 9 bits, dus de tag is 32 − 9 − 6 = 17 bits. Maak je de cache 8-way, dan daalt het aantal sets naar 64, met een index van 6 bits en een tag van 20 bits."
+        },
+        {
+          "q": "Hoeveel indexbits heeft een fully associative cache?",
+          "a": "Nul. Er is maar één set, dus elk bit behalve de offset is tag, en de tag wordt met elke regel vergeleken. Je kunt dit hier controleren door de associativiteit gelijk te maken aan het aantal regels."
+        },
+        {
+          "q": "Wat helpt meer: de missrate halveren of de hittijd met één cyclus verkorten?",
+          "a": "Met de standaardwaarden (hittijd 4 cycli, missrate 5%, miss penalty 100 cycli) verlaagt een missrate van 2,5% de AMAT van 9 naar 6,5 cycli, terwijl een hittijd van 3 cycli 8 cycli geeft, dus hier weegt de missrate zwaarder. Bij een kleine miss penalty kan het antwoord omslaan, dus vergelijk met de AMAT-formule."
+        }
+      ],
+      "practice": "Oefenvragen over de geheugenhiërarchie",
+      "related": "Verwante begrippen"
+    },
+    "fr": {
+      "nav": "Découpage d’adresse du cache",
+      "card": "Bits d’étiquette, d’index et d’offset et temps d’accès mémoire moyen d’après la taille du cache, la taille de ligne et l’associativité",
+      "title": "Calcul étiquette (tag), index et offset d’un cache (ensembles et AMAT)",
+      "description": "Calculez le nombre de lignes et d’ensembles et la largeur en bits de l’étiquette, de l’index et de l’offset d’après l’adresse, la taille du cache, la taille de ligne et l’associativité, ainsi que le temps d’accès mémoire moyen (AMAT).",
+      "h1": "Découpage d’adresse d’un cache et temps d’accès mémoire moyen",
+      "lead": "Saisissez la taille du cache, la taille de ligne et l’associativité pour voir comment une adresse se découpe en étiquette, index et offset, sous forme de nombres de bits et d’une barre. Le calculateur donne aussi le temps d’accès mémoire moyen (AMAT) à partir du temps de succès, du taux de défauts et de la pénalité de défaut, pour voir l’effet de l’organisation du cache sur les performances.",
+      "in_heading": "Organisation du cache",
+      "abits": "Largeur d’adresse (bits)",
+      "size": "Taille du cache (KB)",
+      "line": "Taille de ligne (B)",
+      "ways": "Associativité (voies)",
+      "hit": "Temps de succès (cycles)",
+      "miss": "Taux de défauts (%)",
+      "penalty": "Pénalité de défaut (cycles)",
+      "out_heading": "Résultats",
+      "bar_heading": "Découpage de l’adresse (bits de poids fort à gauche)",
+      "tag": "Étiquette",
+      "index": "Index",
+      "offset": "Offset",
+      "cycles": "cycles",
+      "warn": "Saisissez des puissances de deux pour la taille du cache, la taille de ligne et l’associativité, avec une taille divisible par taille de ligne × voies. Le découpage ne peut pas non plus être calculé lorsque les bits d’offset et d’index dépassent ensemble la largeur d’adresse.",
+      "lines": "Lignes",
+      "sets": "Ensembles",
+      "amat": "Temps d’accès mémoire moyen (AMAT)",
+      "sections": [
+        {
+          "h": "Découper une adresse en trois champs",
+          "p": "Un cache conserve les données de la mémoire principale par unités appelées lignes (blocs). Le nombre de lignes vaut taille ÷ taille de ligne, et le nombre d’ensembles vaut lignes ÷ associativité. En partant des bits de poids faible de l’adresse, l’offset sélectionne un octet dans la ligne et occupe log₂(taille de ligne) bits, l’index sélectionne un ensemble et occupe log₂(ensembles) bits, et les bits de poids fort restants forment l’étiquette (tag). Avec les valeurs par défaut de 32 bits, 32 KB, 64 B et 8 voies, on obtient 512 lignes et 64 ensembles, soit un offset de 6 bits, un index de 6 bits et une étiquette de 32 − 6 − 6 = 20 bits."
+        },
+        {
+          "h": "Ce que change l’associativité",
+          "p": "Doubler l’associativité à taille et taille de ligne égales divise par deux le nombre d’ensembles : l’index perd un bit et l’étiquette en gagne un. Une seule voie correspond à un cache à correspondance directe (direct-mapped), et un nombre de voies égal au nombre de lignes (512 avec les valeurs par défaut) donne un cache entièrement associatif, avec un seul ensemble et un index de 0 bit. Une associativité plus élevée réduit les défauts de conflit, dus à des adresses qui se concentrent dans le même ensemble, mais davantage d’étiquettes doivent être comparées en parallèle, ce qui coûte en surface de comparateurs, en consommation et en temps de succès."
+        },
+        {
+          "h": "Temps d’accès mémoire moyen (AMAT)",
+          "p": "Les caches doivent se comparer sur le temps d’accès mémoire moyen, et non sur le seul taux de défauts. AMAT = temps de succès + taux de défauts × pénalité de défaut, soit 4 + 0,05 × 100 = 9 cycles avec les valeurs par défaut. Même un taux de défauts de 5 % fait plus que doubler la moyenne, car la pénalité est importante. Abaisser le taux de défauts avec un cache plus grand ou plus associatif ne sert à rien si le temps de succès augmente, puisque chaque accès le paie. Pour des caches à plusieurs niveaux, remplacez la pénalité de défaut de L1 par temps de succès L2 + taux de défauts L2 × pénalité de défaut L2."
+        },
+        {
+          "h": "Usage en conception et pièges",
+          "p": "Des lignes plus longues exploitent la localité spatiale et réduisent le taux de défauts, mais chaque défaut transfère davantage de données, ce qui augmente la pénalité de défaut, et un nombre de lignes plus faible accroît les conflits ; la plupart des CPU actuels utilisent 64 B. Les caches L1 adoptent souvent une organisation à index virtuel et étiquette physique (VIPT), qui lit l’ensemble pendant que le TLB traduit l’adresse. Maintenir l’index et l’offset à l’intérieur de l’offset de page limite la taille à taille de page × associativité, par exemple 4 KB × 8 voies = 32 KB. La largeur de l’étiquette détermine aussi la taille de la mémoire des étiquettes."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Combien de bits d’étiquette compte un cache à correspondance directe de 32 KB avec des lignes de 64 B et des adresses de 32 bits ?",
+          "a": "L’offset fait log₂64 = 6 bits, et 32 KB ÷ 64 B = 512 lignes donnent un index de 9 bits ; l’étiquette fait donc 32 − 9 − 6 = 17 bits. En passant à 8 voies, le nombre d’ensembles tombe à 64, ce qui donne un index de 6 bits et une étiquette de 20 bits."
+        },
+        {
+          "q": "Combien de bits d’index compte un cache entièrement associatif ?",
+          "a": "Zéro. Il n’y a qu’un seul ensemble : tous les bits sauf l’offset forment l’étiquette, qui est comparée à celle de chaque ligne. Vous pouvez le vérifier ici en réglant l’associativité sur le nombre de lignes."
+        },
+        {
+          "q": "Qu’est-ce qui aide le plus : diviser le taux de défauts par deux ou réduire le temps de succès d’un cycle ?",
+          "a": "Avec les valeurs par défaut (temps de succès de 4 cycles, taux de défauts de 5 %, pénalité de défaut de 100 cycles), un taux de défauts de 2,5 % abaisse l’AMAT de 9 à 6,5 cycles, tandis qu’un temps de succès de 3 cycles donne 8 cycles : ici, le taux de défauts compte davantage. Avec une faible pénalité de défaut, la réponse peut s’inverser ; comparez donc à l’aide de la formule de l’AMAT."
+        }
+      ],
+      "practice": "S’entraîner sur la hiérarchie mémoire",
+      "related": "Termes associés"
     }
   }
 }
