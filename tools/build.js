@@ -190,12 +190,29 @@ function buildLang(L) {
   const catCards = list => '<ul class="cat-grid">' + list.map(c => `
   <li><a class="cat-card" href="${home}c/${c.id}/">
     <span class="cat-name">${esc(c.name)}</span>
-    <span class="cat-meta"><span>${t('n_questions', { n: qs[c.id].length })}</span><span>${t('rate_label')} <b data-rate="${c.id}">—</b></span></span>
+    <span class="cat-meta"><span>${t('n_questions', { n: qs[c.id].length })}</span><span class="cat-rate" hidden>${t('rate_label')} <b data-rate="${c.id}"></b></span></span>
+    <span class="meter" hidden><span class="meter-bar" data-progress="${c.id}:${qs[c.id].length}" style="width:0%"></span></span>
   </a></li>`).join('') + '</ul>';
   const modeCards = (list, cat) => '<div class="mode-grid">' + list.map((m, i) => `
   <a class="mode-card${i === 0 ? ' primary' : ''}" href="${quizUrl(m, cat)}" rel="nofollow">
     <strong>${esc(modeText(m, 'label'))}</strong><span>${esc(modeText(m, 'desc'))}</span>
   </a>`).join('') + '</div>';
+  // トップの「どこから始めるか」。初回は3つの入口(基礎から・10問・分野を選ぶ)、
+  // 学習履歴があれば progress.js が「続き・今日の復習・苦手問題」に差し替える(保存できない環境では初回の表示のまま)
+  const introCourse = courses.find(co => co.id === 'intro');
+  const startCard = (href, title, desc, extra = '') => `<a class="start-card" href="${href}"${extra}><strong>${title}</strong><span>${desc}</span></a>`;
+  const startPanel = `<section class="start">
+  <div class="start-grid" data-start="new">
+    ${introCourse ? startCard(`${home}course/intro/`, esc(t('start_basics')), esc(t('start_basics_desc', { course: loc(introCourse.name, code), n: introCourse.steps.length }))) : ''}
+    ${startCard(`${home}quiz/?mode=random`, esc(t('start_try')), esc(t('start_try_desc')), ' rel="nofollow"')}
+    ${startCard('#topics', esc(t('start_pick')), esc(t('start_pick_desc', { n: live.length })))}
+  </div>
+  <div class="start-grid" data-start="back" hidden data-cats="${esc(JSON.stringify(Object.fromEntries(live.map(c => [c.id, c.name]))))}">
+    ${startCard(`${home}quiz/?mode=category&amp;n=10`, esc(t('start_continue')), esc(t('start_continue_desc')), ' rel="nofollow" data-continue')}
+    ${startCard(`${home}quiz/?mode=review`, esc(t('start_review')), esc(t('start_review_desc')), ' rel="nofollow" data-due hidden')}
+    ${startCard(`${home}quiz/?mode=weak`, esc(t('start_weak')), esc(t('start_weak_desc')), ' rel="nofollow" data-weak hidden')}
+  </div>
+</section>`;
   // 先頭の #topics はヘッダーの Topics からのジャンプ先
   const categoryList = '<div id="topics"></div>' + exams.map(e => `
 <section class="exam">
@@ -370,6 +387,9 @@ function buildLang(L) {
     contactFormUrl: esc(loc(config.contactFormUrl, code)),
     categoryList, glossaryList, courseList, compareIndex, figureGallery, figureLd,
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
+    // トップ下部の「ほかの練習方法」(ランダム10問は上の入口にあるので除く)
+    moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
+    startPanel,
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: live.length,
     // プライバシーポリシーの「広告・アクセス解析」: 使っているサービスの説明だけを出す

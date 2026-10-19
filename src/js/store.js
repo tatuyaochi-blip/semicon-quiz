@@ -69,6 +69,17 @@ export function isDue(id) {
 }
 
 export const dueCount = () => Object.keys(data.q).filter(isDue).length;
+export const weakCount = () => Object.keys(data.q).filter(isWeak).length;
+
+// 解いた問題があるか(トップの「続きから」の表示の判定)
+export const hasRecords = () => Object.keys(data.q).length > 0;
+
+// 最後に解いた問題の分野
+export function lastCategory() {
+  let last = null;
+  for (const r of Object.values(data.q)) if (r.c && (!last || (r.at ?? 0) > (last.at ?? 0))) last = r;
+  return last?.c ?? null;
+}
 
 // cat を省略すると全分野の集計
 export function stats(cat) {
