@@ -196,7 +196,8 @@ function buildLang(L) {
   <a class="mode-card${i === 0 ? ' primary' : ''}" href="${quizUrl(m, cat)}" rel="nofollow">
     <strong>${esc(modeText(m, 'label'))}</strong><span>${esc(modeText(m, 'desc'))}</span>
   </a>`).join('') + '</div>';
-  const categoryList = exams.map(e => `
+  // 先頭の #topics はヘッダーの Topics からのジャンプ先
+  const categoryList = '<div id="topics"></div>' + exams.map(e => `
 <section class="exam">
   <h2>${esc(t('exam_heading', { exam: exName(e) }))}</h2>
   ${e.groups.map(g => ({ g, list: live.filter(c => c.exam === e.id && c.group === g.id) })).filter(x => x.list.length)
@@ -407,9 +408,15 @@ function buildLang(L) {
       : alt[x.code] != null
         ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`
         : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
-    // ヘッダーのナビ(いまいるページには aria-current を付ける)
-    const headerNav = [['', S.nav_home], ['stats/', S.nav_stats], ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['contact/', S.nav_contact]]
-      .map(([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('');
+    // ヘッダーのナビ(いまいるページには aria-current を付ける)。
+    // PC: Home / Topics / Resources(用語集・比較・図解をまとめたメニュー) / Progress。スマートフォン: 同じリンクを Menu に縦に並べる
+    const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
+    const resources = [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures]];
+    const inResources = resources.some(([sub]) => p === L.path + sub);
+    const headerNav = [navLink(['', S.nav_home]), navLink(['#topics', S.nav_topics]),
+      `<details class="menu"><summary${inResources ? ' aria-current="page"' : ''}>${esc(S.nav_resources)}</summary><div class="menu-panel">${resources.map(navLink).join('')}</div></details>`,
+      navLink(['stats/', S.nav_stats])].join('');
+    const navMenu = [['', S.nav_home], ['#topics', S.nav_topics], ['stats/', S.nav_stats], ...resources].map(navLink).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
@@ -421,7 +428,9 @@ function buildLang(L) {
       description: esc(description),
       head,
       langLinks,
+      langCurrent: esc(L.label),
       headerNav,
+      navMenu,
       langBanner: bannerHtml,
       htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : ads && config.adsenseClient && config.adsenseSlots ? ` data-adsense-client="${esc(config.adsenseClient)}" data-adsense-slots="${esc(JSON.stringify(config.adsenseSlots))}"` : '',
       content,
