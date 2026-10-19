@@ -16,7 +16,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"E/S mappées en mémoire","item":"https://semiconroom.com/fr/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"E/S mappées en mémoire","description":"Méthode qui attribue aux registres des périphériques des adresses précises dans le même espace d'adressage que la mémoire, pour les manipuler avec des instructions de lecture et d'écriture ordinaires. Cette zone est configurée comme non cachable.","url":"https://semiconroom.com/fr/term/memory-mapped-i-o/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"E/S mappées en mémoire","item":"https://semiconroom.com/fr/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"E/S mappées en mémoire","description":"Méthode qui attribue aux registres des périphériques des adresses précises dans le même espace d'adressage que la mémoire, pour les manipuler avec des instructions de lecture et d'écriture ordinaires. Cette zone est configurée comme non cachable.","url":"https://semiconroom.com/fr/term/memory-mapped-i-o/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelle différence entre E/S mappées en mémoire et E/S par ports ?","acceptedAnswer":{"@type":"Answer","text":"Les E/S mappées en mémoire placent les registres des périphériques dans l'espace d'adressage mémoire normal et y accèdent par des chargements et rangements ordinaires, tandis que les E/S par ports utilisent un espace d'adressage séparé et des instructions spéciales comme IN et OUT sur x86."}},{"@type":"Question","name":"Pourquoi les registres mappés en mémoire doivent-ils être déclarés volatile ?","acceptedAnswer":{"@type":"Answer","text":"Le périphérique peut modifier les valeurs des registres indépendamment du programme ; volatile oblige donc le compilateur à effectuer chaque lecture et chaque écriture au lieu de garder les valeurs dans des registres ou de supprimer des accès apparemment redondants."}},{"@type":"Question","name":"Pourquoi l'espace d'E/S mappées en mémoire n'est-il pas mis en cache ?","acceptedAnswer":{"@type":"Answer","text":"Un cache renverrait des valeurs périmées au lieu de l'état courant du périphérique et pourrait retarder ou fusionner des écritures ; les régions de périphériques sont donc mappées avec des attributs non cachés ou de périphérique."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Domaine: <a href="/fr/c/os-hardware/">Système d&#39;exploitation et matériel</a></p>
 </article>
+<section class="term-about">
+  <h2>Fonctionnement</h2>
+  <p>Le <a class="term-link" href="/fr/term/decoder/">décodeur</a> d&#39;adresses du processeur dirige certaines plages d&#39;adresses non pas vers la RAM mais vers des périphériques. Le registre de contrôle d&#39;un temporisateur, le registre de données d&#39;un <a class="term-link" href="/fr/term/uart/">UART</a> ou un port <a class="term-link" href="/fr/term/gpio/">GPIO</a> apparaissent chacun à une adresse fixe, et les instructions ordinaires de chargement et de rangement deviennent des transactions de lecture et d&#39;écriture vers ce périphérique. Contrairement à la mémoire, ces accès peuvent avoir des effets de bord : lire un registre d&#39;état ou de données peut effacer un indicateur ou dépiler une FIFO, écrire un 1 peut acquitter une <a class="term-link" href="/fr/term/interrupt/">interruption</a>, et la valeur peut changer à tout moment car le matériel la met à jour indépendamment du programme.</p>
+</section>
+<section class="term-about">
+  <h2>E/S mappées en mémoire et E/S par ports</h2>
+  <p>Les E/S par ports (port-mapped I/O) donnent aux périphériques un espace d&#39;adressage séparé, accessible uniquement par des instructions dédiées, comme IN et OUT sur x86. Les E/S mappées en mémoire ne nécessitent aucune instruction spéciale : tous les modes d&#39;adressage, pointeurs et structures C peuvent servir à atteindre les registres, ce qui garde le jeu d&#39;instructions simple. C&#39;est la norme sur les microcontrôleurs ARM et RISC-V, et même sur les systèmes x86, les périphériques <a class="term-link" href="/fr/term/pci-express/">PCI Express</a> exposent la plupart de leurs registres <a class="term-link" href="/fr/term/interconnect-via/">via</a> des régions mappées en mémoire, les E/S par ports historiques subsistant surtout pour la compatibilité.</p>
+</section>
+<section class="term-about">
+  <h2>Cache, volatile et ordonnancement</h2>
+  <p>Les régions de périphériques doivent être configurées comme non cachées ; sinon, le CPU pourrait relire indéfiniment une copie en cache périmée sans jamais voir le périphérique changer, ou retenir des écritures dans le cache. En C, les pointeurs de registres sont déclarés volatile afin que le compilateur effectue chaque accès exactement comme écrit, au lieu de lire une seule fois et de boucler indéfiniment ou de supprimer des écritures répétées. volatile ne contrôle toutefois pas le réordonnancement matériel ni la mise en tampon des écritures. Les processeurs et les bus peuvent différer les écritures (posted writes) ; les pilotes utilisent donc des barrières mémoire ou des attributs de mémoire de périphérique, et parfois une relecture, pour garantir l&#39;ordre et l&#39;achèvement.</p>
+</section>
+<section class="term-about">
+  <h2>Le MMIO dans les systèmes d&#39;exploitation</h2>
+  <p>Sur les systèmes à <a class="term-link" href="/fr/term/virtual-memory/">mémoire virtuelle</a>, les adresses physiques des registres d&#39;un périphérique sont mappées dans l&#39;espace d&#39;adressage virtuel du noyau avec des attributs non cachés avant qu&#39;un pilote puisse les utiliser, et parfois dans un processus utilisateur pour les pilotes en espace utilisateur. Le MMIO sert généralement au contrôle et à l&#39;état : configurer un périphérique, lancer des opérations et acquitter des interruptions. Les gros volumes de données transitent habituellement par <a class="term-link" href="/fr/term/dma/">DMA (accès direct à la mémoire)</a>, où le périphérique lit et écrit lui-même la mémoire principale, plutôt que par une copie effectuée par le CPU à travers les registres.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Quelle différence entre E/S mappées en mémoire et E/S par ports ?</h3>
+  <p>Les E/S mappées en mémoire placent les registres des périphériques dans l&#39;espace d&#39;adressage mémoire normal et y accèdent par des chargements et rangements ordinaires, tandis que les E/S par ports utilisent un espace d&#39;adressage séparé et des instructions spéciales comme IN et OUT sur x86.</p>
+  <h3>Pourquoi les registres mappés en mémoire doivent-ils être déclarés volatile ?</h3>
+  <p>Le périphérique peut modifier les valeurs des registres indépendamment du programme ; volatile oblige donc le compilateur à effectuer chaque lecture et chaque écriture au lieu de garder les valeurs dans des registres ou de supprimer des accès apparemment redondants.</p>
+  <h3>Pourquoi l&#39;espace d&#39;E/S mappées en mémoire n&#39;est-il pas mis en cache ?</h3>
+  <p>Un cache renverrait des valeurs périmées au lieu de l&#39;état courant du périphérique et pourrait retarder ou fusionner des écritures ; les régions de périphériques sont donc mappées avec des attributs non cachés ou de périphérique.</p>
+</section>
 
 
 

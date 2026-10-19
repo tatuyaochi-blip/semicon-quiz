@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"強度削減","item":"https://semiconroom.com/zh-hant/term/strength-reduction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"強度削減","description":"將乘法這類較重的運算，替換成加法或位移這類較輕的運算的最佳化。例如不在迴圈中每次計算 i * 4，而是每次加4。","url":"https://semiconroom.com/zh-hant/term/strength-reduction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"強度削減","item":"https://semiconroom.com/zh-hant/term/strength-reduction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"強度削減","description":"將乘法這類較重的運算，替換成加法或位移這類較輕的運算的最佳化。例如不在迴圈中每次計算 i * 4，而是每次加4。","url":"https://semiconroom.com/zh-hant/term/strength-reduction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為了速度，應該把 x * 2 寫成 x 左移 1 位嗎？","acceptedAnswer":{"@type":"Answer","text":"一般不需要。編譯器在有利時會自動套用這種強度削減，寫成乘法可保持程式碼清楚。在除法的情況下，對有號數手寫位移甚至可能改變負數的結果。"}},{"@type":"Question","name":"什麼是歸納變數？","acceptedAnswer":{"@type":"Answer","text":"每次迴圈迭代時值都改變固定量的變數，例如迴圈計數器，或以固定步幅前進的指標。強度削減的對象就是歸納變數之線性函數的運算式。"}},{"@type":"Question","name":"強度削減會改變程式的結果嗎？","acceptedAnswer":{"@type":"Answer","text":"對於遵循語言溢位規則的整數運算，結果完全相同。對於浮點數，除非啟用寬鬆的數學選項，編譯器只在結果精確時才套用，例如乘以 2 的冪次。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,9 +78,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
+<section class="term-about">
+  <h2>迴圈強度削減</h2>
+  <p>典型的例子是隨迴圈計數器線性成長的運算式，例如 4 位元組元素陣列的位元組偏移 i * 4。編譯器辨識出 i 是歸納變數（induction variable），即每次迭代改變固定量的變數，並引入一個從 0 開始、每輪加 4 的新變數。乘法便從迴圈主體中消失。原本的計數器此後往往只剩結束條件判斷需要用到，而歸納變數消除會改以新變數重寫該判斷，讓舊變數得以移除。</p>
+</section>
+<section class="term-about">
+  <h2>昂貴運算的局部替換</h2>
+  <p>強度削減也適用於帶有常數運算元的單一運算。乘以 2 的冪次變成左移，x * 2 可以變成 x + x。無號數除以 2 的冪次變成邏輯右移，無號數取餘數則變成與遮罩的位元 AND。有號數除法需要少許修正，因為 C 語言的除法朝零捨入，而算術右移則朝負無限大捨入。除以其他常數時，常改為乘以預先計算好的定點倒數再位移。</p>
+</section>
+<section class="term-about">
+  <h2>強度削減與相關最佳化的比較</h2>
+  <p>強度削減維持相同的計算次數，但讓每次計算更便宜。<a class="term-link" href="/zh-hant/term/common-subexpression-elimination/">共同子運算式消除</a>則不同：它把同一運算式只計算一次存入暫存值，以去除重複求值。<a class="term-link" href="/zh-hant/term/loop-unrolling/">迴圈展開</a>又是另一回事：它複製迴圈主體以減少每次迭代的開銷並揭露平行性。實務上它們會交互作用；例如在展開之後，多個經強度削減的位址計算可以共用一個基底指標，並把不同的常數偏移併入載入指令中。</p>
+</section>
+<section class="term-about">
+  <h2>何時值得做</h2>
+  <p>在現代處理器上，整數乘法是管線化的，通常只需幾個週期，因此在迴圈中替換它的收益已不如以往，不過仍可縮短相依鏈並釋出乘法器單元。整數除法仍然慢得多，常需數十個週期，因此把除以常數改為乘法加位移仍然很有價值。浮點數則需要小心：以乘 0.5 取代除以 2.0 會得到完全相同的結果，但把除以一般常數改為乘以其捨入後的倒數，可能改變最後一個位元。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為了速度，應該把 x * 2 寫成 x 左移 1 位嗎？</h3>
+  <p>一般不需要。編譯器在有利時會自動套用這種強度削減，寫成乘法可保持程式碼清楚。在除法的情況下，對有號數手寫位移甚至可能改變負數的結果。</p>
+  <h3>什麼是歸納變數？</h3>
+  <p>每次迴圈迭代時值都改變固定量的變數，例如迴圈計數器，或以固定步幅前進的指標。強度削減的對象就是歸納變數之線性函數的運算式。</p>
+  <h3>強度削減會改變程式的結果嗎？</h3>
+  <p>對於遵循語言溢位規則的整數運算，結果完全相同。對於浮點數，除非啟用寬鬆的數學選項，編譯器只在結果精確時才套用，例如乘以 2 的冪次。</p>
+</section>
 <section>
   <h2>解析中的「強度削減」</h2>
   <ul class="term-quotes"><li><p>強度削減是將較重的運算替換為較輕的運算的最佳化。</p><a href="/zh-hant/q/compiler/compiler-017/">對上方迴圈中的索引計算 i * 4 進行強度削減時，下列轉換何者正確？</a></li><li><p>將乘法替換為較輕的運算，則是稱為強度削減的另一種最佳化。</p><a href="/zh-hant/q/compiler/compiler-012/">對上方程式碼進行共同子運算式消除時，下列說明何者正確？</a></li></ul>

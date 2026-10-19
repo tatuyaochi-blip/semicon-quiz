@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"脈動陣列","item":"https://semiconroom.com/zh-hant/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"脈動陣列","description":"將許多乘加運算單元排成格狀，讓資料依序流向相鄰的運算單元，同時計算矩陣乘積的架構。用於 AI 加速器。","url":"https://semiconroom.com/zh-hant/term/systolic-array/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"脈動陣列","item":"https://semiconroom.com/zh-hant/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"脈動陣列","description":"將許多乘加運算單元排成格狀，讓資料依序流向相鄰的運算單元，同時計算矩陣乘積的架構。用於 AI 加速器。","url":"https://semiconroom.com/zh-hant/term/systolic-array/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"脈動陣列為什麼叫「systolic」？","acceptedAnswer":{"@type":"Answer","text":"資料以規律的節奏在格子中脈動前進，每個時脈前進一步，就像心臟以收縮（systole）搏動推送血液一樣。"}},{"@type":"Question","name":"Google TPU 有使用脈動陣列嗎？","acceptedAnswer":{"@type":"Answer","text":"有。它的矩陣單元是由乘加單元組成的大型脈動陣列，例如 128 × 128，用來計算神經網路的矩陣乘積。"}},{"@type":"Question","name":"什麼是權重固定（weight-stationary）資料流？","acceptedAnswer":{"@type":"Answer","text":"每個處理單元固定保存一個權重，輸入激活值從旁流過，部分和則依序傳遞下去。這能將權重的重複讀取降到最低，適合神經網路推論。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/cpu/">CPU與架構</a></p>
 </article>
-
+<section class="term-about">
+  <h2>資料如何在格子中流動</h2>
+  <p>脈動陣列是由處理單元組成的二維格子，每個單元都是只與相鄰單元溝通的乘加（MAC）單元。在權重固定（weight-stationary）的配置中，每個單元預先載入一個權重；輸入激活值從左邊緣進入，每個時脈向右傳遞一個單元，部分和則向下流動，每個單元加上自己的乘積。完成的結果從底部邊緣輸出。各列的輸入依序錯開一個週期，使相互對應的數值能在正確的時間於正確的單元相遇。</p>
+</section>
+<section class="term-about">
+  <h2>為何效率高</h2>
+  <p>從記憶體取出的每個數值，會被一整列或一整行的單元重複使用，而不是每次運算各讀取一次。128 × 128 的陣列每個時脈執行 16,384 次 MAC，卻只需從邊緣供給資料，因此每位元組記憶體流量所完成的工作量非常高。從晶片外記憶體搬移資料所耗的能量遠高於一次乘加，因此這種重複使用不只節省頻寬，也節省功耗。由於每條導線都只連接相鄰單元，不需要長距離的廣播匯流排，因此可以高密度佈局並以高時脈運作。</p>
+</section>
+<section class="term-about">
+  <h2>資料流方式與限制</h2>
+  <p>除了權重固定的設計之外，輸出固定（output-stationary）的陣列讓每個部分和留在原處、兩個運算元則流經陣列，另外也有讓輸入固定的變體。每一種版本都有與陣列大小成正比的填充（fill）與排空（drain）延遲，而且當矩陣維度較小或與陣列不吻合時，利用率會下降，使部分單元閒置。卷積通常會改寫成矩陣乘法以便套用。稀疏或不規則的運算則不適合，因為僵固且由時脈驅動的資料流難以跳過不必要的工作。</p>
+</section>
+<section class="term-about">
+  <h2>起源與應用場合</h2>
+  <p>這個構想可追溯到 1970 年代後期，當時孔祥重（H. T. Kung）等人提出以簡單單元構成的規則陣列用於超大型積體電路（VLSI），並以心臟有節律的收縮搏動為其命名。它最大的應用在於以矩陣乘法為主的神經網路加速器；例如 Google 的 TPU 就使用 128 × 128 等大型陣列。<a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 則以不同方式達成類似目標，使用各自計算小矩陣區塊的<a class="term-link" href="/zh-hant/term/tensor-core/">張量核心（tensor core）</a>，並由暫存器與<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>更彈性地處理資料重複使用。</p>
+</section>
 <section>
   <h2>練習脈動陣列的題目</h2>
   <article class="q-mini" data-qid="ai-stack-038" data-cat="ai-stack" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 因為資料依序傳給相鄰的運算單元而重複使用，從記憶體讀取的次數少，能讓大量運算單元同時運作</p><p class="explanation">在<a class="term-link" href="/zh-hant/term/systolic-array/">脈動陣列</a>中，資料如脈搏般以固定節奏在排成格狀的乘加運算單元之間流動。讀取一次的值會依序傳給相鄰的運算單元，用於數十次的運算，因此相對於從記憶體讀取的量，能進行非常多的計算。佈線也只需相鄰之間的短線，所以能高密度地排列大量運算單元。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>脈動陣列為什麼叫「systolic」？</h3>
+  <p>資料以規律的節奏在格子中脈動前進，每個時脈前進一步，就像心臟以收縮（systole）搏動推送血液一樣。</p>
+  <h3>Google TPU 有使用脈動陣列嗎？</h3>
+  <p>有。它的矩陣單元是由乘加單元組成的大型脈動陣列，例如 128 × 128，用來計算神經網路的矩陣乘積。</p>
+  <h3>什麼是權重固定（weight-stationary）資料流？</h3>
+  <p>每個處理單元固定保存一個權重，輸入激活值從旁流過，部分和則依序傳遞下去。這能將權重的重複讀取降到最低，適合神經網路推論。</p>
+</section>
 <section>
   <h2>解析中的「脈動陣列」</h2>
   <ul class="term-quotes"><li><p>在脈動陣列中，資料如脈搏般以固定節奏在排成格狀的乘加運算單元之間流動。</p><a href="/zh-hant/q/ai-stack/ai-stack-038/">AI加速器所使用的脈動陣列（systolic array）能有效率地計算矩陣相乘，其主要原因為下列何者？</a></li><li><p>脈動陣列是將乘加運算單元（MAC）以二維方式排列，並讓資料規律地傳送到相鄰運算單元的同時進行計算的架構，其名稱源自心臟收縮（systole）將血液送出的比喻。</p><a href="/zh-hant/q/cpu/cpu-049/">在 AI 用加速器等中，將多個乘加運算單元排列成格狀，讓資料依序流向相鄰運算單元的同時計算矩陣乘積的架構是下列何者？</a></li></ul>

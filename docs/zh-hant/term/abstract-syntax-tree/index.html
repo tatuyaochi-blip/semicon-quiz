@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"抽象語法樹(AST)","item":"https://semiconroom.com/zh-hant/term/abstract-syntax-tree/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"抽象語法樹(AST)","description":"以運算與敘述作為節點的樹來表示程式的結構。省略括號或分隔符號等沒有意義的資訊，運算子的優先順序以樹的形狀表示。","url":"https://semiconroom.com/zh-hant/term/abstract-syntax-tree/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"抽象語法樹(AST)","item":"https://semiconroom.com/zh-hant/term/abstract-syntax-tree/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"抽象語法樹(AST)","description":"以運算與敘述作為節點的樹來表示程式的結構。省略括號或分隔符號等沒有意義的資訊，運算子的優先順序以樹的形狀表示。","url":"https://semiconroom.com/zh-hant/term/abstract-syntax-tree/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"剖析樹和抽象語法樹有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"剖析樹記錄每一條文法規則與每個語彙單元（包括標點符號），AST 則只保留有意義的構造。剖析樹以規則鏈表示的優先順序，在 AST 中只需看哪個節點是父節點就能表示。"}},{"@type":"Question","name":"AST 中如何表示括號？","acceptedAnswer":{"@type":"Answer","text":"括號不會被存成節點。其作用由樹的結構表達：被括號包住的子運算式會成為一棵子樹，在其父運算之前求值。"}},{"@type":"Question","name":"直譯器會使用 AST 嗎？","acceptedAnswer":{"@type":"Answer","text":"許多直譯器會。樹走訪直譯器直接對 AST 求值，而較快的直譯器通常會先把 AST 編譯成位元組碼再執行。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
-
+<section class="term-about">
+  <h2>從剖析樹到 AST</h2>
+  <p>照字面遵循文法的剖析器會產生具體語法樹（剖析樹），每套用一條文法規則就有一個節點，每個語彙單元（token）都有一個葉節點，包括括號、逗號與分號。以運算式、項、因子等不同規則來表達優先順序的文法，還會產生一長串只有單一子節點的節點鏈。AST（抽象語法樹）則捨棄所有這些。每個節點都是有意義的構造，例如二元運算、函式呼叫、if 敘述或變數參照，並且恰好擁有該構造所需的子節點。</p>
+</section>
+<section class="term-about">
+  <h2>樹的形狀如何表達優先順序與結合性</h2>
+  <p>先求值的運算位在樹的較深處。對 2 + 3 * 4 而言，根節點是 +，子節點為 2 以及位於 3 與 4 之上的 * 節點；對 (2 + 3) * 4 而言，根節點則是 *，而括號在完成任務後就消失了。結合性也以相同方式表達：a - b - c 的意思是 (a - b) - c，因此根節點的左子節點是另一個減法，形成向左傾斜的樹。因此，以後序走訪（先子節點、後父節點）即可按正確順序求值。</p>
+</section>
+<section class="term-about">
+  <h2>編譯器如何運用 AST</h2>
+  <p>剖析之後，語意分析會走訪 AST，把每個名稱解析到其宣告、檢查並推論型別、插入隱式轉換，並回報使用未宣告變數等錯誤。節點通常會被加註這些資訊。加註後的樹接著被降轉（lower）成中間表示（<a class="term-link" href="/zh-hant/term/intermediate-representation/">IR</a>），例如三位址碼或 SSA 形式，在其中控制流程成為<a class="term-link" href="/zh-hant/term/basic-block/">基本區塊</a>之間明確的分支。簡單的樹走訪直譯器直接執行 AST，而格式化工具、靜態檢查工具（linter）與重構引擎等工具也都在 AST 上運作。</p>
+</section>
+<section class="term-about">
+  <h2>AST 與 IR 的比較</h2>
+  <p>AST 反映原始語言：它仍保有巢狀迴圈、結構化的 if 敘述與原始碼層級的運算式，因此非常適合針對程式原貌進行的檢查與轉換。<a class="term-link" href="/zh-hant/term/intermediate-representation/">IR</a> 則更接近機器，由一連串扁平的簡單運算與明確的跳躍構成，適合資料流分析與最佳化。兩者常被混淆，但大致的分界是：AST 回答程式設計師寫了什麼，IR 回答必須計算什麼。</p>
+</section>
 <section>
   <h2>練習抽象語法樹(AST)的題目</h2>
   <article class="q-mini" data-qid="compiler-004" data-cat="compiler" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 根節點是 + 的節點，其右子節點是表示 3 * 4 的 * 節點</p><p class="explanation">乘法的優先順序高於加法，所以此運算式會被解釋為 2 + (3 * 4)。在<a class="term-link" href="/zh-hant/term/abstract-syntax-tree/">抽象語法樹</a>中，越先計算的運算會放在越下面，所以根節點是 +，其左子節點是2，右子節點是以3和4為子節點的 * 節點。若由下往上對樹求值，會先計算 3 * 4 = 12，再得到 2 + 12 = 14。根節點成為 * 的是寫成 (2 + 3) * 4 的情況，而把全部並列在根節點之下，則無法表示計算的順序。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>剖析樹和抽象語法樹有什麼差別？</h3>
+  <p>剖析樹記錄每一條文法規則與每個語彙單元（包括標點符號），AST 則只保留有意義的構造。剖析樹以規則鏈表示的優先順序，在 AST 中只需看哪個節點是父節點就能表示。</p>
+  <h3>AST 中如何表示括號？</h3>
+  <p>括號不會被存成節點。其作用由樹的結構表達：被括號包住的子運算式會成為一棵子樹，在其父運算之前求值。</p>
+  <h3>直譯器會使用 AST 嗎？</h3>
+  <p>許多直譯器會。樹走訪直譯器直接對 AST 求值，而較快的直譯器通常會先把 AST 編譯成位元組碼再執行。</p>
+</section>
 <section>
   <h2>解析中的「抽象語法樹(AST)」</h2>
   <ul class="term-quotes"><li><p>抽象語法樹則是只將程式語意所需的運算與敘述作為節點的樹，例如在(a + b) * c中，加法節點位於乘法節點之下，因此即使沒有括號也能得知運算的順序。</p><a href="/zh-hant/q/compiler/compiler-004/">關於抽象語法樹（AST）的特徵，下列何者正確？</a></li><li><p>在抽象語法樹中，越先計算的運算會放在越下面，所以根節點是 +，其左子節點是2，右子節點是以3和4為子節點的 * 節點。</p><a href="/zh-hant/q/compiler/compiler-035/">運算式 2 + 3 * 4 的抽象語法樹之形狀，下列何者正確？</a></li></ul>

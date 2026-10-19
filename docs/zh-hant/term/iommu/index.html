@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU(輸入輸出記憶體管理單元)","item":"https://semiconroom.com/zh-hant/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU(輸入輸出記憶體管理單元)","description":"將周邊裝置以DMA使用的位址轉換為實體位址並加以保護的裝置。可防止裝置寫入不被允許的記憶體，在將裝置分配給虛擬機器時也會使用。","url":"https://semiconroom.com/zh-hant/term/iommu/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU(輸入輸出記憶體管理單元)","item":"https://semiconroom.com/zh-hant/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU(輸入輸出記憶體管理單元)","description":"將周邊裝置以DMA使用的位址轉換為實體位址並加以保護的裝置。可防止裝置寫入不被允許的記憶體，在將裝置分配給虛擬機器時也會使用。","url":"https://semiconroom.com/zh-hant/term/iommu/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"GPU 直通（passthrough）需要 IOMMU 嗎？","acceptedAnswer":{"@type":"Answer","text":"需要。把實體裝置交給虛擬機器，要靠 IOMMU 轉換客體的 DMA 位址，並防止裝置存取該 VM 以外的記憶體，因此必須在韌體與作業系統中支援並啟用 IOMMU。"}},{"@type":"Question","name":"啟用 IOMMU 會讓 I/O 變慢嗎？","acceptedAnswer":{"@type":"Answer","text":"轉換未命中以及建立和移除對映會增加一些成本，對極高速率的裝置可能有影響。在大多數工作負載中，IOTLB 快取與較長期的對映能讓開銷維持在適度範圍。"}},{"@type":"Question","name":"IOMMU 和 MMU 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"MMU 轉換 CPU 代表行程發出的位址，IOMMU 則轉換進行 DMA 的裝置所發出的位址。兩者都使用分頁表與權限位元，但 IOMMU 的表格是以裝置或裝置群組為單位。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>IOMMU 如何轉換 DMA 位址</h2>
+  <p>有了 IOMMU（輸入輸出記憶體管理單元），裝置就不再發出原始的實體位址。它的 <a class="term-link" href="/zh-hant/term/dma/">DMA</a> 請求帶有 I/O 虛擬位址，由 IOMMU 在作業系統為該裝置或裝置群組所建立的分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>中查詢；在 PCIe 上，裝置以請求者的匯流排、裝置與功能編號識別。最近的轉換會快取在 IOTLB（I/O <a class="term-link" href="/zh-hant/term/tlb/">轉譯後備緩衝區</a>）中。對沒有有效對映的位址、或讀寫權限不符的存取，會被阻擋並以錯誤（fault）回報給作業系統，而不會到達記憶體。</p>
+</section>
+<section class="term-about">
+  <h2>IOMMU 與 MMU 的比較</h2>
+  <p>兩者都透過分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>轉換位址，但服務的對象不同。CPU 的 MMU 為每個行程轉換虛擬位址，使程式彼此隔離。IOMMU 則為每個裝置轉換位址，把 <a class="term-link" href="/zh-hant/term/dma/">DMA</a> 引擎限制在其驅動程式所對映的緩衝區內。由於對映彼此獨立，作業系統可以交給裝置一個分散在許多實體分頁上、但在裝置的位址空間中看起來連續的緩衝區，這讓本身無法進行分散－集中（scatter-gather）傳輸的裝置得以簡化。</p>
+</section>
+<section class="term-about">
+  <h2>阻擋 DMA 攻擊</h2>
+  <p><a class="term-link" href="/zh-hant/term/dma/">DMA</a> 繞過 CPU 及其記憶體保護，因此在沒有 IOMMU 的情況下，任何能主控匯流排的裝置都能讀取金鑰或竄改核心程式碼。對於向插入的硬體開放 PCIe 式 DMA 的外部連接埠而言，這是實際存在的風險。啟用 IOMMU 後，作業系統只對映各驅動程式所使用的特定緩衝區，通常只在每次傳輸期間有效，其他所有區域都無法從該裝置存取。許多平台也用 IOMMU 重新對映裝置<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>，使裝置無法偽造任意的中斷訊息。</p>
+</section>
+<section class="term-about">
+  <h2>將裝置指派給虛擬機器</h2>
+  <p>客體作業系統以它認為是實體位址的位址來設定裝置，但那其實是客體實體位址。當 <a class="term-link" href="/zh-hant/term/hypervisor/">Hypervisor</a> 將 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 或網路卡等實體裝置直接穿透（passthrough）給虛擬機器時，它會設定 IOMMU，把這些客體實體位址轉換成支撐該 VM 的主機實體分頁。如此一來，裝置就能全速使用 <a class="term-link" href="/zh-hant/term/dma/">DMA</a>，而 Hypervisor 不必攔截每一次傳輸，同時裝置仍無法觸及其他 VM 的記憶體。代價是一些轉換開銷，主要是 IOTLB 未命中，以及對映與解除對映緩衝區的成本。</p>
+</section>
 <section>
   <h2>練習IOMMU(輸入輸出記憶體管理單元)的題目</h2>
   <article class="q-mini" data-qid="os-hardware-030" data-cat="os-hardware" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 轉換裝置DMA的位址，防止非法存取</p><p class="explanation">使用<a class="term-link" href="/zh-hant/term/dma/">DMA</a>的裝置可以直接讀寫主記憶體，因此誤動作或惡意的裝置有可能改寫作業系統的記憶體。<a class="term-link" href="/zh-hant/term/iommu/">IOMMU</a>就像CPU的MMU一樣，將裝置所使用的位址轉換成實體位址，並阻擋對允許範圍以外的存取。它也能讓不連續的實體記憶體對裝置而言看起來是連續的，並在將裝置直接分配給虛擬機器時使用。它不是負責翻譯指令或控制電源的裝置。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>GPU 直通（passthrough）需要 IOMMU 嗎？</h3>
+  <p>需要。把實體裝置交給虛擬機器，要靠 IOMMU 轉換客體的 DMA 位址，並防止裝置存取該 VM 以外的記憶體，因此必須在韌體與作業系統中支援並啟用 IOMMU。</p>
+  <h3>啟用 IOMMU 會讓 I/O 變慢嗎？</h3>
+  <p>轉換未命中以及建立和移除對映會增加一些成本，對極高速率的裝置可能有影響。在大多數工作負載中，IOTLB 快取與較長期的對映能讓開銷維持在適度範圍。</p>
+  <h3>IOMMU 和 MMU 有什麼差別？</h3>
+  <p>MMU 轉換 CPU 代表行程發出的位址，IOMMU 則轉換進行 DMA 的裝置所發出的位址。兩者都使用分頁表與權限位元，但 IOMMU 的表格是以裝置或裝置群組為單位。</p>
+</section>
 <section>
   <h2>解析中的「IOMMU(輸入輸出記憶體管理單元)」</h2>
   <ul class="term-quotes"><li><p>IOMMU就像CPU的MMU一樣，將裝置所使用的位址轉換成實體位址，並阻擋對允許範圍以外的存取。</p><a href="/zh-hant/q/os-hardware/os-hardware-030/">關於IOMMU的主要作用，下列何者正確？</a></li><li><p>若使用IOMMU，就能把各機器可存取的位址限制在作業系統決定的範圍內，因此對未獲許可位置的DMA會被拒絕。</p><a href="/zh-hant/q/hw-security/hw-security-047/">下列何者是對於連接在電腦上的外部機器利用DMA擅自讀寫主記憶體內容的攻擊的對策？</a></li></ul>

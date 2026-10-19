@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Extension de signe","item":"https://semiconroom.com/fr/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Extension de signe","description":"Lors de l'élargissement d'un entier signé à un plus grand nombre de bits, recopie du bit de poids fort (signe) dans tous les bits supérieurs. La valeur est conservée. Remplir les bits supérieurs de 0 s'appelle l'extension par zéros.","url":"https://semiconroom.com/fr/term/sign-extension/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Extension de signe","item":"https://semiconroom.com/fr/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Extension de signe","description":"Lors de l'élargissement d'un entier signé à un plus grand nombre de bits, recopie du bit de poids fort (signe) dans tous les bits supérieurs. La valeur est conservée. Remplir les bits supérieurs de 0 s'appelle l'extension par zéros.","url":"https://semiconroom.com/fr/term/sign-extension/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelle différence entre extension de signe et extension par des zéros ?","acceptedAnswer":{"@type":"Answer","text":"L'extension de signe remplit les nouveaux bits de poids fort avec des copies du bit de poids fort d'origine, ce qui préserve la valeur d'un nombre signé. L'extension par des zéros les remplit de zéros, ce qui préserve la valeur d'un nombre non signé."}},{"@type":"Question","name":"Pourquoi addi en RISC-V étend-il le signe de son immédiat ?","acceptedAnswer":{"@type":"Answer","text":"Pour qu'une seule instruction puisse ajouter des constantes négatives, comme addi sp, sp, -16. Le champ de 12 bits couvre alors de -2 048 à 2 047 au lieu des seules valeurs positives ou nulles."}},{"@type":"Question","name":"Comment faire une extension de signe en C ?","acceptedAnswer":{"@type":"Answer","text":"On stocke la valeur dans un type signé de la largeur d'origine, comme int8_t ou int16_t, puis on l'affecte à un type signé plus large ; la conversion étend automatiquement le signe et les compilateurs émettent l'instruction d'extension de signe correspondante."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Domaine: <a href="/fr/c/isa-assembly/">ISA et assembleur</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Pourquoi recopier le bit de signe préserve la valeur</h2>
+  <p>En <a class="term-link" href="/fr/term/two-s-complement/">complément à deux</a> sur n bits, le bit de poids fort porte un poids de moins 2 puissance n-1 et les autres leurs poids positifs habituels. Étendre un nombre négatif d&#39;un bit ajoute un nouveau bit de poids fort valant moins 2 puissance n et transforme l&#39;ancien bit de poids fort en un positif 2 puissance n-1 ; ensemble, ils contribuent toujours moins 2 puissance n-1, donc la valeur est inchangée. Répéter ce raisonnement pour chaque bit ajouté justifie la règle. Par exemple, 1010 sur 4 bits (-6) devient 11111010 sur 8 bits, toujours -6.</p>
+</section>
+<section class="term-about">
+  <h2>Où les ISA effectuent une extension de signe</h2>
+  <p>Les immédiats sont le cas le plus courant : l&#39;immédiat de 12 bits du type I de RISC-V subit une extension de signe, si bien qu&#39;addi accepte de -2 048 à 2 047 et que les constantes négatives fonctionnent sans instruction de soustraction séparée. Les chargements vont par paires : lb et lh étendent le signe tandis que lbu et lhu étendent par des zéros. En RV64, lw étend le signe d&#39;une valeur de 32 bits à 64 bits et lwu l&#39;étend par des zéros, et les instructions sur mots comme addw étendent le signe de leurs résultats de 32 bits. x86 fournit movsx et movzx dans le même but. En matériel, l&#39;extension de signe ne coûte rien de plus que de relier le bit de poids fort à toutes les nouvelles positions.</p>
+</section>
+<section class="term-about">
+  <h2>Un piège classique : lui plus addi</h2>
+  <p>Pour construire une constante de 32 bits, le code RISC-V utilise lui pour les 20 bits de poids fort et addi pour les 12 bits de poids faible. Comme addi étend le signe de son immédiat, une partie basse de 0x800 ou plus est traitée comme un nombre négatif, sa valeur moins 4 096. Les assembleurs compensent en ajoutant 1 à la partie haute chaque fois que le bit 11 de la constante est à 1, et les opérateurs de relocation %hi et %lo le font automatiquement. Un code écrit à la main qui <a class="term-link" href="/fr/term/dicing/">découpe</a> <a class="term-link" href="/fr/term/numerical-aperture/">na</a>ïvement la constante produit une valeur décalée d&#39;exactement 4 096, un bogue facile à manquer lors des tests.</p>
+</section>
+<section class="term-about">
+  <h2>Extension de signe et extension par des zéros en C</h2>
+  <p>C choisit l&#39;extension d&#39;après le type source : convertir un signed char ou un int16_t en int étend le signe, tandis que convertir un type non signé étend par des zéros. Le type char simple est signé sur certaines plateformes et non signé sur d&#39;autres, par exemple signé sur x86 mais non signé sur la plupart des systèmes Linux Arm, si bien qu&#39;un octet de valeur 0xFF peut devenir -1 ou 255 selon la cible. Cette différence provoque des bogues lorsque des octets sont comparés à des constantes ou utilisés comme indices de tableau. Utiliser unsigned char ou uint8_t pour les octets bruts évite l&#39;ambiguïté.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Extension de signe</h2>
   <article class="q-mini" data-qid="isa-assembly-019" data-cat="isa-assembly" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. lb : 0xFFFFFF80 (-128), lbu : 0x00000080 (128)</p><p class="explanation">lb (load byte) considère l&#39;octet lu comme signé et recopie le bit de poids fort dans les 24 bits supérieurs (<a class="term-link" href="/fr/term/sign-extension/">extension de signe</a>). 0x80 ayant son bit de poids fort à 1, on obtient 0xFFFFFF80, soit -128. lbu (load byte unsigned) remplit les bits supérieurs de 0 (extension par zéros), d&#39;où 128. Lors de la lecture de signed char et unsigned char en C, le compilateur choisit entre ces deux instructions.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Quelle différence entre extension de signe et extension par des zéros ?</h3>
+  <p>L&#39;extension de signe remplit les nouveaux bits de poids fort avec des copies du bit de poids fort d&#39;origine, ce qui préserve la valeur d&#39;un nombre signé. L&#39;extension par des zéros les remplit de zéros, ce qui préserve la valeur d&#39;un nombre non signé.</p>
+  <h3>Pourquoi addi en RISC-V étend-il le signe de son immédiat ?</h3>
+  <p>Pour qu&#39;une seule instruction puisse ajouter des constantes négatives, comme addi sp, sp, -16. Le champ de 12 bits couvre alors de -2 048 à 2 047 au lieu des seules valeurs positives ou nulles.</p>
+  <h3>Comment faire une extension de signe en C ?</h3>
+  <p>On stocke la valeur dans un type signé de la largeur d&#39;origine, comme int8_t ou int16_t, puis on l&#39;affecte à un type signé plus large ; la conversion étend automatiquement le signe et les compilateurs émettent l&#39;instruction d&#39;extension de signe correspondante.</p>
+</section>
 <section>
   <h2>« Extension de signe » dans les explications</h2>
   <ul class="term-quotes"><li><p>Grâce à l&#39;extension de signe, il suffit d&#39;additionner un immédiat négatif pour soustraire.</p><a href="/fr/q/isa-assembly/isa-assembly-019/">En RISC-V (RV32I), après exécution de « addi t0, zero, -1 »…</a></li><li><p>lb (load byte) considère l&#39;octet lu comme signé et recopie le bit de poids fort dans les 24 bits supérieurs (extension de signe).</p><a href="/fr/q/isa-assembly/isa-assembly-020/">Un octet en mémoire contient 0x80. Quelle combinaison corre…</a></li></ul>

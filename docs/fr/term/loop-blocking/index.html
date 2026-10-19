@@ -16,7 +16,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Blocage de boucle (loop blocking)","item":"https://semiconroom.com/fr/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blocage de boucle (loop blocking)","description":"Optimisation qui découpe un grand tableau en petits blocs tenant dans le cache, de sorte que les données chargées soient réutilisées plusieurs fois avant d'être évincées. Très efficace pour le produit matriciel, etc.","url":"https://semiconroom.com/fr/term/loop-blocking/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Blocage de boucle (loop blocking)","item":"https://semiconroom.com/fr/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blocage de boucle (loop blocking)","description":"Optimisation qui découpe un grand tableau en petits blocs tenant dans le cache, de sorte que les données chargées soient réutilisées plusieurs fois avant d'être évincées. Très efficace pour le produit matriciel, etc.","url":"https://semiconroom.com/fr/term/loop-blocking/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"À quoi sert le pavage de boucle ?","acceptedAnswer":{"@type":"Answer","text":"Il restructure les boucles pour travailler sur des blocs de données de la taille du cache, de sorte que chaque élément chargé soit réutilisé de nombreuses fois avant d'être évincé, ce qui réduit fortement les échecs de capacité et le trafic mémoire."}},{"@type":"Question","name":"Comment choisir la taille de bloc pour la multiplication matricielle ?","acceptedAnswer":{"@type":"Answer","text":"On part d'une taille pour laquelle les tuiles de travail tiennent dans le cache visé, par exemple trois tuiles de b × b doubles dans un L1 de 32 Ko donnent b d'environ 32, puis on l'ajuste empiriquement en fonction des conflits, du TLB et du préchargement."}},{"@type":"Question","name":"Le blocage de boucle est-il la même chose que le déroulage de boucle ?","acceptedAnswer":{"@type":"Answer","text":"Non. Le déroulage réduit le surcoût de boucle et les branchements, tandis que le blocage réordonne les itérations pour améliorer la réutilisation du cache."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Domaine: <a href="/fr/c/memory-hierarchy/">Hiérarchie mémoire</a></p>
 </article>
+<section class="term-about">
+  <h2>Pourquoi la multiplication matricielle naïve rate le cache</h2>
+  <p>Considérons C = A × B pour des matrices N × N de doubles avec la triple boucle des manuels. Chaque élément de C nécessite une ligne complète de A et une colonne complète de B, et parcourir une colonne de B en stockage par lignes (row-major) touche une <a class="term-link" href="/fr/term/cache-line/">ligne de cache</a> différente pour chaque élément. Lorsque N est grand, une colonne de B et les lignes de A ne restent pas assez longtemps en cache pour être réutilisées, si bien que les mêmes données sont rechargées depuis la mémoire principale encore et encore. Ce sont des échecs de capacité : rendre le cache plus associatif n&#39;y change rien, car l&#39;ensemble de travail est tout simplement trop grand.</p>
+</section>
+<section class="term-about">
+  <h2>Fonctionnement du blocage</h2>
+  <p>Le blocage de boucle, ou pavage (tiling), <a class="term-link" href="/fr/term/dicing/">découpe</a> chaque matrice en tuiles de b × b et réordonne les boucles de sorte qu&#39;un produit de tuiles, tuile-C += tuile-A × tuile-B, soit achevé pendant que les trois tuiles résident en cache. Chaque élément chargé est alors réutilisé environ b fois avant d&#39;être évincé, et le trafic mémoire passe de l&#39;ordre de N³ éléments à environ N³/b. Les calculs et l&#39;empreinte mémoire totale sont inchangés ; seul l&#39;ordre des opérations change. L&#39;<a class="term-link" href="/fr/term/arithmetic-intensity/">intensité arithmétique</a>, c&#39;est-à-dire le nombre d&#39;opérations par octet transféré, augmente à peu près proportionnellement à la taille de tuile.</p>
+</section>
+<section class="term-about">
+  <h2>Choisir une taille de tuile</h2>
+  <p>Une première estimation est que trois tuiles doivent tenir dans le cache visé : 3 × b² × 8 octets pour des doubles. Pour un cache L1 de 32 Ko, cela donne b d&#39;environ 36 ; une tuile d&#39;environ 32 est donc un choix naturel, qui laisse de la place pour d&#39;autres données. En pratique, les échecs de conflit dus aux pas en puissance de deux, la couverture du <a class="term-link" href="/fr/term/tlb/">TLB</a> et le <a class="term-link" href="/fr/term/prefetching/">préchargement</a> matériel comptent aussi ; les tailles de tuile sont donc ajustées empiriquement, et les tuiles sont parfois copiées dans des tampons contigus. Les bibliothèques hautes performances bloquent à plusieurs niveaux à la fois : registres, L1, L2 et L3.</p>
+</section>
+<section class="term-about">
+  <h2>Blocage et autres transformations de boucles</h2>
+  <p>Le <a class="term-link" href="/fr/term/loop-unrolling/">déroulage de boucle</a> (unrolling) duplique le corps de boucle pour réduire le surcoût de boucle et faire apparaître du parallélisme d&#39;instructions ; il n&#39;améliore pas à lui seul la réutilisation du cache. L&#39;interversion de boucles (interchange) échange l&#39;ordre d&#39;imbrication pour que la boucle la plus interne parcoure la mémoire de façon contiguë, ce qui améliore la <a class="term-link" href="/fr/term/spatial-locality/">localité spatiale</a>. Le blocage vise la <a class="term-link" href="/fr/term/temporal-locality/">localité temporelle</a> sur de grands ensembles de données et est souvent combiné aux deux. La même idée se retrouve sur les <a class="term-link" href="/fr/term/gpu/">GPU</a>, où les tuiles sont placées dans la <a class="term-link" href="/fr/term/gpu-shared-memory/">mémoire partagée</a> sur puce, ainsi que dans les codes de stencil, les convolutions et de nombreux noyaux d&#39;algèbre linéaire dense.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>À quoi sert le pavage de boucle ?</h3>
+  <p>Il restructure les boucles pour travailler sur des blocs de données de la taille du cache, de sorte que chaque élément chargé soit réutilisé de nombreuses fois avant d&#39;être évincé, ce qui réduit fortement les échecs de capacité et le trafic mémoire.</p>
+  <h3>Comment choisir la taille de bloc pour la multiplication matricielle ?</h3>
+  <p>On part d&#39;une taille pour laquelle les tuiles de travail tiennent dans le cache visé, par exemple trois tuiles de b × b doubles dans un L1 de 32 Ko donnent b d&#39;environ 32, puis on l&#39;ajuste empiriquement en fonction des conflits, du TLB et du préchargement.</p>
+  <h3>Le blocage de boucle est-il la même chose que le déroulage de boucle ?</h3>
+  <p>Non. Le déroulage réduit le surcoût de boucle et les branchements, tandis que le blocage réordonne les itérations pour améliorer la réutilisation du cache.</p>
+</section>
 
 
 

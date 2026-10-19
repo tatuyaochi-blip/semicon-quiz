@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Protocole MESI","item":"https://semiconroom.com/fr/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Protocole MESI","description":"Protocole de cohérence qui gère chaque ligne de cache selon quatre états : Modified, Exclusive, Shared et Invalid. Lors d'une écriture, les copies des autres cœurs sont invalidées.","url":"https://semiconroom.com/fr/term/mesi-protocol/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Protocole MESI","item":"https://semiconroom.com/fr/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Protocole MESI","description":"Protocole de cohérence qui gère chaque ligne de cache selon quatre états : Modified, Exclusive, Shared et Invalid. Lors d'une écriture, les copies des autres cœurs sont invalidées.","url":"https://semiconroom.com/fr/term/mesi-protocol/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelle différence entre MESI et MSI ?","acceptedAnswer":{"@type":"Answer","text":"MESI ajoute l'état Exclusif pour les lignes propres qu'aucun autre cache ne détient. Un cœur peut alors écrire une telle ligne sans diffuser d'invalidation, ce que MSI exigerait."}},{"@type":"Question","name":"Que signifie l'état Modifié dans MESI ?","acceptedAnswer":{"@type":"Answer","text":"Ce cache détient la seule copie valide et l'a modifiée, si bien que la mémoire principale n'est plus à jour. La ligne doit être réécrite en mémoire lors de son éviction ou fournie à un autre cœur qui la demande."}},{"@type":"Question","name":"Qu'est-ce que le faux partage ?","acceptedAnswer":{"@type":"Answer","text":"Un ralentissement qui se produit lorsque des threads sur des cœurs différents écrivent des variables distinctes situées dans la même ligne de cache, obligeant le protocole de cohérence à faire passer la ligne d'un cache à l'autre en va-et-vient."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -117,7 +117,22 @@
 </svg><figcaption class="fig-cap">Transitions d&#39;état du protocole MESI · <a href="/fr/figures/#fig-mesi">Voir dans les schémas</a></figcaption></figure>
   <p>Domaine: <a href="/fr/c/multicore-sync/">Multicœur et synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Les quatre états</h2>
+  <p>Modifié (M) : ce cache détient la seule copie et l&#39;a écrite, si bien que la mémoire est périmée et que les données doivent être réécrites en mémoire ou fournies aux autres. Exclusif (E) : la seule copie, mais identique à la mémoire. Partagé (S) : une copie non modifiée que d&#39;autres caches peuvent aussi détenir. Invalide (I) : la ligne ne contient aucune donnée utilisable. Le protocole garantit pour chaque ligne une règle d&#39;écrivain unique et de lecteurs multiples : à tout instant, soit un seul cache peut l&#39;écrire (M ou E), soit un nombre quelconque peut la lire (S), jamais les deux.</p>
+</section>
+<section class="term-about">
+  <h2>Transitions clés</h2>
+  <p>Lors d&#39;un échec en lecture, le cache demande la ligne ; si aucun autre cache ne la détient, elle est chargée en E, sinon en S. Si un autre cache la détient en M, ce cache fournit les données ou les réécrit en mémoire et passe en S. Une écriture sur une ligne en S doit d&#39;abord invalider toutes les autres copies, par une requête de mise à niveau (upgrade), avant de passer en M. Un échec en écriture émet une lecture pour appropriation (read-for-ownership) qui récupère la ligne et invalide les autres copies en une seule étape. Lorsque la requête d&#39;écriture d&#39;un autre cœur est observée, toute copie locale passe en I, et une copie en M transmet d&#39;abord ses données.</p>
+</section>
+<section class="term-about">
+  <h2>Pourquoi l&#39;état E compte</h2>
+  <p>Le protocole <a class="term-link" href="/fr/term/message-signaled-interrupts/">MSI</a>, plus simple, n&#39;a pas d&#39;état E ; un cœur qui lit des données privées puis les écrit doit donc envoyer une invalidation supplémentaire sur le bus alors même qu&#39;aucun autre cache n&#39;en détient de copie. E enregistre que la ligne est propre et non partagée, ce qui permet à l&#39;écriture ultérieure de passer silencieusement en M. Comme une grande partie des données est privée à un seul cœur, cela économise une grande quantité de trafic de cohérence. Des variantes ajoutent d&#39;autres états : MOESI ajoute Owned (possédé), qui permet de partager une ligne modifiée sans mettre d&#39;abord à jour la mémoire, et MESIF ajoute Forward, qui désigne le seul détenteur partagé chargé de répondre aux requêtes.</p>
+</section>
+<section class="term-about">
+  <h2>Faux partage</h2>
+  <p>La cohérence fonctionne par <a class="term-link" href="/fr/term/cache-line/">ligne de cache</a>, généralement de 64 octets, et non par variable. Si deux cœurs écrivent de façon répétée des variables différentes qui se trouvent partager une ligne, chaque écriture doit invalider la copie de l&#39;autre cœur, si bien que la ligne fait des allers-retours entre l&#39;état M dans un cache et I dans l&#39;autre, alors même que les threads ne touchent jamais les mêmes données. Ce <a class="term-link" href="/fr/term/false-sharing/">faux partage (false sharing)</a> peut rendre du code parallèle plus lent que du code séquentiel. Le remède consiste à séparer sur des lignes différentes les données par thread fréquemment écrites, comme les compteurs, par remplissage (padding) ou alignement.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Protocole MESI</h2>
   <article class="q-mini" data-qid="multicore-sync-003" data-cat="multicore-sync" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
@@ -131,7 +146,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Il n’a pas besoin de prévenir les autres cœurs et la ligne passe directement à l’état M</p><p class="explanation">L’état E signifie que seul ce cœur détient la ligne et que son contenu est identique à la mémoire principale. Comme aucun autre cœur n’en a de copie, le passage à l’état M se fait sans notification d’invalidation. L’intérêt de l’état E est d’économiser des échanges dans le cas fréquent où une donnée utilisée par un seul cœur est lue puis écrite. Pour une écriture depuis l’état S, l’invalidation des autres copies est nécessaire.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Quelle différence entre MESI et MSI ?</h3>
+  <p>MESI ajoute l&#39;état Exclusif pour les lignes propres qu&#39;aucun autre cache ne détient. Un cœur peut alors écrire une telle ligne sans diffuser d&#39;invalidation, ce que MSI exigerait.</p>
+  <h3>Que signifie l&#39;état Modifié dans MESI ?</h3>
+  <p>Ce cache détient la seule copie valide et l&#39;a modifiée, si bien que la mémoire principale n&#39;est plus à jour. La ligne doit être réécrite en mémoire lors de son éviction ou fournie à un autre cœur qui la demande.</p>
+  <h3>Qu&#39;est-ce que le faux partage ?</h3>
+  <p>Un ralentissement qui se produit lorsque des threads sur des cœurs différents écrivent des variables distinctes situées dans la même ligne de cache, obligeant le protocole de cohérence à faire passer la ligne d&#39;un cache à l&#39;autre en va-et-vient.</p>
+</section>
 <section>
   <h2>« Protocole MESI » dans les explications</h2>
   <ul class="term-quotes"><li><p>Le contrôle de cohérence attribue à chaque ligne de cache un état tel que « modifiée, partagée, invalide » (protocole MESI, etc.) et invalide les copies des autres cœurs lors d&#39;une écriture.</p><a href="/fr/q/cpu/cpu-025/">Dans un processeur multicœur, quel mécanisme maintient la c…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"看門狗計時器（Watchdog timer）","item":"https://semiconroom.com/zh-hant/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"看門狗計時器（Watchdog timer）","description":"若未在規定時間內由軟體重設（kick），就會重設微控制器的計時器。可使系統從程式失控或停止中恢復。","url":"https://semiconroom.com/zh-hant/term/watchdog-timer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"看門狗計時器（Watchdog timer）","item":"https://semiconroom.com/zh-hant/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"看門狗計時器（Watchdog timer）","description":"若未在規定時間內由軟體重設（kick），就會重設微控制器的計時器。可使系統從程式失控或停止中恢復。","url":"https://semiconroom.com/zh-hant/term/watchdog-timer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"看門狗計時器的 kick 或 feed 是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"指寫入看門狗的重新載入或服務暫存器，使其計數器在到期之前重新開始。正常的軟體會定期這麼做；一旦停止，看門狗就會重設晶片。"}},{"@type":"Question","name":"可以在計時器中斷裡 kick 看門狗嗎？","acceptedAnswer":{"@type":"Answer","text":"不應無條件這麼做。即使主程式已經當機，計時器中斷仍會持續執行，因此會掩蓋故障；應在確認主迴圈與各任務都已完成正常的一個循環後才 kick。"}},{"@type":"Question","name":"視窗看門狗和一般看門狗有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"一般看門狗只在 kick 太晚時重設。視窗看門狗還會把太早到來的 kick 視為故障，可抓到異常快速迴圈的程式。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/embedded/">嵌入式與韌體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>看門狗的運作方式</h2>
+  <p>看門狗是一個獨立於其所監視之程式運作的遞減計數器。軟體必須定期對它「kick」（踢）、「feed」（餵）或「service」（服務），通常是將特定的鍵值寫入暫存器，使計數器重新載入。若因程式卡在迴圈中、當機進入錯誤處理常式或受到雜訊干擾，導致計數器歸零，看門狗就會發出重設（部分元件會先發出預警<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>），<a class="term-link" href="/zh-hant/term/microcontroller/">微控制器</a>從已知狀態重新啟動。以專屬的低速振盪器提供其時脈，可確保主時脈故障時看門狗不會一併失效。</p>
+</section>
+<section class="term-about">
+  <h2>該在哪裡 kick</h2>
+  <p>看門狗的效果取決於 kick 的位置。在週期性計時器<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>內無條件地 kick 是典型錯誤：即使主迴圈卡住，中斷仍會持續觸發，計數器永遠不會到期，當機也就不會被察覺。較好的做法是讓每個任務或主迴圈的各階段設定一個報到旗標，由監督常式在週期內確認所有旗標都已設定後才 kick 看門狗，然後清除旗標。逾時時間要比最壞情況的迴圈時間長，但又要夠短，以限制恢復所需的時間。</p>
+</section>
+<section class="term-about">
+  <h2>視窗看門狗與標準看門狗</h2>
+  <p>標準看門狗只能偵測到太晚抵達的 kick。若故障使程式略過大部分工作、在仍包含 kick 的短迴圈中空轉，計時器被服務的頻率反而比預期更高，什麼都偵測不到。視窗看門狗加入了下限：只有在規定的時間視窗內的 kick 才被接受，太早的 kick 會和缺少的 kick 一樣被視為故障。這能抓到單純逾時所漏掉的控制流程錯誤，因此視窗看門狗在功能安全設計中很常見。</p>
+</section>
+<section class="term-about">
+  <h2>安全系統中的外部看門狗</h2>
+  <p>在車用與工業設備中，看門狗常放在以獨立時脈運作的監控 IC 或<a class="term-link" href="/zh-hant/term/power-management-ic/">電源管理 IC</a> 中，使振盪器故障之類的共因無法同時讓處理器及其監視器停止。部分外部監視器採用問答方式，處理器必須在時間視窗內對挑戰傳回正確的回應。看門狗重設後，韌體通常會讀取重設原因暫存器，以便記錄並分析該事件，而不是讓它默默地重複發生。</p>
+</section>
 <section>
   <h2>練習看門狗計時器（Watchdog timer）的題目</h2>
   <article class="q-mini" data-qid="cpu-044" data-cat="cpu" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 不僅將比規定時間視窗太晚的踢狗（計時器清除），也將太早的踢狗視為異常而偵測</p><p class="explanation">一般的看門狗若在一定時間內未被踢狗就會施加重置。然而，在程式跳過部分處理而執行短迴圈之類的異常中，踢狗會太早到來，可能因此被漏看。視窗型則規定可以踢狗的時間視窗，比視窗太早或太晚都視為異常。在車用領域中，有時也會讓以不同於<a class="term-link" href="/zh-hant/term/microcontroller/">微控制器</a>之時脈運作的外接監視IC具備看門狗，以避免兩者因共同的原因而停止。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>看門狗計時器的 kick 或 feed 是什麼意思？</h3>
+  <p>指寫入看門狗的重新載入或服務暫存器，使其計數器在到期之前重新開始。正常的軟體會定期這麼做；一旦停止，看門狗就會重設晶片。</p>
+  <h3>可以在計時器中斷裡 kick 看門狗嗎？</h3>
+  <p>不應無條件這麼做。即使主程式已經當機，計時器中斷仍會持續執行，因此會掩蓋故障；應在確認主迴圈與各任務都已完成正常的一個循環後才 kick。</p>
+  <h3>視窗看門狗和一般看門狗有什麼差別？</h3>
+  <p>一般看門狗只在 kick 太晚時重設。視窗看門狗還會把太早到來的 kick 視為故障，可抓到異常快速迴圈的程式。</p>
+</section>
 <section>
   <h2>解析中的「看門狗計時器（Watchdog timer）」</h2>
   <ul class="term-quotes"><li><p>看門狗計時器是以正常的程式會定期清除它為前提的計時器，若因失控或停止而未被清除就逾時，便會重置微控制器。</p><a href="/zh-hant/q/cpu/cpu-044/">搭載於微控制器的看門狗計時器（watchdog timer）的作用，下列何者正確？</a></li></ul>

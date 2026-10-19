@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"輪替癱瘓(Thrashing)","item":"https://semiconroom.com/zh-hant/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"輪替癱瘓(Thrashing)","description":"因實體記憶體不足，頁面的逐出與載入頻繁重複，導致處理幾乎無法前進的狀態。減少執行的行程或增加記憶體即可解決。","url":"https://semiconroom.com/zh-hant/term/thrashing/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"輪替癱瘓(Thrashing)","item":"https://semiconroom.com/zh-hant/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"輪替癱瘓(Thrashing)","description":"因實體記憶體不足，頁面的逐出與載入頻繁重複，導致處理幾乎無法前進的狀態。減少執行的行程或增加記憶體即可解決。","url":"https://semiconroom.com/zh-hant/term/thrashing/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"作業系統中的輪替癱瘓是什麼原因造成的？","acceptedAnswer":{"@type":"Answer","text":"執行中行程的工作集總和超過實體記憶體，使分頁被逐出後幾乎立刻又被需要，讓系統忙於分頁 I/O 而非有用的工作。"}},{"@type":"Question","name":"如何停止輪替癱瘓？","acceptedAnswer":{"@type":"Answer","text":"減少活躍行程的數量、增加實體記憶體，或使用工作集或分頁錯誤頻率策略，依每個行程的實際需求分配頁框。"}},{"@type":"Question","name":"輪替癱瘓和 Bélády 異常有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"輪替癱瘓是記憶體過度分配造成的效能崩潰；Bélády 異常則是 FIFO 替換在可用頁框更多時反而產生更多分頁錯誤的反直覺情況。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
+<section class="term-about">
+  <h2>為何會發生</h2>
+  <p>每個行程都有一個工作集（working set），也就是它在短時間內積極使用的分頁。當所有執行中行程的工作集總和超過實體記憶體時，為某個行程載入分頁，就會逐出另一個（或同一個）行程幾乎馬上就要用到的分頁。那個分頁接著又因分頁錯誤被載回來，再逐出另一個需要的分頁。分頁錯誤要存取磁碟或 SSD，耗時數十微秒到數毫秒，相較之下 DRAM 約為 100 ns，因此系統幾乎把所有時間都花在等待分頁 I/O 上。</p>
+</section>
+<section class="term-about">
+  <h2>回饋陷阱</h2>
+  <p>一個經典的教科書情境說明了輪替癱瘓如何自我強化。由於行程都在等待分頁錯誤，CPU 使用率下降。天真的排程器若試圖接納更多行程來提高使用率，就會使每個行程可用的記憶體縮減，造成更多分頁錯誤與更低的使用率。<a class="term-link" href="/zh-hant/term/throughput/">吞吐量</a>不是緩慢下降，而是崩潰。其症狀是分頁錯誤率極高、置換 I/O 飽和、大量時間花在等待 I/O，有用的運算卻很少，儘管機器看起來很忙碌。</p>
+</section>
+<section class="term-about">
+  <h2>對策</h2>
+  <p>根本的解決方法是讓記憶體需求能被容納：暫停或將整個行程置換出去，以減少同時執行的行程數，或增加實體記憶體。以工作集為基礎的策略只在某行程的工作集能被容納時才接納它。分頁錯誤頻率控制則在行程的錯誤率超過上限門檻時給予更多頁框，低於下限門檻時收回頁框。程式本身也可以透過改善局部性、縮小工作集來自救。</p>
+</section>
+<section class="term-about">
+  <h2>輪替癱瘓與相關術語</h2>
+  <p>輪替癱瘓是因記憶體不足而持續發生的<a class="term-link" href="/zh-hant/term/throughput/">吞吐量</a>崩潰。它不同於 Bélády 異常：那是 FIFO 替換在分配更多頁框時反而產生更多分頁錯誤的特定情況；<a class="term-link" href="/zh-hant/term/lru-replacement/">LRU</a> 等堆疊演算法不會出現這種異常。它也不同於<a class="term-link" href="/zh-hant/term/deadlock/">死結（deadlock）</a>：在死結中，各工作因為都在等待彼此持有的資源而停止。這個詞也用於快取與 <a class="term-link" href="/zh-hant/term/tlb/">TLB</a>：快取輪替癱瘓（cache thrashing）指快取線反覆互相逐出，常見於對映到同一組的位址，這是同一模式在較小尺度上的表現。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>作業系統中的輪替癱瘓是什麼原因造成的？</h3>
+  <p>執行中行程的工作集總和超過實體記憶體，使分頁被逐出後幾乎立刻又被需要，讓系統忙於分頁 I/O 而非有用的工作。</p>
+  <h3>如何停止輪替癱瘓？</h3>
+  <p>減少活躍行程的數量、增加實體記憶體，或使用工作集或分頁錯誤頻率策略，依每個行程的實際需求分配頁框。</p>
+  <h3>輪替癱瘓和 Bélády 異常有什麼差別？</h3>
+  <p>輪替癱瘓是記憶體過度分配造成的效能崩潰；Bélády 異常則是 FIFO 替換在可用頁框更多時反而產生更多分頁錯誤的反直覺情況。</p>
+</section>
 
 
 

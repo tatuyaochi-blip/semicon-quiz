@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"敏感度列表（Sensitivity list）","item":"https://semiconroom.com/zh-hant/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"敏感度列表（Sensitivity list）","description":"寫在 Verilog 的 always 之後 @( ) 中，作為執行該區塊之觸發條件的訊號列表。在組合電路中若漏寫，模擬與電路會不一致。","url":"https://semiconroom.com/zh-hant/term/sensitivity-list/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"敏感度列表（Sensitivity list）","item":"https://semiconroom.com/zh-hant/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"敏感度列表（Sensitivity list）","description":"寫在 Verilog 的 always 之後 @( ) 中，作為執行該區塊之觸發條件的訊號列表。在組合電路中若漏寫，模擬與電路會不一致。","url":"https://semiconroom.com/zh-hant/term/sensitivity-list/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verilog 的 always @(*) 是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"只要區塊讀取的任何訊號改變，該區塊就會執行，這正是組合邏輯的正確行為。星號讓你不必手動列出訊號，也就不會漏掉。"}},{"@type":"Question","name":"邏輯合成會使用敏感度列表嗎？","acceptedAnswer":{"@type":"Answer","text":"對組合邏輯而言，合成工具基本上會忽略它，依敘述建構邏輯，因此不完整的列表會導致模擬與硬體不一致。時脈區塊中的邊緣關鍵字則用於推論正反器與非同步重設。"}},{"@type":"Question","name":"VHDL 也有敏感度列表嗎？","acceptedAnswer":{"@type":"Answer","text":"有。VHDL 的 process 會在 process 關鍵字之後的括號中列出觸發訊號，VHDL-2008 還加入了 process(all)，相當於 Verilog 的 @(*)。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hdl-verification/">硬體描述語言與驗證</a></p>
 </article>
+<section class="term-about">
+  <h2>模擬器如何使用它</h2>
+  <p>事件驅動模擬器不會持續地計算 always 區塊。它在 @( ) 事件控制處等待，只有在列出的訊號改變時才喚醒區塊；對於 posedge 與 negedge 項目，則只在該特定邊緣喚醒。一切都由此而來：若影響輸出的訊號沒列在清單中，該訊號改變時區塊就不會執行，輸出會一直保持舊值，直到某個列出的訊號變動為止。</p>
+</section>
+<section class="term-about">
+  <h2>不完整的列表與模擬－合成不一致</h2>
+  <p>對於組合邏輯，合成工具大多忽略此列表，而是依區塊中的敘述建構邏輯閘，通常只發出警告。因此「always @(a) y = a &amp; b;」會合成為 y 隨兩個輸入變化的 AND 閘，但模擬器只在 a 改變時才<a class="term-link" href="/zh-hant/term/refresh/">更新</a> y。剛好有切換 a 的測試會通過，但硬體行為卻與 <a class="term-link" href="/zh-hant/term/rtl/">RTL</a> 模擬不同。這種不一致很危險，因為它能通過 RTL 驗證，直到<a class="term-link" href="/zh-hant/term/gate-level-simulation/">閘級模擬</a>或實際晶片才會顯現。</p>
+</section>
+<section class="term-about">
+  <h2>@(*) 與 always_comb</h2>
+  <p><a class="term-link" href="/zh-hant/term/verilog/">Verilog</a>-2001 引入了 always @(*)，會自動納入區塊內讀取的所有訊號，消除遺漏的風險。<a class="term-link" href="/zh-hant/term/systemverilog/">SystemVerilog</a> 的 always_comb 更進一步：它還會在時間零執行一次，使輸出從一開始就一致；對所呼叫函式內讀取的訊號也敏感；並讓工具能標出會推論出鎖存器的區塊。組合邏輯中手寫敏感度列表如今已是最好避免的舊式寫法。</p>
+</section>
+<section class="term-about">
+  <h2>循序區塊中的邊緣</h2>
+  <p>對於<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>，列表指定的是邊緣而非準位。「always @(posedge clk)」描述在時脈上升邊緣取樣的暫存器。加上「or negedge rst_n」則成為非同步低態有效重設：rst_n 下降的瞬間區塊也會執行，因此輸出不必等待時脈就會清除，即使時脈已停止也一樣。「_n」字尾是表示低態有效訊號的常見慣例。重設的解除仍需注意，通常要將它與時脈同步，以滿足 recovery 與 removal 時序。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>Verilog 的 always @(*) 是什麼意思？</h3>
+  <p>只要區塊讀取的任何訊號改變，該區塊就會執行，這正是組合邏輯的正確行為。星號讓你不必手動列出訊號，也就不會漏掉。</p>
+  <h3>邏輯合成會使用敏感度列表嗎？</h3>
+  <p>對組合邏輯而言，合成工具基本上會忽略它，依敘述建構邏輯，因此不完整的列表會導致模擬與硬體不一致。時脈區塊中的邊緣關鍵字則用於推論正反器與非同步重設。</p>
+  <h3>VHDL 也有敏感度列表嗎？</h3>
+  <p>有。VHDL 的 process 會在 process 關鍵字之後的括號中列出觸發訊號，VHDL-2008 還加入了 process(all)，相當於 Verilog 的 @(*)。</p>
+</section>
 
 
 

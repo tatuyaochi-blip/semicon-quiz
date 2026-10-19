@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"比較並交換（Compare-and-swap）","item":"https://semiconroom.com/zh-hant/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"比較並交換（Compare-and-swap）","description":"只有當記憶體的值等於預期值時才寫入新值的原子指令。也寫作 CAS。失敗時重新讀取並重試的迴圈，可在不使用鎖的情況下完成更新。","url":"https://semiconroom.com/zh-hant/term/compare-and-swap/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"比較並交換（Compare-and-swap）","item":"https://semiconroom.com/zh-hant/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"比較並交換（Compare-and-swap）","description":"只有當記憶體的值等於預期值時才寫入新值的原子指令。也寫作 CAS。失敗時重新讀取並重試的迴圈，可在不使用鎖的情況下完成更新。","url":"https://semiconroom.com/zh-hant/term/compare-and-swap/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"比較並交換中的 ABA 問題是什麼？","acceptedAnswer":{"@type":"Answer","text":"某個位置在中途被改成別的值又改回來，但由於它再次持有預期值，CAS 依然成功。這可能破壞會重複使用記憶體的無鎖資料結構，通常以版本計數器或安全記憶體回收來防止。"}},{"@type":"Question","name":"CAS 迴圈是無鎖還是無等待？","acceptedAnswer":{"@type":"Answer","text":"是無鎖。除了弱形式的假性失敗之外，CAS 只會因為另一個執行緒的更新成功而失敗，因此系統整體會持續前進，但個別執行緒需要重試多少次並沒有上限。"}},{"@type":"Question","name":"compare_exchange_weak 和 compare_exchange_strong 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"弱形式即使在值相符時也可能失敗，這讓它能直接對應到 LL/SC 指令，適合用於重試迴圈。強形式只在真正不相符時才失敗，代價是在 LL/SC 機器上需要內部迴圈。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>CAS 保證什麼</h2>
+  <p>CAS（比較並交換）接受一個位址、一個預期值與一個新值。它在一個不可分割的步驟中讀取該位置、與預期值比較，只有在兩者相符時才寫入新值；它會回報成功或失敗，通常是傳回它所讀到的值。在 x86 上，這是 lock cmpxchg 指令。C11 以 atomic_compare_exchange_strong 與 _weak 提供它，C++ 則以 std::atomic 的 compare_exchange_strong 與 compare_exchange_weak 提供。在硬體上，核心會以獨占狀態取得該快取線，使其他核心在操作期間無法寫入。</p>
+</section>
+<section class="term-about">
+  <h2>重試迴圈</h2>
+  <p>無鎖<a class="term-link" href="/zh-hant/term/refresh/">更新</a>會讀取目前的值、由它計算出新值，再以讀到的值作為預期值嘗試 CAS。若在此期間另一個執行緒改變了該位置，CAS 就會失敗，迴圈會重新讀取並再試一次。總會有某個執行緒成功，因此整個系統不需要鎖就能持續前進，這使這類程式碼屬於無鎖（lock-free），但不是無等待（wait-free）：運氣不好的執行緒可能無限次重試。在激烈競爭下，大量重試以及快取線在核心之間來回<a class="term-link" href="/zh-hant/term/contact-bounce/">彈跳</a>，可能讓 CAS 迴圈比簡單的鎖還慢。</p>
+</section>
+<section class="term-about">
+  <h2>ABA 問題</h2>
+  <p>CAS 只檢查值是否相等，而不檢查它是否從未被改變。若某個位置在執行緒讀取與執行 CAS 之間，從 A 變成 B 又變回 A，即使資料結構可能已經不同，CAS 仍會成功。經典例子是無鎖堆疊：某個節點被彈出、釋放，並在另一個執行緒的彈出完成之前，被重新配置在相同位址。常見的對策是將指標與每次變更都會<a class="term-link" href="/zh-hant/term/refresh/">更新</a>的版本計數器配對，以及使用危險指標（hazard pointer）或基於 epoch 的回收等安全記憶體回收機制。</p>
+</section>
+<section class="term-about">
+  <h2>CAS 與 LL/SC 及 fetch-and-add 的比較</h2>
+  <p>許多 RISC 架構改為提供載入連結／條件儲存（LL/SC）：在 RISC-V 中，lr 保留一個位址，sc 只在自那之後沒有其他寫入發生時才儲存，否則失敗。由於它偵測的是任何中間發生的寫入，而不是比較值，原則上能避免 ABA；但保留可能因無關的原因而遺失，這就是 compare_exchange_weak 被允許假性失敗的原因。對於計數器等簡單操作，原子 fetch-and-add，或 RISC-V 的 amoadd 等 AMO 指令，比 CAS 迴圈更好，因為它們永遠不需要重試。</p>
+</section>
 <section>
   <h2>練習比較並交換（Compare-and-swap）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-015" data-cat="multicore-sync" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 只有在記憶體的值等於預期值時才寫入新值，並可得知是否成功</p><p class="explanation">CAS不可分割地執行「若此位址的值仍是預期值，就改為新值」。若在讀取到寫入之間，其他執行緒已改變了值，就會失敗，所以能在確認未被更動的情況下進行<a class="term-link" href="/zh-hant/term/refresh/">更新</a>。失敗時只要重新讀取、計算並重做CAS，形成迴圈，就能在不使用鎖的情況下安全地更新共用的值。x86的cmpxchg指令等便屬於此類。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>比較並交換中的 ABA 問題是什麼？</h3>
+  <p>某個位置在中途被改成別的值又改回來，但由於它再次持有預期值，CAS 依然成功。這可能破壞會重複使用記憶體的無鎖資料結構，通常以版本計數器或安全記憶體回收來防止。</p>
+  <h3>CAS 迴圈是無鎖還是無等待？</h3>
+  <p>是無鎖。除了弱形式的假性失敗之外，CAS 只會因為另一個執行緒的更新成功而失敗，因此系統整體會持續前進，但個別執行緒需要重試多少次並沒有上限。</p>
+  <h3>compare_exchange_weak 和 compare_exchange_strong 有什麼差別？</h3>
+  <p>弱形式即使在值相符時也可能失敗，這讓它能直接對應到 LL/SC 指令，適合用於重試迴圈。強形式只在真正不相符時才失敗，代價是在 LL/SC 機器上需要內部迴圈。</p>
+</section>
 <section>
   <h2>解析中的「比較並交換（Compare-and-swap）」</h2>
   <ul class="term-quotes"><li><p>有CAS（比較並交換）、取得並相加（fetch-and-add），以及RISC-V的LR/SC與AMO指令等，是建構鎖與無鎖資料結構的基礎。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-014/">關於原子指令（不可分割指令），下列說明何者正確？</a></li></ul>

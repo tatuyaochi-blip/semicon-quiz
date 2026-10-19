@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"目錄式一致性（Directory-based coherence）","item":"https://semiconroom.com/zh-hant/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"目錄式一致性（Directory-based coherence）","description":"以表記錄各行由哪個核心持有，只通知相關核心的一致性方式。用於核心數多的系統。","url":"https://semiconroom.com/zh-hant/term/directory-based-coherence/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"目錄式一致性（Directory-based coherence）","item":"https://semiconroom.com/zh-hant/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"目錄式一致性（Directory-based coherence）","description":"以表記錄各行由哪個核心持有，只通知相關核心的一致性方式。用於核心數多的系統。","url":"https://semiconroom.com/zh-hant/term/directory-based-coherence/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為什麼目錄式一致性比窺探式更具擴展性？","acceptedAnswer":{"@type":"Answer","text":"它只把失效訊息與請求送給實際持有該快取線的快取，而不是廣播給所有快取。因此流量取決於實際的共用情形，而不會隨核心數增加。"}},{"@type":"Question","name":"目錄式一致性比窺探式慢嗎？","acceptedAnswer":{"@type":"Answer","text":"每次未命中可能耗時較久，因為必須查詢主節點的目錄，請求也可能被轉送；但在大型系統中，減少的流量與競爭通常勝過增加的延遲。"}},{"@type":"Question","name":"什麼是窺探過濾器（snoop filter）？","acceptedAnswer":{"@type":"Answer","text":"這是一種記錄哪些快取可能持有各條快取線的結構，使一致性請求只送往那些快取。本質上它是用於窺探式設計中、以削減廣播流量的目錄。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
+<section class="term-about">
+  <h2>目錄儲存什麼</h2>
+  <p>每條記憶體快取線都有一個主節點（home node），通常由其位址決定，主節點為它保存一個目錄項目：一致性狀態，例如未快取、共用或獨占，以及哪些快取持有副本的紀錄。最簡單的紀錄是完整位元向量，每個核心或快取對應一個位元。目錄項目位於記憶體控制器旁，或在共用的最末級快取中。由於請求只送往一個主節點而非所有節點，互連網路可以是點對點連結構成的網格，而不必是廣播匯流排。</p>
+</section>
+<section class="term-about">
+  <h2>一次寫入的逐步流程</h2>
+  <p>想要寫入自己不擁有之快取線的核心，會向該快取線的主節點送出請求。主節點查詢目錄，只向標記為共用者的快取送出失效訊息；這些快取丟棄其副本並回覆確認，對象可能是主節點或直接是請求者。所有確認都到齊後，請求者取得獨占所有權，目錄則將其記錄為擁有者。若另一個快取以修改狀態持有該快取線，主節點會把請求轉送給該擁有者，由它把資料送給請求者，這就是所謂的三跳（three-hop）交易。</p>
+</section>
+<section class="term-about">
+  <h2>窺探式與目錄式的比較</h2>
+  <p><a class="term-link" href="/zh-hant/term/bus-snooping/">窺探</a>式（snooping）把每次未命中廣播給所有快取，由於不需要額外查詢，延遲較低，但流量與窺探工作量會隨核心數增加，因此只適用於小型系統。目錄式增加了在主節點查詢的延遲，有時還多一跳，但只把訊息送到需要的地方，因此流量隨實際共用程度而非核心數增加。所以大型多核心晶片與多插槽系統使用目錄式或混合式設計，例如以窺探過濾器（snoop filter）追蹤哪些快取可能持有某條快取線，從而省去大部分廣播。</p>
+</section>
+<section class="term-about">
+  <h2>讓目錄本身保持精簡</h2>
+  <p>隨著核心數增加，為每條記憶體快取線都配置完整位元向量會耗費過多儲存空間，因此實際設計會設法節省。有限指標方案只儲存少數幾個共用者 ID，當共用的快取更多時則退回廣播；粗粒度向量則每一組核心使用一個位元。稀疏目錄只追蹤實際被快取的快取線，其本身也像快取一樣組織。當稀疏目錄的項目用完時，必須逐出一個項目，這會迫使所有持有該快取線的快取將其失效，因此其容量必須相對於所追蹤的快取配置得相當充裕。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為什麼目錄式一致性比窺探式更具擴展性？</h3>
+  <p>它只把失效訊息與請求送給實際持有該快取線的快取，而不是廣播給所有快取。因此流量取決於實際的共用情形，而不會隨核心數增加。</p>
+  <h3>目錄式一致性比窺探式慢嗎？</h3>
+  <p>每次未命中可能耗時較久，因為必須查詢主節點的目錄，請求也可能被轉送；但在大型系統中，減少的流量與競爭通常勝過增加的延遲。</p>
+  <h3>什麼是窺探過濾器（snoop filter）？</h3>
+  <p>這是一種記錄哪些快取可能持有各條快取線的結構，使一致性請求只送往那些快取。本質上它是用於窺探式設計中、以削減廣播流量的目錄。</p>
+</section>
 
 
 

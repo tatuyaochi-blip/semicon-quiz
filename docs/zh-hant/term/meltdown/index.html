@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Meltdown","item":"https://semiconroom.com/zh-hant/term/meltdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Meltdown","description":"在部分 CPU 上，於權限檢查造成例外之前，可推測性地讀取核心記憶體，並能從快取痕跡推測其值的弱點。已用 KPTI 等對策因應。","url":"https://semiconroom.com/zh-hant/term/meltdown/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Meltdown","item":"https://semiconroom.com/zh-hant/term/meltdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Meltdown","description":"在部分 CPU 上，於權限檢查造成例外之前，可推測性地讀取核心記憶體，並能從快取痕跡推測其值的弱點。已用 KPTI 等對策因應。","url":"https://semiconroom.com/zh-hant/term/meltdown/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Meltdown 和 Spectre 是一樣的嗎？","acceptedAnswer":{"@type":"Answer","text":"不一樣。兩者都透過推測執行的快取痕跡洩漏資料，但 Meltdown 是越過延遲的權限檢查讀取核心記憶體，而 Spectre 是誘使受害程式自身的推測執行去存取機密資料。"}},{"@type":"Question","name":"為什麼 Meltdown 修補程式會讓電腦變慢？","acceptedAnswer":{"@type":"Answer","text":"KPTI 在使用者模式與核心模式之間每次轉換時都切換頁表，使每次系統呼叫與中斷都增加額外負擔與 TLB 未命中。大量進行系統呼叫的程式受影響最大。"}},{"@type":"Question","name":"新的 CPU 還會受到 Meltdown 影響嗎？","acceptedAnswer":{"@type":"Answer","text":"揭露後設計的處理器一般會阻止引發錯誤的資料傳到相依指令，作業系統偵測到這類 CPU 時會略過 KPTI。較舊的受影響 CPU 仍需依靠軟體對策。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hw-security/">硬體安全</a></p>
 </article>
-
+<section class="term-about">
+  <h2>攻擊的運作方式</h2>
+  <p>2018 年揭露的 Meltdown 濫用了<a class="term-link" href="/zh-hant/term/out-of-order-execution/">亂序執行</a>。使用者程式對核心位址發出載入。依架構規定，這必須引發權限錯誤且不傳回任何東西，但在受影響的處理器上，載入的值在錯誤生效之前就已轉送給相依的指令。這些暫態指令以該機密位元組作為索引，存取使用者擁有的探測陣列，將特定的一條快取線拉進快取。最終引發錯誤時，暫存器結果會被捨棄，但快取狀態並不會被回復。</p>
+</section>
+<section class="term-about">
+  <h2>透過快取讀出機密</h2>
+  <p>接著攻擊者對探測陣列的每個項目量測存取時間。唯一一個載入很快的項目（快取命中，而非緩慢地存取 DRAM）就揭露了被暫態讀取的值。這種時序旁通道通常以 flush-and-reload 技術建構，逐位元組重複執行以傾印核心記憶體。權限錯誤本身可以用訊號處理常式攔截或以其他方式抑制，因此洩漏能以實用的速率進行。</p>
+</section>
+<section class="term-about">
+  <h2>Meltdown 與 Spectre</h2>
+  <p>兩種攻擊都依賴暫態執行在快取中留下的痕跡，但繞過的對象不同。Meltdown 利用太晚完成的權限檢查，直接突破使用者／核心的權限邊界，且它依賴部分處理器設計中特有的微架構行為。<a class="term-link" href="/zh-hant/term/spectre/">Spectre</a> 則是誤導<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>器，使受害者自身具合法權限的程式碼推測性地存取攻擊者選定的資料。Spectre 影響幾乎所有高效能<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a> CPU，也更難完全消除。</p>
+</section>
+<section class="term-about">
+  <h2>KPTI 與硬體修正</h2>
+  <p>主要的軟體對策是核心<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>隔離（<a class="term-link" href="/zh-hant/term/kernel-page-table-isolation/">KPTI</a>），在使用者程式碼執行時所用的頁表中不再映射大部分核心記憶體；只保留進入核心所需的一小段 stub。沒有位址轉換，資料就連暫態地載入都不可能。代價是每次<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>、<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>與例外都要切換頁表，可能明顯拖慢大量使用系統呼叫的工作負載；行程上下文識別碼（PCID）可減輕 <a class="term-link" href="/zh-hant/term/tlb/">TLB</a> 清除的損失。已在硬體上修正的處理器不需要 KPTI。</p>
+</section>
 <section>
   <h2>練習Meltdown的題目</h2>
   <article class="q-mini" data-qid="hw-security-008" data-cat="hw-security" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 在使用者程式執行期間，將核心記憶體的大部分從分頁表中移除，使其連推測也無法讀取</p><p class="explanation">以往的作業系統為了加快切換，會在使用者行程的分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>中也放入核心記憶體（並標上禁止存取的標記）。在<a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>中，由於能在檢查該標記之前就推測讀取，<a class="term-link" href="/zh-hant/term/kernel-page-table-isolation/">KPTI</a>便在使用者程式執行期間，連核心分頁的對應本身都移除。位址無法轉換，就連推測也讀不到。不過，每次<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>都要切換分頁表，因此效能會下降。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>Meltdown 和 Spectre 是一樣的嗎？</h3>
+  <p>不一樣。兩者都透過推測執行的快取痕跡洩漏資料，但 Meltdown 是越過延遲的權限檢查讀取核心記憶體，而 Spectre 是誘使受害程式自身的推測執行去存取機密資料。</p>
+  <h3>為什麼 Meltdown 修補程式會讓電腦變慢？</h3>
+  <p>KPTI 在使用者模式與核心模式之間每次轉換時都切換頁表，使每次系統呼叫與中斷都增加額外負擔與 TLB 未命中。大量進行系統呼叫的程式受影響最大。</p>
+  <h3>新的 CPU 還會受到 Meltdown 影響嗎？</h3>
+  <p>揭露後設計的處理器一般會阻止引發錯誤的資料傳到相依指令，作業系統偵測到這類 CPU 時會略過 KPTI。較舊的受影響 CPU 仍需依靠軟體對策。</p>
+</section>
 <section>
   <h2>解析中的「Meltdown」</h2>
   <ul class="term-quotes"><li><p>在Meltdown中，由於能在檢查該標記之前就推測讀取，KPTI便在使用者程式執行期間，連核心分頁的對應本身都移除。</p><a href="/zh-hant/q/hw-security/hw-security-009/">下列關於作為Meltdown的軟體對策而導入的KPTI（核心分頁表隔離）的概念，何者正確？</a></li><li><p>2018 年公開的 Spectre 與 Meltdown，是利用投機執行的指令結果雖然被取消、但所讀取的資料仍留在快取中的特性，從存取時間的差異（旁通道，side channel）推測出原本無法讀取之機密資料的攻擊。</p><a href="/zh-hant/q/cpu/cpu-027/">利用投機執行的痕跡殘留在快取中，推測本來無法存取之資料的攻擊，其被揭露的漏洞例子是下列何者？</a></li></ul>

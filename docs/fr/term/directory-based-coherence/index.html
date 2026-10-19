@@ -16,7 +16,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Protocole à répertoire (directory-based)","item":"https://semiconroom.com/fr/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Protocole à répertoire (directory-based)","description":"Méthode de cohérence qui enregistre dans une table quels cœurs détiennent chaque ligne et ne notifie que les cœurs concernés. Utilisée dans les systèmes à grand nombre de cœurs.","url":"https://semiconroom.com/fr/term/directory-based-coherence/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Protocole à répertoire (directory-based)","item":"https://semiconroom.com/fr/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Protocole à répertoire (directory-based)","description":"Méthode de cohérence qui enregistre dans une table quels cœurs détiennent chaque ligne et ne notifie que les cœurs concernés. Utilisée dans les systèmes à grand nombre de cœurs.","url":"https://semiconroom.com/fr/term/directory-based-coherence/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Pourquoi la cohérence par répertoire passe-t-elle mieux à l'échelle que l'espionnage ?","acceptedAnswer":{"@type":"Answer","text":"Elle n'envoie les invalidations et les requêtes qu'aux caches qui détiennent réellement une ligne au lieu de les diffuser à tous. Le trafic suit donc le partage réel au lieu de croître avec le nombre de cœurs."}},{"@type":"Question","name":"La cohérence par répertoire est-elle plus lente que l'espionnage ?","acceptedAnswer":{"@type":"Answer","text":"Chaque échec peut prendre plus de temps, car le répertoire du nœud de rattachement doit être consulté et les requêtes peuvent être retransmises, mais dans les grands systèmes la réduction du trafic et de la contention l'emporte généralement sur cette latence supplémentaire."}},{"@type":"Question","name":"Qu'est-ce qu'un filtre d'espionnage (snoop filter) ?","acceptedAnswer":{"@type":"Answer","text":"Une structure qui enregistre quels caches peuvent détenir chaque ligne, afin que les requêtes de cohérence ne soient envoyées qu'à ces caches. C'est essentiellement un répertoire utilisé pour réduire le trafic de diffusion dans une conception de type espionnage."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Domaine: <a href="/fr/c/multicore-sync/">Multicœur et synchronisation</a></p>
 </article>
+<section class="term-about">
+  <h2>Ce que stocke le répertoire</h2>
+  <p>Chaque ligne mémoire a un nœud de rattachement (home), généralement déterminé par son adresse, et ce nœud tient pour elle une entrée de répertoire : un état de cohérence comme non cachée, partagée ou exclusive, ainsi qu&#39;un relevé des caches qui en détiennent des copies. Le relevé le plus simple est un vecteur de bits complet, avec un bit par cœur ou par cache. Les entrées se trouvent à côté des contrôleurs mémoire ou dans le cache de dernier niveau partagé. Comme les requêtes vont vers un seul nœud de rattachement au lieu d&#39;être envoyées à tous, l&#39;interconnexion peut être un maillage de liaisons point à point plutôt qu&#39;un bus de diffusion.</p>
+</section>
+<section class="term-about">
+  <h2>Une écriture, étape par étape</h2>
+  <p>Un cœur qui veut écrire une ligne qu&#39;il ne possède pas envoie une requête au nœud de rattachement de la ligne. Celui-ci consulte le répertoire et n&#39;envoie des invalidations qu&#39;aux caches marqués comme détenteurs ; ils abandonnent leurs copies et acquittent, soit auprès du nœud de rattachement, soit directement auprès du demandeur. Une fois tous les acquittements reçus, le demandeur obtient la propriété exclusive et le répertoire l&#39;enregistre comme propriétaire. Si un autre cache détenait la ligne à l&#39;état modifié, le nœud de rattachement transmet la requête à ce propriétaire, qui envoie les données au demandeur : c&#39;est une transaction dite à trois sauts.</p>
+</section>
+<section class="term-about">
+  <h2>Espionnage et répertoire</h2>
+  <p>L&#39;espionnage (<a class="term-link" href="/fr/term/bus-snooping/">snooping</a>) diffuse chaque échec à tous les caches, ce qui donne une faible latence faute de consultation supplémentaire, mais le trafic et le travail d&#39;espionnage croissent avec le nombre de cœurs, ce qui le limite aux petits systèmes. Un répertoire ajoute la latence d&#39;une consultation au nœud de rattachement et parfois un saut supplémentaire, mais n&#39;envoie des messages que là où c&#39;est nécessaire, si bien que le trafic croît avec le partage réel plutôt qu&#39;avec le nombre de cœurs. Les grandes puces multicœurs et les systèmes multi-sockets utilisent donc des répertoires ou des solutions hybrides, comme les filtres d&#39;espionnage (snoop filters) qui suivent quels caches peuvent détenir une ligne, afin que la plupart des diffusions puissent être évitées.</p>
+</section>
+<section class="term-about">
+  <h2>Garder le répertoire lui-même compact</h2>
+  <p>Un vecteur de bits complet pour chaque ligne mémoire coûterait trop de stockage à mesure que le nombre de cœurs augmente ; les conceptions pratiques économisent donc. Les schémas à pointeurs limités stockent quelques identifiants de détenteurs et se replient sur la diffusion si davantage de caches partagent la ligne ; les vecteurs grossiers utilisent un bit par groupe de cœurs. Les répertoires creux (sparse) ne suivent que les lignes effectivement présentes en cache, et sont eux-mêmes organisés comme un cache. Lorsqu&#39;un répertoire creux manque d&#39;entrées, il doit en évincer une, ce qui force l&#39;invalidation de cette ligne dans tous les caches qui la détiennent ; sa capacité doit donc être dimensionnée largement par rapport aux caches qu&#39;il suit.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Pourquoi la cohérence par répertoire passe-t-elle mieux à l&#39;échelle que l&#39;espionnage ?</h3>
+  <p>Elle n&#39;envoie les invalidations et les requêtes qu&#39;aux caches qui détiennent réellement une ligne au lieu de les diffuser à tous. Le trafic suit donc le partage réel au lieu de croître avec le nombre de cœurs.</p>
+  <h3>La cohérence par répertoire est-elle plus lente que l&#39;espionnage ?</h3>
+  <p>Chaque échec peut prendre plus de temps, car le répertoire du nœud de rattachement doit être consulté et les requêtes peuvent être retransmises, mais dans les grands systèmes la réduction du trafic et de la contention l&#39;emporte généralement sur cette latence supplémentaire.</p>
+  <h3>Qu&#39;est-ce qu&#39;un filtre d&#39;espionnage (snoop filter) ?</h3>
+  <p>Une structure qui enregistre quels caches peuvent détenir chaque ligne, afin que les requêtes de cohérence ne soient envoyées qu&#39;à ces caches. C&#39;est essentiellement un répertoire utilisé pour réduire le trafic de diffusion dans une conception de type espionnage.</p>
+</section>
 
 
 

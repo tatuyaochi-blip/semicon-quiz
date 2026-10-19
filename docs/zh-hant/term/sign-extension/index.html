@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"符號擴展","item":"https://semiconroom.com/zh-hant/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"符號擴展","description":"將位元數較少的有號整數擴展為位元數較多時，把最高位元(符號)複製到上方所有位數。可在不改變值的情況下擴展。以0填滿高位的是零擴展。","url":"https://semiconroom.com/zh-hant/term/sign-extension/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"符號擴展","item":"https://semiconroom.com/zh-hant/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"符號擴展","description":"將位元數較少的有號整數擴展為位元數較多時，把最高位元(符號)複製到上方所有位數。可在不改變值的情況下擴展。以0填滿高位的是零擴展。","url":"https://semiconroom.com/zh-hant/term/sign-extension/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"符號擴展和零擴展有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"符號擴展以原本最高位元的複本填滿新的高位元，保持有號數的值。零擴展則以零填滿，保持無號數的值。"}},{"@type":"Question","name":"RISC-V 的 addi 為什麼要對立即值做符號擴展？","acceptedAnswer":{"@type":"Answer","text":"這樣一條指令就能加上負常數，例如 addi sp, sp, -16。12 位元欄位因此涵蓋 -2048 到 2047，而不只是非負值。"}},{"@type":"Question","name":"在 C 語言中如何對數值做符號擴展？","acceptedAnswer":{"@type":"Answer","text":"把它存放在原始寬度的有號型別中，例如 int8_t 或 int16_t，再指派給較寬的有號型別；轉換會自動進行符號擴展，編譯器也會產生對應的符號擴展指令。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/isa-assembly/">指令集與組合語言</a></p>
 </article>
+<section class="term-about">
+  <h2>為何複製符號位元能保持數值</h2>
+  <p>在 n 位元<a class="term-link" href="/zh-hant/term/two-s-complement/">二補數</a>中，最高位元的權重為負的 2 的 n-1 次方，其他位元則是一般的正權重。將負數擴展一個位元時，會加上一個權重為負的 2 的 n 次方的新最高位元，並使原本的最高位元變成正的 2 的 n-1 次方；兩者合計仍貢獻負的 2 的 n-1 次方，因此數值不變。對每個新增位元重複此推論，即可證明此規則。例如，4 位元的 1010（-6）會變成 8 位元的 11111010，仍為 -6。</p>
+</section>
+<section class="term-about">
+  <h2>ISA 在哪些地方進行符號擴展</h2>
+  <p><a class="term-link" href="/zh-hant/term/immediate-operand/">立即值</a>是最常見的情況：RISC-V 的 12 位元 I 型立即值會被符號擴展，因此 addi 可接受 -2048 到 2047，負常數不需另外的減法指令即可使用。載入指令成對出現，lb 與 lh 做符號擴展，lbu 與 lhu 做零擴展。在 RV64 上，lw 把 32 位元值符號擴展為 64 位元，lwu 則做零擴展，而 addw 等字組指令會把其 32 位元結果符號擴展。x86 為同樣目的提供 movsx 與 movzx。在硬體上，符號擴展的成本只不過是把最高位元接線到所有新的位置。</p>
+</section>
+<section class="term-about">
+  <h2>經典陷阱：lui 加 addi</h2>
+  <p>要建構 32 位元常數，RISC-V 程式碼以 lui 處理上位 20 位元，以 addi 處理下位 12 位元。由於 addi 會符號擴展其<a class="term-link" href="/zh-hant/term/immediate-operand/">立即值</a>，0x800 以上的下位部分會被當作負數，即其值減去 4096。<a class="term-link" href="/zh-hant/term/assembler/">組譯器</a>的補償方式是：只要常數的第 11 位元為 1，就在上位部分加 1，而 %hi 與 %lo <a class="term-link" href="/zh-hant/term/relocation/">重定位</a>運算子會自動做到這一點。若手寫程式碼單純地分割常數，產生的值會恰好差 4096，這種錯誤在測試中很容易被忽略。</p>
+</section>
+<section class="term-about">
+  <h2>C 語言中的符號擴展與零擴展</h2>
+  <p>C 語言依來源型別選擇擴展方式：將 signed char 或 int16_t 轉換為 int 時做符號擴展，轉換無號型別時則做零擴展。單純的 char 在某些平台上是有號的、在其他平台上是無號的，例如在 x86 上為有號，但在大多數 Arm Linux 系統上為無號，因此位元組值 0xFF 可能依目標平台變成 -1 或 255。當位元組與常數比較或用作陣列索引時，這種差異就會造成錯誤。原始位元組使用 unsigned char 或 uint8_t 可避免這種歧義。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>符號擴展和零擴展有什麼差別？</h3>
+  <p>符號擴展以原本最高位元的複本填滿新的高位元，保持有號數的值。零擴展則以零填滿，保持無號數的值。</p>
+  <h3>RISC-V 的 addi 為什麼要對立即值做符號擴展？</h3>
+  <p>這樣一條指令就能加上負常數，例如 addi sp, sp, -16。12 位元欄位因此涵蓋 -2048 到 2047，而不只是非負值。</p>
+  <h3>在 C 語言中如何對數值做符號擴展？</h3>
+  <p>把它存放在原始寬度的有號型別中，例如 int8_t 或 int16_t，再指派給較寬的有號型別；轉換會自動進行符號擴展，編譯器也會產生對應的符號擴展指令。</p>
+</section>
 
 
 

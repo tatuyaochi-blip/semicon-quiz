@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"記憶體對映I/O","item":"https://semiconroom.com/zh-hant/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"記憶體對映I/O","description":"將周邊裝置的暫存器配置到與記憶體相同位址空間的特定位址，以一般的讀寫指令操作的方式。該區域會設定為不快取。","url":"https://semiconroom.com/zh-hant/term/memory-mapped-i-o/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"記憶體對映I/O","item":"https://semiconroom.com/zh-hant/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"記憶體對映I/O","description":"將周邊裝置的暫存器配置到與記憶體相同位址空間的特定位址，以一般的讀寫指令操作的方式。該區域會設定為不快取。","url":"https://semiconroom.com/zh-hant/term/memory-mapped-i-o/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"記憶體對映 I/O 和埠對映 I/O 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"記憶體對映 I/O 把裝置暫存器放在一般的記憶體位址空間中，以一般的 load 與 store 存取；埠對映 I/O 則使用獨立的位址空間與 x86 IN、OUT 等特殊指令。"}},{"@type":"Question","name":"記憶體對映暫存器為什麼必須宣告為 volatile？","acceptedAnswer":{"@type":"Answer","text":"裝置可能獨立於程式改變暫存器的值，因此 volatile 強制編譯器執行每一次讀寫，而不是把值暫存在暫存器中或刪除看似多餘的存取。"}},{"@type":"Question","name":"記憶體對映 I/O 空間為什麼不快取？","acceptedAnswer":{"@type":"Answer","text":"快取會傳回過時的值而非裝置的目前狀態，也可能延遲或合併寫入，因此裝置區域會以不快取或裝置屬性對映。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
+<section class="term-about">
+  <h2>運作方式</h2>
+  <p>處理器的位址<a class="term-link" href="/zh-hant/term/decoder/">解碼器</a>會把特定位址範圍導向周邊裝置，而非 RAM。計時器的控制暫存器、<a class="term-link" href="/zh-hant/term/uart/">UART</a> 的資料暫存器或 <a class="term-link" href="/zh-hant/term/gpio/">GPIO</a> 埠，各自出現在固定的位址上，一般的 load 與 store 指令就成為對該裝置的讀寫交易。與記憶體不同，這些存取可能帶有副作用：讀取狀態或資料暫存器可能清除旗標或從 FIFO 取出資料，寫入 1 可能清除<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>，而且由於硬體獨立於程式<a class="term-link" href="/zh-hant/term/refresh/">更新</a>數值，值隨時都可能改變。</p>
+</section>
+<section class="term-about">
+  <h2>記憶體對映 I/O 與埠對映 I/O 的比較</h2>
+  <p>埠對映 I/O 為裝置提供獨立的位址空間，只能透過專用指令存取，例如 x86 的 IN 與 OUT。記憶體對映 I/O 不需要特殊指令，因此可以用所有<a class="term-link" href="/zh-hant/term/addressing-mode/">定址模式</a>、指標與 C 結構體來存取暫存器，讓指令集保持簡單。它是 ARM 與 RISC-V <a class="term-link" href="/zh-hant/term/microcontroller/">微控制器</a>的標準做法；即使在 x86 系統上，<a class="term-link" href="/zh-hant/term/pci-express/">PCI Express</a> 裝置也透過記憶體對映區域公開大部分暫存器，傳統的埠 I/O 主要是為了相容性而保留。</p>
+</section>
+<section class="term-about">
+  <h2>快取、volatile 與順序</h2>
+  <p>裝置區域必須設定為不快取；否則 CPU 可能一直重讀過時的快取副本而看不到裝置的變化，或把寫入留在快取中。在 C 語言中，暫存器指標會宣告為 volatile，讓編譯器完全照寫法執行每一次存取，而不是只讀一次然後無限迴圈，或刪除重複的寫入。不過 volatile 無法控制硬體的重新排序或寫入緩衝。處理器與匯流排可能延後送出（post）寫入，因此驅動程式會使用<a class="term-link" href="/zh-hant/term/memory-barrier/">記憶體屏障</a>或裝置記憶體屬性，有時還會回讀，以確保順序與完成。</p>
+</section>
+<section class="term-about">
+  <h2>作業系統中的 MMIO</h2>
+  <p>在具有<a class="term-link" href="/zh-hant/term/virtual-memory/">虛擬記憶體</a>的系統上，裝置暫存器的實體位址必須先以不快取屬性對映到核心的虛擬位址空間，驅動程式才能使用；有時也會為了使用者空間驅動程式而對映到使用者行程。MMIO 通常用於控制與狀態：設定裝置、啟動操作與確認<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>。大量資料則通常以 <a class="term-link" href="/zh-hant/term/dma/">DMA</a>（直接記憶體存取）搬移，由裝置本身讀寫主記憶體，而非由 CPU 透過暫存器複製。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>記憶體對映 I/O 和埠對映 I/O 有什麼差別？</h3>
+  <p>記憶體對映 I/O 把裝置暫存器放在一般的記憶體位址空間中，以一般的 load 與 store 存取；埠對映 I/O 則使用獨立的位址空間與 x86 IN、OUT 等特殊指令。</p>
+  <h3>記憶體對映暫存器為什麼必須宣告為 volatile？</h3>
+  <p>裝置可能獨立於程式改變暫存器的值，因此 volatile 強制編譯器執行每一次讀寫，而不是把值暫存在暫存器中或刪除看似多餘的存取。</p>
+  <h3>記憶體對映 I/O 空間為什麼不快取？</h3>
+  <p>快取會傳回過時的值而非裝置的目前狀態，也可能延遲或合併寫入，因此裝置區域會以不快取或裝置屬性對映。</p>
+</section>
 
 
 

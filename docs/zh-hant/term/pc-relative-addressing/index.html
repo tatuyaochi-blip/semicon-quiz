@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"PC相對定址","item":"https://semiconroom.com/zh-hant/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC相對定址","description":"以距離目前指令位址(PC)的距離，表示分支目的地或資料位址的方法。不論程式放在哪裡距離都不變，因此是位置無關程式碼的基礎。","url":"https://semiconroom.com/zh-hant/term/pc-relative-addressing/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"PC相對定址","item":"https://semiconroom.com/zh-hant/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC相對定址","description":"以距離目前指令位址(PC)的距離，表示分支目的地或資料位址的方法。不論程式放在哪裡距離都不變，因此是位置無關程式碼的基礎。","url":"https://semiconroom.com/zh-hant/term/pc-relative-addressing/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"RISC-V 分支指令的範圍是多少？","acceptedAnswer":{"@type":"Answer","text":"beq 等條件分支具有以 2 位元組為單位的 13 位元有號偏移，可達距分支約 ±4 KiB。jal 可達約 ±1 MiB，auipc 搭配 jalr 則可達約 ±2 GiB。"}},{"@type":"Question","name":"x86-64 為什麼使用 RIP 相對定址？","acceptedAnswer":{"@type":"Answer","text":"它讓程式碼能以相對於目前指令的方式存取全域資料，因此位置無關程式碼既不需要載入時修補，也不需要專用的基底暫存器。32 位元 x86 沒有這種用於資料的模式。"}},{"@type":"Question","name":"共用函式庫一定需要 PC 相對定址嗎？","acceptedAnswer":{"@type":"Answer","text":"實務上是的。共用函式庫在不同行程中會被載入到不同位址，PC 相對的分支與資料參照，加上透過 GOT 等表格的間接存取，讓相同的程式碼分頁在任何地方都能運作。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/isa-assembly/">指令集與組合語言</a></p>
 </article>
-
+<section class="term-about">
+  <h2>目標位址如何計算</h2>
+  <p>指令中含有一個有號偏移量，硬體將其<a class="term-link" href="/zh-hant/term/sign-extension/">符號擴展</a>後，加到由程式計數器（PC）導出的參考位址上。在 RISC-V 中，參考位址是分支指令本身的位址。條件分支編碼 13 位元的偶數偏移，可達約 ±4 KiB；jal 編碼 21 位元偏移，約 ±1 MiB。更遠的目標則由 auipc 把左移 12 位元的 20 位元上位<a class="term-link" href="/zh-hant/term/immediate-operand/">立即值</a>加到 PC 上，再由接續的 jalr、addi 或載入指令提供低 12 位元，合起來可達約 ±2 GiB。其他 <a class="term-link" href="/zh-hant/term/instruction-set-architecture/">ISA</a> 使用不同的參考點，例如 x86 使用下一條指令的位址。</p>
+</section>
+<section class="term-about">
+  <h2>它為何能實現位置無關程式碼</h2>
+  <p><a class="term-link" href="/zh-hant/term/position-independent-code/">位置無關程式碼</a>（PIC）必須在載入到任何位址時都能正確執行。若使用絕對位址，<a class="term-link" href="/zh-hant/term/program-loader/">載入器</a>就必須修補每一條指名位址的指令，這不僅耗時，還會讓每個行程的程式碼副本各不相同，無法在行程之間共用相同的實體分頁。同一映像內各部分之間的 PC 相對偏移，在整個映像移動時不會改變，因此不需要修補。共用函式庫，以及為了安全而載入到隨機位址的執行檔（<a class="term-link" href="/zh-hant/term/address-space-layout-randomization/">位址空間配置隨機化</a>，ASLR），都仰賴這一點。</p>
+</section>
+<section class="term-about">
+  <h2>不只存取程式碼，也存取資料</h2>
+  <p>PC 相對定址對資料同樣重要。x86-64 引入了 RIP 相對定址，讓載入與儲存指令能以相對於指令指標的方式指名全域變數；32 位元 x86 沒有這種模式，迫使該架構上的 PIC 以 call 技巧取得 PC，並為此專用一個暫存器。對於最終位址要到執行時才知道的符號，例如另一個共用函式庫中的變數，程式碼會以 PC 相對方式從<a class="term-link" href="/zh-hant/term/global-offset-table/">全域偏移表</a>（GOT）載入；GOT 是由<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>在載入時一次填好的位址表。</p>
+</section>
+<section class="term-about">
+  <h2>PC 相對定址與其他定址模式的比較</h2>
+  <p>絕對定址指名固定的位址，程式碼移動時必須<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>。暫存器間接定址透過暫存器中的位址進行跳躍或載入，函式指標、虛擬呼叫與返回就是這樣運作的，因為它們的目標在組譯時尚不知道。PC 相對定址涵蓋了相對於程式碼固定之目標這一大片中間地帶：迴圈分支、程式內部的呼叫，以及對自身常數與全域變數的存取。其限制在於偏移欄位的寬度，這就是 auipc 加 jalr 這類長距離指令序列存在的原因。</p>
+</section>
 <section>
   <h2>練習PC相對定址的題目</h2>
   <article class="q-mini" data-qid="isa-assembly-011" data-cat="isa-assembly" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 無論將程式載入記憶體的哪個位址，都不必改寫指令就能執行</p><p class="explanation">PC相對的分支是以「從這裡往前多少位元組」的距離來表示目的地，所以即使將整個程式移到別的位址，距離也不變，可以直接執行。這是共用函式庫等使用的<a class="term-link" href="/zh-hant/term/position-independent-code/">位置無關程式碼</a>（PIC）的基礎。不過因為表示距離的位元數有限，要跳到遠處時，會組合使用auipc與jalr。<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>的必要性與表示方式無關。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>RISC-V 分支指令的範圍是多少？</h3>
+  <p>beq 等條件分支具有以 2 位元組為單位的 13 位元有號偏移，可達距分支約 ±4 KiB。jal 可達約 ±1 MiB，auipc 搭配 jalr 則可達約 ±2 GiB。</p>
+  <h3>x86-64 為什麼使用 RIP 相對定址？</h3>
+  <p>它讓程式碼能以相對於目前指令的方式存取全域資料，因此位置無關程式碼既不需要載入時修補，也不需要專用的基底暫存器。32 位元 x86 沒有這種用於資料的模式。</p>
+  <h3>共用函式庫一定需要 PC 相對定址嗎？</h3>
+  <p>實務上是的。共用函式庫在不同行程中會被載入到不同位址，PC 相對的分支與資料參照，加上透過 GOT 等表格的間接存取，讓相同的程式碼分頁在任何地方都能運作。</p>
+</section>
 <section>
   <h2>解析中的「PC相對定址」</h2>
   <ul class="term-quotes"><li><p>RISC-V的分支指令，是以「距離目前指令的位址（PC）往前多少位元組」這種帶正負號的距離來表示分支目標，稱為PC相對定址。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-010/">在RISC-V的條件分支指令「beq a0, a1, label」中，分支目標label的位址是如何表示的？</a></li></ul>

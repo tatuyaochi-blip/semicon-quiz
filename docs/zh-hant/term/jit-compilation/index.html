@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"JIT編譯(即時編譯)","item":"https://semiconroom.com/zh-hant/term/jit-compilation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"JIT編譯(即時編譯)","description":"在程式執行中，將經常執行的部分編譯成機器碼的方式。可進行利用執行時資訊的最佳化。用於Java與JavaScript的執行環境等。","url":"https://semiconroom.com/zh-hant/term/jit-compilation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"JIT編譯(即時編譯)","item":"https://semiconroom.com/zh-hant/term/jit-compilation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"JIT編譯(即時編譯)","description":"在程式執行中，將經常執行的部分編譯成機器碼的方式。可進行利用執行時資訊的最佳化。用於Java與JavaScript的執行環境等。","url":"https://semiconroom.com/zh-hant/term/jit-compilation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"JIT 編譯比 AOT 編譯快嗎？","acceptedAnswer":{"@type":"Answer","text":"視工作負載而定。由於 JIT 利用真實的剖析資料進行最佳化，在長時間執行的程式上，其程式碼可追平甚至勝過 AOT 程式碼；但在啟動時間、記憶體用量與可預測性方面，AOT 較佔優勢。"}},{"@type":"Question","name":"JIT 暖機（warm-up）是什麼？","acceptedAnswer":{"@type":"Answer","text":"是指程式碼在直譯器或基線層中執行、而執行環境一邊剖析一邊編譯熱門部分的初期階段。在暖機期間量測的效能，會低估穩態下的速度。"}},{"@type":"Question","name":"JIT 中的去最佳化是什麼？","acceptedAnswer":{"@type":"Answer","text":"是指當最佳化程式碼所依據的假設被證明不成立時，放棄該程式碼，並從對應的位置改以直譯器或最佳化程度較低的程式碼繼續執行。之後執行環境可能以更新的剖析資料重新編譯。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
-
+<section class="term-about">
+  <h2>分層執行</h2>
+  <p>典型的 JIT（即時）執行環境一開始先直譯位元組碼，這不需要事前成本，但執行速度慢。直譯時，它會計數每個方法被呼叫、每個迴圈迭代的次數。超過門檻的程式碼會交給快速的基線編譯器，持續熱門的程式碼之後再由最佳化編譯器重新編譯，後者對每個函式花費多得多的時間。長時間執行的迴圈可以在執行途中切換到已編譯的程式碼，這種技術稱為堆疊上替換（on-stack replacement）。編譯通常在背景執行緒進行，讓程式同時繼續執行。</p>
+</section>
+<section class="term-about">
+  <h2>推測與去最佳化</h2>
+  <p>直譯器與基線程式碼會收集剖析資料（profile）：哪些分支被採用、每個呼叫點出現哪些物件型別、整數是否曾經溢位。最佳化編譯器就押注在這些觀察上，例如把某個虛擬呼叫一直以來都只呼叫到的那個方法內嵌（inline），並捨棄從未出現之型別的程式碼。每一個押注都由一個低成本的防護（guard）保護。若防護失敗，執行環境就會去最佳化（deoptimize）：重建目前<a class="term-link" href="/zh-hant/term/stack-frame/">堆疊框</a>在直譯器中的視圖，以較慢的程式碼繼續執行，之後可能再根據新資訊重新編譯。預先編譯器無法如此自由地進行這類押注。</p>
+</section>
+<section class="term-about">
+  <h2>JIT、AOT 與直譯器的比較</h2>
+  <p>純直譯器可立即啟動，執行時不需要編譯器，但每個運算都執行得很慢。AOT（預先）編譯在程式執行之前就產生機器碼，帶來快速啟動、可預測的效能，且記憶體中不需要編譯器；但除非有剖析導向最佳化（PGO）提供訓練執行的資料，否則它必須在不知道實際輸入的情況下進行最佳化。JIT 要付出暖機時間、編譯所耗的 <a class="term-link" href="/zh-hant/term/cpu-time/">CPU 時間</a>與程式碼快取的記憶體，換來在長時間執行的程式上達到很高的峰值速度。許多執行環境會結合多種方法，例如快取啟動程式碼或以 AOT 編譯它。</p>
+</section>
+<section class="term-about">
+  <h2>實務上的限制</h2>
+  <p>JIT 會把機器碼寫入記憶體再執行，這與「記憶體不應同時可寫入又可執行」的安全規則相衝突。執行環境的處理方式是在產生程式碼後切換分頁權限，或以不同權限將同一塊實體記憶體對映兩次；有些受嚴格管控的平台則完全禁止執行時期產生程式碼。由於編譯後的程式碼取決於執行時期的剖析資料，每次執行的效能可能不同，並可能在發生去最佳化時突然下降，因此對以 JIT 為基礎的系統做效能評測時，需要充分的暖機。</p>
+</section>
 <section>
   <h2>練習JIT編譯(即時編譯)的題目</h2>
   <article class="q-mini" data-qid="compiler-025" data-cat="compiler" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 在執行中將經常使用的部分轉為機器碼，且能利用執行期的資訊</p><p class="explanation">在<a class="term-link" href="/zh-hant/term/jit-compilation/">JIT編譯</a>中，一開始是邊解釋位元組碼邊執行，一旦找到被反覆執行的部分（熱點，hotspot），就在執行中把那裡編譯成機器碼。可以利用實際通過的分支與傳入的型別等執行期資訊，進行事前編譯難以做到的大膽最佳化。若假設落空，也具備退回解釋執行的機制。事先全部翻譯的是事前（AOT）編譯，只持續解釋的則是純粹的直譯器。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>JIT 編譯比 AOT 編譯快嗎？</h3>
+  <p>視工作負載而定。由於 JIT 利用真實的剖析資料進行最佳化，在長時間執行的程式上，其程式碼可追平甚至勝過 AOT 程式碼；但在啟動時間、記憶體用量與可預測性方面，AOT 較佔優勢。</p>
+  <h3>JIT 暖機（warm-up）是什麼？</h3>
+  <p>是指程式碼在直譯器或基線層中執行、而執行環境一邊剖析一邊編譯熱門部分的初期階段。在暖機期間量測的效能，會低估穩態下的速度。</p>
+  <h3>JIT 中的去最佳化是什麼？</h3>
+  <p>是指當最佳化程式碼所依據的假設被證明不成立時，放棄該程式碼，並從對應的位置改以直譯器或最佳化程度較低的程式碼繼續執行。之後執行環境可能以更新的剖析資料重新編譯。</p>
+</section>
 <section>
   <h2>解析中的「JIT編譯(即時編譯)」</h2>
   <ul class="term-quotes"><li><p>在JIT編譯中，一開始是邊解釋位元組碼邊執行，一旦找到被反覆執行的部分（熱點，hotspot），就在執行中把那裡編譯成機器碼。</p><a href="/zh-hant/q/compiler/compiler-025/">關於使用JIT編譯的執行環境之特徵，下列何者正確？</a></li><li><p>移除空白並切分為單字的是詞法分析，在執行時轉換為機器碼的則是JIT編譯。</p><a href="/zh-hant/q/compiler/compiler-002/">關於編譯器的語法分析所進行的工作，下列何者正確？</a></li><li><p>實際上，也常使用結合兩者的方式，例如先翻譯成位元組碼再解釋，並對經常使用的部分進行JIT編譯。</p><a href="/zh-hant/q/compiler/compiler-024/">關於編譯器與直譯器的差異，下列何者正確？</a></li><li><p>像JIT編譯器那樣在執行中產生程式碼的情況，則是切換寫入與執行的權限來使用。</p><a href="/zh-hant/q/linker-loader/linker-loader-042/">藉由不讓記憶體分頁同時具備「可寫入」與「可執行」（W^X，寫入與執行分離），較容易防禦的攻擊為下列何者？</a></li><li><p>第一次執行時，快取、TLB與分支預測器是從空的狀態開始，檔案不在作業系統的快取中而必須從磁碟讀取，使用JIT編譯器的語言還會進行轉換為機器碼的處理。</p><a href="/zh-hant/q/performance/performance-018/">測量程式的執行時間時，常會重複同樣的測量多次，並排除最初的幾次結果，其理由下列何者正確？</a></li></ul>

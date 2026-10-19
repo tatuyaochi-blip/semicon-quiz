@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"有效位數損失(Catastrophic cancellation)","item":"https://semiconroom.com/zh-hant/term/catastrophic-cancellation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"有效位數損失(Catastrophic cancellation)","description":"將幾乎相等的兩個數相減時，高位數互相抵消，有效位數大幅減少的現象。原本數中所含捨入誤差的比例相對變大。可藉由變換算式來避免。","url":"https://semiconroom.com/zh-hant/term/catastrophic-cancellation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"有效位數損失(Catastrophic cancellation)","item":"https://semiconroom.com/zh-hant/term/catastrophic-cancellation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"有效位數損失(Catastrophic cancellation)","description":"將幾乎相等的兩個數相減時，高位數互相抵消，有效位數大幅減少的現象。原本數中所含捨入誤差的比例相對變大。可藉由變換算式來避免。","url":"https://semiconroom.com/zh-hant/term/catastrophic-cancellation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"幾乎相等的浮點數相減，為什麼會損失精度？","acceptedAnswer":{"@type":"Answer","text":"相同的前導位數互相抵消，剩下的小結果主要由低位數構成，而這些位數正是早已被捨入誤差污染的部分。絕對誤差不變而數值變小，因此相對誤差急劇增加。"}},{"@type":"Question","name":"把 float 換成 double 能解決有效位數損失嗎？","acceptedAnswer":{"@type":"Answer","text":"它有幫助，因為有更多位數可以損失，但當運算元更加接近時，同樣的有效位數損失又會出現。改寫算式以避免相減才是真正的解法。"}},{"@type":"Question","name":"如何避免二次方程式公式中的有效位數損失？","acceptedAnswer":{"@type":"Answer","text":"先計算 -b 與平方根項同號的那個根，使兩者相加而非相消，再利用兩根之積等於 c / a 的關係求出另一個根。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/computer-arithmetic/">電腦算術</a></p>
 </article>
+<section class="term-about">
+  <h2>罪魁禍首不是減法本身</h2>
+  <p>出人意料的是，兩個相近浮點數的相減通常是精確的：若 x 與 y 彼此相差在 2 倍以內，x 減 y 可被精確表示，硬體不經捨入即可傳回它（此結果稱為 Sterbenz 引理）。損害來自運算元中早已存在的誤差，也就是先前的捨入、量測或轉換所造成的誤差。當前面的位數互相抵消時，這些小的絕對誤差仍然存在，而結果本身卻變得很小，因此相對誤差被放大。有效位數損失是把舊誤差暴露出來，而不是產生新的誤差。</p>
+</section>
+<section class="term-about">
+  <h2>放大的程度</h2>
+  <p>若 a 與 b 各帶有約 e 的相對誤差，則 a 減 b 的誤差約為 e 乘以 (|a| + |b|) / |a - b|。因此，前 6 位<a class="term-link" href="/zh-hant/term/significand/">有效數</a>字相同的兩數相減，相對誤差會被放大約一百萬倍，用掉 double 約 16 位十進位精度中的 6 位。若運算元所有位數都相同，結果可能是純粹的雜訊或恰好為零。這個比值就是減法的條件數，它說明了為何此效應取決於輸入有多接近，而不只取決於格式。</p>
+</section>
+<section class="term-about">
+  <h2>標準的改寫方式</h2>
+  <p>解法是用代數避免相近值相減。有理化可把 √(x + 1) − √x 變成 1 / (√(x + 1) + √x)。在二次方程式公式中，當 b² 遠大於 4ac 時，其中一個根會發生有效位數損失；先計算另一個根，再由根的乘積求出有問題的那個根（c / a 除以第一個根），即可避免。對於小的 x，1 − cos x 可改為 2 sin²(x / 2)；數學函式庫也提供 expm1(x) 與 log1p(x)，在接近零時精確計算 exp(x) − 1 與 log(1 + x)。</p>
+</section>
+<section class="term-about">
+  <h2>有效位數損失與吸收的比較</h2>
+  <p>有效位數損失與吸收（<a class="term-link" href="/zh-hant/term/floating-point-absorption/">absorption</a>）是浮點數遺失資訊的兩種典型方式，而且很容易混淆。有效位數損失發生在幾乎相等的數相減時，結果中剩下的有意義位數太少。吸收則發生在大小相差懸殊的數相加時：較小運算元的低位數從<a class="term-link" href="/zh-hant/term/significand/">有效數</a>的尾端掉出去，例如在雙精度下 1.0e16 + 1 的結果恰好是 1.0e16。改用更寬的格式能延後這兩個問題，但無法消除它們；重新設計計算方式才能消除。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>幾乎相等的浮點數相減，為什麼會損失精度？</h3>
+  <p>相同的前導位數互相抵消，剩下的小結果主要由低位數構成，而這些位數正是早已被捨入誤差污染的部分。絕對誤差不變而數值變小，因此相對誤差急劇增加。</p>
+  <h3>把 float 換成 double 能解決有效位數損失嗎？</h3>
+  <p>它有幫助，因為有更多位數可以損失，但當運算元更加接近時，同樣的有效位數損失又會出現。改寫算式以避免相減才是真正的解法。</p>
+  <h3>如何避免二次方程式公式中的有效位數損失？</h3>
+  <p>先計算 -b 與平方根項同號的那個根，使兩者相加而非相消，再利用兩根之積等於 c / a 的關係求出另一個根。</p>
+</section>
 
 
 

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"虛擬記憶體","item":"https://semiconroom.com/zh-hant/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"虛擬記憶體","description":"由作業系統與硬體，將程式所使用的位址(虛擬位址)對應到實際記憶體位址(實體位址)的機制。每個程式都能使用寬廣且獨立的記憶體空間。","url":"https://semiconroom.com/zh-hant/term/virtual-memory/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"虛擬記憶體","item":"https://semiconroom.com/zh-hant/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"虛擬記憶體","description":"由作業系統與硬體，將程式所使用的位址(虛擬位址)對應到實際記憶體位址(實體位址)的機制。每個程式都能使用寬廣且獨立的記憶體空間。","url":"https://semiconroom.com/zh-hant/term/virtual-memory/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"分頁表和 TLB 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"分頁表是從虛擬分頁到實體分頁的完整對映，存放在記憶體中並由作業系統維護。TLB 是 CPU 內部的小型硬體快取，保存最近使用的項目，讓大多數位址轉換不必走訪分頁表。"}},{"@type":"Question","name":"發生分頁錯誤時會怎樣？","acceptedAnswer":{"@type":"Answer","text":"CPU 會停下引發錯誤的指令，把控制權交給作業系統；作業系統若存取合法，就對映一個有效分頁（例如從磁碟載入）並重新執行該指令，若存取非法則終止該行程。"}},{"@type":"Question","name":"為什麼要使用大分頁（huge page）？","acceptedAnswer":{"@type":"Answer","text":"這樣每個 TLB 項目可涵蓋多得多的記憶體，工作集大的程式就能減少 TLB 未命中與分頁表走訪。資料庫與虛擬機器經常使用大分頁。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/cpu/">CPU與架構</a></p>
 </article>
-
+<section class="term-about">
+  <h2>位址轉換如何運作</h2>
+  <p>記憶體被分成固定大小的分頁（page），常見為 4 KB。虛擬位址分為虛擬頁碼與頁內偏移，以 4 KB 分頁而言偏移為 12 位元。記憶體管理單元（MMU）以虛擬頁碼查詢分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>，分頁表提供實體頁框號碼，以及存在、可寫入、可執行、使用者可存取等權限位元。偏移則原封不動地複製過去。為了讓表格精簡，分頁表以樹狀結構組織：採用 48 位元虛擬位址的 x86-64 使用四層，每層以 9 個位址位元作為索引。</p>
+</section>
+<section class="term-about">
+  <h2>TLB 與大分頁</h2>
+  <p>走訪四層分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>可能讓每次載入多花四次記憶體存取，因此<a class="term-link" href="/zh-hant/term/tlb/">轉譯後備緩衝區</a>（TLB）會快取最近的位址轉換，大多數存取都會命中。TLB 只有數十到數千個項目，其涵蓋範圍為項目數乘以分頁大小：約 1000 個 4 KB 項目只能涵蓋 4 MB。工作集較大的程式經常未命中，因此作業系統提供例如 2 MB 的大分頁（huge page），讓同樣的項目數可涵蓋數 GB。<a class="term-link" href="/zh-hant/term/asid/">位址空間識別碼</a>則讓 TLB 能同時保存多個行程的項目。</p>
+</section>
+<section class="term-about">
+  <h2>分頁錯誤與需求分頁</h2>
+  <p>若某項目被標示為不存在，存取就會引發分頁錯誤（page fault），由作業系統接手處理。作業系統可能配置一個清為零的新分頁、從檔案或置換空間讀入該分頁，或偵測到非法存取而以區段錯誤（segmentation fault）終止程式。這使得以下機制成為可能：需求分頁（只有在被存取時才載入分頁）、記憶體對映檔案，以及<a class="term-link" href="/zh-hant/term/copy-on-write/">寫入時複製</a>（copy-on-write，多個行程共用分頁，直到其中之一寫入為止）。當工作集遠超過實體記憶體時，持續不斷的置換（稱為<a class="term-link" href="/zh-hant/term/thrashing/">輪替癱瘓</a>，thrashing）會讓系統慢如牛步。</p>
+</section>
+<section class="term-about">
+  <h2>虛擬記憶體與快取</h2>
+  <p>快取與虛擬記憶體都牽涉記憶體階層，因此常被混淆，但兩者的任務不同。快取是由硬體管理、存放最近使用資料的副本，純粹為了速度而存在，對軟體而言是不可見的。虛擬記憶體則是由作業系統管理的對映，讓每個行程擁有自己的位址空間、在行程之間以及行程與核心之間實施保護，並允許共用實體分頁，例如共用函式庫。在日常用語中，「虛擬記憶體」有時只指置換檔，但那只是它所實現的功能之一。</p>
+</section>
 <section>
   <h2>練習虛擬記憶體的題目</h2>
   <article class="q-mini" data-qid="cpu-014" data-cat="cpu" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 將虛擬位址的分頁編號對應到實體位址的分頁編號</p><p class="explanation">在<a class="term-link" href="/zh-hant/term/virtual-memory/">虛擬記憶體</a>中，程式使用的虛擬位址會被轉換成實際的實體記憶體位址來使用。<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>是一張依虛擬分頁編號，記錄對應的實體分頁編號與讀寫許可等保護資訊的表，由作業系統為每個行程建立，並由CPU的MMU參照。常用的轉換結果會保存在<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>中。它並不是用來複製資料內容，也不是管理行程優先順序的表。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>分頁表和 TLB 有什麼差別？</h3>
+  <p>分頁表是從虛擬分頁到實體分頁的完整對映，存放在記憶體中並由作業系統維護。TLB 是 CPU 內部的小型硬體快取，保存最近使用的項目，讓大多數位址轉換不必走訪分頁表。</p>
+  <h3>發生分頁錯誤時會怎樣？</h3>
+  <p>CPU 會停下引發錯誤的指令，把控制權交給作業系統；作業系統若存取合法，就對映一個有效分頁（例如從磁碟載入）並重新執行該指令，若存取非法則終止該行程。</p>
+  <h3>為什麼要使用大分頁（huge page）？</h3>
+  <p>這樣每個 TLB 項目可涵蓋多得多的記憶體，工作集大的程式就能減少 TLB 未命中與分頁表走訪。資料庫與虛擬機器經常使用大分頁。</p>
+</section>
 <section>
   <h2>解析中的「虛擬記憶體」</h2>
   <ul class="term-quotes"><li><p>在虛擬記憶體中，必須將程式所使用的虛擬位址轉換為實體位址，而轉換表（分頁表）位於記憶體上，若每次都去查詢，就得多次存取記憶體。</p><a href="/zh-hant/q/cpu/cpu-014/">保存虛擬位址轉換為實體位址的結果，以加快位址轉換的快取是下列何者？</a></li><li><p>在虛擬記憶體中，程式使用的虛擬位址會被轉換成實際的實體記憶體位址來使用。</p><a href="/zh-hant/q/os-hardware/os-hardware-010/">關於頁表（page table）的作用，下列何者正確？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/fr/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"Format de contraintes temporelles décrivant les périodes et formes d'onde d'horloge, les retards d'entrée et de sortie, les exceptions temporelles, etc. Écrit sous forme de commandes Tcl, il est partagé par les outils de synthèse logique, de placement-routage et de STA.","url":"https://semiconroom.com/fr/term/sdc/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/fr/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"Format de contraintes temporelles décrivant les périodes et formes d'onde d'horloge, les retards d'entrée et de sortie, les exceptions temporelles, etc. Écrit sous forme de commandes Tcl, il est partagé par les outils de synthèse logique, de placement-routage et de STA.","url":"https://semiconroom.com/fr/term/sdc/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Que signifie SDC en VLSI ?","acceptedAnswer":{"@type":"Answer","text":"Synopsys Design Constraints, un format basé sur Tcl pour les contraintes temporelles telles que les horloges, les retards d'entrée et de sortie et les exceptions temporelles, partagé par les outils de synthèse, de placement-routage et de STA."}},{"@type":"Question","name":"Différence entre SDC et SDF","acceptedAnswer":{"@type":"Answer","text":"Le SDC décrit les exigences temporelles que la conception doit respecter, tandis que le SDF transporte les retards calculés des cellules et des interconnexions, principalement pour la simulation au niveau portes avec rétro-annotation."}},{"@type":"Question","name":"Quand faut-il utiliser create_generated_clock ?","acceptedAnswer":{"@type":"Answer","text":"Chaque fois qu'une horloge est dérivée à l'intérieur de la conception, par exemple par un diviseur ou un multiplexeur d'horloge. Sans cette commande, le réseau dérivé n'est pas traité comme une horloge et la logique qu'il pilote n'est pas analysée correctement."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Domaine: <a href="/fr/c/sta-cdc/">Analyse temporelle et CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Contenu d&#39;un fichier SDC</h2>
+  <p>Le SDC (Synopsys Design Constraints) est un format basé sur Tcl, né chez Synopsys et désormais lu par la plupart des outils de synthèse, de <a class="term-link" href="/fr/term/place-and-route/">placement-routage</a> et d&#39;<a class="term-link" href="/fr/term/sta/">analyse temporelle statique</a>. Les commandes typiques définissent les horloges (create_clock avec période et forme d&#39;onde), les horloges dérivées (create_generated_clock), la temporisation externe aux ports (set_input_delay, set_output_delay), l&#39;environnement électrique (set_load, set_driving_cell), la qualité de l&#39;horloge (set_clock_uncertainty, set_clock_latency) et les exceptions temporelles (set_false_path, set_multicycle_path, set_max_delay, set_clock_groups).</p>
+</section>
+<section class="term-about">
+  <h2>Incertitude d&#39;horloge et horloges générées</h2>
+  <p>set_clock_uncertainty soustrait une marge pour la <a class="term-link" href="/fr/term/jitter/">gigue</a> et, avant la synthèse de l&#39;arbre d&#39;horloge (CTS), pour le décalage (skew) attendu : avec une période de 1 ns et 50 ps d&#39;incertitude, les données doivent arriver en moins de 0,95 ns. Après la CTS, l&#39;outil calcule le décalage réel à partir de l&#39;arbre construit, si bien que l&#39;incertitude est réduite à la gigue plus une éventuelle marge volontaire. Une horloge divisée doit être déclarée avec create_generated_clock par rapport à sa source, par exemple une division par 2 qui transforme 500 MHz en 250 MHz, afin que les bascules qu&#39;elle pilote soient analysées avec la bonne période et la bonne relation de phase.</p>
+</section>
+<section class="term-about">
+  <h2>Pourquoi les contraintes sont un risque pour la signoff</h2>
+  <p>Les outils n&#39;optimisent et ne vérifient que ce que décrivent les contraintes. Une horloge manquante laisse des bascules non analysées, un <a class="term-link" href="/fr/term/false-path/">faux chemin</a> trop large fait taire de vraies violations, et déclarer asynchrones des horloges synchrones supprime des chemins qui doivent être vérifiés. Une telle conception peut passer tous les rapports des outils et pourtant échouer sur le silicium. Les contraintes sont donc relues aussi soigneusement que le <a class="term-link" href="/fr/term/rtl/">RTL</a>, contrôlées avec des outils de vérification de contraintes (<a class="term-link" href="/fr/term/lint-tool/">lint</a>) pour détecter les registres sans horloge et les ports non contraints, et maintenues cohérentes entre la synthèse, l&#39;implémentation et la signoff.</p>
+</section>
+<section class="term-about">
+  <h2>SDC et formats apparentés</h2>
+  <p>Le SDC énonce des exigences, pas des résultats. Les retards calculés sont échangés au format SDF (Standard Delay Format) pour la <a class="term-link" href="/fr/term/gate-level-simulation/">simulation au niveau portes</a> avec rétro-annotation, et les parasites extraits au format SPEF (Standard Parasitic Exchange Format). Les outils <a class="term-link" href="/fr/term/fpga/">FPGA</a> utilisent le SDC ou des dérivés proches qui ajoutent des contraintes physiques comme l&#39;affectation des broches. Le SDC étant du Tcl, des variables et des boucles peuvent générer des contraintes de façon compacte, même si les fichiers fortement scriptés deviennent plus difficiles à relire.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur SDC</h2>
   <article class="q-mini" data-qid="eda-047" data-cat="eda" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Définir la sortie du diviseur comme une horloge générée en spécifiant sa relation avec l&#39;horloge d&#39;origine (division par 2)</p><p class="explanation">Le <a class="term-link" href="/fr/term/sdc/">SDC</a> est la description des contraintes temporelles qui transmet à l&#39;outil la période et la forme d&#39;onde des horloges, les délais d&#39;entrée-sortie, les chemins faisant exception, etc. Sans définition, la sortie du diviseur n&#39;est pas traitée comme une horloge, et les bascules en aval ne sont pas analysées correctement. Définie comme horloge générée, elle est analysée, si l&#39;horloge d&#39;origine est à 500 MHz, comme une horloge à 250 MHz, relation de phase avec l&#39;horloge d&#39;origine comprise. Les deux horloges étant synchrones, les traiter comme asynchrones exclurait de l&#39;analyse des chemins qui devraient être vérifiés.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Que signifie SDC en VLSI ?</h3>
+  <p>Synopsys Design Constraints, un format basé sur Tcl pour les contraintes temporelles telles que les horloges, les retards d&#39;entrée et de sortie et les exceptions temporelles, partagé par les outils de synthèse, de placement-routage et de STA.</p>
+  <h3>Différence entre SDC et SDF</h3>
+  <p>Le SDC décrit les exigences temporelles que la conception doit respecter, tandis que le SDF transporte les retards calculés des cellules et des interconnexions, principalement pour la simulation au niveau portes avec rétro-annotation.</p>
+  <h3>Quand faut-il utiliser create_generated_clock ?</h3>
+  <p>Chaque fois qu&#39;une horloge est dérivée à l&#39;intérieur de la conception, par exemple par un diviseur ou un multiplexeur d&#39;horloge. Sans cette commande, le réseau dérivé n&#39;est pas traité comme une horloge et la logique qu&#39;il pilote n&#39;est pas analysée correctement.</p>
+</section>
 <section>
   <h2>« SDC » dans les explications</h2>
   <ul class="term-quotes"><li><p>Le SDC est la description des contraintes temporelles qui transmet à l&#39;outil la période et la forme d&#39;onde des horloges, les délais d&#39;entrée-sortie, les chemins faisant exception, etc.</p><a href="/fr/q/sta-cdc/sta-cdc-024/">Lorsqu&#39;une horloge est divisée par 2 par un circuit diviseu…</a></li><li><p>; elles sont écrites notamment au format SDC.</p><a href="/fr/q/eda/eda-027/">Comment appelle-t-on la description des conditions temporel…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"SSA形式(靜態單賦值形式)","item":"https://semiconroom.com/zh-hant/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA形式(靜態單賦值形式)","description":"重新命名變數，使每個變數在程式中恰好只被賦值一次的中間表示法形式。在匯合點以φ函數選擇值。定義與使用的關係變得明確，容易進行最佳化。","url":"https://semiconroom.com/zh-hant/term/ssa-form/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"SSA形式(靜態單賦值形式)","item":"https://semiconroom.com/zh-hant/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA形式(靜態單賦值形式)","description":"重新命名變數，使每個變數在程式中恰好只被賦值一次的中間表示法形式。在匯合點以φ函數選擇值。定義與使用的關係變得明確，容易進行最佳化。","url":"https://semiconroom.com/zh-hant/term/ssa-form/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"編譯器中的 SSA 代表什麼？","acceptedAnswer":{"@type":"Answer","text":"Static single assignment（靜態單賦值）。IR 中的每個變數在程式文字中恰好只在一處被賦值，並以 φ 函數在控制流程路徑匯合之處合併值。"}},{"@type":"Question","name":"變數只能賦值一次，SSA 要怎麼處理迴圈？","acceptedAnswer":{"@type":"Answer","text":"單一賦值是靜態的，而不是動態的。迴圈標頭的 φ 函數會合併進入迴圈的值與前一次迭代計算出的值，而這一個定義在每次迭代都會執行。"}},{"@type":"Question","name":"φ 函數放在哪裡？","acceptedAnswer":{"@type":"Answer","text":"放在同一個原始變數的不同定義可能沿不同的進入邊抵達之區塊的開頭。基於支配邊界（dominance frontier）的演算法能找出這些位置，而不會插入多餘的 φ。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
-
+<section class="term-about">
+  <h2>重新命名：每個名稱只有一個定義</h2>
+  <p>SSA（靜態單賦值）形式讓每一次賦值都擁有自己的變數名稱。在直線程式碼中，這只是重新命名：x = 1; x = x + 2 變成 x1 = 1; x2 = x1 + 2，之後的每次使用都參照到達該處的那個版本。「靜態」二字很重要：每個名稱在程式文字中恰好只有一次賦值，即使該賦值在迴圈中執行多次。由於每次使用都恰好只有一個定義，最佳化器所需的定義－使用關係就直接體現在名稱本身，而不必另行分析計算。</p>
+</section>
+<section class="term-about">
+  <h2>匯合點上的 φ 函數</h2>
+  <p>單靠重新命名，在控制流程匯合之處就行不通，因為 if-else 之後的 x 值取決於執行了哪個分支。SSA 會在匯合區塊的開頭插入 φ（phi）函數 x3 = φ(x1, x2)，每條進入的邊對應一個參數；它會產出實際經過的那條邊所對應的參數。迴圈在迴圈標頭也需要同樣的處理，把初始值與前一次迭代的值合併。標準的建構演算法利用<a class="term-link" href="/zh-hant/term/control-flow-graph/">控制流程圖</a>的支配（dominance）資訊，只在來自不同路徑的定義實際交會之處放置 φ 函數。</p>
+</section>
+<section class="term-about">
+  <h2>最佳化器為何喜歡 SSA</h2>
+  <p>每個名稱只有一個定義，使得許多最佳化變得簡單又快速。常數傳播只需沿著每個定義追到其使用處；無用程式碼消除只需移除沒有使用者的定義；全域值編號則藉由比較作用於相同名稱值的運算來偵測多餘的計算。分析可以是稀疏的，沿著定義－使用邊進行，而不必在每個程式點上反覆迭代。基於這些理由，許多實用編譯器的 <a class="term-link" href="/zh-hant/term/intermediate-representation/">IR</a>（包括 <a class="term-link" href="/zh-hant/term/llvm/">LLVM</a> IR）都採用 SSA 形式，通常用於存放在虛擬暫存器中的純量值，而記憶體則透過明確的 load 與 store 存取。</p>
+</section>
+<section class="term-about">
+  <h2>離開 SSA</h2>
+  <p>處理器沒有 φ 指令，因此編譯器會在<a class="term-link" href="/zh-hant/term/register-allocation/">暫存器配置</a>之前或期間將程式轉出 SSA。每個 φ 都會被替換成放在前驅區塊末端的複製指令，讓每條進入的路徑都把選定的值寫到共同的位置。從具有多個後繼的區塊出發、進入具有多個前驅之區塊的邊，可能需要分割，才有地方放置這些複製指令。接著，暫存器配置會嘗試合併（coalesce）這些複製，讓兩邊分配到同一個暫存器，使大部分複製指令消失。</p>
+</section>
 <section>
   <h2>練習SSA形式(靜態單賦值形式)的題目</h2>
   <article class="q-mini" data-qid="compiler-008" data-cat="compiler" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 對每個變數的指派在程式中恰好只有一次</p><p class="explanation">在<a class="term-link" href="/zh-hant/term/ssa-form/">SSA形式</a>中，會重新命名變數使每個變數只被指派一次，並在匯合點以φ函數選擇值。例如x被指派兩次時，會分成x1與x2，以明確區分使用的是哪一個。由於定義與使用的關係變得清楚，因此容易進行常數傳播與刪除無用程式碼等最佳化。分支由φ函數處理，所以並不是分支指令就此消失。變數也不是放在記憶體中，多半是作為暫存器的候選來處理。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>編譯器中的 SSA 代表什麼？</h3>
+  <p>Static single assignment（靜態單賦值）。IR 中的每個變數在程式文字中恰好只在一處被賦值，並以 φ 函數在控制流程路徑匯合之處合併值。</p>
+  <h3>變數只能賦值一次，SSA 要怎麼處理迴圈？</h3>
+  <p>單一賦值是靜態的，而不是動態的。迴圈標頭的 φ 函數會合併進入迴圈的值與前一次迭代計算出的值，而這一個定義在每次迭代都會執行。</p>
+  <h3>φ 函數放在哪裡？</h3>
+  <p>放在同一個原始變數的不同定義可能沿不同的進入邊抵達之區塊的開頭。基於支配邊界（dominance frontier）的演算法能找出這些位置，而不會插入多餘的 φ。</p>
+</section>
 <section>
   <h2>解析中的「SSA形式(靜態單賦值形式)」</h2>
   <ul class="term-quotes"><li><p>在SSA形式中，會重新命名變數使每個變數只被指派一次，並在匯合點以φ函數選擇值。</p><a href="/zh-hant/q/compiler/compiler-008/">關於SSA形式中介表示的特徵，下列何者正確？</a></li><li><p>在SSA形式中，then側的指派為x1、else側的指派為x2，兩者名稱各異，因此匯合之後計算y時，必須表明該使用哪一個x。</p><a href="/zh-hant/q/compiler/compiler-009/">將上方程式碼轉為SSA形式後，if敘述之後會加入類似「x3 = φ(x1, x2)」的式子。關於此φ函數的作用，下列何…</a></li></ul>

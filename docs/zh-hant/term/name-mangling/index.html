@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"名稱修飾（Name mangling）","item":"https://semiconroom.com/zh-hant/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"名稱修飾（Name mangling）","description":"C++ 編譯器將引數型別與命名空間的資訊嵌入函式名稱中，產生符號名稱。亦稱 mangling。使連結器能區分多載的函式。","url":"https://semiconroom.com/zh-hant/term/name-mangling/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"名稱修飾（Name mangling）","item":"https://semiconroom.com/zh-hant/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"名稱修飾（Name mangling）","description":"C++ 編譯器將引數型別與命名空間的資訊嵌入函式名稱中，產生符號名稱。亦稱 mangling。使連結器能區分多載的函式。","url":"https://semiconroom.com/zh-hant/term/name-mangling/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"如何還原（demangle）C++ 符號名稱？","acceptedAnswer":{"@type":"Answer","text":"將它透過管線交給 c++filt，例如 echo _Z5printi | c++filt 會印出 print(int)。nm -C 與 objdump -C 會在列出符號時進行還原。"}},{"@type":"Question","name":"C++ 中的 extern \"C\" 有什麼作用？","acceptedAnswer":{"@type":"Answer","text":"它讓所宣告的函式具有 C 連結方式，使編譯器使用未修飾的單純名稱。這讓 C++ 程式碼能呼叫 C 函式庫，也讓 C 程式碼能呼叫以這種方式匯出的 C++ 函式。"}},{"@type":"Question","name":"為什麼回傳型別不包含在修飾後的函式名稱中？","acceptedAnswer":{"@type":"Answer","text":"C++ 的多載必須在參數上有所不同，因此只靠參數就能識別函式。函式樣板的實例是例外，會編碼回傳型別。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/linker-loader/">連結器與載入器與執行檔格式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>編碼了哪些內容</h2>
+  <p>修飾後的名稱把區分「原始碼層級同名之 C++ 實體」所需的一切，都壓縮進一個<a class="term-link" href="/zh-hant/term/linker/">連結器</a>符號中：外圍的命名空間與類別、函式名稱、參數型別、成員函式的 const 或 volatile 限定，以及樣板引數。回傳型別通常會省略，因為多載不能只靠回傳型別區分，不過函式樣板的實例會包含它。在 Linux 及許多其他平台上由 GCC 與 Clang 採用的 Itanium C++ <a class="term-link" href="/zh-hant/term/application-binary-interface/">ABI</a> 下，print(int) 變成 _Z5printi，ns::f(double) 變成 _ZN2ns1fEd，其中每個名稱前面加上長度，單一字母則編碼內建型別。</p>
+</section>
+<section class="term-about">
+  <h2>extern &quot;C&quot; 與語言混用</h2>
+  <p>C 語言沒有多載，因此 C 編譯器輸出的是單純的函式名稱。當 C++ 程式碼呼叫 C 函式庫時，其宣告必須以 extern &quot;C&quot; 包住，讓 C++ 編譯器尋找未修飾的名稱；否則它會去找類似 _Z3fooi 的名稱，卻只找到 foo，導致連結以 undefined reference 失敗。兩種語言共用的標頭檔，通常以檢查 __cplusplus 巨集的條件，用 extern &quot;C&quot; 包住其宣告。宣告為 extern &quot;C&quot; 的函式不能多載，因為兩個這樣的函式會對應到同一個符號。</p>
+</section>
+<section class="term-about">
+  <h2>解讀修飾後的名稱</h2>
+  <p>修飾後的名稱會出現在 nm 輸出、反組譯、當機報告與<a class="term-link" href="/zh-hant/term/linker/">連結器</a>錯誤中。c++filt 工具可將它們轉回可讀的宣告，nm -C 在列出時也會做同樣的事，而大多數除錯器與連結器在輸出診斷訊息時會自動還原（demangle）。能夠解讀原始形式仍然有幫助：兩個還原後看起來相同的符號，可能在 const 限定或參數型別上不同，這就揭露了標頭檔中的宣告與實際編譯的定義不一致。</p>
+</section>
+<section class="term-about">
+  <h2>名稱修飾是 ABI 的一部分</h2>
+  <p>每個編譯器家族都定義自己的方案，Microsoft 的編譯器使用與 Itanium <a class="term-link" href="/zh-hant/term/application-binary-interface/">ABI</a> 完全不同的編碼。此方案是應用程式二進位介面（ABI）的一部分，因此即使原始碼相同，採用不同方案之編譯器所產生的<a class="term-link" href="/zh-hant/term/object-file/">目的檔</a>也無法直接連結。對函式庫 C++ 介面的變更，例如改變參數型別，會改變修飾後的名稱，破壞與依舊版本建置之程式的二進位相容性。Rust 等其他具有多載或模組的語言，也基於相同理由修飾名稱。</p>
+</section>
 <section>
   <h2>練習名稱修飾（Name mangling）的題目</h2>
   <article class="q-mini" data-qid="linker-loader-035" data-cat="linker-loader" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 讓連結器能區分名稱相同但參數型別不同的函式（多載，overload）與命名空間</p><p class="explanation"><a class="term-link" href="/zh-hant/term/linker/">連結器</a>僅以名稱字串來比對符號。在C++中可以建立如「print(int)」與「print(double)」這樣同名的函式，若維持原樣便無法區分。因此編譯器會像「_Z5printi」這樣，將參數型別等嵌入名稱中。C語言的函式不會被修飾，所以從C++呼叫C函式時，要加上「extern &quot;C&quot;」讓它不做修飾。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>如何還原（demangle）C++ 符號名稱？</h3>
+  <p>將它透過管線交給 c++filt，例如 echo _Z5printi | c++filt 會印出 print(int)。nm -C 與 objdump -C 會在列出符號時進行還原。</p>
+  <h3>C++ 中的 extern &quot;C&quot; 有什麼作用？</h3>
+  <p>它讓所宣告的函式具有 C 連結方式，使編譯器使用未修飾的單純名稱。這讓 C++ 程式碼能呼叫 C 函式庫，也讓 C 程式碼能呼叫以這種方式匯出的 C++ 函式。</p>
+  <h3>為什麼回傳型別不包含在修飾後的函式名稱中？</h3>
+  <p>C++ 的多載必須在參數上有所不同，因此只靠參數就能識別函式。函式樣板的實例是例外，會編碼回傳型別。</p>
+</section>
 <section>
   <h2>解析中的「名稱修飾（Name mangling）」</h2>
   <ul class="term-quotes"><li><p>常見原因有：忘了連結定義的檔案、忘了指定函式庫（如-lm等）、名稱拼寫錯誤、以C++撰寫的函式在沒有extern &quot;C&quot;的情況下被呼叫，因名稱修飾而變成另一個名稱等。</p><a href="/zh-hant/q/linker-loader/linker-loader-005/">連結C語言程式時出現「undefined reference to `foo&#39;」（對foo的未定義參照）錯誤，最可能的…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"阻塞賦值（Blocking assignment）","item":"https://semiconroom.com/zh-hant/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"阻塞賦值（Blocking assignment）","description":"Verilog 的「=」賦值。左側當場更新，下一行會使用該新值。用於組合電路的 always 與測試平台。","url":"https://semiconroom.com/zh-hant/term/blocking-assignment/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"阻塞賦值（Blocking assignment）","item":"https://semiconroom.com/zh-hant/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"阻塞賦值（Blocking assignment）","description":"Verilog 的「=」賦值。左側當場更新，下一行會使用該新值。用於組合電路的 always 與測試平台。","url":"https://semiconroom.com/zh-hant/term/blocking-assignment/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verilog 什麼時候該用阻塞賦值，什麼時候用非阻塞賦值？","acceptedAnswer":{"@type":"Answer","text":"時脈 always 區塊中的暫存器使用非阻塞賦值，組合邏輯區塊與暫存變數使用阻塞賦值。不要對同一個變數混用兩種賦值。"}},{"@type":"Question","name":"為什麼我的 Verilog 移位暫存器只延遲一個時脈？","acceptedAnswer":{"@type":"Answer","text":"很可能是各級都用阻塞賦值撰寫，使每一級接收到前一行剛更新的值。改用非阻塞賦值後，每一級都會取用邊緣之前的值。"}},{"@type":"Question","name":"VHDL 的變數賦值和 Verilog 的阻塞賦值一樣嗎？","acceptedAnswer":{"@type":"Answer","text":"大致上是：VHDL 的變數賦值在 process 內立即生效，而 VHDL 的訊號賦值是排程執行的，行為較像非阻塞賦值。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hdl-verification/">硬體描述語言與驗證</a></p>
 </article>
-
+<section class="term-about">
+  <h2>阻塞賦值的運作方式</h2>
+  <p>阻塞賦值以單一等號表示，它會先計算右側，並在同一程序區塊的下一個敘述執行之前<a class="term-link" href="/zh-hant/term/refresh/">更新</a>左側變數，很像 C 語言的賦值。因此敘述依序作用，後面的行會看到前面的行剛寫入的值。相對地，<a class="term-link" href="/zh-hant/term/nonblocking-assignment/">非阻塞賦值</a>會先計算所有右側，再於該時間步的稍後一起套用所有更新，因此每個敘述看到的是時脈邊緣之前的值。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼它會破壞時脈邏輯</h2>
+  <p>在時脈驅動的 always 區塊中，阻塞賦值會讓一個暫存器在同一個邊緣內看到另一個暫存器的新值。以「q1 = d; q2 = q1;」撰寫兩級<a class="term-link" href="/zh-hant/term/shift-register/">移位暫存器</a>時，q2 會得到剛<a class="term-link" href="/zh-hant/term/refresh/">更新</a>的 q1，也就是 d，因此模擬與合成出的電路都只延遲一級。同樣地，「a = b; b = a;」不會交換兩者，而是讓兩者都等於舊的 b。在時脈區塊中對所有暫存器使用<a class="term-link" href="/zh-hant/term/nonblocking-assignment/">非阻塞賦值</a>，能讓程式碼不論敘述順序都像平行的<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>一樣運作。</p>
+</section>
+<section class="term-about">
+  <h2>適合使用阻塞賦值的場合</h2>
+  <p>阻塞賦值適用於組合邏輯的 always 區塊，寫成 always @(*) 或 <a class="term-link" href="/zh-hant/term/systemverilog/">SystemVerilog</a> 的 always_comb，在其中某一行算出的中間變數供下一行使用，結果描述的是一串邏輯閘。它也很適合用在<a class="term-link" href="/zh-hant/term/testbench/">測試平台</a>的程序式程式碼，以及函式與任務內的暫存變數。廣為遵循的規則是：時脈邏輯用非阻塞，組合邏輯用阻塞，且同一個變數絕不混用兩種賦值。</p>
+</section>
+<section class="term-about">
+  <h2>測試平台中的競爭</h2>
+  <p>在與有效時脈邊緣完全相同的模擬時間，以阻塞賦值驅動設計的輸入，會造成競爭：設計中的<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>擷取的是舊值還是新值，取決於模擬器剛好先執行哪個行程，結果可能因模擬器而異。常見的修正方式包括在相反的時脈邊緣或有效邊緣之後稍作延遲再改變激勵、以<a class="term-link" href="/zh-hant/term/nonblocking-assignment/">非阻塞賦值</a>驅動輸入，或使用 <a class="term-link" href="/zh-hant/term/systemverilog/">SystemVerilog</a> 的 clocking block。</p>
+</section>
 <section>
   <h2>練習阻塞賦值（Blocking assignment）的題目</h2>
   <article class="q-mini" data-qid="hdl-verification-034" data-cat="hdl-verification" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 因為電路會取入改變前還是改變後的值，會隨執行順序而變（競爭）。將輸入從時脈邊緣稍微錯開，或以非阻塞賦值來改變</p><p class="explanation">若在同一時刻，發生<a class="term-link" href="/zh-hant/term/testbench/">測試平台</a>改寫輸入的處理與電路的<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>取入輸入的處理，則依模擬器先執行哪一個，取入的值可能是舊值，也可能是新值。這是模擬的競爭（race），結果也可能因模擬器而異。可以透過在下降時改變輸入、稍微延遲、使用<a class="term-link" href="/zh-hant/term/nonblocking-assignment/">非阻塞賦值</a>或<a class="term-link" href="/zh-hant/term/systemverilog/">SystemVerilog</a>的clocking block等來防止。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>Verilog 什麼時候該用阻塞賦值，什麼時候用非阻塞賦值？</h3>
+  <p>時脈 always 區塊中的暫存器使用非阻塞賦值，組合邏輯區塊與暫存變數使用阻塞賦值。不要對同一個變數混用兩種賦值。</p>
+  <h3>為什麼我的 Verilog 移位暫存器只延遲一個時脈？</h3>
+  <p>很可能是各級都用阻塞賦值撰寫，使每一級接收到前一行剛更新的值。改用非阻塞賦值後，每一級都會取用邊緣之前的值。</p>
+  <h3>VHDL 的變數賦值和 Verilog 的阻塞賦值一樣嗎？</h3>
+  <p>大致上是：VHDL 的變數賦值在 process 內立即生效，而 VHDL 的訊號賦值是排程執行的，行為較像非阻塞賦值。</p>
+</section>
 <section>
   <h2>解析中的「阻塞賦值（Blocking assignment）」</h2>
   <ul class="term-quotes"><li><p>在阻塞賦值中，第1行q1會立即更新為d的值，第2行的q2會代入更新後的q1，也就是d。</p><a href="/zh-hant/q/hdl-verification/hdl-verification-008/">原本打算做成2級位移暫存器，卻如上方般以阻塞賦值（=）撰寫。會發生的問題，下列何者正確？</a></li><li><p>若以阻塞賦值（=）撰寫，第1行a會變成1，第2行的b會代入新的a值1，結果兩者都變成1。</p><a href="/zh-hant/q/hdl-verification/hdl-verification-007/">在上方的描述中，時脈上升之前a=0、b=1。上升之後a與b的值會變成什麼？</a></li><li><p>在組合電路中，由上而下依序計算中間值的寫法較為自然，因此使用阻塞賦值。</p><a href="/zh-hant/q/hdl-verification/hdl-verification-009/">在Verilog中區分使用賦值種類時的一般準則，下列何者正確？</a></li></ul>

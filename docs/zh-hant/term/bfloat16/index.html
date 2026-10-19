@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/zh-hant/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"符號1位元、指數8位元、有效數7位元的16位元浮點格式。因指數與FP32相同，可表示的範圍廣，精度雖低但用於AI訓練。FP16為指數5位元、有效數10位元，精度高但範圍窄。","url":"https://semiconroom.com/zh-hant/term/bfloat16/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/zh-hant/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"符號1位元、指數8位元、有效數7位元的16位元浮點格式。因指數與FP32相同，可表示的範圍廣，精度雖低但用於AI訓練。FP16為指數5位元、有效數10位元，精度高但範圍窄。","url":"https://semiconroom.com/zh-hant/term/bfloat16/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"bfloat16 和 FP16 一樣嗎？","acceptedAnswer":{"@type":"Answer","text":"不一樣。兩者都是 16 位元，但 bfloat16 有 8 位元指數與 7 位元有效數，FP16 則有 5 位元指數與 10 位元有效數。bfloat16 犧牲精度，換取 FP32 的範圍。"}},{"@type":"Question","name":"如何把 FP32 轉換成 bfloat16？","acceptedAnswer":{"@type":"Answer","text":"保留 FP32 位元樣式的高 16 位元，理想上應依據被捨棄的 16 位元做捨入至最接近偶數，而不只是截斷。反向轉換是精確的：補上 16 個零位元即可。"}},{"@type":"Question","name":"為什麼 bfloat16 訓練通常不需要損失縮放？","acceptedAnswer":{"@type":"Answer","text":"損失縮放是為了防止小梯度在 FP16 的狹窄範圍內下溢。bfloat16 的指數範圍與 FP32 相同，因此這類梯度通常仍可被表示。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/computer-arithmetic/">電腦算術</a></p>
 </article>
-
+<section class="term-about">
+  <h2>位元配置代表的意義</h2>
+  <p>bfloat16（brain floating point）其實就是 FP32 數值的高 16 位元：相同的符號位元與 8 位元指數，<a class="term-link" href="/zh-hant/term/significand/">有效數</a>則從 23 位元縮減為 7 位元。從 bfloat16 轉換為 FP32 是精確的，只需補上 16 個零位元；反向轉換只需把低 16 位元捨入掉。其範圍與 FP32 相同，正規數約為 1e-38 到 3e38，但含隱藏位元在內只有 8 個有效位元，數值僅帶有約 2 到 3 位十進位數字；在 1.0 正上方的間距為 2 的 -7 次方，約 0.0078。</p>
+</section>
+<section class="term-about">
+  <h2>bfloat16 與 FP16 的比較</h2>
+  <p>FP16 的位元分配方向相反，採用 5 位元指數與 10 位元<a class="term-link" href="/zh-hant/term/significand/">有效數</a>。它的精度較高，約 3 位十進位數字，但最大值為 65504，最小正規數約為 6e-5。在訓練中，小的梯度在 FP16 下可能下溢成零，因此 FP16 訓練通常需要損失縮放（loss scaling），即將損失乘上一個大的係數，之後再把梯度除回來。bfloat16 具有與 FP32 同等的範圍，一般不需要這麼做，也讓既有 FP32 模型的轉換變得簡單，這就是它在訓練中受歡迎的原因。</p>
+</section>
+<section class="term-about">
+  <h2>主權重為何保留在 FP32</h2>
+  <p>當微小的<a class="term-link" href="/zh-hant/term/refresh/">更新</a>加到較大的值上時，低精度就會失效。以 bfloat16 儲存 1.0 的權重時，下一個可表示的值是 1.0078125，因此 0.001 的更新不到半個間距，總和會捨入回恰好 1.0：更新被吸收掉了。因此<a class="term-link" href="/zh-hant/term/mixed-precision/">混合精度</a>訓練會把主權重與最佳化器狀態保留在 FP32，並在前向與<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>中使用 bfloat16 副本。矩陣單元同樣通常以 bfloat16 輸入相乘，但以 FP32 累加乘積，使長串加總不會丟失微小的貢獻。</p>
+</section>
+<section class="term-about">
+  <h2>應用場合</h2>
+  <p>許多現行 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 與 AI 加速器的矩陣單元，以及部分 CPU 的向量擴充，都支援 bfloat16，用於訓練與推論。與 FP32 相比，每個值的大小減半，使記憶體容量與頻寬需求減半，並能在單位晶片面積上放入更多乘法器。不過它不是好的通用格式：有效位元如此之少，大量數值的加總、微小的差值，以及任何需要超過幾位數精度的運算，都必須用更寬的型別來做。</p>
+</section>
 <section>
   <h2>練習bfloat16的題目</h2>
   <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 在將微小的更新量加到權重時，精度較低的格式會因資訊遺失而使更新消失</p><p class="explanation">在訓練中，會對權重反覆加上「學習率 × 梯度」這種非常小的值。FP16或<a class="term-link" href="/zh-hant/term/bfloat16/">bfloat16</a>的尾數較短，若<a class="term-link" href="/zh-hant/term/refresh/">更新</a>量相對於權重過小，相加的結果會因捨入而仍是原本的權重，使更新消失（<a class="term-link" href="/zh-hant/term/floating-point-absorption/">資訊遺失</a>）。因此權重以FP32保存，以正確累積更新，而前向與反向的計算則使用轉換為較低精度的副本。就計算速度而言是較低的精度比較快，而且較低精度的值也能儲存。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>bfloat16 和 FP16 一樣嗎？</h3>
+  <p>不一樣。兩者都是 16 位元，但 bfloat16 有 8 位元指數與 7 位元有效數，FP16 則有 5 位元指數與 10 位元有效數。bfloat16 犧牲精度，換取 FP32 的範圍。</p>
+  <h3>如何把 FP32 轉換成 bfloat16？</h3>
+  <p>保留 FP32 位元樣式的高 16 位元，理想上應依據被捨棄的 16 位元做捨入至最接近偶數，而不只是截斷。反向轉換是精確的：補上 16 個零位元即可。</p>
+  <h3>為什麼 bfloat16 訓練通常不需要損失縮放？</h3>
+  <p>損失縮放是為了防止小梯度在 FP16 的狹窄範圍內下溢。bfloat16 的指數範圍與 FP32 相同，因此這類梯度通常仍可被表示。</p>
+</section>
 <section>
   <h2>解析中的「bfloat16」</h2>
   <ul class="term-quotes"><li><p>bfloat16是由符號1位元、指數部分8位元、尾數部分7位元構成的16位元格式。</p><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-026/">bfloat16主要被用於AI訓練的理由為下列何者？</a></li><li><p>FP16或bfloat16的尾數較短，若更新量相對於權重過小，相加的結果會因捨入而仍是原本的權重，使更新消失（資訊遺失）。</p><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-050/">在AI的混合精度訓練中，大部分計算以FP16或bfloat16進行，同時以FP32保存權重的原始值（主權重，maste…</a></li></ul>

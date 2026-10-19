@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"MESI 協定（MESI protocol）","item":"https://semiconroom.com/zh-hant/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESI 協定（MESI protocol）","description":"以 Modified、Exclusive、Shared、Invalid 四種狀態管理快取各行的一致性協定。寫入時會使其他核心的副本失效。","url":"https://semiconroom.com/zh-hant/term/mesi-protocol/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"MESI 協定（MESI protocol）","item":"https://semiconroom.com/zh-hant/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESI 協定（MESI protocol）","description":"以 Modified、Exclusive、Shared、Invalid 四種狀態管理快取各行的一致性協定。寫入時會使其他核心的副本失效。","url":"https://semiconroom.com/zh-hant/term/mesi-protocol/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"MESI 和 MSI 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"MESI 加入了 Exclusive 狀態，用於沒有其他快取持有的乾淨快取線。核心因此可以在不廣播失效訊息的情況下寫入這樣的快取線，而 MSI 則必須廣播。"}},{"@type":"Question","name":"MESI 中的 Modified 狀態是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"此快取持有唯一的有效副本並已加以修改，因此主記憶體中的資料已過時。該快取線在被逐出時必須寫回，或在其他核心請求時提供給它。"}},{"@type":"Question","name":"什麼是偽共用（false sharing）？","acceptedAnswer":{"@type":"Answer","text":"當不同核心上的執行緒寫入位於同一快取線上的不同變數時，一致性協定被迫在它們的快取之間來回搬移該快取線，所造成的效能下降。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>四種狀態</h2>
+  <p>Modified（M）：此快取持有唯一的副本並已寫入，因此記憶體中的資料已過時，必須寫回或提供給其他快取。Exclusive（E）：唯一的副本，但與記憶體相同。Shared（S）：未修改的副本，其他快取也可能持有。Invalid（I）：該快取線不含可用資料。此協定保證每條快取線遵守「單一寫入者、多個讀取者」的規則：任何時刻，要不是只有一個快取可以寫入（M 或 E），就是任意數量的快取可以讀取（S），兩者絕不同時成立。</p>
+</section>
+<section class="term-about">
+  <h2>主要狀態轉換</h2>
+  <p>讀取未命中時，快取會請求該快取線；若其他快取都沒有，就以 E 載入，否則以 S 載入。若另一個快取以 M 持有，該快取會提供資料或將其寫回，並降為 S。寫入 S 狀態的快取線之前，必須先使所有其他副本失效（升級請求），然後才轉為 M。寫入未命中時會發出讀取取得所有權（read-for-ownership）的請求，一步完成取得快取線並使其他副本失效。觀察到其他核心的寫入請求時，任何本地副本都會轉為 I，而 M 副本會先交出其資料。</p>
+</section>
+<section class="term-about">
+  <h2>E 狀態為何重要</h2>
+  <p>較簡單的 <a class="term-link" href="/zh-hant/term/message-signaled-interrupts/">MSI</a> 協定沒有 E 狀態，因此核心讀取私有資料後再寫入時，即使沒有其他快取持有副本，也必須在匯流排上額外送出失效訊息。E 記錄了該快取線是乾淨且未共用的，讓之後的寫入可以無聲地轉為 M。由於許多資料都是單一核心私有的，這能節省大量的一致性流量。各種變體加入了更多狀態：MOESI 加入 Owned，讓髒的快取線可以在不先<a class="term-link" href="/zh-hant/term/refresh/">更新</a>記憶體的情況下被共用；MESIF 加入 Forward，指定由哪一個共用者回應請求。</p>
+</section>
+<section class="term-about">
+  <h2>偽共用（false sharing）</h2>
+  <p>一致性是以快取線（通常為 64 位元組）為單位運作，而不是以變數為單位。若兩個核心反覆寫入恰好位於同一快取線上的不同變數，每次寫入都必須使另一個核心的副本失效，因此即使執行緒從未存取相同的資料，該快取線仍會在一個快取的 M 與另一個快取的 I 之間來回<a class="term-link" href="/zh-hant/term/contact-bounce/">彈跳</a>。這種偽共用可能讓平行程式碼比循序程式碼還慢。解法是以填充（padding）或對齊，把頻繁寫入的每執行緒資料（例如計數器）分散到不同的快取線上。</p>
+</section>
 <section>
   <h2>練習MESI 協定（MESI protocol）的題目</h2>
   <article class="q-mini" data-qid="cpu-025" data-cat="cpu" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 快取一致性（cache coherency）控制</p><p class="explanation">當某個核心改寫了快取上的資料時，若其他核心的快取中仍留有舊資料，就會使用到錯誤的值。一致性控制讓每條快取列（cache line）具有「已修改、共享、無效」等狀態（如 <a class="term-link" href="/zh-hant/term/mesi-protocol/">MESI 協定</a>），並在寫入時使其他核心的副本無效，以維持一致性。核心數一多，通訊量就會增加，因此會以目錄式（directory）等方式提高效率。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>MESI 和 MSI 有什麼差別？</h3>
+  <p>MESI 加入了 Exclusive 狀態，用於沒有其他快取持有的乾淨快取線。核心因此可以在不廣播失效訊息的情況下寫入這樣的快取線，而 MSI 則必須廣播。</p>
+  <h3>MESI 中的 Modified 狀態是什麼意思？</h3>
+  <p>此快取持有唯一的有效副本並已加以修改，因此主記憶體中的資料已過時。該快取線在被逐出時必須寫回，或在其他核心請求時提供給它。</p>
+  <h3>什麼是偽共用（false sharing）？</h3>
+  <p>當不同核心上的執行緒寫入位於同一快取線上的不同變數時，一致性協定被迫在它們的快取之間來回搬移該快取線，所造成的效能下降。</p>
+</section>
 <section>
   <h2>解析中的「MESI 協定（MESI protocol）」</h2>
   <ul class="term-quotes"><li><p>一致性控制讓每條快取列（cache line）具有「已修改、共享、無效」等狀態（如 MESI 協定），並在寫入時使其他核心的副本無效，以維持一致性。</p><a href="/zh-hant/q/cpu/cpu-025/">在多核心 CPU 中，當各核心的快取內有相同位址的資料時，用來維持其內容一致性的機制是下列何者？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Décoration de noms (name mangling)","item":"https://semiconroom.com/fr/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Décoration de noms (name mangling)","description":"Construction par le compilateur C++ de noms de symboles intégrant les types des arguments et l'espace de noms. Elle permet à l'éditeur de liens de distinguer les fonctions surchargées.","url":"https://semiconroom.com/fr/term/name-mangling/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Décoration de noms (name mangling)","item":"https://semiconroom.com/fr/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Décoration de noms (name mangling)","description":"Construction par le compilateur C++ de noms de symboles intégrant les types des arguments et l'espace de noms. Elle permet à l'éditeur de liens de distinguer les fonctions surchargées.","url":"https://semiconroom.com/fr/term/name-mangling/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Comment décoder (demangle) un nom de symbole C++ ?","acceptedAnswer":{"@type":"Answer","text":"Passez-le à c++filt, par exemple echo _Z5printi | c++filt affiche print(int). nm -C et objdump -C décodent les noms lors du listage des symboles."}},{"@type":"Question","name":"À quoi sert extern \"C\" en C++ ?","acceptedAnswer":{"@type":"Answer","text":"Il donne aux fonctions déclarées une liaison C, si bien que le compilateur utilise le nom simple non décoré. Cela permet au code C++ d'appeler des bibliothèques C et au code C d'appeler des fonctions C++ exportées de cette façon."}},{"@type":"Question","name":"Pourquoi le type de retour ne fait-il pas partie du nom décoré d'une fonction ?","acceptedAnswer":{"@type":"Answer","text":"Les surcharges C++ doivent différer par leurs paramètres ; les paramètres suffisent donc à identifier la fonction. Les instances de templates de fonction font exception et codent le type de retour."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Domaine: <a href="/fr/c/linker-loader/">Éditeurs de liens, chargeurs et exécutables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Ce qui est encodé</h2>
+  <p>Un nom décoré regroupe dans un seul symbole d&#39;édition de liens tout ce qui distingue des entités C++ partageant un même nom au niveau source : espaces de noms et classes englobants, nom de la fonction, types des paramètres, qualification const ou volatile des fonctions membres et arguments de template. Le type de retour est normalement omis, puisque des surcharges ne peuvent pas différer uniquement par leur type de retour, bien que les instances de templates de fonction l&#39;incluent. Selon l&#39;<a class="term-link" href="/fr/term/application-binary-interface/">ABI</a> C++ Itanium, utilisée par GCC et Clang sous Linux et sur de nombreuses autres plateformes, print(int) devient _Z5printi et ns::f(double) devient _ZN2ns1fEd, où chaque nom est préfixé par sa longueur et où des lettres uniques codent les types intégrés.</p>
+</section>
+<section class="term-about">
+  <h2>extern &quot;C&quot; et le mélange de langages</h2>
+  <p>C n&#39;a pas de surcharge ; les compilateurs C émettent donc des noms de fonctions simples. Lorsque du code C++ appelle une bibliothèque C, ses déclarations doivent être entourées d&#39;extern &quot;C&quot; pour que le compilateur C++ cherche le nom non décoré ; sinon, il cherche quelque chose comme _Z3fooi, ne trouve que foo, et l&#39;édition de liens échoue avec une référence indéfinie. Les en-têtes partagés entre les deux langages entourent généralement leurs déclarations d&#39;extern &quot;C&quot;, protégé par un test de la macro __cplusplus. Les fonctions déclarées extern &quot;C&quot; ne peuvent pas être surchargées, car deux d&#39;entre elles correspondraient au même symbole.</p>
+</section>
+<section class="term-about">
+  <h2>Lire les noms décorés</h2>
+  <p>Les noms décorés apparaissent dans la sortie de nm, le désassemblage, les rapports de plantage et les erreurs d&#39;édition de liens. L&#39;outil c++filt les reconvertit en déclarations lisibles, nm -C fait de même dans sa liste, et la plupart des débogueurs et éditeurs de liens les décodent automatiquement lorsqu&#39;ils affichent des diagnostics. Savoir lire la forme brute reste utile : deux symboles qui paraissent identiques une fois décodés peuvent différer par un qualificatif const ou un type de paramètre, ce qui révèle qu&#39;une déclaration dans un en-tête ne correspond pas à la définition réellement compilée.</p>
+</section>
+<section class="term-about">
+  <h2>La décoration fait partie de l&#39;ABI</h2>
+  <p>Chaque famille de compilateurs définit son propre schéma, et le compilateur de Microsoft utilise un codage complètement différent de celui de l&#39;<a class="term-link" href="/fr/term/application-binary-interface/">ABI</a> Itanium. Le schéma fait partie de l&#39;interface binaire d&#39;application (ABI) ; les fichiers objets issus de compilateurs aux schémas différents ne peuvent donc pas être liés directement, même si le source est identique. Les modifications de l&#39;interface C++ d&#39;une bibliothèque, comme le changement d&#39;un type de paramètre, modifient les noms décorés et rompent la compatibilité binaire avec les programmes construits pour l&#39;ancienne version. D&#39;autres langages dotés de surcharge ou de modules, comme Rust, décorent les noms pour les mêmes raisons.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Décoration de noms (name mangling)</h2>
   <article class="q-mini" data-qid="linker-loader-035" data-cat="linker-loader" data-answer="2" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Permettre à l&#39;éditeur de liens de distinguer les fonctions de même nom aux types d&#39;arguments différents (surcharge) et les espaces de noms</p><p class="explanation">L&#39;<a class="term-link" href="/fr/term/linker/">éditeur de liens</a> compare les symboles uniquement par leur chaîne de nom. En C++, on peut créer des fonctions de même nom comme « print(int) » et « print(double) », impossibles à distinguer telles quelles. Le compilateur intègre donc au nom le type des arguments, etc., comme « _Z5printi ». Les fonctions C n&#39;étant pas décorées, pour appeler une fonction C depuis C++, on ajoute « extern &quot;C&quot; » afin de supprimer la décoration.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Comment décoder (demangle) un nom de symbole C++ ?</h3>
+  <p>Passez-le à c++filt, par exemple echo _Z5printi | c++filt affiche print(int). nm -C et objdump -C décodent les noms lors du listage des symboles.</p>
+  <h3>À quoi sert extern &quot;C&quot; en C++ ?</h3>
+  <p>Il donne aux fonctions déclarées une liaison C, si bien que le compilateur utilise le nom simple non décoré. Cela permet au code C++ d&#39;appeler des bibliothèques C et au code C d&#39;appeler des fonctions C++ exportées de cette façon.</p>
+  <h3>Pourquoi le type de retour ne fait-il pas partie du nom décoré d&#39;une fonction ?</h3>
+  <p>Les surcharges C++ doivent différer par leurs paramètres ; les paramètres suffisent donc à identifier la fonction. Les instances de templates de fonction font exception et codent le type de retour.</p>
+</section>
 <section>
   <h2>« Décoration de noms (name mangling) » dans les explications</h2>
   <ul class="term-quotes"><li><p>Les causes fréquentes sont l&#39;oubli de lier le fichier de définition, l&#39;oubli de spécifier une bibliothèque (-lm, etc.), une faute d&#39;orthographe dans le nom, ou l&#39;appel sans extern &quot;C&quot; d&#39;une fonction écrite en C++, que la décoration de noms (name mangling) a renommée.</p><a href="/fr/q/linker-loader/linker-loader-005/">Lors de l&#39;édition de liens d&#39;un programme C, l&#39;erreur « und…</a></li></ul>

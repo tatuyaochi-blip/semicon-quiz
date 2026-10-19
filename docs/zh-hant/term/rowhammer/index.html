@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"列鎚攻擊(Rowhammer)","item":"https://semiconroom.com/zh-hant/term/rowhammer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"列鎚攻擊(Rowhammer)","description":"在 DRAM 中短時間內多次啟動同一列時，相鄰列的單元電荷流失而使資料翻轉的現象。可能被惡意用於資安攻擊，因此在 DRAM 端與記憶體控制器端都有採取對策。","url":"https://semiconroom.com/zh-hant/term/rowhammer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"列鎚攻擊(Rowhammer)","item":"https://semiconroom.com/zh-hant/term/rowhammer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"列鎚攻擊(Rowhammer)","description":"在 DRAM 中短時間內多次啟動同一列時，相鄰列的單元電荷流失而使資料翻轉的現象。可能被惡意用於資安攻擊，因此在 DRAM 端與記憶體控制器端都有採取對策。","url":"https://semiconroom.com/zh-hant/term/rowhammer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ECC 記憶體能阻止 Rowhammer 嗎？","acceptedAnswer":{"@type":"Answer","text":"ECC 藉由修正單一位元翻轉並偵測部分多位元翻轉，使攻擊更加困難，但並非完整的解決方案。一個字中的多個翻轉可能逃過修正，因此 ECC 要與基於刷新的對策結合使用。"}},{"@type":"Question","name":"DRAM 中的 TRR 是什麼？","acceptedAnswer":{"@type":"Answer","text":"目標列刷新是一種對策，它找出被異常頻繁啟動的列，並在流失足以翻轉位元的電荷之前刷新其相鄰列。"}},{"@type":"Question","name":"DDR5 還有 Rowhammer 問題嗎？","acceptedAnswer":{"@type":"Answer","text":"DDR5 加入了刷新管理等機制來協助防範，但單元持續微縮，易受影響的程度通常隨密度上升。對策是 DRAM 廠商、控制器與系統軟體共同持續進行的工作。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/dram/">DRAM</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼反覆敲擊會使位元翻轉</h2>
+  <p>DRAM 單元以會慢慢流失的電荷儲存資料，因此每一列都要在固定的時間窗內刷新，通常為 64 ms。啟動某列會使其<a class="term-link" href="/zh-hant/term/word-line/">字元線</a>擺動，反覆啟動同一個攻擊列，會對實體上相鄰的受害列產生電性耦合，並促進電荷遷移，加快其漏電。若攻擊列在受害列刷新之前被啟動數萬次，部分受害單元就會流失足夠的電荷而翻轉。同時敲擊受害列兩側的列（雙側）效果更強，而密度越高的單元越容易受影響。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼它對資安很重要</h2>
+  <p>Rowhammer 不需要特殊權限，只需要以夠快的速度發出一般的記憶體讀取，使其到達 DRAM 而非命中快取，例如藉由清除或逐出快取線。在 2014 年被廣泛報導後，研究人員證明它可以跨越隔離邊界：翻轉<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>項目中的位元以取得核心權限、破壞屬於其他行程或虛擬機器的資料，以及從沙箱中的程式碼觸發翻轉。硬體可靠度缺陷就此成為可被軟體利用的弱點。</p>
+</section>
+<section class="term-about">
+  <h2>對策</h2>
+  <p>目標列刷新（TRR）在 DRAM 或控制器內部追蹤頻繁啟動的列，並提早刷新其相鄰列。DDR5 加入了刷新管理（RFM），由控制器計算啟動次數，並給予 DRAM 額外時間進行這類刷新。單純提高刷新頻率有幫助，但會消耗頻寬與功率。<a class="term-link" href="/zh-hant/term/ecc/">錯誤更正碼</a>（ECC）可以偵測並修正單一位元翻轉，但一個字中的多個翻轉可能擊敗常見的方案。研究顯示，同時敲擊許多列就能繞過簡單的追蹤器，因此會採用多層防禦。</p>
+</section>
+<section class="term-about">
+  <h2>Rowhammer 與隨機軟錯誤</h2>
+  <p>由 α 粒子或宇宙射線中子造成的<a class="term-link" href="/zh-hant/term/soft-error/">軟錯誤</a>，在時間與位置上都是隨機的，<a class="term-link" href="/zh-hant/term/ecc/">ECC</a> 與記憶體清洗（scrubbing）就是針對這種統計行為而設計的。Rowhammer 則不同：它由特定的存取模式誘發，傾向於在相同的脆弱單元中反覆出現，且攻擊者可以將其瞄準選定的位址。正是這種可重複性使它危險，也是防禦著重於偵測可疑的啟動模式，而不只是在錯誤發生後加以修正的原因。</p>
+</section>
 <section>
   <h2>練習列鎚攻擊(Rowhammer)的題目</h2>
   <article class="q-mini" data-qid="hw-security-017" data-cat="hw-security" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 提早更新被頻繁啟動之列的相鄰列（TRR等），並提高更新（refresh）頻率</p><p class="explanation">列錘攻擊是指，在短時間內反覆啟動某一列時，因電氣干擾使相鄰列的記憶胞電荷流失而造成位元翻轉的現象。恐怕可被用於讓無權限的程式竄改其他行程或核心資料的攻擊。對策是組合以下方法：額外<a class="term-link" href="/zh-hant/term/refresh/">更新</a>被大量啟動之列的相鄰列的機制、提高更新頻率的方法，以及以<a class="term-link" href="/zh-hant/term/ecc/">ECC</a>偵測並修正翻轉的方法等。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>ECC 記憶體能阻止 Rowhammer 嗎？</h3>
+  <p>ECC 藉由修正單一位元翻轉並偵測部分多位元翻轉，使攻擊更加困難，但並非完整的解決方案。一個字中的多個翻轉可能逃過修正，因此 ECC 要與基於刷新的對策結合使用。</p>
+  <h3>DRAM 中的 TRR 是什麼？</h3>
+  <p>目標列刷新是一種對策，它找出被異常頻繁啟動的列，並在流失足以翻轉位元的電荷之前刷新其相鄰列。</p>
+  <h3>DDR5 還有 Rowhammer 問題嗎？</h3>
+  <p>DDR5 加入了刷新管理等機制來協助防範，但單元持續微縮，易受影響的程度通常隨密度上升。對策是 DRAM 廠商、控制器與系統軟體共同持續進行的工作。</p>
+</section>
 
 <section>
   <h2>出現「列鎚攻擊(Rowhammer)」的題目（1題）</h2>
