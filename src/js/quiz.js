@@ -30,10 +30,18 @@ const figure = svg => {
   return el;
 };
 
+// 解説の1文目(結論)を要点として太字にする。文の区切りが見つからない・長すぎるときは分けない
+const FIRST = /^(.{12,320}?(?:[。！？]|(?<!\b\w)(?<!\bca)(?<!\bbzw)(?<!\be\.g)(?<!\bi\.e)(?<!\bvs)(?<!\bapprox)(?<!\bFig)[.!?](?=\s+\S)))\s*(\S[\s\S]*)$/;
+const linked = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? p
+  : h('a', { class: 'term-link', href: `${home}term/${slugOf.get(p.id)}/` }, p.text)));
+const explanationText = text => {
+  const m = text.match(FIRST);
+  return m ? [h('strong', { class: 'key-point' }, linked(m[1])), ' ', linked(m[2])] : linked(text);
+};
+
 // 解説文(用語集の語にリンク)、図、選択肢ごとの補足(choiceNotes)、誤り報告リンク
 const explain = q => h('div', {},
-  h('p', { class: 'explanation' }, linkTerms(q.explanation, matcher).map(p => (typeof p === 'string' ? p
-    : h('a', { class: 'term-link', href: `${home}term/${slugOf.get(p.id)}/` }, p.text)))),
+  h('p', { class: 'explanation' }, explanationText(q.explanation)),
   q.figureSvg && figure(q.figureSvg),
   q.choiceNotes && h('ul', { class: 'choice-notes' }, q.choiceNotes.map((note, n) =>
     note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
@@ -136,10 +144,14 @@ function answer(n) {
   if (!ok) buttons[n].classList.add('wrong');
   const fb = app.querySelector('.feedback');
   const last = i === qs.length - 1;
+  // 判定の横に「次へ」を置き、解説が長くても読まずに進めるようにする(解説の後ろにも同じボタン)
+  const nextLabel = last ? t('see_result') : t('next');
   fb.replaceChildren(
-    h('p', { class: `verdict ${ok ? 'ok' : 'ng'}` }, ok ? t('correct') : t('incorrect', { mark: String.fromCharCode(65 + q.answer) })),
+    h('div', { class: 'fb-head' },
+      h('p', { class: `verdict ${ok ? 'ok' : 'ng'}` }, ok ? t('correct') : t('incorrect', { mark: String.fromCharCode(65 + q.answer) })),
+      h('button', { class: 'btn btn-primary btn-small', type: 'button', onclick: next }, nextLabel)),
     explain(q),
-    h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: next }, last ? t('see_result') : t('next')));
+    h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: next }, nextLabel));
   fb.className = `feedback ${ok ? 'ok' : 'ng'}`;
   fb.hidden = false;
   fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
