@@ -8,6 +8,8 @@ HTML/CSS/JavaScript だけで作った学習サイト。`src/` と `data/` か�
 npm run validate   # 問題データの検査
 npm run build      # docs/ を生成（validate も自動で実行）
 npm run serve      # http://localhost:8080/ で確認
+npm run check:ui   # 各言語のクイズ画面に「undefined」などが出ていないかをブラウザで検査(Playwright が必要)
+npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必要な言語と問題IDを一覧にする
 ```
 
 `docs/` はビルドのたびに作り直すため、直接編集しないこと。
