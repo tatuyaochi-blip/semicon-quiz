@@ -992,6 +992,10 @@ ${list.length ? `<section>
 ${c ? bookSection(c) : ''}
 <div data-ad="term"></div>
 ${cmpSection(t('compare_in_term'), cmp.filter(e => (e.terms ?? []).includes(g.key) || termIds([e.title, ...(e.items ?? [])].join(' ')).includes(g.key)))}
+${toolsIn(code).some(y => (y.terms ?? []).includes(g.key)) ? `<section>
+  <h2>${esc(S.tools_title)}</h2>
+  <div class="mode-grid compact">${toolsIn(code).filter(y => (y.terms ?? []).includes(g.key)).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+</section>` : ''}
 ${related.length ? `<section>
   <h2>${esc(t('term_related'))}</h2>
   <p class="term-chips">${related.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
