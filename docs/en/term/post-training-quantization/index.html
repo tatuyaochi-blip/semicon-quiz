@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Post-training quantization","item":"https://semiconroom.com/en/term/post-training-quantization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Post-training quantization","description":"Converting a trained model's weights and activations to lower precision after examining value ranges with representative data.","url":"https://semiconroom.com/en/term/post-training-quantization/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Post-training quantization","item":"https://semiconroom.com/en/term/post-training-quantization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Post-training quantization","description":"Converting a trained model's weights and activations to lower precision after examining value ranges with representative data.","url":"https://semiconroom.com/en/term/post-training-quantization/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between post-training quantization and quantization-aware training?","acceptedAnswer":{"@type":"Answer","text":"Post-training quantization converts an already trained model to low precision without retraining, using only a small calibration set. Quantization-aware training simulates the rounding during training so the weights adapt, which costs a training run but keeps accuracy better at very low bit widths such as 4 bits."}},{"@type":"Question","name":"Why does post-training quantization need calibration data?","acceptedAnswer":{"@type":"Answer","text":"Weights are known after training, but activation values depend on the input, so their ranges must be observed by running representative inputs through the model. Those observed ranges set the scale factors that map activations onto the integer grid."}},{"@type":"Question","name":"Does post-training quantization need the original training dataset?","acceptedAnswer":{"@type":"Answer","text":"No full training dataset or labels are required. A few hundred unlabeled inputs that resemble real usage are normally enough to calibrate activation ranges."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How post-training quantization works</h2>
+  <p>Post-training quantization (PTQ) starts from a model already trained in 32-bit floating point and maps each tensor onto a small integer grid, most often <a class="term-link" href="/en/term/int8/">INT8</a>. Every real value is represented as an integer times a scale factor, sometimes with a zero-point offset. Weights are fixed after training, so their scales can be computed directly from their stored values, often separately for each output channel to follow differences between filters. No gradient updates take place, so PTQ typically finishes in minutes and needs no labeled training data, only a small set of inputs for calibration.</p>
+</section>
+<section class="term-about">
+  <h2>Calibration and the clipping trade-off</h2>
+  <p>Activations change with every input, so their range cannot be read from the model itself. Calibration runs a few hundred representative inputs through the network, records each layer&#39;s activation distribution and picks the range to map onto the symmetric <a class="term-link" href="/en/term/int8/">INT8</a> grid of -127 to 127. Using the absolute maximum guarantees nothing is clipped, but a few rare outliers then stretch the scale and waste most of the available levels on values that almost never occur. Narrowing the range to cover most of the distribution clips the outliers while giving finer resolution to the common values.</p>
+</section>
+<section class="term-about">
+  <h2>PTQ vs. quantization-aware training</h2>
+  <p><a class="term-link" href="/en/term/quantization-aware-training/">Quantization-aware training</a> (QAT) inserts simulated rounding into the forward pass during training or fine-tuning, so the weights learn to tolerate the <a class="term-link" href="/en/term/quantization-error/">quantization error</a>. PTQ skips this step entirely, which makes it far cheaper and usable when the original training pipeline or dataset is not available. The price is accuracy: at <a class="term-link" href="/en/term/int8/">INT8</a> the loss is often small, but as the bit width shrinks toward 4 bits rounding error grows quickly and PTQ alone may no longer be acceptable. QAT is the usual fallback, because it can preserve accuracy at precisions where PTQ breaks down.</p>
+</section>
+<section class="term-about">
+  <h2>Why it matters for inference hardware</h2>
+  <p>An <a class="term-link" href="/en/term/int8/">INT8</a> weight occupies a quarter of the memory of an FP32 weight, so the same model needs less DRAM capacity and, more importantly, less memory bandwidth per inference. Integer multiply-accumulate units are also much smaller and use less energy per operation than floating-point units, which is why neural processing units and edge accelerators are built around low-precision integer arrays. PTQ is the most common way to move an existing model onto such hardware, and deployment toolchains generally provide a calibration step for it.</p>
+</section>
 <section>
   <h2>Try it: questions about Post-training quantization</h2>
   <article class="q-mini" data-qid="ai-stack-026" data-cat="ai-stack" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Running representative input data to observe each layer&#39;s activation range and set the quantization scales</p><p class="explanation">Weights are fixed once training ends, but activation values vary with the input. So a few hundred inputs resembling real usage are run through the model to observe each layer&#39;s activation range and distribution, and the range mapped onto <a class="term-link" href="/en/term/int8/">INT8</a>&#39;s -127 to 127 (the scale) is chosen. Matching the maximum lets outliers waste resolution, so the range is sometimes narrowed to cover most of the distribution.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between post-training quantization and quantization-aware training?</h3>
+  <p>Post-training quantization converts an already trained model to low precision without retraining, using only a small calibration set. Quantization-aware training simulates the rounding during training so the weights adapt, which costs a training run but keeps accuracy better at very low bit widths such as 4 bits.</p>
+  <h3>Why does post-training quantization need calibration data?</h3>
+  <p>Weights are known after training, but activation values depend on the input, so their ranges must be observed by running representative inputs through the model. Those observed ranges set the scale factors that map activations onto the integer grid.</p>
+  <h3>Does post-training quantization need the original training dataset?</h3>
+  <p>No full training dataset or labels are required. A few hundred unlabeled inputs that resemble real usage are normally enough to calibrate activation ranges.</p>
+</section>
 <section>
   <h2>Post-training quantization in the explanations</h2>
   <ul class="term-quotes"><li><p>Post-training quantization converts a trained model&#39;s weights (and activations) to lower precision after examining value ranges with a small representative dataset.</p><a href="/en/q/ai-stack/ai-stack-026/">What is the difference between post-training quantization (…</a></li></ul>

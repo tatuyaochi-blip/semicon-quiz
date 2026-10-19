@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b encoding","item":"https://semiconroom.com/en/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b encoding","description":"Line coding that sends 128 data bits with a 2-bit header, about 98.5% efficient, relying on scrambling for transitions. Used from PCI Express 3.0 onward.","url":"https://semiconroom.com/en/term/128b-130b-encoding/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b encoding","item":"https://semiconroom.com/en/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b encoding","description":"Line coding that sends 128 data bits with a 2-bit header, about 98.5% efficient, relying on scrambling for transitions. Used from PCI Express 3.0 onward.","url":"https://semiconroom.com/en/term/128b-130b-encoding/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is 128b/130b more efficient than 8b/10b?","acceptedAnswer":{"@type":"Answer","text":"8b/10b spends 2 extra bits on every 8 data bits, a 20% overhead, while 128b/130b spends 2 header bits on every 128 data bits, about 1.5%. It can do this because scrambling, rather than the code itself, provides the transitions and balance the receiver needs."}},{"@type":"Question","name":"What is the sync header in 128b/130b encoding?","acceptedAnswer":{"@type":"Answer","text":"It is the 2-bit prefix of each 130-bit block, either 01 or 10, which marks the block boundary with a guaranteed transition and indicates whether the block carries data or an ordered set."}},{"@type":"Question","name":"How much bandwidth does a PCIe 3.0 x16 link have?","acceptedAnswer":{"@type":"Answer","text":"About 15.8 GB/s in each direction, from 8 GT/s × 128/130 ÷ 8 bits per byte × 16 lanes. Packet overhead makes the usable throughput slightly lower."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/io-interface/">I/O Interfaces &amp; Buses</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a 128b/130b block is built</h2>
+  <p>128b/130b encoding groups data into blocks of 130 bits: a 2-bit sync header followed by a 128-bit payload. Only the header values 01 and 10 are legal, so every block is guaranteed at least one transition at its start, which lets the receiver find block boundaries. The header also tells the receiver whether the payload carries data or an ordered set, the special symbols used for link training and clock compensation. The payload itself is passed through a scrambler, which XORs it with a pseudo-random sequence from a linear feedback <a class="term-link" href="/en/term/shift-register/">shift register</a>, and the receiver descrambles it with the same sequence.</p>
+</section>
+<section class="term-about">
+  <h2>Scrambling instead of guaranteed balance</h2>
+  <p>A serial receiver recovers its clock from data transitions and AC-coupled links need roughly equal numbers of ones and zeros. <a class="term-link" href="/en/term/8b-10b-encoding/">8b/10b encoding</a> guarantees both by construction: no run longer than five identical bits and a running disparity that keeps the line DC-balanced, at the cost of two extra bits per byte. 128b/130b instead relies on scrambling to make long runs and imbalance statistically very unlikely. The guarantee is weaker, so equalization and clock recovery must tolerate occasional longer runs, but the overhead drops from 20% to about 1.5%.</p>
+</section>
+<section class="term-about">
+  <h2>What the efficiency means for PCI Express</h2>
+  <p>Efficiency is 128/130, about 98.5%, versus 80% for 8b/10b. That is why <a class="term-link" href="/en/term/pci-express/">PCI Express</a> 3.0 nearly doubled usable bandwidth while raising the signaling rate only from 5 to 8 GT/s: a PCIe 2.0 lane carries 5 × 0.8 = 4 Gb/s of data, while a PCIe 3.0 lane carries 8 × 128/130 ≈ 7.88 Gb/s, or about 0.985 GB/s. A x16 link therefore gives about 15.8 GB/s in each direction before packet headers and protocol overhead, which reduce the delivered figure somewhat.</p>
+</section>
+<section class="term-about">
+  <h2>Related codes</h2>
+  <p>128b/130b is used by <a class="term-link" href="/en/term/pci-express/">PCI Express</a> 3.0, 4.0 and 5.0, which kept the encoding while doubling the transfer rate each generation. It belongs to the same family as 64b/66b, used in 10 Gigabit Ethernet, which also pairs a 2-bit sync header with a scrambled payload. PCI Express 6.0 moved to <a class="term-link" href="/en/term/pam4/">PAM4</a> signaling with fixed-size flits and forward error correction, so it no longer uses 128b/130b blocks. When comparing link speeds, always check which encoding applies, because the raw rate in GT/s is not the data rate.</p>
+</section>
 <section>
   <h2>Try it: questions about 128b/130b encoding</h2>
   <article class="q-mini" data-qid="io-interface-007" data-cat="io-interface" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. About 16 GB/s</p><p class="explanation">The effective rate of one lane is 8 Gb/s × 128/130 ≈ 7.88 Gb/s, or about 0.985 GB/s after dividing by 8. Sixteen lanes give about 15.8 GB/s, roughly 16 GB/s in one direction, or about 32 GB/s for both directions together. <a class="term-link" href="/en/term/pci-express/">PCI Express</a> bandwidth is the product of the generation&#39;s per-lane rate, the coding efficiency and the lane count. Packet headers and other overhead make the real figure somewhat lower.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why is 128b/130b more efficient than 8b/10b?</h3>
+  <p>8b/10b spends 2 extra bits on every 8 data bits, a 20% overhead, while 128b/130b spends 2 header bits on every 128 data bits, about 1.5%. It can do this because scrambling, rather than the code itself, provides the transitions and balance the receiver needs.</p>
+  <h3>What is the sync header in 128b/130b encoding?</h3>
+  <p>It is the 2-bit prefix of each 130-bit block, either 01 or 10, which marks the block boundary with a guaranteed transition and indicates whether the block carries data or an ordered set.</p>
+  <h3>How much bandwidth does a PCIe 3.0 x16 link have?</h3>
+  <p>About 15.8 GB/s in each direction, from 8 GT/s × 128/130 ÷ 8 bits per byte × 16 lanes. Packet overhead makes the usable throughput slightly lower.</p>
+</section>
 <section>
   <h2>128b/130b encoding in the explanations</h2>
   <ul class="term-quotes"><li><p>128b/130b encoding sends 128 data bits with a 2-bit header as 130 bits, so efficiency is 128/130 ≈ 98.5%, a big reduction in waste compared with 8b/10b&#39;s 80%.</p><a href="/en/q/io-interface/io-interface-007/">Which is closest to the efficiency of the 128b/130b encodin…</a></li></ul>

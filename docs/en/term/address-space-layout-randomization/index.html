@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Address space layout randomization (ASLR)","item":"https://semiconroom.com/en/term/address-space-layout-randomization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Address space layout randomization (ASLR)","description":"A countermeasure that changes the addresses of the stack, heap, shared libraries and executable every run so attackers cannot easily predict them.","url":"https://semiconroom.com/en/term/address-space-layout-randomization/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Address space layout randomization (ASLR)","item":"https://semiconroom.com/en/term/address-space-layout-randomization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Address space layout randomization (ASLR)","description":"A countermeasure that changes the addresses of the stack, heap, shared libraries and executable every run so attackers cannot easily predict them.","url":"https://semiconroom.com/en/term/address-space-layout-randomization/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does ASLR prevent buffer overflow attacks?","acceptedAnswer":{"@type":"Answer","text":"No. ASLR does not stop the overflow itself; it only makes it hard to know which address to jump to, so most attempts crash instead of succeeding. An information leak that reveals one real address can defeat it, which is why it is paired with NX memory and stack canaries."}},{"@type":"Question","name":"What is the difference between ASLR and PIE?","acceptedAnswer":{"@type":"Answer","text":"ASLR is the operating-system mechanism that loads memory regions at random addresses on each run. PIE is a way of compiling and linking the executable so that its code works at any address, which allows ASLR to randomize the main program as well as libraries, stack and heap."}},{"@type":"Question","name":"How do I check whether ASLR is enabled on Linux?","acceptedAnswer":{"@type":"Answer","text":"Read /proc/sys/kernel/randomize_va_space: 0 means disabled, 1 randomizes the stack, mmap region and shared libraries, and 2 additionally randomizes the brk-based heap. Most distributions default to 2."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How ASLR shifts a process</h2>
+  <p>When a program starts, the kernel and the dynamic loader choose random, page-aligned base offsets for each major region of the address space: the stack, the heap, the mmap area where shared libraries are mapped, and the executable itself if it was built as a <a class="term-link" href="/en/term/position-independent-executable/">position-independent executable</a> (PIE). The relative order of the regions stays the usual one (text, data, BSS and heap at low addresses, stack at the top), but their absolute addresses differ on every run. Address space layout randomization (ASLR) therefore changes where things are, not what the program does.</p>
+</section>
+<section class="term-about">
+  <h2>Why attackers need addresses</h2>
+  <p>Memory-corruption exploits such as stack buffer overflows usually overwrite a <a class="term-link" href="/en/term/return-address/">return address</a> or function pointer with the address of something useful: shellcode on the stack, a library function like system() in a return-to-libc attack, or a chain of instruction snippets in return-oriented programming (ROP). Each of these needs exact addresses. With ASLR the attacker must guess them, and a wrong guess typically crashes the process instead of handing over control. The protection is probabilistic, so its strength depends on how many random bits are available, which is much more limited on 32-bit address spaces than on 64-bit ones.</p>
+</section>
+<section class="term-about">
+  <h2>PIE and position-independent code</h2>
+  <p>ASLR can only move code that does not assume a fixed load address. Shared libraries have long been compiled as <a class="term-link" href="/en/term/position-independent-code/">position-independent code</a> (PIC), reaching their data through <a class="term-link" href="/en/term/pc-relative-addressing/">PC-relative addressing</a> and the <a class="term-link" href="/en/term/global-offset-table/">global offset table</a> (GOT). Older executables, however, were linked for a fixed address, so the main program&#39;s code stayed at a known location and gave attackers a reliable source of ROP gadgets. Building with -fPIE and -pie makes the executable relocatable as well, so the loader can randomize it too. On x86-64 the cost is small because PC-relative data access is native.</p>
+</section>
+<section class="term-about">
+  <h2>Limits and companion defences</h2>
+  <p>Randomization is applied per region, so leaking a single pointer from a library reveals the offset of that whole library, and from there every function in it. Child processes created by fork() inherit the parent&#39;s layout, which lets attackers probe a forking server repeatedly. For these reasons ASLR is combined with non-executable writable memory (W^X or NX), stack canaries and control-flow protections. The operating-system kernel can be randomized too, which is called KASLR. On Linux the setting is visible in /proc/sys/kernel/randomize_va_space.</p>
+</section>
 <section>
   <h2>Try it: questions about Address space layout randomization (ASLR)</h2>
   <article class="q-mini" data-qid="linker-loader-028" data-cat="linker-loader" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. To change the addresses of the stack, heap, libraries and so on every run, making target addresses hard for attackers to predict</p><p class="explanation">Attacks that exploit bugs such as buffer overflows depend on knowing the addresses of library functions or data on the stack. <a class="term-link" href="/en/term/address-space-layout-randomization/">ASLR</a> shifts where the stack, heap, shared libraries and the executable are placed every time a process starts, so attackers cannot hard-code addresses. It is not a complete defence on its own and is combined with other measures such as separating writable and executable memory.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Does ASLR prevent buffer overflow attacks?</h3>
+  <p>No. ASLR does not stop the overflow itself; it only makes it hard to know which address to jump to, so most attempts crash instead of succeeding. An information leak that reveals one real address can defeat it, which is why it is paired with NX memory and stack canaries.</p>
+  <h3>What is the difference between ASLR and PIE?</h3>
+  <p>ASLR is the operating-system mechanism that loads memory regions at random addresses on each run. PIE is a way of compiling and linking the executable so that its code works at any address, which allows ASLR to randomize the main program as well as libraries, stack and heap.</p>
+  <h3>How do I check whether ASLR is enabled on Linux?</h3>
+  <p>Read /proc/sys/kernel/randomize_va_space: 0 means disabled, 1 randomizes the stack, mmap region and shared libraries, and 2 additionally randomizes the brk-based heap. Most distributions default to 2.</p>
+</section>
 <section>
   <h2>Address space layout randomization (ASLR) in the explanations</h2>
   <ul class="term-quotes"><li><p>ASLR shifts where the stack, heap, shared libraries and the executable are placed every time a process starts, so attackers cannot hard-code addresses.</p><a href="/en/q/linker-loader/linker-loader-028/">What is the purpose of ASLR (address space layout randomiza…</a></li><li><p>For security, ASLR shifts the actual addresses on every run.</p><a href="/en/q/linker-loader/linker-loader-017/">Which lists the typical memory layout of a process on Linux…</a></li><li><p>Older executables assumed they would be loaded at a fixed address, so ASLR could shift only libraries and the stack while the main program&#39;s code addresses stayed known to attackers.</p><a href="/en/q/linker-loader/linker-loader-029/">What is the main reason to build an executable as a PIE (po…</a></li></ul>

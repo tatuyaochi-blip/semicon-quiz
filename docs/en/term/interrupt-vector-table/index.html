@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Interrupt vector table","item":"https://semiconroom.com/en/term/interrupt-vector-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interrupt vector table","description":"A table listing, for each type of interrupt or exception, the start address of its handler. The CPU indexes it by the cause number to find where to begin handling.","url":"https://semiconroom.com/en/term/interrupt-vector-table/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Interrupt vector table","item":"https://semiconroom.com/en/term/interrupt-vector-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interrupt vector table","description":"A table listing, for each type of interrupt or exception, the start address of its handler. The CPU indexes it by the cause number to find where to begin handling.","url":"https://semiconroom.com/en/term/interrupt-vector-table/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is an interrupt vector?","acceptedAnswer":{"@type":"Answer","text":"An interrupt vector is the number assigned to an interrupt or exception source, used as an index into the vector table. The term is also used loosely for the table entry itself, which holds the handler address."}},{"@type":"Question","name":"Where is the vector table on an ARM Cortex-M microcontroller?","acceptedAnswer":{"@type":"Answer","text":"By default it is at the start of the boot memory, usually flash. Its first entry is the initial stack pointer value and its second is the reset handler, and on most cores the vector table offset register (VTOR) can relocate it, for example to RAM."}},{"@type":"Question","name":"What is the difference between the IVT and the IDT on x86?","acceptedAnswer":{"@type":"Answer","text":"The interrupt vector table (IVT) is the real-mode table of 256 segment:offset addresses at the bottom of memory. The interrupt descriptor table (IDT) replaces it in protected and long modes, holding descriptors with privilege information, and can be placed anywhere via the IDTR register."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the CPU uses the table</h2>
+  <p>When an <a class="term-link" href="/en/term/interrupt/">interrupt</a> or exception is accepted, hardware determines a number, called the vector, that identifies its cause: a timer, a particular peripheral, a <a class="term-link" href="/en/term/page-fault/">page fault</a>, an illegal instruction or a <a class="term-link" href="/en/term/system-call/">system call</a>. The CPU saves the address of the next instruction and status such as the operating mode, then uses the vector as an index into the interrupt vector table, typically reading the entry at base + vector × entry size. That entry holds the handler&#39;s start address. The handler saves the registers it uses, services the event and executes a return-from-interrupt instruction.</p>
+</section>
+<section class="term-about">
+  <h2>Where the table lives</h2>
+  <p>Architectures differ in detail. On Arm Cortex-M microcontrollers the table sits at the start of the code memory: its first word is the initial <a class="term-link" href="/en/term/stack-pointer/">stack pointer</a>, the second is the reset handler address, and later words point to fault and peripheral handlers; on most cores a vector table offset register (VTOR) lets software move it. In x86 real mode the table occupies the first 1 KB of memory with 256 four-byte entries, while protected and long modes use an <a class="term-link" href="/en/term/interrupt/">interrupt</a> descriptor table (IDT) located by the IDTR register. RISC-V uses the mtvec register, which can send all traps to one handler or vector interrupts to separate addresses.</p>
+</section>
+<section class="term-about">
+  <h2>Setting it up in embedded firmware</h2>
+  <p>On a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> with no operating system, the vector table must be at the address the hardware expects from the moment of reset. The startup code defines it as an array of function pointers in its own section, and the <a class="term-link" href="/en/term/linker-script/">linker script</a> places that section at the required flash address. Typical startup files give every entry a weak default handler, often an infinite loop, so the application overrides only the interrupts it uses by defining functions with matching names. A misspelled handler name therefore compiles cleanly but silently routes the <a class="term-link" href="/en/term/interrupt/">interrupt</a> to the default loop.</p>
+</section>
+<section class="term-about">
+  <h2>Vector table versus polling</h2>
+  <p>A vectored scheme sends each cause straight to its own handler, so the CPU does not need to read status registers to discover what happened, which shortens <a class="term-link" href="/en/term/interrupt/">interrupt</a> latency. The alternative is a single <a class="term-link" href="/en/term/entry-point/">entry point</a> whose handler reads a cause register and dispatches in software, as RISC-V&#39;s direct mode does. On a general-purpose operating system, the kernel fills the table at boot so timer ticks, device interrupts, page faults and system calls each reach the correct kernel routine.</p>
+</section>
 <section>
   <h2>Try it: questions about Interrupt vector table</h2>
   <article class="q-mini" data-qid="os-hardware-007" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Specifying the address where handling begins for each type of interrupt or exception</p><p class="explanation">When an <a class="term-link" href="/en/term/interrupt/">interrupt</a> or exception occurs, the CPU obtains a number (vector) for its cause, reads the handler&#39;s start address from the <a class="term-link" href="/en/term/interrupt-vector-table/">interrupt vector table</a> and jumps there. The OS fills in the table at boot so that the timer, each device, page faults, system calls and so on can invoke separate handlers. Counting occurrences is a separate statistics mechanism, and the order of processes is managed by the OS scheduler.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is an interrupt vector?</h3>
+  <p>An interrupt vector is the number assigned to an interrupt or exception source, used as an index into the vector table. The term is also used loosely for the table entry itself, which holds the handler address.</p>
+  <h3>Where is the vector table on an ARM Cortex-M microcontroller?</h3>
+  <p>By default it is at the start of the boot memory, usually flash. Its first entry is the initial stack pointer value and its second is the reset handler, and on most cores the vector table offset register (VTOR) can relocate it, for example to RAM.</p>
+  <h3>What is the difference between the IVT and the IDT on x86?</h3>
+  <p>The interrupt vector table (IVT) is the real-mode table of 256 segment:offset addresses at the bottom of memory. The interrupt descriptor table (IDT) replaces it in protected and long modes, holding descriptors with privilege information, and can be placed anywhere via the IDTR register.</p>
+</section>
 <section>
   <h2>Interrupt vector table in the explanations</h2>
   <ul class="term-quotes"><li><p>When an interrupt or exception occurs, the CPU obtains a number (vector) for its cause, reads the handler&#39;s start address from the interrupt vector table and jumps there.</p><a href="/en/q/os-hardware/os-hardware-007/">What is the role of an interrupt vector table?</a></li><li><p>Items that must sit at fixed addresses, such as the interrupt vector table, are also placed here.</p><a href="/en/q/linker-loader/linker-loader-039/">What is the role of a linker script used in embedded develo…</a></li><li><p>On accepting an interrupt, the CPU saves the address of the instruction it would have executed next plus state such as the operating mode, and jumps to the interrupt handler, located for example via an interrupt vector table.</p><a href="/en/q/os-hardware/os-hardware-006/">What is the usual sequence when a CPU accepts an interrupt?</a></li></ul>

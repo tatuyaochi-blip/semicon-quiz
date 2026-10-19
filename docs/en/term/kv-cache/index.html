@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"KV cache","item":"https://semiconroom.com/en/term/kv-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KV cache","description":"Memory in LLM inference holding the attention keys and values of already processed tokens. It avoids recomputation but grows with context length and batch size.","url":"https://semiconroom.com/en/term/kv-cache/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"KV cache","item":"https://semiconroom.com/en/term/kv-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KV cache","description":"Memory in LLM inference holding the attention keys and values of already processed tokens. It avoids recomputation but grows with context length and batch size.","url":"https://semiconroom.com/en/term/kv-cache/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the KV cache in large language models?","acceptedAnswer":{"@type":"Answer","text":"It is memory holding the attention keys and values of tokens already processed, so each newly generated token only needs its own keys and values computed instead of recomputing the whole sequence."}},{"@type":"Question","name":"Why does the KV cache use so much memory?","acceptedAnswer":{"@type":"Answer","text":"Its size grows linearly with the number of layers, the attention width, the context length and the batch size, so long contexts or many concurrent requests can make it larger than the model weights."}},{"@type":"Question","name":"Does the KV cache affect output quality?","acceptedAnswer":{"@type":"Answer","text":"Caching exact keys and values is mathematically equivalent to recomputing them; only approximations such as low-precision cache storage or dropping old tokens can change outputs."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why LLM inference keeps keys and values</h2>
+  <p>A transformer language model generates text one token at a time. In each attention layer the new token&#39;s query is compared with the keys of all earlier tokens, and the result weights their values. Because attention is causal, the keys and values of earlier tokens never change once computed. The KV cache stores them per layer, so each decoding step only computes the new token&#39;s query, key and value and appends the latter two, instead of reprocessing the entire sequence. This turns repeated full recomputation into a modest per-token cost.</p>
+</section>
+<section class="term-about">
+  <h2>How big the KV cache gets</h2>
+  <p>Cache size is 2 (keys and values) × number of layers × key/value dimension per layer × number of tokens × <a class="term-link" href="/en/term/batch-size/">batch size</a> × bytes per element. As an illustration, a model with 32 layers, a hidden size of 4096 and standard multi-head attention needs about 0.5 MB per token in FP16. A 4096-token context then takes about 2 GB per sequence, and a batch of eight such sequences needs about 16 GB, more than the roughly 14 GB that the weights of a 7-billion-parameter FP16 model occupy.</p>
+</section>
+<section class="term-about">
+  <h2>Prefill, decode and memory bandwidth</h2>
+  <p>Inference has two phases. <a class="term-link" href="/en/term/prefill/">Prefill</a> processes the whole prompt in parallel and writes its keys and values into the cache; it is mostly limited by compute. Decode then produces one token per step, and each step must read the model weights plus the entire KV cache for that sequence, so it is usually limited by memory bandwidth. Larger batches share the weight reads among more requests and raise <a class="term-link" href="/en/term/throughput/">throughput</a>, but they enlarge the KV cache and lengthen each step, increasing the latency of individual requests.</p>
+</section>
+<section class="term-about">
+  <h2>Ways to shrink or manage it</h2>
+  <p>Several techniques reduce KV cache pressure. Grouped-query and multi-query attention let several query heads share one set of key and value heads, cutting cache size proportionally. Storing the cache in 8-bit or lower precision halves or further reduces memory relative to FP16. Allocating the cache in small fixed-size blocks, rather than one contiguous region per sequence sized for the maximum length, avoids fragmentation and lets more requests fit; it also allows sequences with a common prompt prefix to share blocks. Some models also limit attention to a sliding window of recent tokens.</p>
+</section>
 <section>
   <h2>Try it: questions about KV cache</h2>
   <article class="q-mini" data-qid="ai-stack-013" data-cat="ai-stack" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. It stores the attention keys and values of already processed tokens so they need not be recomputed for each new token</p><p class="explanation">In attention, each new token refers to the keys and values of all earlier tokens. Those keys and values do not change, so storing them instead of recomputing means only the new token&#39;s share must be computed. That store is the <a class="term-link" href="/en/term/kv-cache/">KV cache</a>. It cuts computation dramatically, but the amount of stored keys and values grows in proportion to sequence length and <a class="term-link" href="/en/term/batch-size/">batch size</a>.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the KV cache in large language models?</h3>
+  <p>It is memory holding the attention keys and values of tokens already processed, so each newly generated token only needs its own keys and values computed instead of recomputing the whole sequence.</p>
+  <h3>Why does the KV cache use so much memory?</h3>
+  <p>Its size grows linearly with the number of layers, the attention width, the context length and the batch size, so long contexts or many concurrent requests can make it larger than the model weights.</p>
+  <h3>Does the KV cache affect output quality?</h3>
+  <p>Caching exact keys and values is mathematically equivalent to recomputing them; only approximations such as low-precision cache storage or dropping old tokens can change outputs.</p>
+</section>
 <section>
   <h2>KV cache in the explanations</h2>
   <ul class="term-quotes"><li><p>That store is the KV cache.</p><a href="/en/q/ai-stack/ai-stack-013/">What is the role of the KV cache in LLM inference?</a></li><li><p>Inference also needs memory for intermediate results and, for large language models, the KV cache.</p><a href="/en/q/ai-stack/ai-stack-004/">If a 7-billion-parameter (7B) model&#39;s weights are held in F…</a></li><li><p>Memory for intermediate results and the KV cache also grows with batch size.</p><a href="/en/q/ai-stack/ai-stack-011/">What is a drawback of making the inference batch size too l…</a></li><li><p>KV cache size is the number of layers × key and value dimensions × number of tokens × batch size × bytes per element.</p><a href="/en/q/ai-stack/ai-stack-014/">When LLM inference handles long contexts or large batches, …</a></li></ul>

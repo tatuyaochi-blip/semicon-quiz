@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Critical section","item":"https://semiconroom.com/en/term/critical-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Critical section","description":"A part of a program that operates on shared data and must be run by only one thread at a time. It is protected by a lock and kept as short as possible.","url":"https://semiconroom.com/en/term/critical-section/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Critical section","item":"https://semiconroom.com/en/term/critical-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Critical section","description":"A part of a program that operates on shared data and must be run by only one thread at a time. It is protected by a lock and kept as short as possible.","url":"https://semiconroom.com/en/term/critical-section/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a critical section and a mutex?","acceptedAnswer":{"@type":"Answer","text":"A critical section is the region of code that accesses shared data and must not run concurrently. A mutex is one mechanism for enforcing that, by letting only the thread holding it enter the region."}},{"@type":"Question","name":"Why should critical sections be kept short?","acceptedAnswer":{"@type":"Answer","text":"Other threads must wait while one is inside, and interrupts may be disabled during it on microcontrollers. Long sections reduce parallelism and delay response to other events."}},{"@type":"Question","name":"Is disabling interrupts enough to protect a critical section?","acceptedAnswer":{"@type":"Answer","text":"On a single-core system where the only competitor is an interrupt handler, it usually is. On a multicore system other cores can still run, so a lock or atomic operation is required as well."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why critical sections exist</h2>
+  <p>Even a simple statement like count++ compiles to a read, a modify and a write. If two threads run it at the same time, both may read the same old value and one increment is lost. Code that reads and updates shared data in this way is a critical section, and the bug that occurs when two threads enter it together is a <a class="term-link" href="/en/term/data-race/">data race</a> or race condition. A correct solution must guarantee mutual exclusion, so only one thread is inside at a time, while still letting waiting threads make progress rather than wait forever.</p>
+</section>
+<section class="term-about">
+  <h2>How critical sections are protected</h2>
+  <p>The usual tool is a lock: a thread acquires a <a class="term-link" href="/en/term/mutex/">mutex</a> before entering and releases it on exit, and any other thread trying to acquire it blocks or spins until it is free. Locks are built from atomic hardware instructions such as test-and-set, <a class="term-link" href="/en/term/compare-and-swap/">compare-and-swap</a>, or load-linked/store-conditional, which read and update a memory word without interference. A <a class="term-link" href="/en/term/spinlock/">spinlock</a> busy-waits and suits very short sections on multicore systems, while a mutex that puts the waiting thread to sleep suits longer waits. Acquiring several locks in inconsistent orders can cause <a class="term-link" href="/en/term/deadlock/">deadlock</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Disabling interrupts on microcontrollers</h2>
+  <p>On a single-core <a class="term-link" href="/en/term/microcontroller/">microcontroller</a>, the competing code is often an <a class="term-link" href="/en/term/interrupt-handler/">interrupt handler</a> rather than another thread, so a critical section is commonly protected by disabling interrupts and re-enabling them afterward. Interrupts that arrive meanwhile are normally held pending and serviced on re-enable, but long masked periods delay timer and communication handling and can overflow buffers. The section must therefore be as short as possible. On a multicore system disabling interrupts on one core is not enough, because another core can still access the data, so a <a class="term-link" href="/en/term/spinlock/">spinlock</a> or atomic operation is also needed.</p>
+</section>
+<section class="term-about">
+  <h2>Keeping sections short and transactional memory</h2>
+  <p>While one thread holds a lock, others wait, so long critical sections serialize a program and erase the benefit of extra cores. Designers shorten them, split one coarse lock into finer locks for independent data, or use lock-free atomic operations. Hardware <a class="term-link" href="/en/term/transactional-memory/">transactional memory</a> offers another route: the critical section runs speculatively as a transaction whose writes stay invisible to other threads. If no other thread touched the same data it commits all at once; on conflict it aborts, rolls back and retries or falls back to a normal lock.</p>
+</section>
 <section>
   <h2>Try it: questions about Critical section</h2>
   <article class="q-mini" data-qid="os-hardware-008" data-cat="os-hardware" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. A part of a program that operates on shared data and must be executed by only one thread at a time</p><p class="explanation">If several threads simultaneously execute code that reads and updates a shared variable, a <a class="term-link" href="/en/term/data-race/">data race</a> occurs. Such a part, which only one thread should run at a time, is called a <a class="term-link" href="/en/term/critical-section/">critical section</a> and is protected by taking a lock before entering and releasing it on exit. The longer the critical section, the longer other threads wait, so it should be kept as short as possible.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a critical section and a mutex?</h3>
+  <p>A critical section is the region of code that accesses shared data and must not run concurrently. A mutex is one mechanism for enforcing that, by letting only the thread holding it enter the region.</p>
+  <h3>Why should critical sections be kept short?</h3>
+  <p>Other threads must wait while one is inside, and interrupts may be disabled during it on microcontrollers. Long sections reduce parallelism and delay response to other events.</p>
+  <h3>Is disabling interrupts enough to protect a critical section?</h3>
+  <p>On a single-core system where the only competitor is an interrupt handler, it usually is. On a multicore system other cores can still run, so a lock or atomic operation is required as well.</p>
+</section>
 <section>
   <h2>Critical section in the explanations</h2>
   <ul class="term-quotes"><li><p>Long disabled periods delay communication and timer handling, risking lost data or slow responses, so the critical section should be as short as possible.</p><a href="/en/q/os-hardware/os-hardware-008/">What should you keep in mind when temporarily disabling (ma…</a></li><li><p>Such a part, which only one thread should run at a time, is called a critical section and is protected by taking a lock before entering and releasing it on exit.</p><a href="/en/q/multicore-sync/multicore-sync-038/">Which describes a critical section?</a></li><li><p>In transactional memory, a critical section runs as a transaction whose writes stay tentative and invisible to others.</p><a href="/en/q/multicore-sync/multicore-sync-049/">Which describes the idea of hardware transactional memory?</a></li></ul>

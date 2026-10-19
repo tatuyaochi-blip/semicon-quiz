@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"I2C","item":"https://semiconroom.com/en/term/i2c/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"I2C","description":"A synchronous serial bus connecting several devices on two wires, clock (SCL) and data (SDA), selecting the partner by address. The lines are open-drain with pull-ups.","url":"https://semiconroom.com/en/term/i2c/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"I2C","item":"https://semiconroom.com/en/term/i2c/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"I2C","description":"A synchronous serial bus connecting several devices on two wires, clock (SCL) and data (SDA), selecting the partner by address. The lines are open-drain with pull-ups.","url":"https://semiconroom.com/en/term/i2c/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does I2C need pull-up resistors?","acceptedAnswer":{"@type":"Answer","text":"I2C devices use open-drain outputs that can only pull a line low, so resistors are needed to bring SDA and SCL back high when no device is driving them. Without pull-ups the lines would float and the bus would not work."}},{"@type":"Question","name":"How fast is I2C?","acceptedAnswer":{"@type":"Answer","text":"Standard mode runs at up to 100 kHz, fast mode at 400 kHz and fast mode plus at 1 MHz, with a less common high-speed mode at 3.4 MHz. Actual speed is also limited by bus capacitance and pull-up strength."}},{"@type":"Question","name":"What is the difference between I2C and SPI?","acceptedAnswer":{"@type":"Answer","text":"I2C shares two open-drain wires among many devices and selects them by address, which saves pins but limits speed. SPI uses a clock, separate data-in and data-out lines and a chip-select per device, allowing much higher speeds at the cost of more wires."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Two open-drain wires</h2>
+  <p>I2C (inter-integrated circuit) connects a controller and many target devices (historically called master and slaves) with just two lines: a serial clock, SCL, and serial data, SDA. Every device drives the lines only through open-drain outputs, which can pull a line low or release it; pull-up resistors return released lines high. This wired-AND arrangement means no two devices can fight with opposite levels. The pull-up value is a trade-off: smaller resistors charge the bus capacitance faster for cleaner rising edges but waste more current when a line is held low. Common speed grades are 100 kHz standard mode, 400 kHz fast mode and 1 MHz fast mode plus.</p>
+</section>
+<section class="term-about">
+  <h2>Anatomy of a transfer</h2>
+  <p>A transfer begins with a START condition, SDA falling while SCL is high; otherwise SDA may change only while SCL is low. The controller then sends a 7-bit address and a read/write bit. On the ninth clock of every byte, the receiver acknowledges by pulling SDA low (ACK); if SDA stays high, that is a NACK. Data bytes follow, each with its own acknowledge, and a STOP condition, SDA rising while SCL is high, ends the transfer. Reading a sensor register usually writes the register number first, then issues a repeated START to switch direction without releasing the bus.</p>
+</section>
+<section class="term-about">
+  <h2>Clock stretching and arbitration</h2>
+  <p>Open-drain lines also let devices cooperate. A slow target can hold SCL low after a byte, known as clock stretching, and the controller waits until the line is released. When two controllers start at once, each watches SDA while transmitting; a controller that releases SDA for a 1 but sees it held at 0 knows another device is sending a 0, and it backs off. The winner&#39;s message is never corrupted. When troubleshooting, a missing ACK after the address points to a wrong address, a missing or unpowered device, or broken wiring.</p>
+</section>
+<section class="term-about">
+  <h2>Address conflicts and I2C versus SPI</h2>
+  <p>Because devices are selected by address, two identical parts with the same fixed address cannot share a bus. Many parts provide address-select pins that change the low bits when tied to supply or ground; otherwise use a second I2C peripheral or an I2C <a class="term-link" href="/en/term/multiplexer/">multiplexer</a>. Compared with <a class="term-link" href="/en/term/spi/">SPI</a>, which uses push-pull lines and a chip-select per device to reach tens of MHz, I2C is slower but needs only two wires however many devices are attached.</p>
+</section>
 <section>
   <h2>Try it: questions about I2C</h2>
   <article class="q-mini" data-qid="embedded-024" data-cat="embedded" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. During the ninth clock, the receiver pulls SDA low (ACK)</p><p class="explanation">In <a class="term-link" href="/en/term/i2c/">I2C</a>, on the ninth clock after the 8 data bits, the receiver acknowledges by pulling SDA low (ACK). If no one pulls it low, SDA stays at 1 through the pull-up, which is a NACK. If no ACK follows an address, the device may be missing, the wiring broken or the address wrong, which provides a clue when troubleshooting.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does I2C need pull-up resistors?</h3>
+  <p>I2C devices use open-drain outputs that can only pull a line low, so resistors are needed to bring SDA and SCL back high when no device is driving them. Without pull-ups the lines would float and the bus would not work.</p>
+  <h3>How fast is I2C?</h3>
+  <p>Standard mode runs at up to 100 kHz, fast mode at 400 kHz and fast mode plus at 1 MHz, with a less common high-speed mode at 3.4 MHz. Actual speed is also limited by bus capacitance and pull-up strength.</p>
+  <h3>What is the difference between I2C and SPI?</h3>
+  <p>I2C shares two open-drain wires among many devices and selects them by address, which saves pins but limits speed. SPI uses a clock, separate data-in and data-out lines and a chip-select per device, allowing much higher speeds at the cost of more wires.</p>
+</section>
 <section>
   <h2>I2C in the explanations</h2>
   <ul class="term-quotes"><li><p>I2C is synchronous serial communication that connects several devices with only two wires, SCL and SDA.</p><a href="/en/q/embedded/embedded-024/">What is a characteristic of I2C communication?</a></li><li><p>In I2C, on the ninth clock after the 8 data bits, the receiver acknowledges by pulling SDA low (ACK).</p><a href="/en/q/embedded/embedded-025/">In I2C, how does the receiver of a data byte acknowledge it?</a></li><li><p>I2C selects devices by address, so two devices with the same address would respond together and corrupt the communication.</p><a href="/en/q/embedded/embedded-026/">You want to connect two identical I2C temperature sensors t…</a></li><li><p>I2C connects many devices on two wires but, being open-drain, runs at a few hundred kHz to a few MHz.</p><a href="/en/q/embedded/embedded-027/">Which comparison of UART, SPI and I2C is correct?</a></li></ul>

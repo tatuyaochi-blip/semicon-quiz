@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Memory barrier","item":"https://semiconroom.com/en/term/memory-barrier/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory barrier","description":"An instruction guaranteeing that memory operations before it become visible to other cores before those after it, also called a fence, such as RISC-V fence.","url":"https://semiconroom.com/en/term/memory-barrier/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Memory barrier","item":"https://semiconroom.com/en/term/memory-barrier/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory barrier","description":"An instruction guaranteeing that memory operations before it become visible to other cores before those after it, also called a fence, such as RISC-V fence.","url":"https://semiconroom.com/en/term/memory-barrier/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a memory barrier and a fence?","acceptedAnswer":{"@type":"Answer","text":"They are the same concept under two names. Both refer to an instruction that keeps memory operations before it ordered ahead of those after it as observed by other cores; RISC-V calls its instruction fence, and Arm calls its instructions barriers."}},{"@type":"Question","name":"Does x86 need memory barriers?","acceptedAnswer":{"@type":"Answer","text":"Less often than weakly ordered architectures, because x86 total store order keeps most loads and stores in program order. A barrier such as mfence, or a locked instruction, is still needed when a store must become visible before a later load to a different address."}},{"@type":"Question","name":"What is the difference between a compiler barrier and a memory barrier?","acceptedAnswer":{"@type":"Answer","text":"A compiler barrier only prevents the compiler from moving memory accesses across it and generates no machine instruction. A memory barrier is a hardware instruction that constrains the order in which the processor makes accesses visible to other cores."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What a memory barrier guarantees</h2>
+  <p>A memory barrier, also called a fence, is an instruction that splits a thread&#39;s memory operations into those before it and those after it, and guarantees that the earlier ones become visible to other cores before the later ones are performed. Without it, a processor may let loads and stores to different addresses complete out of order, for example by keeping stores in a <a class="term-link" href="/en/term/store-buffer/">store buffer</a> while later loads proceed. Results seen by the issuing thread itself never change, so barriers matter only when data is shared between cores or with devices such as <a class="term-link" href="/en/term/dma/">DMA</a> engines.</p>
+</section>
+<section class="term-about">
+  <h2>The store-buffer example</h2>
+  <p>Suppose core 0 runs x = 1 and then r1 = y, while core 1 runs y = 1 and then r2 = x, with x and y starting at 0. Under <a class="term-link" href="/en/term/sequential-consistency/">sequential consistency</a> one store happens first, so at least one load must return 1. On real processors, including x86, each store can wait in its core&#39;s <a class="term-link" href="/en/term/store-buffer/">store buffer</a> while the following load reads the old value from cache, so both r1 and r2 can be 0. Placing a full barrier between the store and the load in each thread forces the store to become visible before the load runs, which rules out that outcome.</p>
+</section>
+<section class="term-about">
+  <h2>Barrier instructions on real ISAs</h2>
+  <p>RISC-V provides fence, whose operands state which earlier accesses must be ordered before which later ones, so fence rw, rw orders all reads and writes, and its atomic and <a class="term-link" href="/en/term/load-reserved-store-conditional/">load-reserved/store-conditional</a> instructions carry acquire and release bits. Arm has dmb (data memory barrier) for ordering, dsb when completion must be awaited, and load-acquire and store-release instructions. On x86, whose <a class="term-link" href="/en/term/total-store-order/">total store order (TSO)</a> already preserves most orderings, mfence or a locked instruction is needed mainly to order a store before a later load. Barriers are not free, because they can stall the core until pending stores drain.</p>
+</section>
+<section class="term-about">
+  <h2>Barriers in locks and compilers</h2>
+  <p>Most programmers never write a barrier directly. Lock acquisition includes acquire semantics, so later accesses cannot move before it, and release includes release semantics, so earlier writes are visible before the lock is freed; this is why data protected by a lock passes correctly between threads. Languages expose the same ideas through atomics with memory orders, such as C11 and C++11. A compiler barrier is a different thing: it stops the compiler from reordering accesses across a point but emits no instruction, so it does not constrain the hardware.</p>
+</section>
 <section>
   <h2>Try it: questions about Memory barrier</h2>
   <article class="q-mini" data-qid="multicore-sync-031" data-cat="multicore-sync" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. It guarantees that memory operations before the barrier become visible to other cores before those after it</p><p class="explanation">CPUs can reorder memory operations, so passing data to other cores in a fixed order requires an instruction that prevents it. A <a class="term-link" href="/en/term/memory-barrier/">memory barrier</a> makes all earlier reads and writes complete (become visible to other cores) before later ones are performed. Lock acquisition and release include this barrier effect, which is why variables protected by a lock are passed correctly.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a memory barrier and a fence?</h3>
+  <p>They are the same concept under two names. Both refer to an instruction that keeps memory operations before it ordered ahead of those after it as observed by other cores; RISC-V calls its instruction fence, and Arm calls its instructions barriers.</p>
+  <h3>Does x86 need memory barriers?</h3>
+  <p>Less often than weakly ordered architectures, because x86 total store order keeps most loads and stores in program order. A barrier such as mfence, or a locked instruction, is still needed when a store must become visible before a later load to a different address.</p>
+  <h3>What is the difference between a compiler barrier and a memory barrier?</h3>
+  <p>A compiler barrier only prevents the compiler from moving memory accesses across it and generates no machine instruction. A memory barrier is a hardware instruction that constrains the order in which the processor makes accesses visible to other cores.</p>
+</section>
 <section>
   <h2>Memory barrier in the explanations</h2>
   <ul class="term-quotes"><li><p>A memory barrier makes all earlier reads and writes complete (become visible to other cores) before later ones are performed.</p><a href="/en/q/multicore-sync/multicore-sync-031/">What is the role of a memory barrier (fence) instruction?</a></li><li><p>A memory barrier between the write and the read prevents it.</p><a href="/en/q/multicore-sync/multicore-sync-028/">The two threads above run simultaneously on different cores…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"DMA (direct memory access)","item":"https://semiconroom.com/en/term/dma/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"DMA (direct memory access)","description":"A mechanism that transfers data directly between peripherals and memory without going through the CPU, so the CPU can do other work during large transfers.","url":"https://semiconroom.com/en/term/dma/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"DMA (direct memory access)","item":"https://semiconroom.com/en/term/dma/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"DMA (direct memory access)","description":"A mechanism that transfers data directly between peripherals and memory without going through the CPU, so the CPU can do other work during large transfers.","url":"https://semiconroom.com/en/term/dma/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does DMA stand for?","acceptedAnswer":{"@type":"Answer","text":"DMA stands for direct memory access, a mechanism that lets peripherals transfer data to and from main memory without the CPU copying each word, so the CPU can do other work during the transfer."}},{"@type":"Question","name":"What is the difference between DMA and programmed I/O?","acceptedAnswer":{"@type":"Answer","text":"In programmed I/O the CPU reads or writes every data word to the device itself. With DMA the CPU only sets up the transfer and is notified when it finishes, which saves CPU time for large or frequent transfers."}},{"@type":"Question","name":"Why must the cache be invalidated after a DMA transfer into memory?","acceptedAnswer":{"@type":"Answer","text":"On systems without hardware cache coherence, the CPU's cache may still hold old copies of that memory range. Invalidating it forces the CPU to read the new data the device wrote."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/cpu/">CPUs and architecture</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a DMA transfer works</h2>
+  <p>In programmed I/O the CPU moves every word itself with load and store instructions. With direct memory access (DMA), the CPU instead programs a DMA controller, or the device&#39;s own DMA engine, with a source, a destination, a length and a trigger, then goes back to other work. The controller takes control of the bus, moves the data and raises a completion <a class="term-link" href="/en/term/interrupt/">interrupt</a>. In a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a>, for example, a timer can trigger an ADC conversion at fixed intervals and DMA can store each result into an array, waking the CPU only when the buffer is full.</p>
+</section>
+<section class="term-about">
+  <h2>Descriptor rings in high-speed devices</h2>
+  <p>Network cards and <a class="term-link" href="/en/term/nvme/">NVMe</a> SSDs use descriptor rings: circular tables in main memory whose entries give a buffer address and length. The CPU fills free descriptors and writes once to a device register, often called a doorbell, to say how far it has written. The device reads the descriptors by DMA, performs the transfers itself and marks finished entries complete. CPU and device thus advance many transfers without waiting for each other, and lists of scattered buffers can be handled in one operation, known as scatter-gather.</p>
+</section>
+<section class="term-about">
+  <h2>Caches and pinned memory</h2>
+  <p>DMA bypasses the CPU caches, so the two views of memory can disagree. Where hardware does not keep them coherent, the driver writes dirty cache lines back to memory before a device reads a buffer, and invalidates the cached range before the CPU reads data a device has written, so stale values are not used. The operating system may also move or swap out ordinary pages at any time, so buffers for DMA are pinned in place; pinned host memory lets a <a class="term-link" href="/en/term/gpu/">GPU</a> transfer data without an intermediate copy and overlap transfers with computation.</p>
+</section>
+<section class="term-about">
+  <h2>Protecting memory with an IOMMU</h2>
+  <p>Because DMA writes memory directly, a faulty or malicious device could overwrite kernel data or read encryption keys, a particular concern for devices attached through fast external ports. An <a class="term-link" href="/en/term/iommu/">IOMMU</a> (input-output memory management unit) does for devices what the MMU does for the CPU: it translates the addresses devices use into physical addresses and blocks access outside the regions the operating system has granted. It also lets scattered physical pages appear contiguous to a device and makes it safe to assign a device directly to a virtual machine.</p>
+</section>
 <section>
   <h2>Try it: questions about DMA (direct memory access)</h2>
   <article class="q-mini" data-qid="os-hardware-029" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. The CPU need not read each result in an interrupt; DMA stores them in memory, reducing CPU load</p><p class="explanation">If the CPU reads each conversion in an <a class="term-link" href="/en/term/interrupt/">interrupt</a>, at tens of thousands of samples per second the interrupt overhead alone consumes much of its time. With <a class="term-link" href="/en/term/dma/">DMA</a>, each completed conversion is written in turn into an array in memory, and the CPU is notified only when the array is full. Combined with a timer that triggers conversions, precisely spaced sampling continues without the CPU.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does DMA stand for?</h3>
+  <p>DMA stands for direct memory access, a mechanism that lets peripherals transfer data to and from main memory without the CPU copying each word, so the CPU can do other work during the transfer.</p>
+  <h3>What is the difference between DMA and programmed I/O?</h3>
+  <p>In programmed I/O the CPU reads or writes every data word to the device itself. With DMA the CPU only sets up the transfer and is notified when it finishes, which saves CPU time for large or frequent transfers.</p>
+  <h3>Why must the cache be invalidated after a DMA transfer into memory?</h3>
+  <p>On systems without hardware cache coherence, the CPU&#39;s cache may still hold old copies of that memory range. Invalidating it forces the CPU to read the new data the device wrote.</p>
+</section>
 <section>
   <h2>DMA (direct memory access) in the explanations</h2>
   <ul class="term-quotes"><li><p>DMA transfers data between devices and main memory without the CPU, so on non-coherent systems the CPU&#39;s cache may still hold stale data for that range.</p><a href="/en/q/os-hardware/os-hardware-029/">In a system where hardware does not keep caches coherent, w…</a></li><li><p>With DMA, each completed conversion is written in turn into an array in memory, and the CPU is notified only when the array is full.</p><a href="/en/q/embedded/embedded-044/">When a microcontroller captures many A/D conversion results…</a></li><li><p>The device reads the descriptors by DMA, transfers the data and marks finished descriptors as complete.</p><a href="/en/q/io-interface/io-interface-049/">Which statement is correct about DMA using a ring of descri…</a></li><li><p>DMA lets devices read and write memory directly without the CPU, so a malicious or compromised device can read or modify OS memory and keys.</p><a href="/en/q/hw-security/hw-security-047/">What countermeasure protects against external devices conne…</a></li><li><p>With DMA, a dedicated controller moves data between memory and peripherals, so the CPU only starts the transfer and receives a completion interrupt, remaining free in between.</p><a href="/en/q/cpu/cpu-023/">Which mechanism transfers data directly between peripherals…</a></li></ul>

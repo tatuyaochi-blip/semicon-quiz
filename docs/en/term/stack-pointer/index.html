@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Stack pointer","item":"https://semiconroom.com/en/term/stack-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Stack pointer","description":"The register that points to the current top of the stack; sp (x2) in RISC-V. In many ISAs the stack grows toward lower addresses.","url":"https://semiconroom.com/en/term/stack-pointer/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Stack pointer","item":"https://semiconroom.com/en/term/stack-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Stack pointer","description":"The register that points to the current top of the stack; sp (x2) in RISC-V. In many ISAs the stack grows toward lower addresses.","url":"https://semiconroom.com/en/term/stack-pointer/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Which register is the stack pointer in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"In RISC-V the stack pointer is x2, given the ABI name sp. The standard calling convention keeps it 16-byte aligned and the stack grows toward lower addresses."}},{"@type":"Question","name":"Why does the stack grow downward?","acceptedAnswer":{"@type":"Answer","text":"It is a convention adopted by most ABIs, historically convenient because the heap can grow upward from low memory while the stack grows downward from high memory, using the free space between them. The hardware or ABI defines the direction, and grows-down is by far the most common."}},{"@type":"Question","name":"What is the difference between the stack pointer and the frame pointer?","acceptedAnswer":{"@type":"Answer","text":"The stack pointer always marks the current top of the stack and moves as space is allocated. The frame pointer stays fixed for the duration of a function call, giving stable offsets to locals and making it easy to walk the chain of frames when debugging."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/isa-assembly/">ISA &amp; Assembly</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What the stack pointer tracks</h2>
+  <p>The stack is a last-in, first-out region of memory used for function calls, and the stack pointer is the register holding the address of its current top. In RISC-V it is register x2, named sp; on x86-64 it is RSP. In most ABIs the stack grows toward lower addresses, so allocating space means subtracting from the stack pointer and freeing it means adding back. x86 has dedicated push and pop instructions that adjust RSP automatically, while RISC-V uses ordinary instructions, such as addi sp, sp, -16 followed by stores at offsets from sp.</p>
+</section>
+<section class="term-about">
+  <h2>Stack frames and function calls</h2>
+  <p>When a function is entered, its prologue moves the stack pointer down to reserve a <a class="term-link" href="/en/term/stack-frame/">stack frame</a>. The frame holds the <a class="term-link" href="/en/term/return-address/">return address</a> if the function makes further calls, callee-saved registers it will use, and local variables that do not fit in registers. In the standard RISC-V <a class="term-link" href="/en/term/calling-convention/">calling convention</a>, the first eight integer arguments travel in registers a0–a7, and further arguments are placed on the stack at fixed offsets from sp. The epilogue restores registers and adds the frame size back. Because each call gets its own frame, recursion works naturally.</p>
+</section>
+<section class="term-about">
+  <h2>Stack overflow and stack attacks</h2>
+  <p>The stack has a finite size, set by the operating system for each thread or, on a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a>, by the <a class="term-link" href="/en/term/linker-script/">linker script</a> and start-up code that initialize the stack pointer. Deep recursion or large local arrays can push the stack pointer past its limit, a stack overflow that corrupts other memory or triggers a fault. Because return addresses sit on the stack next to local buffers, writing past the end of a local array can overwrite a <a class="term-link" href="/en/term/return-address/">return address</a>, a classic attack. Stack canaries and non-executable stacks are standard defenses.</p>
+</section>
+<section class="term-about">
+  <h2>Stack pointer vs. frame pointer</h2>
+  <p>The stack pointer moves whenever space is allocated, so offsets to a given variable can change within a function. A <a class="term-link" href="/en/term/frame-pointer/">frame pointer</a>, s0/fp in RISC-V or RBP on x86-64, can be set once at function entry to a <a class="term-link" href="/en/term/fixed-point/">fixed point</a> in the frame, making local and argument addresses constant and stack traces easy to walk; optimizing compilers often omit it to free a register. During a <a class="term-link" href="/en/term/context-switch/">context switch</a>, the stack pointer is saved along with the program counter and other registers, because each thread has its own stack and must resume on it.</p>
+</section>
 <section>
   <h2>Try it: questions about Stack pointer</h2>
   <article class="q-mini" data-qid="cpu-045" data-cat="cpu" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. On the stack</p><p class="explanation">There are only eight argument registers, a0-a7, so from the ninth argument on the caller places them on the stack and the callee reads them at fixed positions relative to the <a class="term-link" href="/en/term/stack-pointer/">stack pointer</a>. The extra memory accesses make functions with very many arguments a little slower. Passing a pointer to a struct instead of many separate values is a common way to keep the argument count down.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Which register is the stack pointer in RISC-V?</h3>
+  <p>In RISC-V the stack pointer is x2, given the ABI name sp. The standard calling convention keeps it 16-byte aligned and the stack grows toward lower addresses.</p>
+  <h3>Why does the stack grow downward?</h3>
+  <p>It is a convention adopted by most ABIs, historically convenient because the heap can grow upward from low memory while the stack grows downward from high memory, using the free space between them. The hardware or ABI defines the direction, and grows-down is by far the most common.</p>
+  <h3>What is the difference between the stack pointer and the frame pointer?</h3>
+  <p>The stack pointer always marks the current top of the stack and moves as space is allocated. The frame pointer stays fixed for the duration of a function call, giving stable offsets to locals and making it easy to walk the chain of frames when debugging.</p>
+</section>
 <section>
   <h2>Stack pointer in the explanations</h2>
   <ul class="term-quotes"><li><p>Its last-in, first-out (LIFO) structure ensures correct returns even with nested or recursive calls, and the stack pointer marks its top.</p><a href="/en/q/cpu/cpu-045/">When a program calls a subroutine (function), which area is…</a></li><li><p>There are only eight argument registers, a0-a7, so from the ninth argument on the caller places them on the stack and the callee reads them at fixed positions relative to the stack pointer.</p><a href="/en/q/isa-assembly/isa-assembly-029/">In the standard RISC-V calling convention, when calling a f…</a></li><li><p>The executable has no section for locals; the function reserves space by moving the stack pointer at entry.</p><a href="/en/q/linker-loader/linker-loader-015/">Where is a non-static local (automatic) variable declared i…</a></li><li><p>A context switch saves CPU state, such as general registers, the program counter, the stack pointer and the operating mode, so the process can later resume exactly where it left off, and loads the state of the next process.</p><a href="/en/q/os-hardware/os-hardware-023/">During a context switch, what must be saved for the process…</a></li></ul>

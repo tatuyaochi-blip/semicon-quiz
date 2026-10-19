@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Memory coalescing","item":"https://semiconroom.com/en/term/memory-coalescing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory coalescing","description":"Combining accesses into a few memory transactions when adjacent threads in a warp access adjacent addresses.","url":"https://semiconroom.com/en/term/memory-coalescing/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Memory coalescing","item":"https://semiconroom.com/en/term/memory-coalescing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory coalescing","description":"Combining accesses into a few memory transactions when adjacent threads in a warp access adjacent addresses.","url":"https://semiconroom.com/en/term/memory-coalescing/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is memory coalescing in CUDA?","acceptedAnswer":{"@type":"Answer","text":"It is the hardware combining the global memory accesses of a warp's threads into as few transactions as possible, which happens when adjacent threads access adjacent, aligned addresses."}},{"@type":"Question","name":"Why is a structure of arrays better for GPU memory access?","acceptedAnswer":{"@type":"Answer","text":"In a structure of arrays, each field is stored contiguously, so adjacent threads reading the same field access consecutive addresses and their loads coalesce; an array of structures puts a stride between them."}},{"@type":"Question","name":"What is the difference between memory coalescing and bank conflicts?","acceptedAnswer":{"@type":"Answer","text":"Coalescing concerns how a warp's global memory accesses map onto memory transactions, while bank conflicts concern multiple threads accessing the same bank of on-chip shared memory, which forces serialization."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/gpu-programming/">GPU Programming</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How coalescing works</h2>
+  <p><a class="term-link" href="/en/term/gpu/">GPU</a> global memory is accessed in fixed-size chunks, typically 32-byte sectors within 128-byte cache lines, not in individual words. Threads execute in groups called warps, usually 32 threads issuing the same load instruction together. When thread i of a warp reads the 4-byte element at base + 4i, the 32 requests fall into 128 contiguous bytes, and the hardware combines them into one or a few memory transactions. This combining is memory coalescing, and it lets the GPU use nearly all the bytes it moves.</p>
+</section>
+<section class="term-about">
+  <h2>What breaks coalescing</h2>
+  <p>If threads access addresses with a stride, for example every fourth element, the warp touches four times as many sectors, and most of each fetched sector is discarded. Random or indirect accesses can require a separate transaction for every thread. Misaligned starting addresses can add one extra segment. In each case effective bandwidth drops to a fraction of the peak, and since many <a class="term-link" href="/en/term/gpu/">GPU</a> kernels are limited by memory bandwidth rather than arithmetic, uncoalesced access often slows a kernel by a large factor.</p>
+</section>
+<section class="term-about">
+  <h2>Array of structures vs. structure of arrays</h2>
+  <p>Data layout largely decides whether accesses coalesce. With particle positions stored as an array of structures (AoS), the x, y and z of particle 0 are followed by those of particle 1, so when each thread reads x the addresses are 12 bytes apart. With a structure of arrays (SoA), all x values are contiguous, so adjacent threads read adjacent addresses and the warp&#39;s loads coalesce. SoA is also usually better for CPU <a class="term-link" href="/en/term/simd/">SIMD</a> <a class="term-link" href="/en/term/vectorization/">vectorization</a>, for the same reason: neighboring lanes want neighboring elements.</p>
+</section>
+<section class="term-about">
+  <h2>Techniques and a common confusion</h2>
+  <p>Common fixes include mapping the fastest-changing thread index, threadIdx.x in <a class="term-link" href="/en/term/cuda/">CUDA</a>, to the contiguous dimension of an array, converting AoS data to SoA, and staging data through on-chip shared memory, for example loading a matrix tile with coalesced row reads and writing it out transposed. Coalescing concerns global memory transactions. It should not be confused with shared-memory <a class="term-link" href="/en/term/bank/">bank</a> conflicts, which occur when several threads of a warp hit different addresses in the same shared-memory bank and their accesses are serialized.</p>
+</section>
 <section>
   <h2>Try it: questions about Memory coalescing</h2>
   <article class="q-mini" data-qid="gpu-programming-013" data-cat="gpu-programming" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Separate arrays for x, y and z (a structure of arrays rather than an array of structures)</p><p class="explanation">In an array of structures (AoS), the layout is x, y, z of particle 0, then x, y, z of particle 1 and so on, so when each thread reads x the addresses are 12 bytes apart. In a structure of arrays (SoA), all x values are contiguous, so adjacent threads read adjacent x values and the accesses coalesce. SoA is often better for CPU <a class="term-link" href="/en/term/simd/">SIMD</a> for the same reason.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is memory coalescing in CUDA?</h3>
+  <p>It is the hardware combining the global memory accesses of a warp&#39;s threads into as few transactions as possible, which happens when adjacent threads access adjacent, aligned addresses.</p>
+  <h3>Why is a structure of arrays better for GPU memory access?</h3>
+  <p>In a structure of arrays, each field is stored contiguously, so adjacent threads reading the same field access consecutive addresses and their loads coalesce; an array of structures puts a stride between them.</p>
+  <h3>What is the difference between memory coalescing and bank conflicts?</h3>
+  <p>Coalescing concerns how a warp&#39;s global memory accesses map onto memory transactions, while bank conflicts concern multiple threads accessing the same bank of on-chip shared memory, which forces serialization.</p>
+</section>
 
 <section>
   <h2>Questions that mention Memory coalescing (2)</h2>

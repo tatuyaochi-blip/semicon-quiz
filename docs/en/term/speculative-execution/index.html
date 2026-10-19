@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Speculative execution","item":"https://semiconroom.com/en/term/speculative-execution/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Speculative execution","description":"A CPU technique that executes instructions ahead based on predictions, such as branch outcomes, before they are known. Wrong results are discarded, but traces such as cache state may remain.","url":"https://semiconroom.com/en/term/speculative-execution/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Speculative execution","item":"https://semiconroom.com/en/term/speculative-execution/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Speculative execution","description":"A CPU technique that executes instructions ahead based on predictions, such as branch outcomes, before they are known. Wrong results are discarded, but traces such as cache state may remain.","url":"https://semiconroom.com/en/term/speculative-execution/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is speculative execution the same as out-of-order execution?","acceptedAnswer":{"@type":"Answer","text":"They are related but different. Out-of-order execution reorders instructions whose inputs are ready, while speculative execution runs instructions before it is known that they should execute at all, such as those after an unresolved branch; modern cores do both."}},{"@type":"Question","name":"What is the difference between Spectre and Meltdown?","acceptedAnswer":{"@type":"Answer","text":"Spectre tricks the branch predictor into speculatively running legitimate code paths that leak data the victim program can access. Meltdown exploited CPUs whose speculative loads could read kernel memory before the permission check took effect, and it was largely fixed by kernel page-table isolation and later hardware changes."}},{"@type":"Question","name":"Why can discarded speculative results still leak data?","acceptedAnswer":{"@type":"Answer","text":"The CPU discards register results but does not restore the cache, so data loaded during speculation leaves a trace that can be detected by measuring access times."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why CPUs execute ahead of time</h2>
+  <p>A high-performance CPU has a deep pipeline and executes instructions out of order, so waiting for every branch to resolve would leave it idle for many cycles. Instead, a branch predictor guesses the outcome and the core keeps fetching and executing along the predicted path. These speculative results are held in internal buffers and committed, or retired, only once the guess is confirmed. If the prediction was wrong, the core discards the speculative work and restarts on the correct path, so the program&#39;s visible results are always correct.</p>
+</section>
+<section class="term-about">
+  <h2>Architectural vs. microarchitectural state</h2>
+  <p>Rolling back a misprediction restores the architectural state, meaning the registers and memory a program can observe directly. It does not undo changes to microarchitectural state such as which lines are in the cache, <a class="term-link" href="/en/term/tlb/">TLB</a> contents or predictor history. Those changes are normally harmless because programs cannot read them directly, but timing can reveal them: an access to a cached line is measurably faster than one to main memory. This gap between what is rolled back and what is not is the root of speculative-execution vulnerabilities.</p>
+</section>
+<section class="term-about">
+  <h2>How Spectre and Meltdown exploit it</h2>
+  <p>In <a class="term-link" href="/en/term/spectre/">Spectre</a>, disclosed in 2018 along with <a class="term-link" href="/en/term/meltdown/">Meltdown</a>, an attacker trains the branch predictor so that a path which should never run, such as code past a bounds check, executes speculatively, reads a secret, and uses its value to touch a particular <a class="term-link" href="/en/term/cache-line/">cache line</a>. The results are discarded, but timing which line is cached reveals the secret through a cache side channel. Meltdown abused CPUs that let a speculative load return data from kernel memory before the permission check took effect. Nearly all high-performance CPUs were affected by at least one variant.</p>
+</section>
+<section class="term-about">
+  <h2>Countermeasures and their cost</h2>
+  <p>Mitigations span every layer: operating systems separated kernel and user page tables, compilers insert speculation barriers or use indirect-branch sequences that avoid poisoned predictions, microcode updates add controls over predictor behavior, and newer CPUs build in hardware fixes. Each restriction on speculation, prediction or shared caches reduces leakage but can cost performance, so designers choose how far to go based on what data is at stake. The episode showed that performance features can become security weaknesses even when software is bug-free.</p>
+</section>
 <section>
   <h2>Try it: questions about Speculative execution</h2>
   <article class="q-mini" data-qid="cpu-027" data-cat="cpu" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Instructions executed speculatively along a predicted branch are rolled back, but their traces in the cache remain and can be read by timing measurements</p><p class="explanation">CPUs execute instructions on the predicted side of a branch before its outcome is known and discard the results if the prediction was wrong. In <a class="term-link" href="/en/term/spectre/">Spectre</a>, an attacker trains the predictor to mispredict, so a path that should never execute reads secret data and loads a cache location that depends on its value. The results are discarded but the cache state is not restored, so the value can be inferred through a cache side channel.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is speculative execution the same as out-of-order execution?</h3>
+  <p>They are related but different. Out-of-order execution reorders instructions whose inputs are ready, while speculative execution runs instructions before it is known that they should execute at all, such as those after an unresolved branch; modern cores do both.</p>
+  <h3>What is the difference between Spectre and Meltdown?</h3>
+  <p>Spectre tricks the branch predictor into speculatively running legitimate code paths that leak data the victim program can access. Meltdown exploited CPUs whose speculative loads could read kernel memory before the permission check took effect, and it was largely fixed by kernel page-table isolation and later hardware changes.</p>
+  <h3>Why can discarded speculative results still leak data?</h3>
+  <p>The CPU discards register results but does not restore the cache, so data loaded during speculation leaves a trace that can be detected by measuring access times.</p>
+</section>
 <section>
   <h2>Speculative execution in the explanations</h2>
   <ul class="term-quotes"><li><p>Even when software is written correctly, secrets can leak or defenses can fail through speculative execution and caches added for performance, power and timing that vary with processing, malfunctions under abnormal voltage or temperature, or circuitry inserted during manufacturing.</p><a href="/en/q/hw-security/hw-security-001/">Which best describes the problems addressed by hardware sec…</a></li><li><p>Speculative execution, branch prediction and shared caches underpin modern CPU performance.</p><a href="/en/q/hw-security/hw-security-011/">Which statement about countermeasures to speculative-execut…</a></li></ul>

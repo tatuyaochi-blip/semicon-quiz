@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Testbench","item":"https://semiconroom.com/en/term/testbench/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Testbench","description":"Simulation-only code that drives inputs to the design under test and checks its outputs. Since it is never synthesized, delays, display statements and similar can be used freely.","url":"https://semiconroom.com/en/term/testbench/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Testbench","item":"https://semiconroom.com/en/term/testbench/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Testbench","description":"Simulation-only code that drives inputs to the design under test and checks its outputs. Since it is never synthesized, delays, display statements and similar can be used freely.","url":"https://semiconroom.com/en/term/testbench/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is a testbench synthesizable?","acceptedAnswer":{"@type":"Answer","text":"No. A testbench is written only for simulation, so it freely uses delays, display statements, file I/O and other constructs that cannot become hardware."}},{"@type":"Question","name":"What is the DUT in a testbench?","acceptedAnswer":{"@type":"Answer","text":"DUT stands for design under test, the synthesizable module that the testbench instantiates, drives with stimulus and checks."}},{"@type":"Question","name":"What is the difference between == and === in a Verilog testbench?","acceptedAnswer":{"@type":"Answer","text":"The == operator returns X if either operand contains X or Z bits, like a hardware comparator. The === operator compares X and Z literally and always returns 0 or 1, so testbenches use it to detect unknown outputs."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/hdl-verification/">HDL &amp; Verification</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What a testbench contains</h2>
+  <p>A testbench is a top-level <a class="term-link" href="/en/term/hardware-description-language/">HDL</a> module, usually without ports, that instantiates the design under test (DUT) and surrounds it with everything needed to exercise it. It generates the clock, for example always #5 clk = ~clk; which toggles every 5 time units and gives a 10 ns period with a 1 ns unit, applies reset, drives input stimulus, and observes the outputs. It may also read test vectors from files, write logs and dump waveforms. The DUT is the synthesizable design; the testbench exists only in simulation.</p>
+</section>
+<section class="term-about">
+  <h2>Simulation-only constructs</h2>
+  <p>Because a testbench is never synthesized, it can use features that have no hardware meaning. Delay statements such as #10 advance simulation time, $display and file I/O print or record values, and the case-equality operator === compares X and Z bits literally, which lets a test detect an output that has become unknown. Synthesis ignores or rejects these constructs, so they must stay out of <a class="term-link" href="/en/term/rtl/">RTL</a>. If they leak into the design code, simulation and hardware behavior can diverge in ways that are hard to debug.</p>
+</section>
+<section class="term-about">
+  <h2>Avoiding races at the clock edge</h2>
+  <p>A common testbench bug is changing a DUT input with a <a class="term-link" href="/en/term/blocking-assignment/">blocking assignment</a> at exactly the same simulation time as the rising clock edge. Whether the DUT flip-flops capture the old or new value then depends on the order in which the simulator executes events, a race whose result can even differ between simulators. Safer practice is to drive inputs on the opposite clock edge or a little after the active edge, to use nonblocking assignments, or to use <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a> clocking blocks, which define sampling and driving times explicitly.</p>
+</section>
+<section class="term-about">
+  <h2>From waveforms to self-checking tests</h2>
+  <p>For a small block, inspecting waveforms by eye may be enough, but this does not scale. A self-checking testbench computes or looks up the expected result for each input, often with a <a class="term-link" href="/en/term/reference-model/">reference model</a>, compares it automatically with the DUT output and reports mismatches as errors. Thousands of tests can then run unattended, for example overnight in regression. Larger projects build on this with constrained-random stimulus, scoreboards and coverage collection, and verification effort often matches or exceeds design effort.</p>
+</section>
 <section>
   <h2>Try it: questions about Testbench</h2>
   <article class="q-mini" data-qid="hdl-verification-032" data-cat="hdl-verification" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Whether the design captures the old or new value depends on execution order (a race); change inputs away from the clock edge or with nonblocking assignments</p><p class="explanation">When the <a class="term-link" href="/en/term/testbench/">testbench</a> updates an input at the same instant the design&#39;s flip-flops sample it, the captured value can be old or new depending on which the simulator executes first. This is a simulation race, and results may even differ between simulators. It is prevented by changing inputs on the falling edge or slightly after the edge, or by using nonblocking assignments or <a class="term-link" href="/en/term/systemverilog/">SystemVerilog</a> clocking blocks.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is a testbench synthesizable?</h3>
+  <p>No. A testbench is written only for simulation, so it freely uses delays, display statements, file I/O and other constructs that cannot become hardware.</p>
+  <h3>What is the DUT in a testbench?</h3>
+  <p>DUT stands for design under test, the synthesizable module that the testbench instantiates, drives with stimulus and checks.</p>
+  <h3>What is the difference between == and === in a Verilog testbench?</h3>
+  <p>The == operator returns X if either operand contains X or Z bits, like a hardware comparator. The === operator compares X and Z literally and always returns 0 or 1, so testbenches use it to detect unknown outputs.</p>
+</section>
 <section>
   <h2>Testbench in the explanations</h2>
   <ul class="term-quotes"><li><p>A testbench is HDL code that instantiates the design under test (DUT), generates clocks, resets and input signals, and observes outputs.</p><a href="/en/q/hdl-verification/hdl-verification-032/">Which describes a testbench used in HDL verification?</a></li><li><p>When the testbench updates an input at the same instant the design&#39;s flip-flops sample it, the captured value can be old or new depending on which the simulator executes first.</p><a href="/en/q/hdl-verification/hdl-verification-034/">In a testbench, changing a design input with a blocking ass…</a></li><li><p>A self-checking testbench computes or looks up the expected output for each input, compares it automatically with the design&#39;s output and reports any mismatch as an error.</p><a href="/en/q/hdl-verification/hdl-verification-035/">What characterizes a self-checking testbench?</a></li><li><p>Testbench constructs such as $display and file I/O likewise do not become hardware.</p><a href="/en/q/hdl-verification/hdl-verification-015/">Which Verilog construct is ignored by logic synthesis and d…</a></li><li><p>=== is called case equality and compares X as X and Z as Z literally, so a testbench can use it to check whether an output has become X.</p><a href="/en/q/hdl-verification/hdl-verification-050/">What is the difference between Verilog&#39;s equality operators…</a></li></ul>

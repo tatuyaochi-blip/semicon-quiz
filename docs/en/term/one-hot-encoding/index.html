@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"One-hot encoding","item":"https://semiconroom.com/en/term/one-hot-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"One-hot encoding","description":"State encoding that assigns one flip-flop per state with exactly one set at a time. Logic tends to be simple and fast, and it is common on FPGAs.","url":"https://semiconroom.com/en/term/one-hot-encoding/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"One-hot encoding","item":"https://semiconroom.com/en/term/one-hot-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"One-hot encoding","description":"State encoding that assigns one flip-flop per state with exactly one set at a time. Logic tends to be simple and fast, and it is common on FPGAs.","url":"https://semiconroom.com/en/term/one-hot-encoding/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many flip-flops does one-hot encoding need?","acceptedAnswer":{"@type":"Answer","text":"One flip-flop per state, so a machine with N states needs N flip-flops. Binary encoding of the same machine needs only the ceiling of log2 N."}},{"@type":"Question","name":"What is the difference between one-hot and binary state encoding?","acceptedAnswer":{"@type":"Answer","text":"One-hot uses one flip-flop per state with a single bit set, giving simple, fast decode logic at the cost of more registers. Binary encoding stores the state number in the fewest flip-flops but needs wider logic to decode each state."}},{"@type":"Question","name":"Is one-hot encoding in digital design the same as one-hot encoding in machine learning?","acceptedAnswer":{"@type":"Answer","text":"The idea is the same: a vector with exactly one element set to 1 identifies one item from a set. In hardware it encodes the current state of a state machine or a select signal, while in machine learning it represents a categorical value as a numeric vector."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/hdl-verification/">HDL &amp; Verification</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How one-hot state encoding works</h2>
+  <p>In a finite state machine, one-hot encoding gives each state its own <a class="term-link" href="/en/term/flip-flop/">flip-flop</a>, and exactly one flip-flop holds 1 at any time. Four states become 0001, 0010, 0100 and 1000. Testing whether the machine is in a given state means looking at a single bit, so outputs that depend on the state are often just one flip-flop or a small OR of a few. The next-state input of each flip-flop is the OR of the conditions on the transitions entering that state, each ANDed with the bit of the source state, which keeps the logic depth shallow and the machine fast.</p>
+</section>
+<section class="term-about">
+  <h2>One-hot vs. binary encoding</h2>
+  <p>Binary encoding numbers the states and needs only the ceiling of log2 N flip-flops: three states fit in two flip-flops, while one-hot needs three, and sixteen states need four flip-flops versus sixteen. The cost of binary encoding is wider decode logic, because recognizing a state means comparing all state bits. Gray-code encoding, a third option, assigns codes so that frequent transitions change one bit, reducing switching activity. Binary suits designs where flip-flops are scarce or the state count is large; one-hot suits speed and simplicity when flip-flops are plentiful.</p>
+</section>
+<section class="term-about">
+  <h2>Why FPGAs favor it</h2>
+  <p>An <a class="term-link" href="/en/term/fpga/">FPGA</a> logic block pairs each small lookup table (LUT) with one or more flip-flops, so registers are abundant while wide logic functions must be split across several LUT levels. One-hot encoding fits this structure well: each state bit&#39;s next-state function usually involves only a few inputs and fits in a single LUT, which shortens critical paths. Synthesis tools commonly detect state machines and pick an encoding automatically, often one-hot for small and medium machines, though designers can override the choice. In ASICs, where flip-flops cost more area, binary or other compact encodings are more common.</p>
+</section>
+<section class="term-about">
+  <h2>Illegal states and recovery</h2>
+  <p>With N flip-flops, one-hot uses only N of the 2^N possible patterns, so all-zero and multi-hot patterns are illegal. Noise, a <a class="term-link" href="/en/term/glitch/">glitch</a> or a radiation-induced bit flip could put the machine into one of them, where it may stall or behave unpredictably. Binary encoding has the same issue with unused codes, such as 11 in a three-state machine. Robust designs therefore define a default branch that returns any unexpected state to a known one, and synthesis tools offer safe state-machine options that keep this recovery logic instead of optimizing it away.</p>
+</section>
 <section>
   <h2>Try it: questions about One-hot encoding</h2>
   <article class="q-mini" data-qid="hdl-verification-023" data-cat="hdl-verification" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. 2 / 3</p><p class="explanation">Binary encoding numbers the states in binary, so three states fit in 2 bits (two flip-flops): 00, 01 and 10. <a class="term-link" href="/en/term/one-hot-encoding/">One-hot encoding</a> uses one <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> per state, so three. Binary leaves the unused code 11, so it is safer to define its destination with a default branch, letting the machine recover if noise ever puts it there.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How many flip-flops does one-hot encoding need?</h3>
+  <p>One flip-flop per state, so a machine with N states needs N flip-flops. Binary encoding of the same machine needs only the ceiling of log2 N.</p>
+  <h3>What is the difference between one-hot and binary state encoding?</h3>
+  <p>One-hot uses one flip-flop per state with a single bit set, giving simple, fast decode logic at the cost of more registers. Binary encoding stores the state number in the fewest flip-flops but needs wider logic to decode each state.</p>
+  <h3>Is one-hot encoding in digital design the same as one-hot encoding in machine learning?</h3>
+  <p>The idea is the same: a vector with exactly one element set to 1 identifies one item from a set. In hardware it encodes the current state of a state machine or a select signal, while in machine learning it represents a categorical value as a numeric vector.</p>
+</section>
 <section>
   <h2>One-hot encoding in the explanations</h2>
   <ul class="term-quotes"><li><p>One-hot encoding represents, say, four states as 0001, 0010, 0100 and 1000, assigning one flip-flop to each state.</p><a href="/en/q/hdl-verification/hdl-verification-023/">What is a characteristic of one-hot encoding for state mach…</a></li><li><p>One-hot encoding uses one flip-flop per state, so three.</p><a href="/en/q/hdl-verification/hdl-verification-024/">For a state machine with three states, how many flip-flops …</a></li></ul>

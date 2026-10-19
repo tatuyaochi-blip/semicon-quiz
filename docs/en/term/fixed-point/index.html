@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Fixed point","item":"https://semiconroom.com/en/term/fixed-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Fixed point","description":"Representing fractions with ordinary integer bit patterns and an agreed binary-point position. Integer arithmetic circuits suffice, giving small, low-power hardware, but the range is narrow. Formats are often named by fraction bits, as in Q15.","url":"https://semiconroom.com/en/term/fixed-point/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Fixed point","item":"https://semiconroom.com/en/term/fixed-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Fixed point","description":"Representing fractions with ordinary integer bit patterns and an agreed binary-point position. Integer arithmetic circuits suffice, giving small, low-power hardware, but the range is narrow. Formats are often named by fraction bits, as in Q15.","url":"https://semiconroom.com/en/term/fixed-point/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does Q15 mean in fixed-point arithmetic?","acceptedAnswer":{"@type":"Answer","text":"Q15 is a 16-bit signed fixed-point format with 15 fraction bits and one sign bit. It represents values from −1 up to 1 − 2⁻¹⁵ in steps of about 3.05 × 10⁻⁵."}},{"@type":"Question","name":"How do you convert a fixed-point value to decimal?","acceptedAnswer":{"@type":"Answer","text":"Read the bit pattern as an integer and divide by 2 raised to the number of fraction bits. For example, 0011 1000 with 4 fraction bits is 56 ÷ 16 = 3.5."}},{"@type":"Question","name":"What is the difference between fixed point and floating point?","acceptedAnswer":{"@type":"Answer","text":"Fixed point uses a binary point at an agreed fixed position, giving uniform spacing and simple integer hardware but a narrow range. Floating point adds an exponent, giving a wide range with roughly constant relative precision at the cost of more complex hardware."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a fixed-point number is stored</h2>
+  <p>A fixed-point number is an ordinary integer that the programmer agrees to divide by a fixed power of two. With 8 bits and 4 fraction bits, the pattern 0011 1000 reads as the integer 56, and dividing by 2⁴ = 16 gives 3.5: the upper bits are the integer part and the first fraction bit weighs 0.5. Q notation names the format: Q15 is a 16-bit signed number with 15 fraction bits, covering −1 to just under +1 with a step of 2⁻¹⁵, about 3.05 × 10⁻⁵. Qm.n states integer and fraction bits explicitly.</p>
+</section>
+<section class="term-about">
+  <h2>Arithmetic rules</h2>
+  <p>Two numbers in the same format can be added with an ordinary integer adder, since their binary points already line up. Multiplication doubles the fraction bits: two Q15 values give a 32-bit product with 30 fraction bits, which is shifted right by 15 to return to Q15, with rounding if needed. Overflow is the main hazard. Ordinary integer hardware wraps around, turning a large positive result into a negative one, so DSPs provide <a class="term-link" href="/en/term/saturating-arithmetic/">saturating arithmetic</a> that clamps to the largest representable value. In Q15, even −1 × −1 overflows because +1 cannot be represented.</p>
+</section>
+<section class="term-about">
+  <h2>Why hardware uses it</h2>
+  <p>Because the contents are just integers, fixed point needs no exponent alignment, normalization or special-value handling, all of which make floating-point units larger and more power-hungry. Integer multipliers and adders are small and fast, which suits low-cost microcontrollers without a floating-point unit, signal-processing DSPs, and custom datapaths on FPGAs and ASICs where the designer can choose exactly as many bits as the algorithm needs. The price is design effort: every intermediate value must be scaled so it neither overflows nor loses too much precision.</p>
+</section>
+<section class="term-about">
+  <h2>Fixed point vs. floating point</h2>
+  <p>Fixed-point values are evenly spaced, so absolute precision is the same everywhere but the range is narrow. Floating point stores a <a class="term-link" href="/en/term/significand/">significand</a> and an exponent, so spacing doubles each time the exponent rises: in single precision the gap between neighbors is about 1.2 × 10⁻⁷ near 1 but 8 near 100 million. Floating point therefore keeps relative precision roughly constant over an enormous range. Both formats have rounding error; the difference is that fixed point trades range for simple hardware and predictable, uniform resolution.</p>
+</section>
 <section>
   <h2>Try it: questions about Fixed point</h2>
   <article class="q-mini" data-qid="computer-arithmetic-001" data-cat="computer-arithmetic" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. 3.5</p><p class="explanation">The upper four bits, 0011, are the integer part, 3; the lower four bits, 1000, are the fraction, where the first bit weighs 2⁻¹ = 0.5. Together that is 3 + 0.5 = 3.5. Equivalently, reading the bits as the integer 56 and dividing by 2⁴ = 16 for the four fraction bits gives 56 ÷ 16 = 3.5. 56 ignores the binary point, and 3.8 misreads binary 1000 as the decimal &quot;.8&quot;.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does Q15 mean in fixed-point arithmetic?</h3>
+  <p>Q15 is a 16-bit signed fixed-point format with 15 fraction bits and one sign bit. It represents values from −1 up to 1 − 2⁻¹⁵ in steps of about 3.05 × 10⁻⁵.</p>
+  <h3>How do you convert a fixed-point value to decimal?</h3>
+  <p>Read the bit pattern as an integer and divide by 2 raised to the number of fraction bits. For example, 0011 1000 with 4 fraction bits is 56 ÷ 16 = 3.5.</p>
+  <h3>What is the difference between fixed point and floating point?</h3>
+  <p>Fixed point uses a binary point at an agreed fixed position, giving uniform spacing and simple integer hardware but a narrow range. Floating point adds an exponent, giving a wide range with roughly constant relative precision at the cost of more complex hardware.</p>
+</section>
 <section>
   <h2>Fixed point in the explanations</h2>
   <ul class="term-quotes"><li><p>Fixed point merely agrees on a binary-point position; the contents are integers, so addition and multiplication use integer circuits.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-032/">Why is fixed-point rather than floating-point arithmetic of…</a></li><li><p>Uniform spacing everywhere is a property of fixed point.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-047/">Which correctly describes the spacing between adjacent repr…</a></li></ul>

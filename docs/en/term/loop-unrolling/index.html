@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Loop unrolling","item":"https://semiconroom.com/en/term/loop-unrolling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop unrolling","description":"Replicating a loop body several times to reduce the number of iterations. It cuts branch and counter overhead and gives more freedom to reorder instructions, at the cost of larger code.","url":"https://semiconroom.com/en/term/loop-unrolling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Loop unrolling","item":"https://semiconroom.com/en/term/loop-unrolling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop unrolling","description":"Replicating a loop body several times to reduce the number of iterations. It cuts branch and counter overhead and gives more freedom to reorder instructions, at the cost of larger code.","url":"https://semiconroom.com/en/term/loop-unrolling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is loop unrolling?","acceptedAnswer":{"@type":"Answer","text":"Loop unrolling is a compiler or manual optimization that replicates the loop body several times and reduces the number of iterations accordingly, cutting counter updates and branches and exposing more instructions for scheduling."}},{"@type":"Question","name":"Does loop unrolling always improve performance?","acceptedAnswer":{"@type":"Answer","text":"No. It increases code size and register usage, which can cause instruction cache misses or register spills, and on modern CPUs the remaining loop overhead is often small, so the benefit must be measured."}},{"@type":"Question","name":"What is the difference between loop unrolling and loop tiling?","acceptedAnswer":{"@type":"Answer","text":"Unrolling replicates the loop body to reduce branch overhead and increase instruction-level parallelism. Tiling splits the iteration space into cache-sized blocks to improve data reuse and reduce cache misses."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/compiler/">Compilers</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What unrolling does to a loop</h2>
+  <p>A loop that adds two arrays element by element normally performs, for every element, a counter increment, a comparison and a conditional branch in addition to the useful work. Unrolling by four writes the body four times, handling elements i through i+3 in one pass and incrementing i by 4, so the loop runs a quarter as many iterations and the overhead is paid once per four elements. When the trip count is not a multiple of the unroll factor, a short remainder loop handles the leftover elements. Small loops with a known constant trip count can be unrolled completely.</p>
+</section>
+<section class="term-about">
+  <h2>Why it speeds code up</h2>
+  <p>Besides cutting branch and counter overhead, unrolling places several independent copies of the work in one <a class="term-link" href="/en/term/basic-block/">basic block</a>, giving the compiler&#39;s instruction scheduler freedom to interleave them. A load from one copy can be issued while arithmetic from another proceeds, hiding latencies. For reductions such as sums, unrolling with several separate accumulators breaks a single long dependency chain; for floating point this changes the rounding order, so compilers do it only when allowed. Unrolling also exposes groups of operations that can be combined into <a class="term-link" href="/en/term/simd/">SIMD</a> vector instructions.</p>
+</section>
+<section class="term-about">
+  <h2>Costs and diminishing returns</h2>
+  <p>Each extra copy enlarges the code, which can push hot loops out of the instruction cache, and more simultaneous values raise register pressure, which can force spills to memory that undo the gain. Modern out-of-order processors with accurate <a class="term-link" href="/en/term/branch-prediction/">branch prediction</a> already hide much loop overhead, so heavy unrolling often brings little benefit. Compilers therefore choose unroll factors heuristically, and programmers can request specific behavior through compiler options or pragmas when measurements justify it.</p>
+</section>
+<section class="term-about">
+  <h2>Unrolling vs. related loop optimizations</h2>
+  <p>Loop unrolling targets control overhead and scheduling freedom. <a class="term-link" href="/en/term/strength-reduction/">Strength reduction</a> is different: it replaces an expensive operation with a cheaper one, such as computing i * 4 by adding 4 to a separate variable each iteration or by a shift. <a class="term-link" href="/en/term/loop-blocking/">Loop blocking</a>, or tiling, restructures loops such as matrix multiplication to work on cache-sized blocks and increase data reuse, attacking memory misses rather than branches. Compilers often apply several of these together to the same loop.</p>
+</section>
 <section>
   <h2>Try it: questions about Loop unrolling</h2>
   <article class="q-mini" data-qid="compiler-015" data-cat="compiler" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Fewer counter checks and branches, and easier reordering</p><p class="explanation"><a class="term-link" href="/en/term/loop-unrolling/">Loop unrolling</a> writes, say, four copies of the loop body and runs a quarter as many iterations. Counter checks and branches shrink, and instructions from the copies can be interleaved, making it easier to hide operation latencies. Code grows in exchange and can strain the instruction cache. A single copy with smaller code is the reverse, and extracting a loop into a function is a different transformation.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is loop unrolling?</h3>
+  <p>Loop unrolling is a compiler or manual optimization that replicates the loop body several times and reduces the number of iterations accordingly, cutting counter updates and branches and exposing more instructions for scheduling.</p>
+  <h3>Does loop unrolling always improve performance?</h3>
+  <p>No. It increases code size and register usage, which can cause instruction cache misses or register spills, and on modern CPUs the remaining loop overhead is often small, so the benefit must be measured.</p>
+  <h3>What is the difference between loop unrolling and loop tiling?</h3>
+  <p>Unrolling replicates the loop body to reduce branch overhead and increase instruction-level parallelism. Tiling splits the iteration space into cache-sized blocks to improve data reuse and reduce cache misses.</p>
+</section>
 <section>
   <h2>Loop unrolling in the explanations</h2>
   <ul class="term-quotes"><li><p>Loop unrolling writes, say, four copies of the loop body and runs a quarter as many iterations.</p><a href="/en/q/compiler/compiler-015/">What is the main effect of loop unrolling?</a></li><li><p>A function usually consists of many basic blocks, and replicating a loop body is loop unrolling.</p><a href="/en/q/compiler/compiler-006/">Which describes a basic block?</a></li><li><p>Replicating a loop body is loop unrolling, and merging function calls is a different optimization.</p><a href="/en/q/compiler/compiler-010/">Which is an example of constant folding by a compiler?</a></li><li><p>Replicating the body four times is loop unrolling.</p><a href="/en/q/compiler/compiler-017/">In the loop above, which transformation applies strength re…</a></li><li><p>Reducing branches is the goal of loop unrolling, and total memory usage does not change.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-018/">What is the main purpose of loop blocking (tiling), used fo…</a></li></ul>

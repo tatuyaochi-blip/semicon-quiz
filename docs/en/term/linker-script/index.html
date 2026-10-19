@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Linker script","item":"https://semiconroom.com/en/term/linker-script/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Linker script","description":"A file telling the linker at which memory addresses to place each section. Embedded development uses it to lay out flash and RAM and to fix the interrupt vector address.","url":"https://semiconroom.com/en/term/linker-script/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Linker script","item":"https://semiconroom.com/en/term/linker-script/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Linker script","description":"A file telling the linker at which memory addresses to place each section. Embedded development uses it to lay out flash and RAM and to fix the interrupt vector address.","url":"https://semiconroom.com/en/term/linker-script/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a linker script used for?","acceptedAnswer":{"@type":"Answer","text":"A linker script tells the linker which memory regions exist and at which addresses to place each code and data section. Embedded projects use it to put code in flash, variables in RAM and the interrupt vector table at its required address."}},{"@type":"Question","name":"What is the difference between .data and .bss?","acceptedAnswer":{"@type":"Answer","text":".data holds variables with nonzero initial values, which are stored in flash and copied to RAM at start-up. .bss holds variables that start at zero, so it takes no space in flash and is simply cleared in RAM before main runs."}},{"@type":"Question","name":"Why does .data have two addresses in a linker script?","acceptedAnswer":{"@type":"Answer","text":"Its initial values must be stored in non-volatile flash, but the variables are modified at run time and so must live in RAM. The load address points to the flash copy and the run address to the RAM location the code actually uses."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What a linker script describes</h2>
+  <p>The compiler produces object files whose code and data are grouped into sections such as .text (instructions), .rodata (constants), .data (initialized variables) and .bss (zero-initialized variables), but without final addresses. A linker script tells the <a class="term-link" href="/en/term/linker/">linker</a> how to combine them. In GNU ld syntax, a MEMORY block declares regions with an origin and length, for example flash at one address and RAM at another, and a SECTIONS block maps input sections into output sections and assigns each to a region. The linker reports an error if a region overflows.</p>
+</section>
+<section class="term-about">
+  <h2>Why embedded systems need one</h2>
+  <p>On a PC the operating system&#39;s loader decides where a program sits in memory, and a default linker script works for nearly everything. A <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> without an OS starts executing from fixed addresses at power-on, so the program must be built for its exact memory map. The <a class="term-link" href="/en/term/interrupt-vector-table/">interrupt vector table</a> has to sit where the hardware expects it, code and constants belong in non-volatile flash, and writable variables, the heap and the stack must be in RAM. Different chips in the same family often need only a different linker script because their memory sizes differ.</p>
+</section>
+<section class="term-about">
+  <h2>Load address vs. run address</h2>
+  <p>Initialized variables pose a special problem: their initial values must survive power-off, so they are stored in flash, yet the program writes to them, so they must live in RAM at run time. The linker script therefore gives .data two addresses: a load address in flash and a run address in RAM. It also defines symbols marking the start and end of .data and .bss and often the top of the stack. Start-up code uses those symbols to copy .data from flash to RAM and fill .bss with zeros before calling main, giving C its promised initial state.</p>
+</section>
+<section class="term-about">
+  <h2>Common pitfalls</h2>
+  <p>Many problems in bare-metal projects trace back to the linker script. When unused-section removal is enabled, the vector table or other sections referenced only by hardware can be discarded unless marked to be kept. A stack region sized too small does not cause a link error but silently overwrites other data at run time. Placing a section at the wrong load address leaves variables with garbage initial values. Reading the map file the <a class="term-link" href="/en/term/linker/">linker</a> can produce, which lists every symbol&#39;s address and each region&#39;s usage, is the standard way to check the result.</p>
+</section>
 <section>
   <h2>Try it: questions about Linker script</h2>
   <article class="q-mini" data-qid="linker-loader-039" data-cat="linker-loader" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. To tell the linker at which addresses, in flash or RAM, to place each section</p><p class="explanation">On a PC the OS loader chooses addresses, but on a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> the addresses at power-on are used as they are. A <a class="term-link" href="/en/term/linker-script/">linker script</a> gives the start addresses and sizes of flash and RAM and specifies placement, such as .text and constants in flash and .data, .bss and the stack in RAM. Items that must sit at fixed addresses, such as the <a class="term-link" href="/en/term/interrupt-vector-table/">interrupt vector table</a>, are also placed here.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a linker script used for?</h3>
+  <p>A linker script tells the linker which memory regions exist and at which addresses to place each code and data section. Embedded projects use it to put code in flash, variables in RAM and the interrupt vector table at its required address.</p>
+  <h3>What is the difference between .data and .bss?</h3>
+  <p>.data holds variables with nonzero initial values, which are stored in flash and copied to RAM at start-up. .bss holds variables that start at zero, so it takes no space in flash and is simply cleared in RAM before main runs.</p>
+  <h3>Why does .data have two addresses in a linker script?</h3>
+  <p>Its initial values must be stored in non-volatile flash, but the variables are modified at run time and so must live in RAM. The load address points to the flash copy and the run address to the RAM location the code actually uses.</p>
+</section>
 <section>
   <h2>Linker script in the explanations</h2>
   <ul class="term-quotes"><li><p>A linker script gives the start addresses and sizes of flash and RAM and specifies placement, such as .text and constants in flash and .data, .bss and the stack in RAM.</p><a href="/en/q/linker-loader/linker-loader-039/">What is the role of a linker script used in embedded develo…</a></li><li><p>The linker script gives .data separate addresses: where it is stored in flash and where it is used in RAM at run time.</p><a href="/en/q/linker-loader/linker-loader-040/">On a microcontroller without an OS, what does the start-up …</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Data race","item":"https://semiconroom.com/en/term/data-race/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Data race","description":"A situation in which threads access the same variable concurrently without synchronization and at least one access is a write. Results vary between runs; in C and C++ it is undefined behavior.","url":"https://semiconroom.com/en/term/data-race/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Data race","item":"https://semiconroom.com/en/term/data-race/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Data race","description":"A situation in which threads access the same variable concurrently without synchronization and at least one access is a write. Results vary between runs; in C and C++ it is undefined behavior.","url":"https://semiconroom.com/en/term/data-race/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a data race and a race condition?","acceptedAnswer":{"@type":"Answer","text":"A data race is concurrent, unsynchronized access to the same memory location where at least one access is a write. A race condition is any timing-dependent bug, which can exist even when every individual access is properly synchronized."}},{"@type":"Question","name":"Can a data race happen on a single-core CPU?","acceptedAnswer":{"@type":"Answer","text":"Yes. If the operating system preempts a thread between its load and store, another thread can run and update the same variable, so an increment can still be lost without any true parallelism."}},{"@type":"Question","name":"Does the volatile keyword prevent data races in C and C++?","acceptedAnswer":{"@type":"Answer","text":"No. Volatile only forces the compiler to perform each access; it does not make read-modify-write sequences atomic or order them between threads. Use atomics or locks instead."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a lost update happens</h2>
+  <p>The statement counter++ looks atomic but compiles to three steps: load the value, add 1, store it back. Suppose two threads each increment a shared counter 100,000 times. If thread A loads 100 and thread B also loads 100 before A stores, both store 101 and one increment disappears. Depending on how the threads interleave, the final value can be anywhere below 200,000 and differs from run to run. Nothing crashes, so the bug is easy to miss, and it may vanish when the program is slowed down by a debugger or logging.</p>
+</section>
+<section class="term-about">
+  <h2>Data race vs. race condition</h2>
+  <p>A data race is precisely defined: two threads access the same memory location concurrently, at least one access is a write, and no synchronization orders them. A race condition is broader: any bug whose outcome depends on timing. The two overlap but are not identical. A check-then-act sequence built from individually atomic operations has no data race yet can still be a race condition, because another thread can act between the check and the act. Languages treat data races differently: in C and C++ a program containing one has undefined behavior, while Java gives racy programs defined but weak semantics.</p>
+</section>
+<section class="term-about">
+  <h2>Fixing it: locks and atomics</h2>
+  <p>The cure is to impose an order on the conflicting accesses. A lock (<a class="term-link" href="/en/term/mutex/">mutex</a>) turns the update into a <a class="term-link" href="/en/term/critical-section/">critical section</a> that only one thread executes at a time; keeping critical sections short limits waiting. For simple operations, atomic instructions are faster: fetch-and-add, such as x86 lock xadd or RISC-V amoadd.w, performs the read, add and write indivisibly and returns the old value, so it never needs to retry. More complex updates use <a class="term-link" href="/en/term/compare-and-swap/">compare-and-swap</a> loops. Declaring a variable volatile in C or C++ does not prevent a data race, because it provides neither atomicity nor ordering between threads.</p>
+</section>
+<section class="term-about">
+  <h2>Why compilers and hardware make races worse</h2>
+  <p>Because C and C++ assume race-free programs, compilers may legally keep a shared variable in a register, hoist a load out of a loop or merge stores, so a thread spinning on a flag written by another thread without synchronization might never see the change. Hardware adds its own reordering through store buffers and caches. Synchronization operations, such as lock acquisition and atomics with the appropriate memory ordering, are what tell both compiler and hardware where ordering must be preserved. Dynamic race detectors such as ThreadSanitizer help find races that testing alone rarely exposes.</p>
+</section>
 <section>
   <h2>Try it: questions about Data race</h2>
   <article class="q-mini" data-qid="multicore-sync-012" data-cat="multicore-sync" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Multiple threads access the same variable at the same time without synchronization, and at least one access is a write</p><p class="explanation">A <a class="term-link" href="/en/term/data-race/">data race</a> occurs when the order of reads and writes to one location is not fixed by synchronization, so the result depends on the order in which they happened to run. Because it appears or not depending on timing, it is a hard bug to find by testing. In C and C++, a program with a data race has undefined behavior. Locks or atomic variables must be used to establish an order.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a data race and a race condition?</h3>
+  <p>A data race is concurrent, unsynchronized access to the same memory location where at least one access is a write. A race condition is any timing-dependent bug, which can exist even when every individual access is properly synchronized.</p>
+  <h3>Can a data race happen on a single-core CPU?</h3>
+  <p>Yes. If the operating system preempts a thread between its load and store, another thread can run and update the same variable, so an increment can still be lost without any true parallelism.</p>
+  <h3>Does the volatile keyword prevent data races in C and C++?</h3>
+  <p>No. Volatile only forces the compiler to perform each access; it does not make read-modify-write sequences atomic or order them between threads. Use atomics or locks instead.</p>
+</section>
 <section>
   <h2>Data race in the explanations</h2>
   <ul class="term-quotes"><li><p>A data race occurs when the order of reads and writes to one location is not fixed by synchronization, so the result depends on the order in which they happened to run.</p><a href="/en/q/multicore-sync/multicore-sync-012/">Which describes a data race?</a></li><li><p>This is a textbook data race.</p><a href="/en/q/multicore-sync/multicore-sync-013/">When two threads run the code above simultaneously, the fin…</a></li><li><p>Fetch-and-add performs the read, add and write as one atomic operation, so a single instruction fixes the counter++ data race.</p><a href="/en/q/multicore-sync/multicore-sync-019/">What does a fetch-and-add instruction, such as RISC-V amoad…</a></li><li><p>If several threads simultaneously execute code that reads and updates a shared variable, a data race occurs.</p><a href="/en/q/multicore-sync/multicore-sync-038/">Which describes a critical section?</a></li></ul>

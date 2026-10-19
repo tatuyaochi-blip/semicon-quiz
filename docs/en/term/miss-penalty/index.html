@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Miss penalty","item":"https://semiconroom.com/en/term/miss-penalty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Miss penalty","description":"The extra time needed to fetch data from the next level when a cache miss occurs, determined by the lower level's access time and the line transfer time.","url":"https://semiconroom.com/en/term/miss-penalty/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Miss penalty","item":"https://semiconroom.com/en/term/miss-penalty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Miss penalty","description":"The extra time needed to fetch data from the next level when a cache miss occurs, determined by the lower level's access time and the line transfer time.","url":"https://semiconroom.com/en/term/miss-penalty/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do you calculate miss penalty in a two-level cache?","acceptedAnswer":{"@type":"Answer","text":"The L1 miss penalty equals the L2 average access time: L2 hit time plus L2 local miss rate times the main memory access time. For example, 10 ns + 0.2 × 100 ns = 30 ns."}},{"@type":"Question","name":"What is the difference between miss rate and miss penalty?","acceptedAnswer":{"@type":"Answer","text":"Miss rate is the fraction of accesses that miss in the cache, while miss penalty is the extra time each miss costs. Average access time depends on their product plus the hit time."}},{"@type":"Question","name":"Does a larger cache line increase the miss penalty?","acceptedAnswer":{"@type":"Answer","text":"Yes. Each miss must transfer more bytes, so the transfer part of the penalty grows, even though larger lines can reduce the number of misses for code with good spatial locality."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What sets the miss penalty</h2>
+  <p>The miss penalty is the time to fetch the missing line from the next level of the hierarchy. It has two parts: the latency until the first data arrives and the transfer time for the rest of the line, which is line size divided by bandwidth. In a multilevel hierarchy, the L1 miss penalty is simply the average access time of L2. With a 10 ns L2 hit time, a 20% L2 local miss rate and 100 ns main memory, the L1 miss penalty is 10 + 0.2 × 100 = 30 ns, far shorter than going straight to memory.</p>
+</section>
+<section class="term-about">
+  <h2>How it enters AMAT and CPI</h2>
+  <p><a class="term-link" href="/en/term/average-memory-access-time/">Average memory access time</a> (AMAT) is hit time + miss rate × miss penalty. With a 2-cycle hit time, a 4% miss rate and a 150-cycle penalty, AMAT is 2 + 0.04 × 150 = 8 cycles, four times the hit time. In <a class="term-link" href="/en/term/cycles-per-instruction/">CPI</a> terms, an ideal CPI of 1.0 with 1.3 memory accesses per instruction, a 2% miss rate and a 100-cycle penalty gains 1.3 × 0.02 × 100 = 2.6 stall cycles, giving a CPI of 3.6. A large penalty turns even small miss rates into large slowdowns.</p>
+</section>
+<section class="term-about">
+  <h2>Why miss rate alone can mislead</h2>
+  <p>Larger or more associative caches reduce the miss rate but may lengthen the hit time, and larger lines exploit <a class="term-link" href="/en/term/spatial-locality/">spatial locality</a> but raise the miss penalty because each miss transfers more data. Designs must therefore be compared by AMAT, not miss rate. With a 20-cycle penalty, a cache with a 1-cycle hit and 5% miss rate averages 1 + 0.05 × 20 = 2.0 cycles, while one with a 2-cycle hit and 4% miss rate averages 2 + 0.04 × 20 = 2.8 cycles, so the cache with the lower miss rate is slower.</p>
+</section>
+<section class="term-about">
+  <h2>Techniques that cut the effective penalty</h2>
+  <p>Adding cache levels shortens the trip for most misses. Critical word first sends the word the CPU requested before the rest of the line, and early restart lets execution resume as soon as that word arrives. Non-blocking caches keep serving hits while a miss is outstanding, and out-of-order cores overlap several misses so their latencies partly hide one another. <a class="term-link" href="/en/term/prefetching/">Prefetching</a> hides the penalty by fetching ahead; a useful rule of thumb sets the prefetch distance to roughly the miss penalty divided by the time per loop iteration.</p>
+</section>
 <section>
   <h2>Try it: questions about Miss penalty</h2>
   <article class="q-mini" data-qid="memory-hierarchy-023" data-cat="memory-hierarchy" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. 3.6</p><p class="explanation">Memory stall <a class="term-link" href="/en/term/cycles-per-instruction/">cycles per instruction</a> are 1.3 accesses × 0.02 × 100 cycles = 2.6 cycles. Adding them to the ideal CPI gives 1.0 + 2.6 = 3.6, so performance falls to 1/3.6 of ideal. 3.0 wrongly assumes one access per instruction (1.0 + 1 × 0.02 × 100). 1.3 is the number of accesses per instruction, not the CPI. Even a small miss rate badly hurts performance when the <a class="term-link" href="/en/term/miss-penalty/">miss penalty</a> is large.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do you calculate miss penalty in a two-level cache?</h3>
+  <p>The L1 miss penalty equals the L2 average access time: L2 hit time plus L2 local miss rate times the main memory access time. For example, 10 ns + 0.2 × 100 ns = 30 ns.</p>
+  <h3>What is the difference between miss rate and miss penalty?</h3>
+  <p>Miss rate is the fraction of accesses that miss in the cache, while miss penalty is the extra time each miss costs. Average access time depends on their product plus the hit time.</p>
+  <h3>Does a larger cache line increase the miss penalty?</h3>
+  <p>Yes. Each miss must transfer more bytes, so the transfer part of the penalty grows, even though larger lines can reduce the number of misses for code with good spatial locality.</p>
+</section>
 <section>
   <h2>Miss penalty in the explanations</h2>
   <ul class="term-quotes"><li><p>Average memory access time = hit time + miss rate × miss penalty = 2 + 0.04 × 150 = 2 + 6 = 8 cycles.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-023/">With a cache hit time of 2 cycles, a miss rate of 4% and a …</a></li><li><p>Even a small miss rate badly hurts performance when the miss penalty is large.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-024/">A processor has an average CPI of 1.0 with a perfect cache.…</a></li><li><p>The L1 miss penalty is the L2 average access time, 10 + 0.2 × 100 = 30 ns.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-006/">With an L1 hit time of 1 ns and miss rate of 5%, an L2 hit …</a></li><li><p>On the other hand, each miss transfers more data, increasing the miss penalty, and at the same capacity there are fewer lines, raising conflict misses and loads of unused data.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-010/">What is the effect of increasing a cache&#39;s line size?</a></li><li><p>A rule of thumb is to fetch ahead by the miss penalty divided by the time per loop iteration.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-016/">When inserting software prefetch instructions, which statem…</a></li></ul>

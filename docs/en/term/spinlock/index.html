@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Spinlock","item":"https://semiconroom.com/en/term/spinlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spinlock","description":"A lock that waits by repeatedly checking the lock variable in a loop. Fast for short waits, but it keeps using the CPU while waiting.","url":"https://semiconroom.com/en/term/spinlock/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Spinlock","item":"https://semiconroom.com/en/term/spinlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spinlock","description":"A lock that waits by repeatedly checking the lock variable in a loop. Fast for short waits, but it keeps using the CPU while waiting.","url":"https://semiconroom.com/en/term/spinlock/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a spinlock and a mutex?","acceptedAnswer":{"@type":"Answer","text":"A spinlock waits by looping on the lock variable and keeps the CPU busy, which is efficient only for very short waits. A mutex puts the waiting thread to sleep and lets other threads run, which suits longer waits but adds the cost of sleeping, waking and context switching."}},{"@type":"Question","name":"When should you use a spinlock?","acceptedAnswer":{"@type":"Answer","text":"Use one when the critical section is very short and threads run on different cores, or in kernel contexts such as interrupt handlers that are not allowed to sleep. Avoid it when the lock may be held for long or on single-core systems."}},{"@type":"Question","name":"What is test-and-test-and-set?","acceptedAnswer":{"@type":"Answer","text":"It is a spinlock technique in which waiters repeatedly read the lock with ordinary loads from their own caches and attempt the atomic test-and-set only when the lock appears free. This avoids constant cache-line invalidations and greatly reduces coherence traffic."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a spinlock acquires and releases</h2>
+  <p>A spinlock is a shared variable, typically 0 when free and 1 when held. To acquire it, a thread uses an atomic <a class="term-link" href="/en/term/read-modify-write/">read-modify-write</a> instruction such as test-and-set, swap or <a class="term-link" href="/en/term/compare-and-swap/">compare-and-swap</a>, which sets the variable to 1 and returns the old value in one indivisible step; on RISC-V this is an atomic swap or a <a class="term-link" href="/en/term/load-reserved-store-conditional/">load-reserved/store-conditional</a> pair. If the old value was 0, the thread owns the lock; otherwise it tries again in a loop. Releasing simply stores 0. Acquire and release must also act as memory barriers, so that accesses inside the <a class="term-link" href="/en/term/critical-section/">critical section</a> stay between them.</p>
+</section>
+<section class="term-about">
+  <h2>Test-and-test-and-set and cache traffic</h2>
+  <p>Retrying the <a class="term-link" href="/en/term/atomic-instruction/">atomic instruction</a> in a tight loop performs poorly on multicore chips. Every atomic operation needs exclusive ownership of the <a class="term-link" href="/en/term/cache-line/">cache line</a>, so waiting cores keep pulling the line into the modified (M) state and invalidating each other&#39;s copies, flooding the coherence fabric. The test-and-test-and-set pattern waits with ordinary loads instead: each waiter reads its own shared copy in its cache, generating no traffic, and attempts the atomic operation only when it sees the lock become free. Exponential backoff and ticket or queue-based locks further reduce contention and add fairness.</p>
+</section>
+<section class="term-about">
+  <h2>Spinlock vs. mutex</h2>
+  <p>A <a class="term-link" href="/en/term/mutex/">mutex</a> that sleeps puts a waiting thread into a blocked state and hands the CPU to other threads; the operating system wakes it when the lock is released. That wastes no <a class="term-link" href="/en/term/cpu-time/">CPU time</a> but costs a <a class="term-link" href="/en/term/system-call/">system call</a>, scheduling and a <a class="term-link" href="/en/term/context-switch/">context switch</a>, typically several microseconds. A spinlock avoids that overhead entirely and wins when the lock is held for only a short time, shorter than a sleep and wake cycle would take. For long hold times the balance reverses, so many library mutexes spin briefly first and then sleep, combining the strengths of both.</p>
+</section>
+<section class="term-about">
+  <h2>Where spinlocks fit and where they fail</h2>
+  <p>Spinlocks are common inside operating system kernels, for short critical sections on multiprocessors and for data shared with <a class="term-link" href="/en/term/interrupt/">interrupt</a> handlers, which cannot sleep. Code holding a spinlock must not sleep, and kernels usually disable preemption, and interrupts where needed, while it is held, so that an <a class="term-link" href="/en/term/interrupt-handler/">interrupt handler</a> on the same core cannot spin forever on a lock its own core holds. On a single-core system a user-level spinlock is especially wasteful: the holder cannot run to release the lock while the waiter spins, so the waiter burns its entire time slice.</p>
+</section>
 <section>
   <h2>Try it: questions about Spinlock</h2>
   <article class="q-mini" data-qid="multicore-sync-020" data-cat="multicore-sync" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. When the lock is held for a long time, so waiting threads waste CPU time spinning</p><p class="explanation">A thread waiting on a <a class="term-link" href="/en/term/spinlock/">spinlock</a> keeps using the CPU until the lock is free. If the lock is held for long, all that <a class="term-link" href="/en/term/cpu-time/">CPU time</a> is wasted and other threads are held back. On a single core it is worse: the lock cannot be released unless the holder runs, so the waiter spins until its time slice ends. Long waits call for a <a class="term-link" href="/en/term/mutex/">mutex</a> that sleeps, and some locks spin briefly before sleeping.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a spinlock and a mutex?</h3>
+  <p>A spinlock waits by looping on the lock variable and keeps the CPU busy, which is efficient only for very short waits. A mutex puts the waiting thread to sleep and lets other threads run, which suits longer waits but adds the cost of sleeping, waking and context switching.</p>
+  <h3>When should you use a spinlock?</h3>
+  <p>Use one when the critical section is very short and threads run on different cores, or in kernel contexts such as interrupt handlers that are not allowed to sleep. Avoid it when the lock may be held for long or on single-core systems.</p>
+  <h3>What is test-and-test-and-set?</h3>
+  <p>It is a spinlock technique in which waiters repeatedly read the lock with ordinary loads from their own caches and attempt the atomic test-and-set only when the lock appears free. This avoids constant cache-line invalidations and greatly reduces coherence traffic.</p>
+</section>
 <section>
   <h2>Spinlock in the explanations</h2>
   <ul class="term-quotes"><li><p>A spinlock tries to acquire the lock with an atomic instruction and, if that fails, immediately tries again, over and over.</p><a href="/en/q/multicore-sync/multicore-sync-020/">Which describes a spinlock?</a></li><li><p>A thread waiting on a spinlock keeps using the CPU until the lock is free.</p><a href="/en/q/multicore-sync/multicore-sync-021/">In which situation is a spinlock least suitable?</a></li></ul>

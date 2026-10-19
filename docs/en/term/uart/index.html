@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"UART","item":"https://semiconroom.com/en/term/uart/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"UART","description":"A circuit for asynchronous serial communication without a clock wire, in which both sides agree on a baud rate and characters are framed by start and stop bits.","url":"https://semiconroom.com/en/term/uart/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"UART","item":"https://semiconroom.com/en/term/uart/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"UART","description":"A circuit for asynchronous serial communication without a clock wire, in which both sides agree on a baud rate and characters are framed by start and stop bits.","url":"https://semiconroom.com/en/term/uart/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does UART stand for?","acceptedAnswer":{"@type":"Answer","text":"UART stands for universal asynchronous receiver-transmitter. It is the hardware block that converts bytes to and from a serial bit stream framed by start and stop bits, without a shared clock."}},{"@type":"Question","name":"How many bytes per second can a 115200 baud UART send?","acceptedAnswer":{"@type":"Answer","text":"With 8N1 framing each byte takes 10 bits, so 115200 bps carries about 11,520 bytes per second, roughly 87 µs per byte. Adding parity or a second stop bit lowers this further."}},{"@type":"Question","name":"Why do both sides of a UART link need the same baud rate?","acceptedAnswer":{"@type":"Answer","text":"No clock is transmitted, so the receiver times each bit with its own clock after the start bit. If the rates differ by more than a few percent, the sampling point drifts by half a bit or more before the end of the frame and bits are misread."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a UART frame works</h2>
+  <p>A UART (universal asynchronous receiver-transmitter) sends bytes one bit at a time over a transmit line and receives on a separate line, sharing only a ground with the other device. No clock is sent. The line idles at logic 1; a character begins with a start bit of 0, followed by usually eight data bits sent least significant bit first, an optional parity bit and one or more stop bits at 1. The most common format is written 8N1: eight data bits, no parity, one stop bit. Both ends must be configured to the same <a class="term-link" href="/en/term/baud-rate/">baud rate</a> in advance, such as 9600 or 115200 bits per second.</p>
+</section>
+<section class="term-about">
+  <h2>Throughput and timing tolerance</h2>
+  <p>Framing costs bandwidth: an 8N1 character takes ten bit times for eight bits of data. At 115200 bps that gives 115200 / 10 = 11,520 bytes per second, about 87 µs per byte, so heavy logging can stall a program. The receiver synchronizes on the falling edge of each start bit, typically by sampling the line at 16 times the <a class="term-link" href="/en/term/baud-rate/">baud rate</a>, and then samples each bit near its center using its own clock. Any rate mismatch accumulates, and once the drift reaches half a bit by the stop bit the character is corrupted, so the combined error of both ends must stay within a few percent.</p>
+</section>
+<section class="term-about">
+  <h2>UART vs. SPI and I2C</h2>
+  <p>UART is the simplest of the common on-board serial links: two signal wires, point to point, with no clock and little protocol. <a class="term-link" href="/en/term/spi/">SPI</a> (serial peripheral interface) is synchronous, with a shared clock, data in each direction and a chip-select line per device, which allows clock rates of tens of megahertz but adds a wire for each additional device. <a class="term-link" href="/en/term/i2c/">I2C</a> (inter-integrated circuit) connects many devices on two open-drain wires using addresses, at a few hundred kilohertz to a few megahertz. Choose UART to link two devices simply, SPI for speed and I2C for many devices on few wires.</p>
+</section>
+<section class="term-about">
+  <h2>Where you will meet it</h2>
+  <p>Almost every <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> includes one or more UARTs, alongside <a class="term-link" href="/en/term/spi/">SPI</a>, <a class="term-link" href="/en/term/i2c/">I2C</a> and often CAN. They provide debug consoles, connect GPS receivers, cellular and wireless modules, and serve as a recovery path through which a <a class="term-link" href="/en/term/bootloader/">bootloader</a> receives new firmware. The UART itself works at logic levels; standards such as RS-232 and RS-485 add line drivers with different voltage levels or <a class="term-link" href="/en/term/differential-signaling/">differential signaling</a> for longer cables. Because characters can arrive at any time, practical drivers use receive FIFOs with interrupts or <a class="term-link" href="/en/term/dma/">DMA</a> so that no byte is lost while the processor is busy.</p>
+</section>
 <section>
   <h2>Try it: questions about UART</h2>
   <article class="q-mini" data-qid="embedded-018" data-cat="embedded" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. About 11,500 bytes</p><p class="explanation">In 8N1 format, sending one byte of data takes 10 bits: 1 start bit, 8 data bits and 1 stop bit. 115200 ÷ 10 = 11,520, so about 11,500 bytes per second, or roughly 87 µs per byte. Heavy logging can take longer than expected and delay other processing, so the amount of output and the use of buffers need attention.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does UART stand for?</h3>
+  <p>UART stands for universal asynchronous receiver-transmitter. It is the hardware block that converts bytes to and from a serial bit stream framed by start and stop bits, without a shared clock.</p>
+  <h3>How many bytes per second can a 115200 baud UART send?</h3>
+  <p>With 8N1 framing each byte takes 10 bits, so 115200 bps carries about 11,520 bytes per second, roughly 87 µs per byte. Adding parity or a second stop bit lowers this further.</p>
+  <h3>Why do both sides of a UART link need the same baud rate?</h3>
+  <p>No clock is transmitted, so the receiver times each bit with its own clock after the start bit. If the rates differ by more than a few percent, the sampling point drifts by half a bit or more before the end of the frame and bits are misread.</p>
+</section>
 <section>
   <h2>UART in the explanations</h2>
   <ul class="term-quotes"><li><p>A UART communicates asynchronously over two wires, transmit and receive (plus ground).</p><a href="/en/q/embedded/embedded-018/">What is a characteristic of serial communication with a UAR…</a></li><li><p>UART links two devices asynchronously without a clock, with simple wiring and software.</p><a href="/en/q/embedded/embedded-027/">Which comparison of UART, SPI and I2C is correct?</a></li><li><p>A microcontroller integrates a CPU with flash for program storage, working RAM, timers, ADCs and communication interfaces (UART, SPI, I²C, CAN, etc.) on one chip.</p><a href="/en/q/cpu/cpu-024/">Which IC integrates a CPU, memory and peripherals such as t…</a></li><li><p>Normally it verifies the main firmware and starts it, but it can also receive new firmware over UART, USB, radio and so on and write it to flash.</p><a href="/en/q/embedded/embedded-037/">What is the role of a bootloader in an embedded device?</a></li></ul>

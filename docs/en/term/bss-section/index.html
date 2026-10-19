@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"BSS section","item":"https://semiconroom.com/en/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"BSS section","description":"The area for global and static variables with no initializer (or zero). Only its size is recorded in the file and it is zero-filled at load time, so it does not enlarge the executable.","url":"https://semiconroom.com/en/term/bss-section/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"BSS section","item":"https://semiconroom.com/en/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"BSS section","description":"The area for global and static variables with no initializer (or zero). Only its size is recorded in the file and it is zero-filled at load time, so it does not enlarge the executable.","url":"https://semiconroom.com/en/term/bss-section/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does BSS stand for?","acceptedAnswer":{"@type":"Answer","text":"BSS is usually expanded as block started by symbol, after an old assembler directive. In modern toolchains it simply names the section for zero-initialized global and static variables."}},{"@type":"Question","name":"Does a large uninitialized array make the executable bigger?","acceptedAnswer":{"@type":"Answer","text":"No. A global or static array without an initializer goes in .bss, where only its size is recorded; the memory is allocated and zero-filled when the program is loaded."}},{"@type":"Question","name":"What is the difference between .data and .bss?","acceptedAnswer":{"@type":"Answer","text":"The .data section holds globals and statics with nonzero initial values, which must be stored in the file. The .bss section holds those that start at zero, so it occupies memory at run time but no space for contents in the file."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What ends up in .bss</h2>
+  <p>The C language requires every object with static storage duration, meaning globals and static variables, to start at zero if no initializer is given. Compilers place such variables, and usually also those explicitly initialized to 0, in the .bss section. Globals with a nonzero initial value go in .data, and const-qualified constants go in read-only .rodata. The static keyword does not choose the section; it only limits visibility to one file. Local automatic variables never appear in .bss, because they live on the stack and have no defined initial value.</p>
+</section>
+<section class="term-about">
+  <h2>Why .bss costs no file space</h2>
+  <p>Storing a long run of zeros in the executable would only waste disk space and load time, so the .bss section records only its size and alignment. In <a class="term-link" href="/en/term/executable-and-linkable-format/">ELF</a> it is marked as occupying no file bytes. The loader maps the read-write segment containing .data and .bss, and where the segment&#39;s memory size exceeds its file size, the extra bytes are provided as zero-filled pages. As a result, a declaration such as static char buf[1000000]; adds about 1 MB to memory use but almost nothing to the file.</p>
+</section>
+<section class="term-about">
+  <h2>BSS on embedded systems</h2>
+  <p>On a <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> without an operating system, nobody else zero-fills memory, so the start-up code does it. Before calling main, the reset handler typically copies initial values of .data from flash into RAM and clears the .bss range in RAM, using start and end addresses that the <a class="term-link" href="/en/term/linker-script/">linker script</a> exports as symbols. Forgetting either step leads to globals with garbage values. Tools such as the size command report text, data and bss separately, which helps estimate flash and RAM usage.</p>
+</section>
+<section class="term-about">
+  <h2>Where the name comes from</h2>
+  <p>BSS is commonly expanded as block started by symbol, a name inherited from an <a class="term-link" href="/en/term/assembler/">assembler</a> directive on early IBM mainframes that reserved an uninitialized block of storage under a label. The meaning survived into Unix object formats and later <a class="term-link" href="/en/term/executable-and-linkable-format/">ELF</a>, even though the directive itself is long gone. Today the name simply refers to the zero-initialized data section, alongside .text for code, .data for initialized data and .rodata for constants.</p>
+</section>
 <section>
   <h2>Try it: questions about BSS section</h2>
   <article class="q-mini" data-qid="linker-loader-012" data-cat="linker-loader" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. It holds variables with no initializer (or zero); the file records only its size, and it is zero-filled at load time</p><p class="explanation">Global and static variables without an initializer start at zero by the rules of C. Storing a run of zeros in the file would be wasteful, so the .<a class="term-link" href="/en/term/bss-section/">bss section</a> records only its size, and the loader allocates and zero-fills the memory. For example, &quot;static char buf[1000000];&quot; does not make the executable 1 MB larger.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does BSS stand for?</h3>
+  <p>BSS is usually expanded as block started by symbol, after an old assembler directive. In modern toolchains it simply names the section for zero-initialized global and static variables.</p>
+  <h3>Does a large uninitialized array make the executable bigger?</h3>
+  <p>No. A global or static array without an initializer goes in .bss, where only its size is recorded; the memory is allocated and zero-filled when the program is loaded.</p>
+  <h3>What is the difference between .data and .bss?</h3>
+  <p>The .data section holds globals and statics with nonzero initial values, which must be stored in the file. The .bss section holds those that start at zero, so it occupies memory at run time but no space for contents in the file.</p>
+</section>
 <section>
   <h2>BSS section in the explanations</h2>
   <ul class="term-quotes"><li><p>Storing a run of zeros in the file would be wasteful, so the .bss section records only its size, and the loader allocates and zero-fills the memory.</p><a href="/en/q/linker-loader/linker-loader-012/">What is a characteristic of the .bss section?</a></li></ul>

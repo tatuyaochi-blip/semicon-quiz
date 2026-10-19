@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Polling","item":"https://semiconroom.com/en/term/polling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Polling","description":"A method in which the CPU repeatedly checks a peripheral's status to detect changes. Simple, but it consumes time and power even when nothing happens.","url":"https://semiconroom.com/en/term/polling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Polling","item":"https://semiconroom.com/en/term/polling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Polling","description":"A method in which the CPU repeatedly checks a peripheral's status to detect changes. Simple, but it consumes time and power even when nothing happens.","url":"https://semiconroom.com/en/term/polling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between polling and interrupts?","acceptedAnswer":{"@type":"Answer","text":"With polling, the CPU repeatedly checks a device's status; with interrupts, the device notifies the CPU when its status changes. Polling is simpler and predictable, while interrupts let the CPU do other work or sleep in the meantime."}},{"@type":"Question","name":"Why should a polled register be declared volatile in C?","acceptedAnswer":{"@type":"Answer","text":"Without volatile, the compiler may assume the value cannot change and read it only once, turning the polling loop into an infinite loop. Volatile forces a fresh read of the hardware register on every iteration."}},{"@type":"Question","name":"Is polling always inefficient?","acceptedAnswer":{"@type":"Answer","text":"No. When events arrive at a very high rate, polling avoids the save-and-restore overhead of each interrupt and can process events in batches, making it more efficient than interrupts."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How polling works</h2>
+  <p>With polling, the CPU learns about a peripheral by reading its status register in a loop, for example checking a <a class="term-link" href="/en/term/uart/">UART</a>&#39;s &quot;receive data ready&quot; flag until it is set and then reading the byte. The check may be a tight busy-wait or a periodic test inside the main loop or a timer routine. Polling is simple to write and debug, and the timing is predictable because checks happen exactly where the program places them. In C, the register pointer must be declared volatile so the compiler actually re-reads the hardware on each pass instead of reusing a cached value.</p>
+</section>
+<section class="term-about">
+  <h2>Polling vs. interrupts</h2>
+  <p>With interrupts, the peripheral signals the CPU when something happens; the CPU suspends its current work, saves its state, runs a handler and resumes. That leaves the CPU free to do other work or sleep while waiting, which matters for battery-powered devices. Polling spends <a class="term-link" href="/en/term/cpu-time/">CPU time</a> and energy even when nothing has changed, and its worst-case reaction time is set by the polling interval. Each <a class="term-link" href="/en/term/interrupt/">interrupt</a>, on the other hand, carries fixed overhead for entering and leaving the handler, which polling avoids.</p>
+</section>
+<section class="term-about">
+  <h2>When polling is the better choice</h2>
+  <p>Polling wins when events are so frequent that per-<a class="term-link" href="/en/term/interrupt/">interrupt</a> overhead would dominate. High-speed network processing is the classic case: under heavy load, drivers switch from an interrupt per packet to polling batches of packets, and some packet-processing frameworks dedicate cores to continuous polling. Polling also suits very short waits, such as a status flag that will be ready within a few cycles, simple boot code where interrupts are not yet configured, and control loops that must sample at strictly fixed instants.</p>
+</section>
+<section class="term-about">
+  <h2>Hybrid approaches</h2>
+  <p>Real systems often combine the two. An <a class="term-link" href="/en/term/interrupt/">interrupt</a> wakes the CPU from sleep, and the handler then polls to drain all pending data before re-enabling the interrupt, so a burst of events costs one interrupt rather than many. <a class="term-link" href="/en/term/dma/">DMA (direct memory access)</a> reduces the need for either by moving data without CPU involvement and signalling only when a whole block is complete. Care is needed with status registers whose flags are cleared by the act of reading them, because an extra read can silently discard an event.</p>
+</section>
 <section>
   <h2>Try it: questions about Polling</h2>
   <article class="q-mini" data-qid="os-hardware-028" data-cat="os-hardware" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. With polling the CPU checks the status repeatedly; with interrupts the peripheral notifies the CPU when the status changes</p><p class="explanation"><a class="term-link" href="/en/term/polling/">Polling</a> is simple and predictable because checks happen at fixed intervals, but the CPU keeps checking even when nothing happens, wasting time and power. With interrupts the CPU responds only when something changes, so it can do other work or sleep while waiting. If interrupts are extremely frequent, though, their overhead becomes large, so the choice matters.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between polling and interrupts?</h3>
+  <p>With polling, the CPU repeatedly checks a device&#39;s status; with interrupts, the device notifies the CPU when its status changes. Polling is simpler and predictable, while interrupts let the CPU do other work or sleep in the meantime.</p>
+  <h3>Why should a polled register be declared volatile in C?</h3>
+  <p>Without volatile, the compiler may assume the value cannot change and read it only once, turning the polling loop into an infinite loop. Volatile forces a fresh read of the hardware register on every iteration.</p>
+  <h3>Is polling always inefficient?</h3>
+  <p>No. When events arrive at a very high rate, polling avoids the save-and-restore overhead of each interrupt and can process events in batches, making it more efficient than interrupts.</p>
+</section>
 <section>
   <h2>Polling in the explanations</h2>
   <ul class="term-quotes"><li><p>When events are extremely frequent, as with high-speed networking, interrupt overhead piles up until processing cannot keep pace, so polling in batches becomes more efficient.</p><a href="/en/q/os-hardware/os-hardware-028/">When is polling, in which the CPU repeatedly checks device …</a></li><li><p>Polling is simple and predictable because checks happen at fixed intervals, but the CPU keeps checking even when nothing happens, wasting time and power.</p><a href="/en/q/embedded/embedded-028/">What is the difference between polling and interrupts as wa…</a></li><li><p>It is more efficient and responsive than polling, in which the CPU repeatedly checks device status.</p><a href="/en/q/cpu/cpu-022/">Which CPU mechanism temporarily suspends the current task t…</a></li></ul>

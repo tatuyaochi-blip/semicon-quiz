@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Priority inversion","item":"https://semiconroom.com/en/term/priority-inversion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Priority inversion","description":"A situation in which a high-priority task waiting for a resource held by a low-priority task is held up because a medium-priority task preempts the low one.","url":"https://semiconroom.com/en/term/priority-inversion/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Priority inversion","item":"https://semiconroom.com/en/term/priority-inversion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Priority inversion","description":"A situation in which a high-priority task waiting for a resource held by a low-priority task is held up because a medium-priority task preempts the low one.","url":"https://semiconroom.com/en/term/priority-inversion/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is priority inversion in an RTOS?","acceptedAnswer":{"@type":"Answer","text":"It is a situation in which a high-priority task waits for a resource held by a low-priority task, and a medium-priority task preempts the low one, so the high-priority task is effectively delayed by the medium one. The delay can become unbounded."}},{"@type":"Question","name":"What is the difference between priority inheritance and priority ceiling?","acceptedAnswer":{"@type":"Answer","text":"Priority inheritance raises a lock holder's priority only when a higher-priority task actually blocks on that lock. Priority ceiling raises any task to a preset ceiling priority as soon as it takes the lock, which also helps prevent deadlocks."}},{"@type":"Question","name":"How was priority inversion fixed on Mars Pathfinder?","acceptedAnswer":{"@type":"Answer","text":"The repeated resets were traced to priority inversion on a shared mutex, and engineers fixed them by enabling priority inheritance on that mutex in the flight software."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How priority inversion happens</h2>
+  <p>Consider three tasks in a preemptive <a class="term-link" href="/en/term/real-time-operating-system/">real-time operating system (RTOS)</a>: high (H), medium (M) and low (L) priority. L locks a <a class="term-link" href="/en/term/mutex/">mutex</a> protecting a shared resource. H becomes ready, needs the same mutex and blocks, waiting for L to release it. Now M, which has nothing to do with the resource, becomes ready. Because M outranks L, the scheduler runs M and L cannot reach the point where it releases the mutex. As long as M keeps running, H waits as well, so in effect a medium-priority task is delaying the highest-priority task, inverting the intended order.</p>
+</section>
+<section class="term-about">
+  <h2>Bounded vs. unbounded inversion</h2>
+  <p>Some blocking is unavoidable whenever tasks share a resource: if L holds the <a class="term-link" href="/en/term/mutex/">mutex</a>, H must wait for L to finish its <a class="term-link" href="/en/term/critical-section/">critical section</a>. That delay is bounded by the length of the critical section and can be included in timing analysis. The problem is the medium-priority interference, which makes the delay unbounded, since any number of medium tasks can run in between. In a <a class="term-link" href="/en/term/hard-real-time/">hard real-time</a> system, where deadlines must be guaranteed, an unbounded delay can mean a missed deadline, a watchdog reset or unsafe behavior, which is why the issue receives so much attention.</p>
+</section>
+<section class="term-about">
+  <h2>Priority inheritance and priority ceiling</h2>
+  <p><a class="term-link" href="/en/term/priority-inheritance/">Priority inheritance</a> fixes the problem dynamically: when H blocks on a <a class="term-link" href="/en/term/mutex/">mutex</a> held by L, L temporarily takes on H&#39;s priority, so M cannot preempt it. L finishes its <a class="term-link" href="/en/term/critical-section/">critical section</a>, releases the mutex, drops back to its own priority, and H runs. Many <a class="term-link" href="/en/term/real-time-operating-system/">RTOS</a> mutexes provide this option. The priority ceiling protocol is a static alternative: each mutex is assigned the priority of the highest task that may use it, and any task locking it is raised to that ceiling immediately. Ceiling protocols also prevent certain deadlocks, at the cost of analyzing which tasks use which resources.</p>
+</section>
+<section class="term-about">
+  <h2>The Mars Pathfinder incident</h2>
+  <p>A well-known example occurred on the Mars Pathfinder lander in 1997. After landing, the spacecraft suffered repeated system resets. A high-priority task was waiting for a <a class="term-link" href="/en/term/mutex/">mutex</a> held by a low-priority task, which was in turn preempted by medium-priority work, until a <a class="term-link" href="/en/term/watchdog-timer/">watchdog timer</a> noticed that a periodic task had not completed in time and reset the system. Engineers reproduced the problem on a ground replica and fixed it by enabling <a class="term-link" href="/en/term/priority-inheritance/">priority inheritance</a> on the mutex involved. Keeping critical sections short and minimizing resources shared across priority levels remain useful design rules.</p>
+</section>
 <section>
   <h2>Try it: questions about Priority inversion</h2>
   <article class="q-mini" data-qid="embedded-032" data-cat="embedded" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Temporarily raise the low-priority task holding a resource to the priority of the high-priority task waiting for it</p><p class="explanation">With <a class="term-link" href="/en/term/priority-inheritance/">priority inheritance</a>, when a high-priority task starts waiting for a <a class="term-link" href="/en/term/mutex/">mutex</a> held by a low-priority task, the low task temporarily gets the high task&#39;s priority. It then proceeds without being preempted by medium tasks and returns to its original priority on releasing the resource. The high task waits only for the short time the low task uses the resource. Many <a class="term-link" href="/en/term/real-time-operating-system/">RTOS</a> mutexes provide this feature.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is priority inversion in an RTOS?</h3>
+  <p>It is a situation in which a high-priority task waits for a resource held by a low-priority task, and a medium-priority task preempts the low one, so the high-priority task is effectively delayed by the medium one. The delay can become unbounded.</p>
+  <h3>What is the difference between priority inheritance and priority ceiling?</h3>
+  <p>Priority inheritance raises a lock holder&#39;s priority only when a higher-priority task actually blocks on that lock. Priority ceiling raises any task to a preset ceiling priority as soon as it takes the lock, which also helps prevent deadlocks.</p>
+  <h3>How was priority inversion fixed on Mars Pathfinder?</h3>
+  <p>The repeated resets were traced to priority inversion on a shared mutex, and engineers fixed them by enabling priority inheritance on that mutex in the flight software.</p>
+</section>
 
 <section>
   <h2>Questions that mention Priority inversion (2)</h2>

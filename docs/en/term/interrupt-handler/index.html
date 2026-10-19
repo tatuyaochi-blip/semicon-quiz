@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Interrupt handler","item":"https://semiconroom.com/en/term/interrupt-handler/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interrupt handler","description":"The routine a CPU runs when an interrupt or exception occurs. It saves the interrupted state, handles the cause and returns. Handlers should be kept as short as possible.","url":"https://semiconroom.com/en/term/interrupt-handler/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Interrupt handler","item":"https://semiconroom.com/en/term/interrupt-handler/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interrupt handler","description":"The routine a CPU runs when an interrupt or exception occurs. It saves the interrupted state, handles the cause and returns. Handlers should be kept as short as possible.","url":"https://semiconroom.com/en/term/interrupt-handler/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between an interrupt handler and an ISR?","acceptedAnswer":{"@type":"Answer","text":"There is no real difference: interrupt service routine (ISR) is another name for the interrupt handler, the code the CPU runs in response to an interrupt."}},{"@type":"Question","name":"Why should a variable shared with an interrupt handler be declared volatile?","acceptedAnswer":{"@type":"Answer","text":"Without volatile, the compiler may assume the variable cannot change inside a loop and keep it in a register, so the main code never sees the handler's update. Volatile forces each access to read or write memory."}},{"@type":"Question","name":"What is the difference between an interrupt and an exception?","acceptedAnswer":{"@type":"Answer","text":"An interrupt is an asynchronous signal from hardware such as a timer or peripheral, unrelated to the current instruction. An exception is raised synchronously by the instruction being executed, for example a page fault or an illegal operation."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What happens when an interrupt is accepted</h2>
+  <p>When a device signals an <a class="term-link" href="/en/term/interrupt/">interrupt</a>, the CPU finishes the current instruction, saves the address it would have executed next along with state such as the operating mode and flags, and jumps to the interrupt handler, also called an interrupt service routine (ISR), usually found through an <a class="term-link" href="/en/term/interrupt-vector-table/">interrupt vector table</a>. The handler saves any registers it uses, services the cause, clears the device&#39;s interrupt flag, restores state and executes a return-from-interrupt instruction. The interrupted program then resumes exactly where it stopped; it is neither discarded nor restarted.</p>
+</section>
+<section class="term-about">
+  <h2>Why handlers must be short</h2>
+  <p>While a handler runs, other interrupts of the same or lower priority are typically held off and the main code is stalled, so a long handler increases latency for everything else. Slow calls such as printf are especially risky because they take time and may themselves depend on interrupts. A good handler does the minimum, such as moving received data into a buffer or setting a flag, and leaves heavy processing to the main loop or a task. Operating system kernels formalize this by splitting work into an immediate part and a deferred part.</p>
+</section>
+<section class="term-about">
+  <h2>Sharing data with main code</h2>
+  <p>Variables shared between a handler and the main program cause classic bugs. If main spins on a flag that only the handler sets, an optimizing compiler may load it into a register once and never see the update; declaring it volatile forces every access to go to memory. A <a class="term-link" href="/en/term/read-modify-write/">read-modify-write</a> such as reg |= mask can be interrupted between the read and the write, wiping out a change the handler made to another bit. Briefly disabling interrupts or using hardware set and clear registers avoids this, and multi-byte variables need protection against torn reads.</p>
+</section>
+<section class="term-about">
+  <h2>Interrupts in scheduling and watchdogs</h2>
+  <p>A periodic timer <a class="term-link" href="/en/term/interrupt/">interrupt</a> is what lets an operating system take back the CPU from a program that never yields, enabling preemptive scheduling and context switches. Interrupts are asynchronous events from hardware, whereas exceptions such as page faults or divide-by-zero arise synchronously from the instruction being executed, though both enter the kernel through similar handlers. One common mistake is kicking a <a class="term-link" href="/en/term/watchdog-timer/">watchdog timer</a> unconditionally inside a timer interrupt: the interrupt keeps firing even if the main loop has hung, so the watchdog never detects the failure.</p>
+</section>
 <section>
   <h2>Try it: questions about Interrupt handler</h2>
   <article class="q-mini" data-qid="embedded-006" data-cat="embedded" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Time-consuming work such as printing long strings with printf or loops that wait for something to happen</p><p class="explanation">While an <a class="term-link" href="/en/term/interrupt-handler/">interrupt handler</a> runs long, other interrupts cannot be serviced and the main code stalls. printf takes time to finish and may itself rely on interrupts, so it is especially risky. A handler should do only the minimum, such as moving received data into a buffer or setting a flag, and leave heavy work to the main loop or a task. It must also remember to clear the <a class="term-link" href="/en/term/interrupt/">interrupt</a> source bit.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between an interrupt handler and an ISR?</h3>
+  <p>There is no real difference: interrupt service routine (ISR) is another name for the interrupt handler, the code the CPU runs in response to an interrupt.</p>
+  <h3>Why should a variable shared with an interrupt handler be declared volatile?</h3>
+  <p>Without volatile, the compiler may assume the variable cannot change inside a loop and keep it in a register, so the main code never sees the handler&#39;s update. Volatile forces each access to read or write memory.</p>
+  <h3>What is the difference between an interrupt and an exception?</h3>
+  <p>An interrupt is an asynchronous signal from hardware such as a timer or peripheral, unrelated to the current instruction. An exception is raised synchronously by the instruction being executed, for example a page fault or an illegal operation.</p>
+</section>
 <section>
   <h2>Interrupt handler in the explanations</h2>
   <ul class="term-quotes"><li><p>While an interrupt handler runs long, other interrupts cannot be serviced and the main code stalls.</p><a href="/en/q/embedded/embedded-015/">What should be avoided inside an interrupt handler?</a></li><li><p>On accepting an interrupt, the CPU saves the address of the instruction it would have executed next plus state such as the operating mode, and jumps to the interrupt handler, located for example via an interrupt vector table.</p><a href="/en/q/os-hardware/os-hardware-006/">What is the usual sequence when a CPU accepts an interrupt?</a></li><li><p>When it fires, the CPU always enters the kernel&#39;s interrupt handler, so even if a program is stuck in an infinite loop, the OS regains control and can context-switch to another process.</p><a href="/en/q/os-hardware/os-hardware-026/">What mechanism mainly lets the OS reclaim the CPU at regula…</a></li><li><p>Even when the interrupt handler updates flag in memory, the loop never sees it.</p><a href="/en/q/embedded/embedded-016/">When the program above is compiled with optimization, led_o…</a></li></ul>

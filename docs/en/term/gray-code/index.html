@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Gray code","item":"https://semiconroom.com/en/term/gray-code/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Gray code","description":"A code in which successive values differ in only one bit. It prevents read errors in rotary encoders and when passing counter values between different clock domains.","url":"https://semiconroom.com/en/term/gray-code/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Gray code","item":"https://semiconroom.com/en/term/gray-code/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Gray code","description":"A code in which successive values differ in only one bit. It prevents read errors in rotary encoders and when passing counter values between different clock domains.","url":"https://semiconroom.com/en/term/gray-code/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do you convert binary to Gray code?","acceptedAnswer":{"@type":"Answer","text":"XOR the binary number with itself shifted right by one bit: G = B XOR (B >> 1). The most significant bit stays the same, and every other Gray bit is the XOR of two adjacent binary bits."}},{"@type":"Question","name":"Why are FIFO pointers Gray-coded for clock domain crossing?","acceptedAnswer":{"@type":"Answer","text":"A Gray-coded pointer changes only one bit per increment, so a synchronizer that samples it during a transition still yields either the old or the new value. A binary pointer can change many bits at once and be captured as a completely wrong value."}},{"@type":"Question","name":"What is the difference between Gray code and BCD?","acceptedAnswer":{"@type":"Answer","text":"Gray code is an ordering of binary patterns in which successive values differ by one bit. BCD (binary-coded decimal) encodes each decimal digit separately in four bits and has no one-bit-change property."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/logic/">Logic circuits</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Converting between binary and Gray code</h2>
+  <p>The usual Gray code is the reflected binary code, built by listing the n-bit sequence, appending its mirror image and prefixing 0 to the first half and 1 to the second. Conversion from binary B is a single expression: G = B XOR (B &gt;&gt; 1), so each Gray bit below the most significant one is the XOR of two neighboring binary bits. Converting back takes a running XOR from the most significant bit down: the top bit is copied, and each lower binary bit is the previous binary bit XOR the current Gray bit. For three bits the sequence is 000, 001, 011, 010, 110, 111, 101, 100.</p>
+</section>
+<section class="term-about">
+  <h2>Why one-bit changes matter in encoders</h2>
+  <p>In plain binary, stepping from 0111 to 1000 flips four bits at once. A rotary or linear absolute encoder reads each bit from its own track, and the transitions on those tracks never line up perfectly, so a reading taken at the boundary can mix old and new bits and report a value far from either position. With Gray code only one track changes at each step, so a reading at the boundary can only be the old or the new value, both of which are correct to within one step.</p>
+</section>
+<section class="term-about">
+  <h2>Gray-coded pointers in asynchronous FIFOs</h2>
+  <p>An asynchronous FIFO passes data between two clock domains, and each side must see the other&#39;s read or write pointer to compute full and empty flags. Sending a binary pointer through synchronizer flip-flops is unsafe because several bits may change together and be captured at different clock edges, producing a pointer value that never existed. A Gray-coded pointer changes one bit per increment, so even if that bit is caught mid-transition, the receiving side gets either the old or the new pointer. This works only when the pointer advances by one per clock and the counter wraps at a power of two.</p>
+</section>
+<section class="term-about">
+  <h2>Gray code in flash memory and Karnaugh maps</h2>
+  <p>Multi-level cell (MLC) and <a class="term-link" href="/en/term/tlc/">triple-level cell</a> (TLC) NAND flash store two or three bits as one of four or eight threshold-voltage states. Wear and interference broaden the state distributions, and a misread almost always lands in a neighboring state. Assigning bit patterns in Gray order, such as 111, 110, 100, 101, 001, 000, 010, 011 for TLC, turns each such misread into a single-bit error that <a class="term-link" href="/en/term/ecc/">error-correcting code</a> handles cheaply. Karnaugh maps use the same ordering on their axes so that physically adjacent cells differ by one variable and can be grouped.</p>
+</section>
 <section>
   <h2>Try it: questions about Gray code</h2>
   <article class="q-mini" data-qid="logic-015" data-cat="logic" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Only one bit changes between adjacent values</p><p class="explanation"><a class="term-link" href="/en/term/gray-code/">Gray code</a> changes exactly one bit between adjacent values and can be computed from binary B as B XOR (B &gt;&gt; 1). Because multiple bits never change at once, it avoids reading spurious intermediate values in rotary-encoder position sensing and when passing FIFO pointers between circuits on different clocks. <a class="term-link" href="/en/term/karnaugh-map/">Karnaugh map</a> cells are also ordered in Gray code. Encoding each decimal digit in four bits is BCD.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do you convert binary to Gray code?</h3>
+  <p>XOR the binary number with itself shifted right by one bit: G = B XOR (B &gt;&gt; 1). The most significant bit stays the same, and every other Gray bit is the XOR of two adjacent binary bits.</p>
+  <h3>Why are FIFO pointers Gray-coded for clock domain crossing?</h3>
+  <p>A Gray-coded pointer changes only one bit per increment, so a synchronizer that samples it during a transition still yields either the old or the new value. A binary pointer can change many bits at once and be captured as a completely wrong value.</p>
+  <h3>What is the difference between Gray code and BCD?</h3>
+  <p>Gray code is an ordering of binary patterns in which successive values differ by one bit. BCD (binary-coded decimal) encodes each decimal digit separately in four bits and has no one-bit-change property.</p>
+</section>
 <section>
   <h2>Gray code in the explanations</h2>
   <ul class="term-quotes"><li><p>Gray code changes exactly one bit between adjacent values and can be computed from binary B as B XOR (B &gt;&gt; 1).</p><a href="/en/q/logic/logic-015/">Which is a characteristic of Gray code?</a></li><li><p>Assigning bit patterns in Gray code, so adjacent states differ by one bit, limits each misread to a single-bit error and minimizes the ECC burden.</p><a href="/en/q/sram-flash/sram-flash-048/">In multi-level (MLC or TLC) NAND flash, why are the bit pat…</a></li></ul>
