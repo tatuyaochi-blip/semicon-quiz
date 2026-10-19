@@ -16,7 +16,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリコアレッシング","item":"https://semiconroom.com/term/memory-coalescing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリコアレッシング","description":"ワープの中の隣り合うスレッドが隣り合う番地にアクセスしたとき、まとめて少ない回数のメモリアクセスにすること。合体アクセス。","url":"https://semiconroom.com/term/memory-coalescing/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリコアレッシング","item":"https://semiconroom.com/term/memory-coalescing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリコアレッシング","description":"ワープの中の隣り合うスレッドが隣り合う番地にアクセスしたとき、まとめて少ない回数のメモリアクセスにすること。合体アクセス。","url":"https://semiconroom.com/term/memory-coalescing/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"CUDAのメモリコアレッシングとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ワープのスレッドによるグローバルメモリへのアクセスを、ハードウェアができるだけ少ないトランザクションにまとめることです。隣り合うスレッドが、アラインされた隣り合う番地にアクセスするときに起こります。"}},{"@type":"Question","name":"GPUのメモリアクセスでSoAが有利なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"配列の構造体(SoA)では各フィールドが連続して保存されるため、隣り合うスレッドが同じフィールドを読むと連続した番地にアクセスし、ロードがコアレッシングされます。構造体の配列(AoS)では、その間にストライドが生じます。"}},{"@type":"Question","name":"メモリコアレッシングとバンクコンフリクトの違いは?","acceptedAnswer":{"@type":"Answer","text":"コアレッシングは、ワープのグローバルメモリへのアクセスがどのようにメモリトランザクションに対応するかの話です。バンクコンフリクトは、複数のスレッドがオンチップの共有メモリの同じバンクにアクセスし、直列化が必要になる現象です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>この用語の分野: <a href="/c/gpu-programming/">GPUプログラミング</a></p>
 </article>
+<section class="term-about">
+  <h2>コアレッシングの仕組み</h2>
+  <p><a class="term-link" href="/term/gpu/">GPU</a>のグローバルメモリは、1語ずつではなく決まった大きさの塊でアクセスされます。一般的には128バイトの<a class="term-link" href="/term/cache-line/">キャッシュライン</a>の中の32バイトのセクタ単位です。スレッドはワープと呼ぶグループで実行され、通常は32スレッドが同じロード命令を一緒に発行します。ワープのスレッド i が番地 base + 4i の4バイトの要素を読むと、32個の要求は連続した128バイトに収まり、ハードウェアはそれを1回か数回のメモリトランザクションにまとめます。このまとめる処理がメモリコアレッシング(合体アクセス)で、これによりGPUは転送したバイトのほぼすべてを活用できます。</p>
+</section>
+<section class="term-about">
+  <h2>コアレッシングを妨げる要因</h2>
+  <p>スレッドがストライドを持つ番地、たとえば4要素おきにアクセスすると、ワープが触れるセクタは4倍に増え、取ってきた各セクタの大部分は捨てられます。ランダムなアクセスや間接参照では、スレッドごとに別々のトランザクションが必要になることもあります。開始番地がアラインされていないと、セグメントが1つ余分に必要になることがあります。いずれの場合も実効帯域はピークの何分の一かに落ちます。多くの<a class="term-link" href="/term/gpu-kernel/">GPUカーネル</a>は演算ではなくメモリ帯域で性能が制限されるため、コアレッシングされないアクセスはカーネルを大幅に遅くすることがよくあります。</p>
+</section>
+<section class="term-about">
+  <h2>AoSとSoA</h2>
+  <p>アクセスがコアレッシングされるかどうかは、データの配置でほぼ決まります。粒子の位置を構造体の配列(AoS)で保存すると、粒子0の x、y、z の後に粒子1の x、y、z が続くので、各スレッドが x を読むときの番地は12バイトずつ離れます。配列の構造体(SoA)にすると、すべての x が連続して並ぶので、隣り合うスレッドが隣り合う番地を読み、ワープのロードがコアレッシングされます。同じ理由で、SoAは通常CPUの<a class="term-link" href="/term/simd/">SIMD</a>による<a class="term-link" href="/term/vectorization/">ベクトル化</a>にも有利です。隣のレーンが隣の要素を必要とするからです。</p>
+</section>
+<section class="term-about">
+  <h2>対策とよくある混同</h2>
+  <p>よく使われる対策には、最も速く変わるスレッド番号(<a class="term-link" href="/term/cuda/">CUDA</a>では threadIdx.x)を配列の連続した次元に対応させること、AoSのデータをSoAに変換すること、オンチップの共有メモリを経由させることがあります。たとえば行方向のコアレッシングされた読み出しで行列のタイルを読み込み、転置して書き出します。コアレッシングはグローバルメモリのトランザクションに関する話です。共有メモリのバンクコンフリクトと混同しないようにしてください。バンクコンフリクトは、ワープの複数のスレッドが共有メモリの同じ<a class="term-link" href="/term/bank/">バンク</a>内の異なる番地にアクセスし、アクセスが直列化される現象です。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>CUDAのメモリコアレッシングとは何ですか?</h3>
+  <p>ワープのスレッドによるグローバルメモリへのアクセスを、ハードウェアができるだけ少ないトランザクションにまとめることです。隣り合うスレッドが、アラインされた隣り合う番地にアクセスするときに起こります。</p>
+  <h3>GPUのメモリアクセスでSoAが有利なのはなぜですか?</h3>
+  <p>配列の構造体(SoA)では各フィールドが連続して保存されるため、隣り合うスレッドが同じフィールドを読むと連続した番地にアクセスし、ロードがコアレッシングされます。構造体の配列(AoS)では、その間にストライドが生じます。</p>
+  <h3>メモリコアレッシングとバンクコンフリクトの違いは?</h3>
+  <p>コアレッシングは、ワープのグローバルメモリへのアクセスがどのようにメモリトランザクションに対応するかの話です。バンクコンフリクトは、複数のスレッドがオンチップの共有メモリの同じバンクにアクセスし、直列化が必要になる現象です。</p>
+</section>
 
 
 <section class="books">

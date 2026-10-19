@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"入れ子ページング","item":"https://semiconroom.com/term/nested-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"入れ子ページング","description":"仮想マシンのOSが管理する変換と、ハイパーバイザが管理する変換の2段のページテーブルを、ハードウェアが続けてたどる方式。ハイパーバイザの介入を減らして仮想化を速くする。","url":"https://semiconroom.com/term/nested-paging/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"入れ子ページング","item":"https://semiconroom.com/term/nested-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"入れ子ページング","description":"仮想マシンのOSが管理する変換と、ハイパーバイザが管理する変換の2段のページテーブルを、ハードウェアが続けてたどる方式。ハイパーバイザの介入を減らして仮想化を速くする。","url":"https://semiconroom.com/term/nested-paging/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"入れ子ページングとシャドーページングの違いは?","acceptedAnswer":{"@type":"Answer","text":"シャドーページングでは、ハイパーバイザがゲスト仮想アドレスからホスト物理アドレスへの合成テーブルをソフトウェアで管理し、ゲストのページテーブル更新をトラップします。入れ子ページングではハードウェアがゲストとホストのテーブルを続けてたどるため、ゲストはハイパーバイザの介入なしに自分のテーブルを更新できます。"}},{"@type":"Question","name":"入れ子ページングのページウォークには何回のメモリアクセスが必要ですか?","acceptedAnswer":{"@type":"Answer","text":"ゲストとホストの両方が4段のページテーブルの場合、TLBミス時には最悪で24回のメモリアクセスが必要です。仮想化していない場合のウォークは4回です。"}},{"@type":"Question","name":"入れ子ページングとネステッド仮想化は同じですか?","acceptedAnswer":{"@type":"Answer","text":"違います。入れ子ページングは通常の仮想マシンのための2段階アドレス変換で、ネステッド仮想化は仮想マシンの中でハイパーバイザを動かすことを指します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,18 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>2段の変換を1回のハードウェアウォークで</h2>
+  <p>仮想マシン内のゲストOSは、ゲスト仮想アドレスを、自分では物理アドレスだと思っているゲスト物理アドレスに変換する<a class="term-link" href="/term/page-table/">ページテーブル</a>を管理します。しかし、そのメモリの実体は<a class="term-link" href="/term/hypervisor/">ハイパーバイザ</a>が割り当てた場所にあります。入れ子ページング(2段階アドレス変換とも呼ばれます)では、ハードウェアがゲストのページテーブルに続いてハイパーバイザ自身のテーブルをたどり、ゲスト仮想アドレスからゲスト物理アドレス、さらにホスト物理アドレスへと自動的に変換します。代表的な実装は、IntelのEPT(Extended Page Tables)、AMDのNPT(Nested Page Tables)、Armのステージ2変換です。</p>
+</section>
+<section class="term-about">
+  <h2>置き換えられたシャドーページテーブル</h2>
+  <p>ハードウェアの支援がなかった頃、<a class="term-link" href="/term/hypervisor/">ハイパーバイザ</a>はシャドーページテーブルを使っていました。これは、ゲスト仮想アドレスをホスト物理アドレスに直接対応させるテーブルをソフトウェアで管理し、実際のMMUに使わせる方式です。整合性を保つため、ハイパーバイザはゲストによる<a class="term-link" href="/term/page-table/">ページテーブル</a>の書き込みやアドレス空間の切り替えをトラップする必要があり、高コストな仮想マシンからの退出(VM exit)が頻繁に起きていました。入れ子ページングではゲストが自分のテーブルを自由に編集できるので、こうした退出のほとんどがなくなり、ハイパーバイザも単純になります。その代わり、<a class="term-link" href="/term/tlb/">TLB</a>ミス時のコストが課題になります。</p>
+</section>
+<section class="term-about">
+  <h2>TLBミスで最大24回のメモリアクセスが必要な理由</h2>
+  <p>ゲストのページテーブルウォークで必要な各エントリはゲスト物理アドレスで指定されるため、読み出す前にそのアドレス自体をホストのテーブルで変換しなければなりません。ゲストとホストの両方が4段のテーブルなら、ゲストの各段でホストの読み出し4回とゲストテーブルの読み出し1回の計5回、4段で20回かかります。最後にデータのアドレスをホストのテーブルで変換するのにさらに4回かかるので、合計は(4 + 1) × (4 + 1) − 1 = 24回となり、ネイティブのウォークの4回を大きく上回ります。ページウォークキャッシュ、最終的な合成変換を保持する<a class="term-link" href="/term/tlb/">TLB</a>、ホスト側での大きなページの利用により、平均コストははるかに低く抑えられています。</p>
+</section>
 <section>
   <h2>入れ子ページングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-035" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +89,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 24回</p><p class="explanation">ゲストの<a class="term-link" href="/term/page-table/">ページテーブル</a>の4段の各表の場所はゲスト物理アドレスで書かれているので、それぞれを読む前にホストの4段の表で変換する必要があります。ゲストの各段で「ホストの4回 + ゲストの表の1回」の5回、4段で20回になり、最後に得たゲスト物理アドレスのデータ自体をホストの4段で変換する4回を足して24回です。式では (4 + 1) × (4 + 1) − 1 = 24 です。8回は4段を2回たどるだけと考えた値で、表の場所の変換を見落としています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>入れ子ページングとシャドーページングの違いは?</h3>
+  <p>シャドーページングでは、ハイパーバイザがゲスト仮想アドレスからホスト物理アドレスへの合成テーブルをソフトウェアで管理し、ゲストのページテーブル更新をトラップします。入れ子ページングではハードウェアがゲストとホストのテーブルを続けてたどるため、ゲストはハイパーバイザの介入なしに自分のテーブルを更新できます。</p>
+  <h3>入れ子ページングのページウォークには何回のメモリアクセスが必要ですか?</h3>
+  <p>ゲストとホストの両方が4段のページテーブルの場合、TLBミス時には最悪で24回のメモリアクセスが必要です。仮想化していない場合のウォークは4回です。</p>
+  <h3>入れ子ページングとネステッド仮想化は同じですか?</h3>
+  <p>違います。入れ子ページングは通常の仮想マシンのための2段階アドレス変換で、ネステッド仮想化は仮想マシンの中でハイパーバイザを動かすことを指します。</p>
+</section>
 <section>
   <h2>解説の中の「入れ子ページング」</h2>
   <ul class="term-quotes"><li><p>入れ子ページングでは、ハードウェアがゲストのページテーブルでゲスト物理アドレスまで変換し、さらにハイパーバイザの表でホストの物理アドレスまで変換します。</p><a href="/q/os-hardware/os-hardware-035/">入れ子ページング(2段のアドレス変換)を使った仮想化で、ハードウェアが行うアドレス変換の説明として正しいものはどれか。</a></li><li><p>CPUの仮想化支援機能や入れ子ページングが、その性能を支えています。</p><a href="/q/os-hardware/os-hardware-033/">1台のコンピュータの上で、複数のOSをそれぞれ独立した仮想マシンとして同時に動かすためのソフトウェアを何と呼ぶか。</a></li></ul>

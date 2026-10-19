@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"KVキャッシュ","item":"https://semiconroom.com/term/kv-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KVキャッシュ","description":"大規模言語モデルの推論で、すでに処理したトークンのアテンションのKeyとValueを保存しておくメモリ。再計算を避けるが、文章の長さとバッチに比例して大きくなる。","url":"https://semiconroom.com/term/kv-cache/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"KVキャッシュ","item":"https://semiconroom.com/term/kv-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KVキャッシュ","description":"大規模言語モデルの推論で、すでに処理したトークンのアテンションのKeyとValueを保存しておくメモリ。再計算を避けるが、文章の長さとバッチに比例して大きくなる。","url":"https://semiconroom.com/term/kv-cache/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"大規模言語モデルのKVキャッシュとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"すでに処理したトークンのアテンションのKeyとValueを保持するメモリです。これにより、新しく生成するトークンでは、系列全体を再計算せず、そのトークン自身のKeyとValueだけを計算すれば済みます。"}},{"@type":"Question","name":"KVキャッシュがメモリを大量に使うのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"大きさが層数、アテンションの幅、コンテキスト長、バッチサイズに比例して増えるためです。長いコンテキストや多数の同時リクエストでは、モデルの重みより大きくなることがあります。"}},{"@type":"Question","name":"KVキャッシュは出力の品質に影響しますか?","acceptedAnswer":{"@type":"Answer","text":"正確なKeyとValueをキャッシュすることは、再計算するのと数学的に等価です。出力が変わり得るのは、低精度でのキャッシュ保存や古いトークンの削除といった近似を使う場合だけです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>LLMの推論でKeyとValueを保存する理由</h2>
+  <p>Transformerの言語モデルは、テキストを1トークンずつ生成します。各<a class="term-link" href="/term/attention-mechanism/">アテンション</a>層では、新しいトークンのQueryを過去のすべてのトークンのKeyと比較し、その結果で各トークンのValueに重みを付けます。アテンションは因果的なので、過去のトークンのKeyとValueは一度計算すれば変わりません。KVキャッシュはこれらを層ごとに保存します。そのため各デコードステップでは、系列全体を処理し直すのではなく、新しいトークンのQuery、Key、Valueだけを計算し、KeyとValueをキャッシュに追加すれば済みます。毎回の全体の再計算が、トークンあたりのわずかなコストに変わります。</p>
+</section>
+<section class="term-about">
+  <h2>KVキャッシュの大きさ</h2>
+  <p>キャッシュの大きさは、2(KeyとValue)× 層数 × 層あたりのKey/Valueの次元 × トークン数 × <a class="term-link" href="/term/batch-size/">バッチサイズ</a> × 要素あたりのバイト数です。例として、32層、隠れ次元4096で標準的なマルチヘッドアテンションを使うモデルでは、FP16で1トークンあたり約0.5 MBが必要です。すると4096トークンのコンテキストでは1系列あたり約2 GBとなり、そのような系列8本のバッチでは約16 GBになります。これは、70億パラメータのFP16モデルの重みが占める約14 GBを上回ります。</p>
+</section>
+<section class="term-about">
+  <h2>プリフィル、デコードとメモリ帯域</h2>
+  <p><a class="term-link" href="/term/ai-inference/">推論</a>には2つのフェーズがあります。<a class="term-link" href="/term/prefill/">プリフィル</a>はプロンプト全体を並列に処理し、そのKeyとValueをキャッシュに書き込むもので、主に演算性能で制限されます。続くデコードは1ステップに1トークンを生成し、各ステップでモデルの重みに加えてその系列のKVキャッシュ全体を読む必要があるため、通常はメモリ帯域で制限されます。バッチを大きくすると、重みの読み出しをより多くのリクエストで分け合えるので<a class="term-link" href="/term/throughput/">スループット</a>は上がりますが、KVキャッシュが大きくなって各ステップが長くなり、個々のリクエストのレイテンシは増えます。</p>
+</section>
+<section class="term-about">
+  <h2>小さくする・管理する方法</h2>
+  <p>KVキャッシュの負担を減らす技術はいくつかあります。グループ化クエリアテンション(GQA)やマルチクエリアテンション(MQA)では、複数のQueryヘッドが1組のKeyヘッドとValueヘッドを共有し、その割合に応じてキャッシュが小さくなります。キャッシュを8ビット以下の精度で保存すれば、FP16に比べてメモリを半分以下にできます。系列ごとに最大長に合わせた1つの連続領域を確保するのではなく、小さな固定サイズのブロック単位でキャッシュを割り当てると、<a class="term-link" href="/term/memory-fragmentation/">断片化</a>を避けてより多くのリクエストを収容でき、共通のプロンプト接頭部を持つ系列同士でブロックを共有することもできます。<a class="term-link" href="/term/attention-mechanism/">アテンション</a>を直近のトークンのスライディングウィンドウに限るモデルもあります。</p>
+</section>
 <section>
   <h2>KVキャッシュの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-013" data-cat="ai-stack" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. すでに処理したトークンのアテンションのKeyとValueを保存しておき、新しいトークンのたびに計算し直すのを避ける</p><p class="explanation"><a class="term-link" href="/term/attention-mechanism/">アテンション</a>の計算では、新しいトークンが、それまでのすべてのトークンのKeyとValueを参照します。前のトークンのKeyとValueは変わらないので、毎回計算し直さずに保存しておけば、新しいトークンの分だけ計算すれば済みます。これが<a class="term-link" href="/term/kv-cache/">KVキャッシュ</a>です。計算は大きく減りますが、保存するKeyとValueの量は文章の長さとバッチの大きさに比例して増えます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>大規模言語モデルのKVキャッシュとは何ですか?</h3>
+  <p>すでに処理したトークンのアテンションのKeyとValueを保持するメモリです。これにより、新しく生成するトークンでは、系列全体を再計算せず、そのトークン自身のKeyとValueだけを計算すれば済みます。</p>
+  <h3>KVキャッシュがメモリを大量に使うのはなぜですか?</h3>
+  <p>大きさが層数、アテンションの幅、コンテキスト長、バッチサイズに比例して増えるためです。長いコンテキストや多数の同時リクエストでは、モデルの重みより大きくなることがあります。</p>
+  <h3>KVキャッシュは出力の品質に影響しますか?</h3>
+  <p>正確なKeyとValueをキャッシュすることは、再計算するのと数学的に等価です。出力が変わり得るのは、低精度でのキャッシュ保存や古いトークンの削除といった近似を使う場合だけです。</p>
+</section>
 <section>
   <h2>解説の中の「KVキャッシュ」</h2>
   <ul class="term-quotes"><li><p>これがKVキャッシュです。</p><a href="/q/ai-stack/ai-stack-013/">大規模言語モデルの推論で使われるKVキャッシュの役割として正しいものはどれか。</a></li><li><p>推論ではこのほかに、途中の結果や大規模言語モデルのKVキャッシュのメモリも必要です。</p><a href="/q/ai-stack/ai-stack-004/">パラメータ数70億(7B)のモデルの重みをFP16(2バイト)で持つと、重みのメモリはおよそいくらか。</a></li><li><p>途中の結果やKVキャッシュのメモリもバッチに比例して増えます。</p><a href="/q/ai-stack/ai-stack-011/">推論でバッチサイズを大きくしすぎたときの欠点として正しいものはどれか。</a></li><li><p>KVキャッシュの大きさは、層の数×KeyとValueの次元×トークンの数×バッチの大きさ×1要素のバイト数で決まります。</p><a href="/q/ai-stack/ai-stack-014/">大規模言語モデルの推論で、長い文章や大きなバッチを扱うときに問題になりやすいことはどれか。</a></li></ul>

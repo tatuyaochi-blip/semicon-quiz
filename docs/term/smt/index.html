@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SMT(同時マルチスレッディング)","item":"https://semiconroom.com/term/smt/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SMT(同時マルチスレッディング)","description":"1つのCPUコアで複数のスレッドの命令を同時に処理し、コア内の演算器を有効に使う技術。Intelはハイパースレッディングと呼ぶ。","url":"https://semiconroom.com/term/smt/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SMT(同時マルチスレッディング)","item":"https://semiconroom.com/term/smt/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SMT(同時マルチスレッディング)","description":"1つのCPUコアで複数のスレッドの命令を同時に処理し、コア内の演算器を有効に使う技術。Intelはハイパースレッディングと呼ぶ。","url":"https://semiconroom.com/term/smt/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ハイパースレッディングとSMTは同じものですか?","acceptedAnswer":{"@type":"Answer","text":"はい。ハイパースレッディングは、Intelが自社の同時マルチスレッディングの実装に付けたブランド名で、各物理コアがOSからは2つの論理プロセッサに見えます。"}},{"@type":"Question","name":"SMTでCPUの性能は2倍になりますか?","acceptedAnswer":{"@type":"Answer","text":"なりません。2つのスレッドは1つのコアの演算器とキャッシュを共有するため、スループットの向上は処理内容によって約0〜30%で、コアを1つ増やすよりはるかに小さくなります。"}},{"@type":"Question","name":"SMTを無効にするシステムがあるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"同じコア上のスレッドはキャッシュや実行資源を密接に共有しているため、一方がタイミングのサイドチャネルを通じてもう一方を観測できてしまうからです。SMTを無効にするか、互いに信頼できるスレッドだけを一緒にスケジューリングすれば、スループットと引き換えにこの危険をなくせます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SMTが1つのコアを共有する仕組み</h2>
+  <p>最近の<a class="term-link" href="/term/out-of-order-execution/">アウトオブオーダー実行</a>コアは1サイクルに複数の命令を発行できますが、依存関係、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>ミス、キャッシュミスのために、1つのスレッドだけですべての演算器を使い切ることはまれです。同時マルチスレッディング(SMT)は、プログラムカウンタやアーキテクチャレジスタなどのアーキテクチャ状態をハードウェアスレッドごとに別々に持たせ、演算器、キャッシュ、分岐予測器、内部バッファはスレッド間で共有します。同じサイクルに、異なるスレッドの命令を異なる演算器へ発行できます。OSからは各ハードウェアスレッドが1つの論理プロセッサに見え、通常は1コアあたり2つです。</p>
+</section>
+<section class="term-about">
+  <h2>期待できる性能向上</h2>
+  <p>スレッドどうしが同じ実行資源を奪い合うため、SMTはコアを1つ増やしたときのように性能を2倍にはしません。一般的な向上幅は約0〜30%です。メモリ待ちなどで頻繁にストールする処理が最も恩恵を受け、一方のスレッドがキャッシュミスを待っている間も、もう一方が演算器を動かし続けます。すでに浮動小数点演算器やメモリ帯域幅を使い切っている処理ではほとんど効果がなく、共有キャッシュでの競合によって個々のスレッドが遅くなることさえあり、レイテンシが重要なアプリケーションでは問題になります。</p>
+</section>
+<section class="term-about">
+  <h2>他のマルチスレッディング方式との違い</h2>
+  <p>粗粒度マルチスレッディングは、キャッシュミスのような長いストールが起きたときだけ別のスレッドに切り替えます。細粒度マルチスレッディングはサイクルごとにスレッドを交互に切り替えますが、1サイクルに発行するのは1つのスレッドの命令だけで、<a class="term-link" href="/term/gpu/">GPU</a>や一部のネットワークプロセッサでよく使われます。SMTはさらに進んで、同じサイクルに複数のスレッドから命令を発行するため、幅の広いスーパースカラコアに適しています。これに対してマルチコアは、コア全体を複製します。Intelは自社の2ウェイSMTをハイパースレッディングと呼んでおり、一部のサーバ向けプロセッサは1コアあたり4つや8つのスレッドに対応しています。</p>
+</section>
+<section class="term-about">
+  <h2>セキュリティとスケジューリングの課題</h2>
+  <p>2つのSMTスレッドは、L1キャッシュ、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器、実行ポート、バッファを非常に細かい粒度で共有しているので、一方のスレッドは自分の処理時間を測ることで、もう一方が何をしているかを推測できます。いくつかのサイドチャネル脆弱性は、まさにこの構造に依存しています。そのため、異なる顧客の信頼できないコードを同じハードウェアで動かすシステムでは、SMTを無効にするか、同じ信頼ドメインのスレッドだけを兄弟の論理プロセッサに配置するコアスケジューリングを使うことがあります。どちらも<a class="term-link" href="/term/throughput/">スループット</a>が下がるので、性能と分離のどちらを重視するかの判断になります。</p>
+</section>
 <section>
   <h2>SMT(同時マルチスレッディング)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hw-security-046" data-cat="hw-security" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 同じコアで動く2つのスレッドは、L1キャッシュや演算器などを共有するので、もう一方のスレッドから処理の痕跡を細かく観察されやすいから</p><p class="explanation"><a class="term-link" href="/term/smt/">SMT</a>では、1つのコアの中で2つのスレッドが同時に動き、L1キャッシュ、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器、演算器、バッファなどを細かく共有します。そのため、一方のスレッドがもう一方の使っている資源を時間の測定で観察しやすく、いくつかの脆弱性ではこれが攻撃の条件になりました。信頼できない相手と同じコアを共有しないように、SMTを切ったり、同じコアには同じ利用者のスレッドだけを置いたりします。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ハイパースレッディングとSMTは同じものですか?</h3>
+  <p>はい。ハイパースレッディングは、Intelが自社の同時マルチスレッディングの実装に付けたブランド名で、各物理コアがOSからは2つの論理プロセッサに見えます。</p>
+  <h3>SMTでCPUの性能は2倍になりますか?</h3>
+  <p>なりません。2つのスレッドは1つのコアの演算器とキャッシュを共有するため、スループットの向上は処理内容によって約0〜30%で、コアを1つ増やすよりはるかに小さくなります。</p>
+  <h3>SMTを無効にするシステムがあるのはなぜですか?</h3>
+  <p>同じコア上のスレッドはキャッシュや実行資源を密接に共有しているため、一方がタイミングのサイドチャネルを通じてもう一方を観測できてしまうからです。SMTを無効にするか、互いに信頼できるスレッドだけを一緒にスケジューリングすれば、スループットと引き換えにこの危険をなくせます。</p>
+</section>
 <section>
   <h2>解説の中の「SMT(同時マルチスレッディング)」</h2>
   <ul class="term-quotes"><li><p>SMTでは、1つのコアの中で2つのスレッドが同時に動き、L1キャッシュ、分岐予測器、演算器、バッファなどを細かく共有します。</p><a href="/q/hw-security/hw-security-046/">機密の処理を行うシステムで、CPUの同時マルチスレッディング(SMT)を無効にすることがある理由として正しいものはどれ…</a></li><li><p>SMTは、1つのコアが複数のスレッドの命令を並行して発行し、1スレッドだけでは使い切れない演算器などの資源を活用する技術です。</p><a href="/q/cpu/cpu-042/">1つのCPUコアで複数のスレッドの命令を同時に処理し、コア内の演算器などを有効に使う技術はどれか。</a></li></ul>

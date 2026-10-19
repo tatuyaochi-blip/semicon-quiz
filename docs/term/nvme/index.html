@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"NVMe","item":"https://semiconroom.com/term/nvme/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NVMe","description":"PCI Expressで接続したSSDを高速に扱うためのインターフェースの規格。多数のコマンドを並列に処理でき、HDD向けに作られたSATAより遅延が小さい。","url":"https://semiconroom.com/term/nvme/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"NVMe","item":"https://semiconroom.com/term/nvme/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NVMe","description":"PCI Expressで接続したSSDを高速に扱うためのインターフェースの規格。多数のコマンドを並列に処理でき、HDD向けに作られたSATAより遅延が小さい。","url":"https://semiconroom.com/term/nvme/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"NVMeとは何の略ですか?","acceptedAnswer":{"@type":"Answer","text":"Non-Volatile Memory Expressの略で、NVM Expressとも書きます。PCI Express経由でSSDなどの不揮発性メモリにアクセスするための、ホストインタフェースとコマンドプロトコルの規格です。"}},{"@type":"Question","name":"NVMe SSDとSATA SSDの違いは?","acceptedAnswer":{"@type":"Answer","text":"SATA SSDは、32コマンドのキューが1本だけのAHCIプロトコルを使い、リンク速度は約600 MB/sが上限です。NVMe SSDはPCIeで接続し、数千の並列キューを持つため、数GB/sから10 GB/s超の速度と小さなソフトウェアレイテンシが得られます。"}},{"@type":"Question","name":"NVMeはTRIMに対応していますか?","acceptedAnswer":{"@type":"Answer","text":"はい。NVMeではDataset ManagementコマンドのDeallocate属性で同じ機能を提供しており、ファイルを削除したときにOSがこれを発行します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/sram-flash/">SRAM・フラッシュメモリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SSDに新しいインタフェースが必要だった理由</h2>
+  <p>SATA接続のSSDは、ハードディスク向けに設計されたホストインタフェースであるAHCIを使います。コマンドキューは1本で最大32コマンドまでしか保持できず、リンク速度も約600 MB/sが上限です。フラッシュメモリは多数の要求を並列に処理できるため、これがボトルネックになりました。NVMe(NVM Express)は、<a class="term-link" href="/term/pci-express/">PCI Express</a>に直接接続する<a class="term-link" href="/term/nonvolatile-memory/">不揮発性メモリ</a>向けに設計されたプロトコルです。最大64K本のI/Oキューを持ち、各キューに最大64K個のコマンドを積めるほか、簡潔なコマンドセットを使い、CPUコアごとに専用のキューを持たせることで、ソフトウェアのオーバーヘッドやロックの競合を減らしています。</p>
+</section>
+<section class="term-about">
+  <h2>サブミッションキューとコンプリーションキュー</h2>
+  <p>NVMeのキューは、ホストメモリ上のリングバッファです。読み書きを発行するとき、ドライバは64バイトのコマンドをサブミッションキューに置き、新しい末尾(テール)位置をデバイスのドアベルレジスタに書き込みます。コントローラは<a class="term-link" href="/term/dma/">DMA</a>でコマンドを取り出し、データをホストメモリとの間で直接転送し、対になるコンプリーションキューに16バイトのエントリを書き込みます。通常は<a class="term-link" href="/term/message-signaled-interrupts/">MSI</a>-X割り込みでホストに通知し、ホストはコンプリーションキューの先頭(ヘッド)ドアベルを更新します。ホストとデバイスは独立に処理を進めるので、多くの転送を同時に実行できます。</p>
+</section>
+<section class="term-about">
+  <h2>帯域幅とフォームファクタ</h2>
+  <p>NVMeはPCIe上で動くため、帯域幅はリンクの世代とレーン数で決まり、PCIe 4.0 x4のドライブで約7 GB/s、PCIe 5.0 x4では10 GB/sを超えます。プロトコルのレイテンシは数マイクロ秒で、数十マイクロ秒かかるフラッシュの読み出し時間に比べて小さな値です。NVMeドライブには、小型のM.2カード、2.5インチのU.2ドライブ、拡張カードといった形態があります。注意したいのは、M.2はコネクタの規格にすぎないという点です。M.2スロットはSATAとPCIeのどちらにも対応しうるので、M.2のSSDが必ずNVMeとは限りません。NVMe over Fabrics(NVMe-oF)はこのプロトコルをネットワーク越しに拡張したものです。</p>
+</section>
+<section class="term-about">
+  <h2>管理用のコマンド</h2>
+  <p>NVMeは読み書き以外に、キューの作成、コントローラの識別、ネームスペースの管理、ファームウェアの更新などを行う管理コマンドを定めています。Dataset Managementコマンドに含まれるDeallocate操作は、ATAの<a class="term-link" href="/term/trim/">TRIM</a>に相当するNVMeの機能です。どの論理ブロックがもう有用なデータを持っていないかをSSDに伝えることで、<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>がそれらをコピーせずに消去できるようになります。これにより<a class="term-link" href="/term/write-amplification/">書き込み増幅(ライトアンプリフィケーション)</a>が減り、持続的な書き込み性能が向上し、フラッシュの寿命も延びます。</p>
+</section>
 <section>
   <h2>NVMeの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="io-interface-049" data-cat="io-interface" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. CPUは転送の番地や長さを記述子に書いて機器に知らせるだけで、機器が記述子を読んで自分で転送を進める</p><p class="explanation">記述子のリングは、メインメモリ上に並べた「どの番地から何バイト送るか」を書いた表を輪のように使うしくみです。CPUは空いている記述子に転送の内容を書き、機器のレジスタに「ここまで書いた」と1回知らせます。機器は<a class="term-link" href="/term/dma/">DMA</a>で記述子を読み、データを転送し、終わった記述子に完了の印を付けます。CPUと機器が互いを待たずに多くの転送を進められます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>NVMeとは何の略ですか?</h3>
+  <p>Non-Volatile Memory Expressの略で、NVM Expressとも書きます。PCI Express経由でSSDなどの不揮発性メモリにアクセスするための、ホストインタフェースとコマンドプロトコルの規格です。</p>
+  <h3>NVMe SSDとSATA SSDの違いは?</h3>
+  <p>SATA SSDは、32コマンドのキューが1本だけのAHCIプロトコルを使い、リンク速度は約600 MB/sが上限です。NVMe SSDはPCIeで接続し、数千の並列キューを持つため、数GB/sから10 GB/s超の速度と小さなソフトウェアレイテンシが得られます。</p>
+  <h3>NVMeはTRIMに対応していますか?</h3>
+  <p>はい。NVMeではDataset ManagementコマンドのDeallocate属性で同じ機能を提供しており、ファイルを削除したときにOSがこれを発行します。</p>
+</section>
 <section>
   <h2>解説の中の「NVMe」</h2>
   <ul class="term-quotes"><li><p>NVMeでは同じ働きをDeallocateコマンドが担います。</p><a href="/q/sram-flash/sram-flash-028/">OSが削除したファイルの領域をSSDに通知し、ガベージコレクションを効率化するためのコマンドはどれか。</a></li><li><p>NVMe(NVM Express)は、PCI Express上でフラッシュを効率よく扱うために設計された規格で、最大6万4千個のコマンドキューを並列に扱えます。</p><a href="/q/sram-flash/sram-flash-044/">高速なSSDとホストの接続に広く使われている、PCI Expressを利用したインターフェース規格はどれか。</a></li></ul>

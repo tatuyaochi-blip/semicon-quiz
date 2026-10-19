@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SIMT","item":"https://semiconroom.com/term/single-instruction-multiple-threads/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMT","description":"単一命令・複数スレッドの方式。プログラムはスレッドごとに書くが、ハードウェアはワープ(NVIDIAでは32本)ごとにスレッドを束ねて同じ命令で実行する。","url":"https://semiconroom.com/term/single-instruction-multiple-threads/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SIMT","item":"https://semiconroom.com/term/single-instruction-multiple-threads/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMT","description":"単一命令・複数スレッドの方式。プログラムはスレッドごとに書くが、ハードウェアはワープ(NVIDIAでは32本)ごとにスレッドを束ねて同じ命令で実行する。","url":"https://semiconroom.com/term/single-instruction-multiple-threads/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"GPUのワープとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"NVIDIAのGPUで、同じ命令を足並みをそろえて一緒に実行する32スレッドのまとまりです。SIMTモデルにおける命令発行の基本単位で、AMDではこれに相当するものをウェーブフロントと呼びます。"}},{"@type":"Question","name":"SIMTとSIMDの違いは?","acceptedAnswer":{"@type":"Answer","text":"SIMDは固定幅のベクトル命令を提供し、プログラマやコンパイラがそれを明示的に使う必要があります。SIMTでは各スレッドを独立したスカラーのコードとして書け、ハードウェアがスレッドをワープにまとめ、分岐のダイバージェンスも処理します。"}},{"@type":"Question","name":"ワープダイバージェンスとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"同じワープのスレッドが異なる分岐経路に進むことです。ハードウェアは非アクティブなスレッドをマスクしながら各経路を順番に実行するため、経路が合流するまで効率が下がります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/gpu-programming/">GPUプログラミング</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SIMTのスレッド実行の仕組み</h2>
+  <p>単一命令・複数スレッド(SIMT)のモデルでは、プログラマはカーネルを1つのスレッド用の普通のコードとして書き、それを数千のスレッドが別々のデータに対して実行します。ハードウェアはスレッドを固定数の束にまとめます。NVIDIAの<a class="term-link" href="/term/gpu/">GPU</a>では32スレッドのワープ、AMDのGPUでは64または32スレッドのウェーブフロントと呼びます。1つの命令を束全体のためにフェッチ・デコードし、束の全スレッドがそれぞれ自分のレジスタとデータを使って足並みをそろえて実行します。制御回路のコストを多数の演算レーンで分け合えるので、チップ面積の大部分を演算に回せます。</p>
+</section>
+<section class="term-about">
+  <h2>分岐ダイバージェンス</h2>
+  <p>スレッドはそれぞれ独立に書かれているので、同じワープ内のスレッドが別々の分岐に進むことがあります。ハードウェアは、各経路を順番に実行し、その経路にいないスレッドをマスクして無効にし、その後で合流させることでこれに対処します。正しさは保たれますが、if-elseの両側に半分ずつスレッドが分かれると、ワープは両方に時間を使い、<a class="term-link" href="/term/throughput/">スループット</a>はおよそ半分になります。性能を意識したコードでは、同じワープのスレッドが同じ経路をたどるようにデータを並べます。たとえば分岐条件を、各スレッドのデータではなくワープ番号に依存させます。</p>
+</section>
+<section class="term-about">
+  <h2>SIMTとCPUのSIMDの違い</h2>
+  <p>CPUの単一命令・複数データ(<a class="term-link" href="/term/simd/">SIMD</a>)拡張は、4個や8個など決まった数の要素を持つベクトルレジスタに1つの命令を適用します。プログラムやコンパイラはその幅に合わせて書く必要があり、明示的なベクトル命令や、端の処理のためのマスクを使います。SIMTはこの幅を隠します。コードはスカラーの1スレッドを記述し、ハードウェアが多数のスレッドからベクトルを組み立て、ダイバージェンス時のマスク処理も管理します。内部の実行は似ているので、SIMTの性能もワープ内のスレッドの足並みをそろえられるかどうかに左右されます。</p>
+</section>
+<section class="term-about">
+  <h2>実践上の帰結</h2>
+  <p><a class="term-link" href="/term/gpu/">GPU</a>プログラミングでよく言われるいくつかの決まりは、SIMTから導かれます。<a class="term-link" href="/term/thread-block/">スレッドブロック</a>の大きさは、一部が空のまま動くワープが出ないよう、通常32の倍数にします。メモリアクセスは、ワープ内の隣り合うスレッドが隣り合う番地にアクセスするときに最も速く、ハードウェアがそれらを少数の幅広いトランザクションにまとめられます。これをコアレッシングと呼びます。また、GPUは多くのワープを常駐させ、どれかが止まるたびに準備のできた別のワープに切り替えることで、長いメモリレイテンシを隠します。そのため、コアあたりのアクティブなワープ数が十分にある高いオキュパンシが、性能上重要になることが多いのです。</p>
+</section>
 <section>
   <h2>SIMTの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. SIMTでは各スレッドを独立したプログラムとして書け、分岐もハードウェアが処理するが、SIMDではプログラマやコンパイラが幅の決まったベクトルの命令を明示的に使う</p><p class="explanation">CPUの<a class="term-link" href="/term/simd/">SIMD</a>では、4個や8個のデータをまとめたベクトルのレジスタに1つの命令をかけるので、プログラムはベクトルの幅を意識して書きます。<a class="term-link" href="/term/gpu/">GPU</a>の<a class="term-link" href="/term/single-instruction-multiple-threads/">SIMT</a>では、プログラマは1本のスレッドの処理を普通に書き、ハードウェアが32本ずつ束ねて同じ命令で動かします。スレッドごとに分岐してもよく、ハードウェアが分岐した経路を順に実行しますが、そのときは効率が下がります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>GPUのワープとは何ですか?</h3>
+  <p>NVIDIAのGPUで、同じ命令を足並みをそろえて一緒に実行する32スレッドのまとまりです。SIMTモデルにおける命令発行の基本単位で、AMDではこれに相当するものをウェーブフロントと呼びます。</p>
+  <h3>SIMTとSIMDの違いは?</h3>
+  <p>SIMDは固定幅のベクトル命令を提供し、プログラマやコンパイラがそれを明示的に使う必要があります。SIMTでは各スレッドを独立したスカラーのコードとして書け、ハードウェアがスレッドをワープにまとめ、分岐のダイバージェンスも処理します。</p>
+  <h3>ワープダイバージェンスとは何ですか?</h3>
+  <p>同じワープのスレッドが異なる分岐経路に進むことです。ハードウェアは非アクティブなスレッドをマスクしながら各経路を順番に実行するため、経路が合流するまで効率が下がります。</p>
+</section>
 <section>
   <h2>解説の中の「SIMT」</h2>
   <ul class="term-quotes"><li><p>GPUのSIMTでは、プログラマは1本のスレッドの処理を普通に書き、ハードウェアが32本ずつ束ねて同じ命令で動かします。</p><a href="/q/gpu-programming/gpu-programming-010/">GPUのSIMT(単一命令・複数スレッド)の方式と、CPUのSIMD命令の違いとして正しいものはどれか。</a></li><li><p>このように、スレッドとして書いたプログラムを束にして同じ命令で動かす方式をSIMTと呼びます。</p><a href="/q/gpu-programming/gpu-programming-009/">NVIDIAのGPUで、32本のスレッドを1つの束にして、同じ命令を一斉に実行する単位を何と呼ぶか。</a></li></ul>

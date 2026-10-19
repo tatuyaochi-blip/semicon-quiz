@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"DMA(ダイレクトメモリアクセス)","item":"https://semiconroom.com/term/dma/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"DMA(ダイレクトメモリアクセス)","description":"CPUを介さずに、周辺装置とメモリの間で直接データを転送する仕組み。大量のデータ転送の間もCPUが別の処理を進められる。","url":"https://semiconroom.com/term/dma/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"DMA(ダイレクトメモリアクセス)","item":"https://semiconroom.com/term/dma/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"DMA(ダイレクトメモリアクセス)","description":"CPUを介さずに、周辺装置とメモリの間で直接データを転送する仕組み。大量のデータ転送の間もCPUが別の処理を進められる。","url":"https://semiconroom.com/term/dma/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"DMAとは何の略ですか?","acceptedAnswer":{"@type":"Answer","text":"Direct Memory Access(ダイレクトメモリアクセス)の略です。CPUがワードを1つずつコピーしなくても周辺装置がメインメモリとの間でデータを転送できる仕組みで、転送中もCPUは別の処理を行えます。"}},{"@type":"Question","name":"DMAとプログラムI/Oの違いは?","acceptedAnswer":{"@type":"Answer","text":"プログラムI/Oでは、CPU自身がすべてのデータワードをデバイスとの間で読み書きします。DMAではCPUは転送を設定するだけで、終わったら通知を受けるので、大量または頻繁な転送でCPU時間を節約できます。"}},{"@type":"Question","name":"DMAでメモリに転送した後にキャッシュを無効化する必要があるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"ハードウェアによるキャッシュコヒーレンシがないシステムでは、CPUのキャッシュにそのメモリ範囲の古いコピーが残っている可能性があるからです。無効化することで、CPUはデバイスが書き込んだ新しいデータを読むようになります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>DMA転送の仕組み</h2>
+  <p>プログラムI/Oでは、CPU自身がロード命令とストア命令ですべてのワードを転送します。ダイレクトメモリアクセス(DMA)では、CPUはDMAコントローラ(またはデバイス自身のDMAエンジン)に転送元、転送先、長さ、起動条件(トリガ)を設定するだけで、ほかの処理に戻ります。コントローラはバスの制御権を得てデータを転送し、終わると完了<a class="term-link" href="/term/interrupt/">割り込み</a>を発生させます。たとえば<a class="term-link" href="/term/microcontroller/">マイコン</a>では、タイマで一定間隔ごとにADC変換を起動し、DMAで各変換結果を配列に格納していき、バッファがいっぱいになったときだけCPUを起こす、といった使い方ができます。</p>
+</section>
+<section class="term-about">
+  <h2>高速デバイスのディスクリプタリング</h2>
+  <p>ネットワークカードや<a class="term-link" href="/term/nvme/">NVMe</a> SSDはディスクリプタリングを使います。これはメインメモリ上の循環テーブルで、各エントリにバッファのアドレスと長さが入っています。CPUは空いているディスクリプタに情報を書き込み、どこまで書いたかをデバイスのレジスタ(ドアベルと呼ばれることが多い)に一度だけ書き込みます。デバイスはDMAでディスクリプタを読み込み、自ら転送を行い、終わったエントリに完了の印を付けます。こうしてCPUとデバイスはお互いを待つことなく多数の転送を進められ、分散した複数のバッファのリストも1回の操作で扱えます。これをスキャッタ・ギャザーと呼びます。</p>
+</section>
+<section class="term-about">
+  <h2>キャッシュとピン留めされたメモリ</h2>
+  <p>DMAはCPUのキャッシュを経由しないため、CPUから見たメモリとデバイスから見たメモリの内容が食い違うことがあります。ハードウェアが一貫性(コヒーレンシ)を保たない場合、ドライバは、デバイスがバッファを読む前に変更済みの<a class="term-link" href="/term/cache-line/">キャッシュライン</a>をメモリに書き戻し、デバイスが書き込んだデータをCPUが読む前に該当範囲のキャッシュを無効化して、古い値が使われないようにします。また、OSは通常のページをいつでも移動したりスワップアウトしたりできるため、DMA用のバッファはその場に固定(ピン留め)します。ピン留めされたホストメモリを使うと、<a class="term-link" href="/term/gpu/">GPU</a>は中間コピーなしでデータを転送でき、転送と計算を重ね合わせることもできます。</p>
+</section>
+<section class="term-about">
+  <h2>IOMMUによるメモリ保護</h2>
+  <p>DMAはメモリに直接書き込むので、故障したデバイスや悪意のあるデバイスがカーネルのデータを書き換えたり暗号鍵を読み取ったりする恐れがあり、高速な外部ポートで接続するデバイスでは特に懸念されます。<a class="term-link" href="/term/iommu/">IOMMU</a>(入出力メモリ管理ユニット)は、MMUがCPUに対して行うことをデバイスに対して行います。デバイスが使うアドレスを物理アドレスに変換し、OSが許可した領域以外へのアクセスを遮断します。また、ばらばらの物理ページをデバイスから連続して見せることもでき、デバイスを仮想マシンに直接割り当てても安全になります。</p>
+</section>
 <section>
   <h2>DMA(ダイレクトメモリアクセス)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-029" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 変換が終わるたびにCPUが割り込みで読む必要がなく、DMAがメモリに並べてくれるので、CPUの負担が減る</p><p class="explanation">変換のたびに<a class="term-link" href="/term/interrupt/">割り込み</a>でCPUが結果を読むと、1秒に数万回の取り込みでは割り込みの手間だけでCPUの多くの時間が使われます。<a class="term-link" href="/term/dma/">DMA</a>を使えば、変換が終わるたびにDMAが結果をメモリの配列に順に書き込み、配列がいっぱいになったときだけCPUに知らせます。タイマで変換を始める設定と組み合わせれば、正確な間隔での取り込みをCPUなしで続けられます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>DMAとは何の略ですか?</h3>
+  <p>Direct Memory Access(ダイレクトメモリアクセス)の略です。CPUがワードを1つずつコピーしなくても周辺装置がメインメモリとの間でデータを転送できる仕組みで、転送中もCPUは別の処理を行えます。</p>
+  <h3>DMAとプログラムI/Oの違いは?</h3>
+  <p>プログラムI/Oでは、CPU自身がすべてのデータワードをデバイスとの間で読み書きします。DMAではCPUは転送を設定するだけで、終わったら通知を受けるので、大量または頻繁な転送でCPU時間を節約できます。</p>
+  <h3>DMAでメモリに転送した後にキャッシュを無効化する必要があるのはなぜですか?</h3>
+  <p>ハードウェアによるキャッシュコヒーレンシがないシステムでは、CPUのキャッシュにそのメモリ範囲の古いコピーが残っている可能性があるからです。無効化することで、CPUはデバイスが書き込んだ新しいデータを読むようになります。</p>
+</section>
 <section>
   <h2>解説の中の「DMA(ダイレクトメモリアクセス)」</h2>
   <ul class="term-quotes"><li><p>DMAはCPUを通さずに装置と主記憶の間でデータを転送するため、ハードウェアが一貫性を保たないシステムでは、CPUのキャッシュにはその範囲の古いデータが残っていることがあります。</p><a href="/q/os-hardware/os-hardware-029/">キャッシュの一貫性をハードウェアが保たない(非コヒーレントな)システムで、装置がDMAで主記憶に書き込んだデータをCP…</a></li><li><p>DMAを使えば、変換が終わるたびにDMAが結果をメモリの配列に順に書き込み、配列がいっぱいになったときだけCPUに知らせます。</p><a href="/q/embedded/embedded-044/">マイコンでADコンバータの変換結果を一定の間隔で大量に取り込むとき、DMAを使う利点として正しいものはどれか。</a></li><li><p>機器はDMAで記述子を読み、データを転送し、終わった記述子に完了の印を付けます。</p><a href="/q/io-interface/io-interface-049/">ネットワークカードやNVMeのSSDなどで広く使われる、メモリ上の記述子(ディスクリプタ)の輪(リング)を使ったDMA…</a></li><li><p>DMAは、機器がCPUを通さずにメモリを直接読み書きする仕組みなので、悪意のある機器や乗っ取られた機器がつながると、OSのメモリや鍵を読んだり書き換えたりできてしまいます。</p><a href="/q/hw-security/hw-security-047/">パソコンにつないだ外部の機器が、DMAを使ってメインメモリの内容を勝手に読み書きする攻撃への対策として正しいものはどれ…</a></li><li><p>DMAでは、専用のコントローラがメモリと周辺装置の間でデータを転送するため、CPUは転送の開始と完了の通知(割り込み)を受けるだけで、その間はほかの処理を進められます。</p><a href="/q/cpu/cpu-023/">CPUを介さずに、周辺装置とメモリの間で直接データを転送する仕組みはどれか。</a></li></ul>

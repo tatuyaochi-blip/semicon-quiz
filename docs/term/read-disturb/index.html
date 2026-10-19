@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"リードディスターブ","item":"https://semiconroom.com/term/read-disturb/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"リードディスターブ","description":"NANDフラッシュで同じブロックを何度も読み出すうちに、読み出していないセルにも弱い電圧がかかり、しきい値電圧が少しずつ変化する現象。","url":"https://semiconroom.com/term/read-disturb/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"リードディスターブ","item":"https://semiconroom.com/term/read-disturb/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"リードディスターブ","description":"NANDフラッシュで同じブロックを何度も読み出すうちに、読み出していないセルにも弱い電圧がかかり、しきい値電圧が少しずつ変化する現象。","url":"https://semiconroom.com/term/read-disturb/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"NANDフラッシュのリードディスターブとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"NANDのブロック内で、読み出しのたびに非選択セルにかかるパス電圧によって、それらのセルのしきい値電圧が徐々に上昇する現象です。読み出し回数が十分に多くなると、記憶したビットが反転することがあります。"}},{"@type":"Question","name":"リードディスターブは永久的な損傷ですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。しきい値電圧の変化はセルに余分に注入された電荷によるものなので、ブロックを消去してデータを書き直せば正常なマージンに戻ります。この点で、書き込み・消去サイクルによる劣化とは異なります。"}},{"@type":"Question","name":"リードディスターブとデータ保持エラーの違いは?","acceptedAnswer":{"@type":"Answer","text":"リードディスターブは電荷が加わってしきい値電圧が上がる現象で、ブロックの読み出し回数に応じて進みます。データ保持エラーは時間とともに電荷が漏れ出すことで生じ、データにアクセスしなくてもしきい値電圧が下がります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/sram-flash/">SRAM・フラッシュメモリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>1ページの読み出しが周囲にストレスを与える理由</h2>
+  <p>NANDフラッシュのセルはストリング内で直列につながっています。1本の<a class="term-link" href="/term/word-line/">ワード線</a>を読み出すとき、選択セルのゲートには読み出し電圧がかかり、ブロック内の他のすべてのワード線には、記憶データにかかわらずセルを完全にオンにできる数ボルトのパス電圧がかかります。このパス電圧が非選択セルのトンネル酸化膜に弱い電界を生じさせ、読み出しのたびにごくわずかな電荷が記憶層に注入されます。読み出しを何度も重ねると、それらのセルの<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>が少しずつ上がっていきます。一般に、しきい値電圧が最も低い消去状態のセルが最も影響を受けやすくなります。</p>
+</section>
+<section class="term-about">
+  <h2>リードディスターブが問題になる場面</h2>
+  <p>1回の読み出しによる変化は無視できるほど小さいものですが、同じブロックを数万〜数十万回読み出すと無視できなくなります。そのため、ブートコードや頻繁に参照されるルックアップテーブルなど、読み出し頻度が非常に高い一方でめったに書き換えられないデータを持つブロックで問題になります。1セルに複数ビットを記憶するセル(MLC、<a class="term-link" href="/term/tlc/">TLC</a>、QLC)は、状態を区切る<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>のウィンドウが狭いため影響を受けやすく、書き込み・消去サイクルを多く重ねて劣化したセルはさらに影響を受けやすくなります。</p>
+</section>
+<section class="term-about">
+  <h2>SSDコントローラの対策</h2>
+  <p>コントローラはブロックごとに読み出し回数のカウンタを持っています。回数が上限に近づいたり、誤り訂正(<a class="term-link" href="/term/ecc/">ECC</a>)で訂正されるビット数が増え始めたりすると、データを新しいブロックへコピーし、後で古いブロックを消去します。この処理はリードリクレームや<a class="term-link" href="/term/refresh/">リフレッシュ</a>と呼ばれます。<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>の変化は永久的な損傷ではなく注入された電荷によるものなので、ブロックを消去して書き直せば元に戻ります。また、参照電圧をずらして読み直すリードリトライによって、分布が移動してしまったページのデータを回復できることもあります。</p>
+</section>
+<section class="term-about">
+  <h2>データ保持不良や他のメモリとの比較</h2>
+  <p>リードディスターブは<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>を上げる現象で、ブロックが読み出される頻度に依存します。一方、データ保持(リテンション)による劣化は、蓄えた電荷が時間とともに漏れ出すことでしきい値電圧が下がる現象で、データにまったくアクセスしなくても起こります。この用語は他のメモリでも使われます。<a class="term-link" href="/term/stt-mram/">STT-MRAM</a>では読み出し電流が書き込みに使うのと同じ<a class="term-link" href="/term/magnetic-tunnel-junction/">磁気トンネル接合</a>を流れるため、スイッチング電流より十分小さくしないとビットが反転する恐れがありますが、小さすぎると信号が弱くなります。SRAMでは、セルへのアクセスによって記憶値が乱される関連したリスクを読み出し安定性と呼びます。</p>
+</section>
 <section>
   <h2>リードディスターブの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sram-flash-018" data-cat="sram-flash" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. リードディスターブ</p><p class="explanation">NANDの読み出しでは、選択していないセルにも数Vの通過電圧をかけて導通させるため、繰り返し読み出すうちにわずかに電子が注入され、<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>が上がっていきます。これが<a class="term-link" href="/term/read-disturb/">リードディスターブ</a>で、数万〜数十万回の読み出しで問題になります。読み出し頻度の高いデータが集まるブロックで起きやすく、コントローラは読み出し回数を数えて、上限が近づくとデータを別のブロックに書き直します。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>NANDフラッシュのリードディスターブとは何ですか?</h3>
+  <p>NANDのブロック内で、読み出しのたびに非選択セルにかかるパス電圧によって、それらのセルのしきい値電圧が徐々に上昇する現象です。読み出し回数が十分に多くなると、記憶したビットが反転することがあります。</p>
+  <h3>リードディスターブは永久的な損傷ですか?</h3>
+  <p>いいえ。しきい値電圧の変化はセルに余分に注入された電荷によるものなので、ブロックを消去してデータを書き直せば正常なマージンに戻ります。この点で、書き込み・消去サイクルによる劣化とは異なります。</p>
+  <h3>リードディスターブとデータ保持エラーの違いは?</h3>
+  <p>リードディスターブは電荷が加わってしきい値電圧が上がる現象で、ブロックの読み出し回数に応じて進みます。データ保持エラーは時間とともに電荷が漏れ出すことで生じ、データにアクセスしなくてもしきい値電圧が下がります。</p>
+</section>
 <section>
   <h2>解説の中の「リードディスターブ」</h2>
   <ul class="term-quotes"><li><p>これがリードディスターブで、数万〜数十万回の読み出しで問題になります。</p><a href="/q/sram-flash/sram-flash-018/">NANDフラッシュで、同じブロックを何度も読み出すうちに、読み出していないセルのしきい値電圧が少しずつ変化してしまう現…</a></li></ul>

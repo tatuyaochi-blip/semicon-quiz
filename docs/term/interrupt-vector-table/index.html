@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"割り込みベクタテーブル","item":"https://semiconroom.com/term/interrupt-vector-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"割り込みベクタテーブル","description":"割り込みや例外の種類ごとに、対応する割り込みハンドラの先頭アドレスを並べた表。CPUは原因の番号からこの表を引いて、処理の開始位置を決める。","url":"https://semiconroom.com/term/interrupt-vector-table/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"割り込みベクタテーブル","item":"https://semiconroom.com/term/interrupt-vector-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"割り込みベクタテーブル","description":"割り込みや例外の種類ごとに、対応する割り込みハンドラの先頭アドレスを並べた表。CPUは原因の番号からこの表を引いて、処理の開始位置を決める。","url":"https://semiconroom.com/term/interrupt-vector-table/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"割り込みベクタとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"割り込みや例外の発生源に割り当てられた番号で、ベクタテーブルを引く添字として使われます。ハンドラのアドレスが入ったテーブルのエントリそのものを指して、ゆるく使われることもあります。"}},{"@type":"Question","name":"ARM Cortex-Mのベクタテーブルはどこにありますか?","acceptedAnswer":{"@type":"Answer","text":"既定では、ブートメモリ(通常はフラッシュ)の先頭にあります。最初のエントリがスタックポインタの初期値、2番目がリセットハンドラで、多くのコアではベクタテーブルオフセットレジスタ(VTOR)を使ってRAMなどへ移動できます。"}},{"@type":"Question","name":"x86のIVTとIDTの違いは?","acceptedAnswer":{"@type":"Answer","text":"割り込みベクタテーブル(IVT)は、メモリの最下位に置かれる、セグメント:オフセット形式の256個のアドレスからなるリアルモード用の表です。割り込みディスクリプタテーブル(IDT)はプロテクトモードとロングモードでこれに代わる表で、特権情報を含むディスクリプタを保持し、IDTRレジスタによってメモリ上の任意の位置に置けます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>CPUがテーブルを使う仕組み</h2>
+  <p><a class="term-link" href="/term/interrupt/">割り込み</a>や例外を受け付けると、ハードウェアはその原因を表すベクタと呼ばれる番号を決めます。原因はタイマ、特定の周辺装置、ページフォールト、不正命令、<a class="term-link" href="/term/system-call/">システムコール</a>などです。CPUは次の命令のアドレスと動作モードなどの状態を保存し、ベクタを添字として割り込みベクタテーブルを引きます。一般には、ベースアドレス+ベクタ×エントリサイズの位置にあるエントリを読みます。このエントリにハンドラの先頭アドレスが入っています。ハンドラは使うレジスタを保存し、イベントを処理してから、割り込み復帰命令を実行します。</p>
+</section>
+<section class="term-about">
+  <h2>テーブルの置き場所</h2>
+  <p>細部はアーキテクチャによって異なります。ArmのCortex-Mマイコンでは、テーブルはコードメモリの先頭にあり、最初のワードが<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>の初期値、2番目がリセットハンドラのアドレスで、その後にフォルトや周辺装置のハンドラへのポインタが続きます。多くのコアではベクタテーブルオフセットレジスタ(VTOR)で、ソフトウェアから移動できます。x86のリアルモードでは、メモリの先頭1 KBに4バイトのエントリが256個並びます。プロテクトモードとロングモードでは、IDTRレジスタが指す<a class="term-link" href="/term/interrupt/">割り込み</a>ディスクリプタテーブル(IDT)を使います。RISC-Vはmtvecレジスタを使い、すべてのトラップを1つのハンドラに送ることも、割り込みを別々のアドレスに振り分けることもできます。</p>
+</section>
+<section class="term-about">
+  <h2>組み込みファームウェアでの設定</h2>
+  <p>OSのない<a class="term-link" href="/term/microcontroller/">マイコン</a>では、リセットの瞬間から、ハードウェアが想定するアドレスにベクタテーブルがなければなりません。スタートアップコードはテーブルを関数ポインタの配列として専用のセクションに定義し、<a class="term-link" href="/term/linker-script/">リンカスクリプト</a>がそのセクションを所定のフラッシュアドレスに配置します。一般的なスタートアップファイルでは、すべてのエントリに無限ループなどのweakなデフォルトハンドラを割り当てておき、アプリケーションは使う<a class="term-link" href="/term/interrupt/">割り込み</a>だけを同じ名前の関数を定義して上書きします。そのため、ハンドラ名のつづりを間違えてもエラーなくコンパイルでき、割り込みは知らないうちにデフォルトのループへ飛んでしまいます。</p>
+</section>
+<section class="term-about">
+  <h2>ベクタ方式とポーリングの違い</h2>
+  <p>ベクタ方式では原因ごとに専用のハンドラへ直接飛ぶため、CPUはステータスレジスタを読んで何が起きたかを調べる必要がなく、<a class="term-link" href="/term/interrupt/">割り込み</a>レイテンシが短くなります。もう1つの方式は入口を1つにまとめ、そのハンドラが原因レジスタを読んでソフトウェアで振り分けるもので、RISC-Vのダイレクトモードがこれに当たります。汎用OSでは、カーネルが起動時にテーブルを設定し、タイマ割り込み、デバイス割り込み、ページフォールト、<a class="term-link" href="/term/system-call/">システムコール</a>がそれぞれ正しいカーネルの処理に届くようにします。</p>
+</section>
 <section>
   <h2>割り込みベクタテーブルの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-007" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 割り込みや例外の種類ごとに、処理を始めるアドレスを決めておく</p><p class="explanation"><a class="term-link" href="/term/interrupt/">割り込み</a>や例外が起きると、CPUはその原因に対応する番号(ベクタ番号)を得て、<a class="term-link" href="/term/interrupt-vector-table/">割り込みベクタテーブル</a>からハンドラの先頭アドレスを読み、そこへ処理を移します。表の中身はOSが起動時に設定し、タイマー、各装置、<a class="term-link" href="/term/page-fault/">ページフォルト</a>、<a class="term-link" href="/term/system-call/">システムコール</a>などで別々のハンドラを呼べるようにします。回数を数えるのは統計のための別のしくみで、実行するプロセスの順番はOSのスケジューラが管理します。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>割り込みベクタとは何ですか?</h3>
+  <p>割り込みや例外の発生源に割り当てられた番号で、ベクタテーブルを引く添字として使われます。ハンドラのアドレスが入ったテーブルのエントリそのものを指して、ゆるく使われることもあります。</p>
+  <h3>ARM Cortex-Mのベクタテーブルはどこにありますか?</h3>
+  <p>既定では、ブートメモリ(通常はフラッシュ)の先頭にあります。最初のエントリがスタックポインタの初期値、2番目がリセットハンドラで、多くのコアではベクタテーブルオフセットレジスタ(VTOR)を使ってRAMなどへ移動できます。</p>
+  <h3>x86のIVTとIDTの違いは?</h3>
+  <p>割り込みベクタテーブル(IVT)は、メモリの最下位に置かれる、セグメント:オフセット形式の256個のアドレスからなるリアルモード用の表です。割り込みディスクリプタテーブル(IDT)はプロテクトモードとロングモードでこれに代わる表で、特権情報を含むディスクリプタを保持し、IDTRレジスタによってメモリ上の任意の位置に置けます。</p>
+</section>
 <section>
   <h2>解説の中の「割り込みベクタテーブル」</h2>
   <ul class="term-quotes"><li><p>割り込みや例外が起きると、CPUはその原因に対応する番号(ベクタ番号)を得て、割り込みベクタテーブルからハンドラの先頭アドレスを読み、そこへ処理を移します。</p><a href="/q/os-hardware/os-hardware-007/">割り込みベクタテーブルの役割として正しいものはどれか。</a></li><li><p>割り込みを受け付けると、CPUは次に実行するはずだった命令のアドレスと動作モードなどの状態を保存し、割り込みベクタテーブルなどで決まる割り込みハンドラへ移ります。</p><a href="/q/os-hardware/os-hardware-006/">CPUが割り込みを受け付けたときの一般的な処理の流れとして正しいものはどれか。</a></li></ul>

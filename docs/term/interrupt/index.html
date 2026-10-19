@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"割り込み","item":"https://semiconroom.com/term/interrupt/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"割り込み","description":"外部機器からの要求などに応じて、実行中の処理を一時的に中断し、対応する処理を優先して行うCPUの仕組み。終わると元の処理に戻る。","url":"https://semiconroom.com/term/interrupt/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"割り込み","item":"https://semiconroom.com/term/interrupt/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"割り込み","description":"外部機器からの要求などに応じて、実行中の処理を一時的に中断し、対応する処理を優先して行うCPUの仕組み。終わると元の処理に戻る。","url":"https://semiconroom.com/term/interrupt/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"割り込みと例外の違いは?","acceptedAnswer":{"@type":"Answer","text":"割り込みは非同期で、タイマやI/Oデバイスなど命令の流れの外から発生します。例外は同期的で、ページフォルト、不正命令、システムコールのように特定の命令の実行によって発生します。"}},{"@type":"Question","name":"割り込みベクタテーブルとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"OSやファームウェアが用意する表で、割り込みや例外の番号ごとに、そのハンドラの開始アドレスを対応づけたものです。CPUはこの表を使って、要因に応じた正しいルーチンへジャンプします。"}},{"@type":"Question","name":"割り込みハンドラを短くするべきなのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"ハンドラの実行中は、通常、同じかそれより低い優先度の割り込みが保留され、メインプログラムも止まるため、ハンドラが長いと他のすべての処理のレイテンシが増えるからです。重い処理は、割り込み許可状態で動くタスクやメインループに回します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>割り込みを受け付けたときの動作</h2>
+  <p>デバイスやタイマなどが割り込みを要求し、それが許可されていると、CPUは次に実行する命令のアドレスと、<a class="term-link" href="/term/privileged-mode/">特権モード</a>や割り込み許可ビットなどの状態を専用レジスタに保存します。次に要因を示すベクタ番号を得て、OSが用意した<a class="term-link" href="/term/interrupt-vector-table/">割り込みベクタテーブル</a>からハンドラの開始アドレスを読み出し、そこへジャンプします。ハンドラは自分が使うレジスタを退避し、デバイスの処理を行い、割り込み要因をクリアして状態を復元し、RISC-Vのmretやsretのような専用命令で復帰します。この命令はモードと戻りアドレスを不可分に(アトミックに)復元します。</p>
+</section>
+<section class="term-about">
+  <h2>割り込み・例外・ポーリングの違い</h2>
+  <p>割り込みは非同期です。タイマのティックやネットワークパケットの到着は、どの命令を実行中かとは無関係に起こります。一方、<a class="term-link" href="/term/page-fault/">ページフォルト</a>、ゼロ除算、意図的な<a class="term-link" href="/term/system-call/">システムコール</a>(RISC-Vのecall)などの例外は同期的で、特定の命令によって引き起こされます。割り込みの代わりになるのが、CPUがデバイスの状態を繰り返し読み取る<a class="term-link" href="/term/polling/">ポーリング</a>です。イベントがまれな場合やCPUを休止させたい場合は割り込みのほうが適していますが、割り込みのたびに状態の保存とジャンプのコストがかかるため、高速ネットワークのようにイベント頻度が非常に高い場合は、まとめて処理するポーリングのほうが効率的なことがあります。</p>
+</section>
+<section class="term-about">
+  <h2>優先度・マスク・レイテンシ</h2>
+  <p>割り込みコントローラは、多くの場合プライオリティエンコーダを使って同時に発生した要求を調停します。ネスト(多重割り込み)に対応していれば、Arm Cortex-MのNVICのように、優先度の高い割り込みが優先度の低いハンドラに割り込めます。割り込みはソフトウェアでマスクできますが、<a class="term-link" href="/term/non-maskable-interrupt/">マスク不可能割り込み</a>(NMI)は訂正不能なメモリエラーやウォッチドッグのタイムアウトといった重大な事象のために確保されています。最悪時の割り込みレイテンシは、主に割り込み禁止のまま実行される最も長い区間で決まるため、OSは処理を短い緊急部分と、後で割り込み許可状態で行う遅延処理に分けます。<a class="term-link" href="/term/pci-express/">PCI Express</a>のデバイスは、専用の信号線ではなくメモリ書き込み(<a class="term-link" href="/term/message-signaled-interrupts/">MSI</a>)で割り込みを通知します。</p>
+</section>
+<section class="term-about">
+  <h2>組み込みソフトウェアでの落とし穴</h2>
+  <p>ハンドラは短くするべきで、printfや待ちループは使わず、データをバッファに移すか、メインループ向けのフラグを立てるだけにします。ハンドラと共有する変数はvolatileと宣言しないと、コンパイラが一度しか読まないことがあります。reg |= mask のような<a class="term-link" href="/term/read-modify-write/">読み出し・変更・書き込み</a>の更新では、その途中でハンドラが変えたビットが失われる恐れがあり、8ビットマイコンが32ビットのカウンタを読むと、更新途中のバイトが混ざった値を見てしまうことがあります。どちらも、短時間だけ割り込みを禁止すれば解決します。システムティックは、たとえば16 MHzを16分周して1000まで数えることで1 msごとに発生させる周期的なタイマ割り込みで作ります。</p>
+</section>
 <section>
   <h2>割り込みの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-004" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 実行中の位置と状態を保存し、割り込みハンドラを実行してから、保存した位置に戻る</p><p class="explanation"><a class="term-link" href="/term/interrupt/">割り込み</a>を受け付けると、CPUは次に実行するはずだった命令のアドレスと動作モードなどの状態を保存し、<a class="term-link" href="/term/interrupt-vector-table/">割り込みベクタテーブル</a>などで決まる<a class="term-link" href="/term/interrupt-handler/">割り込みハンドラ</a>へ移ります。ハンドラは必要なレジスタを保存して処理を行い、終わったら状態を戻して、中断した場所から元のプログラムを再開します。プログラムを破棄したり、最初からやり直したりはしません。ハンドラのあと別のプロセスに切り替わることはありますが、それはOSの判断です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>割り込みと例外の違いは?</h3>
+  <p>割り込みは非同期で、タイマやI/Oデバイスなど命令の流れの外から発生します。例外は同期的で、ページフォルト、不正命令、システムコールのように特定の命令の実行によって発生します。</p>
+  <h3>割り込みベクタテーブルとは何ですか?</h3>
+  <p>OSやファームウェアが用意する表で、割り込みや例外の番号ごとに、そのハンドラの開始アドレスを対応づけたものです。CPUはこの表を使って、要因に応じた正しいルーチンへジャンプします。</p>
+  <h3>割り込みハンドラを短くするべきなのはなぜですか?</h3>
+  <p>ハンドラの実行中は、通常、同じかそれより低い優先度の割り込みが保留され、メインプログラムも止まるため、ハンドラが長いと他のすべての処理のレイテンシが増えるからです。重い処理は、割り込み許可状態で動くタスクやメインループに回します。</p>
+</section>
 <section>
   <h2>解説の中の「割り込み」</h2>
   <ul class="term-quotes"><li><p>割り込みは、入出力装置の完了通知やタイマーなど、実行中の命令とは関係のない外部の要因で、いつ起こるか決まっていない(非同期の)ものです。</p><a href="/q/os-hardware/os-hardware-004/">割り込みと例外の違いとして一般的な説明はどれか。</a></li><li><p>割り込みを受け付けると、CPUは次に実行するはずだった命令のアドレスと動作モードなどの状態を保存し、割り込みベクタテーブルなどで決まる割り込みハンドラへ移ります。</p><a href="/q/os-hardware/os-hardware-006/">CPUが割り込みを受け付けたときの一般的な処理の流れとして正しいものはどれか。</a></li><li><p>割り込みを禁止すると、共有するデータの更新を途中で割り込まれずに済みますが、その間に届いた割り込みは待たされます。</p><a href="/q/os-hardware/os-hardware-008/">重要な処理の途中で一時的に割り込みを禁止(マスク)するときの注意点として正しいものはどれか。</a></li><li><p>割り込みは、処理がまれなときにはCPUを無駄にせずに済みますが、1回ごとに状態の保存やハンドラへの移動の負担があります。</p><a href="/q/os-hardware/os-hardware-028/">装置の状態を、割り込みを使わずにCPUが繰り返し調べる方式(ポーリング)が有利になる場合はどれか。</a></li><li><p>例外や割り込みが起きると、CPUは戻り先のアドレスのほか、それまでの動作モードや割り込みが許可されていたかどうかを専用のレジスタに保存して、特権モードに入ります。</p><a href="/q/os-hardware/os-hardware-044/">割り込みや例外の処理を終えて元のプログラムに戻るとき、通常の関数の戻り命令ではなく、専用の復帰命令(RISC-Vのsr…</a></li></ul>

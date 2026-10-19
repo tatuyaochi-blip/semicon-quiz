@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ループ展開","item":"https://semiconroom.com/term/loop-unrolling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ループ展開","description":"ループの本体を何回分か並べて書き、繰り返しの回数を減らす最適化。分岐や回数の判定の手間が減り、命令を並べ替えやすくなるが、コードが大きくなる。","url":"https://semiconroom.com/term/loop-unrolling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ループ展開","item":"https://semiconroom.com/term/loop-unrolling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ループ展開","description":"ループの本体を何回分か並べて書き、繰り返しの回数を減らす最適化。分岐や回数の判定の手間が減り、命令を並べ替えやすくなるが、コードが大きくなる。","url":"https://semiconroom.com/term/loop-unrolling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ループ展開とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ループの本体を何回分か複製し、その分だけ繰り返し回数を減らす最適化で、コンパイラが行うことも手作業で行うこともあります。カウンタの更新や分岐が減り、スケジューリングに使える命令が増えます。"}},{"@type":"Question","name":"ループ展開すれば必ず速くなりますか?","acceptedAnswer":{"@type":"Answer","text":"そうとは限りません。コードサイズとレジスタ使用量が増えて命令キャッシュミスやレジスタのスピルを招くことがあり、最近のCPUでは残るループのオーバーヘッド自体が小さいことも多いため、効果は測定して確かめる必要があります。"}},{"@type":"Question","name":"ループ展開とループタイリングの違いは?","acceptedAnswer":{"@type":"Answer","text":"ループ展開はループ本体を複製して分岐のオーバーヘッドを減らし、命令レベル並列性を高めます。タイリングは繰り返しの範囲をキャッシュに収まる大きさのブロックに分け、データの再利用を増やしてキャッシュミスを減らします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ループ展開でループはどう変わるか</h2>
+  <p>2つの配列を要素ごとに足すループでは、通常、要素1つごとに本来の処理に加えてカウンタの加算、比較、条件分岐が必要です。4倍に展開すると本体を4回分並べて書き、1回の繰り返しでiからi+3までの要素を処理してiを4ずつ増やします。繰り返し回数は4分の1になり、オーバーヘッドは4要素に1回で済みます。繰り返し回数が展開数の倍数でない場合は、短い残りのループで端数の要素を処理します。繰り返し回数が定数で決まっている小さなループは、完全に展開することもできます。</p>
+</section>
+<section class="term-about">
+  <h2>高速になる理由</h2>
+  <p>ループ展開は分岐やカウンタのオーバーヘッドを減らすだけでなく、独立した処理の複製を1つの<a class="term-link" href="/term/basic-block/">基本ブロック</a>に並べるので、コンパイラの命令スケジューラがそれらを自由に交互に並べられるようになります。ある複製のロードを発行している間に別の複製の演算を進められ、レイテンシを隠せます。合計のようなリダクションでは、複数の別々の累積変数を使って展開すると、1本の長い依存の連鎖を断ち切れます。ただし浮動小数点では丸めの順序が変わるため、コンパイラは許可された場合にだけこれを行います。展開によって、<a class="term-link" href="/term/simd/">SIMD</a>のベクトル命令にまとめられる演算のグループも見つけやすくなります。</p>
+</section>
+<section class="term-about">
+  <h2>コストと効果の頭打ち</h2>
+  <p>複製を増やすたびにコードが大きくなり、よく実行されるループが命令キャッシュに収まらなくなることがあります。また、同時に扱う値が増えるとレジスタが足りなくなり、メモリへの退避(<a class="term-link" href="/term/register-spilling/">スピル</a>)が起きて効果が打ち消されることもあります。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>が正確な最近のアウトオブオーダープロセッサは、もともとループのオーバーヘッドの多くを隠せるため、大きく展開してもほとんど効果がないことがよくあります。そのためコンパイラは経験則で展開数を決めており、測定で効果が確認できる場合には、プログラマがコンパイラオプションやプラグマで指定することもできます。</p>
+</section>
+<section class="term-about">
+  <h2>関連するループ最適化との違い</h2>
+  <p>ループ展開が狙うのは、制御のオーバーヘッドの削減とスケジューリングの自由度です。<a class="term-link" href="/term/strength-reduction/">強度低減</a>はこれとは異なり、i * 4 を毎回別の変数に4を足して求めたり、シフトで計算したりするように、重い演算を軽い演算に置き換えます。<a class="term-link" href="/term/loop-blocking/">ループブロッキング</a>(タイリング)は、行列積などのループを組み替えてキャッシュに収まる大きさのブロック単位で処理し、データの再利用を増やすもので、分岐ではなくキャッシュミスを減らします。コンパイラは同じループにこれらを組み合わせて適用することがよくあります。</p>
+</section>
 <section>
   <h2>ループ展開の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-015" data-cat="compiler" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 25回</p><p class="explanation">本体を4回分並べると、1回の繰り返しで元の4回分の処理を行うので、繰り返しの回数は 100 ÷ 4 = 25回になり、回数の判定と分岐も25回に減ります。元の100回に比べて、分岐などの手間が4分の1になります。回数が4で割り切れない場合は、余った分を処理する短いループを後ろに付け加えます。100回は展開しない場合の回数、400回は本体の処理の数を誤って掛けた値です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ループ展開とは何ですか?</h3>
+  <p>ループの本体を何回分か複製し、その分だけ繰り返し回数を減らす最適化で、コンパイラが行うことも手作業で行うこともあります。カウンタの更新や分岐が減り、スケジューリングに使える命令が増えます。</p>
+  <h3>ループ展開すれば必ず速くなりますか?</h3>
+  <p>そうとは限りません。コードサイズとレジスタ使用量が増えて命令キャッシュミスやレジスタのスピルを招くことがあり、最近のCPUでは残るループのオーバーヘッド自体が小さいことも多いため、効果は測定して確かめる必要があります。</p>
+  <h3>ループ展開とループタイリングの違いは?</h3>
+  <p>ループ展開はループ本体を複製して分岐のオーバーヘッドを減らし、命令レベル並列性を高めます。タイリングは繰り返しの範囲をキャッシュに収まる大きさのブロックに分け、データの再利用を増やしてキャッシュミスを減らします。</p>
+</section>
 <section>
   <h2>解説の中の「ループ展開」</h2>
   <ul class="term-quotes"><li><p>ループ展開は、ループの本体を例えば4回分並べて書き、繰り返しの回数を4分の1にする最適化です。</p><a href="/q/compiler/compiler-015/">ループ展開(ループアンローリング)の主な効果として正しいものはどれか。</a></li><li><p>関数全体は普通いくつもの基本ブロックからなり、ループ本体を並べるのはループ展開です。</p><a href="/q/compiler/compiler-006/">基本ブロックの説明として正しいものはどれか。</a></li><li><p>ループの本体を並べるのはループ展開で、関数呼び出しをまとめるのは別の最適化です。</p><a href="/q/compiler/compiler-010/">コンパイラの定数畳み込みの例として正しいものはどれか。</a></li><li><p>本体を4回分並べるのはループ展開です。</p><a href="/q/compiler/compiler-017/">上のループで、添字の計算 i * 4 に強度低減を行ったときの変換として正しいものはどれか。</a></li><li><p>分岐命令を減らすのはループ展開の目的で、使うメモリの総量は変わりません。</p><a href="/q/memory-hierarchy/memory-hierarchy-018/">行列の積などで使われるループブロッキング(タイリング)の主な目的はどれか。</a></li></ul>

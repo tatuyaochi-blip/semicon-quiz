@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"逐次一貫性","item":"https://semiconroom.com/term/sequential-consistency/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"逐次一貫性","description":"すべてのコアの操作が1つの順番に並べられ、各コアの操作はプログラムの順番どおりに見えるという、最も直感的なメモリ一貫性モデル。","url":"https://semiconroom.com/term/sequential-consistency/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"逐次一貫性","item":"https://semiconroom.com/term/sequential-consistency/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"逐次一貫性","description":"すべてのコアの操作が1つの順番に並べられ、各コアの操作はプログラムの順番どおりに見えるという、最も直感的なメモリ一貫性モデル。","url":"https://semiconroom.com/term/sequential-consistency/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"x86は逐次一貫性ですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。x86はトータルストアオーダー(TSO)を採用しており、別の番地への先行ストアがほかのコアから見えるようになる前にロードが完了することを許すため、ストアバッファのリトマステストで r1 = r2 = 0 が起こり得ます。MFENCE のようなフェンスやロック付き命令を使うと、これを防げます。"}},{"@type":"Question","name":"逐次一貫性とキャッシュコヒーレンシの違いは?","acceptedAnswer":{"@type":"Answer","text":"コヒーレンシは、個々の番地ごとに書き込みの順序が一致することを保証します。逐次一貫性はそれより強く、すべての番地への操作の相対的な順序を、各コアのプログラム順を守った1つの全体順序として保証します。"}},{"@type":"Question","name":"C++の memory_order_seq_cst とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"std::atomic の操作で既定となるメモリ順序で、すべての seq_cst 操作が、各スレッドのプログラム順と矛盾しない1つの全体順序で起きたように見せます。最も考えやすい反面、最もコストの高いバリア命令が必要になることがあります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>逐次一貫性が保証すること</h2>
+  <p>逐次一貫性(シーケンシャルコンシステンシ)は、1979年にレスリー・ランポートが定義したモデルです。どのような実行の結果も、全コアのメモリ操作を1本の全体順序に並べたものと同じになり、その中で各コアの操作はプログラム順を保つことを求めます。複数のトランプの束を、それぞれの束の中の順番は崩さずに混ぜ合わせるようなもので、混ざり方は自由ですが、すべてのコアが同じ1つの順序を見ます。スレッドが交代で動く様子を想像するだけで並行プログラムを考えられるため、最も直感的な<a class="term-link" href="/term/memory-consistency-model/">メモリ一貫性モデル</a>とされています。</p>
+</section>
+<section class="term-about">
+  <h2>実際のCPUが緩和する理由</h2>
+  <p>すべてのメモリアクセスでプログラム順を厳密に守ると、多くのハードウェア最適化ができなくなります。<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>があれば、コアは書き込みがキャッシュに届くのを待たずに実行を続けられます。<a class="term-link" href="/term/out-of-order-execution/">アウトオブオーダー実行</a>では、後のロードが前のストアより先に完了できます。どちらも逐次一貫性を破ります。そのため多くのプロセッサはより弱いモデルを採用しています。x86は<a class="term-link" href="/term/total-store-order/">トータルストアオーダー</a>(TSO)で、後のロードが別の番地への前のストアを追い越すことを許します。ArmやRISC-Vはさらに弱いモデルで、プログラムがフェンスを入れない限り、より多くの並べ替えを許します。</p>
+</section>
+<section class="term-about">
+  <h2>ストアバッファのリトマステスト</h2>
+  <p>x と y の初期値を0とし、コア0が x = 1 の後に r1 = y を、コア1が y = 1 の後に r2 = x を実行するとします。逐次一貫性のもとでは全体順序の中でどちらかの書き込みが先に来るので、少なくとも一方の読み出しは1を返し、r1 = r2 = 0 にはなりません。x86では、各書き込みが自コアの<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>にとどまっている間に、続く読み出しがキャッシュから古い値を取ってくるため、両方とも0になることがあります。各コアで書き込みと読み出しの間に完全な<a class="term-link" href="/term/memory-barrier/">メモリバリア</a>を入れると、逐次一貫性どおりの結果に戻ります。</p>
+</section>
+<section class="term-about">
+  <h2>逐次一貫性とキャッシュコヒーレンシの違い</h2>
+  <p><a class="term-link" href="/term/cache-coherency/">キャッシュコヒーレンシ</a>は1つのメモリ番地についての性質で、その番地への書き込みの順序を全コアが一致して認識し、いずれ最新の値が見えることを保証します。一方、逐次一貫性のような<a class="term-link" href="/term/memory-consistency-model/">メモリ一貫性モデル</a>は、異なる番地へのアクセス同士の順序を扱います。これはコヒーレンシだけでは制約されません。この差はプログラミング言語が埋めています。C11やC++11のアトミック操作は既定で memory_order_seq_cst を使い、<a class="term-link" href="/term/data-race/">データ競合</a>のないプログラムは逐次一貫であるかのように動作します。acquire/release や relaxed といった弱い順序を使えば、完全な順序付けが不要な場面でコンパイラが出力するバリアを減らせます。</p>
+</section>
 <section>
   <h2>逐次一貫性の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-027" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. すべてのコアの操作が、ある1つの順番に並べられ、各コアの操作はプログラムに書いた順番どおりに現れるように見える</p><p class="explanation"><a class="term-link" href="/term/sequential-consistency/">逐次一貫性</a>では、複数のコアの操作がトランプを混ぜるように1列に並べられ、各コアの操作はその中でプログラムの順番を保っているように見えます。プログラマにとって最も分かりやすいモデルですが、ハードウェアが<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>などで順番を入れ替える最適化を大きく制限するので、実際の多くのCPUはもっと緩いモデルを採用しています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>x86は逐次一貫性ですか?</h3>
+  <p>いいえ。x86はトータルストアオーダー(TSO)を採用しており、別の番地への先行ストアがほかのコアから見えるようになる前にロードが完了することを許すため、ストアバッファのリトマステストで r1 = r2 = 0 が起こり得ます。MFENCE のようなフェンスやロック付き命令を使うと、これを防げます。</p>
+  <h3>逐次一貫性とキャッシュコヒーレンシの違いは?</h3>
+  <p>コヒーレンシは、個々の番地ごとに書き込みの順序が一致することを保証します。逐次一貫性はそれより強く、すべての番地への操作の相対的な順序を、各コアのプログラム順を守った1つの全体順序として保証します。</p>
+  <h3>C++の memory_order_seq_cst とは何ですか?</h3>
+  <p>std::atomic の操作で既定となるメモリ順序で、すべての seq_cst 操作が、各スレッドのプログラム順と矛盾しない1つの全体順序で起きたように見せます。最も考えやすい反面、最もコストの高いバリア命令が必要になることがあります。</p>
+</section>
 <section>
   <h2>解説の中の「逐次一貫性」</h2>
   <ul class="term-quotes"><li><p>逐次一貫性では、複数のコアの操作がトランプを混ぜるように1列に並べられ、各コアの操作はその中でプログラムの順番を保っているように見えます。</p><a href="/q/multicore-sync/multicore-sync-027/">逐次一貫性(シーケンシャルコンシステンシ)の説明として正しいものはどれか。</a></li><li><p>逐次一貫性では、どちらかの書き込みが最初に行われるので、少なくとも一方の読み出しは1を見るはずです。</p><a href="/q/multicore-sync/multicore-sync-028/">上の2つのスレッドを別々のコアで同時に実行する(コンパイラによる並べ替えはないとする)。逐次一貫性では起こらないが、x…</a></li><li><p>アトミック変数の操作は、既定では逐次一貫性(memory_order_seq_cst)で、最も分かりやすい代わりにバリアの負担が大きくなります。</p><a href="/q/multicore-sync/multicore-sync-035/">C11の_AtomicやC++11のstd::atomicで、メモリオーダーを指定できるようになっている理由として正し…</a></li></ul>

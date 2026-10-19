@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"BSSセクション","item":"https://semiconroom.com/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"BSSセクション","description":"初期値のない(または0の)グローバル変数や静的変数の領域。ファイルには大きさだけを記録し、読み込み時に0で埋めるので、実行ファイルを大きくしない。","url":"https://semiconroom.com/term/bss-section/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"BSSセクション","item":"https://semiconroom.com/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"BSSセクション","description":"初期値のない(または0の)グローバル変数や静的変数の領域。ファイルには大きさだけを記録し、読み込み時に0で埋めるので、実行ファイルを大きくしない。","url":"https://semiconroom.com/term/bss-section/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"BSSとは何の略ですか?","acceptedAnswer":{"@type":"Answer","text":"古いアセンブラの疑似命令に由来して、一般にblock started by symbolの略とされます。現在のツールチェーンでは、単にゼロ初期化されるグローバル変数や静的変数のセクションの名前です。"}},{"@type":"Question","name":"初期化していない大きな配列は実行ファイルを大きくしますか?","acceptedAnswer":{"@type":"Answer","text":"大きくしません。初期化子のないグローバル配列や静的配列は.bssに置かれ、ファイルには大きさだけが記録されます。メモリはプログラムの読み込み時に確保され、0で埋められます。"}},{"@type":"Question","name":".dataと.bssの違いは?","acceptedAnswer":{"@type":"Answer","text":".dataセクションには0以外の初期値をもつグローバル変数や静的変数が入り、その値をファイルに格納しておく必要があります。.bssセクションには0から始まるものが入るので、実行時にはメモリを使いますが、ファイルには中身のための領域を取りません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>.bssに入るもの</h2>
+  <p>C言語では、静的記憶域期間をもつオブジェクト、つまりグローバル変数と静的変数は、初期化子がなければ0から始まると決められています。コンパイラはこうした変数を、そして通常は明示的に0で初期化した変数も、.bssセクションに置きます。0以外の初期値をもつグローバル変数は.dataに、const修飾された定数は読み出し専用の.rodataに入ります。staticキーワードはセクションを決めるものではなく、見える範囲を1つのファイルに限るだけです。関数内の自動変数はスタック上に置かれ、初期値も決まっていないため、.bssに入ることはありません。</p>
+</section>
+<section class="term-about">
+  <h2>.bssがファイルの容量を使わない理由</h2>
+  <p>長く続く0を実行ファイルに格納しても、ディスク容量と読み込み時間が無駄になるだけなので、.bssセクションには大きさとアラインメントだけが記録されます。<a class="term-link" href="/term/executable-and-linkable-format/">ELF</a>では、ファイル内のバイトを占めないセクションとして印が付けられます。<a class="term-link" href="/term/program-loader/">ローダ</a>は.dataと.bssを含む読み書き可能なセグメントをマップし、セグメントのメモリ上の大きさがファイル上の大きさを超える部分は、0で埋めたページとして用意します。そのため static char buf[1000000]; のような宣言は、メモリ使用量を約1 MB増やしますが、ファイルの大きさはほとんど増やしません。</p>
+</section>
+<section class="term-about">
+  <h2>組み込みシステムでのBSS</h2>
+  <p>OSのない<a class="term-link" href="/term/microcontroller/">マイコン</a>では、ほかに誰もメモリを0で埋めてくれないため、スタートアップコードがこれを行います。リセットハンドラは通常、mainを呼ぶ前に、.dataの初期値をフラッシュからRAMへコピーし、RAM上の.bssの範囲をクリアします。このとき、<a class="term-link" href="/term/linker-script/">リンカスクリプト</a>がシンボルとして書き出した開始・終了アドレスを使います。どちらかを忘れると、グローバル変数がでたらめな値になります。sizeコマンドなどのツールはtext、data、bssを別々に表示するので、フラッシュとRAMの使用量の見積もりに役立ちます。</p>
+</section>
+<section class="term-about">
+  <h2>名前の由来</h2>
+  <p>BSSは一般に、block started by symbolの略とされます。これは初期のIBMのメインフレームで、ラベルを付けて初期化されない記憶領域のブロックを確保していた<a class="term-link" href="/term/assembler/">アセンブラ</a>の<a class="term-link" href="/term/pseudo-instruction/">疑似命令</a>に由来する名前です。その疑似命令自体はとうに使われなくなりましたが、意味はUNIXのオブジェクト形式に、そして後の<a class="term-link" href="/term/executable-and-linkable-format/">ELF</a>に受け継がれました。現在では、コードの.text、初期値付きデータの.data、定数の.rodataと並んで、ゼロ初期化データのセクションを指す名前として使われています。</p>
+</section>
 <section>
   <h2>BSSセクションの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-012" data-cat="linker-loader" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 初期値のない(または0の)変数の領域で、ファイルには大きさだけを記録し、読み込み時に0で埋める</p><p class="explanation">初期値を書かないグローバル変数や静的変数は、C言語の決まりで0から始まります。中身がすべて0なら、ファイルに0を並べて保存するのはむだなので、.<a class="term-link" href="/term/bss-section/">bssセクション</a>には大きさだけを記録し、<a class="term-link" href="/term/program-loader/">ローダ</a>がメモリを確保して0で埋めます。例えば「static char buf[1000000];」があっても、実行ファイルは1MB大きくなりません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>BSSとは何の略ですか?</h3>
+  <p>古いアセンブラの疑似命令に由来して、一般にblock started by symbolの略とされます。現在のツールチェーンでは、単にゼロ初期化されるグローバル変数や静的変数のセクションの名前です。</p>
+  <h3>初期化していない大きな配列は実行ファイルを大きくしますか?</h3>
+  <p>大きくしません。初期化子のないグローバル配列や静的配列は.bssに置かれ、ファイルには大きさだけが記録されます。メモリはプログラムの読み込み時に確保され、0で埋められます。</p>
+  <h3>.dataと.bssの違いは?</h3>
+  <p>.dataセクションには0以外の初期値をもつグローバル変数や静的変数が入り、その値をファイルに格納しておく必要があります。.bssセクションには0から始まるものが入るので、実行時にはメモリを使いますが、ファイルには中身のための領域を取りません。</p>
+</section>
 <section>
   <h2>解説の中の「BSSセクション」</h2>
   <ul class="term-quotes"><li><p>中身がすべて0なら、ファイルに0を並べて保存するのはむだなので、.bssセクションには大きさだけを記録し、ローダがメモリを確保して0で埋めます。</p><a href="/q/linker-loader/linker-loader-012/">.bssセクションの特徴として正しいものはどれか。</a></li></ul>

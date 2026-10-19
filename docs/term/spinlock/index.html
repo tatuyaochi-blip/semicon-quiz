@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スピンロック","item":"https://semiconroom.com/term/spinlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スピンロック","description":"ロックが空くまで、ループでロックの変数を調べ続けて待つ方式のロック。待ちが短いときに速いが、待つ間もCPUを使い続ける。","url":"https://semiconroom.com/term/spinlock/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スピンロック","item":"https://semiconroom.com/term/spinlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スピンロック","description":"ロックが空くまで、ループでロックの変数を調べ続けて待つ方式のロック。待ちが短いときに速いが、待つ間もCPUを使い続ける。","url":"https://semiconroom.com/term/spinlock/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"スピンロックとミューテックスの違いは?","acceptedAnswer":{"@type":"Answer","text":"スピンロックはロックの変数をループで調べ続けて待ち、その間CPUを使い続けるため、待ち時間がごく短い場合にだけ効率的です。ミューテックスは待っているスレッドをスリープさせてほかのスレッドを動かすため、長い待ちに向いていますが、スリープ、起床、コンテキストスイッチのコストが加わります。"}},{"@type":"Question","name":"スピンロックはどんなときに使うべきですか?","acceptedAnswer":{"@type":"Answer","text":"クリティカルセクションが非常に短く、スレッドが別々のコアで動いている場合や、スリープが許されない割り込みハンドラなどのカーネルの処理で使います。ロックを長く保持する可能性がある場合や、シングルコアのシステムでは避けます。"}},{"@type":"Question","name":"テストアンドテストアンドセットとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"待機中のスレッドが自分のキャッシュから通常のロードでロックを繰り返し読み、ロックが空いたように見えたときだけアトミックなテストアンドセットを試みるスピンロックの手法です。キャッシュラインの無効化が絶えず起きるのを防ぎ、コヒーレンスのトラフィックを大きく減らします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>スピンロックの獲得と解放</h2>
+  <p>スピンロックは共有変数で、通常は空いているとき0、保持されているとき1です。獲得するときは、テストアンドセット、スワップ、コンペアアンドスワップといったアトミックな<a class="term-link" href="/term/read-modify-write/">読み出し・変更・書き込み</a>命令を使い、変数を1にすると同時に古い値を分割できない1ステップで返させます。RISC-Vでは、アトミックスワップか、ロードリザーブド/ストアコンディショナルの組を使います。古い値が0ならそのスレッドがロックを獲得し、そうでなければループで再試行します。解放は0を書き込むだけです。また、獲得と解放は<a class="term-link" href="/term/memory-barrier/">メモリバリア</a>としても働き、<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>内のアクセスがその間に収まるようにしなければなりません。</p>
+</section>
+<section class="term-about">
+  <h2>テストアンドテストアンドセットとキャッシュのトラフィック</h2>
+  <p><a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>を短いループで繰り返し試すと、マルチコアのチップでは性能が悪くなります。アトミック操作のたびに<a class="term-link" href="/term/cache-line/">キャッシュライン</a>の排他的な所有権が必要になるため、待っているコアがラインをM(Modified)状態に引き込んではお互いのコピーを無効化し続け、コヒーレンスの通信路があふれてしまいます。テストアンドテストアンドセットでは、代わりに通常のロードで待ちます。各待機スレッドは自分のキャッシュにある共有コピーを読むだけなので通信は発生せず、ロックが空いたのを見てからアトミック操作を試みます。指数バックオフや、チケットロック、キューベースのロックを使うと、競合がさらに減り、公平性も得られます。</p>
+</section>
+<section class="term-about">
+  <h2>スピンロックとミューテックスの違い</h2>
+  <p>スリープする<a class="term-link" href="/term/mutex/">ミューテックス</a>は、待っているスレッドをブロック状態にしてCPUをほかのスレッドに渡し、ロックが解放されるとOSがそのスレッドを起こします。<a class="term-link" href="/term/cpu-time/">CPU時間</a>は無駄になりませんが、<a class="term-link" href="/term/system-call/">システムコール</a>、スケジューリング、<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>のコストがかかり、通常は数マイクロ秒を要します。スピンロックにはこのオーバーヘッドがまったくないので、ロックの保持時間がスリープと起床の一巡より短い場合に有利です。保持時間が長い場合は逆になるため、多くのライブラリのミューテックスは、まず短くスピンしてからスリープし、両方の長所を組み合わせています。</p>
+</section>
+<section class="term-about">
+  <h2>スピンロックが向く場面と向かない場面</h2>
+  <p>スピンロックはOSのカーネル内でよく使われ、マルチプロセッサでの短い<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>や、スリープできない<a class="term-link" href="/term/interrupt-handler/">割り込みハンドラ</a>と共有するデータの保護に用いられます。スピンロックを保持しているコードはスリープしてはいけません。カーネルは通常、保持中はプリエンプションを禁止し、必要に応じて<a class="term-link" href="/term/interrupt/">割り込み</a>も禁止します。同じコアの割り込みハンドラが、自分のコアが保持しているロックを永遠に待ち続けないようにするためです。シングルコアのシステムでは、ユーザーレベルのスピンロックは特に無駄が大きくなります。待つ側がスピンしている間は保持している側が実行されずロックを解放できないので、待つ側はタイムスライスを丸ごと浪費します。</p>
+</section>
 <section>
   <h2>スピンロックの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-020" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ロックを持つ時間が長く、待つスレッドがCPUをむだに使い続けてしまう場面</p><p class="explanation"><a class="term-link" href="/term/spinlock/">スピンロック</a>で待つスレッドは、ロックが空くまでCPUを使い続けます。ロックを持つ時間が長いと、そのCPUの時間がすべてむだになり、ほかのスレッドの実行も妨げます。特にコアが1つしかないと、ロックを持つスレッドが実行されない限り空かないので、待ちは時間の割り当てが終わるまで続きます。長い待ちには、眠って待つ<a class="term-link" href="/term/mutex/">ミューテックス</a>を使い、短い間だけ回ってから眠る方式もあります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>スピンロックとミューテックスの違いは?</h3>
+  <p>スピンロックはロックの変数をループで調べ続けて待ち、その間CPUを使い続けるため、待ち時間がごく短い場合にだけ効率的です。ミューテックスは待っているスレッドをスリープさせてほかのスレッドを動かすため、長い待ちに向いていますが、スリープ、起床、コンテキストスイッチのコストが加わります。</p>
+  <h3>スピンロックはどんなときに使うべきですか?</h3>
+  <p>クリティカルセクションが非常に短く、スレッドが別々のコアで動いている場合や、スリープが許されない割り込みハンドラなどのカーネルの処理で使います。ロックを長く保持する可能性がある場合や、シングルコアのシステムでは避けます。</p>
+  <h3>テストアンドテストアンドセットとは何ですか?</h3>
+  <p>待機中のスレッドが自分のキャッシュから通常のロードでロックを繰り返し読み、ロックが空いたように見えたときだけアトミックなテストアンドセットを試みるスピンロックの手法です。キャッシュラインの無効化が絶えず起きるのを防ぎ、コヒーレンスのトラフィックを大きく減らします。</p>
+</section>
 <section>
   <h2>解説の中の「スピンロック」</h2>
   <ul class="term-quotes"><li><p>スピンロックは、アトミック命令でロックを取ろうとし、取れなければすぐにもう一度試すことを繰り返します。</p><a href="/q/multicore-sync/multicore-sync-020/">スピンロックの説明として正しいものはどれか。</a></li><li><p>スピンロックで待つスレッドは、ロックが空くまでCPUを使い続けます。</p><a href="/q/multicore-sync/multicore-sync-021/">スピンロックが向かない場面として最も適切なものはどれか。</a></li></ul>

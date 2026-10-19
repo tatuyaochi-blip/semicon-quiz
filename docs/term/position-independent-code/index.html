@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"位置独立コード","item":"https://semiconroom.com/term/position-independent-code/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"位置独立コード","description":"メモリのどの番地に読み込んでも、コードを書き換えずに動く機械語。PICとも呼ぶ。PC相対の参照やGOTを使い、共有ライブラリやPIEで使われる。","url":"https://semiconroom.com/term/position-independent-code/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"位置独立コード","item":"https://semiconroom.com/term/position-independent-code/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"位置独立コード","description":"メモリのどの番地に読み込んでも、コードを書き換えずに動く機械語。PICとも呼ぶ。PC相対の参照やGOTを使い、共有ライブラリやPIEで使われる。","url":"https://semiconroom.com/term/position-independent-code/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"PICとは何の略ですか?","acceptedAnswer":{"@type":"Answer","text":"position-independent code(位置独立コード)の略で、どの読み込みアドレスでも書き換えなしに正しく動く機械語のことです。PC相対アドレッシングとグローバルオフセットテーブルを利用します。"}},{"@type":"Question","name":"-fPICと-fPIEの違いは?","acceptedAnswer":{"@type":"Answer","text":"どちらも位置独立コードを生成します。-fPICは、シンボルがほかのモジュールに上書きされうる共有ライブラリ向けで、-fPIEはメインの実行ファイル向けです。-fPIEでは自分自身のシンボルを少し安価な直接参照で扱えます。-fPIEでビルドしたものを -pie でリンクするとPIEになります。"}},{"@type":"Question","name":"グローバルオフセットテーブル(GOT)はなぜ必要なのですか?","acceptedAnswer":{"@type":"Answer","text":"別のモジュールにあるシンボルのアドレスは読み込み後にしか決まらないため、コードに埋め込めないからです。GOTはそれらのアドレスを保持し、値は動的リンカが書き込みます。コードはPC相対の参照でGOTにアクセスします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>PICでのコードとデータの参照方法</h2>
+  <p>位置独立コード(PIC)は、命令の中に絶対アドレスを埋め込みません。分岐や呼び出しの飛び先はプログラムカウンタからの距離で指定するので、モジュール全体をどこに置いても距離は変わりません。分岐命令のフィールドでは届かない遠い飛び先には、RISC-Vでは、20ビットの<a class="term-link" href="/term/immediate-operand/">即値</a>を12ビット左シフトしてPCに足すauipcと、下位12ビットを与えるjalrやロード命令を組み合わせ、現在の命令から約±2 GiBの範囲をカバーします。x86-64には同じ目的のRIP相対アドレッシングがあり、位置独立コードを固定アドレスのコードとほぼ同じ速さで動かせます。</p>
+</section>
+<section class="term-about">
+  <h2>GOTとPLT</h2>
+  <p>PC相対の距離が使えるのは1つのモジュールの中だけで、別の<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>にある変数や関数のアドレスは実行時までわかりません。そこでPICでは、そうしたシンボルに<a class="term-link" href="/term/global-offset-table/">グローバルオフセットテーブル</a>(GOT)を通じてアクセスします。GOTはモジュールごとのアドレスの表で、コードから決まった距離に置かれます。コードは必要なアドレスをGOTから読み込み、実際のアドレスは読み込み時に<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>が書き込みます。<a class="term-link" href="/term/executable-and-linkable-format/">ELF</a>のシステムでは、外部関数の呼び出しはさらに手続きリンケージテーブル(<a class="term-link" href="/term/procedure-linkage-table/">PLT</a>)の小さなスタブを経由し、各関数を最初の呼び出し時に遅延解決できます。</p>
+</section>
+<section class="term-about">
+  <h2>共有ライブラリにPICが必要な理由</h2>
+  <p><a class="term-link" href="/term/shared-library/">共有ライブラリ</a>は、それを使うプロセスごとに異なる仮想アドレスにマップされることがあります。コードに絶対アドレスが含まれていると、<a class="term-link" href="/term/program-loader/">ローダ</a>はアドレスごとに命令を書き換えなければならず、共有の読み出し専用ページがプロセスごとの書き込み可能なコピーになって、共有の意味がなくなります。PICなら、プロセスごとに異なるのは書き込み可能な小さな<a class="term-link" href="/term/global-offset-table/">GOT</a>だけなので、コードのページは変更不要で、1つの物理的なコピーをすべてのプロセスにマップできます。これによりメモリを節約でき、どこに配置されてもライブラリを素早く読み込めます。</p>
+</section>
+<section class="term-about">
+  <h2>PICとPIE、セキュリティとの関係</h2>
+  <p>位置独立実行形式(<a class="term-link" href="/term/position-independent-executable/">PIE</a>)は、同じ技術をメインプログラムに適用したもので、GCCやClangでは通常 -fPIE と -pie オプションでビルドします。<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>には -fPIC を使います。以前の実行ファイルは固定の読み込みアドレスを前提としていたため、アドレス空間配置のランダム化(<a class="term-link" href="/term/address-space-layout-randomization/">ASLR</a>)でライブラリやスタックは動かせても、メインプログラムのコードは動かせず、そのアドレスは攻撃者に予測されやすいままでした。PIEはどこにでも読み込めるので、コードもランダム化されます。現在の多くのLinuxディストリビューションは、既定でPIEとしてビルドしています。代償は<a class="term-link" href="/term/global-offset-table/">GOT</a>を経由する間接参照による小さなオーバーヘッドで、32ビットのx86ではこれが目立って大きくなっていました。</p>
+</section>
 <section>
   <h2>位置独立コードの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-024" data-cat="linker-loader" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. メモリのどの番地に読み込んでも、コードを書き換えずに正しく動くように作られた機械語</p><p class="explanation"><a class="term-link" href="/term/shared-library/">共有ライブラリ</a>は、プロセスごとに違う番地に読み込まれることがあります。<a class="term-link" href="/term/position-independent-code/">位置独立コード</a>では、関数やデータを固定の番地ではなく、PCからの距離や、番地をまとめた表(<a class="term-link" href="/term/global-offset-table/">GOT</a>)を通して参照します。こうすると、読み込む番地が変わってもコードのページを書き換えずに済むので、物理メモリ上の1つのコピーを多くのプロセスで共有できます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>PICとは何の略ですか?</h3>
+  <p>position-independent code(位置独立コード)の略で、どの読み込みアドレスでも書き換えなしに正しく動く機械語のことです。PC相対アドレッシングとグローバルオフセットテーブルを利用します。</p>
+  <h3>-fPICと-fPIEの違いは?</h3>
+  <p>どちらも位置独立コードを生成します。-fPICは、シンボルがほかのモジュールに上書きされうる共有ライブラリ向けで、-fPIEはメインの実行ファイル向けです。-fPIEでは自分自身のシンボルを少し安価な直接参照で扱えます。-fPIEでビルドしたものを -pie でリンクするとPIEになります。</p>
+  <h3>グローバルオフセットテーブル(GOT)はなぜ必要なのですか?</h3>
+  <p>別のモジュールにあるシンボルのアドレスは読み込み後にしか決まらないため、コードに埋め込めないからです。GOTはそれらのアドレスを保持し、値は動的リンカが書き込みます。コードはPC相対の参照でGOTにアクセスします。</p>
+</section>
 <section>
   <h2>解説の中の「位置独立コード」</h2>
   <ul class="term-quotes"><li><p>位置独立コードでは、関数やデータを固定の番地ではなく、PCからの距離や、番地をまとめた表(GOT)を通して参照します。</p><a href="/q/linker-loader/linker-loader-024/">位置独立コード(PIC)の説明として正しいものはどれか。</a></li><li><p>これは共有ライブラリなどで使う位置独立コード(PIC)の土台になります。</p><a href="/q/isa-assembly/isa-assembly-011/">分岐やジャンプにPC相対アドレッシングを使うことの利点として正しいものはどれか。</a></li><li><p>これにより、プログラムをどこに読み込んでも動く位置独立コードで、遠くの関数を呼んだりグローバル変数を読んだりできます。</p><a href="/q/isa-assembly/isa-assembly-018/">RISC-Vのauipc命令(add upper immediate to PC)の動作として正しいものはどれか。</a></li><li><p>位置独立コードは、ほかのライブラリにある変数の番地を命令に直接書けません。</p><a href="/q/linker-loader/linker-loader-025/">共有ライブラリで使われるGOT(グローバルオフセットテーブル)の役割として正しいものはどれか。</a></li><li><p>PIEは本体も位置独立コードで作り、どこに読み込んでも動くようにしたもので、本体の番地もランダムにできます。</p><a href="/q/linker-loader/linker-loader-029/">実行ファイルをPIE(位置独立実行ファイル)として作る主な理由はどれか。</a></li></ul>

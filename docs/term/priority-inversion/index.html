@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"優先度逆転","item":"https://semiconroom.com/term/priority-inversion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"優先度逆転","description":"低いタスクが持つ資源を高いタスクが待っている間に、中くらいのタスクが低いタスクを止めて動き続け、高いタスクが長く待たされる現象。","url":"https://semiconroom.com/term/priority-inversion/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"優先度逆転","item":"https://semiconroom.com/term/priority-inversion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"優先度逆転","description":"低いタスクが持つ資源を高いタスクが待っている間に、中くらいのタスクが低いタスクを止めて動き続け、高いタスクが長く待たされる現象。","url":"https://semiconroom.com/term/priority-inversion/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"RTOSの優先度逆転とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"高優先度のタスクが低優先度のタスクの持つ資源を待っている間に、中優先度のタスクが低優先度のタスクを横取りし、結果として高優先度のタスクが中優先度のタスクに遅らされる状況です。この遅れには上限がなくなることがあります。"}},{"@type":"Question","name":"優先度継承と優先度上限の違いは?","acceptedAnswer":{"@type":"Answer","text":"優先度継承は、より高い優先度のタスクが実際にそのロックでブロックしたときだけ、ロックの保持者の優先度を引き上げます。優先度上限は、ロックを取った時点でどのタスクもあらかじめ決めた上限の優先度に引き上げるもので、デッドロックの防止にも役立ちます。"}},{"@type":"Question","name":"マーズ・パスファインダーの優先度逆転はどう修正されましたか?","acceptedAnswer":{"@type":"Answer","text":"繰り返し起きたリセットの原因は、共有ミューテックスでの優先度逆転だと突き止められました。技術者は飛行ソフトウェアのそのミューテックスで優先度継承を有効にして修正しました。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/embedded/">組込み・ファームウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>優先度逆転が起きる仕組み</h2>
+  <p>プリエンプティブな<a class="term-link" href="/term/real-time-operating-system/">リアルタイムOS</a>(RTOS)上に、優先度が高(H)、中(M)、低(L)の3つのタスクがあるとします。Lが共有資源を守る<a class="term-link" href="/term/mutex/">ミューテックス</a>をロックします。Hが実行可能になり、同じミューテックスを必要としてブロックし、Lの解放を待ちます。ここで、その資源とは無関係のMが実行可能になります。MはLより優先度が高いので、スケジューラはMを実行し、Lはミューテックスを解放する地点までたどり着けません。Mが動き続ける限りHも待たされるため、実質的に中優先度のタスクが最高優先度のタスクを遅らせ、本来の優先順位が逆転してしまいます。</p>
+</section>
+<section class="term-about">
+  <h2>有界な逆転と無制限の逆転</h2>
+  <p>タスクが資源を共有する以上、ある程度のブロッキングは避けられません。Lが<a class="term-link" href="/term/mutex/">ミューテックス</a>を持っていれば、HはLが<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>を終えるまで待つ必要があります。この遅れはクリティカルセクションの長さで上限が決まるため、タイミング解析に含めることができます。問題は中優先度タスクの<a class="term-link" href="/term/interrupt/">割り込み</a>で、間にいくつでも中優先度タスクが入り得るため、遅れに上限がなくなります。デッドラインを保証しなければならないハードリアルタイムシステムでは、上限のない遅れはデッドラインミス、ウォッチドッグによるリセット、危険な動作につながりかねず、そのためこの問題は大きく注目されています。</p>
+</section>
+<section class="term-about">
+  <h2>優先度継承と優先度上限</h2>
+  <p><a class="term-link" href="/term/priority-inheritance/">優先度継承</a>は、この問題を動的に解決します。Lが持つ<a class="term-link" href="/term/mutex/">ミューテックス</a>でHがブロックすると、Lが一時的にHの優先度を引き継ぐので、MはLを横取りできません。Lは<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>を終えてミューテックスを解放し、元の優先度に戻り、Hが実行されます。多くの<a class="term-link" href="/term/real-time-operating-system/">RTOS</a>のミューテックスにこのオプションがあります。優先度上限プロトコル(プライオリティシーリング)は静的な代替策で、各ミューテックスにそれを使う可能性のある最も高いタスクの優先度を割り当て、ロックしたタスクは直ちにその上限まで引き上げられます。上限プロトコルは一部の<a class="term-link" href="/term/deadlock/">デッドロック</a>も防ぎますが、どのタスクがどの資源を使うかを解析する手間がかかります。</p>
+</section>
+<section class="term-about">
+  <h2>マーズ・パスファインダーの事例</h2>
+  <p>よく知られた例が、1997年の火星探査機マーズ・パスファインダーの着陸機で起きました。着陸後、探査機はシステムリセットを繰り返しました。高優先度のタスクが低優先度のタスクの持つ<a class="term-link" href="/term/mutex/">ミューテックス</a>を待ち、その低優先度タスクが中優先度の処理に横取りされていたため、周期タスクが時間内に終わらないことを<a class="term-link" href="/term/watchdog-timer/">ウォッチドッグタイマ</a>が検出し、システムをリセットしていたのです。技術者は地上の複製機で問題を再現し、該当するミューテックスで<a class="term-link" href="/term/priority-inheritance/">優先度継承</a>を有効にして修正しました。<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>を短く保つこと、優先度の異なるタスク間で共有する資源を最小限にすることは、今も有効な設計の原則です。</p>
+</section>
 <section>
   <h2>優先度逆転の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="embedded-032" data-cat="embedded" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 資源を持つ低いタスクの優先度を、その資源を待つ高いタスクと同じ高さまで一時的に上げる</p><p class="explanation"><a class="term-link" href="/term/priority-inheritance/">優先度継承</a>では、高いタスクが低いタスクの持つ<a class="term-link" href="/term/mutex/">ミューテックス</a>を待ち始めたとき、低いタスクの優先度を一時的に高いタスクと同じにします。すると中くらいのタスクに横取りされずに処理を進め、資源を手放した時点で元の優先度に戻ります。高いタスクの待ち時間は、低いタスクが資源を使う短い時間だけになります。多くの<a class="term-link" href="/term/real-time-operating-system/">RTOS</a>のミューテックスがこの機能を持っています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>RTOSの優先度逆転とは何ですか?</h3>
+  <p>高優先度のタスクが低優先度のタスクの持つ資源を待っている間に、中優先度のタスクが低優先度のタスクを横取りし、結果として高優先度のタスクが中優先度のタスクに遅らされる状況です。この遅れには上限がなくなることがあります。</p>
+  <h3>優先度継承と優先度上限の違いは?</h3>
+  <p>優先度継承は、より高い優先度のタスクが実際にそのロックでブロックしたときだけ、ロックの保持者の優先度を引き上げます。優先度上限は、ロックを取った時点でどのタスクもあらかじめ決めた上限の優先度に引き上げるもので、デッドロックの防止にも役立ちます。</p>
+  <h3>マーズ・パスファインダーの優先度逆転はどう修正されましたか?</h3>
+  <p>繰り返し起きたリセットの原因は、共有ミューテックスでの優先度逆転だと突き止められました。技術者は飛行ソフトウェアのそのミューテックスで優先度継承を有効にして修正しました。</p>
+</section>
 
 <section>
   <h2>「優先度逆転」が出てくる問題(2問)</h2>

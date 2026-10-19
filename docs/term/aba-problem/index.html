@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ABA問題","item":"https://semiconroom.com/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA問題","description":"値がAからBに変わってまたAに戻ったとき、値だけを比べるCASが変化に気づかずに成功してしまう問題。ロックフリーのデータ構造で注意が必要。","url":"https://semiconroom.com/term/aba-problem/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ABA問題","item":"https://semiconroom.com/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA問題","description":"値がAからBに変わってまたAに戻ったとき、値だけを比べるCASが変化に気づかずに成功してしまう問題。ロックフリーのデータ構造で注意が必要。","url":"https://semiconroom.com/term/aba-problem/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ABA問題とは、簡単に言うと何ですか?","acceptedAnswer":{"@type":"Answer","text":"あるスレッドが値Aを読んだ後、別のスレッドがそれをBに変えてからAに戻すと、最初のスレッドのCASが何事もなかったかのように成功してしまう問題です。値は一致していても、その背後の状態は変わっています。"}},{"@type":"Question","name":"LL/SCはどのようにABA問題を避けますか?","acceptedAnswer":{"@type":"Answer","text":"ストアコンディショナルは、対応するロードリンク以降にその場所への書き込みが一度もなかった場合にだけ成功し、書き込まれた値は関係ありません。そのため、AからBに変わってAに戻った場合でもストアは失敗します。"}},{"@type":"Question","name":"バージョンカウンタでABA問題は完全に解決しますか?","acceptedAnswer":{"@type":"Answer","text":"スレッドが止まっている間にカウンタが一周して同じ値に戻らないだけの幅があれば、実用上は解決します。カウンタの幅が非常に狭いと、理論上は一周して問題が再発する可能性があります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ABA問題が起きる仕組み</h2>
+  <p>コンペアアンドスワップ(CAS)は、ある場所がまだ期待した値を保持している場合にだけ新しい値を書き込む操作で、比べるのは値であって履歴ではありません。先頭(head)がノードAを指し、AのnextポインタがノードBを指している<a class="term-link" href="/term/lock-free-algorithm/">ロックフリー</a>のスタックを考えます。スレッド1がhead = Aとnext = Bを読んだところで中断されます。スレッド2がAとBをポップし、Aをプッシュし直すか、たまたまAと同じアドレスを再利用した新しいノードをプッシュします。スレッド1が再開すると、headはまだAなのでCAS(head, A, B)は成功し、headはもはやスタックにないノードBを指してしまいます。</p>
+</section>
+<section class="term-about">
+  <h2>メモリの再利用で起きやすくなる理由</h2>
+  <p>この問題は、メモリを手動で管理する言語で特によく起こります。ノードを解放すると、アロケータは次の割り当てで同じアドレスをすぐに渡すので、別のノードを指していてもポインタの値がAに戻ることがあります。<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>のある言語では、スレッドが参照を保持している間はノードが回収されないため、アドレスの再利用によるABAはほぼ起きません。ただし、同じノードを意図的に再挿入した場合には、論理的なABAが起こりえます。</p>
+</section>
+<section class="term-about">
+  <h2>代表的な対策</h2>
+  <p>古典的な対策は、ポインタに更新カウンタを組み合わせ、倍幅のCASやポインタの空きビットを使って両方を1回のアトミック操作で比較することです。更新のたびにカウンタを増やすので、タグ5のAとタグ7のAは別のものとして区別されます。ロードリンク/ストアコンディショナル(LL/SC、RISC-Vでは<a class="term-link" href="/term/load-reserved-store-conditional/">LR/SC</a>)は、ロード以降にその場所へ少しでも書き込みがあれば、値が同じでも失敗します。ハザードポインタやエポックベースの回収といった安全なメモリ回収の手法は、どこかのスレッドがまだアクセスする可能性がある間、ノードが解放・再利用されないようにします。</p>
+</section>
+<section class="term-about">
+  <h2>ABAとロックフリーの進行保証</h2>
+  <p><a class="term-link" href="/term/lock-free-algorithm/">ロックフリー</a>のアルゴリズムは、ほかのスレッドが止まっても、常にどれかのスレッドが前に進むことを保証します。CASが失敗するのは、ほかのスレッドの更新が成功したときだけだからです。しかし、この進行保証は正しさについては何も保証しません。ABAは、一見正しいCASのループがデータ構造を壊してしまう典型例です。特定の実行の重なり方とメモリの再利用がそろわないと起きないため、テストで見つけるのは困難です。ロックフリーのコードは、最初からABAへの対策を明確に組み込んで設計すべきです。</p>
+</section>
 <section>
   <h2>ABA問題の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 値がAからBに変わり、またAに戻ったとき、CASは変化に気づかずに成功してしまう</p><p class="explanation">連結リストの先頭のポインタがAのとき、あるスレッドがAを読んでCASの準備をする間に、ほかのスレッドがAを取り除き、Bの操作をして、再び同じ番地Aのノードを入れることがあります。CASは値がAのままなので成功しますが、リストの中身はすでに変わっていて、構造が壊れます。ポインタに更新回数を添えて一緒に比べる方法や、<a class="term-link" href="/term/load-reserved-store-conditional/">LR/SC</a>を使う方法で防ぎます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ABA問題とは、簡単に言うと何ですか?</h3>
+  <p>あるスレッドが値Aを読んだ後、別のスレッドがそれをBに変えてからAに戻すと、最初のスレッドのCASが何事もなかったかのように成功してしまう問題です。値は一致していても、その背後の状態は変わっています。</p>
+  <h3>LL/SCはどのようにABA問題を避けますか?</h3>
+  <p>ストアコンディショナルは、対応するロードリンク以降にその場所への書き込みが一度もなかった場合にだけ成功し、書き込まれた値は関係ありません。そのため、AからBに変わってAに戻った場合でもストアは失敗します。</p>
+  <h3>バージョンカウンタでABA問題は完全に解決しますか?</h3>
+  <p>スレッドが止まっている間にカウンタが一周して同じ値に戻らないだけの幅があれば、実用上は解決します。カウンタの幅が非常に狭いと、理論上は一周して問題が再発する可能性があります。</p>
+</section>
 <section>
   <h2>解説の中の「ABA問題」</h2>
   <ul class="term-quotes"><li><p>ただし正しく作るのは難しく、ABA問題などにも注意が必要です。</p><a href="/q/multicore-sync/multicore-sync-037/">ロックフリー(lock-free)のアルゴリズムの性質として正しいものはどれか。</a></li></ul>

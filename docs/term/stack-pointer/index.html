@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スタックポインタ","item":"https://semiconroom.com/term/stack-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スタックポインタ","description":"スタックの今の先頭の番地を指すレジスタ。RISC-Vではsp(x2)。多くのISAでスタックは番地の小さい方へ伸びる。","url":"https://semiconroom.com/term/stack-pointer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スタックポインタ","item":"https://semiconroom.com/term/stack-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スタックポインタ","description":"スタックの今の先頭の番地を指すレジスタ。RISC-Vではsp(x2)。多くのISAでスタックは番地の小さい方へ伸びる。","url":"https://semiconroom.com/term/stack-pointer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"RISC-Vのスタックポインタはどのレジスタですか?","acceptedAnswer":{"@type":"Answer","text":"RISC-Vのスタックポインタはx2で、ABI名はspです。標準の呼び出し規約では16バイト境界にそろえて使い、スタックは番地の小さい方へ伸びます。"}},{"@type":"Question","name":"スタックが小さい番地に向かって伸びるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"多くのABIが採用している慣習です。歴史的には、ヒープを低い番地から上へ、スタックを高い番地から下へ伸ばせば、間の空き領域を両方で使えて都合がよかったためです。向きはハードウェアやABIが定め、下向きが圧倒的に一般的です。"}},{"@type":"Question","name":"スタックポインタとフレームポインタの違いは?","acceptedAnswer":{"@type":"Answer","text":"スタックポインタは常にスタックの現在の先頭を指し、領域を確保するたびに動きます。フレームポインタは関数呼び出しの間ずっと固定されているので、ローカル変数へのオフセットが一定になり、デバッグ時にフレームの連鎖をたどりやすくなります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>スタックポインタが指すもの</h2>
+  <p>スタックは関数呼び出しに使われる後入れ先出し(LIFO)のメモリ領域で、スタックポインタはその現在の先頭の番地を保持するレジスタです。RISC-Vではx2(sp)、x86-64ではRSPがこれに当たります。多くの<a class="term-link" href="/term/application-binary-interface/">ABI</a>ではスタックが番地の小さい方へ伸びるため、領域を確保するときはスタックポインタから引き、解放するときは足して戻します。x86にはRSPを自動的に増減する専用のpush命令とpop命令がありますが、RISC-Vでは addi sp, sp, -16 のような通常の命令でspを動かし、spからのオフセットを指定してストアします。</p>
+</section>
+<section class="term-about">
+  <h2>スタックフレームと関数呼び出し</h2>
+  <p>関数に入ると、プロローグがスタックポインタを下げて<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>を確保します。フレームには、その関数がさらに別の関数を呼ぶ場合の戻りアドレス、使用する呼び出され側保存レジスタ、レジスタに収まらないローカル変数が置かれます。RISC-Vの標準の<a class="term-link" href="/term/calling-convention/">呼び出し規約</a>では、最初の8個の整数引数はa0〜a7のレジスタで渡し、それ以降の引数はspから決まったオフセットにあるスタック上に置きます。エピローグはレジスタを復元し、フレームの大きさをspに足して戻します。呼び出しごとに専用のフレームができるので、再帰も自然に実現できます。</p>
+</section>
+<section class="term-about">
+  <h2>スタックオーバーフローとスタックへの攻撃</h2>
+  <p>スタックの大きさには限りがあり、スレッドごとにOSが決めるか、<a class="term-link" href="/term/microcontroller/">マイコン</a>ではスタックポインタを初期化する<a class="term-link" href="/term/linker-script/">リンカスクリプト</a>とスタートアップコードで決まります。深い再帰や大きなローカル配列によってスタックポインタが上限を越えるとスタックオーバーフローとなり、ほかのメモリを壊したりフォールトを起こしたりします。戻りアドレスはローカルのバッファと隣り合ってスタック上にあるため、ローカル配列の終わりを越えて書き込むと戻りアドレスを上書きできてしまいます。これは古典的な攻撃手法で、スタックカナリアや実行不可能なスタックが標準的な防御策です。</p>
+</section>
+<section class="term-about">
+  <h2>スタックポインタとフレームポインタの違い</h2>
+  <p>スタックポインタは領域を確保するたびに動くため、関数の中でも同じ変数へのオフセットが変わることがあります。<a class="term-link" href="/term/frame-pointer/">フレームポインタ</a>(RISC-Vではs0/fp、x86-64ではRBP)は、関数の入口でフレーム内の決まった位置に一度設定すれば、ローカル変数や引数の番地を一定のオフセットで表せ、スタックトレースもたどりやすくなります。最適化コンパイラは、レジスタを1本空けるためにフレームポインタを省略することがよくあります。<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>では、スレッドごとに専用のスタックがあり、再開時にそのスタックに戻る必要があるため、プログラムカウンタなどのレジスタと一緒にスタックポインタも保存されます。</p>
+</section>
 <section>
   <h2>スタックポインタの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-045" data-cat="cpu" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. スタック上</p><p class="explanation">引数用のレジスタはa0〜a7の8本なので、9個目以降は呼び出す側がスタックに積み、呼ばれた側は<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>からの決まった位置で読みます。メモリへのアクセスが増えるので、引数がとても多い関数は少し遅くなります。大きな構造体はまとめて構造体へのポインタで渡すなど、引数を少なくする工夫がよく使われます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>RISC-Vのスタックポインタはどのレジスタですか?</h3>
+  <p>RISC-Vのスタックポインタはx2で、ABI名はspです。標準の呼び出し規約では16バイト境界にそろえて使い、スタックは番地の小さい方へ伸びます。</p>
+  <h3>スタックが小さい番地に向かって伸びるのはなぜですか?</h3>
+  <p>多くのABIが採用している慣習です。歴史的には、ヒープを低い番地から上へ、スタックを高い番地から下へ伸ばせば、間の空き領域を両方で使えて都合がよかったためです。向きはハードウェアやABIが定め、下向きが圧倒的に一般的です。</p>
+  <h3>スタックポインタとフレームポインタの違いは?</h3>
+  <p>スタックポインタは常にスタックの現在の先頭を指し、領域を確保するたびに動きます。フレームポインタは関数呼び出しの間ずっと固定されているので、ローカル変数へのオフセットが一定になり、デバッグ時にフレームの連鎖をたどりやすくなります。</p>
+</section>
 <section>
   <h2>解説の中の「スタックポインタ」</h2>
   <ul class="term-quotes"><li><p>先頭位置はスタックポインタが示します。</p><a href="/q/cpu/cpu-045/">プログラムでサブルーチン(関数)を呼び出すとき、戻り先のアドレスなどを一時的に保存するために一般的に使われる領域はどれ…</a></li><li><p>引数用のレジスタはa0〜a7の8本なので、9個目以降は呼び出す側がスタックに積み、呼ばれた側はスタックポインタからの決まった位置で読みます。</p><a href="/q/isa-assembly/isa-assembly-029/">RISC-Vの標準の呼び出し規約で、整数の引数が10個ある関数を呼ぶとき、9個目と10個目の引数はどこで渡されるか。</a></li><li><p>実行ファイルの中に局所変数のためのセクションはなく、関数の先頭でスタックポインタを動かして領域を確保します。</p><a href="/q/linker-loader/linker-loader-015/">C言語の関数の中で宣言した、staticの付かない局所変数(自動変数)は、実行中どこに置かれるか。</a></li><li><p>コンテキストスイッチでは、あとで同じ状態から再開できるように、汎用レジスタ、プログラムカウンタ、スタックポインタ、動作モードなどのCPUの状態を保存し、次に動かすプロセスの状態を読み込みます。</p><a href="/q/os-hardware/os-hardware-023/">コンテキストスイッチで、切り替える前のプロセスについて保存しておく必要があるものはどれか。</a></li></ul>

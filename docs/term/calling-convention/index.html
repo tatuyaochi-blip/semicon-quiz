@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"呼び出し規約","item":"https://semiconroom.com/term/calling-convention/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"呼び出し規約","description":"関数を呼ぶとき、引数や戻り値をどのレジスタやスタックで受け渡すか、どのレジスタを誰が保存するかなどを定めた約束。ABIの重要な一部。","url":"https://semiconroom.com/term/calling-convention/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"呼び出し規約","item":"https://semiconroom.com/term/calling-convention/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"呼び出し規約","description":"関数を呼ぶとき、引数や戻り値をどのレジスタやスタックで受け渡すか、どのレジスタを誰が保存するかなどを定めた約束。ABIの重要な一部。","url":"https://semiconroom.com/term/calling-convention/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"呼び出し規約とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"関数呼び出しで引数や戻り値をどう渡すか、戻りアドレスをどう保存するか、レジスタの保存を呼び出し側と呼ばれる側でどう分担するかを定めた取り決めです。これにより、ライブラリやアセンブリのルーチンを含め、別々にコンパイルされたコードどうしが正しく呼び出し合えます。"}},{"@type":"Question","name":"caller-savedレジスタとcallee-savedレジスタの違いは?","acceptedAnswer":{"@type":"Answer","text":"caller-saved(呼び出し側保存)レジスタは呼ばれた関数が上書きしてよいので、呼び出し後も値が必要なら呼び出し側が保存します。callee-saved(呼び出され側保存)レジスタは呼ばれた関数が値を保たなければならず、使う場合はその関数が保存と復元を行います。"}},{"@type":"Question","name":"RISC-Vでは関数の引数はどこで渡されますか?","acceptedAnswer":{"@type":"Answer","text":"最初の8個の整数引数はa0〜a7のレジスタで渡し、それ以降の引数はスタックに置きます。戻り値はa0で返し、レジスタ幅の2倍の値ならa0とa1を使います。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>呼び出し規約で決めること</h2>
+  <p>呼び出し規約は、関数呼び出しの低レベルの細部を決めます。どのレジスタで引数を渡すか、戻り値をどこに置くか、戻りアドレスをどう保存するか、呼ばれた関数がどのレジスタを上書きしてよいか、<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>をどう配置し境界をそろえるか、といった点です。呼び出し側と呼ばれる側は別々にコンパイルされることが多く、異なるコンパイラで作られたり、アセンブリで手書きされたりすることもあるため、互いの作り方は見えません。両方が同じ規約に従ってさえいれば、C言語の関数がライブラリのルーチンやアセンブリの関数を呼んでも、値は期待どおりの場所に届きます。</p>
+</section>
+<section class="term-about">
+  <h2>RISC-Vの呼び出し規約</h2>
+  <p>RISC-Vにはx0〜x31の32本の整数レジスタがあり、呼び出し規約によって役割を表す名前が付けられています。整数の引数は8個までa0〜a7(x10〜x17)で渡し、9個目や10個目の引数はspから決まったオフセットにあるスタック上に置きます。結果はa0で返し、RV32で64ビットの値を返す場合はa0とa1を使います。浮動小数点の引数にはfa0〜fa7を使います。呼び出しは jal ra, func で行い、戻りアドレスがra(x1)に書き込まれます。関数に入るとき<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>は16バイトの倍数でなければならないので、フレームは16バイト単位で確保します。</p>
+</section>
+<section class="term-about">
+  <h2>呼び出し側保存と呼び出され側保存</h2>
+  <p>レジスタは2つのグループに分かれます。呼び出し側保存(caller-saved)のレジスタは、RISC-Vでは一時レジスタt0〜t6と引数レジスタで、呼ばれた関数が自由に上書きできます。そのため、呼び出し後もその値が必要な呼び出し側は、先に保存しておかなければなりません。呼び出され側保存(callee-saved)のレジスタs0〜s11は、呼び出しから戻ったときに変わっていないように見える必要があるため、これを使いたい関数はプロローグで保存し、エピローグで復元します。この区分により、短いリーフ関数は一時レジスタだけで保存なしに動け、ループカウンタのように長く使う値はsレジスタに安全に置けます。</p>
+</section>
+<section class="term-about">
+  <h2>呼び出し規約とABI・APIの違い</h2>
+  <p>呼び出し規約は、<a class="term-link" href="/term/application-binary-interface/">アプリケーションバイナリインターフェース</a>(ABI)の一部です。ABIはほかにも、データ型のサイズとアラインメント、構造体のレイアウト、<a class="term-link" href="/term/system-call/">システムコール</a>の呼び出し方などを定めます。これに対してAPIは、ソースコードのレベルで関数をどう使うかを記述したものです。APIが同じでもABIが異なればバイナリレベルの互換性はなく、ライブラリを再コンパイルする必要があります。同じ命令セットの系列でも、プラットフォームごとに規約が異なります。x86-64では、Linuxが最初の6個の整数引数をレジスタで渡すのに対し、Windowsは4個です。</p>
+</section>
 <section>
   <h2>呼び出し規約の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-027" data-cat="isa-assembly" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 引数はa0〜a7、戻り値はa0(とa1)</p><p class="explanation">RISC-Vの標準の<a class="term-link" href="/term/calling-convention/">呼び出し規約</a>では、整数の引数を最大8個までa0〜a7(x10〜x17)に入れて渡し、戻り値はa0に、64ビットの値などはa0とa1の2つに入れて返します。メモリより速いレジスタで受け渡すので、関数呼び出しの手間が小さくなります。8個を超える引数はスタックに置きます。浮動小数点の引数はfa0〜fa7を使います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>呼び出し規約とは何ですか?</h3>
+  <p>関数呼び出しで引数や戻り値をどう渡すか、戻りアドレスをどう保存するか、レジスタの保存を呼び出し側と呼ばれる側でどう分担するかを定めた取り決めです。これにより、ライブラリやアセンブリのルーチンを含め、別々にコンパイルされたコードどうしが正しく呼び出し合えます。</p>
+  <h3>caller-savedレジスタとcallee-savedレジスタの違いは?</h3>
+  <p>caller-saved(呼び出し側保存)レジスタは呼ばれた関数が上書きしてよいので、呼び出し後も値が必要なら呼び出し側が保存します。callee-saved(呼び出され側保存)レジスタは呼ばれた関数が値を保たなければならず、使う場合はその関数が保存と復元を行います。</p>
+  <h3>RISC-Vでは関数の引数はどこで渡されますか?</h3>
+  <p>最初の8個の整数引数はa0〜a7のレジスタで渡し、それ以降の引数はスタックに置きます。戻り値はa0で返し、レジスタ幅の2倍の値ならa0とa1を使います。</p>
+</section>
 <section>
   <h2>解説の中の「呼び出し規約」</h2>
   <ul class="term-quotes"><li><p>呼び出し規約は、引数をどのレジスタに入れるか、戻り値はどこに返すか、どのレジスタを呼ばれた側が壊してよいか、スタックをどう使うかを定めます。</p><a href="/q/isa-assembly/isa-assembly-027/">呼び出し規約(コーリングコンベンション)が決められている主な目的はどれか。</a></li><li><p>RISC-Vの標準の呼び出し規約では、整数の引数を最大8個までa0〜a7(x10〜x17)に入れて渡し、戻り値はa0に、64ビットの値などはa0とa1の2つに入れて返します。</p><a href="/q/isa-assembly/isa-assembly-028/">RISC-Vの標準の呼び出し規約で、整数の引数と戻り値の受け渡しに使うレジスタとして正しいものはどれか。</a></li><li><p>ra、sp、a0のような別名もあり、呼び出し規約で役割が決められています。</p><a href="/q/isa-assembly/isa-assembly-004/">RISC-VのRV32I(32ビットの基本整数命令セット)が持つ汎用の整数レジスタとして正しいものはどれか。</a></li><li><p>呼び出し規約では戻り先をra(x1)に入れるので、関数の呼び出しは「jal ra, func」、疑似命令では「call func」と書きます。</p><a href="/q/isa-assembly/isa-assembly-025/">RISC-Vの命令「jal ra, func」の動作として正しいものはどれか。</a></li><li><p>ABIは、コンパイル済みのプログラムやライブラリが一緒に動くための機械語レベルの約束で、呼び出し規約、intやlongやポインタの大きさ、構造体の整列、システムコールの呼び方などを含みます。</p><a href="/q/isa-assembly/isa-assembly-049/">ABI(アプリケーションバイナリインターフェース)の説明として正しいものはどれか。</a></li></ul>

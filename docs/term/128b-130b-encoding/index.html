@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b符号化","item":"https://semiconroom.com/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b符号化","description":"128ビットのデータに2ビットの見出しを付けて送る方式。効率は約98.5%で、切り替わりはスクランブルで確保する。PCI Express 3.0以降で使われる。","url":"https://semiconroom.com/term/128b-130b-encoding/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b符号化","item":"https://semiconroom.com/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b符号化","description":"128ビットのデータに2ビットの見出しを付けて送る方式。効率は約98.5%で、切り替わりはスクランブルで確保する。PCI Express 3.0以降で使われる。","url":"https://semiconroom.com/term/128b-130b-encoding/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"128b/130bが8b/10bより効率が良いのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"8b/10bはデータ8ビットごとに2ビットを追加するのでオーバーヘッドは20%ですが、128b/130bはデータ128ビットごとにヘッダ2ビットだけなので約1.5%です。受信側に必要な切り替わりと直流バランスを、符号そのものではなくスクランブルで確保しているため、これが可能になります。"}},{"@type":"Question","name":"128b/130b符号化の同期ヘッダとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"130ビットの各ブロックの先頭に付く2ビットで、値は01か10です。必ず切り替わりを含むことでブロック境界を示し、ブロックがデータかオーダードセットかも表します。"}},{"@type":"Question","name":"PCIe 3.0 x16の帯域はどれくらいですか?","acceptedAnswer":{"@type":"Answer","text":"片方向あたり約15.8 GB/sで、8 GT/s × 128/130 ÷ 8ビット/バイト × 16レーンで求められます。パケットのオーバーヘッドがあるため、実際に使えるスループットはこれより少し低くなります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/io-interface/">インターフェース・バス規格</a></p>
 </article>
-
+<section class="term-about">
+  <h2>128b/130bブロックの構成</h2>
+  <p>128b/130b符号化では、データを130ビットのブロックにまとめます。先頭が2ビットの同期ヘッダで、その後に128ビットのペイロードが続きます。ヘッダに使える値は01と10だけなので、どのブロックも先頭で必ず1回は信号が切り替わり、受信側はそれを手がかりにブロックの境界を見つけられます。ヘッダは、ペイロードがデータなのか、リンクトレーニングやクロック補償に使う特別なシンボルであるオーダードセットなのかも示します。ペイロードはスクランブラを通り、線形帰還<a class="term-link" href="/term/shift-register/">シフトレジスタ</a>(LFSR)が作る擬似乱数列とXORされます。受信側は同じ系列でデスクランブルします。</p>
+</section>
+<section class="term-about">
+  <h2>保証の代わりにスクランブルを使う</h2>
+  <p>シリアル受信器はデータの切り替わりからクロックを再生し、ACカップリングのリンクでは1と0の数がほぼ等しい必要があります。<a class="term-link" href="/term/8b-10b-encoding/">8b/10b符号化</a>は、同じビットが6個以上続かないことと、ランニングディスパリティで直流バランスを保つことを符号の構造自体で保証しますが、その代わりに1バイトごとに2ビット余分にかかります。128b/130bはスクランブルに頼り、長い連続や偏りが統計的にほとんど起きないようにします。保証は弱くなるため、等化やクロック再生は時々起きる長めの連続に耐えなければなりませんが、オーバーヘッドは20%から約1.5%に減ります。</p>
+</section>
+<section class="term-about">
+  <h2>PCI Expressにとっての効率の意味</h2>
+  <p>効率は128/130で約98.5%となり、8b/10bの80%を上回ります。<a class="term-link" href="/term/pci-express/">PCI Express</a> 3.0が信号速度を5 GT/sから8 GT/sに上げただけで実効帯域をほぼ2倍にできたのはこのためです。PCIe 2.0の1レーンは5 × 0.8 = 4 Gb/sのデータを運び、PCIe 3.0の1レーンは8 × 128/130 ≈ 7.88 Gb/s、つまり約0.985 GB/sを運びます。x16リンクでは片方向あたり約15.8 GB/sになりますが、これはパケットヘッダやプロトコルのオーバーヘッドを引く前の値で、実際に届く量はいくらか少なくなります。</p>
+</section>
+<section class="term-about">
+  <h2>関連する符号</h2>
+  <p>128b/130bは<a class="term-link" href="/term/pci-express/">PCI Express</a> 3.0、4.0、5.0で使われており、これらの世代は符号化を変えずに転送速度を毎回2倍にしてきました。10ギガビットイーサネットで使われる64b/66bも同じ系統で、2ビットの同期ヘッダとスクランブルしたペイロードを組み合わせています。PCI Express 6.0は<a class="term-link" href="/term/pam4/">PAM4</a>信号と固定長のフリット、前方誤り訂正(FEC)に移行したため、128b/130bのブロックはもう使っていません。リンク速度を比べるときは、GT/sで表した生の速度がデータレートそのものではないので、どの符号化が使われているかを必ず確認してください。</p>
+</section>
 <section>
   <h2>128b/130b符号化の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="io-interface-007" data-cat="io-interface" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 約16 GB/s</p><p class="explanation">1レーンの実効的な速度は8 Gb/s×128/130≒7.88 Gb/sで、8で割ると約0.985 GB/sです。16レーンなら約15.8 GB/s、つまり約16 GB/sが片方向の帯域になり、送受信を合わせると約32 GB/sです。<a class="term-link" href="/term/pci-express/">PCI Express</a>の帯域は、世代(1レーンの速度)、符号化の効率、レーン数の掛け算で求められます。実際にはパケットの見出しなどのむだがあり、もう少し小さくなります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>128b/130bが8b/10bより効率が良いのはなぜですか?</h3>
+  <p>8b/10bはデータ8ビットごとに2ビットを追加するのでオーバーヘッドは20%ですが、128b/130bはデータ128ビットごとにヘッダ2ビットだけなので約1.5%です。受信側に必要な切り替わりと直流バランスを、符号そのものではなくスクランブルで確保しているため、これが可能になります。</p>
+  <h3>128b/130b符号化の同期ヘッダとは何ですか?</h3>
+  <p>130ビットの各ブロックの先頭に付く2ビットで、値は01か10です。必ず切り替わりを含むことでブロック境界を示し、ブロックがデータかオーダードセットかも表します。</p>
+  <h3>PCIe 3.0 x16の帯域はどれくらいですか?</h3>
+  <p>片方向あたり約15.8 GB/sで、8 GT/s × 128/130 ÷ 8ビット/バイト × 16レーンで求められます。パケットのオーバーヘッドがあるため、実際に使えるスループットはこれより少し低くなります。</p>
+</section>
 <section>
   <h2>解説の中の「128b/130b符号化」</h2>
   <ul class="term-quotes"><li><p>128b/130b符号化は、128ビットのデータに2ビットの見出しを付けて130ビットで送るので、効率は128/130≒98.5%です。</p><a href="/q/io-interface/io-interface-007/">PCI Express 3.0以降で採用された128b/130b符号化の効率に最も近いものはどれか。</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ポーリング","item":"https://semiconroom.com/term/polling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ポーリング","description":"CPUが周辺回路の状態を繰り返し調べに行って、変化を見つける方式。単純だが、何も起きていなくても調べ続けるので時間と電力を使う。","url":"https://semiconroom.com/term/polling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ポーリング","item":"https://semiconroom.com/term/polling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ポーリング","description":"CPUが周辺回路の状態を繰り返し調べに行って、変化を見つける方式。単純だが、何も起きていなくても調べ続けるので時間と電力を使う。","url":"https://semiconroom.com/term/polling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ポーリングと割り込みの違いは?","acceptedAnswer":{"@type":"Answer","text":"ポーリングではCPUがデバイスの状態を繰り返し確認し、割り込みでは状態が変わったときにデバイスがCPUに知らせます。ポーリングは単純で予測しやすく、割り込みは待っている間CPUがほかの仕事をしたりスリープしたりできます。"}},{"@type":"Question","name":"C言語でポーリングするレジスタを volatile にするのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"volatile がないと、コンパイラは値が変わらないと仮定して1回しか読まず、ポーリングのループが無限ループになることがあります。volatile を付けると、ループのたびにハードウェアレジスタを読み直すようになります。"}},{"@type":"Question","name":"ポーリングは常に非効率ですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。イベントが非常に高い頻度で届く場合、ポーリングは割り込みごとの退避・復帰のオーバーヘッドを避け、イベントをまとめて処理できるので、割り込みより効率的になります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/embedded/">組込み・ファームウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ポーリングの仕組み</h2>
+  <p>ポーリングでは、CPUが周辺回路のステータスレジスタをループで読み、状態を知ります。たとえば<a class="term-link" href="/term/uart/">UART</a>の「受信データあり」フラグがセットされるまで確認し続け、セットされたらそのバイトを読みます。確認は、すき間なく回るビジーウェイトのこともあれば、メインループやタイマ処理の中での定期的なチェックのこともあります。ポーリングは書くのもデバッグするのも簡単で、プログラムが置いた場所でちょうど確認が行われるので、タイミングも予測しやすくなります。C言語では、コンパイラがキャッシュした値を使い回さず毎回ハードウェアを読み直すよう、レジスタへのポインタを volatile で宣言する必要があります。</p>
+</section>
+<section class="term-about">
+  <h2>ポーリングと割り込みの違い</h2>
+  <p><a class="term-link" href="/term/interrupt/">割り込み</a>では、何かが起きたときに周辺回路がCPUに知らせます。CPUは今の処理を中断し、状態を保存してハンドラを実行し、元の処理に戻ります。そのため待っている間、CPUはほかの仕事をしたりスリープしたりでき、これは電池で動く機器では重要です。ポーリングは何も変化がなくても<a class="term-link" href="/term/cpu-time/">CPU時間</a>と電力を消費し、最悪の場合の反応時間はポーリング間隔で決まります。一方、割り込みには1回ごとにハンドラへの出入りの固定的なオーバーヘッドがあり、ポーリングにはそれがありません。</p>
+</section>
+<section class="term-about">
+  <h2>ポーリングのほうが良い場面</h2>
+  <p>イベントが非常に頻繁で、割り込み1回ごとのオーバーヘッドが支配的になる場合は、ポーリングが有利です。代表例は高速なネットワーク処理で、高負荷時にはドライバがパケットごとの<a class="term-link" href="/term/interrupt/">割り込み</a>から、まとめてポーリングする方式に切り替えます。パケット処理フレームワークの中には、コアを専有して連続的にポーリングさせるものもあります。ほかにも、数サイクル以内に準備できるステータスフラグのようなごく短い待ち、割り込みをまだ設定していない単純な起動コード、厳密に決まった時刻でサンプリングしなければならない制御ループにもポーリングが向いています。</p>
+</section>
+<section class="term-about">
+  <h2>両者を組み合わせる方法</h2>
+  <p>実際のシステムでは、両方を組み合わせることがよくあります。<a class="term-link" href="/term/interrupt/">割り込み</a>でCPUをスリープから起こし、ハンドラの中でポーリングして保留中のデータをすべて処理してから割り込みを再び許可すれば、イベントがまとめて来ても割り込みは何度もではなく1回で済みます。<a class="term-link" href="/term/dma/">DMA(ダイレクトメモリアクセス)</a>は、CPUを介さずにデータを転送し、ブロック全体が終わったときだけ通知するので、どちらの必要性も減らします。読み出すこと自体でフラグがクリアされるステータスレジスタには注意が必要で、余分に1回読むだけでイベントが気づかないうちに失われることがあります。</p>
+</section>
 <section>
   <h2>ポーリングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-028" data-cat="os-hardware" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ポーリングはCPUが状態を繰り返し調べに行き、割り込みは状態が変わったときに周辺回路からCPUに知らせる</p><p class="explanation"><a class="term-link" href="/term/polling/">ポーリング</a>は仕組みが単純で、調べる間隔が決まっているので動きを予測しやすい一方、何も起きていなくてもCPUが調べ続けるので時間と電力をむだにします。<a class="term-link" href="/term/interrupt/">割り込み</a>は変化があったときだけCPUが応えるので、待っている間に別の処理をしたり眠ったりできます。ただし割り込みが非常に頻繁だと、かえって処理の手間が大きくなるので、使い分けが大切です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ポーリングと割り込みの違いは?</h3>
+  <p>ポーリングではCPUがデバイスの状態を繰り返し確認し、割り込みでは状態が変わったときにデバイスがCPUに知らせます。ポーリングは単純で予測しやすく、割り込みは待っている間CPUがほかの仕事をしたりスリープしたりできます。</p>
+  <h3>C言語でポーリングするレジスタを volatile にするのはなぜですか?</h3>
+  <p>volatile がないと、コンパイラは値が変わらないと仮定して1回しか読まず、ポーリングのループが無限ループになることがあります。volatile を付けると、ループのたびにハードウェアレジスタを読み直すようになります。</p>
+  <h3>ポーリングは常に非効率ですか?</h3>
+  <p>いいえ。イベントが非常に高い頻度で届く場合、ポーリングは割り込みごとの退避・復帰のオーバーヘッドを避け、イベントをまとめて処理できるので、割り込みより効率的になります。</p>
+</section>
 <section>
   <h2>解説の中の「ポーリング」</h2>
   <ul class="term-quotes"><li><p>高速なネットワークのように処理が非常に頻繁に発生すると、割り込みの負担が積み重なって処理が追いつかなくなるため、まとめてポーリングする方が効率的になります。</p><a href="/q/os-hardware/os-hardware-028/">装置の状態を、割り込みを使わずにCPUが繰り返し調べる方式(ポーリング)が有利になる場合はどれか。</a></li><li><p>ポーリングは仕組みが単純で、調べる間隔が決まっているので動きを予測しやすい一方、何も起きていなくてもCPUが調べ続けるので時間と電力をむだにします。</p><a href="/q/embedded/embedded-028/">周辺回路の状態を知る方法のうち、ポーリングと割り込みの違いとして正しいものはどれか。</a></li><li><p>CPUが周辺機器の状態を常に確認し続ける方式(ポーリング)より無駄が少なく、応答も速くなります。</p><a href="/q/cpu/cpu-022/">実行中の処理を一時的に中断し、外部機器からの要求などに応じた処理を優先して行うCPUの仕組みはどれか。</a></li></ul>

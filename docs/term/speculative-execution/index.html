@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"投機的実行","item":"https://semiconroom.com/term/speculative-execution/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"投機的実行","description":"分岐の結果などが分かる前に、予測にもとづいて先の命令を実行しておくCPUの仕組み。予測が外れると結果を取り消すが、キャッシュなどの痕跡が残ることがある。","url":"https://semiconroom.com/term/speculative-execution/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"投機的実行","item":"https://semiconroom.com/term/speculative-execution/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"投機的実行","description":"分岐の結果などが分かる前に、予測にもとづいて先の命令を実行しておくCPUの仕組み。予測が外れると結果を取り消すが、キャッシュなどの痕跡が残ることがある。","url":"https://semiconroom.com/term/speculative-execution/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"投機的実行とアウトオブオーダー実行は同じものですか?","acceptedAnswer":{"@type":"Answer","text":"関連はありますが別物です。アウトオブオーダー実行は入力がそろった命令から順番を入れ替えて実行するもので、投機的実行は、未確定の分岐の後の命令のように、そもそも実行すべきかどうかわかる前に命令を実行するものです。現代のコアは両方を行っています。"}},{"@type":"Question","name":"SpectreとMeltdownの違いは?","acceptedAnswer":{"@type":"Answer","text":"Spectreは分岐予測器をだまし、被害者のプログラムがアクセスできるデータを漏らす正規のコード経路を投機的に実行させます。Meltdownは、権限チェックが効く前に投機的なロードがカーネルメモリを読めてしまうCPUを悪用したもので、カーネルのページテーブル分離とその後のハードウェアの変更でほぼ修正されました。"}},{"@type":"Question","name":"破棄された投機的実行の結果からデータが漏れるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"CPUはレジスタの結果は破棄しますが、キャッシュは元に戻さないためです。投機中に読み込んだデータは痕跡を残し、アクセス時間を測ることでそれを検出できます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/hw-security/">ハードウェアセキュリティ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>CPUが先回りして実行する理由</h2>
+  <p>高性能なCPUは深いパイプラインを持ち、命令をアウトオブオーダーで実行するため、分岐が確定するたびに待っていては多くのサイクルを無駄にしてしまいます。そこで<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器が結果を予想し、コアは予測した経路に沿って命令のフェッチと実行を続けます。こうした投機的な結果は内部のバッファに保持され、予想が正しいと確認されて初めてコミット(リタイア)されます。予測が外れていた場合、コアは投機的に行った処理を破棄して正しい経路からやり直すので、プログラムから見える結果は常に正しくなります。</p>
+</section>
+<section class="term-about">
+  <h2>アーキテクチャ状態とマイクロアーキテクチャ状態</h2>
+  <p>予測ミスをロールバックすると、アーキテクチャ状態、つまりプログラムが直接観測できるレジスタとメモリは元に戻ります。しかし、どのラインがキャッシュにあるか、<a class="term-link" href="/term/tlb/">TLB</a>の内容、予測器の履歴といったマイクロアーキテクチャ状態の変化は元に戻りません。プログラムはこれらを直接読めないので、通常は害がありません。ところがタイミングから明らかになってしまいます。キャッシュにあるラインへのアクセスは、メインメモリへのアクセスより測定できるほど速いからです。ロールバックされるものとされないものとのこの差が、投機的実行の脆弱性の根本原因です。</p>
+</section>
+<section class="term-about">
+  <h2>SpectreとMeltdownの悪用の仕組み</h2>
+  <p>2018年に<a class="term-link" href="/term/meltdown/">Meltdown</a>とともに公表された<a class="term-link" href="/term/spectre/">Spectre</a>では、攻撃者が<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器を訓練し、境界チェックの先のコードのように本来決して実行されない経路を投機的に実行させます。その経路が秘密の値を読み、その値に応じて特定の<a class="term-link" href="/term/cache-line/">キャッシュライン</a>に触れます。結果は破棄されますが、どのラインがキャッシュにあるかを時間計測で調べれば、キャッシュのサイドチャネルを通じて秘密がわかってしまいます。Meltdownは、権限チェックが効く前に、投機的なロードがカーネルメモリのデータを返してしまうCPUを悪用しました。ほぼすべての高性能CPUが、少なくとも1つの亜種の影響を受けました。</p>
+</section>
+<section class="term-about">
+  <h2>対策とそのコスト</h2>
+  <p>対策はあらゆる層にわたります。OSはカーネルとユーザーの<a class="term-link" href="/term/page-table/">ページテーブル</a>を分離し、コンパイラは投機バリアを挿入したり、汚染された予測を避ける間接分岐の命令列を使ったりします。マイクロコードの更新では予測器の動作を制御する機能が加わり、新しいCPUではハードウェアでの修正が組み込まれています。投機、予測、共有キャッシュを制限するたびに情報漏えいは減りますが、性能が犠牲になることがあるため、設計者は守るべきデータに応じてどこまで対策するかを選びます。この一件は、ソフトウェアにバグがなくても、性能向上のための機能がセキュリティの弱点になり得ることを示しました。</p>
+</section>
 <section>
   <h2>投機的実行の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-027" data-cat="cpu" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 分岐の予測にしたがって投機的に実行した命令は結果が取り消されても、キャッシュに読み込んだ痕跡が残り、それを時間の測定で読み取れる</p><p class="explanation">CPUは分岐の結果が分かる前に、予測した側の命令を先に実行し、予測が外れたら結果を捨てます。<a class="term-link" href="/term/spectre/">Spectre</a>では、攻撃者が分岐の予測を誤らせて、本来は実行されない経路で秘密のデータを読み、その値に応じた場所をキャッシュに読み込ませます。結果は取り消されてもキャッシュの状態は戻らないので、キャッシュのサイドチャネルで値を推測できます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>投機的実行とアウトオブオーダー実行は同じものですか?</h3>
+  <p>関連はありますが別物です。アウトオブオーダー実行は入力がそろった命令から順番を入れ替えて実行するもので、投機的実行は、未確定の分岐の後の命令のように、そもそも実行すべきかどうかわかる前に命令を実行するものです。現代のコアは両方を行っています。</p>
+  <h3>SpectreとMeltdownの違いは?</h3>
+  <p>Spectreは分岐予測器をだまし、被害者のプログラムがアクセスできるデータを漏らす正規のコード経路を投機的に実行させます。Meltdownは、権限チェックが効く前に投機的なロードがカーネルメモリを読めてしまうCPUを悪用したもので、カーネルのページテーブル分離とその後のハードウェアの変更でほぼ修正されました。</p>
+  <h3>破棄された投機的実行の結果からデータが漏れるのはなぜですか?</h3>
+  <p>CPUはレジスタの結果は破棄しますが、キャッシュは元に戻さないためです。投機中に読み込んだデータは痕跡を残し、アクセス時間を測ることでそれを検出できます。</p>
+</section>
 <section>
   <h2>解説の中の「投機的実行」</h2>
   <ul class="term-quotes"><li><p>Spectreへの対策には、条件分岐の後に投機的実行を止める命令(x86のlfenceなど)を入れる方法、添字をマスクして範囲の外を読めないようにする方法、間接分岐の予測を悪用されないようにする書き方(retpolineなど)、CPUのマイクロコードの更新による予測器の制御などがあります。</p><a href="/q/hw-security/hw-security-010/">Spectreのような投機的実行の脆弱性への対策として使われているものに当てはまらないものはどれか。</a></li><li><p>投機的実行、分岐予測、共有のキャッシュは、現在のCPUの高い性能を支える仕組みです。</p><a href="/q/hw-security/hw-security-011/">投機的実行の脆弱性への対策について、一般的に正しいものはどれか。</a></li><li><p>ソフトウェアが正しく書かれていても、性能のための投機的実行やキャッシュ、処理によって変わる消費電力や時間、電圧や温度の異常による誤動作、製造の途中で仕込まれた回路などから、秘密が漏れたり守りが破られたりすることがあります。</p><a href="/q/hw-security/hw-security-001/">ハードウェアセキュリティで扱う問題の説明として最も適切なものはどれか。</a></li></ul>

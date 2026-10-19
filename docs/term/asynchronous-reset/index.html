@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"非同期リセット","item":"https://semiconroom.com/term/asynchronous-reset/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"非同期リセット","description":"クロックに関係なく、リセットの信号が有効になるとすぐにフリップフロップを初期化するリセット。解除はクロックに同期させるのが基本。","url":"https://semiconroom.com/term/asynchronous-reset/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"非同期リセット","item":"https://semiconroom.com/term/asynchronous-reset/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"非同期リセット","description":"クロックに関係なく、リセットの信号が有効になるとすぐにフリップフロップを初期化するリセット。解除はクロックに同期させるのが基本。","url":"https://semiconroom.com/term/asynchronous-reset/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"同期リセットと非同期リセットの違いは?","acceptedAnswer":{"@type":"Answer","text":"同期リセットはアクティブなクロックエッジでだけ効き、クロックが動いている必要があります。非同期リセットはクロックに関係なく、フリップフロップのリセットピンを通じてすぐに効きます。"}},{"@type":"Question","name":"非同期リセットの解除を同期化するのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"クロックエッジの近くでリセットを解除すると、フリップフロップがリカバリやリムーバルのタイミングに違反し、メタステーブルになったり、異なるサイクルでリセットから抜けたりするからです。2段のフリップフロップによる同期化回路で、解除をクロックにそろえます。"}},{"@type":"Question","name":"リカバリ時間とリムーバル時間とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"アクティブなクロックエッジに対して、非同期リセットをその前までにデアサートしておくべき最小時間(リカバリ)と、その後もアサートを保持すべき最小時間(リムーバル)です。データのセットアップ時間とホールド時間に相当します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/hdl-verification/">ハードウェア記述言語と検証</a></p>
 </article>
-
+<section class="term-about">
+  <h2>非同期リセットの書き方</h2>
+  <p><a class="term-link" href="/term/verilog/">Verilog</a>では、非同期リセットはクロックと一緒に<a class="term-link" href="/term/sensitivity-list/">センシティビティリスト</a>に書きます。always @(posedge clk or negedge rst_n) の後に if (!rst_n) q &lt;= 0; else q &lt;= d; と続ける形です。rst_n の立ち下がりでもブロックが起動するので、リセットがアサートされた瞬間に、クロックエッジを待たずに q がクリアされます。末尾の _n は、ローアクティブの信号によく使われる命名規則です。<a class="term-link" href="/term/logic-synthesis/">論理合成</a>はこの書き方を、専用のリセットピンやクリアピンを持つ<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>に割り当てるため、リセットはデータパスの論理を通りません。</p>
+</section>
+<section class="term-about">
+  <h2>非同期リセットと同期リセットの違い</h2>
+  <p><a class="term-link" href="/term/synchronous-reset/">同期リセット</a>は、クロックエッジでサンプリングされる入力の1つにすぎません。<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>のD入力の前にある論理を通り、クロックが動いているときにだけ効きます。そのためタイミング解析は簡単ですが、クロックが止まっているブロックは初期化できず、データパスに論理が追加されます。非同期リセットはフリップフロップのリセットピンを使い、クロックがなくてもすぐに効くので、電源投入時やクロックをゲーティングしているときに役立ちます。弱点は解除の瞬間で、そこには独自のタイミング要件があります。</p>
+</section>
+<section class="term-about">
+  <h2>リセット解除の問題</h2>
+  <p><a class="term-link" href="/term/flip-flop/">フリップフロップ</a>にはリカバリ時間とリムーバル時間が規定されており、これらは非同期リセットのデアサートに対する<a class="term-link" href="/term/setup-time/">セットアップ時間</a>と<a class="term-link" href="/term/hold-time/">ホールド時間</a>の役割を果たします。クロックエッジに近すぎるタイミングでリセットを解除すると、フリップフロップが<a class="term-link" href="/term/metastability/">メタステーブル</a>になったり、リセットネットワークの場所によってフリップフロップがリセットから抜けるクロックサイクルがずれたりします。状態ビットの開始が1サイクルずれたステートマシンは、不正な状態から動き始めることがあります。外部のリセット源はクロックと無関係なので、解除を同期化しない限り、この状況は排除できません。</p>
+</section>
+<section class="term-about">
+  <h2>非同期アサート・同期解除</h2>
+  <p>一般的な対策は<a class="term-link" href="/term/reset-synchronizer/">リセット同期化回路</a>です。送り先のクロックで動く2個の<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>を直列につなぎ、その非同期リセットピンを外部リセットで駆動し、1段目のデータ入力は非アクティブのレベルに固定します。リセットをアサートすると両段が同時にクリアされるので、リセットはこれまでどおりすぐに効きます。解除時には非アクティブのレベルが2個のフリップフロップを順に伝わる必要があるため、分配されるリセットはクロックにそろって解除され、2段目が1段目に<a class="term-link" href="/term/metastability/">メタステーブル</a>を解消する時間を与えます。クロックドメインごとに個別の同期化回路が必要です。</p>
+</section>
 <section>
   <h2>非同期リセットの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hdl-verification-018" data-cat="hdl-verification" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 解除がクロックのエッジに近いと、フリップフロップごとに解除されるサイクルがずれたり不安定になったりするので、解除をクロックにそろえるため</p><p class="explanation"><a class="term-link" href="/term/asynchronous-reset/">非同期リセット</a>の解除がクロックのエッジの直前や直後に起こると、解除のための時間の条件を満たせず、ある<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>は今のサイクルで、別のものは次のサイクルで動き始める、といったずれが生じます。状態機械が不正な状態から始まる原因になります。<a class="term-link" href="/term/reset-synchronizer/">リセット同期化回路</a>は、リセットをかけるときはすぐに効かせ、解除だけを2段のフリップフロップでクロックにそろえて全体に配ります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>同期リセットと非同期リセットの違いは?</h3>
+  <p>同期リセットはアクティブなクロックエッジでだけ効き、クロックが動いている必要があります。非同期リセットはクロックに関係なく、フリップフロップのリセットピンを通じてすぐに効きます。</p>
+  <h3>非同期リセットの解除を同期化するのはなぜですか?</h3>
+  <p>クロックエッジの近くでリセットを解除すると、フリップフロップがリカバリやリムーバルのタイミングに違反し、メタステーブルになったり、異なるサイクルでリセットから抜けたりするからです。2段のフリップフロップによる同期化回路で、解除をクロックにそろえます。</p>
+  <h3>リカバリ時間とリムーバル時間とは何ですか?</h3>
+  <p>アクティブなクロックエッジに対して、非同期リセットをその前までにデアサートしておくべき最小時間(リカバリ)と、その後もアサートを保持すべき最小時間(リムーバル)です。データのセットアップ時間とホールド時間に相当します。</p>
+</section>
 <section>
   <h2>解説の中の「非同期リセット」</h2>
   <ul class="term-quotes"><li><p>非同期リセットはフリップフロップのリセット端子を直接使うので、クロックがなくてもすぐにリセットできますが、解除の瞬間がクロックのエッジに近いと、フリップフロップごとに解除のタイミングがばらつく恐れがあります。</p><a href="/q/hdl-verification/hdl-verification-018/">同期リセットと非同期リセットの違いとして正しいものはどれか。</a></li><li><p>非同期リセットの解除がクロックのエッジの直前や直後に起こると、解除のための時間の条件を満たせず、あるフリップフロップは今のサイクルで、別のものは次のサイクルで動き始める、といったずれが生じます。</p><a href="/q/hdl-verification/hdl-verification-019/">非同期リセットを使う回路で、リセットの解除(0から1への変化)を2段のフリップフロップでクロックに同期させてから各回路…</a></li><li><p>一方、クロックや非同期リセット、他チップへの制御信号にグリッチが乗ると誤動作するため、これらはフリップフロップの出力から直接出すのが鉄則です。</p><a href="/q/logic/logic-030/">組み合わせ回路で、入力が変化したときに、経路ごとの遅延の差によって出力に一瞬だけ現れる不要なパルスを何と呼ぶか。</a></li><li><p>これが非同期リセットです。</p><a href="/q/hdl-verification/hdl-verification-017/">上の記述のリセットの種類と動作として正しいものはどれか。</a></li></ul>

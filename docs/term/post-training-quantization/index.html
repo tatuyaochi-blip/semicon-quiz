@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"学習後量子化","item":"https://semiconroom.com/term/post-training-quantization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"学習後量子化","description":"学習が終わったモデルの重みや活性化を、代表的なデータで値の範囲を調べてから低い精度に変える方法。PTQ。","url":"https://semiconroom.com/term/post-training-quantization/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"学習後量子化","item":"https://semiconroom.com/term/post-training-quantization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"学習後量子化","description":"学習が終わったモデルの重みや活性化を、代表的なデータで値の範囲を調べてから低い精度に変える方法。PTQ。","url":"https://semiconroom.com/term/post-training-quantization/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"学習後量子化と量子化を考慮した学習の違いは?","acceptedAnswer":{"@type":"Answer","text":"学習後量子化は、学習済みのモデルを再学習せずに、少量のキャリブレーション用データだけで低精度に変換します。量子化を考慮した学習は、学習中に丸めを模擬して重みを適応させるもので、学習のコストはかかりますが、4ビットのような非常に低いビット幅でも精度を保ちやすくなります。"}},{"@type":"Question","name":"学習後量子化にキャリブレーションデータが必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"重みは学習後にわかっていますが、活性化の値は入力によって変わるため、代表的な入力をモデルに通してその範囲を観測する必要があるからです。観測した範囲から、活性化を整数格子に対応させるスケール係数を決めます。"}},{"@type":"Question","name":"学習後量子化には元の学習データセットが必要ですか?","acceptedAnswer":{"@type":"Answer","text":"学習データセット全体もラベルも必要ありません。実際の使い方に近いラベルなしの入力が数百個あれば、通常は活性化の範囲をキャリブレーションするのに十分です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>学習後量子化の仕組み</h2>
+  <p>学習後量子化(PTQ)は、32ビット浮動小数点ですでに学習済みのモデルから出発し、各テンソルを小さな整数の格子、多くの場合<a class="term-link" href="/term/int8/">INT8</a>に対応させます。実数の値はすべて、整数とスケール係数の積で表され、ゼロ点のオフセットを加えることもあります。重みは学習後に固定されているので、保存された値から直接スケールを計算でき、フィルタごとの違いに合わせて出力チャネルごとに別々に計算することもよくあります。勾配による更新は行わないため、PTQは通常数分で終わり、ラベル付きの学習データは不要で、キャリブレーション用の少量の入力だけが必要です。</p>
+</section>
+<section class="term-about">
+  <h2>キャリブレーションとクリッピングのトレードオフ</h2>
+  <p>活性化は入力ごとに変わるため、その範囲はモデル自体からは読み取れません。キャリブレーションでは、代表的な入力を数百個ネットワークに通して各層の活性化の分布を記録し、-127から127の対称な<a class="term-link" href="/term/int8/">INT8</a>格子に対応させる範囲を決めます。絶対値の最大値を使えば何もクリップされませんが、まれな外れ値がいくつかあるだけでスケールが広がり、使えるレベルの大半をほとんど現れない値に費やしてしまいます。範囲を分布の大部分をカバーする程度に狭めると、外れ値はクリップされますが、よく現れる値をより細かい分解能で表せます。</p>
+</section>
+<section class="term-about">
+  <h2>PTQと量子化を考慮した学習(QAT)の違い</h2>
+  <p><a class="term-link" href="/term/quantization-aware-training/">量子化を考慮した学習</a>(QAT)は、学習やファインチューニングの間に順伝播へ丸めの模擬を挿入し、重みが<a class="term-link" href="/term/quantization-error/">量子化誤差</a>に耐えるように学習させます。PTQはこの手順をまったく省くため、はるかに安価で、元の学習パイプラインやデータセットが手に入らない場合にも使えます。その代わりに精度が犠牲になります。<a class="term-link" href="/term/int8/">INT8</a>では劣化は小さいことが多いものの、ビット幅を4ビットに向けて減らすと丸め誤差が急速に増え、PTQだけでは許容できなくなることがあります。そのときの一般的な代替がQATで、PTQが破綻する精度でも精度を保てます。</p>
+</section>
+<section class="term-about">
+  <h2>推論ハードウェアにとっての意味</h2>
+  <p><a class="term-link" href="/term/int8/">INT8</a>の重みはFP32の重みの4分の1のメモリしか使わないため、同じモデルでも必要なDRAM容量が減り、さらに重要なことに、推論1回あたりのメモリ帯域も減ります。整数の積和演算器は浮動小数点演算器よりずっと小さく、演算1回あたりのエネルギーも少ないので、<a class="term-link" href="/term/npu/">NPU(ニューラルプロセッシングユニット)</a>やエッジ向けアクセラレータは低精度の整数演算器アレイを中心に作られています。PTQは既存のモデルをこうしたハードウェアに移す最も一般的な方法で、デプロイ用のツールチェーンはたいていそのためのキャリブレーション機能を備えています。</p>
+</section>
 <section>
   <h2>学習後量子化の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-026" data-cat="ai-stack" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 代表的な入力のデータを流して各層の活性化の値の範囲を調べ、量子化のスケールを決める</p><p class="explanation">重みは学習が終われば値が決まっていますが、活性化の値は入力によって変わります。そこで、実際の使い方に近い入力を数百件ほど流して、各層の活性化がとる値の範囲や分布を調べ、どの範囲を<a class="term-link" href="/term/int8/">INT8</a>の-127〜127に対応させるか(スケール)を決めます。最大値にそろえると外れ値のために細かさが失われるので、分布の大部分が入るように範囲を少し狭くすることもあります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>学習後量子化と量子化を考慮した学習の違いは?</h3>
+  <p>学習後量子化は、学習済みのモデルを再学習せずに、少量のキャリブレーション用データだけで低精度に変換します。量子化を考慮した学習は、学習中に丸めを模擬して重みを適応させるもので、学習のコストはかかりますが、4ビットのような非常に低いビット幅でも精度を保ちやすくなります。</p>
+  <h3>学習後量子化にキャリブレーションデータが必要なのはなぜですか?</h3>
+  <p>重みは学習後にわかっていますが、活性化の値は入力によって変わるため、代表的な入力をモデルに通してその範囲を観測する必要があるからです。観測した範囲から、活性化を整数格子に対応させるスケール係数を決めます。</p>
+  <h3>学習後量子化には元の学習データセットが必要ですか?</h3>
+  <p>学習データセット全体もラベルも必要ありません。実際の使い方に近いラベルなしの入力が数百個あれば、通常は活性化の範囲をキャリブレーションするのに十分です。</p>
+</section>
 <section>
   <h2>解説の中の「学習後量子化」</h2>
   <ul class="term-quotes"><li><p>学習後量子化は、学習が終わったモデルの重み(と活性化)を、少量の代表的なデータで値の範囲を調べてから低い精度に変える方法で、手軽ですが、ビット数を減らすほど精度が落ちやすくなります。</p><a href="/q/ai-stack/ai-stack-026/">学習後量子化(PTQ)と、量子化を考慮した学習(QAT)の違いとして正しいものはどれか。</a></li></ul>

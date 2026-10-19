@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリバリア","item":"https://semiconroom.com/term/memory-barrier/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリバリア","description":"バリアより前のメモリ操作が、後の操作より先にほかのコアから見えることを保証する命令。フェンスとも呼ぶ。RISC-Vのfenceなど。","url":"https://semiconroom.com/term/memory-barrier/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリバリア","item":"https://semiconroom.com/term/memory-barrier/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリバリア","description":"バリアより前のメモリ操作が、後の操作より先にほかのコアから見えることを保証する命令。フェンスとも呼ぶ。RISC-Vのfenceなど。","url":"https://semiconroom.com/term/memory-barrier/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"メモリバリアとフェンスの違いは?","acceptedAnswer":{"@type":"Answer","text":"同じ概念の2つの呼び名です。どちらも、ほかのコアから見て、命令より前のメモリ操作を後の操作より先に順序付ける命令を指します。RISC-Vでは命令名が fence で、Armではバリアと呼びます。"}},{"@type":"Question","name":"x86でもメモリバリアは必要ですか?","acceptedAnswer":{"@type":"Answer","text":"x86のトータルストアオーダーでは大半のロードとストアがプログラム順に保たれるため、弱い順序のアーキテクチャほど頻繁には必要ありません。ただし、ストアを別番地への後のロードより前に見えるようにしたい場合は、mfence などのバリアやロック付き命令が必要です。"}},{"@type":"Question","name":"コンパイラバリアとメモリバリアの違いは?","acceptedAnswer":{"@type":"Answer","text":"コンパイラバリアは、コンパイラがメモリアクセスをその地点をまたいで移動させないようにするだけで、機械語命令は生成しません。メモリバリアはハードウェア命令で、プロセッサがアクセスをほかのコアに見せる順序を制約します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>メモリバリアが保証すること</h2>
+  <p>メモリバリアはフェンスとも呼ばれ、スレッドのメモリ操作をその前と後に分け、前の操作がほかのコアから見えるようになってから後の操作が行われることを保証する命令です。これがないと、プロセッサは異なる番地へのロードとストアを順不同に完了させることがあります。たとえばストアを<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>に置いたまま、後のロードを先に進めます。発行したスレッド自身から見える結果は変わらないため、バリアが問題になるのは、データをコア間で共有するときや、<a class="term-link" href="/term/dma/">DMA</a>エンジンなどのデバイスと共有するときだけです。</p>
+</section>
+<section class="term-about">
+  <h2>ストアバッファの例</h2>
+  <p>x と y の初期値を0とし、コア0が x = 1 の後に r1 = y を、コア1が y = 1 の後に r2 = x を実行するとします。<a class="term-link" href="/term/sequential-consistency/">逐次一貫性</a>のもとではどちらかのストアが先に起きるので、少なくとも一方のロードは1を返すはずです。しかしx86を含む実際のプロセッサでは、各ストアが自コアの<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>で待っている間に、続くロードがキャッシュから古い値を読むため、r1 と r2 がどちらも0になることがあります。各スレッドでストアとロードの間に完全なバリアを置くと、ロードの実行前にストアが見えるようになり、この結果は起こらなくなります。</p>
+</section>
+<section class="term-about">
+  <h2>実際の命令セットのバリア命令</h2>
+  <p>RISC-Vには fence 命令があり、オペランドでどの先行アクセスをどの後続アクセスより前に順序付けるかを指定します。fence rw, rw はすべての読み書きを順序付けます。また、<a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>やロード予約/条件付きストア命令には acquire ビットと release ビットがあります。Armには順序付け用の dmb(データメモリバリア)、完了を待つ必要があるときの dsb、そしてロードアクワイア命令とストアリリース命令があります。x86は<a class="term-link" href="/term/total-store-order/">トータルストアオーダー</a>(TSO)により大半の順序がもともと保たれるため、mfence やロック付き命令が必要なのは主にストアを後のロードより前に順序付ける場合です。バリアは保留中のストアが吐き出されるまでコアを止めることがあり、コストはゼロではありません。</p>
+</section>
+<section class="term-about">
+  <h2>ロックとコンパイラにおけるバリア</h2>
+  <p>多くのプログラマはバリアを直接書くことはありません。ロックの獲得には acquire セマンティクスが含まれ、後のアクセスが獲得より前に移動しません。解放には release セマンティクスが含まれ、ロックが解放される前にそれまでの書き込みが見えるようになります。このため、ロックで保護されたデータはスレッド間で正しく受け渡されます。C11やC++11などの言語は、同じ考え方をメモリ順序付きのアトミック操作として提供しています。コンパイラバリアは別物で、ある地点をまたいだアクセスの並べ替えをコンパイラに禁じるだけで命令は出力しないため、ハードウェアの動作は制約しません。</p>
+</section>
 <section>
   <h2>メモリバリアの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-031" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. バリアより前のメモリ操作が、バリアより後の操作より先にほかのコアから見えることを保証する</p><p class="explanation">CPUはメモリ操作の順番を入れ替えることがあるので、ほかのコアと決まった順番でデータを受け渡すには、それを止める指示が必要です。<a class="term-link" href="/term/memory-barrier/">メモリバリア</a>は、その前の読み書きをすべて終えてから(ほかのコアに見えるようにしてから)、後ろの読み書きを行わせます。ロックの取得や解放の中にもバリアの働きが含まれていて、ロックで守った変数が正しく受け渡されます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>メモリバリアとフェンスの違いは?</h3>
+  <p>同じ概念の2つの呼び名です。どちらも、ほかのコアから見て、命令より前のメモリ操作を後の操作より先に順序付ける命令を指します。RISC-Vでは命令名が fence で、Armではバリアと呼びます。</p>
+  <h3>x86でもメモリバリアは必要ですか?</h3>
+  <p>x86のトータルストアオーダーでは大半のロードとストアがプログラム順に保たれるため、弱い順序のアーキテクチャほど頻繁には必要ありません。ただし、ストアを別番地への後のロードより前に見えるようにしたい場合は、mfence などのバリアやロック付き命令が必要です。</p>
+  <h3>コンパイラバリアとメモリバリアの違いは?</h3>
+  <p>コンパイラバリアは、コンパイラがメモリアクセスをその地点をまたいで移動させないようにするだけで、機械語命令は生成しません。メモリバリアはハードウェア命令で、プロセッサがアクセスをほかのコアに見せる順序を制約します。</p>
+</section>
 <section>
   <h2>解説の中の「メモリバリア」</h2>
   <ul class="term-quotes"><li><p>メモリバリアは、その前の読み書きをすべて終えてから(ほかのコアに見えるようにしてから)、後ろの読み書きを行わせます。</p><a href="/q/multicore-sync/multicore-sync-031/">メモリバリア(フェンス)命令の役割として正しいものはどれか。</a></li><li><p>これを防ぐには、書き込みと読み出しの間にメモリバリアを入れます。</p><a href="/q/multicore-sync/multicore-sync-028/">上の2つのスレッドを別々のコアで同時に実行する(コンパイラによる並べ替えはないとする)。逐次一貫性では起こらないが、x…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリ一貫性モデル","item":"https://semiconroom.com/term/memory-consistency-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリ一貫性モデル","description":"あるコアが行った複数の番地への読み書きが、ほかのコアからどの順番で見えうるかを定めた約束。逐次一貫性、x86のTSO、ARMやRISC-Vの弱いモデルなどがある。","url":"https://semiconroom.com/term/memory-consistency-model/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"メモリ一貫性モデル","item":"https://semiconroom.com/term/memory-consistency-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"メモリ一貫性モデル","description":"あるコアが行った複数の番地への読み書きが、ほかのコアからどの順番で見えうるかを定めた約束。逐次一貫性、x86のTSO、ARMやRISC-Vの弱いモデルなどがある。","url":"https://semiconroom.com/term/memory-consistency-model/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"キャッシュコヒーレンスとメモリ一貫性の違いは?","acceptedAnswer":{"@type":"Answer","text":"コヒーレンスは、1つのアドレスへの書き込みがすべてのコアから同じ順序で見え、やがて最新の値を読めることを保証します。一貫性は、異なるアドレスへのアクセスがほかのコアからどの順番で観測されうるかを定めます。"}},{"@type":"Question","name":"TSOとは何の略ですか?","acceptedAnswer":{"@type":"Answer","text":"total store order(トータルストアオーダー)の略で、x86プロセッサが採用しているメモリモデルです。ストアバッファの影響として、別のアドレスへの後のロードが先のストアより先に観測されることだけが許されます。"}},{"@type":"Question","name":"ArmやRISC-Vでx86より多くのメモリバリアが必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"ArmとRISC-Vは、異なるアドレスへのロードとストアのほとんどの入れ替えを許す弱いメモリモデルを採用しているため、順序を明示的に指定する必要があるからです。x86のTSOはもともとほとんどの順序を守るので、バリアが必要なのは、ストアの後に別のアドレスへのロードが続く場合などに限られます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ハードウェアがメモリ操作の順序を入れ替える理由</h2>
+  <p>現代のコアは、ロードとストアをプログラムの順番どおりに厳密に実行するわけではありません。ストアは<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>にいったん置かれ、その間にコアは先へ進むことがよくあります。ロードは、キャッシュのレイテンシを隠すために早めに、あるいは順序を変えて発行されることがあります。コアは自分の未完了の書き込みを常に転送し、自分の結果を守るので、こうした最適化は1つのスレッドの中からは見えません。しかし、ほかのコアからは同じ操作が違う順番で見えることがあります。メモリ一貫性モデルは、こうした入れ替えのうちどれが見えうるかを正確に定めた約束で、これによりプログラマやコンパイラはいつ同期が必要かを判断できます。</p>
+</section>
+<section class="term-about">
+  <h2>逐次一貫性、TSO、弱いモデル</h2>
+  <p><a class="term-link" href="/term/sequential-consistency/">逐次一貫性</a>(SC)は最も厳しいモデルで、すべての操作が、各コアのプログラム順序を守った1つの全体的な順序で起きたように見えます。x86は<a class="term-link" href="/term/total-store-order/">トータルストアオーダー</a>(TSO)を採用しており、これもほぼ同じくらい強いモデルです。見える入れ替えは、後のロードが別のアドレスへの先のストアより先に完了することだけで、これはまさにFIFOの<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>から生じる現象です。ArmとRISC-Vは弱いモデルを採用しており、異なるアドレスへのロードとストアは、ほとんどの組み合わせで入れ替わりえます。そのため順序が必要な場合は、フェンスやバリア命令、または<a class="term-link" href="/term/acquire-release-semantics/">アクワイア・リリース</a>操作で明示的に指定しなければなりません。</p>
+</section>
+<section class="term-about">
+  <h2>代表例:ストアバッファのテスト</h2>
+  <p>xとyの初期値を0とし、コア0がx = 1を実行してからyを読み、コア1がy = 1を実行してからxを読むとします。<a class="term-link" href="/term/sequential-consistency/">逐次一貫性</a>のもとでは、少なくとも一方のコアは1を読みます。<a class="term-link" href="/term/total-store-order/">TSO</a>のもとでは、相手のロードが実行された時点で各ストアがまだ自分のコアの<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>にあることがあるため、両方が0を読むことがありえます。DekkerやPetersonのロックアルゴリズムは、ストアとロードの間に完全なフェンスを入れない限り、まさにこの形で破綻します。弱いモデルでは、フラグを使ったデータの受け渡しでさえ、バリアでアクセスの順序を決めないと失敗することがあります。</p>
+</section>
+<section class="term-about">
+  <h2>一貫性とキャッシュコヒーレンスの違い</h2>
+  <p>キャッシュコヒーレンスは1つのアドレスについての保証で、すべてのコアがその場所への書き込みの順序について合意し、やがて最新の値を読めることを保証します。一貫性モデルは、xへの書き込みがその後のyへの書き込みより先に見えるかどうかといった、異なるアドレスにまたがる順序を扱います。コヒーレンスが完全に保たれていても、このような入れ替えは見えることがあり、そのためにコヒーレンスプロトコルとは別にバリアが存在します。高水準言語はC11やC++11のアトミックのように独自のモデルを定めており、コンパイラはそれを、ハードウェアのモデルが必要とするバリア命令に変換します。</p>
+</section>
 <section>
   <h2>メモリ一貫性モデルの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-026" data-cat="multicore-sync" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 書き込みの後の別の番地からの読み出しが、その書き込みより先に見えることだけを許す、比較的強いモデルである</p><p class="explanation"><a class="term-link" href="/term/total-store-order/">TSO</a>では、書き込みどうしの順番、読み出しどうしの順番、読み出しの後の書き込みの順番は保たれ、書き込みの後の別の番地への読み出しだけが追い越せます。これは<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>があることをそのまま表したモデルです。多くのプログラムはこの範囲なら直感どおりに動くので、x86ではバリアが必要な場面が比較的少なくなります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>キャッシュコヒーレンスとメモリ一貫性の違いは?</h3>
+  <p>コヒーレンスは、1つのアドレスへの書き込みがすべてのコアから同じ順序で見え、やがて最新の値を読めることを保証します。一貫性は、異なるアドレスへのアクセスがほかのコアからどの順番で観測されうるかを定めます。</p>
+  <h3>TSOとは何の略ですか?</h3>
+  <p>total store order(トータルストアオーダー)の略で、x86プロセッサが採用しているメモリモデルです。ストアバッファの影響として、別のアドレスへの後のロードが先のストアより先に観測されることだけが許されます。</p>
+  <h3>ArmやRISC-Vでx86より多くのメモリバリアが必要なのはなぜですか?</h3>
+  <p>ArmとRISC-Vは、異なるアドレスへのロードとストアのほとんどの入れ替えを許す弱いメモリモデルを採用しているため、順序を明示的に指定する必要があるからです。x86のTSOはもともとほとんどの順序を守るので、バリアが必要なのは、ストアの後に別のアドレスへのロードが続く場合などに限られます。</p>
+</section>
 <section>
   <h2>解説の中の「メモリ一貫性モデル」</h2>
   <ul class="term-quotes"><li><p>メモリ一貫性モデルは、どの入れ替えが起こりうるかを定め、プログラマが正しい同期を書くための約束になります。</p><a href="/q/multicore-sync/multicore-sync-026/">メモリ一貫性モデル(メモリコンシステンシモデル)が定めているものはどれか。</a></li></ul>

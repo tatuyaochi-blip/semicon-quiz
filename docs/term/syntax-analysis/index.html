@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"構文解析","item":"https://semiconroom.com/term/syntax-analysis/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"構文解析","description":"トークンの並びが言語の文法に合っているかを調べ、プログラムの構造を木の形に組み立てるコンパイラの段階。文法の誤りはここで見つかる。","url":"https://semiconroom.com/term/syntax-analysis/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"構文解析","item":"https://semiconroom.com/term/syntax-analysis/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"構文解析","description":"トークンの並びが言語の文法に合っているかを調べ、プログラムの構造を木の形に組み立てるコンパイラの段階。文法の誤りはここで見つかる。","url":"https://semiconroom.com/term/syntax-analysis/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"字句解析と構文解析の違いは?","acceptedAnswer":{"@type":"Answer","text":"字句解析はソースコードをトークンに分け、空白やコメントを取り除きます。構文解析はそのトークンを文法と照らし合わせ、プログラムの構造を表す木を組み立てます。"}},{"@type":"Question","name":"抽象構文木(AST)とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"プログラムの意味に必要な演算や文だけを残した、木構造の表現です。木の形そのものが優先順位や入れ子を表すため、括弧のようなまとめるための記号は省かれます。"}},{"@type":"Question","name":"LL構文解析とLR構文解析の違いは?","acceptedAnswer":{"@type":"Answer","text":"LL構文解析器は次に来るトークンから規則を予測して木を上から作り、手書きの再帰下降構文解析器もこれに含まれます。LR構文解析器はトークンをスタックにシフトして規則に還元しながら木を下から作り、より広い範囲の文法を扱えます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>コンパイラの中での構文解析の位置</h2>
+  <p>コンパイラのフロントエンドは段階的に処理を進めます。<a class="term-link" href="/term/lexical-analysis/">字句解析</a>は文字の並びを識別子、数値、記号などのトークンに分け、空白やコメントを捨てます。続く構文解析(パース)は、そのトークン列が言語の文法に照らして正しいプログラムになっているかを調べ、どの文がループ本体になるか、どのオペランドがどの演算子に属するかといった入れ子の関係を記録します。セミコロンの抜けや括弧の対応の誤りはこの段階で報告されます。その後、意味解析で型や名前の宣言を検査し、プログラムを<a class="term-link" href="/term/intermediate-representation/">中間表現</a>に変換して最適化とコード生成へ進みます。</p>
+</section>
+<section class="term-about">
+  <h2>文脈自由文法が必要な理由</h2>
+  <p>トークンの規則は正規表現と高速な有限オートマトンで扱えるほど単純ですが、プログラムの構造はそうはいきません。入れ子の括弧やif文の中のif文を扱うには、深さを無制限に数える必要があり、これは正規表現にはできません。そのため、プログラミング言語は expr → expr + term のような書き換え規則の集まりである文脈自由文法で記述され、多くはバッカス・ナウア記法(BNF)で書かれます。よく設計された文法は演算子の優先順位と結合性も表し、a + b * c で乗算が先にまとまるようにします。1つの入力に2通りの木ができるあいまいな文法は、避けるか、追加の規則で解消しなければなりません。</p>
+</section>
+<section class="term-about">
+  <h2>下向きのLL構文解析と上向きのLR構文解析</h2>
+  <p>LL構文解析器は下向き(トップダウン)に動き、開始記号から出発して、次の1個または数個のトークンを見てどの規則を適用するかを予測します。文法規則ごとに1つの関数を書く手書きの再帰下降構文解析器はLL型で、わかりやすさとエラーメッセージの質のよさから広く使われていますが、左再帰の規則は書き換える必要があります。LR構文解析器は上向き(ボトムアップ)に動き、トークンをスタックに積み(シフト)、規則の右辺がそろったところでその規則にまとめます(還元)。LRはより広い範囲の文法を扱え、yaccやBisonなどの構文解析器生成系はLALRの表を自動で作ります。</p>
+</section>
+<section class="term-about">
+  <h2>構文木と抽象構文木</h2>
+  <p>文法どおりに組み立てると、括弧、区切り記号、途中の規則をすべて含む具象構文木(パース木)ができます。後の段階で必要な情報はずっと少ないため、構文解析器は通常、代わりに<a class="term-link" href="/term/abstract-syntax-tree/">抽象構文木(AST)</a>を作ります。(a + b) * c のASTでは、加算のノードが乗算のノードの下にあるだけで、木の形が評価順序を表すため括弧は消えます。ASTは、意味解析が型やスコープの情報を書き加え、その後コンパイラが中間コードに変換するもとになるデータ構造です。</p>
+</section>
 <section>
   <h2>構文解析の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-002" data-cat="compiler" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 文脈自由文法</p><p class="explanation">括弧の入れ子や、if文の中にさらにif文がある構造は、正規表現では表せません。プログラミング言語の文法の多くは、「式 → 式 + 項」のような書き換えの規則の集まりである文脈自由文法で表され、<a class="term-link" href="/term/syntax-analysis/">構文解析</a>はこの文法にもとづいて行われます。上から規則を当てはめていくLL法や、下から組み立てていくLR法などの解析方法があり、文法から解析器を自動で作る道具もあります。正規文法は<a class="term-link" href="/term/lexical-analysis/">字句解析</a>向けで、入れ子の構造は扱えません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>字句解析と構文解析の違いは?</h3>
+  <p>字句解析はソースコードをトークンに分け、空白やコメントを取り除きます。構文解析はそのトークンを文法と照らし合わせ、プログラムの構造を表す木を組み立てます。</p>
+  <h3>抽象構文木(AST)とは何ですか?</h3>
+  <p>プログラムの意味に必要な演算や文だけを残した、木構造の表現です。木の形そのものが優先順位や入れ子を表すため、括弧のようなまとめるための記号は省かれます。</p>
+  <h3>LL構文解析とLR構文解析の違いは?</h3>
+  <p>LL構文解析器は次に来るトークンから規則を予測して木を上から作り、手書きの再帰下降構文解析器もこれに含まれます。LR構文解析器はトークンをスタックにシフトして規則に還元しながら木を下から作り、より広い範囲の文法を扱えます。</p>
+</section>
 <section>
   <h2>解説の中の「構文解析」</h2>
   <ul class="term-quotes"><li><p>構文解析は、字句解析で得たトークンの並びが言語の文法に合っているかを調べ、if文の条件と本体、式の中の演算の組み合わせなどの構造を木の形(構文木)に組み立てます。</p><a href="/q/compiler/compiler-002/">コンパイラの構文解析で行うこととして正しいものはどれか。</a></li><li><p>プログラミング言語の文法の多くは、「式 → 式 + 項」のような書き換えの規則の集まりである文脈自由文法で表され、構文解析はこの文法にもとづいて行われます。</p><a href="/q/compiler/compiler-034/">多くのプログラミング言語の文法を表すのに使われ、構文解析の基礎になる文法の種類はどれか。</a></li><li><p>文法に合っているかを木の形で確かめるのは次の構文解析、型や名前を調べるのは意味解析の仕事です。</p><a href="/q/compiler/compiler-001/">コンパイラの字句解析の役割として正しいものはどれか。</a></li><li><p>セミコロンの書き忘れは文法の誤りなので構文解析で見つかります。</p><a href="/q/compiler/compiler-003/">コンパイラの意味解析で見つかる誤りの例として最も適切なものはどれか。</a></li><li><p>構文解析では、文法の規則どおりに括弧や区切り記号まで含めた木(具象構文木)ができますが、その後の処理には不要な情報が多く含まれます。</p><a href="/q/compiler/compiler-004/">抽象構文木(AST)の特徴として正しいものはどれか。</a></li></ul>
