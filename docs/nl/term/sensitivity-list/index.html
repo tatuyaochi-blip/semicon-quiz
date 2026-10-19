@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Sensitivity list","item":"https://semiconroom.com/nl/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sensitivity list","description":"Reeks signalen achter always in @( ) in Verilog die bepaalt wanneer het blok wordt uitgevoerd. Bij een combinatorische schakeling leidt een vergeten signaal tot een verschil tussen simulatie en schakeling.","url":"https://semiconroom.com/nl/term/sensitivity-list/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Sensitivity list","item":"https://semiconroom.com/nl/term/sensitivity-list/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Sensitivity list","description":"Reeks signalen achter always in @( ) in Verilog die bepaalt wanneer het blok wordt uitgevoerd. Bij een combinatorische schakeling leidt een vergeten signaal tot een verschil tussen simulatie en schakeling.","url":"https://semiconroom.com/nl/term/sensitivity-list/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat betekent always @(*) in Verilog?","acceptedAnswer":{"@type":"Answer","text":"Het blok draait telkens wanneer een signaal dat het leest verandert, wat het juiste gedrag is voor combinatorische logica. De asterisk bespaart je het handmatig opsommen van signalen en het vergeten van een ervan."}},{"@type":"Question","name":"Gebruikt synthese de sensitivity list?","acceptedAnswer":{"@type":"Answer","text":"Voor combinatorische logica negeren synthesetools hem in wezen en bouwen ze logica uit de statements, zodat een onvolledige lijst ervoor zorgt dat de simulatie niet overeenkomt met de hardware. Flank-keywords in geklokte blokken worden gebruikt om flipflops en asynchrone resets te infereren."}},{"@type":"Question","name":"Heeft VHDL ook een sensitivity list?","acceptedAnswer":{"@type":"Answer","text":"Ja. Een VHDL-process noemt zijn triggersignalen tussen haakjes na het keyword process, en VHDL-2008 voegt process(all) toe, de tegenhanger van Verilogs @(*)."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/hdl-verification/">Hardwarebeschrijvingstalen en verificatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe de simulator hem gebruikt</h2>
+  <p>Een event-driven simulator evalueert een always-blok niet continu. Hij wacht bij de @( )-event control en wekt het blok alleen als een vermeld signaal verandert, of, bij posedge- en negedge-items, alleen op die specifieke flank. Alles volgt hieruit: ontbreekt een signaal dat de uitgangen beïnvloedt in de lijst, dan draait het blok gewoon niet als dat signaal verandert, en houden de uitgangen verouderde waarden tot een vermeld signaal beweegt.</p>
+</section>
+<section class="term-about">
+  <h2>Onvolledige lijsten en simulatie-synthese-mismatch</h2>
+  <p>Synthesetools negeren de lijst grotendeels voor combinatorische logica en bouwen poorten uit de statements van het blok, doorgaans met hooguit een waarschuwing. &#39;always @(a) y = a &amp; b;&#39; synthetiseert dus tot een AND-poort waarin y beide ingangen volgt, terwijl de simulator y alleen bijwerkt als a verandert. Tests die toevallig a laten togglen, slagen, maar de hardware gedraagt zich anders dan de <a class="term-link" href="/nl/term/rtl/">RTL</a>-simulatie. De mismatch is gevaarlijk omdat hij de RTL-verificatie overleeft en pas in <a class="term-link" href="/nl/term/gate-level-simulation/">gate-level-simulatie</a> of in silicium opduikt.</p>
+</section>
+<section class="term-about">
+  <h2>@(*) en always_comb</h2>
+  <p><a class="term-link" href="/nl/term/verilog/">Verilog</a>-2001 introduceerde always @(*), dat automatisch elk signaal opneemt dat in het blok wordt gelezen en het risico op weglatingen wegneemt. SystemVerilogs always_comb gaat verder: het wordt ook eenmaal op tijdstip nul uitgevoerd zodat de uitgangen consistent beginnen, is gevoelig voor signalen die in aangeroepen functions worden gelezen en laat tools blokken markeren die een latch zouden infereren. Handgeschreven sensitivity lists voor combinatorische logica zijn inmiddels een verouderde stijl die je beter kunt vermijden.</p>
+</section>
+<section class="term-about">
+  <h2>Flanken in sequentiële blokken</h2>
+  <p>Voor flipflops noemt de lijst flanken in plaats van niveaus. &#39;always @(posedge clk)&#39; beschrijft een register dat op de stijgende klokflank bemonstert. Voeg je &#39;or negedge rst_n&#39; toe, dan krijg je een asynchrone active-low reset: het blok draait ook op het moment dat rst_n daalt, zodat de uitgang wordt gewist zonder op een klok te wachten, zelfs als de klok stilstaat. Het achtervoegsel &#39;_n&#39; is een gangbare conventie voor active-low signalen. Het loslaten van de reset vraagt nog steeds aandacht, meestal door hem met de klok te synchroniseren om aan de recovery- en removal-timing te voldoen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Sensitivity list</h2>
   <article class="q-mini" data-qid="hdl-verification-010" data-cat="hdl-verification" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Zonder simulatie de beschrijving onderzoeken en problemen vinden zoals niet-overeenkomende bitbreedtes, onbedoelde latches en niet te synthetiseren schrijfwijzen</p><p class="explanation">Een <a class="term-link" href="/nl/term/lint-tool/">lint</a>-tool onderzoekt de <a class="term-link" href="/nl/term/hardware-description-language/">HDL</a>-beschrijving statisch aan de hand van regels en wijst op schrijfwijzen die grammaticaal juist zijn maar gemakkelijk problemen geven. Voorbeelden zijn toekenning van signalen met verschillende breedte, weglatingen in de <a class="term-link" href="/nl/term/sensitivity-list/">sensitivity list</a>, het afleiden van latches, het mengen van blokkerende en niet-blokkerende toekenning en fouten in de omgang met klokken. Omdat het zonder het maken van tests kan worden uitgevoerd, kan het vroeg in het ontwerp de moeite van latere verificatie verminderen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat betekent always @(*) in Verilog?</h3>
+  <p>Het blok draait telkens wanneer een signaal dat het leest verandert, wat het juiste gedrag is voor combinatorische logica. De asterisk bespaart je het handmatig opsommen van signalen en het vergeten van een ervan.</p>
+  <h3>Gebruikt synthese de sensitivity list?</h3>
+  <p>Voor combinatorische logica negeren synthesetools hem in wezen en bouwen ze logica uit de statements, zodat een onvolledige lijst ervoor zorgt dat de simulatie niet overeenkomt met de hardware. Flank-keywords in geklokte blokken worden gebruikt om flipflops en asynchrone resets te infereren.</p>
+  <h3>Heeft VHDL ook een sensitivity list?</h3>
+  <p>Ja. Een VHDL-process noemt zijn triggersignalen tussen haakjes na het keyword process, en VHDL-2008 voegt process(all) toe, de tegenhanger van Verilogs @(*).</p>
+</section>
 <section>
   <h2>“Sensitivity list” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Wat na always tussen @( ) staat heet de sensitivity list en geeft aan bij welke signaalwijzigingen het blok wordt uitgevoerd.</p><a href="/nl/q/hdl-verification/hdl-verification-010/">Welke uitspraak over de betekenis van &#39;always @(*)&#39; in Veri…</a></li><li><p>Een simulator voert het blok alleen uit bij verandering van de signalen in de sensitivity list, dus als alleen b verandert, blijft y op de oude waarde staan.</p><a href="/nl/q/hdl-verification/hdl-verification-011/">Dit is zoals hierboven geschreven als een combinatorische s…</a></li><li><p>Omdat &#39;negedge rst_n&#39; in de sensitivity list staat, wordt het blok ook uitgevoerd op het moment dat rst_n van 1 naar 0 verandert, en wordt q onafhankelijk van de klok 0.</p><a href="/nl/q/hdl-verification/hdl-verification-017/">Welke uitspraak over het soort reset en de werking in de bo…</a></li><li><p>Voorbeelden zijn toekenning van signalen met verschillende breedte, weglatingen in de sensitivity list, het afleiden van latches, het mengen van blokkerende en niet-blokkerende toekenning en fouten in de omgang met klokken.</p><a href="/nl/q/hdl-verification/hdl-verification-045/">Welke uitspraak over de rol van lint-tools die bij HDL-veri…</a></li></ul>

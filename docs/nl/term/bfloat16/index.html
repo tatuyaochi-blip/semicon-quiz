@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/nl/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"16-bits drijvendekommaformaat met 1 tekenbit, 8 exponentbits en 7 mantissebits. Omdat de exponent gelijk is aan die van FP32, is het bereik groot; de precisie is laag, maar het wordt gebruikt voor AI-training. FP16 heeft 5 exponentbits en 10 mantissebits: hogere precisie maar smaller bereik.","url":"https://semiconroom.com/nl/term/bfloat16/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/nl/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"16-bits drijvendekommaformaat met 1 tekenbit, 8 exponentbits en 7 mantissebits. Omdat de exponent gelijk is aan die van FP32, is het bereik groot; de precisie is laag, maar het wordt gebruikt voor AI-training. FP16 heeft 5 exponentbits en 10 mantissebits: hogere precisie maar smaller bereik.","url":"https://semiconroom.com/nl/term/bfloat16/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is bfloat16 hetzelfde als FP16?","acceptedAnswer":{"@type":"Answer","text":"Nee. Beide zijn 16 bits, maar bfloat16 heeft een exponent van 8 bits en een significand van 7 bits, terwijl FP16 een exponent van 5 bits en een significand van 10 bits heeft. bfloat16 levert precisie in voor het bereik van FP32."}},{"@type":"Question","name":"Hoe zet je FP32 om naar bfloat16?","acceptedAnswer":{"@type":"Answer","text":"Behoud de bovenste 16 bits van het FP32-bitpatroon, bij voorkeur met afronding naar even op basis van de weggegooide 16 bits in plaats van gewoon af te kappen. Terug omzetten is exact: voeg 16 nulbits toe."}},{"@type":"Question","name":"Waarom heeft bfloat16-training meestal geen loss scaling nodig?","acceptedAnswer":{"@type":"Answer","text":"Loss scaling bestaat om te voorkomen dat kleine gradiënten underflowen in het smalle bereik van FP16. bfloat16 heeft hetzelfde exponentbereik als FP32, dus zulke gradiënten blijven normaal gesproken representeerbaar."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/computer-arithmetic/">Computerarithmetiek</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat de bitindeling inhoudt</h2>
+  <p>bfloat16 (brain floating point) is simpelweg de bovenste 16 bits van een FP32-getal: hetzelfde tekenbit en dezelfde <a class="term-link" href="/nl/term/exponent-field/">exponent</a> van 8 bits, met de <a class="term-link" href="/nl/term/significand/">significand</a> ingekort van 23 naar 7 bits. Conversie van bfloat16 naar FP32 is exact en gebeurt door 16 nulbits toe te voegen, en de omgekeerde conversie vereist alleen het wegafronden van de onderste 16 bits. Het bereik komt overeen met dat van FP32, ruwweg 1e-38 tot 3e38 voor genormaliseerde getallen, maar met 8 significante bits inclusief het verborgen bit hebben waarden slechts ongeveer twee à drie decimale cijfers; de stapgrootte net boven 1,0 is 2 tot de macht -7, ongeveer 0,0078.</p>
+</section>
+<section class="term-about">
+  <h2>bfloat16 versus FP16</h2>
+  <p>FP16 verdeelt zijn bits andersom, met een <a class="term-link" href="/nl/term/exponent-field/">exponent</a> van 5 bits en een <a class="term-link" href="/nl/term/significand/">significand</a> van 10 bits. Het is preciezer, ongeveer drie decimale cijfers, maar de grootste waarde is 65.504 en de kleinste genormaliseerde waarde ongeveer 6e-5. Bij training kunnen kleine gradiënten in FP16 underflowen naar nul, dus FP16-training vereist meestal loss scaling: de loss met een grote factor vermenigvuldigen en de gradiënten later weer delen. Het FP32-bereik van bfloat16 maakt dat in het algemeen overbodig en maakt conversie van bestaande FP32-modellen eenvoudig, en daarom is het populair voor training.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom master weights in FP32 blijven</h2>
+  <p>Lage precisie schiet tekort wanneer kleine updates bij grote waarden worden opgeteld. Bij een gewicht van 1,0 dat in bfloat16 is opgeslagen, is de volgende representeerbare waarde 1,0078125, dus een update van 0,001 is minder dan een halve stap en de som wordt weer afgerond naar precies 1,0: de update wordt geabsorbeerd. Bij mixed-precision-training blijven master weights en de optimizer state daarom in FP32, en worden bfloat16-kopieën gebruikt voor de forward en backward pass. Matrixeenheden vermenigvuldigen eveneens doorgaans bfloat16-inputs maar accumuleren de producten in FP32, zodat lange sommen hun kleine bijdragen niet verliezen.</p>
+</section>
+<section class="term-about">
+  <h2>Waar je het tegenkomt</h2>
+  <p>bfloat16 wordt ondersteund door de matrixeenheden van veel huidige <a class="term-link" href="/nl/term/gpu/">GPU</a>&#39;s en AI-accelerators, en door vectorextensies op sommige CPU&#39;s, voor zowel training als <a class="term-link" href="/nl/term/ai-inference/">inferentie</a>. Doordat elke waarde half zo groot is als in FP32, halveren de benodigde geheugencapaciteit en bandbreedte en passen er meer vermenigvuldigers op dezelfde chipoppervlakte. Het is echter geen goed formaat voor algemeen gebruik: met zo weinig significandbits moeten sommen van veel waarden, kleine verschillen en alles wat meer dan een paar cijfers nauwkeurigheid vereist in een breder type worden uitgevoerd.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over bfloat16</h2>
   <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Bij het optellen van kleine bijwerkingen bij de gewichten verdwijnt de bijwerking door informatieverlies in een formaat met lage precisie</p><p class="explanation">Bij training wordt telkens een zeer kleine waarde, &quot;leersnelheid × gradiënt&quot;, bij de gewichten opgeteld. FP16 en <a class="term-link" href="/nl/term/bfloat16/">bfloat16</a> hebben een korte <a class="term-link" href="/nl/term/significand/">mantisse</a>; als de bijwerking te klein is ten opzichte van het gewicht, blijft de som door afronding gelijk aan het oorspronkelijke gewicht en verdwijnt de bijwerking (<a class="term-link" href="/nl/term/floating-point-absorption/">informatieverlies</a>). Daarom worden de gewichten in FP32 bewaard, zodat de bijwerkingen correct worden opgebouwd, en wordt voor de voorwaartse en achterwaartse berekeningen een kopie met lagere precisie gebruikt. Rekenen gaat sneller bij lagere precisie, en waarden met lage precisie kunnen wel worden opgeslagen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Is bfloat16 hetzelfde als FP16?</h3>
+  <p>Nee. Beide zijn 16 bits, maar bfloat16 heeft een exponent van 8 bits en een significand van 7 bits, terwijl FP16 een exponent van 5 bits en een significand van 10 bits heeft. bfloat16 levert precisie in voor het bereik van FP32.</p>
+  <h3>Hoe zet je FP32 om naar bfloat16?</h3>
+  <p>Behoud de bovenste 16 bits van het FP32-bitpatroon, bij voorkeur met afronding naar even op basis van de weggegooide 16 bits in plaats van gewoon af te kappen. Terug omzetten is exact: voeg 16 nulbits toe.</p>
+  <h3>Waarom heeft bfloat16-training meestal geen loss scaling nodig?</h3>
+  <p>Loss scaling bestaat om te voorkomen dat kleine gradiënten underflowen in het smalle bereik van FP16. bfloat16 heeft hetzelfde exponentbereik als FP32, dus zulke gradiënten blijven normaal gesproken representeerbaar.</p>
+</section>
 <section>
   <h2>“bfloat16” in de toelichting</h2>
   <ul class="term-quotes"><li><p>bfloat16 is een 16-bitsformaat met 1 tekenbit, 8 exponentbits en 7 mantissebits.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-026/">Wat is de belangrijkste reden dat bfloat16 wordt gebruikt b…</a></li><li><p>FP16 en bfloat16 hebben een korte mantisse; als de bijwerking te klein is ten opzichte van het gewicht, blijft de som door afronding gelijk aan het oorspronkelijke gewicht en verdwijnt de bijwerking (informatieverlies).</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-050/">Wat is de belangrijkste reden dat bij AI-training met gemen…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Memory-mapped I/O","item":"https://semiconroom.com/nl/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory-mapped I/O","description":"Methode waarbij de registers van randapparatuur aan specifieke adressen in dezelfde adresruimte als het geheugen worden toegewezen en met gewone lees- en schrijfinstructies worden bediend. Dat gebied wordt als niet-cachebaar ingesteld.","url":"https://semiconroom.com/nl/term/memory-mapped-i-o/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Memory-mapped I/O","item":"https://semiconroom.com/nl/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory-mapped I/O","description":"Methode waarbij de registers van randapparatuur aan specifieke adressen in dezelfde adresruimte als het geheugen worden toegewezen en met gewone lees- en schrijfinstructies worden bediend. Dat gebied wordt als niet-cachebaar ingesteld.","url":"https://semiconroom.com/nl/term/memory-mapped-i-o/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen memory-mapped I/O en port-mapped I/O?","acceptedAnswer":{"@type":"Answer","text":"Memory-mapped I/O plaatst apparaatregisters in de normale geheugenadresruimte en benadert ze met gewone loads en stores, terwijl port-mapped I/O een aparte adresruimte en speciale instructies gebruikt, zoals IN en OUT op x86."}},{"@type":"Question","name":"Waarom moeten memory-mapped registers volatile worden gedeclareerd?","acceptedAnswer":{"@type":"Answer","text":"Het apparaat kan registerwaarden onafhankelijk van het programma veranderen, dus volatile dwingt de compiler om elke lees- en schrijfactie uit te voeren in plaats van waarden in registers te bewaren of ogenschijnlijk overbodige toegangen te verwijderen."}},{"@type":"Question","name":"Waarom is de memory-mapped I/O-ruimte uncached?","acceptedAnswer":{"@type":"Answer","text":"Een cache zou verouderde waarden teruggeven in plaats van de actuele toestand van het apparaat en zou schrijfacties kunnen vertragen of samenvoegen, dus apparaatgebieden worden gemapt met uncached- of device-attributen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe het werkt</h2>
+  <p>De adresdecoder van de processor leidt bepaalde adresbereiken niet naar RAM maar naar randapparaten. Het besturingsregister van een timer, het dataregister van een <a class="term-link" href="/nl/term/uart/">UART</a> of een <a class="term-link" href="/nl/term/gpio/">GPIO</a>-poort verschijnt elk op een vast adres, en gewone load- en store-instructies worden lees- en schrijftransacties naar dat apparaat. Anders dan bij geheugen kunnen deze toegangen neveneffecten hebben: het lezen van een status- of dataregister kan een vlag wissen of een element uit een FIFO halen, het schrijven van een 1 kan een <a class="term-link" href="/nl/term/interrupt/">interrupt</a> wissen, en de waarde kan op elk moment veranderen omdat de hardware hem onafhankelijk van het programma bijwerkt.</p>
+</section>
+<section class="term-about">
+  <h2>Memory-mapped versus port-mapped I/O</h2>
+  <p>Port-mapped I/O geeft apparaten een aparte adresruimte die alleen <a class="term-link" href="/nl/term/interconnect-via/">via</a> speciale instructies bereikbaar is, zoals IN en OUT op x86. Memory-mapped I/O heeft geen speciale instructies nodig, dus elke <a class="term-link" href="/nl/term/addressing-mode/">adresseringsmodus</a>, pointer en C-struct kan worden gebruikt om registers te bereiken, wat de instructieset eenvoudig houdt. Het is de standaard op ARM- en RISC-V-microcontrollers, en zelfs op x86-systemen stellen <a class="term-link" href="/nl/term/pci-express/">PCI Express</a>-apparaten de meeste registers beschikbaar via memory-mapped gebieden, terwijl legacy port-I/O vooral voor compatibiliteit blijft bestaan.</p>
+</section>
+<section class="term-about">
+  <h2>Caching, volatile en volgorde</h2>
+  <p>Apparaatgebieden moeten als uncached worden geconfigureerd; anders kan de CPU steeds een verouderde gecachte kopie herlezen en de verandering in het apparaat nooit zien, of schrijfacties in de cache vasthouden. In C worden registerpointers als volatile gedeclareerd, zodat de compiler elke toegang precies zo uitvoert als geschreven, in plaats van één keer te lezen en eindeloos te blijven lussen of herhaalde schrijfacties weg te laten. volatile regelt echter niet het herordenen door hardware of het bufferen van schrijfacties. Processors en bussen kunnen schrijfacties posten, dus drivers gebruiken memory barriers of device-memory-attributen, en soms een read-back, om volgorde en voltooiing te garanderen.</p>
+</section>
+<section class="term-about">
+  <h2>MMIO in besturingssystemen</h2>
+  <p>Op systemen met <a class="term-link" href="/nl/term/virtual-memory/">virtueel geheugen</a> worden de fysieke registeradressen van een apparaat met uncached-attributen in de virtuele adresruimte van de kernel gemapt voordat een driver ze kan gebruiken, en soms in een gebruikersproces voor drivers in user space. MMIO wordt doorgaans gebruikt voor besturing en status: een apparaat configureren, bewerkingen starten en interrupts bevestigen. Grote hoeveelheden data worden meestal verplaatst <a class="term-link" href="/nl/term/interconnect-via/">via</a> <a class="term-link" href="/nl/term/dma/">DMA (direct memory access)</a>, waarbij het apparaat zelf het hoofdgeheugen leest en beschrijft, in plaats van dat de CPU ze via registers kopieert.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Memory-mapped I/O</h2>
   <article class="q-mini" data-qid="cpu-043" data-cat="cpu" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Memory-mapped I/O</p><p class="explanation">Bij <a class="term-link" href="/nl/term/memory-mapped-i-o/">memory-mapped I/O</a> worden aan de besturingsregisters van randapparatuur zoals timers en <a class="term-link" href="/nl/term/uart/">UART</a>&#39;s specifieke adressen toegewezen en worden ze met gewone load- en storeinstructies bediend. Vergeleken met een methode met speciale in- en uitvoerinstructies (port-mapped I/O, zoals IN/OUT van x86) kan de instructieset eenvoudiger zijn, en het is de standaard bij ARM- en RISC-V-microcontrollers. Er moet op worden gelet dat de registers van randapparatuur niet worden gecachet en niet door de compiler worden geoptimaliseerd (volatile).</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen memory-mapped I/O en port-mapped I/O?</h3>
+  <p>Memory-mapped I/O plaatst apparaatregisters in de normale geheugenadresruimte en benadert ze met gewone loads en stores, terwijl port-mapped I/O een aparte adresruimte en speciale instructies gebruikt, zoals IN en OUT op x86.</p>
+  <h3>Waarom moeten memory-mapped registers volatile worden gedeclareerd?</h3>
+  <p>Het apparaat kan registerwaarden onafhankelijk van het programma veranderen, dus volatile dwingt de compiler om elke lees- en schrijfactie uit te voeren in plaats van waarden in registers te bewaren of ogenschijnlijk overbodige toegangen te verwijderen.</p>
+  <h3>Waarom is de memory-mapped I/O-ruimte uncached?</h3>
+  <p>Een cache zou verouderde waarden teruggeven in plaats van de actuele toestand van het apparaat en zou schrijfacties kunnen vertragen of samenvoegen, dus apparaatgebieden worden gemapt met uncached- of device-attributen.</p>
+</section>
 <section>
   <h2>“Memory-mapped I/O” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij memory-mapped I/O worden aan de besturingsregisters van randapparatuur zoals timers en UART&#39;s specifieke adressen toegewezen en worden ze met gewone load- en storeinstructies bediend.</p><a href="/nl/q/cpu/cpu-043/">Welke methode wijst bij microcontrollers en dergelijke de r…</a></li></ul>

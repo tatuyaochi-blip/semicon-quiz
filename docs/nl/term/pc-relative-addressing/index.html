@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"PC-relatieve adressering","item":"https://semiconroom.com/nl/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC-relatieve adressering","description":"Methode om het doeladres van een sprong of gegevens uit te drukken als afstand tot het adres van de huidige instructie (PC). De afstand verandert niet waar het programma ook staat, dus vormt dit de basis voor positie-onafhankelijke code.","url":"https://semiconroom.com/nl/term/pc-relative-addressing/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"PC-relatieve adressering","item":"https://semiconroom.com/nl/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC-relatieve adressering","description":"Methode om het doeladres van een sprong of gegevens uit te drukken als afstand tot het adres van de huidige instructie (PC). De afstand verandert niet waar het programma ook staat, dus vormt dit de basis voor positie-onafhankelijke code.","url":"https://semiconroom.com/nl/term/pc-relative-addressing/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het bereik van een branchinstructie bij RISC-V?","acceptedAnswer":{"@type":"Answer","text":"Conditionele branches zoals beq hebben een offset met teken van 13 bits in veelvouden van 2 bytes, ongeveer ±4 KiB vanaf de branch. jal reikt tot ongeveer ±1 MiB, en auipc in combinatie met jalr tot ongeveer ±2 GiB."}},{"@type":"Question","name":"Waarom gebruikt x86-64 RIP-relatieve adressering?","acceptedAnswer":{"@type":"Answer","text":"Daarmee kan code globale data relatief ten opzichte van de huidige instructie benaderen, zodat positie-onafhankelijke code geen patching bij het laden en geen gereserveerd basisregister nodig heeft. 32-bits x86 had zo'n modus niet voor data."}},{"@type":"Question","name":"Is PC-relatieve adressering nodig voor shared libraries?","acceptedAnswer":{"@type":"Answer","text":"In de praktijk wel. Shared libraries worden in verschillende processen op verschillende adressen geladen, en PC-relatieve sprongen en dataverwijzingen, plus indirectie via tabellen zoals de GOT, zorgen ervoor dat dezelfde codepagina's overal werken."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/isa-assembly/">Instructieset en assembly</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe het doeladres wordt berekend</h2>
+  <p>De instructie bevat een offset met teken, en de hardware telt die <a class="term-link" href="/nl/term/numerical-aperture/">na</a> <a class="term-link" href="/nl/term/sign-extension/">tekenextensie</a> op bij een referentieadres dat van de programmateller (PC) is afgeleid. Bij RISC-V is de referentie het adres van de branch zelf. Conditionele branches coderen een even offset van 13 bits, met een bereik van ongeveer ±4 KiB, en jal codeert een offset van 21 bits, ongeveer ±1 MiB. Voor alles wat verder weg ligt, telt auipc een upper <a class="term-link" href="/nl/term/immediate-operand/">immediate</a> van 20 bits, 12 posities naar links geschoven, op bij de PC, en levert een volgende jalr, addi of load de onderste 12 bits, waarmee samen ongeveer ±2 GiB wordt bereikt. Andere <a class="term-link" href="/nl/term/instruction-set-architecture/">ISA</a>&#39;s gebruiken andere referentiepunten, zoals het adres van de volgende instructie bij x86.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom het positie-onafhankelijke code mogelijk maakt</h2>
+  <p><a class="term-link" href="/nl/term/position-independent-code/">Positie-onafhankelijke code (PIC)</a> moet correct draaien op welk adres ze ook wordt geladen. Met absolute adressen zou de <a class="term-link" href="/nl/term/program-loader/">loader</a> elke instructie die een adres noemt moeten patchen, wat tijd kost, de kopie van de code per proces anders maakt en voorkomt dat processen dezelfde fysieke pagina&#39;s delen. PC-relatieve offsets tussen delen van hetzelfde image veranderen niet wanneer het hele image verschuift, dus patchen is niet nodig. Shared libraries en executables die om veiligheidsredenen op willekeurige adressen worden geladen (address space layout randomization), zijn hiervan afhankelijk.</p>
+</section>
+<section class="term-about">
+  <h2>Ook data bereiken, niet alleen code</h2>
+  <p>PC-relatieve adressering is net zo belangrijk voor data. x86-64 introduceerde RIP-relatieve adressering, zodat loads en stores globale variabelen relatief ten opzichte van de instructiepointer kunnen aanspreken, iets wat 32-bits x86 niet had, waardoor <a class="term-link" href="/nl/term/position-independent-code/">PIC</a> op die architectuur de PC met een call-truc moest opvragen en er een register voor moest reserveren. Voor symbolen waarvan het definitieve adres pas tijdens de uitvoering bekend is, zoals variabelen in een andere <a class="term-link" href="/nl/term/shared-library/">shared library</a>, gebruikt de code een PC-relatieve load uit de <a class="term-link" href="/nl/term/global-offset-table/">global offset table</a> (GOT), een tabel met adressen die de <a class="term-link" href="/nl/term/dynamic-linker/">dynamische linker</a> bij het laden één keer invult.</p>
+</section>
+<section class="term-about">
+  <h2>PC-relatief versus andere adresseringsmodi</h2>
+  <p>Absolute adressering noemt een vast adres en moet worden gereloceerd als de code verschuift. Register-indirecte adressering springt of laadt <a class="term-link" href="/nl/term/interconnect-via/">via</a> een adres in een register; zo werken functiepointers, virtuele aanroepen en returns, omdat hun doelen niet bekend zijn wanneer de code wordt geassembleerd. PC-relatieve adressering dekt het grote middengebied van doelen die vastliggen ten opzichte van de code: lussprongen, aanroepen binnen een programma en toegang tot de eigen constanten en globale variabelen. De beperking is de breedte van het offsetveld, en daarom bestaan reeksen voor lange afstanden zoals auipc plus jalr.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over PC-relatieve adressering</h2>
   <article class="q-mini" data-qid="isa-assembly-011" data-cat="isa-assembly" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Het programma werkt zonder herschrijven van instructies, op welk geheugenadres het ook wordt geladen</p><p class="explanation">Een PC-relatieve sprong drukt de bestemming uit als afstand „zoveel bytes vanaf hier”, dus ook als het hele programma naar een ander adres wordt verschoven, verandert de afstand niet en werkt het ongewijzigd. Dit is de basis van position-independent code (<a class="term-link" href="/nl/term/position-independent-code/">PIC</a>), zoals gebruikt in gedeelde bibliotheken. Omdat het aantal bits voor de afstand beperkt is, worden voor verre sprongen auipc en jalr gecombineerd. De noodzaak van <a class="term-link" href="/nl/term/branch-prediction/">sprongvoorspelling</a> is niet afhankelijk van de manier van weergave.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het bereik van een branchinstructie bij RISC-V?</h3>
+  <p>Conditionele branches zoals beq hebben een offset met teken van 13 bits in veelvouden van 2 bytes, ongeveer ±4 KiB vanaf de branch. jal reikt tot ongeveer ±1 MiB, en auipc in combinatie met jalr tot ongeveer ±2 GiB.</p>
+  <h3>Waarom gebruikt x86-64 RIP-relatieve adressering?</h3>
+  <p>Daarmee kan code globale data relatief ten opzichte van de huidige instructie benaderen, zodat positie-onafhankelijke code geen patching bij het laden en geen gereserveerd basisregister nodig heeft. 32-bits x86 had zo&#39;n modus niet voor data.</p>
+  <h3>Is PC-relatieve adressering nodig voor shared libraries?</h3>
+  <p>In de praktijk wel. Shared libraries worden in verschillende processen op verschillende adressen geladen, en PC-relatieve sprongen en dataverwijzingen, plus indirectie via tabellen zoals de GOT, zorgen ervoor dat dezelfde codepagina&#39;s overal werken.</p>
+</section>
 <section>
   <h2>“PC-relatieve adressering” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Dit heet PC-relatieve adressering.</p><a href="/nl/q/isa-assembly/isa-assembly-010/">Hoe wordt het sprongdoel label weergegeven in de RISC-V-voo…</a></li></ul>

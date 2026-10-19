@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"FMA (fused multiply-add)","item":"https://semiconroom.com/nl/term/fused-multiply-add/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FMA (fused multiply-add)","description":"Bewerking die a × b + c met één instructie berekent en alleen aan het eind één keer afrondt, zonder het tussenproduct af te ronden. Sneller en met een kleinere fout dan vermenigvuldigen en optellen apart. Veel gebruikt bij onder meer matrixberekeningen.","url":"https://semiconroom.com/nl/term/fused-multiply-add/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"FMA (fused multiply-add)","item":"https://semiconroom.com/nl/term/fused-multiply-add/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FMA (fused multiply-add)","description":"Bewerking die a × b + c met één instructie berekent en alleen aan het eind één keer afrondt, zonder het tussenproduct af te ronden. Sneller en met een kleinere fout dan vermenigvuldigen en optellen apart. Veel gebruikt bij onder meer matrixberekeningen.","url":"https://semiconroom.com/nl/term/fused-multiply-add/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom veranderen mijn floating-pointresultaten als FMA is ingeschakeld?","acceptedAnswer":{"@type":"Answer","text":"FMA rondt a × b + c één keer af in plaats van twee keer, dus het resultaat kan in de laatste bits afwijken van een aparte vermenigvuldiging en optelling. Het FMA-resultaat is meestal het nauwkeurigste, maar het is niet bit-identiek."}},{"@type":"Question","name":"Telt een FMA als één of twee FLOP's?","acceptedAnswer":{"@type":"Answer","text":"Volgens conventie als twee, één vermenigvuldiging en één optelling, en daarom zijn de opgegeven piekdoorvoercijfers voor hardware met FMA-eenheden twee keer het aantal FMA-instructies per seconde."}},{"@type":"Question","name":"Wat doet de functie fma in C?","acceptedAnswer":{"@type":"Answer","text":"fma(x, y, z) uit math.h geeft x × y + z terug, berekend alsof met oneindige precisie en één keer afgerond naar het resultaattype. Op hardware zonder FMA-instructie wordt ze in software geëmuleerd en kan ze traag zijn."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/computer-arithmetic/">Computerarithmetiek</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Eén afronding in plaats van twee</h2>
+  <p>Het vermenigvuldigen van twee significands van p bits levert een exact product op van maximaal 2p bits. Een aparte vermenigvuldiginstructie rondt dat product af op p bits, en de daaropvolgende optelling rondt opnieuw af. Een FMA-eenheid (fused multiply-add) houdt het product op volle breedte vast, lijnt c daartegen uit, telt op en rondt maar één keer af, zodat het resultaat de exacte waarde van a × b + c is, correct afgerond. <a class="term-link" href="/nl/term/ieee-754/">IEEE 754</a>-2008 heeft deze bewerking gestandaardiseerd, C biedt haar aan als de functie fma, en de meeste huidige instructiesets van CPU&#39;s en <a class="term-link" href="/nl/term/gpu/">GPU</a>&#39;s bevatten haar, bijvoorbeeld fmadd.s en fmadd.d in de F- en D-extensies van RISC-V.</p>
+</section>
+<section class="term-about">
+  <h2>Waar FMA loont</h2>
+  <p>Inproducten, matrixvermenigvuldiging en convolutie zijn lange ketens van multiply-accumulate-stappen, dus FMA halveert zowel het aantal instructies als dat het de nauwkeurigheid verbetert. Polynoomevaluatie volgens Horner heeft bij elke stap de vorm r = r × x + c, een perfecte match. Iteratieve algoritmen voor deling en worteltrekking steunen op FMA om residuen nauwkeurig te berekenen. Een handige truc: als p het afgeronde product van a en b is, dan geeft fma(a, b, -p) de exacte afrondfout van dat product, een bouwsteen voor rekenkunde met uitgebreide precisie. Opgaven van piekprestaties in floating point tellen elke FMA volgens conventie als twee bewerkingen.</p>
+</section>
+<section class="term-about">
+  <h2>Valkuilen voor reproduceerbaarheid</h2>
+  <p>Omdat FMA anders afrondt, kan het inschakelen ervan de laatste bits van resultaten veranderen ten opzichte van een aparte vermenigvuldiging en optelling. Compilers kunnen a * b + c automatisch samentrekken tot een FMA, afhankelijk van de taalregels en flags (in GCC en Clang regelt -ffp-contract dit), zodat dezelfde broncode op verschillende targets of optimalisatieniveaus licht verschillende antwoorden kan geven. FMA kan ook verwachte symmetrieën doorbreken: a * a - b * b berekenen als fma(a, a, -(b * b)) geeft, als a gelijk is aan b, de afrondfout van b * b terug in plaats van precies nul.</p>
+</section>
+<section class="term-about">
+  <h2>FMA versus multiply-accumulate met integers</h2>
+  <p>Integer-multiply-accumulate-instructies berekenen ook a × b + c, maar integerrekenkunde kent geen afronding, dus het samenvoegen bespaart alleen tijd en registers. Het nauwkeurigheidsargument geldt specifiek voor floating point. In digitale signaalprocessors en AI-accelerators spelen brede accumulatoren een vergelijkbare rol: producten van smalle waarden worden in een breder register opgeteld, zodat er niet bij elke stap precisie verloren gaat, en alleen het eindtotaal wordt afgerond of omlaag geschaald.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over FMA (fused multiply-add)</h2>
   <article class="q-mini" data-qid="computer-arithmetic-025" data-cat="computer-arithmetic" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Het tussenliggende product wordt niet afgerond maar slechts één keer aan het einde, zodat de fout kleiner is en het sneller gaat</p><p class="explanation">Wanneer vermenigvuldigen en optellen met afzonderlijke instructies gebeuren, wordt het resultaat van a × b eerst afgerond en daarna het resultaat van de optelling van c opnieuw, dus er vindt twee keer afronding plaats. <a class="term-link" href="/nl/term/fused-multiply-add/">FMA</a> houdt het product intern ongerond, telt c erbij op en rondt slechts één keer af, zodat de fout kleiner is. Omdat het één instructie is, is het ook sneller en wordt het veel gebruikt bij matrixvermenigvuldiging, polynoomberekening en AI-berekeningen. Het product wordt niet een geheel getal en de optelling wordt niet weggelaten. Door het verschillende aantal afrondingen kan het resultaat echter licht afwijken van afzonderlijk berekende resultaten.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom veranderen mijn floating-pointresultaten als FMA is ingeschakeld?</h3>
+  <p>FMA rondt a × b + c één keer af in plaats van twee keer, dus het resultaat kan in de laatste bits afwijken van een aparte vermenigvuldiging en optelling. Het FMA-resultaat is meestal het nauwkeurigste, maar het is niet bit-identiek.</p>
+  <h3>Telt een FMA als één of twee FLOP&#39;s?</h3>
+  <p>Volgens conventie als twee, één vermenigvuldiging en één optelling, en daarom zijn de opgegeven piekdoorvoercijfers voor hardware met FMA-eenheden twee keer het aantal FMA-instructies per seconde.</p>
+  <h3>Wat doet de functie fma in C?</h3>
+  <p>fma(x, y, z) uit math.h geeft x × y + z terug, berekend alsof met oneindige precisie en één keer afgerond naar het resultaattype. Op hardware zonder FMA-instructie wordt ze in software geëmuleerd en kan ze traag zijn.</p>
+</section>
 <section>
   <h2>“FMA (fused multiply-add)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>FMA houdt het product intern ongerond, telt c erbij op en rondt slechts één keer af, zodat de fout kleiner is.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-025/">Wat is het juiste voordeel van de FMA-instructie (fused mul…</a></li><li><p>Ook voor dezelfde berekening verschillen de beschikbare instructies per CPU; a * b + c wordt bijvoorbeeld met één instructie gerealiseerd als de CPU een multiply-accumulate-instructie (FMA) heeft en anders met twee instructies, vermenigvuldigen en optellen.</p><a href="/nl/q/compiler/compiler-047/">Welke uitspraak over instructieselectie (instruction select…</a></li></ul>

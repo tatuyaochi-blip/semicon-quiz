@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Compare-and-swap","item":"https://semiconroom.com/nl/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Compare-and-swap","description":"Atomaire instructie die alleen een nieuwe waarde schrijft als de waarde in het geheugen gelijk is aan de verwachte waarde. Ook CAS genoemd. Bij falen wordt opnieuw gelezen en herhaald in een lus, zodat updates zonder lock mogelijk zijn.","url":"https://semiconroom.com/nl/term/compare-and-swap/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Compare-and-swap","item":"https://semiconroom.com/nl/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Compare-and-swap","description":"Atomaire instructie die alleen een nieuwe waarde schrijft als de waarde in het geheugen gelijk is aan de verwachte waarde. Ook CAS genoemd. Bij falen wordt opnieuw gelezen en herhaald in een lus, zodat updates zonder lock mogelijk zijn.","url":"https://semiconroom.com/nl/term/compare-and-swap/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het ABA-probleem bij compare-and-swap?","acceptedAnswer":{"@type":"Answer","text":"Een CAS slaagt omdat de locatie weer de verwachte waarde bevat, ook al is die tussendoor in iets anders veranderd en weer terug. Dit kan lock-free structuren die geheugen hergebruiken corrumperen en wordt meestal voorkomen met versietellers of veilige geheugenteruggave."}},{"@type":"Question","name":"Is een CAS-lus lock-free of wait-free?","acceptedAnswer":{"@type":"Answer","text":"Lock-free. Afgezien van onterechte mislukkingen van de weak-varianten mislukt een CAS alleen omdat de update van een andere thread is geslaagd, dus het systeem boekt vooruitgang, maar voor een individuele thread is er geen grens aan het aantal pogingen dat nodig kan zijn."}},{"@type":"Question","name":"Wat is het verschil tussen compare_exchange_weak en compare_exchange_strong?","acceptedAnswer":{"@type":"Answer","text":"De weak-vorm kan mislukken, zelfs als de waarde overeenkomt, waardoor ze direct op LL/SC-instructies kan worden afgebeeld en goed past in retry-lussen. De strong-vorm mislukt alleen bij een echte mismatch, ten koste van een interne lus op LL/SC-machines."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat CAS garandeert</h2>
+  <p>CAS (compare-and-swap) neemt een adres, een verwachte waarde en een nieuwe waarde. In één ondeelbare stap leest het de locatie, vergelijkt die met de verwachte waarde en slaat alleen bij overeenkomst de nieuwe waarde op; het meldt succes of mislukking, vaak door de gevonden waarde terug te geven. Op x86 is dit de instructie lock cmpxchg. C11 biedt het aan als atomic_compare_exchange_strong en _weak, en C++ als compare_exchange_strong en compare_exchange_weak op std::atomic. In hardware verkrijgt de core de cacheline in een exclusieve toestand, zodat geen andere core haar tijdens de bewerking kan beschrijven.</p>
+</section>
+<section class="term-about">
+  <h2>De retry-lus</h2>
+  <p>Een <a class="term-link" href="/nl/term/lock-free-algorithm/">lock-free</a> update leest de huidige waarde, berekent daaruit de nieuwe waarde en probeert een CAS met de gelezen waarde als verwachte waarde. Als een andere thread de locatie intussen heeft gewijzigd, mislukt de CAS en leest de lus opnieuw en probeert het nog eens. Er slaagt altijd wel een thread, dus het systeem als geheel boekt vooruitgang zonder locks; dat maakt zulke code lock-free maar niet wait-free: één thread met pech kan onbeperkt opnieuw proberen. Bij zware contentie kunnen veel herhalingen en het heen en weer kaatsen van de cacheline tussen cores een CAS-lus trager maken dan een eenvoudige lock.</p>
+</section>
+<section class="term-about">
+  <h2>Het ABA-probleem</h2>
+  <p>CAS controleert alleen of de waarde gelijk is, niet of die nooit is veranderd. Als een locatie tussen de leesactie en de CAS van een thread van A naar B en terug naar A verandert, slaagt de CAS, ook al kan de datastructuur inmiddels anders zijn. Het klassieke geval is een <a class="term-link" href="/nl/term/lock-free-algorithm/">lock-free</a> stack waarbij een knoop wordt gepopt, vrijgegeven en op hetzelfde adres opnieuw toegewezen voordat de pop van een andere thread is voltooid. Gangbare remedies zijn de pointer te koppelen aan een versieteller die bij elke wijziging wordt bijgewerkt, en schema&#39;s voor veilige geheugenteruggave zoals hazard pointers of epoch-based reclamation.</p>
+</section>
+<section class="term-about">
+  <h2>CAS versus LL/SC en fetch-and-add</h2>
+  <p>Veel RISC-architecturen bieden in plaats daarvan load-linked/store-conditional (LL/SC): bij RISC-V reserveert lr een adres en slaat sc alleen op als er sindsdien geen andere schrijfactie naar dat adres heeft plaatsgevonden, en mislukt anders. Omdat het elke tussentijdse schrijfactie detecteert in plaats van waarden te vergelijken, vermijdt het in principe ABA, maar de reservering kan om niet-gerelateerde redenen verloren gaan, en daarom mag compare_exchange_weak onterecht (spurious) mislukken. Voor eenvoudige bewerkingen zoals tellers is atomaire fetch-and-add, of een RISC-V-AMO-instructie zoals amoadd, beter dan een CAS-lus, omdat die nooit opnieuw hoeft te proberen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Compare-and-swap</h2>
   <article class="q-mini" data-qid="multicore-sync-015" data-cat="multicore-sync" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Schrijft alleen een nieuwe waarde als de waarde in het geheugen gelijk is aan de verwachte waarde, en laat weten of dit is gelukt</p><p class="explanation">CAS voert ondeelbaar uit: &#39;als de waarde op dit adres nog de verwachte waarde is, verander hem dan in de nieuwe waarde&#39;. Als een andere thread de waarde tussen lezen en schrijven heeft veranderd, mislukt het, zodat bijwerken kan terwijl wordt gecontroleerd dat er niets is gewijzigd. Bij mislukking wordt opnieuw gelezen en berekend en wordt CAS herhaald in een lus, zodat een gedeelde waarde veilig zonder lock kan worden bijgewerkt. De cmpxchg-instructie van x86 is hiervan een voorbeeld.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het ABA-probleem bij compare-and-swap?</h3>
+  <p>Een CAS slaagt omdat de locatie weer de verwachte waarde bevat, ook al is die tussendoor in iets anders veranderd en weer terug. Dit kan lock-free structuren die geheugen hergebruiken corrumperen en wordt meestal voorkomen met versietellers of veilige geheugenteruggave.</p>
+  <h3>Is een CAS-lus lock-free of wait-free?</h3>
+  <p>Lock-free. Afgezien van onterechte mislukkingen van de weak-varianten mislukt een CAS alleen omdat de update van een andere thread is geslaagd, dus het systeem boekt vooruitgang, maar voor een individuele thread is er geen grens aan het aantal pogingen dat nodig kan zijn.</p>
+  <h3>Wat is het verschil tussen compare_exchange_weak en compare_exchange_strong?</h3>
+  <p>De weak-vorm kan mislukken, zelfs als de waarde overeenkomt, waardoor ze direct op LL/SC-instructies kan worden afgebeeld en goed past in retry-lussen. De strong-vorm mislukt alleen bij een echte mismatch, ten koste van een interne lus op LL/SC-machines.</p>
+</section>
 <section>
   <h2>“Compare-and-swap” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Voorbeelden zijn CAS (compare-and-swap), fetch-and-add en de LR/SC- en AMO-instructies van RISC-V; ze vormen de basis voor locks en lock-free datastructuren.</p><a href="/nl/q/multicore-sync/multicore-sync-014/">Welke uitleg over atomaire instructies (ondeelbare instruct…</a></li></ul>

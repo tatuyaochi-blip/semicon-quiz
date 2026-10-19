@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"MESI-protocol","item":"https://semiconroom.com/nl/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESI-protocol","description":"Coherentieprotocol dat elke cacheregel in een van vier toestanden beheert: Modified, Exclusive, Shared en Invalid. Bij schrijven worden de kopieën in andere cores ongeldig gemaakt.","url":"https://semiconroom.com/nl/term/mesi-protocol/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"MESI-protocol","item":"https://semiconroom.com/nl/term/mesi-protocol/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"MESI-protocol","description":"Coherentieprotocol dat elke cacheregel in een van vier toestanden beheert: Modified, Exclusive, Shared en Invalid. Bij schrijven worden de kopieën in andere cores ongeldig gemaakt.","url":"https://semiconroom.com/nl/term/mesi-protocol/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen MESI en MSI?","acceptedAnswer":{"@type":"Answer","text":"MESI voegt de toestand Exclusive toe voor clean lines die geen andere cache heeft. Een core kan zo'n line dan beschrijven zonder een invalidatie te broadcasten, wat bij MSI wel nodig zou zijn."}},{"@type":"Question","name":"Wat betekent de toestand Modified in MESI?","acceptedAnswer":{"@type":"Answer","text":"Deze cache heeft de enige geldige kopie en heeft die gewijzigd, dus het hoofdgeheugen is verouderd. De line moet bij verdringing worden teruggeschreven of worden geleverd aan een andere core die erom vraagt."}},{"@type":"Question","name":"Wat is false sharing?","acceptedAnswer":{"@type":"Answer","text":"Een vertraging die optreedt wanneer threads op verschillende cores afzonderlijke variabelen beschrijven die in dezelfde cacheline liggen, waardoor het coherentieprotocol de line steeds tussen hun caches heen en weer moet verplaatsen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -117,7 +117,22 @@
 </svg><figcaption class="fig-cap">Toestandsovergangen van het MESI-protocol · <a href="/nl/figures/#fig-mesi">Bekijken in het figurenoverzicht</a></figcaption></figure>
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>De vier toestanden</h2>
+  <p>Modified (M): deze cache heeft de enige kopie en heeft die beschreven, dus het geheugen is verouderd en de data moeten worden teruggeschreven of aan anderen worden geleverd. Exclusive (E): de enige kopie, maar identiek aan het geheugen. Shared (S): een ongewijzigde kopie die andere caches ook kunnen hebben. Invalid (I): de line bevat geen bruikbare data. Het protocol garandeert per line een regel van één schrijver en meerdere lezers: op elk moment mag ofwel één cache de line beschrijven (M of E), ofwel mogen willekeurig veel caches haar lezen (S), nooit beide.</p>
+</section>
+<section class="term-about">
+  <h2>Belangrijke overgangen</h2>
+  <p>Bij een read miss vraagt de cache de line op; als geen andere cache haar heeft, wordt ze in E geladen, anders in S. Als een andere cache haar in M heeft, levert die cache de data of schrijft ze terug en gaat ze naar S. Een schrijfactie naar een line in S moet eerst alle andere kopieën ongeldig maken, een upgrade-verzoek, voordat ze naar M gaat. Een write miss stuurt een read-for-ownership die de line ophaalt en andere kopieën in één stap ongeldig maakt. Wanneer een schrijfverzoek van een andere core wordt waargenomen, gaat een lokale kopie naar I, en een kopie in M geeft eerst haar data door.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom de E-toestand ertoe doet</h2>
+  <p>Het eenvoudigere <a class="term-link" href="/nl/term/message-signaled-interrupts/">MSI</a>-protocol heeft geen E-toestand, dus een core die private data leest en daarna beschrijft, moet een extra invalidatie over de bus sturen, ook al heeft geen andere cache een kopie. E legt vast dat de line clean is en niet gedeeld, zodat de latere schrijfactie stil naar M kan overgaan. Omdat veel data privé zijn voor één core, bespaart dit een grote hoeveelheid coherentieverkeer. Varianten voegen meer toestanden toe: MOESI voegt Owned toe, waarmee een dirty line kan worden gedeeld zonder eerst het geheugen bij te werken, en MESIF voegt Forward toe, dat de ene deler aanwijst die verzoeken beantwoordt.</p>
+</section>
+<section class="term-about">
+  <h2>False sharing</h2>
+  <p>Coherentie werkt per cacheline, doorgaans 64 bytes, niet per variabele. Als twee cores herhaaldelijk verschillende variabelen beschrijven die toevallig in dezelfde line liggen, moet elke schrijfactie de kopie van de andere core ongeldig maken, zodat de line heen en weer kaatst tussen M in de ene cache en I in de andere, ook al raken de threads nooit dezelfde data aan. Deze <a class="term-link" href="/nl/term/false-sharing/">false sharing</a> kan parallelle code trager maken dan sequentiële code. De oplossing is vaak beschreven data per thread, zoals tellers, met padding of alignment over verschillende lines te verdelen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over MESI-protocol</h2>
   <article class="q-mini" data-qid="multicore-sync-003" data-cat="multicore-sync" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -131,7 +146,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Andere cores hoeven niet te worden geïnformeerd en de regel gaat direct over naar de M-toestand</p><p class="explanation">De E-toestand is de toestand waarin alleen deze core de regel heeft en de inhoud gelijk is aan het hoofdgeheugen. Omdat bekend is dat andere cores geen kopie hebben, kan bij schrijven zonder ongeldigverklaringsbericht naar de M-toestand worden overgegaan. Het voordeel van de E-toestand is dat bij het veelvoorkomende patroon waarbij gegevens die maar door één core worden gebruikt worden gelezen en dan geschreven, communicatie wordt bespaard. Bij schrijven vanuit de S-toestand moeten de andere kopieën wel ongeldig worden gemaakt.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen MESI en MSI?</h3>
+  <p>MESI voegt de toestand Exclusive toe voor clean lines die geen andere cache heeft. Een core kan zo&#39;n line dan beschrijven zonder een invalidatie te broadcasten, wat bij MSI wel nodig zou zijn.</p>
+  <h3>Wat betekent de toestand Modified in MESI?</h3>
+  <p>Deze cache heeft de enige geldige kopie en heeft die gewijzigd, dus het hoofdgeheugen is verouderd. De line moet bij verdringing worden teruggeschreven of worden geleverd aan een andere core die erom vraagt.</p>
+  <h3>Wat is false sharing?</h3>
+  <p>Een vertraging die optreedt wanneer threads op verschillende cores afzonderlijke variabelen beschrijven die in dezelfde cacheline liggen, waardoor het coherentieprotocol de line steeds tussen hun caches heen en weer moet verplaatsen.</p>
+</section>
 <section>
   <h2>“MESI-protocol” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij coherentiebeheer krijgt elke cacheregel een toestand zoals gewijzigd, gedeeld of ongeldig (zoals in het MESI-protocol) en worden bij schrijven de kopieën in andere kernen ongeldig gemaakt om de consistentie te bewaren.</p><a href="/nl/q/cpu/cpu-025/">Welk mechanisme houdt in een multicore-CPU de inhoud consis…</a></li></ul>

@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Systolische array","item":"https://semiconroom.com/nl/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Systolische array","description":"Opzet waarbij veel multiply-accumulate-eenheden in een raster staan en een matrixproduct wordt berekend terwijl gegevens achtereenvolgens naar de naburige eenheid stromen. Wordt gebruikt in AI-accelerators.","url":"https://semiconroom.com/nl/term/systolic-array/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Systolische array","item":"https://semiconroom.com/nl/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Systolische array","description":"Opzet waarbij veel multiply-accumulate-eenheden in een raster staan en een matrixproduct wordt berekend terwijl gegevens achtereenvolgens naar de naburige eenheid stromen. Wordt gebruikt in AI-accelerators.","url":"https://semiconroom.com/nl/term/systolic-array/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom heet het een systolische array?","acceptedAnswer":{"@type":"Answer","text":"Data pulseren in een regelmatig ritme door het raster, één stap per klokcyclus, ongeveer zoals het hart bloed rondpompt met systolische samentrekkingen."}},{"@type":"Question","name":"Gebruikt de Google TPU een systolische array?","acceptedAnswer":{"@type":"Answer","text":"Ja. De matrixeenheden zijn grote systolische arrays van multiply-accumulate-elementen, zoals 128 × 128, die matrixproducten voor neurale netwerken berekenen."}},{"@type":"Question","name":"Wat is weight-stationary dataflow?","acceptedAnswer":{"@type":"Answer","text":"Elk processing element houdt één gewicht vast terwijl inputactivaties langsstromen en deelsommen worden doorgegeven. Dit minimaliseert het herhaaldelijk ophalen van gewichten, wat goed past bij inferentie van neurale netwerken."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/cpu/">CPU en architectuur</a></p>
 </article>
+<section class="term-about">
+  <h2>Hoe data door het raster stromen</h2>
+  <p>Een systolische array is een tweedimensionaal raster van processing elements, elk een multiply-accumulate-eenheid (MAC) die alleen met zijn directe buren communiceert. In de weight-stationary-opzet krijgt elk element vooraf één gewicht geladen; inputactivaties komen aan de linkerrand binnen en schuiven per klokcyclus één element naar rechts, terwijl deelsommen naar beneden stromen en elk element zijn eigen product erbij optelt. Afgeronde resultaten verlaten de onderrand. De inputs worden per rij één cyclus verschoven ingevoerd, zodat bij elkaar horende waarden op het juiste moment bij het juiste element samenkomen.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom het efficiënt is</h2>
+  <p>Elke uit het geheugen opgehaalde waarde wordt hergebruikt door een hele rij of kolom elementen in plaats van één keer per bewerking te worden gelezen. Een array van 128 × 128 voert 16.384 MAC&#39;s per klokcyclus uit terwijl hij alleen langs de randen wordt gevoed, dus de hoeveelheid werk per byte geheugenverkeer is zeer hoog. Data verplaatsen vanuit off-chip geheugen kost veel meer energie dan een vermenigvuldig-optelbewerking, dus dit hergebruik spaart zowel vermogen als bandbreedte. Omdat elke verbinding alleen buren met elkaar verbindt, zijn er geen lange broadcastbussen, wat dichte layouts en hoge kloksnelheden mogelijk maakt.</p>
+</section>
+<section class="term-about">
+  <h2>Dataflows en beperkingen</h2>
+  <p>Naast weight-stationary-ontwerpen bestaan er output-stationary-arrays, die elke deelsom op zijn plaats houden terwijl beide operanden erdoorheen stromen, en andere varianten houden de inputs stationair. Elke versie heeft een vul- en leeglooplatentie die evenredig is met de grootte van de array, en de bezettingsgraad daalt als de matrixdimensies klein zijn of niet bij de array passen, waardoor elementen stilstaan. Convoluties worden meestal herschreven als matrixvermenigvuldigingen zodat ze passen. Sparse of onregelmatige berekeningen passen slecht, omdat de starre, geklokte dataflow niet gemakkelijk werk kan overslaan.</p>
+</section>
+<section class="term-about">
+  <h2>Oorsprong en waar je het tegenkomt</h2>
+  <p>Het idee stamt uit eind jaren zeventig, toen H. T. Kung en collega&#39;s regelmatige arrays van eenvoudige cellen voorstelden voor very-large-scale integration (VLSI), genoemd naar het ritmische pompen van het hart. De grootste toepassing vond het in accelerators voor neurale netwerken, waar matrixvermenigvuldiging domineert; de TPU van Google gebruikt bijvoorbeeld grote arrays zoals 128 × 128. <a class="term-link" href="/nl/term/gpu/">GPU</a>&#39;s bereiken een vergelijkbaar doel op een andere manier, met tensor cores die elk kleine matrixtegels berekenen terwijl registers en <a class="term-link" href="/nl/term/gpu-shared-memory/">shared memory</a> het hergebruik van data flexibeler afhandelen.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom heet het een systolische array?</h3>
+  <p>Data pulseren in een regelmatig ritme door het raster, één stap per klokcyclus, ongeveer zoals het hart bloed rondpompt met systolische samentrekkingen.</p>
+  <h3>Gebruikt de Google TPU een systolische array?</h3>
+  <p>Ja. De matrixeenheden zijn grote systolische arrays van multiply-accumulate-elementen, zoals 128 × 128, die matrixproducten voor neurale netwerken berekenen.</p>
+  <h3>Wat is weight-stationary dataflow?</h3>
+  <p>Elk processing element houdt één gewicht vast terwijl inputactivaties langsstromen en deelsommen worden doorgegeven. Dit minimaliseert het herhaaldelijk ophalen van gewichten, wat goed past bij inferentie van neurale netwerken.</p>
+</section>
 
 
 

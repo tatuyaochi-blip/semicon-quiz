@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Multicyclepad","item":"https://semiconroom.com/nl/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Multicyclepad","description":"Timingexceptie die STA vertelt dat een pad meerdere klokcycli mag gebruiken om data over te dragen. Als setup op N cycli wordt gezet, wordt hold meestal op N − 1 gezet om de flank van de holdcontrole terug te zetten op haar oorspronkelijke positie.","url":"https://semiconroom.com/nl/term/multicycle-path/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Multicyclepad","item":"https://semiconroom.com/nl/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Multicyclepad","description":"Timingexceptie die STA vertelt dat een pad meerdere klokcycli mag gebruiken om data over te dragen. Als setup op N cycli wordt gezet, wordt hold meestal op N − 1 gezet om de flank van de holdcontrole terug te zetten op haar oorspronkelijke positie.","url":"https://semiconroom.com/nl/term/multicycle-path/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom een hold-multicycle van N − 1 bij een setup-multicycle van N?","acceptedAnswer":{"@type":"Answer","text":"Het verplaatsen van de setup-capture-flank verplaatst ook de standaard holdcheck naar later, waardoor hold bijna onmogelijk te halen is. De holdinstelling N − 1 zet de holdcheck terug op zijn oorspronkelijke flank."}},{"@type":"Question","name":"Verschil tussen multicyclepad en false path","acceptedAnswer":{"@type":"Answer","text":"Een multicyclepad wordt nog steeds geanalyseerd, maar krijgt meerdere klokperioden. Een false path wordt helemaal niet geanalyseerd en mag alleen worden gebruikt voor paden die functioneel nooit kunnen propageren."}},{"@type":"Question","name":"Wanneer is een multicyclepad instellen veilig?","acceptedAnswer":{"@type":"Answer","text":"Alleen als het ontwerp garandeert dat de bestemming de data om de N cycli bemonstert, bijvoorbeeld via een enable, en verificatie dat gedrag bevestigt. Anders kan de versoepelde check een echte timingfout maskeren."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/sta-cdc/">Timinganalyse en CDC</a></p>
 </article>
+<section class="term-about">
+  <h2>Wanneer een pad echt meer tijd heeft</h2>
+  <p>Sommige paden hoeven data niet binnen één klokperiode af te leveren, omdat de bestemming maar om de N cycli vangt, bijvoorbeeld een register dat wordt geladen <a class="term-link" href="/nl/term/interconnect-via/">via</a> een enable die om de andere cyclus actief is, of een traag rekenblok waarvan het resultaat twee cycli <a class="term-link" href="/nl/term/numerical-aperture/">na</a> het veranderen van de ingangen wordt bemonsterd. Standaard gaat <a class="term-link" href="/nl/term/sta/">STA</a> uit van een overdracht in één cyclus en rapporteert een overtreding. Een multicyclepad-exception, set_multicycle_path in <a class="term-link" href="/nl/term/sdc/">SDC</a>, vertelt de tool dat de capture-flank N perioden na de launch ligt in plaats van één.</p>
+</section>
+<section class="term-about">
+  <h2>Setupberekening</h2>
+  <p>Met een klok van 2,0 ns, een data-aankomsttijd van 3,3 ns en een setuptijd van 0,1 ns geeft de standaardcheck voor één cyclus een vereiste tijd van 1,9 ns en een <a class="term-link" href="/nl/term/slack/">slack</a> van −1,4 ns. Een setup-multicycle van 2 verplaatst de capture naar 4,0 ns, zodat de vereiste tijd 3,9 ns wordt en de slack +0,6 ns. De exception is alleen geldig als de logica werkelijk garandeert dat er om de tweede cyclus wordt gevangen; anders verbergt ze een echte fout die in silicium zal opduiken.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom hold N − 1 nodig heeft</h2>
+  <p><a class="term-link" href="/nl/term/sta/">STA</a> controleert hold ten opzichte van de flank één periode vóór de setup-capture-flank. Verplaats je de setup-capture naar N perioden, dan sleept dat de holdcheck ook mee naar N − 1 perioden <a class="term-link" href="/nl/term/numerical-aperture/">na</a> de launch, wat zou eisen dat nieuwe data minstens zo laat aankomt, een absurd strenge eis die meestal faalt. Een hold-multicycle van N − 1 toevoegen verplaatst de holdcheck terug naar de launch-flank op tijdstip nul en herstelt zo de gewone holdvoorwaarde. Het verwijdert de holdcheck niet.</p>
+</section>
+<section class="term-about">
+  <h2>Multicyclepad vs. false path</h2>
+  <p>Een multicyclepad blijft getimed, alleen met een groter budget. Een <a class="term-link" href="/nl/term/false-path/">false path</a>, ingesteld met set_false_path, wordt volledig van de analyse uitgesloten en is bedoeld voor paden die structureel verbonden zijn maar nooit een betekenisvolle overgang kunnen doorgeven, bijvoorbeeld <a class="term-link" href="/nl/term/interconnect-via/">via</a> twee multiplexers waarvan de selectievoorwaarden elkaar uitsluiten. Een pad als false declareren alleen omdat het moeilijk te sluiten is, verbergt echte bugs, en een echt multicyclepad als false declareren verwijdert een check die het nog steeds nodig heeft.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom een hold-multicycle van N − 1 bij een setup-multicycle van N?</h3>
+  <p>Het verplaatsen van de setup-capture-flank verplaatst ook de standaard holdcheck naar later, waardoor hold bijna onmogelijk te halen is. De holdinstelling N − 1 zet de holdcheck terug op zijn oorspronkelijke flank.</p>
+  <h3>Verschil tussen multicyclepad en false path</h3>
+  <p>Een multicyclepad wordt nog steeds geanalyseerd, maar krijgt meerdere klokperioden. Een false path wordt helemaal niet geanalyseerd en mag alleen worden gebruikt voor paden die functioneel nooit kunnen propageren.</p>
+  <h3>Wanneer is een multicyclepad instellen veilig?</h3>
+  <p>Alleen als het ontwerp garandeert dat de bestemming de data om de N cycli bemonstert, bijvoorbeeld via een enable, en verificatie dat gedrag bevestigt. Anders kan de versoepelde check een echte timingfout maskeren.</p>
+</section>
 
 
 

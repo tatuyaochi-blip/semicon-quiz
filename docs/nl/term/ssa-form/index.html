@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"SSA-vorm (static single assignment)","item":"https://semiconroom.com/nl/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA-vorm (static single assignment)","description":"Vorm van een tussenrepresentatie waarin variabelen zo zijn hernoemd dat elke variabele in het programma precies één keer een waarde krijgt. Op samenvoegpunten wordt met een φ-functie een waarde gekozen. De relatie tussen definitie en gebruik is duidelijk, wat optimaliseren vergemakkelijkt.","url":"https://semiconroom.com/nl/term/ssa-form/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"SSA-vorm (static single assignment)","item":"https://semiconroom.com/nl/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA-vorm (static single assignment)","description":"Vorm van een tussenrepresentatie waarin variabelen zo zijn hernoemd dat elke variabele in het programma precies één keer een waarde krijgt. Op samenvoegpunten wordt met een φ-functie een waarde gekozen. De relatie tussen definitie en gebruik is duidelijk, wat optimaliseren vergemakkelijkt.","url":"https://semiconroom.com/nl/term/ssa-form/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waar staat SSA voor bij compilers?","acceptedAnswer":{"@type":"Answer","text":"Static single assignment. Elke variabele in de IR krijgt op precies één plek in de programmatekst een waarde toegekend, en φ-functies voegen waarden samen waar paden in de control flow samenkomen."}},{"@type":"Question","name":"Hoe werkt SSA met lussen als een variabele maar één keer een waarde mag krijgen?","acceptedAnswer":{"@type":"Answer","text":"De enkele toekenning is statisch, niet dynamisch. Een φ-functie in de lusheader voegt de waarde die de lus binnenkomt samen met de waarde die in de vorige iteratie is berekend, en die ene definitie wordt in elke iteratie uitgevoerd."}},{"@type":"Question","name":"Waar worden φ-functies geplaatst?","acceptedAnswer":{"@type":"Answer","text":"Aan het begin van blokken waar verschillende definities van dezelfde oorspronkelijke variabele via verschillende binnenkomende edges kunnen aankomen. Algoritmen op basis van dominance frontiers vinden deze punten zonder overbodige φ's in te voegen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/compiler/">Compilers</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hernoemen: één definitie per naam</h2>
+  <p>In SSA-vorm (static single assignment) krijgt elke toekenning een eigen variabelenaam. In rechtlijnige code is dit gewoon hernoemen: x = 1; x = x + 2 wordt x1 = 1; x2 = x1 + 2, en elk later gebruik verwijst naar de versie die het bereikt. Het woord static is belangrijk: elke naam heeft precies één toekenning in de programmatekst, ook als die toekenning in een lus vele keren wordt uitgevoerd. Omdat elk gebruik precies één definitie heeft, zijn de definitie-gebruiksrelaties die optimizers nodig hebben expliciet zichtbaar in de namen zelf, in plaats van dat ze met een aparte analyse moeten worden berekend.</p>
+</section>
+<section class="term-about">
+  <h2>φ-functies op samenvoegpunten</h2>
+  <p>Alleen hernoemen werkt niet waar de control flow samenkomt, omdat de waarde van x <a class="term-link" href="/nl/term/numerical-aperture/">na</a> een if-else afhangt van welke tak is uitgevoerd. SSA voegt aan het begin van het samenvoegblok een φ-functie (phi) in, x3 = φ(x1, x2), met één argument per binnenkomende edge; die levert het argument op van de edge die daadwerkelijk is genomen. Lussen hebben hetzelfde nodig in de lusheader, waar de beginwaarde wordt samengevoegd met de waarde uit de vorige iteratie. Standaardconstructiealgoritmen plaatsen φ-functies alleen waar definities uit verschillende paden werkelijk samenkomen, met behulp van de dominantie-informatie van de control-flow graph.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom optimizers van SSA houden</h2>
+  <p>Met één definitie per naam worden veel optimalisaties eenvoudig en snel. Constant propagation volgt gewoon elke definitie naar haar gebruiken; dead-code elimination verwijdert definities zonder gebruik; global value numbering spoort overbodige berekeningen op door bewerkingen op dezelfde benoemde waarden te vergelijken. Analyses kunnen sparse zijn en langs definitie-gebruiksverbindingen werken in plaats van over elk programmapunt te itereren. Om deze redenen zijn de <a class="term-link" href="/nl/term/intermediate-representation/">IR</a>&#39;s van veel productiecompilers, waaronder <a class="term-link" href="/nl/term/llvm/">LLVM</a> IR, in SSA-vorm, meestal voor scalaire waarden in virtuele registers, terwijl geheugen <a class="term-link" href="/nl/term/interconnect-via/">via</a> expliciete loads en stores wordt benaderd.</p>
+</section>
+<section class="term-about">
+  <h2>SSA weer verlaten</h2>
+  <p>Processors hebben geen φ-instructie, dus vóór of tijdens de registerallocatie zet de compiler de code uit SSA om. Elke φ wordt vervangen door kopieerinstructies aan het eind van de voorgangerblokken, zodat elk binnenkomend pad de gekozen waarde naar een gemeenschappelijke locatie schrijft. Edges die een blok met meerdere opvolgers verlaten en een blok met meerdere voorgangers binnenkomen, moeten soms worden gesplitst om plaats te bieden aan die kopieën. De registerallocatie probeert de kopieën vervolgens samen te voegen (coalescing) door beide kanten hetzelfde register toe te wijzen, zodat de meeste ervan verdwijnen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over SSA-vorm (static single assignment)</h2>
   <article class="q-mini" data-qid="compiler-008" data-cat="compiler" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Aan elke variabele wordt in het programma precies één keer een waarde toegewezen</p><p class="explanation">In <a class="term-link" href="/nl/term/ssa-form/">SSA-vorm</a> worden variabelen zo hernoemd dat aan elke variabele één keer een waarde wordt toegewezen, en op samenvoegpunten wordt met een φ-functie een waarde gekozen. Wordt x tweemaal toegewezen, dan wordt het bijvoorbeeld verdeeld in x1 en x2, zodat duidelijk is welke wordt gebruikt. Doordat het verband tussen definitie en gebruik duidelijk is, zijn optimalisaties zoals constant propagation en het verwijderen van dode code gemakkelijker. Sprongen worden door φ-functies behandeld, zodat sprong-instructies niet verdwijnen. Variabelen staan ook niet in het geheugen; ze worden meestal als kandidaat voor registers behandeld.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waar staat SSA voor bij compilers?</h3>
+  <p>Static single assignment. Elke variabele in de IR krijgt op precies één plek in de programmatekst een waarde toegekend, en φ-functies voegen waarden samen waar paden in de control flow samenkomen.</p>
+  <h3>Hoe werkt SSA met lussen als een variabele maar één keer een waarde mag krijgen?</h3>
+  <p>De enkele toekenning is statisch, niet dynamisch. Een φ-functie in de lusheader voegt de waarde die de lus binnenkomt samen met de waarde die in de vorige iteratie is berekend, en die ene definitie wordt in elke iteratie uitgevoerd.</p>
+  <h3>Waar worden φ-functies geplaatst?</h3>
+  <p>Aan het begin van blokken waar verschillende definities van dezelfde oorspronkelijke variabele via verschillende binnenkomende edges kunnen aankomen. Algoritmen op basis van dominance frontiers vinden deze punten zonder overbodige φ&#39;s in te voegen.</p>
+</section>
 <section>
   <h2>“SSA-vorm (static single assignment)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>In SSA-vorm worden variabelen zo hernoemd dat aan elke variabele één keer een waarde wordt toegewezen, en op samenvoegpunten wordt met een φ-functie een waarde gekozen.</p><a href="/nl/q/compiler/compiler-008/">Welke uitspraak over de tussenrepresentatie in SSA-vorm is …</a></li><li><p>In SSA-vorm krijgen de toewijzing in de then-tak en die in de else-tak verschillende namen, x1 en x2, zodat moet worden aangegeven welke x in de berekening van y na het samenkomen moet worden gebruikt.</p><a href="/nl/q/compiler/compiler-009/">Als de bovenstaande code in SSA-vorm wordt gebracht, komt n…</a></li></ul>

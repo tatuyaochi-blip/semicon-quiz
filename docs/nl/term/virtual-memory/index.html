@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Virtueel geheugen","item":"https://semiconroom.com/nl/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Virtueel geheugen","description":"Mechanisme waarbij het besturingssysteem en de hardware de adressen die programma's gebruiken (virtuele adressen) koppelen aan echte geheugenadressen (fysieke adressen). Elk programma kan een eigen, ruime geheugenruimte gebruiken.","url":"https://semiconroom.com/nl/term/virtual-memory/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Virtueel geheugen","item":"https://semiconroom.com/nl/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Virtueel geheugen","description":"Mechanisme waarbij het besturingssysteem en de hardware de adressen die programma's gebruiken (virtuele adressen) koppelen aan echte geheugenadressen (fysieke adressen). Elk programma kan een eigen, ruime geheugenruimte gebruiken.","url":"https://semiconroom.com/nl/term/virtual-memory/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen een paginatabel en een TLB?","acceptedAnswer":{"@type":"Answer","text":"De paginatabel is de volledige mapping van virtuele naar fysieke pagina's, opgeslagen in het geheugen en bijgehouden door het besturingssysteem. De TLB is een kleine hardwarecache in de CPU die recent gebruikte entries bewaart, zodat de meeste vertalingen geen table walk nodig hebben."}},{"@type":"Question","name":"Wat gebeurt er bij een page fault?","acceptedAnswer":{"@type":"Answer","text":"De CPU stopt de instructie die de fault veroorzaakte en geeft de besturing aan het besturingssysteem. Dat mapt een geldige pagina, bijvoorbeeld door die van schijf te laden, en voert de instructie opnieuw uit, of beëindigt het proces als de toegang ongeldig was."}},{"@type":"Question","name":"Waarom huge pages gebruiken?","acceptedAnswer":{"@type":"Answer","text":"Elke TLB-entry dekt dan veel meer geheugen, zodat programma's met grote working sets minder TLB-misses en table walks hebben. Databases en virtuele machines gebruiken ze vaak."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/cpu/">CPU en architectuur</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe adresvertaling werkt</h2>
+  <p>Het geheugen is verdeeld in pagina&#39;s van vaste grootte, meestal 4 KB. Een virtueel adres valt uiteen in een virtueel paginanummer en een offset binnen de pagina, 12 bits bij pagina&#39;s van 4 KB. De memory management unit (MMU) zoekt het virtuele paginanummer op in de <a class="term-link" href="/nl/term/page-table/">paginatabel</a>, die het fysieke framenummer levert plus permissiebits zoals present, writable, executable en user-accessible. De offset wordt ongewijzigd overgenomen. Om de tabellen compact te houden, zijn ze als boom georganiseerd: x86-64 met 48-bits virtuele adressen gebruikt vier niveaus, die elk door 9 adresbits worden geïndexeerd.</p>
+</section>
+<section class="term-about">
+  <h2>De TLB en huge pages</h2>
+  <p>Het doorlopen van een tabel met vier niveaus zou vier geheugentoegangen per load kunnen kosten, dus de <a class="term-link" href="/nl/term/tlb/">translation lookaside buffer</a> (TLB) cachet recente vertalingen, en de meeste toegangen leveren daarin een hit op. TLB&#39;s bevatten slechts tientallen tot enkele duizenden entries, en hun bereik is het aantal entries maal de paginagrootte: ongeveer 1000 entries van 4 KB dekken slechts 4 MB. Programma&#39;s met grotere working sets missen vaak, en daarom bieden besturingssystemen huge pages aan, bijvoorbeeld van 2 MB, waarmee dezelfde entries gigabytes dekken. Dankzij address-space identifiers kan de TLB entries van meerdere processen tegelijk bewaren.</p>
+</section>
+<section class="term-about">
+  <h2>Page faults en demand paging</h2>
+  <p>Is een entry als niet aanwezig gemarkeerd, dan veroorzaakt de toegang een <a class="term-link" href="/nl/term/page-fault/">page fault</a> en neemt het besturingssysteem het over. Het kan een nieuwe, met nullen gevulde pagina toewijzen, de pagina inlezen uit een bestand of swapruimte, of een ongeldige toegang detecteren en het programma beëindigen met een segmentation fault. Dit maakt <a class="term-link" href="/nl/term/demand-paging/">demand paging</a> mogelijk, waarbij pagina&#39;s pas worden geladen als ze worden aangesproken, evenals memory-mapped bestanden en <a class="term-link" href="/nl/term/copy-on-write/">copy-on-write</a>, waarbij processen pagina&#39;s delen totdat een van hen schrijft. Als de working set het fysieke geheugen ver overtreft, gaat het systeem door voortdurend swappen, <a class="term-link" href="/nl/term/thrashing/">thrashing</a> genoemd, tergend traag lopen.</p>
+</section>
+<section class="term-about">
+  <h2>Virtueel geheugen versus caches</h2>
+  <p>Caches en virtueel geheugen worden vaak verward omdat beide met de geheugenhiërarchie te maken hebben, maar hun taken verschillen. Een cache is een door hardware beheerde kopie van recent gebruikte data, die puur voor snelheid bestaat en onzichtbaar is voor software. Virtueel geheugen is een door het besturingssysteem beheerde mapping die elk proces een eigen adresruimte geeft, bescherming afdwingt tussen processen onderling en ten opzichte van de kernel, en het delen van fysieke pagina&#39;s mogelijk maakt, zoals bij gemeenschappelijke bibliotheken. In het dagelijks taalgebruik verwijst virtueel geheugen soms alleen naar het swapbestand, dat slechts één van de functies is die het mogelijk maakt.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Virtueel geheugen</h2>
   <article class="q-mini" data-qid="cpu-014" data-cat="cpu" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Paginanummers van virtuele adressen koppelen aan paginanummers van fysieke adressen</p><p class="explanation">Bij <a class="term-link" href="/nl/term/virtual-memory/">virtueel geheugen</a> worden virtuele adressen die een programma gebruikt omgezet in adressen van het feitelijke fysieke geheugen. De <a class="term-link" href="/nl/term/page-table/">paginatabel</a> legt per virtueel paginanummer het bijbehorende fysieke paginanummer vast, samen met beveiligingsinformatie zoals lees- en schrijfrechten; het besturingssysteem maakt hem per proces aan en de MMU van de CPU raadpleegt hem. Veelgebruikte vertalingen worden in de <a class="term-link" href="/nl/term/tlb/">TLB</a> bewaard. Het is geen tabel die de inhoud van gegevens kopieert of de prioriteit van processen beheert.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen een paginatabel en een TLB?</h3>
+  <p>De paginatabel is de volledige mapping van virtuele naar fysieke pagina&#39;s, opgeslagen in het geheugen en bijgehouden door het besturingssysteem. De TLB is een kleine hardwarecache in de CPU die recent gebruikte entries bewaart, zodat de meeste vertalingen geen table walk nodig hebben.</p>
+  <h3>Wat gebeurt er bij een page fault?</h3>
+  <p>De CPU stopt de instructie die de fault veroorzaakte en geeft de besturing aan het besturingssysteem. Dat mapt een geldige pagina, bijvoorbeeld door die van schijf te laden, en voert de instructie opnieuw uit, of beëindigt het proces als de toegang ongeldig was.</p>
+  <h3>Waarom huge pages gebruiken?</h3>
+  <p>Elke TLB-entry dekt dan veel meer geheugen, zodat programma&#39;s met grote working sets minder TLB-misses en table walks hebben. Databases en virtuele machines gebruiken ze vaak.</p>
+</section>
 <section>
   <h2>“Virtueel geheugen” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij virtueel geheugen moeten de virtuele adressen van een programma worden omgezet naar fysieke adressen.</p><a href="/nl/q/cpu/cpu-014/">Welke cache bewaart de resultaten van de omzetting van virt…</a></li><li><p>Bij virtueel geheugen worden virtuele adressen die een programma gebruikt omgezet in adressen van het feitelijke fysieke geheugen.</p><a href="/nl/q/os-hardware/os-hardware-010/">Wat is de juiste rol van de paginatabel?</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Statisch linken","item":"https://semiconroom.com/nl/term/static-linking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Statisch linken","description":"Methode waarbij de code van gebruikte bibliotheken in het uitvoerbare bestand wordt gekopieerd en samengevoegd. Werkt ook als de bibliotheek in de uitvoeringsomgeving ontbreekt, maar het bestand wordt groot en wijzigingen aan de bibliotheek worden pas na opnieuw bouwen doorgevoerd.","url":"https://semiconroom.com/nl/term/static-linking/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Statisch linken","item":"https://semiconroom.com/nl/term/static-linking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Statisch linken","description":"Methode waarbij de code van gebruikte bibliotheken in het uitvoerbare bestand wordt gekopieerd en samengevoegd. Werkt ook als de bibliotheek in de uitvoeringsomgeving ontbreekt, maar het bestand wordt groot en wijzigingen aan de bibliotheek worden pas na opnieuw bouwen doorgevoerd.","url":"https://semiconroom.com/nl/term/static-linking/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Hoe link ik een C-programma statisch met gcc?","acceptedAnswer":{"@type":"Answer","text":"Voeg -static toe aan de linkopdracht, bijvoorbeeld gcc -static main.c -o main. Daarvoor moeten statische versies (.a) van alle betrokken bibliotheken, inclusief de C-bibliotheek, zijn geïnstalleerd."}},{"@type":"Question","name":"Waarom is mijn statisch gelinkte executable zoveel groter?","acceptedAnswer":{"@type":"Answer","text":"Hij bevat kopieën van alle bibliotheekcode die hij gebruikt, inclusief delen van de C-runtime, in plaats van te verwijzen naar shared libraries die al op het systeem staan. Symbolen strippen en linken met garbage collection van secties kan de grootte verkleinen."}},{"@type":"Question","name":"Is een statisch gelinkt programma sneller?","acceptedAnswer":{"@type":"Answer","text":"Het opstarten is meestal sneller omdat er geen shared libraries hoeven te worden geladen en gebonden, en aanroepen vermijden een indirectie. Voor de meeste langlopende programma's is het verschil in snelheid in de stabiele toestand klein."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/linker-loader/">Linker, loader en uitvoerbare formaten</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat de linker doet</h2>
+  <p>Bij statisch linken leest de <a class="term-link" href="/nl/term/linker/">linker</a> de objectbestanden van het programma en de statische bibliotheken die op de opdrachtregel zijn opgegeven, haalt hij de archiefleden binnen die nodig zijn om ongedefinieerde symbolen op te lossen, en voegt hij gelijksoortige secties samen: alle code in één text-sectie, alle geïnitialiseerde data in één data-sectie, enzovoort. Daarna kent hij definitieve adressen toe, patcht hij elke verwijzing met behulp van de <a class="term-link" href="/nl/term/relocation/">relocatie</a>-entries en schrijft hij één enkele executable. Bij GCC vraagt de optie -static hierom voor alle bibliotheken, inclusief de C-standaardbibliotheek, mits daarvan statische versies zijn geïnstalleerd.</p>
+</section>
+<section class="term-about">
+  <h2>Statisch versus dynamisch linken</h2>
+  <p>Een statisch gelinkte executable is op zichzelf staand: bij het opstarten hoeft niets te worden gezocht, er is geen symboolbinding door een <a class="term-link" href="/nl/term/dynamic-linker/">dynamische linker</a> en aanroepen naar bibliotheekcode zijn direct. De kosten zitten in grootte en onderhoud. Elk programma draagt zijn eigen kopie van elke bibliotheekroutine die het gebruikt, dus kopieën worden niet tussen processen in het geheugen gedeeld zoals pagina&#39;s van shared libraries, en een beveiligingsfix in een bibliotheek bereikt het programma pas als het opnieuw wordt gelinkt. <a class="term-link" href="/nl/term/dynamic-linking/">Dynamisch linken</a> keert deze afwegingen om, ten koste van een afhankelijkheid van compatibele bibliotheekversies op elke machine waarop het programma draait.</p>
+</section>
+<section class="term-about">
+  <h2>Grenzen van het op zichzelf staan</h2>
+  <p>Een statische executable is nog steeds afhankelijk van de CPU-architectuur en van de system-call-interface van het besturingssysteem, dus hij kan niet zomaar op een ander besturingssysteem draaien. Sommige bibliotheekfuncties gaan bovendien achter de schermen uit van dynamisch laden. GNU libc waarschuwt bijvoorbeeld dat functies zoals getaddrinfo, gebruikt in statisch gelinkte programma&#39;s, tijdens de uitvoering toch shared libraries nodig hebben voor name-service-lookups. Statisch linken betekent ook dat het programma minder gemakkelijk plug-ins in dlopen-stijl kan gebruiken, omdat dat shared objects zijn die een <a class="term-link" href="/nl/term/dynamic-linker/">dynamische linker</a> verwachten.</p>
+</section>
+<section class="term-about">
+  <h2>Waar je het tegenkomt</h2>
+  <p>Firmware voor microcontrollers wordt vrijwel altijd statisch tot één image gelinkt, omdat er geen <a class="term-link" href="/nl/term/program-loader/">loader</a> of bestandssysteem is om tijdens de uitvoering bibliotheken te leveren. Op servers en in minimale containerimages worden statische executables gewaardeerd, omdat één bestand naar elke machine met een compatibele kernel kan worden gekopieerd. Ontwikkelaars gebruiken statisch linken ook voor command-line tools die op veel distributies moeten draaien zonder zorgen over bibliotheekversies, en accepteren een groter bestand in ruil voor het vermijden van problemen zoals een ontbrekende of incompatibele <a class="term-link" href="/nl/term/shared-library/">shared library</a>.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Statisch linken</h2>
   <article class="q-mini" data-qid="linker-loader-019" data-cat="linker-loader" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. De code van de gebruikte bibliotheken wordt in het uitvoerbare bestand gekopieerd en daarmee samengevoegd</p><p class="explanation">Bij <a class="term-link" href="/nl/term/static-linking/">statisch linken</a> haalt de <a class="term-link" href="/nl/term/linker/">linker</a> de benodigde functies uit een <a class="term-link" href="/nl/term/static-library/">statische bibliotheek</a> (op Linux een .a-bestand) en bouwt die in het uitvoerbare bestand in. Het werkt ook als de bibliotheek in de uitvoeromgeving ontbreekt en er is geen koppelwerk bij het opstarten, maar het uitvoerbare bestand wordt groot en elk programma dat dezelfde bibliotheek gebruikt, heeft een eigen kopie. Ook als een fout in de bibliotheek is verholpen, wordt dat pas verwerkt <a class="term-link" href="/nl/term/numerical-aperture/">na</a> opnieuw bouwen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Hoe link ik een C-programma statisch met gcc?</h3>
+  <p>Voeg -static toe aan de linkopdracht, bijvoorbeeld gcc -static main.c -o main. Daarvoor moeten statische versies (.a) van alle betrokken bibliotheken, inclusief de C-bibliotheek, zijn geïnstalleerd.</p>
+  <h3>Waarom is mijn statisch gelinkte executable zoveel groter?</h3>
+  <p>Hij bevat kopieën van alle bibliotheekcode die hij gebruikt, inclusief delen van de C-runtime, in plaats van te verwijzen naar shared libraries die al op het systeem staan. Symbolen strippen en linken met garbage collection van secties kan de grootte verkleinen.</p>
+  <h3>Is een statisch gelinkt programma sneller?</h3>
+  <p>Het opstarten is meestal sneller omdat er geen shared libraries hoeven te worden geladen en gebonden, en aanroepen vermijden een indirectie. Voor de meeste langlopende programma&#39;s is het verschil in snelheid in de stabiele toestand klein.</p>
+</section>
 <section>
   <h2>“Statisch linken” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij statisch linken haalt de linker de benodigde functies uit een statische bibliotheek (op Linux een .a-bestand) en bouwt die in het uitvoerbare bestand in.</p><a href="/nl/q/linker-loader/linker-loader-019/">Welke omschrijving van statisch linken is juist?</a></li></ul>

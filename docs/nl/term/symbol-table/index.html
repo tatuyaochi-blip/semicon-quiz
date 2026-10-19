@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Symbooltabel","item":"https://semiconroom.com/nl/term/symbol-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Symbooltabel","description":"Lijst in object- en uitvoerbare bestanden met namen van functies en variabelen en bijbehorende adressen. Wordt gebruikt voor linken en debuggen en kan met strip worden verwijderd.","url":"https://semiconroom.com/nl/term/symbol-table/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Symbooltabel","item":"https://semiconroom.com/nl/term/symbol-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Symbooltabel","description":"Lijst in object- en uitvoerbare bestanden met namen van functies en variabelen en bijbehorende adressen. Wordt gebruikt voor linken en debuggen en kan met strip worden verwijderd.","url":"https://semiconroom.com/nl/term/symbol-table/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Hoe bekijk ik de symbooltabel van een executable of objectbestand?","acceptedAnswer":{"@type":"Answer","text":"Op Linux toont nm de symbolen met een type van één letter, en readelf -s toont de volledige ELF-symbooltabellen inclusief grootte, type en binding. objdump -t is een andere mogelijkheid."}},{"@type":"Question","name":"Wat betekenen T en U in de uitvoer van nm?","acceptedAnswer":{"@type":"Answer","text":"T markeert een symbool dat in de text-sectie (code) is gedefinieerd, doorgaans een globale functie, en U markeert een ongedefinieerd symbool waarnaar dit bestand verwijst maar dat het niet definieert. Kleine letters geven lokale symbolen aan."}},{"@type":"Question","name":"Kan een gestripte binary nog worden gedebugd?","acceptedAnswer":{"@type":"Answer","text":"Ja, maar stacktraces tonen adressen in plaats van functienamen, tenzij apart bewaarde debuginformatie of symboolbestanden voor de debugger beschikbaar zijn."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/linker-loader/">Linker, loader en uitvoerbare formaten</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat een entry bevat</h2>
+  <p>Elke entry in de symbooltabel beschrijft één benoemde entiteit. In het <a class="term-link" href="/nl/term/executable-and-linkable-format/">ELF</a>-formaat (Executable and Linkable Format) dat op Linux wordt gebruikt, legt een entry de naam vast (als offset in een stringtabel), de waarde (een adres, of in een <a class="term-link" href="/nl/term/object-file/">objectbestand</a> een offset binnen een sectie), de grootte, het type zoals functie of dataobject, de binding (local, global of weak) en de sectie waarin het symbool is gedefinieerd. Een symbool waarnaar in dit bestand wordt verwezen maar dat er niet in is gedefinieerd, wordt als undefined gemarkeerd; dit zijn de verwijzingen die de <a class="term-link" href="/nl/term/linker/">linker</a> moet invullen vanuit andere objectbestanden of bibliotheken.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe de linker haar gebruikt</h2>
+  <p>Linken begint met <a class="term-link" href="/nl/term/symbol-resolution/">symboolresolutie</a>: de <a class="term-link" href="/nl/term/linker/">linker</a> verzamelt de symbooltabellen van alle invoerbestanden en koppelt elke ongedefinieerde verwijzing aan precies één definitie. Twee sterke globale definities met dezelfde naam geven een multiple-definition-fout, een weak definitie wijkt voor een sterke, en een verwijzing zonder definitie geeft een undefined-reference-fout. Zodra elk symbool een definitief adres heeft, verwerkt de linker de <a class="term-link" href="/nl/term/relocation/">relocatie</a>-entries en patcht hij elke instructie en elk datawoord dat naar een symbool verwijst. Lokale symbolen, zoals static functies in C, doen nooit mee aan het koppelen tussen bestanden.</p>
+</section>
+<section class="term-about">
+  <h2>Statische symbolen, dynamische symbolen en strip</h2>
+  <p><a class="term-link" href="/nl/term/executable-and-linkable-format/">ELF</a>-bestanden bevatten twee symbooltabellen. De volledige tabel (.symtab) dient de statische <a class="term-link" href="/nl/term/linker/">linker</a> en debuggers; de dynamische tabel (.dynsym) bevat alleen de symbolen die bij het laden tussen een executable en zijn shared libraries moeten worden opgelost. strip verwijdert .symtab en debugsecties zoals DWARF-regelinformatie, waardoor het bestand kleiner wordt, maar laat .dynsym staan omdat het programma niet zonder kan draaien. Ontwikkelaars bewaren de debuginformatie vaak vóór het strippen in een apart bestand, zodat crashes in uitgeleverde binaries nog steeds van symbolen kunnen worden voorzien. Tools zoals nm en readelf -s tonen de symbolen van een bestand.</p>
+</section>
+<section class="term-about">
+  <h2>De symbooltabel van de compiler</h2>
+  <p>Dezelfde term verwijst ook naar een andere structuur in de compiler. Tijdens de semantische analyse houdt de compiler een tabel bij, doorgaans hashtabellen die per geneste scope zijn georganiseerd, die elke identifier koppelt aan zijn declaratie, type en opslag. Die beantwoordt vragen zoals welke variabele x op dit punt betekent en of een functie met overeenkomende argumenten is gedeclareerd. Die tabel bestaat alleen tijdens het compileren. De symbooltabel in het <a class="term-link" href="/nl/term/object-file/">objectbestand</a> is de blijvende uitvoer ervan en bevat alleen de namen die ertoe doen voor linken, <a class="term-link" href="/nl/term/relocation/">relocatie</a> en debuggen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Symbooltabel</h2>
   <article class="q-mini" data-qid="linker-loader-001" data-cat="linker-loader" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. De symbooltabel en debuginformatie worden verwijderd, waardoor het bestand kleiner wordt maar functienamen en dergelijke in een debugger minder zichtbaar zijn</p><p class="explanation">Een uitvoerbaar bestand kan een <a class="term-link" href="/nl/term/symbol-table/">symbooltabel</a> met namen van functies en variabelen en debuginformatie met de koppeling aan regels van de broncode bevatten. Deze zijn voor uitvoering niet nodig, dus met strip worden ze verwijderd en wordt het bestand kleiner. Omdat bij foutopsporing functienamen en regelnummers dan niet meer zichtbaar zijn, wordt de informatie van vóór het verwijderen soms apart bewaard. Symbolen die voor <a class="term-link" href="/nl/term/dynamic-linking/">dynamisch linken</a> nodig zijn, blijven behouden.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Hoe bekijk ik de symbooltabel van een executable of objectbestand?</h3>
+  <p>Op Linux toont nm de symbolen met een type van één letter, en readelf -s toont de volledige ELF-symbooltabellen inclusief grootte, type en binding. objdump -t is een andere mogelijkheid.</p>
+  <h3>Wat betekenen T en U in de uitvoer van nm?</h3>
+  <p>T markeert een symbool dat in de text-sectie (code) is gedefinieerd, doorgaans een globale functie, en U markeert een ongedefinieerd symbool waarnaar dit bestand verwijst maar dat het niet definieert. Kleine letters geven lokale symbolen aan.</p>
+  <h3>Kan een gestripte binary nog worden gedebugd?</h3>
+  <p>Ja, maar stacktraces tonen adressen in plaats van functienamen, tenzij apart bewaarde debuginformatie of symboolbestanden voor de debugger beschikbaar zijn.</p>
+</section>
 <section>
   <h2>“Symbooltabel” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Een objectbestand bevat de machinecode die uit de functies van dat bestand is vertaald, de beginwaarden van variabelen, een lijst van gedefinieerde en gerefereerde namen (symbooltabel) en een lijst van plaatsen waar later adressen moeten worden ingevuld (relocatie-informatie).</p><a href="/nl/q/linker-loader/linker-loader-001/">Welke uitspraak over het objectbestand (.o) dat de compiler…</a></li><li><p>Een uitvoerbaar bestand kan een symbooltabel met namen van functies en variabelen en debuginformatie met de koppeling aan regels van de broncode bevatten.</p><a href="/nl/q/linker-loader/linker-loader-033/">Wat gebeurt er als het commando strip op een uitvoerbaar be…</a></li></ul>

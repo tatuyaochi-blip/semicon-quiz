@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Watchdog-timer","item":"https://semiconroom.com/nl/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Watchdog-timer","description":"Timer die de microcontroller reset als hij niet binnen een bepaalde tijd door de software wordt gereset (kick). Laat het systeem herstellen van een op hol geslagen of vastgelopen programma.","url":"https://semiconroom.com/nl/term/watchdog-timer/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Watchdog-timer","item":"https://semiconroom.com/nl/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Watchdog-timer","description":"Timer die de microcontroller reset als hij niet binnen een bepaalde tijd door de software wordt gereset (kick). Laat het systeem herstellen van een op hol geslagen of vastgelopen programma.","url":"https://semiconroom.com/nl/term/watchdog-timer/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat betekent een watchdog-timer kicken of voeden?","acceptedAnswer":{"@type":"Answer","text":"Het betekent naar het reload- of serviceregister van de watchdog schrijven, zodat de teller opnieuw begint voordat hij afloopt. Gezonde software doet dit periodiek; stopt ze daarmee, dan reset de watchdog de chip."}},{"@type":"Question","name":"Watchdog kicken in een timerinterrupt, mag dat?","acceptedAnswer":{"@type":"Answer","text":"Niet onvoorwaardelijk. Een timerinterrupt blijft draaien, ook als de hoofdcode vastzit, en zou de fout dus maskeren; kick pas nadat is bevestigd dat de hoofdlus en elke taak een normale cyclus hebben doorlopen."}},{"@type":"Question","name":"Verschil tussen window-watchdog en normale watchdog","acceptedAnswer":{"@type":"Answer","text":"Een normale watchdog reset alleen als de kick te laat komt. Een window-watchdog behandelt ook een kick die te vroeg komt als fout en vangt zo code die abnormaal snel in een lus draait."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/embedded/">Embedded systemen en firmware</a></p>
 </article>
+<section class="term-about">
+  <h2>Hoe een watchdog werkt</h2>
+  <p>Een watchdog is een aftellende teller die onafhankelijk loopt van het programma dat hij bewaakt. De software moet hem periodiek &#39;kicken&#39;, &#39;voeden&#39; of &#39;bedienen&#39;, meestal door een specifieke sleutelwaarde naar een register te schrijven, waardoor de teller opnieuw wordt geladen. Bereikt de teller nul omdat de code in een lus is blijven hangen, in een fault handler is beland of door ruis is verstoord, dan activeert de watchdog een reset (bij sommige componenten eerst een vroegtijdige waarschuwingsinterrupt) en start de <a class="term-link" href="/nl/term/microcontroller/">microcontroller</a> opnieuw vanuit een bekende toestand. Doordat hij zijn klok uit een eigen langzame oscillator haalt, legt een uitgevallen hoofdklok hem niet ook stil.</p>
+</section>
+<section class="term-about">
+  <h2>Waar je hem kickt</h2>
+  <p>Een watchdog is maar zo goed als de plek waar hij wordt gekickt. Hem onvoorwaardelijk kicken in een periodieke timerinterrupt is een klassieke fout: de <a class="term-link" href="/nl/term/interrupt/">interrupt</a> blijft komen, ook als de hoofdlus vastzit, dus de teller loopt nooit af en het vastlopen blijft onopgemerkt. Een beter patroon is dat elke taak of elke stap van de hoofdlus een check-in-vlag zet, en dat een supervisorroutine de watchdog alleen kickt als alle vlaggen binnen de periode zijn gezet, en ze daarna wist. De time-out wordt langer gekozen dan de worstcase-looptijd van de lus, maar kort genoeg om de hersteltijd te begrenzen.</p>
+</section>
+<section class="term-about">
+  <h2>Window-watchdog vs. standaardwatchdog</h2>
+  <p>Een standaardwatchdog vangt alleen kicks die te laat komen. Laat een fout het programma het grootste deel van zijn werk overslaan en in een korte lus draaien die de kick nog bevat, dan wordt de timer vaker bediend dan verwacht en wordt niets gedetecteerd. Een window-watchdog voegt een ondergrens toe: kicks worden alleen binnen een gedefinieerd tijdvenster geaccepteerd, en een kick die te vroeg komt, wordt net als een ontbrekende kick als fout behandeld. Zo worden fouten in de programmaflow gevangen die een eenvoudige time-out mist; daarom zijn window-watchdogs gebruikelijk in ontwerpen voor functionele veiligheid.</p>
+</section>
+<section class="term-about">
+  <h2>Externe watchdogs in veiligheidssystemen</h2>
+  <p>In automotive- en industriële apparatuur zit de watchdog vaak in een aparte supervisor- of power-management-IC met een eigen klok, zodat een gemeenschappelijke oorzaak, zoals een uitgevallen oscillator, niet zowel de processor als zijn bewaker kan stilleggen. Sommige externe bewakers gebruiken vraag-en-antwoordschema&#39;s waarbij de processor binnen een tijdvenster het juiste antwoord op een challenge moet teruggeven. <a class="term-link" href="/nl/term/numerical-aperture/">Na</a> een watchdogreset leest de firmware meestal een reset-cause-register uit, zodat de gebeurtenis kan worden gelogd en geanalyseerd in plaats van zich ongemerkt te herhalen.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat betekent een watchdog-timer kicken of voeden?</h3>
+  <p>Het betekent naar het reload- of serviceregister van de watchdog schrijven, zodat de teller opnieuw begint voordat hij afloopt. Gezonde software doet dit periodiek; stopt ze daarmee, dan reset de watchdog de chip.</p>
+  <h3>Watchdog kicken in een timerinterrupt, mag dat?</h3>
+  <p>Niet onvoorwaardelijk. Een timerinterrupt blijft draaien, ook als de hoofdcode vastzit, en zou de fout dus maskeren; kick pas nadat is bevestigd dat de hoofdlus en elke taak een normale cyclus hebben doorlopen.</p>
+  <h3>Verschil tussen window-watchdog en normale watchdog</h3>
+  <p>Een normale watchdog reset alleen als de kick te laat komt. Een window-watchdog behandelt ook een kick die te vroeg komt als fout en vangt zo code die abnormaal snel in een lus draait.</p>
+</section>
 
 
 

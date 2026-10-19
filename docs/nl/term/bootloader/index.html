@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Bootloader","item":"https://semiconroom.com/nl/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bootloader","description":"Klein programma dat als eerste draait bij het inschakelen van de voeding. Controleert en start de eigenlijke firmware of schrijft nieuwe firmware.","url":"https://semiconroom.com/nl/term/bootloader/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Bootloader","item":"https://semiconroom.com/nl/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bootloader","description":"Klein programma dat als eerste draait bij het inschakelen van de voeding. Controleert en start de eigenlijke firmware of schrijft nieuwe firmware.","url":"https://semiconroom.com/nl/term/bootloader/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verschil tussen bootloader en firmware","acceptedAnswer":{"@type":"Answer","text":"De bootloader is een klein, zelden gewijzigd programma dat als eerste draait en beslist wat er wordt gestart; de applicatiefirmware is het hoofdprogramma dat hij verifieert en start. De bootloader kan ook nieuwe applicatiefirmware installeren."}},{"@type":"Question","name":"Waarom gebruiken OTA-updates twee firmwareslots?","acceptedAnswer":{"@type":"Answer","text":"Zodat het nieuwe image kan worden geschreven en geverifieerd terwijl het oude intact blijft. Wordt de update onderbroken of faalt de nieuwe versie, dan boot het apparaat nog steeds vanuit de oorspronkelijke slot."}},{"@type":"Question","name":"Is een CRC-controle genoeg voor secure boot?","acceptedAnswer":{"@type":"Answer","text":"Nee. Een CRC vangt onbedoelde corruptie, maar iedereen die het image wijzigt, kan hem opnieuw berekenen; secure boot vereist het verifiëren van een cryptografische handtekening."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/embedded/">Embedded systemen en firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat er bij het inschakelen gebeurt</h2>
+  <p><a class="term-link" href="/nl/term/numerical-aperture/">Na</a> een reset begint een processor met uitvoeren vanaf een vast adres, en in veel embedded apparaten staat daar de bootloader in plaats van de applicatie. Die initialiseert de minimale hardware die hij nodig heeft, controleert of er een geldig applicatie-image aanwezig is, meestal door een header plus een CRC of handtekening te valideren, en springt dan naar het <a class="term-link" href="/nl/term/entry-point/">entry point</a> van de applicatie, doorgaans na het instellen van de <a class="term-link" href="/nl/term/stack-pointer/">stackpointer</a> en de <a class="term-link" href="/nl/term/interrupt-vector-table/">interruptvectortabel</a>. Is er geen geldig image, of is er een update aangevraagd, dan houdt hij de controle en wacht hij in plaats daarvan op nieuwe firmware.</p>
+</section>
+<section class="term-about">
+  <h2>Updates in het veld en de bootloader beschermen</h2>
+  <p>Een bootloader kan firmware ontvangen <a class="term-link" href="/nl/term/interconnect-via/">via</a> <a class="term-link" href="/nl/term/uart/">UART</a>, USB, CAN, Ethernet of een radioverbinding en die in flash schrijven, zodat producten <a class="term-link" href="/nl/term/numerical-aperture/">na</a> levering kunnen worden gerepareerd zonder hardwareprogrammer. Omdat een beschadigde bootloader het apparaat onherstelbaar zou maken, ofwel &#39;bricked&#39;, staat hij normaal in een schrijfbeveiligd flashgebied en wordt hij van updates uitgesloten. Veel microcontrollers bevatten ook een bootloader van de fabrikant in ROM, geselecteerd met een boot-mode-pin, wat handig is voor de eerste programmering en voor het herstellen van een board waarvan de flash leeg of beschadigd is.</p>
+</section>
+<section class="term-about">
+  <h2>A/B-slots voor veilige OTA-updates</h2>
+  <p>De draaiende firmware ter plekke overschrijven is riskant: valt halverwege de voeding of de verbinding weg, dan blijft er geen bootbaar image over. Over-the-air-ontwerpen (OTA) verdelen de flash daarom in twee slots. Het nieuwe image wordt in de inactieve slot geschreven en geverifieerd, en pas daarna schakelt de bootloader om van welke slot hij boot. Start de nieuwe versie niet op of bevestigt ze nooit dat ze gezond is, dan valt de bootloader terug op de vorige slot. De prijs is ongeveer twee keer zoveel flashruimte voor firmware.</p>
+</section>
+<section class="term-about">
+  <h2>Secure boot en de chain of trust</h2>
+  <p>Bij <a class="term-link" href="/nl/term/secure-boot/">secure boot</a> verifieert onveranderlijke ROM-code de digitale handtekening van de first-stage bootloader, die stage verifieert de volgende stage of de kernel van het besturingssysteem, enzovoort, zodat een chain of trust ontstaat. Een mislukte controle stopt het opstarten, zodat gemanipuleerde bootcode nooit draait. Een bootloader die alleen een CRC controleert, detecteert onbedoelde corruptie maar geen opzettelijke wijziging, omdat een aanvaller de CRC gewoon opnieuw kan berekenen; voor authenticiteit is een handtekening nodig die wordt geverifieerd met een sleutel die de aanvaller niet heeft.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Bootloader</h2>
   <article class="q-mini" data-qid="embedded-037" data-cat="embedded" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Het programma dat als eerste draait bij het inschakelen en de eigenlijke firmware start of door nieuwe firmware vervangt</p><p class="explanation">De <a class="term-link" href="/nl/term/bootloader/">bootloader</a> is een klein programma op een vaste plaats in het flashgeheugen dat als eerste draait bij het inschakelen. Gewoonlijk controleert het of de eigenlijke firmware correct is en start die, maar het heeft ook een functie om nieuwe firmware <a class="term-link" href="/nl/term/interconnect-via/">via</a> <a class="term-link" href="/nl/term/uart/">UART</a>, USB of draadloos te ontvangen en te herschrijven. Om de bootloader zelf niet te beschadigen, wordt deze gewoonlijk uitgesloten van herschrijven en beschermd.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Verschil tussen bootloader en firmware</h3>
+  <p>De bootloader is een klein, zelden gewijzigd programma dat als eerste draait en beslist wat er wordt gestart; de applicatiefirmware is het hoofdprogramma dat hij verifieert en start. De bootloader kan ook nieuwe applicatiefirmware installeren.</p>
+  <h3>Waarom gebruiken OTA-updates twee firmwareslots?</h3>
+  <p>Zodat het nieuwe image kan worden geschreven en geverifieerd terwijl het oude intact blijft. Wordt de update onderbroken of faalt de nieuwe versie, dan boot het apparaat nog steeds vanuit de oorspronkelijke slot.</p>
+  <h3>Is een CRC-controle genoeg voor secure boot?</h3>
+  <p>Nee. Een CRC vangt onbedoelde corruptie, maar iedereen die het image wijzigt, kan hem opnieuw berekenen; secure boot vereist het verifiëren van een cryptografische handtekening.</p>
+</section>
 <section>
   <h2>“Bootloader” in de toelichting</h2>
   <ul class="term-quotes"><li><p>De bootloader is een klein programma op een vaste plaats in het flashgeheugen dat als eerste draait bij het inschakelen.</p><a href="/nl/q/embedded/embedded-037/">Welke uitspraak over de rol van de bootloader van embedded …</a></li><li><p>Als opstarten met de nieuwe versie mislukt, zet de bootloader terug naar het oorspronkelijke vlak.</p><a href="/nl/q/embedded/embedded-038/">Waarom worden bij apparaten waarvan de firmware draadloos w…</a></li><li><p>Bij secure boot controleert de code in een niet herschrijfbaar ROM de handtekening van de eerste bootloader, controleert die bootloader de handtekening van de volgende fase of de OS-kernel, enzovoort, zodat een vertrouwensketen wordt opgebouwd.</p><a href="/nl/q/hw-security/hw-security-019/">Welke uitspraak over secure boot is juist?</a></li></ul>

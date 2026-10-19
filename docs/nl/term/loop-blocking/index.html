@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Loop blocking (tiling)","item":"https://semiconroom.com/nl/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop blocking (tiling)","description":"Optimalisatie waarbij een grote array in kleine blokken wordt verdeeld die in de cache passen, zodat ingelezen gegevens meermaals worden gebruikt voordat ze worden verdrongen. Heeft veel effect bij onder meer matrixproducten.","url":"https://semiconroom.com/nl/term/loop-blocking/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Loop blocking (tiling)","item":"https://semiconroom.com/nl/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop blocking (tiling)","description":"Optimalisatie waarbij een grote array in kleine blokken wordt verdeeld die in de cache passen, zodat ingelezen gegevens meermaals worden gebruikt voordat ze worden verdrongen. Heeft veel effect bij onder meer matrixproducten.","url":"https://semiconroom.com/nl/term/loop-blocking/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarvoor wordt loop tiling gebruikt?","acceptedAnswer":{"@type":"Answer","text":"Het herstructureert lussen zodat ze werken op blokken data ter grootte van de cache, waardoor elk geladen element vele keren wordt hergebruikt voordat het wordt verdrongen, wat capacity misses en geheugenverkeer sterk vermindert."}},{"@type":"Question","name":"Hoe kies je de blokgrootte bij matrixvermenigvuldiging?","acceptedAnswer":{"@type":"Answer","text":"Begin met een grootte waarbij de actieve tegels in de doelcache passen, bijvoorbeeld drie tegels van b × b doubles in een L1 van 32 KB geeft een b van ongeveer 32, en stem daarna empirisch af op conflicten, TLB en prefetching."}},{"@type":"Question","name":"Is loop blocking hetzelfde als loop unrolling?","acceptedAnswer":{"@type":"Answer","text":"Nee. Unrolling vermindert de lusoverhead en het aantal sprongen, terwijl blocking iteraties herschikt om het cachehergebruik te verbeteren."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom naïeve matrixvermenigvuldiging misst</h2>
+  <p>Neem C = A × B voor N × N-matrices van doubles met de bekende drievoudige lus uit het leerboek. Elk element van C heeft een volledige rij van A en een volledige kolom van B nodig, en het aflopen van een kolom van B bij row-major-opslag raakt voor elk element een andere cacheline. Als N groot is, blijven een kolom van B en de rijen van A niet lang genoeg in de cache om te worden hergebruikt, zodat dezelfde data steeds opnieuw uit het hoofdgeheugen worden geladen. Dit zijn capacity misses: de cache meer associatief maken helpt niet, omdat de working set gewoon te groot is.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe blocking werkt</h2>
+  <p>Loop blocking, of tiling, verdeelt elke matrix in tegels van b × b en herschikt de lussen zodat één tegelproduct, C-tegel += A-tegel × B-tegel, wordt afgerond terwijl alle drie de tegels in de cache staan. Elk geladen element wordt dan ongeveer b keer hergebruikt voordat het wordt verdrongen, en het geheugenverkeer daalt van grootteorde N³ elementen naar ongeveer N³/b. Het rekenwerk en de totale geheugenvoetafdruk blijven gelijk; alleen de volgorde van de bewerkingen verandert. De <a class="term-link" href="/nl/term/arithmetic-intensity/">arithmetic intensity</a>, het aantal bewerkingen per verplaatste byte, stijgt ruwweg evenredig met de tegelgrootte.</p>
+</section>
+<section class="term-about">
+  <h2>Een tegelgrootte kiezen</h2>
+  <p>Een eerste schatting is dat drie tegels in de doelcache moeten passen: 3 × b² × 8 bytes voor doubles. Voor een L1-cache van 32 KB geeft dat een b van ongeveer 36, dus een tegel van ongeveer 32 is een logische keuze, met ruimte over voor andere data. In de praktijk spelen ook conflict misses door strides die een macht van twee zijn, het <a class="term-link" href="/nl/term/tlb/">TLB</a>-bereik en hardwareprefetching een rol, dus tegelgroottes worden empirisch afgestemd, en tegels worden soms naar aaneengesloten buffers gekopieerd. High-performance bibliotheken passen blocking op meerdere niveaus tegelijk toe: registers, L1, L2 en L3.</p>
+</section>
+<section class="term-about">
+  <h2>Blocking versus andere lustransformaties</h2>
+  <p><a class="term-link" href="/nl/term/loop-unrolling/">Loop unrolling</a> dupliceert de lusbody om de lusoverhead te verminderen en parallellisme op instructieniveau bloot te leggen; op zichzelf verbetert het het cachehergebruik niet. Loop interchange verwisselt de nestingvolgorde, zodat de binnenste lus het geheugen aaneengesloten doorloopt, wat de <a class="term-link" href="/nl/term/spatial-locality/">ruimtelijke lokaliteit</a> verbetert. Blocking richt zich op <a class="term-link" href="/nl/term/temporal-locality/">temporele lokaliteit</a> over grote datasets en wordt vaak met beide gecombineerd. Hetzelfde idee komt voor op <a class="term-link" href="/nl/term/gpu/">GPU</a>&#39;s, waar tegels in on-chip <a class="term-link" href="/nl/term/gpu-shared-memory/">shared memory</a> worden klaargezet, en in stencilcode, convoluties en veel kernels voor dichte lineaire algebra.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Loop blocking (tiling)</h2>
   <article class="q-mini" data-qid="memory-hierarchy-018" data-cat="memory-hierarchy" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Rekenen per klein blok dat in de cache past, zodat data vaker worden hergebruikt</p><p class="explanation">Bij rechtstreekse berekening van een groot matrixproduct worden ingelezen elementen uit de cache verdrongen voordat ze opnieuw worden gebruikt, zodat ze herhaaldelijk uit het hoofdgeheugen moeten worden ingelezen. Bij <a class="term-link" href="/nl/term/loop-blocking/">loop blocking</a> wordt de matrix verdeeld in kleine blokken die in de cache passen en wordt de berekening binnen een blok afgerond; ingelezen data worden zo vaak hergebruikt en capaciteitsmisses nemen sterk af. Het verminderen van spronginstructies is het doel van <a class="term-link" href="/nl/term/loop-unrolling/">loop unrolling</a>, en de totale hoeveelheid gebruikt geheugen verandert niet.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarvoor wordt loop tiling gebruikt?</h3>
+  <p>Het herstructureert lussen zodat ze werken op blokken data ter grootte van de cache, waardoor elk geladen element vele keren wordt hergebruikt voordat het wordt verdrongen, wat capacity misses en geheugenverkeer sterk vermindert.</p>
+  <h3>Hoe kies je de blokgrootte bij matrixvermenigvuldiging?</h3>
+  <p>Begin met een grootte waarbij de actieve tegels in de doelcache passen, bijvoorbeeld drie tegels van b × b doubles in een L1 van 32 KB geeft een b van ongeveer 32, en stem daarna empirisch af op conflicten, TLB en prefetching.</p>
+  <h3>Is loop blocking hetzelfde als loop unrolling?</h3>
+  <p>Nee. Unrolling vermindert de lusoverhead en het aantal sprongen, terwijl blocking iteraties herschikt om het cachehergebruik te verbeteren.</p>
+</section>
 <section>
   <h2>“Loop blocking (tiling)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij loop blocking wordt de matrix verdeeld in kleine blokken die in de cache passen en wordt de berekening binnen een blok afgerond; ingelezen data worden zo vaak hergebruikt en capaciteitsmisses nemen sterk af.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-018/">Wat is het belangrijkste doel van loop blocking (tiling), z…</a></li><li><p>Dit is de capaciteitsmiss; de cache moet dan worden vergroot, of het hergebruiksbereik moet worden verkleind met bijvoorbeeld loop blocking.</p><a href="/nl/q/memory-hierarchy/memory-hierarchy-009/">Welke miss verdwijnt niet wanneer de cache volledig associa…</a></li></ul>

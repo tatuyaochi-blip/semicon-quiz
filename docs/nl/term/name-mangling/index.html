@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Name mangling","item":"https://semiconroom.com/nl/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Name mangling","description":"Het vormen van symboolnamen door een C++-compiler door informatie over argumenttypen en namespaces in de functienaam op te nemen. Hierdoor kan de linker overloaded functies onderscheiden.","url":"https://semiconroom.com/nl/term/name-mangling/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Name mangling","item":"https://semiconroom.com/nl/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Name mangling","description":"Het vormen van symboolnamen door een C++-compiler door informatie over argumenttypen en namespaces in de functienaam op te nemen. Hierdoor kan de linker overloaded functies onderscheiden.","url":"https://semiconroom.com/nl/term/name-mangling/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Hoe demangle ik een C++-symboolnaam?","acceptedAnswer":{"@type":"Answer","text":"Stuur hem door c++filt, bijvoorbeeld echo _Z5printi | c++filt geeft print(int). nm -C en objdump -C demanglen tijdens het tonen van symbolen."}},{"@type":"Question","name":"Wat doet extern \"C\" in C++?","acceptedAnswer":{"@type":"Answer","text":"Het geeft de gedeclareerde functies C-linkage, zodat de compiler de gewone, niet-gemanglede naam gebruikt. Zo kan C++-code C-bibliotheken aanroepen en kan C-code C++-functies aanroepen die op deze manier zijn geëxporteerd."}},{"@type":"Question","name":"Waarom maakt het returntype geen deel uit van een gemanglede functienaam?","acceptedAnswer":{"@type":"Answer","text":"C++-overloads moeten in hun parameters verschillen, dus de parameters alleen identificeren de functie al. Instanties van functietemplates zijn de uitzondering en coderen het returntype wel."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/linker-loader/">Linker, loader en uitvoerbare formaten</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat er wordt gecodeerd</h2>
+  <p>Een gemanglede naam verpakt in één linkersymbool alles wat C++-entiteiten met dezelfde naam op bronniveau van elkaar onderscheidt: omsluitende namespaces en klassen, de functienaam, de parametertypes, const- of volatile-kwalificatie van memberfuncties en templateargumenten. Het returntype wordt normaal weggelaten, omdat overloads niet alleen in returntype mogen verschillen, al nemen instanties van functietemplates het wel op. Volgens de Itanium C++ <a class="term-link" href="/nl/term/application-binary-interface/">ABI</a>, die GCC en Clang op Linux en veel andere platforms gebruiken, wordt print(int) _Z5printi en ns::f(double) _ZN2ns1fEd, waarbij elke naam wordt voorafgegaan door zijn lengte en losse letters ingebouwde types coderen.</p>
+</section>
+<section class="term-about">
+  <h2>extern &quot;C&quot; en het mengen van talen</h2>
+  <p>C kent geen overloading, dus C-compilers genereren gewone functienamen. Als C++-code een C-bibliotheek aanroept, moeten de declaraties ervan in extern &quot;C&quot; worden verpakt, zodat de C++-compiler naar de niet-gemanglede naam zoekt; anders zoekt hij naar iets als _Z3fooi, vindt hij alleen foo en mislukt het linken met een undefined reference. Headers die tussen de talen worden gedeeld, verpakken hun declaraties meestal in extern &quot;C&quot;, afgeschermd met een controle op de macro __cplusplus. Functies die als extern &quot;C&quot; zijn gedeclareerd, kunnen niet worden overloaded, omdat er dan twee naar hetzelfde symbool zouden mappen.</p>
+</section>
+<section class="term-about">
+  <h2>Gemanglede namen lezen</h2>
+  <p>Gemanglede namen verschijnen in de uitvoer van nm, in disassembly, crashrapporten en linkerfouten. De tool c++filt zet ze terug om in leesbare declaraties, nm -C doet hetzelfde in zijn overzicht, en de meeste debuggers en linkers demanglen automatisch bij het tonen van meldingen. Het kunnen lezen van de ruwe vorm helpt toch: twee symbolen die er <a class="term-link" href="/nl/term/numerical-aperture/">na</a> demanglen identiek uitzien, kunnen verschillen in een const-kwalificatie of een parametertype, wat verraadt dat een declaratie in een header niet overeenkomt met de definitie die werkelijk is gecompileerd.</p>
+</section>
+<section class="term-about">
+  <h2>Mangling hoort bij de ABI</h2>
+  <p>Elke compilerfamilie definieert een eigen schema, en de compiler van Microsoft gebruikt een volledig andere codering dan de Itanium-<a class="term-link" href="/nl/term/application-binary-interface/">ABI</a>. Het schema maakt deel uit van de application binary interface (ABI), dus objectbestanden van compilers met verschillende schema&#39;s kunnen niet direct worden gelinkt, ook al is de broncode identiek. Wijzigingen in de C++-interface van een bibliotheek, zoals het aanpassen van een parametertype, veranderen de gemanglede namen en verbreken de binaire compatibiliteit met programma&#39;s die tegen de oude versie zijn gebouwd. Andere talen met overloading of modules, zoals Rust, manglen namen om dezelfde redenen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Name mangling</h2>
   <article class="q-mini" data-qid="linker-loader-035" data-cat="linker-loader" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. De linker in staat stellen functies met dezelfde naam maar verschillende argumenttypen (overloading) en namespaces te onderscheiden</p><p class="explanation">De <a class="term-link" href="/nl/term/linker/">linker</a> vergelijkt symbolen alleen op de tekenreeks van de naam. In C++ kunnen functies met dezelfde naam bestaan, zoals „print(int)” en „print(double)”, en die zouden zo niet te onderscheiden zijn. Daarom verwerkt de compiler argumenttypen en dergelijke in de naam, zoals „_Z5printi”. C-functies worden niet gemangled, dus bij het aanroepen van een C-functie vanuit C++ wordt „extern &quot;C&quot;” gebruikt om het mangelen te stoppen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Hoe demangle ik een C++-symboolnaam?</h3>
+  <p>Stuur hem door c++filt, bijvoorbeeld echo _Z5printi | c++filt geeft print(int). nm -C en objdump -C demanglen tijdens het tonen van symbolen.</p>
+  <h3>Wat doet extern &quot;C&quot; in C++?</h3>
+  <p>Het geeft de gedeclareerde functies C-linkage, zodat de compiler de gewone, niet-gemanglede naam gebruikt. Zo kan C++-code C-bibliotheken aanroepen en kan C-code C++-functies aanroepen die op deze manier zijn geëxporteerd.</p>
+  <h3>Waarom maakt het returntype geen deel uit van een gemanglede functienaam?</h3>
+  <p>C++-overloads moeten in hun parameters verschillen, dus de parameters alleen identificeren de functie al. Instanties van functietemplates zijn de uitzondering en coderen het returntype wel.</p>
+</section>
 <section>
   <h2>“Name mangling” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Veelvoorkomende oorzaken zijn dat is vergeten het bestand met de definitie te linken, dat is vergeten de bibliotheek op te geven (zoals -lm), dat de naam anders is gespeld, of dat een in C++ geschreven functie zonder extern &quot;C&quot; wordt aangeroepen, zodat door name mangling een andere naam is ontstaan.</p><a href="/nl/q/linker-loader/linker-loader-005/">Bij het linken van een C-programma verschijnt de fout „unde…</a></li></ul>

@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Apparaatstuurprogramma (device driver)","item":"https://semiconroom.com/nl/term/device-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Apparaatstuurprogramma (device driver)","description":"Onderdeel van het besturingssysteem om een bepaald randapparaat aan te sturen. Verzorgt het bedienen van de registers van het apparaat en de afhandeling van interrupts en laat applicaties het apparaat via een gemeenschappelijke procedure gebruiken.","url":"https://semiconroom.com/nl/term/device-driver/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Apparaatstuurprogramma (device driver)","item":"https://semiconroom.com/nl/term/device-driver/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Apparaatstuurprogramma (device driver)","description":"Onderdeel van het besturingssysteem om een bepaald randapparaat aan te sturen. Verzorgt het bedienen van de registers van het apparaat en de afhandeling van interrupts en laat applicaties het apparaat via een gemeenschappelijke procedure gebruiken.","url":"https://semiconroom.com/nl/term/device-driver/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is een device driver onderdeel van het besturingssysteem?","acceptedAnswer":{"@type":"Answer","text":"Meestal wel. De meeste drivers zijn kernelmodules die met kernelprivileges draaien en aansluiten op de apparaatframeworks van het besturingssysteem, al ondersteunen sommige systemen ook drivers die als processen in user space draaien."}},{"@type":"Question","name":"Wat is het verschil tussen een driver en firmware?","acceptedAnswer":{"@type":"Answer","text":"Firmware draait op een processor in het apparaat en bestuurt de hardware rechtstreeks. De driver draait op de host-CPU als onderdeel van het besturingssysteem en communiceert met het apparaat en de firmware via registers, DMA-buffers en interrupts."}},{"@type":"Question","name":"Waarom kan een slechte driver de hele computer laten crashen?","acceptedAnswer":{"@type":"Answer","text":"Drivers in kernelmodus delen de adresruimte en privileges van de kernel, dus een bug kan willekeurige kerneldata overschrijven of hardware in een inconsistente toestand achterlaten. Een bug in een gebruikersprogramma blijft daarentegen beperkt tot het eigen proces."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
+<section class="term-about">
+  <h2>Wat een driver eigenlijk doet</h2>
+  <p>Een driver vertaalt generieke verzoeken van de kernel naar de exacte reeks die een bepaald apparaat verwacht. Bij het opstarten detecteert (probet) hij het apparaat, mapt hij de registers in de adresruimte (<a class="term-link" href="/nl/term/memory-mapped-i-o/">memory-mapped I/O</a>) en brengt hij de hardware in een bekende toestand. Tijdens bedrijf beschrijft hij command- en statusregisters, bereidt hij <a class="term-link" href="/nl/term/dma/">DMA</a>-descriptors (direct memory access) voor zodat het apparaat data van en naar het geheugen kan verplaatsen zonder dat de CPU ze kopieert, en handelt hij de interrupts af die het apparaat genereert wanneer werk klaar is. Naar boven toe sluit hij aan op een gemeenschappelijk framework, zoals een block-, netwerk- of character-device-interface, zodat applicaties gewone lees-, schrijf- en besturingsaanroepen zien.</p>
+</section>
+<section class="term-about">
+  <h2>Interruptafhandeling en uitgesteld werk</h2>
+  <p>Interrupthandlers draaien terwijl het normale werk op die CPU is onderbroken, dus drivers houden ze kort: het apparaat bevestigen, noteren wat er is gebeurd en de rest inplannen. De zwaardere verwerking, zoals ontvangen pakketten doorgeven aan de protocolstack of een schijfverzoek afronden, draait later in een context die kan worden gescheduled. Deze opsplitsing wordt vaak top half en bottom half genoemd. Apparaten met een zeer hoge snelheid, zoals snelle netwerkkaarten, kunnen onder belasting overschakelen van één <a class="term-link" href="/nl/term/interrupt/">interrupt</a> per gebeurtenis naar <a class="term-link" href="/nl/term/polling/">polling</a>, omdat een interrupt voor elk pakket meer <a class="term-link" href="/nl/term/cpu-time/">CPU-tijd</a> zou verspillen dan een wachtrij in een lus controleren.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom driverbugs gevaarlijk zijn</h2>
+  <p>De meeste drivers draaien in kernelmodus met dezelfde privileges als de rest van de kernel. Een verdwaalde pointer, een vergeten lock of een <a class="term-link" href="/nl/term/dma/">DMA</a>-buffer die met het verkeerde adres is geprogrammeerd, kan daardoor overal geheugen corrumperen of het hele systeem laten crashen in plaats van slechts één programma. Daarom zijn drivers een veelvoorkomende bron van systeeminstabiliteit en beveiligingslekken. Sommige ontwerpen verplaatsen drivers naar processen in user space en ruilen extra context switches in voor isolatie, en een <a class="term-link" href="/nl/term/iommu/">IOMMU</a> kan beperken welk geheugen een apparaat mag bereiken, zelfs als de driver zich misdraagt.</p>
+</section>
+<section class="term-about">
+  <h2>Driver versus firmware versus hypervisor</h2>
+  <p>Firmware is code die op het apparaat zelf draait, bijvoorbeeld op een controller in een SSD of een netwerkkaart; de driver draait op de host-CPU en communiceert met die firmware <a class="term-link" href="/nl/term/interconnect-via/">via</a> registers en gedeeld geheugen. Een <a class="term-link" href="/nl/term/hypervisor/">hypervisor</a> zit onder complete besturingssystemen en verdeelt hardware over virtuele machines. Binnen een virtuele machine gebruikt de gast ofwel paravirtuele drivers die efficiënt met de hypervisor communiceren, ofwel, bij device assignment, de gewone driver voor een echt apparaat dat aan hem is toegewezen.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Is een device driver onderdeel van het besturingssysteem?</h3>
+  <p>Meestal wel. De meeste drivers zijn kernelmodules die met kernelprivileges draaien en aansluiten op de apparaatframeworks van het besturingssysteem, al ondersteunen sommige systemen ook drivers die als processen in user space draaien.</p>
+  <h3>Wat is het verschil tussen een driver en firmware?</h3>
+  <p>Firmware draait op een processor in het apparaat en bestuurt de hardware rechtstreeks. De driver draait op de host-CPU als onderdeel van het besturingssysteem en communiceert met het apparaat en de firmware via registers, DMA-buffers en interrupts.</p>
+  <h3>Waarom kan een slechte driver de hele computer laten crashen?</h3>
+  <p>Drivers in kernelmodus delen de adresruimte en privileges van de kernel, dus een bug kan willekeurige kerneldata overschrijven of hardware in een inconsistente toestand achterlaten. Een bug in een gebruikersprogramma blijft daarentegen beperkt tot het eigen proces.</p>
+</section>
 
 
 

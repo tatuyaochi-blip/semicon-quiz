@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Blocking assignment","item":"https://semiconroom.com/nl/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blocking assignment","description":"De toewijzing met '=' in Verilog. De linkerzijde wordt direct bijgewerkt en de volgende regel gebruikt de nieuwe waarde. Gebruikt in always-blokken voor combinatorische logica en in testbenches.","url":"https://semiconroom.com/nl/term/blocking-assignment/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Blocking assignment","item":"https://semiconroom.com/nl/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blocking assignment","description":"De toewijzing met '=' in Verilog. De linkerzijde wordt direct bijgewerkt en de volgende regel gebruikt de nieuwe waarde. Gebruikt in always-blokken voor combinatorische logica en in testbenches.","url":"https://semiconroom.com/nl/term/blocking-assignment/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wanneer blocking of nonblocking assignment gebruiken in Verilog?","acceptedAnswer":{"@type":"Answer","text":"Gebruik nonblocking assignment voor registers in geklokte always-blokken en blocking assignment in combinatorische blokken en voor tijdelijke variabelen. Meng de twee soorten niet op dezelfde variabele."}},{"@type":"Question","name":"Waarom vertraagt mijn Verilog-schuifregister maar één klok?","acceptedAnswer":{"@type":"Answer","text":"Waarschijnlijk zijn de trappen geschreven met blocking assignments, zodat elke trap de waarde krijgt die de vorige regel net heeft bijgewerkt. Overstappen op nonblocking assignments zorgt ervoor dat elke trap de waarde van vóór de flank neemt."}},{"@type":"Question","name":"Is een VHDL-variabeletoekenning hetzelfde als een Verilog-blocking assignment?","acceptedAnswer":{"@type":"Answer","text":"Ja, ruwweg: een VHDL-variabeletoekenning werkt direct binnen het process, terwijl een VHDL-signaaltoekenning wordt ingepland en zich meer als een nonblocking assignment gedraagt."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/hdl-verification/">Hardwarebeschrijvingstalen en verificatie</a></p>
 </article>
+<section class="term-about">
+  <h2>Hoe een blocking assignment werkt</h2>
+  <p>Een blocking assignment, geschreven met een enkel isgelijkteken, evalueert de rechterkant en werkt de variabele links bij voordat het volgende statement in hetzelfde procedurele blok wordt uitgevoerd, ongeveer zoals een toekenning in C. Statements werken daardoor in volgorde, en een latere regel ziet de waarde die een eerdere regel net heeft geschreven. Een nonblocking assignment evalueert daarentegen eerst alle rechterkanten en past alle updates later in de tijdstap tegelijk toe, zodat elk statement de waarden van vóór de klokflank ziet.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom het geklokte logica breekt</h2>
+  <p>In een geklokt always-blok laten blocking assignments het ene register binnen dezelfde flank de nieuwe waarde van een ander zien. Schrijf je &#39;q1 = d; q2 = q1;&#39; voor een <a class="term-link" href="/nl/term/shift-register/">schuifregister</a> met twee trappen, dan krijgt q2 de net bijgewerkte q1, dus d, waardoor zowel de simulatie als het gesynthetiseerde circuit maar één trap vertraagt. Evenzo maakt &#39;a = b; b = a;&#39; beide gelijk aan de oude b in plaats van ze te verwisselen. Gebruik je nonblocking assignments voor elk register in een geklokt blok, dan gedraagt de code zich als parallelle flipflops, ongeacht de volgorde van de statements.</p>
+</section>
+<section class="term-about">
+  <h2>Waar blocking de juiste keuze is</h2>
+  <p>Blocking assignment hoort thuis in combinatorische always-blokken, geschreven als always @(*) of <a class="term-link" href="/nl/term/systemverilog/">SystemVerilog</a> always_comb, waar een tussenvariabele die op één regel wordt berekend de volgende voedt en het resultaat een keten van poorten beschrijft. Het ligt ook voor de hand in procedurele testbenchcode en voor tijdelijke variabelen in functions en tasks. De breed gevolgde regels zijn: nonblocking voor geklokte logica, blocking voor combinatorische logica, en dezelfde variabele nooit met beide soorten toekennen.</p>
+</section>
+<section class="term-about">
+  <h2>Races in testbenches</h2>
+  <p>Stuur je een ontwerpingang aan met een blocking assignment op precies hetzelfde simulatietijdstip als de actieve klokflank, dan ontstaat een race: of de flipflops van het ontwerp de oude of de nieuwe waarde vangen, hangt af van welk proces de simulator toevallig eerst uitvoert, en resultaten kunnen per simulator verschillen. Gangbare oplossingen zijn de stimulus wijzigen op de tegenovergestelde klokflank of kort <a class="term-link" href="/nl/term/numerical-aperture/">na</a> de actieve flank, ingangen aansturen met nonblocking assignments, of <a class="term-link" href="/nl/term/systemverilog/">SystemVerilog</a>-clocking blocks gebruiken.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wanneer blocking of nonblocking assignment gebruiken in Verilog?</h3>
+  <p>Gebruik nonblocking assignment voor registers in geklokte always-blokken en blocking assignment in combinatorische blokken en voor tijdelijke variabelen. Meng de twee soorten niet op dezelfde variabele.</p>
+  <h3>Waarom vertraagt mijn Verilog-schuifregister maar één klok?</h3>
+  <p>Waarschijnlijk zijn de trappen geschreven met blocking assignments, zodat elke trap de waarde krijgt die de vorige regel net heeft bijgewerkt. Overstappen op nonblocking assignments zorgt ervoor dat elke trap de waarde van vóór de flank neemt.</p>
+  <h3>Is een VHDL-variabeletoekenning hetzelfde als een Verilog-blocking assignment?</h3>
+  <p>Ja, ruwweg: een VHDL-variabeletoekenning werkt direct binnen het process, terwijl een VHDL-signaaltoekenning wordt ingepland en zich meer als een nonblocking assignment gedraagt.</p>
+</section>
 
 
 

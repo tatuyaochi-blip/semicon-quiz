@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Tekenextensie (sign extension)","item":"https://semiconroom.com/nl/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Tekenextensie (sign extension)","description":"Het kopiëren van het meest significante bit (teken) naar alle hogere posities bij het uitbreiden van een geheel getal met teken naar meer bits. De waarde blijft daarbij gelijk. Opvullen van de bovenste bits met 0 heet zero extension.","url":"https://semiconroom.com/nl/term/sign-extension/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Tekenextensie (sign extension)","item":"https://semiconroom.com/nl/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Tekenextensie (sign extension)","description":"Het kopiëren van het meest significante bit (teken) naar alle hogere posities bij het uitbreiden van een geheel getal met teken naar meer bits. De waarde blijft daarbij gelijk. Opvullen van de bovenste bits met 0 heet zero extension.","url":"https://semiconroom.com/nl/term/sign-extension/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen tekenextensie en zero extension?","acceptedAnswer":{"@type":"Answer","text":"Tekenextensie vult de nieuwe bovenste bits met kopieën van het oorspronkelijke bovenste bit, waardoor de waarde van een getal met teken behouden blijft. Zero extension vult ze met nullen, waardoor de waarde van een getal zonder teken behouden blijft."}},{"@type":"Question","name":"Waarom breidt addi bij RISC-V zijn immediate met teken uit?","acceptedAnswer":{"@type":"Answer","text":"Zodat één instructie negatieve constanten kan optellen, zoals addi sp, sp, -16. Het 12-bits veld beslaat dan -2048 tot en met 2047 in plaats van alleen niet-negatieve waarden."}},{"@type":"Question","name":"Hoe pas ik tekenextensie toe op een waarde in C?","acceptedAnswer":{"@type":"Answer","text":"Sla haar op in een type met teken van de oorspronkelijke breedte, zoals int8_t of int16_t, en ken haar toe aan een breder type met teken; de conversie past automatisch tekenextensie toe en compilers genereren de bijbehorende instructie voor tekenextensie."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/isa-assembly/">Instructieset en assembly</a></p>
 </article>
+<section class="term-about">
+  <h2>Waarom het kopiëren van het tekenbit de waarde behoudt</h2>
+  <p>In n-bits <a class="term-link" href="/nl/term/two-s-complement/">two&#39;s complement</a> heeft het bovenste bit een gewicht van min 2 tot de macht n-1 en hebben de andere bits hun gebruikelijke positieve gewichten. Een negatief getal met één bit uitbreiden voegt een nieuw bovenste bit toe met de waarde min 2 tot de macht n en maakt van het oude bovenste bit een positieve 2 tot de macht n-1; samen dragen ze nog steeds min 2 tot de macht n-1 bij, dus de waarde blijft ongewijzigd. Door dit voor elk toegevoegd bit te herhalen, is de regel verantwoord. Zo wordt 4-bits 1010 (-6) 8-bits 11111010, nog steeds -6.</p>
+</section>
+<section class="term-about">
+  <h2>Waar ISA&#39;s tekenextensie toepassen</h2>
+  <p>Immediates zijn het meest voorkomende geval: de 12-bits I-type-<a class="term-link" href="/nl/term/immediate-operand/">immediate</a> van RISC-V wordt met teken uitgebreid, dus addi accepteert -2048 tot en met 2047 en negatieve constanten werken zonder aparte aftrekinstructie. Loads komen in paren: lb en lh passen tekenextensie toe, terwijl lbu en lhu zero extension toepassen. Op RV64 breidt lw een 32-bits waarde met teken uit naar 64 bits en breidt lwu haar met nullen uit, en wordinstructies zoals addw breiden hun 32-bits resultaten met teken uit. x86 biedt movsx en movzx voor hetzelfde doel. In hardware kost tekenextensie niet meer dan het bovenste bit naar alle nieuwe posities te bedraden.</p>
+</section>
+<section class="term-about">
+  <h2>Een klassieke valkuil: lui plus addi</h2>
+  <p>Om een 32-bits constante op te bouwen, gebruikt RISC-V-code lui voor de bovenste 20 bits en addi voor de onderste 12. Omdat addi zijn <a class="term-link" href="/nl/term/immediate-operand/">immediate</a> met teken uitbreidt, wordt een onderste deel van 0x800 of meer behandeld als negatief getal, met als waarde dat getal min 4096. Assemblers compenseren dit door 1 bij het bovenste deel op te tellen wanneer bit 11 van de constante gezet is, en de <a class="term-link" href="/nl/term/relocation/">relocatie</a>-operatoren %hi en %lo doen dit automatisch. Met de hand geschreven code die de constante <a class="term-link" href="/nl/term/numerical-aperture/">na</a>ïef splitst, levert een waarde op die er precies 4096 naast zit, een bug die bij het testen gemakkelijk over het hoofd wordt gezien.</p>
+</section>
+<section class="term-about">
+  <h2>Tekenextensie versus zero extension in C</h2>
+  <p>C kiest de extensie op basis van het brontype: het omzetten van een signed char of int16_t naar int past tekenextensie toe, terwijl het omzetten van een unsigned type zero extension toepast. Gewone char is op sommige platforms signed en op andere unsigned, bijvoorbeeld signed op x86 maar unsigned op de meeste Arm-Linuxsystemen, dus een bytewaarde 0xFF kan afhankelijk van het target -1 of 255 worden. Dat verschil veroorzaakt bugs wanneer bytes met constanten worden vergeleken of als array-index worden gebruikt. Door unsigned char of uint8_t te gebruiken voor ruwe bytes wordt die dubbelzinnigheid vermeden.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen tekenextensie en zero extension?</h3>
+  <p>Tekenextensie vult de nieuwe bovenste bits met kopieën van het oorspronkelijke bovenste bit, waardoor de waarde van een getal met teken behouden blijft. Zero extension vult ze met nullen, waardoor de waarde van een getal zonder teken behouden blijft.</p>
+  <h3>Waarom breidt addi bij RISC-V zijn immediate met teken uit?</h3>
+  <p>Zodat één instructie negatieve constanten kan optellen, zoals addi sp, sp, -16. Het 12-bits veld beslaat dan -2048 tot en met 2047 in plaats van alleen niet-negatieve waarden.</p>
+  <h3>Hoe pas ik tekenextensie toe op een waarde in C?</h3>
+  <p>Sla haar op in een type met teken van de oorspronkelijke breedte, zoals int8_t of int16_t, en ken haar toe aan een breder type met teken; de conversie past automatisch tekenextensie toe en compilers genereren de bijbehorende instructie voor tekenextensie.</p>
+</section>
 
 
 

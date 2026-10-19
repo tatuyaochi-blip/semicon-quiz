@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"CPU-tijd","item":"https://semiconroom.com/nl/term/cpu-time/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CPU-tijd","description":"Totale tijd waarin de CPU de instructies van dat programma uitvoerde. Wachttijd is niet inbegrepen; bij parallelle uitvoering kan het langer zijn dan de wandkloktijd.","url":"https://semiconroom.com/nl/term/cpu-time/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"CPU-tijd","item":"https://semiconroom.com/nl/term/cpu-time/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CPU-tijd","description":"Totale tijd waarin de CPU de instructies van dat programma uitvoerde. Wachttijd is niet inbegrepen; bij parallelle uitvoering kan het langer zijn dan de wandkloktijd.","url":"https://semiconroom.com/nl/term/cpu-time/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom is CPU-tijd groter dan real time?","acceptedAnswer":{"@type":"Answer","text":"Het programma gebruikte meerdere threads of processen die tegelijk op verschillende cores draaiden, en CPU-tijd telt de tijd op al die cores op. Vier volledig bezette threads verzamelen bijvoorbeeld ongeveer vier seconden CPU-tijd per seconde verstreken tijd."}},{"@type":"Question","name":"Wat betekenen real, user en sys bij het commando time?","acceptedAnswer":{"@type":"Answer","text":"Real is de verstreken wandkloktijd, user is CPU-tijd die in de eigen code van het programma is besteed, en sys is CPU-tijd die de kernel namens het programma heeft besteed, zoals voor het afhandelen van system calls."}},{"@type":"Question","name":"Telt wachten op I/O mee in de CPU-tijd?","acceptedAnswer":{"@type":"Answer","text":"Nee. Terwijl een programma op schijf of netwerk wacht, wordt het niet uitgevoerd, dus die tijd verschijnt in de wandkloktijd maar niet in de CPU-tijd."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/performance/">Prestatiemeting en profiling</a></p>
 </article>
-
+<section class="term-about">
+  <h2>CPU-tijd vs. wandkloktijd</h2>
+  <p><a class="term-link" href="/nl/term/wall-clock-time/">Wandkloktijd</a>, ook verstreken of reële tijd genoemd, is wat een gebruiker van begin tot eind wacht, inclusief de tijd die wordt besteed aan wachten op schijf, netwerk of locks en de tijdslices die aan andere programma&#39;s worden gegeven. CPU-tijd telt alleen de tijd dat een processor het programma daadwerkelijk uitvoerde. Op Unix-achtige systemen toont het commando time beide: real is de wandkloktijd, terwijl user en sys de CPU-tijd opsplitsen in de eigen code van het programma en het kernelwerk dat namens het programma wordt gedaan, zoals system calls.</p>
+</section>
+<section class="term-about">
+  <h2>De verhouding lezen</h2>
+  <p>Door de twee waarden te vergelijken zie je waar de tijd naartoe gaat. Is de <a class="term-link" href="/nl/term/wall-clock-time/">wandkloktijd</a> bij een single-threaded programma veel groter dan de CPU-tijd, dan is het vooral aan het wachten, meestal op I/O of locks, en helpt een snellere processor weinig. Ligt de CPU-tijd dicht bij de wandkloktijd, dan is het programma rekengebonden. Met meerdere threads die parallel draaien, kan de totale CPU-tijd groter zijn dan de wandkloktijd: vier threads die elk 10 s bezig zijn, geven ongeveer 40 s CPU-tijd in ongeveer 10 s verstreken tijd.</p>
+</section>
+<section class="term-about">
+  <h2>De CPU-prestatievergelijking</h2>
+  <p>In de computerarchitectuur wordt de CPU-tijd van een programma geschreven als aantal instructies × <a class="term-link" href="/nl/term/cycles-per-instruction/">CPI</a> (gemiddeld aantal klokcycli per instructie) × klokperiode, of equivalent aantal instructies × CPI ÷ klokfrequentie. De vergelijking scheidt de bijdragen van de compiler en de instructieset (aantal instructies), de microarchitectuur (CPI) en de circuittechnologie (kloksnelheid). Ze laat ook zien waarom het verbeteren van één factor ten koste van een andere, zoals de frequentie verhogen terwijl de CPI verslechtert, een programma niet per se sneller maakt.</p>
+</section>
+<section class="term-about">
+  <h2>CPU-tijd als budget</h2>
+  <p>Bezette CPU-tijd is niet altijd nuttig werk. Een thread die op een lang vastgehouden lock spint, verbrandt CPU-tijd zonder iets te doen, en op een enkele core kan hij de houder van de lock zelfs vertragen tot zijn tijdslice afloopt; lange wachttijden vragen om een <a class="term-link" href="/nl/term/mutex/">mutex</a> die slaapt. In real-time- en automotivesystemen wordt CPU-tijd per taak toegewezen en bewaakt, en temporele partitionering zorgt ervoor dat een zich misdragende taak van lagere kritikaliteit niet de uitvoeringstijd kan opgebruiken die veiligheidskritische software nodig heeft.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over CPU-tijd</h2>
   <article class="q-mini" data-qid="performance-020" data-cat="performance" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Wandkloktijd is de werkelijk verstreken tijd van begin tot einde, inclusief wachten op I/O e.d., terwijl CPU-tijd alleen de tijd telt dat de CPU het programma uitvoerde</p><p class="explanation">De <a class="term-link" href="/nl/term/wall-clock-time/">wandkloktijd</a> is de tijd die de gebruiker werkelijk wacht, inclusief wachten op schijf en netwerk en de tijd dat de beurt aan andere programma’s werd gelaten. De <a class="term-link" href="/nl/term/cpu-time/">CPU-tijd</a> is de som van de tijd dat de CPU de instructies van het programma uitvoerde. Als de wandkloktijd veel langer is dan de CPU-tijd, wordt veel tijd besteed aan wachten op iets. Omgekeerd kan bij parallelle uitvoering met meerdere threads de som van de CPU-tijd langer worden dan de wandkloktijd.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom is CPU-tijd groter dan real time?</h3>
+  <p>Het programma gebruikte meerdere threads of processen die tegelijk op verschillende cores draaiden, en CPU-tijd telt de tijd op al die cores op. Vier volledig bezette threads verzamelen bijvoorbeeld ongeveer vier seconden CPU-tijd per seconde verstreken tijd.</p>
+  <h3>Wat betekenen real, user en sys bij het commando time?</h3>
+  <p>Real is de verstreken wandkloktijd, user is CPU-tijd die in de eigen code van het programma is besteed, en sys is CPU-tijd die de kernel namens het programma heeft besteed, zoals voor het afhandelen van system calls.</p>
+  <h3>Telt wachten op I/O mee in de CPU-tijd?</h3>
+  <p>Nee. Terwijl een programma op schijf of netwerk wacht, wordt het niet uitgevoerd, dus die tijd verschijnt in de wandkloktijd maar niet in de CPU-tijd.</p>
+</section>
 <section>
   <h2>“CPU-tijd” in de toelichting</h2>
   <ul class="term-quotes"><li><p>De CPU-tijd is de som van de tijd dat de CPU de instructies van het programma uitvoerde.</p><a href="/nl/q/performance/performance-020/">Welk verschil tussen “wandkloktijd” (wall-clock time) en “C…</a></li><li><p>Door meerdere functies in één SoC samen te voegen kan het aantal componenten en ECU&#39;s worden verminderd, maar een bug in software met een lage ASIL kan de functies met een hoge ASIL hinderen door geheugen te overschrijven of alle CPU-tijd op te gebruiken.</p><a href="/nl/q/automotive/automotive-034/">Wat wordt vereist wanneer de functies van meerdere ECU&#39;s wo…</a></li><li><p>Interrupts verspillen bij zeldzame verwerking geen CPU-tijd, maar elke keer zijn er lasten voor het opslaan van de toestand en het overschakelen naar de handler.</p><a href="/nl/q/os-hardware/os-hardware-028/">In welk geval is polling, waarbij de CPU de status van een …</a></li><li><p>Het nadeel is dat tijdens het wachten ook CPU-tijd wordt gebruikt.</p><a href="/nl/q/multicore-sync/multicore-sync-020/">Welke uitleg over een spinlock is juist?</a></li><li><p>Een thread die bij een spinlock wacht, gebruikt CPU-tijd tot de lock vrij is.</p><a href="/nl/q/multicore-sync/multicore-sync-021/">In welke situatie is een spinlock het minst geschikt?</a></li></ul>

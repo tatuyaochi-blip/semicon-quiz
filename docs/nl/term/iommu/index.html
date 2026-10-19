@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU","item":"https://semiconroom.com/nl/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU","description":"Apparaat dat de adressen die randapparatuur via DMA gebruikt naar fysieke adressen vertaalt en zo beschermt. Voorkomt dat een apparaat naar niet-toegestaan geheugen schrijft en wordt ook gebruikt bij het toewijzen van apparaten aan virtuele machines.","url":"https://semiconroom.com/nl/term/iommu/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"IOMMU","item":"https://semiconroom.com/nl/term/iommu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IOMMU","description":"Apparaat dat de adressen die randapparatuur via DMA gebruikt naar fysieke adressen vertaalt en zo beschermt. Voorkomt dat een apparaat naar niet-toegestaan geheugen schrijft en wordt ook gebruikt bij het toewijzen van apparaten aan virtuele machines.","url":"https://semiconroom.com/nl/term/iommu/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Heb ik een IOMMU nodig voor GPU-passthrough?","acceptedAnswer":{"@type":"Answer","text":"Ja. Het doorgeven van een fysiek apparaat aan een virtuele machine steunt op de IOMMU om de DMA-adressen van de gast te vertalen en te voorkomen dat het apparaat geheugen buiten die VM bereikt, dus de IOMMU moet worden ondersteund en ingeschakeld zijn in de firmware en het besturingssysteem."}},{"@type":"Question","name":"Vertraagt het inschakelen van de IOMMU de I/O?","acceptedAnswer":{"@type":"Answer","text":"Het voegt enige kosten toe voor vertalingsmisses en voor het aanmaken en verwijderen van mappings, wat van belang kan zijn bij apparaten met een zeer hoge snelheid. Caching in de IOTLB en langer bestaande mappings houden de overhead bij de meeste workloads beperkt."}},{"@type":"Question","name":"Wat is het verschil tussen een IOMMU en een MMU?","acceptedAnswer":{"@type":"Answer","text":"De MMU vertaalt adressen die de CPU namens processen uitgeeft, terwijl de IOMMU adressen vertaalt die apparaten uitgeven bij DMA. Beide gebruiken paginatabellen en permissiebits, maar de tabellen van de IOMMU zijn per apparaat of apparaatgroep."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe een IOMMU DMA vertaalt</h2>
+  <p>Met een IOMMU (input-output memory management unit) geeft een apparaat geen kale fysieke adressen meer uit. Zijn <a class="term-link" href="/nl/term/dma/">DMA</a>-verzoeken bevatten I/O-virtuele adressen, en de IOMMU zoekt die op in paginatabellen die het besturingssysteem heeft opgezet voor dat apparaat of die groep apparaten, die op PCIe wordt geïdentificeerd door de bus-, device- en functienummers van de aanvrager. Recente vertalingen worden gecachet in een IOTLB (I/O <a class="term-link" href="/nl/term/tlb/">translation lookaside buffer</a>). Een toegang tot een adres zonder geldige mapping, of met de verkeerde lees/schrijfpermissie, wordt geblokkeerd en als fault aan het besturingssysteem gemeld in plaats van het geheugen te bereiken.</p>
+</section>
+<section class="term-about">
+  <h2>IOMMU versus MMU</h2>
+  <p>Beide vertalen adressen <a class="term-link" href="/nl/term/interconnect-via/">via</a> paginatabellen, maar ze dienen verschillende partijen. De MMU van de CPU vertaalt virtuele adressen per proces, zodat programma&#39;s van elkaar zijn geïsoleerd. De IOMMU vertaalt adressen per apparaat, zodat <a class="term-link" href="/nl/term/dma/">DMA</a>-engines beperkt blijven tot de buffers die hun driver heeft gemapt. Omdat de mappings onafhankelijk zijn, kan het besturingssysteem een apparaat een buffer geven die over veel fysieke pagina&#39;s verspreid is maar in de adresruimte van het apparaat aaneengesloten lijkt, wat apparaten vereenvoudigt die zelf geen scatter-gather-transfers kunnen uitvoeren.</p>
+</section>
+<section class="term-about">
+  <h2>DMA-aanvallen blokkeren</h2>
+  <p><a class="term-link" href="/nl/term/dma/">DMA</a> omzeilt de CPU en diens geheugenbescherming, dus zonder IOMMU kan elk apparaat dat busmaster kan worden sleutels lezen of kernelcode aanpassen. Dit is een praktisch risico bij externe poorten die DMA in PCIe-stijl openstellen voor aangesloten hardware. Met de IOMMU ingeschakeld mapt het besturingssysteem alleen de specifieke buffers die elke driver gebruikt, doorgaans voor de duur van elke transfer, en is al het andere onbereikbaar voor dat apparaat. Veel platforms gebruiken de IOMMU ook om interrupts van apparaten te remappen, zodat een apparaat geen willekeurige interruptberichten kan vervalsen.</p>
+</section>
+<section class="term-about">
+  <h2>Apparaten toewijzen aan virtuele machines</h2>
+  <p>Een gast-OS programmeert een apparaat met wat het voor fysieke adressen houdt, maar dat zijn in werkelijkheid guest-physical-adressen. Wanneer een <a class="term-link" href="/nl/term/hypervisor/">hypervisor</a> een echt apparaat, zoals een <a class="term-link" href="/nl/term/gpu/">GPU</a> of netwerkkaart, rechtstreeks doorgeeft aan een virtuele machine, configureert hij de IOMMU zo dat die guest-physical-adressen worden vertaald naar de host-physical-pagina&#39;s achter die VM. Het apparaat kan dan op volle snelheid <a class="term-link" href="/nl/term/dma/">DMA</a> gebruiken zonder dat de hypervisor elke transfer onderschept, terwijl het geen toegang heeft tot het geheugen van andere VM&#39;s. De prijs is enige vertalingsoverhead, vooral IOTLB-misses en de kosten van het mappen en unmappen van buffers.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over IOMMU</h2>
   <article class="q-mini" data-qid="os-hardware-030" data-cat="os-hardware" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. De DMA-adressen van apparaten vertalen en ongeldige toegang voorkomen</p><p class="explanation">Omdat apparaten met <a class="term-link" href="/nl/term/dma/">DMA</a> het hoofdgeheugen rechtstreeks kunnen lezen en schrijven, bestaat het gevaar dat een defect of kwaadaardig apparaat het geheugen van het besturingssysteem overschrijft. Een <a class="term-link" href="/nl/term/iommu/">IOMMU</a> vertaalt, zoals de MMU voor de CPU, de adressen die een apparaat gebruikt naar fysieke adressen en blokkeert toegang buiten het toegestane bereik. Het kan ook niet-aaneengesloten fysiek geheugen voor het apparaat aaneengesloten laten lijken en wordt gebruikt om apparaten rechtstreeks aan virtuele machines toe te wijzen. Het is geen apparaat dat instructies vertaalt of voeding beheert.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Heb ik een IOMMU nodig voor GPU-passthrough?</h3>
+  <p>Ja. Het doorgeven van een fysiek apparaat aan een virtuele machine steunt op de IOMMU om de DMA-adressen van de gast te vertalen en te voorkomen dat het apparaat geheugen buiten die VM bereikt, dus de IOMMU moet worden ondersteund en ingeschakeld zijn in de firmware en het besturingssysteem.</p>
+  <h3>Vertraagt het inschakelen van de IOMMU de I/O?</h3>
+  <p>Het voegt enige kosten toe voor vertalingsmisses en voor het aanmaken en verwijderen van mappings, wat van belang kan zijn bij apparaten met een zeer hoge snelheid. Caching in de IOTLB en langer bestaande mappings houden de overhead bij de meeste workloads beperkt.</p>
+  <h3>Wat is het verschil tussen een IOMMU en een MMU?</h3>
+  <p>De MMU vertaalt adressen die de CPU namens processen uitgeeft, terwijl de IOMMU adressen vertaalt die apparaten uitgeven bij DMA. Beide gebruiken paginatabellen en permissiebits, maar de tabellen van de IOMMU zijn per apparaat of apparaatgroep.</p>
+</section>
 <section>
   <h2>“IOMMU” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Een IOMMU vertaalt, zoals de MMU voor de CPU, de adressen die een apparaat gebruikt naar fysieke adressen en blokkeert toegang buiten het toegestane bereik.</p><a href="/nl/q/os-hardware/os-hardware-030/">Wat is de juiste hoofdrol van de IOMMU?</a></li><li><p>Met een IOMMU kunnen de adressen waartoe elk apparaat toegang heeft worden beperkt tot het door het OS bepaalde bereik, zodat DMA naar niet toegestane plaatsen wordt geweigerd.</p><a href="/nl/q/hw-security/hw-security-047/">Welke maatregel tegen een aanval waarbij een met de pc verb…</a></li></ul>

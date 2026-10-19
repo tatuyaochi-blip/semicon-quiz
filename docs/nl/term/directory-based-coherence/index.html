@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Directorygebaseerde coherentie (directory-based)","item":"https://semiconroom.com/nl/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Directorygebaseerde coherentie (directory-based)","description":"Coherentiemethode waarbij in een tabel wordt vastgelegd welke core elke regel bezit en alleen de betrokken cores worden geïnformeerd. Gebruikt in systemen met veel cores.","url":"https://semiconroom.com/nl/term/directory-based-coherence/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Directorygebaseerde coherentie (directory-based)","item":"https://semiconroom.com/nl/term/directory-based-coherence/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Directorygebaseerde coherentie (directory-based)","description":"Coherentiemethode waarbij in een tabel wordt vastgelegd welke core elke regel bezit en alleen de betrokken cores worden geïnformeerd. Gebruikt in systemen met veel cores.","url":"https://semiconroom.com/nl/term/directory-based-coherence/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom schaalt directorygebaseerde coherentie beter dan snooping?","acceptedAnswer":{"@type":"Answer","text":"Ze stuurt invalidaties en verzoeken alleen naar de caches die een line werkelijk hebben, in plaats van naar alle caches te broadcasten. Het verkeer volgt daardoor het werkelijke delen in plaats van mee te groeien met het aantal cores."}},{"@type":"Question","name":"Is directorygebaseerde coherentie trager dan snooping?","acceptedAnswer":{"@type":"Answer","text":"Elke miss kan langer duren omdat de directory van de home moet worden geraadpleegd en verzoeken kunnen worden doorgestuurd, maar in grote systemen wegen het verminderde verkeer en de minder grote contentie meestal op tegen die extra latency."}},{"@type":"Question","name":"Wat is een snoop filter?","acceptedAnswer":{"@type":"Answer","text":"Een structuur die bijhoudt welke caches elke line zouden kunnen hebben, zodat coherentieverzoeken alleen naar die caches worden gestuurd. In wezen is het een directory die wordt gebruikt om broadcastverkeer in een ontwerp in snoopingstijl te beperken."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
+<section class="term-about">
+  <h2>Wat de directory opslaat</h2>
+  <p>Elke geheugenline heeft een home node, meestal bepaald door haar adres, en de home houdt er een directory-entry voor bij: een coherentietoestand zoals uncached, shared of exclusive, plus een registratie van welke caches kopieën hebben. De eenvoudigste registratie is een volledige bitvector met één bit per core of cache. Entries staan naast de geheugencontrollers of in de gedeelde last-level cache. Omdat verzoeken naar één home gaan in plaats van naar iedereen, kan de interconnect een mesh van point-to-pointverbindingen zijn in plaats van een broadcastbus.</p>
+</section>
+<section class="term-about">
+  <h2>Een schrijfactie, stap voor stap</h2>
+  <p>Een core die een line wil beschrijven die hij niet bezit, stuurt een verzoek naar de home van die line. De home raadpleegt de directory en stuurt alleen invalidaties naar de caches die als deler zijn gemarkeerd; die laten hun kopieën vallen en bevestigen dat, aan de home of rechtstreeks aan de aanvrager. Zodra alle bevestigingen binnen zijn, krijgt de aanvrager exclusief eigendom en registreert de directory hem als eigenaar. Als een andere cache de line in gewijzigde toestand had, stuurt de home het verzoek door naar die eigenaar, die de data naar de aanvrager stuurt, een zogeheten three-hop-transactie.</p>
+</section>
+<section class="term-about">
+  <h2>Snooping versus directory</h2>
+  <p><a class="term-link" href="/nl/term/bus-snooping/">Snooping</a> broadcast elke miss naar elke cache, wat een lage latency geeft omdat er geen extra lookup is, maar het verkeer en het snoopwerk groeien met het aantal cores, wat het beperkt tot kleine systemen. Een directory voegt de latency van een lookup bij de home toe en soms een extra hop, maar stuurt alleen berichten waar dat nodig is, zodat het verkeer meegroeit met het werkelijke delen in plaats van met het aantal cores. Grote multicorechips en systemen met meerdere sockets gebruiken daarom directories of hybride vormen, zoals snoop filters die bijhouden welke caches een line zouden kunnen hebben, zodat de meeste broadcasts kunnen worden overgeslagen.</p>
+</section>
+<section class="term-about">
+  <h2>De directory zelf klein houden</h2>
+  <p>Een volledige bitvector voor elke geheugenline zou bij een stijgend aantal cores te veel opslag kosten, dus praktische ontwerpen bezuinigen. Limited-pointer-schema&#39;s slaan enkele deler-ID&#39;s op en vallen terug op broadcast als meer caches de line delen; coarse vectors gebruiken één bit per groep cores. Sparse directories houden alleen lines bij die werkelijk gecachet zijn en zijn zelf als een cache georganiseerd. Wanneer een sparse directory geen entries meer heeft, moet hij er een verdringen, wat invalidatie van die line afdwingt in elke cache die haar heeft, dus de capaciteit moet ruim worden gedimensioneerd ten opzichte van de caches die hij bijhoudt.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom schaalt directorygebaseerde coherentie beter dan snooping?</h3>
+  <p>Ze stuurt invalidaties en verzoeken alleen naar de caches die een line werkelijk hebben, in plaats van naar alle caches te broadcasten. Het verkeer volgt daardoor het werkelijke delen in plaats van mee te groeien met het aantal cores.</p>
+  <h3>Is directorygebaseerde coherentie trager dan snooping?</h3>
+  <p>Elke miss kan langer duren omdat de directory van de home moet worden geraadpleegd en verzoeken kunnen worden doorgestuurd, maar in grote systemen wegen het verminderde verkeer en de minder grote contentie meestal op tegen die extra latency.</p>
+  <h3>Wat is een snoop filter?</h3>
+  <p>Een structuur die bijhoudt welke caches elke line zouden kunnen hebben, zodat coherentieverzoeken alleen naar die caches worden gestuurd. In wezen is het een directory die wordt gebruikt om broadcastverkeer in een ontwerp in snoopingstijl te beperken.</p>
+</section>
 
 
 
