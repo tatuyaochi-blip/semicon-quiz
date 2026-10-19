@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"ABA problem","item":"https://semiconroom.com/en/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA problem","description":"The problem that when a value changes from A to B and back to A, a CAS comparing only values fails to notice and succeeds. Lock-free data structures must guard against it.","url":"https://semiconroom.com/en/term/aba-problem/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"ABA problem","item":"https://semiconroom.com/en/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA problem","description":"The problem that when a value changes from A to B and back to A, a CAS comparing only values fails to notice and succeeds. Lock-free data structures must guard against it.","url":"https://semiconroom.com/en/term/aba-problem/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the ABA problem in simple terms?","acceptedAnswer":{"@type":"Answer","text":"A thread sees value A, another thread changes it to B and back to A, and the first thread's compare-and-swap succeeds as if nothing had happened. The value matches, but the state behind it has changed."}},{"@type":"Question","name":"How does LL/SC avoid the ABA problem?","acceptedAnswer":{"@type":"Answer","text":"Store-conditional succeeds only if no write has occurred to the location since the matching load-linked, regardless of the value written. A change from A to B and back to A therefore still makes the store fail."}},{"@type":"Question","name":"Does a version counter fully solve ABA?","acceptedAnswer":{"@type":"Answer","text":"In practice yes, as long as the counter is wide enough that it cannot wrap around to the same value while a thread is stalled. A very narrow counter can in principle wrap and reintroduce the problem."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -59,11 +59,26 @@
   
   <p class="lead">The problem that when a value changes from A to B and back to A, a CAS comparing only values fails to notice and succeeds. Lock-free data structures must guard against it.</p>
   <p class="muted">Japanese name: <span lang="ja">ABA問題</span></p>
-  <p class="muted term-summary">ABA problem appears in 2 practice questions across 1 topics, including Multicore &amp; Synchronization.</p>
+  <p class="muted term-summary">ABA problem appears in 2 practice questions across 1 topic, including Multicore &amp; Synchronization.</p>
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the ABA problem arises</h2>
+  <p><a class="term-link" href="/en/term/compare-and-swap/">Compare-and-swap</a> (CAS) writes a new value only if a location still holds an expected value, and it compares values, not history. Consider a lock-free stack whose head points to node A, with A&#39;s next pointer pointing to B. Thread 1 reads head = A and next = B, then is preempted. Thread 2 pops A, pops B, and pushes A back, or pushes a new node that happens to reuse A&#39;s address. Thread 1 resumes, its CAS(head, A, B) succeeds because head is still A, and head now points to B, a node that is no longer in the stack.</p>
+</section>
+<section class="term-about">
+  <h2>Why memory reuse makes it likely</h2>
+  <p>The problem is most common in languages with manual memory management. When a node is freed, the allocator readily hands the same address to the next allocation, so a pointer value can return to A even though it refers to a different node. In garbage-collected languages a node cannot be reclaimed while a thread still holds a reference to it, which largely removes the address-reuse form of ABA, although the logical form can still occur if the same node is deliberately reinserted.</p>
+</section>
+<section class="term-about">
+  <h2>Standard countermeasures</h2>
+  <p>The classic fix pairs the pointer with a modification counter and compares both in one atomic operation, using a double-width CAS or spare pointer bits; every update increments the counter, so A with tag 5 differs from A with tag 7. Load-linked/store-conditional (LL/SC, called <a class="term-link" href="/en/term/load-reserved-store-conditional/">LR/SC</a> in RISC-V) fails if the location was written at all since the load, even when the value is the same. Safe memory reclamation schemes, such as hazard pointers and epoch-based reclamation, prevent a node from being freed and reused while any thread may still access it.</p>
+</section>
+<section class="term-about">
+  <h2>ABA and lock-free progress</h2>
+  <p>A <a class="term-link" href="/en/term/lock-free-algorithm/">lock-free algorithm</a> guarantees that some thread always makes progress even if others stall, because a CAS fails only when another thread&#39;s update succeeded. That progress guarantee says nothing about correctness, and ABA is the classic way a seemingly correct CAS loop corrupts a data structure. It is hard to catch in testing because it needs a specific interleaving plus memory reuse, so lock-free code should be designed with an explicit ABA strategy from the start.</p>
+</section>
 <section>
   <h2>Try it: questions about ABA problem</h2>
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. When a value changes from A to B and back to A, CAS fails to notice the change and succeeds</p><p class="explanation">Suppose a linked list&#39;s head pointer is A. While one thread reads A and prepares a CAS, other threads remove A, do work involving B, and reinsert a node at the same address A. The CAS succeeds because the value is still A, but the list has already changed and its structure is corrupted. It is prevented by pairing the pointer with a modification counter compared together, or by using <a class="term-link" href="/en/term/load-reserved-store-conditional/">LR/SC</a>.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the ABA problem in simple terms?</h3>
+  <p>A thread sees value A, another thread changes it to B and back to A, and the first thread&#39;s compare-and-swap succeeds as if nothing had happened. The value matches, but the state behind it has changed.</p>
+  <h3>How does LL/SC avoid the ABA problem?</h3>
+  <p>Store-conditional succeeds only if no write has occurred to the location since the matching load-linked, regardless of the value written. A change from A to B and back to A therefore still makes the store fail.</p>
+  <h3>Does a version counter fully solve ABA?</h3>
+  <p>In practice yes, as long as the counter is wide enough that it cannot wrap around to the same value while a thread is stalled. A very narrow counter can in principle wrap and reintroduce the problem.</p>
+</section>
 <section>
   <h2>ABA problem in the explanations</h2>
   <ul class="term-quotes"><li><p>Building one correctly is hard, though, and pitfalls such as the ABA problem must be handled.</p><a href="/en/q/multicore-sync/multicore-sync-037/">What property does a lock-free algorithm have?</a></li></ul>

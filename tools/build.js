@@ -123,7 +123,10 @@ function buildLang(L) {
   const code = L.code;
   const isDef = code === defLang;
   const S = { ...readJSON(`src/i18n/${defLang}.json`), ...readOpt(`src/i18n/${code}.json`, {}) };
-  const t = (k, vars = {}) => (S[k] ?? k).replace(/\{(\w+)\}/g, (m, x) => (x in vars ? vars[x] : m));
+  // {n|question|questions} は n が 1 のとき前、それ以外は後ろの語にする(英語などの単数・複数)
+  const t = (k, vars = {}) => (S[k] ?? k)
+    .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (m, x, one, many) => (x in vars ? (Number(vars[x]) === 1 ? one : many) : m))
+    .replace(/\{(\w+)\}/g, (m, x) => (x in vars ? vars[x] : m));
   const tr = kind => (isDef ? {} : readOpt(`data/i18n/${code}/${kind}.json`, {}));
   const exT = tr('exams');
   const catT = tr('categories');

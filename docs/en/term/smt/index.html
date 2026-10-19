@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SMT (simultaneous multithreading)","item":"https://semiconroom.com/en/term/smt/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SMT (simultaneous multithreading)","description":"A technique in which one CPU core processes instructions from several threads at once, making better use of its execution units. Intel calls it Hyper-Threading.","url":"https://semiconroom.com/en/term/smt/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SMT (simultaneous multithreading)","item":"https://semiconroom.com/en/term/smt/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SMT (simultaneous multithreading)","description":"A technique in which one CPU core processes instructions from several threads at once, making better use of its execution units. Intel calls it Hyper-Threading.","url":"https://semiconroom.com/en/term/smt/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Hyper-Threading the same as SMT?","acceptedAnswer":{"@type":"Answer","text":"Yes. Hyper-Threading is Intel's brand name for its implementation of simultaneous multithreading, in which each physical core appears to the operating system as two logical processors."}},{"@type":"Question","name":"Does SMT double CPU performance?","acceptedAnswer":{"@type":"Answer","text":"No. The two threads share one core's execution units and caches, so typical throughput gains are about 0 to 30 percent depending on the workload, far less than adding a second core."}},{"@type":"Question","name":"Why do some systems disable SMT?","acceptedAnswer":{"@type":"Answer","text":"Threads on the same core share caches and execution resources closely enough for one to observe the other through timing side channels. Disabling SMT, or scheduling only mutually trusted threads together, removes that exposure at some cost in throughput."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/cpu/">CPUs and architecture</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How SMT shares one core</h2>
+  <p>A modern out-of-order core can issue several instructions per cycle, but a single thread rarely keeps all its execution units busy because of dependencies, branch mispredictions and cache misses. Simultaneous multithreading (SMT) gives the core a separate architectural state, such as program counter and architectural registers, for each hardware thread, while the threads share execution units, caches, branch predictors and internal buffers. In the same cycle, instructions from different threads can be issued to different units. The operating system sees each hardware thread as a logical processor, typically two per core.</p>
+</section>
+<section class="term-about">
+  <h2>How much speedup to expect</h2>
+  <p>Because the threads compete for the same execution resources, SMT does not double performance the way a second core can. Typical gains range from about 0 to 30 percent. Workloads that stall often, such as those waiting on memory, benefit most: while one thread waits for a cache miss, the other keeps the units busy. Workloads that already saturate the floating-point units or memory bandwidth gain little, and contention in shared caches can even make individual threads slower, which matters for latency-sensitive applications.</p>
+</section>
+<section class="term-about">
+  <h2>SMT versus other kinds of multithreading</h2>
+  <p>Coarse-grained multithreading switches to another thread only on a long stall such as a cache miss. Fine-grained multithreading interleaves threads cycle by cycle but issues from only one thread per cycle, an approach common in GPUs and some network processors. SMT goes further by issuing from multiple threads in the same cycle, which suits wide <a class="term-link" href="/en/term/superscalar/">superscalar</a> cores. Multicore, by contrast, duplicates the entire core. Intel brands its two-way SMT as Hyper-Threading, and some server processors support four or eight threads per core.</p>
+</section>
+<section class="term-about">
+  <h2>Security and scheduling concerns</h2>
+  <p>Two SMT threads share the L1 caches, branch predictor, execution ports and buffers at very fine granularity, so one thread can infer what the other is doing by measuring its own timing. Several side-channel vulnerabilities depend on exactly this arrangement. Systems that run untrusted code from different customers on the same hardware therefore may disable SMT or use core scheduling, which only places threads from the same trust domain on sibling logical processors. Both reduce <a class="term-link" href="/en/term/throughput/">throughput</a>, so the decision weighs performance against isolation.</p>
+</section>
 <section>
   <h2>Try it: questions about SMT (simultaneous multithreading)</h2>
   <article class="q-mini" data-qid="hw-security-046" data-cat="hw-security" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Two threads on the same core share the L1 cache, execution units and more, so one thread can closely observe the other&#39;s activity</p><p class="explanation">With <a class="term-link" href="/en/term/smt/">SMT</a>, two threads run simultaneously in one core, finely sharing the L1 cache, branch predictor, execution units, buffers and more. One thread can therefore observe the resources the other uses through timing measurements, and several vulnerabilities required exactly this condition. To avoid sharing a core with untrusted parties, SMT is turned off or only threads of the same tenant are scheduled on the same core.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is Hyper-Threading the same as SMT?</h3>
+  <p>Yes. Hyper-Threading is Intel&#39;s brand name for its implementation of simultaneous multithreading, in which each physical core appears to the operating system as two logical processors.</p>
+  <h3>Does SMT double CPU performance?</h3>
+  <p>No. The two threads share one core&#39;s execution units and caches, so typical throughput gains are about 0 to 30 percent depending on the workload, far less than adding a second core.</p>
+  <h3>Why do some systems disable SMT?</h3>
+  <p>Threads on the same core share caches and execution resources closely enough for one to observe the other through timing side channels. Disabling SMT, or scheduling only mutually trusted threads together, removes that exposure at some cost in throughput.</p>
+</section>
 <section>
   <h2>SMT (simultaneous multithreading) in the explanations</h2>
   <ul class="term-quotes"><li><p>With SMT, two threads run simultaneously in one core, finely sharing the L1 cache, branch predictor, execution units, buffers and more.</p><a href="/en/q/hw-security/hw-security-046/">Why do some systems handling confidential work disable the …</a></li><li><p>SMT lets one core issue instructions from multiple threads at once, using execution resources a single thread cannot saturate; while one thread waits on a cache miss, the other proceeds.</p><a href="/en/q/cpu/cpu-042/">Which technique lets one CPU core process instructions from…</a></li></ul>

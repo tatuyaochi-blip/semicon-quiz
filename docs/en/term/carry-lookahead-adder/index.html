@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Carry-lookahead adder","item":"https://semiconroom.com/en/term/carry-lookahead-adder/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Carry-lookahead adder","description":"An adder that computes carries in parallel from each bit's generate signal g = a·b and propagate signal p = a ⊕ b, without waiting for carries to ripple. Delay stays small even for wide operands.","url":"https://semiconroom.com/en/term/carry-lookahead-adder/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Carry-lookahead adder","item":"https://semiconroom.com/en/term/carry-lookahead-adder/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Carry-lookahead adder","description":"An adder that computes carries in parallel from each bit's generate signal g = a·b and propagate signal p = a ⊕ b, without waiting for carries to ripple. Delay stays small even for wide operands.","url":"https://semiconroom.com/en/term/carry-lookahead-adder/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is a carry-lookahead adder faster than a ripple-carry adder?","acceptedAnswer":{"@type":"Answer","text":"A ripple-carry adder waits for the carry to pass through every bit in turn, so delay grows linearly with width. A carry-lookahead adder computes all carries in parallel from generate and propagate signals, so delay grows roughly with the logarithm of the width."}},{"@type":"Question","name":"Can the propagate signal use OR instead of XOR?","acceptedAnswer":{"@type":"Answer","text":"Yes, for the carry chain: p = a + b gives the same carries because when both inputs are 1 the generate term already produces the carry. The sum bit still needs a ⊕ b, so many designs compute XOR for p and use it for both."}},{"@type":"Question","name":"What is group generate and group propagate?","acceptedAnswer":{"@type":"Answer","text":"They summarize a block of bits: group generate is 1 if the block produces a carry out by itself, and group propagate is 1 if a carry entering the block will pass all the way through. Higher lookahead levels use them to compute block carries quickly."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Generate and propagate signals</h2>
+  <p>For each bit with inputs a and b, the generate signal g = a·b is 1 when the bit produces a carry regardless of the carry coming in, and the propagate signal p = a ⊕ b is 1 when an incoming carry will pass through. The carry out is c(i+1) = g(i) + p(i)·c(i), and the sum is s(i) = p(i) ⊕ c(i). Expanding the recurrence gives c1 = g0 + p0·c0 and c2 = g1 + p1·g0 + p1·p0·c0, so every carry can be written in two-level logic using only the g and p signals and the input carry c0.</p>
+</section>
+<section class="term-about">
+  <h2>Why ripple-carry addition is slow</h2>
+  <p>In a ripple-carry adder, each <a class="term-link" href="/en/term/full-adder/">full adder</a> must wait for the carry from the bit below. In the worst case, such as adding 1 to a word of all ones, the carry travels through every bit, so delay grows linearly with width; a 64-bit ripple-carry adder is far too slow for a processor clocked at gigahertz rates. A carry-lookahead adder (CLA) computes the carries directly from the inputs in parallel, and with hierarchical lookahead its delay grows only with the logarithm of the width.</p>
+</section>
+<section class="term-about">
+  <h2>Building wide adders hierarchically</h2>
+  <p>Fully expanded carry equations quickly need gates with too many inputs, so practical designs use blocks of about 4 bits. Each block produces a group generate, G = g3 + p3·g2 + p3·p2·g1 + p3·p2·p1·g0, and a group propagate, P = p3·p2·p1·p0. A second-level lookahead unit treats these exactly like single-bit g and p signals to compute the carries into each block, and a third level extends the scheme to 64 bits. Parallel prefix adders such as Kogge-Stone and Brent-Kung generalize the same idea, trading wiring and area for logic depth.</p>
+</section>
+<section class="term-about">
+  <h2>Where carry-lookahead adders are used</h2>
+  <p>Fast adders sit in ALUs, address generators and floating-point units, and in the last stage of multipliers. A multiplier first reduces its many partial products with carry-save adders, which are independent full adders that turn three numbers into two with only one full-adder delay and no carry propagation. Only the final two numbers need a carry-propagating addition, which is done once by a carry-lookahead or prefix adder. Other compromises, such as carry-select and carry-skip adders, sit between ripple-carry and full lookahead in speed and area.</p>
+</section>
 <section>
   <h2>Try it: questions about Carry-lookahead adder</h2>
   <article class="q-mini" data-qid="logic-046" data-cat="logic" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. g = a·b, p = a ⊕ b, c(i+1) = g + p·c(i)</p><p class="explanation">If a and b are both 1, a carry is produced regardless of the incoming carry, so the generate signal is g = a·b. If exactly one of them is 1, the incoming carry passes upward, so the propagate signal is p = a ⊕ b (OR is also used). Hence c(i+1) = g(i) + p(i)·c(i); expanding this lets every carry be computed in parallel with two-level logic from the g and p signals and the lowest carry alone. Formulas that swap generate and propagate do not compute correctly.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why is a carry-lookahead adder faster than a ripple-carry adder?</h3>
+  <p>A ripple-carry adder waits for the carry to pass through every bit in turn, so delay grows linearly with width. A carry-lookahead adder computes all carries in parallel from generate and propagate signals, so delay grows roughly with the logarithm of the width.</p>
+  <h3>Can the propagate signal use OR instead of XOR?</h3>
+  <p>Yes, for the carry chain: p = a + b gives the same carries because when both inputs are 1 the generate term already produces the carry. The sum bit still needs a ⊕ b, so many designs compute XOR for p and use it for both.</p>
+  <h3>What is group generate and group propagate?</h3>
+  <p>They summarize a block of bits: group generate is 1 if the block produces a carry out by itself, and group propagate is 1 if a carry entering the block will pass all the way through. Higher lookahead levels use them to compute block carries quickly.</p>
+</section>
 <section>
   <h2>Carry-lookahead adder in the explanations</h2>
   <ul class="term-quotes"><li><p>A carry-lookahead adder uses per-bit generate G = A·B (always produces a carry) and propagate P = A⊕B (passes a lower carry) to compute each carry directly from the inputs in parallel: C1 = G0 + P0·C0, C2 = G1 + P1·G0 + P1·P0·C0, and so on.</p><a href="/en/q/logic/logic-046/">Why is a carry-lookahead adder fast?</a></li><li><p>Stages of these reduce the partial products to two, which are added once at the end by a carry-lookahead adder or similar.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-037/">Why are carry-save adders used to sum the many partial prod…</a></li></ul>
