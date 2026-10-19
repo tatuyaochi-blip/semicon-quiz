@@ -39,7 +39,7 @@ function draw(p, r) {
   const tMin = Math.min(0, p.skew, r.required) ;
   const x = t => L + ((t - tMin) / (tMax - tMin)) * (R - L);
   const color = ok => (ok ? 'var(--ok)' : 'var(--ng)');
-  const text = (tx, ty, s, anchor = 'start') => `<text x="${tx}" y="${ty}" font-size="12" fill="var(--muted)" text-anchor="${anchor}">${s}</text>`;
+  const text = (tx, ty, s, anchor = 'start') => `<text x="${tx}" y="${ty}" font-size="14" fill="var(--muted)" text-anchor="${anchor}">${s}</text>`;
   const clamp = v => Math.min(Math.max(v, L + 2), W - 12);
   svg.innerHTML = [
     `<line x1="${x(0)}" y1="14" x2="${x(0)}" y2="160" stroke="var(--text)" stroke-width="1.5"/>`,

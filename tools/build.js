@@ -732,6 +732,23 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <p class="dy-legend"><span class="dy-key ok"></span>${esc(x.legend_ok)} <span class="dy-key ng"></span>${esc(x.legend_ng)}</p>
     <p class="muted">${esc(x.chart_note)}</p>
   </section>`,
+    'mosfet-iv': x => `<form id="iv-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('vth', x.vth, 0.5, 'min="0" step="0.05"')}
+    ${field('kp', x.kp, 200, 'min="1" step="10"')}
+    ${field('wl', x.wl, 10, 'min="0.1" step="0.5"')}
+    ${field('lambda', x.lambda, 0.05, 'min="0" step="0.01"')}
+    ${field('vgs', x.vgs, 1.5, 'min="0" step="0.05"')}
+    ${field('vds', x.vds, 1.2, 'min="0" step="0.05"')}
+    ${field('vdd', x.vdd, 3.3, 'min="0.1" step="0.1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('region', x.region)}${stat('id', x.id)}${stat('vdsat', x.vdsat)}${stat('gm', x.gm)}${stat('ro', x.ro)}</dl>
+    <svg id="iv-chart" class="sta-chart" viewBox="0 0 600 340" role="img" aria-label="${esc(x.chart_label)}"
+      data-labels="${esc(JSON.stringify({ cutoff: x.r_cutoff, linear: x.r_linear, sat: x.r_sat, op: x.lbl_op }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
     <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>
