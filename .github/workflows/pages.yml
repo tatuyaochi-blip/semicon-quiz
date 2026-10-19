@@ -1,0 +1,36 @@
+# サイトを GitHub 上でビルドして GitHub Pages に公開する。
+# 使うには、リポジトリの Settings → Pages → Build and deployment の Source を「GitHub Actions」にする。
+# 切り替えるまでは手動実行(workflow_dispatch)だけにしておく(従来どおり main の docs/ が公開される)
+name: Deploy site
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/validate.js
+      - run: node tools/build.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4
