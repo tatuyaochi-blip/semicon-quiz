@@ -272,6 +272,21 @@ function buildLang(L) {
   // 静的な問題ブロック(個別問題・用語・比較ページ)を、その場で解けるようにするための属性(動きは answer.js)
   const qData = q => ` data-qid="${esc(q.id)}" data-cat="${esc(q.cat)}" data-answer="${q.answer}" data-correct="${esc(t('correct'))}" data-incorrect="${esc(t('incorrect', { mark: mark(q.answer) }))}"`;
 
+  // 用語ページの説明文(検索結果に出る): 文の途中で「…」と切らず、収まる文までにする。
+  // 余裕があれば練習問題の数を添える(検索から来た人に、解ける問題があることを伝える)
+  const termDescription = (desc, n) => {
+    const sentences = desc.match(/[^。.!?！？]+(?:[。！？]|[.!?](?=\s|$))\s*/g) ?? [desc];
+    let text = '';
+    for (const x of sentences) {
+      if ((text + x).trim().length > 150) break;
+      text += x;
+    }
+    text = text.trim() || short(desc, 150);
+    const more = n ? t('term_desc_more', { n }) : '';
+    const sep = /[。！？]$/.test(text) ? '' : ' '; // 日本語・中国語は句点のあとに空白を入れない
+    return more && text.length + more.length + 1 <= 160 ? `${text}${sep}${more}` : text;
+  };
+
   // 学習コース: トップの一覧と /course/{id}/ のページ(進み具合の表示は course.js)
   // コースの分野のうち、問題がまだない分野は準備ができるまで外す
   const liveCourses = courses.map(co => ({ ...co, steps: co.steps.filter(id => qs[id]?.length) })).filter(co => co.steps.length);
@@ -740,7 +755,7 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
       path: `${L.path}term/${termSlug[g.key]}/`,
       alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
       title: t('term_title', { term: g.term }),
-      description: short(g.desc, 150),
+      description: termDescription(g.desc, list.length),
       scripts: ['answer.js'],
       noindex: !list.length, // 問題に一度も出てこない用語のページは検索に出さない
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
