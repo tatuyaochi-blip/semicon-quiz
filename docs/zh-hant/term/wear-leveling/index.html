@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"損耗平均","item":"https://semiconroom.com/zh-hant/term/wear-leveling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"損耗平均","description":"為避免快閃記憶體的覆寫集中在特定區塊，而分散寫入位置以延長壽命的技術。","url":"https://semiconroom.com/zh-hant/term/wear-leveling/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"損耗平均","item":"https://semiconroom.com/zh-hant/term/wear-leveling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"損耗平均","description":"為避免快閃記憶體的覆寫集中在特定區塊，而分散寫入位置以延長壽命的技術。","url":"https://semiconroom.com/zh-hant/term/wear-leveling/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"靜態損耗平均和動態損耗平均有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"動態損耗平均為新的寫入選擇耗損較少的空閒區塊；靜態損耗平均則還會將很少變動的資料移出耗損較少的區塊，讓這些區塊也能分擔寫入負荷。"}},{"@type":"Question","name":"損耗平均會增加寫入放大嗎？","acceptedAnswer":{"@type":"Answer","text":"靜態損耗平均會搬移主機未變更的資料，因此會增加一些內部寫入，但耗損平均分佈所帶來的好處遠大於此成本。"}},{"@type":"Question","name":"NAND 快閃記憶體可承受多少次寫入循環？","acceptedAnswer":{"@type":"Answer","text":"SLC 約 50,000 至 100,000 次，MLC 數千至 10,000 次，TLC 數千次，QLC 約 1,000 次，視製程與條件而定。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sram-flash/">SRAM與快閃記憶體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>快閃記憶體為何需要損耗平均</h2>
+  <p>NAND 快閃記憶體無法就地覆寫資料：頁面可以個別寫入，但抹除只能以包含許多頁面的整個區塊為單位進行，而每一次寫入／抹除（P/E）循環都會對穿隧氧化層造成輕微損傷。因此耐久度取決於記憶胞類型：單層式記憶胞（<a class="term-link" href="/zh-hant/term/slc/">SLC</a>）約 50,000 至 100,000 次循環，多層式記憶胞（MLC）數千至 10,000 次，三層式記憶胞（<a class="term-link" href="/zh-hant/term/tlc/">TLC</a>）數千次，四層式記憶胞（QLC）約 1,000 次。若一個經常<a class="term-link" href="/zh-hant/term/refresh/">更新</a>的邏輯位址（例如日誌或檔案系統的中繼資料）總是寫入同一個區塊，該區塊會遠比其他區塊更早耗損。</p>
+</section>
+<section class="term-about">
+  <h2>如何透過 FTL 運作</h2>
+  <p>控制器執行快閃轉換層（FTL），將主機的邏輯區塊位址對應到實體頁面。每次<a class="term-link" href="/zh-hant/term/refresh/">更新</a>邏輯位址時，都會寫入其他位置剛抹除的頁面，舊頁面只會被標示為無效；之後由<a class="term-link" href="/zh-hant/term/garbage-collection/">垃圾回收</a>將區塊中剩餘的有效頁面複製出去，再抹除該區塊。動態損耗平均會將新的寫入導向抹除次數少的空閒區塊。靜態損耗平均還會搬移很少變動的冷資料，讓其所佔用、幾乎未耗損的區塊重新加入輪替，使所有區塊以相近的速率老化。</p>
+</section>
+<section class="term-about">
+  <h2>寫入放大與備用區域</h2>
+  <p><a class="term-link" href="/zh-hant/term/garbage-collection/">垃圾回收</a>與靜態損耗平均會寫入主機從未要求寫入的資料。NAND 寫入量與主機寫入量的比值，即<a class="term-link" href="/zh-hant/term/write-amplification/">寫入放大</a>係數，會直接降低可用的耐久度。保留備用容量（稱為預留空間 over-provisioning），以及主機告知硬碟哪些資料已被刪除的 <a class="term-link" href="/zh-hant/term/trim/">TRIM</a> 指令，可給予控制器作業空間並降低此係數。硬碟耐久度以總寫入位元組數（TBW）或每日全碟寫入次數（DWPD）標示，大約等於容量乘以額定 P/E 循環次數再除以寫入放大係數。</p>
+</section>
+<section class="term-about">
+  <h2>相關機制與執行位置</h2>
+  <p>損耗平均只負責使耗損均勻；它與控制器的其他功能協同運作。<a class="term-link" href="/zh-hant/term/ecc/">錯誤更正碼</a>（ECC），從 BCH 到現代 SSD 中的低密度同位檢查（LDPC）碼，會更正隨記憶胞老化而增加的原始位元錯誤，壞區塊管理則會淘汰失效的區塊。SSD、USB 隨身碟、SD 卡與嵌入式 eMMC 元件都在其控制器內完成這一切，不過廉價的記憶卡可能只做簡易的實作。當原始 NAND 直接連接到處理器時，則必須改由支援快閃記憶體的檔案系統或主機軟體提供損耗平均。</p>
+</section>
 <section>
   <h2>練習損耗平均的題目</h2>
   <article class="q-mini" data-qid="sram-flash-007" data-cat="sram-flash" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 不讓寫入集中在特定區塊，而是分散到整體以延長壽命</p><p class="explanation">區塊有改寫次數的上限，因此若總是寫入相同的邏輯位址，只有該處會提早到達壽命。<a class="term-link" href="/zh-hant/term/wear-leveling/">損耗平均</a>中，控制器管理邏輯位址與實體區塊的對應表（FTL），將寫入分配到抹除次數較少的區塊。對於很少改寫的靜態資料也會不時搬移，使所有區塊的損耗一致，進而延長整個產品的壽命。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>靜態損耗平均和動態損耗平均有什麼不同？</h3>
+  <p>動態損耗平均為新的寫入選擇耗損較少的空閒區塊；靜態損耗平均則還會將很少變動的資料移出耗損較少的區塊，讓這些區塊也能分擔寫入負荷。</p>
+  <h3>損耗平均會增加寫入放大嗎？</h3>
+  <p>靜態損耗平均會搬移主機未變更的資料，因此會增加一些內部寫入，但耗損平均分佈所帶來的好處遠大於此成本。</p>
+  <h3>NAND 快閃記憶體可承受多少次寫入循環？</h3>
+  <p>SLC 約 50,000 至 100,000 次，MLC 數千至 10,000 次，TLC 數千次，QLC 約 1,000 次，視製程與條件而定。</p>
+</section>
 <section>
   <h2>解析中的「損耗平均」</h2>
   <ul class="term-quotes"><li><p>損耗平均中，控制器管理邏輯位址與實體區塊的對應表（FTL），將寫入分配到抹除次數較少的區塊。</p><a href="/zh-hant/q/sram-flash/sram-flash-007/">SSD 等所使用的損耗平均（Wear Leveling）的目的，下列何者正確？</a></li><li><p>USB 隨身碟、SD 卡與 SSD 使用的是大容量且便宜的非揮發性記憶體 NAND 快閃記憶體，內部有 NAND 晶片，以及負責錯誤更正與損耗平均的控制器。</p><a href="/zh-hant/q/sram-flash/sram-flash-032/">USB 隨身碟與 SD 卡主要使用的記憶體是下列何者？</a></li><li><p>SSD 的壽命以 TBW（總寫入量）或 DWPD（一天可寫滿整個容量幾次）表示，並藉由損耗平均與預留空間來延長。</p><a href="/zh-hant/q/sram-flash/sram-flash-039/">SLC 型 NAND 快閃記憶體的可改寫次數標準，最接近下列何者？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"暫存器配置","item":"https://semiconroom.com/zh-hant/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"暫存器配置","description":"將程式的變數與中間值，分配到數量有限的CPU暫存器的編譯器處理。以干涉圖著色等方式決定，避免讓同時使用的值共用同一個暫存器。","url":"https://semiconroom.com/zh-hant/term/register-allocation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"暫存器配置","item":"https://semiconroom.com/zh-hant/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"暫存器配置","description":"將程式的變數與中間值，分配到數量有限的CPU暫存器的編譯器處理。以干涉圖著色等方式決定，避免讓同時使用的值共用同一個暫存器。","url":"https://semiconroom.com/zh-hant/term/register-allocation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"什麼是暫存器溢出（spilling）？","acceptedAnswer":{"@type":"Answer","text":"溢出是指因為暫存器不足以容納該點所有存活的值，而將某個值保存在記憶體中，通常是堆疊位置；編譯器會在其使用處前後插入儲存與載入，使程式碼變慢。"}},{"@type":"Question","name":"為什麼暫存器配置是圖著色問題？","acceptedAnswer":{"@type":"Answer","text":"同時存活的值會互相干涉，需要不同的暫存器，因此若以值為節點、以干涉為邊，為每個節點從 k 種顏色中指派一種且相鄰節點不同色，正好就是指派 k 個暫存器。"}},{"@type":"Question","name":"圖著色和線性掃描暫存器配置有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"圖著色會建立完整的干涉圖，通常能產生較好的程式碼，但花費時間較長；線性掃描則對排序後的存活區間單次走訪進行配置，以犧牲部分程式碼品質換取快得多的編譯速度。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
-
+<section class="term-about">
+  <h2>從虛擬暫存器到實體暫存器</h2>
+  <p>編譯器使用數量不受限制的虛擬暫存器或暫時值來產生中間碼，但實際的 CPU 只有一小組固定的暫存器，通常是 16 到 32 個通用暫存器。暫存器配置決定在每個點上哪些值放在哪些實體暫存器中，以及哪些值必須改放在記憶體中。由於暫存器比 L1 快取存取還要快得多，良好的配置對速度有很大的影響，尤其是在迴圈內。硬性規則是：同時需要的兩個值不能共用一個暫存器。</p>
+</section>
+<section class="term-about">
+  <h2>存活性與干涉圖</h2>
+  <p>配置器首先在<a class="term-link" href="/zh-hant/term/control-flow-graph/">控制流程圖</a>上執行存活分析，找出在每個點上哪些值之後仍可能被讀取。接著建立干涉圖：每個值是一個節點，同時存活的兩個值之間以邊相連。指派暫存器就變成以 k 種顏色為圖著色，使相鄰節點不同色，其中 k 為可用暫存器的數量。最佳著色在一般情況下是 NP 完全問題，因此編譯器使用啟發式方法，例如 Chaitin 式的簡化法，反覆移除鄰居少於 k 個的節點。</p>
+</section>
+<section class="term-about">
+  <h2>溢出及其代價</h2>
+  <p>當圖無法以 k 種顏色著色時，部分值會被溢出（<a class="term-link" href="/zh-hant/term/register-spilling/">spill</a>）：它們被保存在堆疊位置中，每次定義後加入一個儲存，每次使用前加入一個載入。溢出會增加指令與記憶體流量，因此配置器會估計每個候選值的溢出代價，依迴圈巢狀深度對使用次數加權，並優先溢出那些很少使用、卻與許多其他值干涉的值。將長的存活範圍分割成較短的片段，也能讓一個值在最重要的地方留在暫存器中。</p>
+</section>
+<section class="term-about">
+  <h2>呼叫慣例、合併與線性掃描</h2>
+  <p>實際的配置器必須遵守<a class="term-link" href="/zh-hant/term/calling-convention/">呼叫慣例</a>：引數與回傳值使用特定的暫存器，呼叫端保存（caller-saved）暫存器會被呼叫破壞，而被呼叫端保存（callee-saved）暫存器必須在返回前恢復。合併（coalescing）會在複製指令的來源與目的不互相干涉時，為兩者指派同一個暫存器，從而刪除該搬移指令。即時（JIT）編譯器常使用線性掃描配置而非圖著色，以單次走訪排序後的存活區間，執行速度快得多，代價是程式碼品質稍差。</p>
+</section>
 <section>
   <h2>練習暫存器配置的題目</h2>
   <article class="q-mini" data-qid="compiler-020" data-cat="compiler" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 將值退避到堆疊與讀回的指令增加，容易變慢</p><p class="explanation">溢出是指當同時存活的值比暫存器數量還多時，將部分的值放到記憶體（堆疊）中。每次使用該值都需要讀取指令，每次改寫都需要寫入指令，因此指令增加，並因記憶體存取而容易變慢。所以編譯器會把迴圈內等經常使用的值留在暫存器中，挑選不常使用的值來溢出。暫存器的數量由CPU決定而不會增加，這也與刪除不需要的值是不同的事。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>什麼是暫存器溢出（spilling）？</h3>
+  <p>溢出是指因為暫存器不足以容納該點所有存活的值，而將某個值保存在記憶體中，通常是堆疊位置；編譯器會在其使用處前後插入儲存與載入，使程式碼變慢。</p>
+  <h3>為什麼暫存器配置是圖著色問題？</h3>
+  <p>同時存活的值會互相干涉，需要不同的暫存器，因此若以值為節點、以干涉為邊，為每個節點從 k 種顏色中指派一種且相鄰節點不同色，正好就是指派 k 個暫存器。</p>
+  <h3>圖著色和線性掃描暫存器配置有什麼不同？</h3>
+  <p>圖著色會建立完整的干涉圖，通常能產生較好的程式碼，但花費時間較長；線性掃描則對排序後的存活區間單次走訪進行配置，以犧牲部分程式碼品質換取快得多的編譯速度。</p>
+</section>
 <section>
   <h2>解析中的「暫存器配置」</h2>
   <ul class="term-quotes"><li><p>每種裝置的暫存器配置與操作程序都不同。</p><a href="/zh-hant/q/os-hardware/os-hardware-031/">關於裝置驅動程式（device driver）的作用，下列何者正確？</a></li></ul>

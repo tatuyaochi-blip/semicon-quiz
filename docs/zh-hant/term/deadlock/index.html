@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"死結（Deadlock）","item":"https://semiconroom.com/zh-hant/term/deadlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"死結（Deadlock）","description":"多個執行緒各自持有資源，並互相等待其他執行緒所持有的資源，使得誰都無法前進的狀態。可藉由全體統一取鎖順序來防止。","url":"https://semiconroom.com/zh-hant/term/deadlock/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"死結（Deadlock）","item":"https://semiconroom.com/zh-hant/term/deadlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"死結（Deadlock）","description":"多個執行緒各自持有資源，並互相等待其他執行緒所持有的資源，使得誰都無法前進的狀態。可藉由全體統一取鎖順序來防止。","url":"https://semiconroom.com/zh-hant/term/deadlock/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"死結的四個條件是什麼？","acceptedAnswer":{"@type":"Answer","text":"互斥、持有並等待、不可搶占與循環等待；四者必須同時成立，因此打破其中任何一個即可防止死結。"}},{"@type":"Question","name":"使用多個鎖時如何防止死結？","acceptedAnswer":{"@type":"Answer","text":"定義一個全域的鎖取得順序，並讓每個執行緒都遵守，這樣就不可能發生循環等待；一次取得所有鎖，或以 try-lock 退讓，是其他替代做法。"}},{"@type":"Question","name":"死結和活結有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"死結時執行緒被阻塞而什麼也不做；活結時執行緒持續執行並改變狀態，例如彼此回應地重試，卻始終無法取得進展。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>四個必要條件</h2>
+  <p>只有當四個條件（常稱為 Coffman 條件）同時成立時，才可能發生死結。互斥：一項資源一次只能由一個執行緒持有。持有並等待：執行緒在等待更多資源時保留已持有的資源。不可搶占：資源無法被強制奪走。循環等待：存在一個執行緒的循環，其中每個執行緒都在等待下一個執行緒所持有的資源。由於四者缺一不可，每種預防技術都是藉由使其中至少一個條件無法成立來發揮作用。</p>
+</section>
+<section class="term-about">
+  <h2>看起來是什麼樣子</h2>
+  <p>經典案例涉及兩個鎖。執行緒 1 持有鎖 A 並等待鎖 B，而執行緒 2 持有 B 並等待 A；兩者都不釋放所持有的鎖，因此永遠等待下去。若使用會讓等待中的執行緒進入睡眠的鎖，CPU 會閒置，程式看起來就只是凍結了。活結（livelock）則不同：執行緒持續忙碌，例如同步地反覆退讓再重試，卻毫無進展。飢餓（starvation）是指某個執行緒始終得不到資源，而其他執行緒持續進行；顛簸（<a class="term-link" href="/zh-hant/term/thrashing/">thrashing</a>）則是記憶體分頁的問題，而非鎖的問題。</p>
+</section>
+<section class="term-about">
+  <h2>預防與處理</h2>
+  <p>最常見的實務規則是全域鎖順序：若每個執行緒總是先取得 A 再取得 B，就不會有執行緒在持有 B 的同時等待 A，因此無法形成循環。其他做法包括一次取得所有需要的鎖，或使用 try-lock，在某個鎖無法取得時釋放所有已持有的鎖，等待一段時間後重試。有些系統則是透過在等待圖（wait-for graph）中找出循環來偵測死結，並中止其中一個參與者來解除，如同資料庫對交易所做的那樣。鎖順序檢查工具可在測試期間標出違規。</p>
+</section>
+<section class="term-about">
+  <h2>硬體中的死結</h2>
+  <p>硬體互連也可能發生死結。在晶片上網路中，封包在等待前方緩衝區時會占用自身的緩衝區；若這些依存關係形成循環，流量就會永久停止。設計者以排除循環的路由規則來防止這種情況，例如網格上的維度順序路由（dimension-order routing），或以虛擬通道打斷依存鏈。協定死結是指因為要求填滿了相同的緩衝區而使回應無法前進，可藉由為要求與回應訊息提供各自獨立的緩衝區或通道來避免。</p>
+</section>
 <section>
   <h2>練習死結（Deadlock）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-024" data-cat="multicore-sync" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 讓所有執行緒取得鎖的順序，在整個程式中統一規定</p><p class="explanation"><a class="term-link" href="/zh-hant/term/deadlock/">死結</a>會在執行緒之間形成彼此等待對方所持有鎖的「環」時發生。例如，若所有人都遵守「一定要先取得A再取得B」，就不會出現持有B而等待A的執行緒，也就不會形成環。其他方法還有一次同時取得所需的所有鎖，或取不到時就放開已持有的鎖再重做等。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>死結的四個條件是什麼？</h3>
+  <p>互斥、持有並等待、不可搶占與循環等待；四者必須同時成立，因此打破其中任何一個即可防止死結。</p>
+  <h3>使用多個鎖時如何防止死結？</h3>
+  <p>定義一個全域的鎖取得順序，並讓每個執行緒都遵守，這樣就不可能發生循環等待；一次取得所有鎖，或以 try-lock 退讓，是其他替代做法。</p>
+  <h3>死結和活結有什麼不同？</h3>
+  <p>死結時執行緒被阻塞而什麼也不做；活結時執行緒持續執行並改變狀態，例如彼此回應地重試，卻始終無法取得進展。</p>
+</section>
 <section>
   <h2>解析中的「死結（Deadlock）」</h2>
   <ul class="term-quotes"><li><p>死結是指多個執行緒各自持有資源，同時等待其他執行緒持有的資源，使得沒有任何一方能繼續前進的狀態。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-024/">下列何者是死結（deadlock）的例子？</a></li><li><p>死結會在執行緒之間形成彼此等待對方所持有鎖的「環」時發生。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-025/">在使用多把鎖的程式中，防止死結最常見的方法為下列何者？</a></li><li><p>死結則是彼此等待對方的資源而停住的狀態。</p><a href="/zh-hant/q/os-hardware/os-hardware-021/">因實體記憶體不足，持續不斷地換出與載入分頁，導致處理幾乎無法進行的狀態稱為什麼？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"進入點（Entry point）","item":"https://semiconroom.com/zh-hant/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"進入點（Entry point）","description":"開始執行程式的位址。記錄於 ELF 標頭。在 C 語言中通常不是 main，而是 _start 等啟動程式碼，先進行初始化後再呼叫 main。","url":"https://semiconroom.com/zh-hant/term/entry-point/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"進入點（Entry point）","item":"https://semiconroom.com/zh-hant/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"進入點（Entry point）","description":"開始執行程式的位址。記錄於 ELF 標頭。在 C 語言中通常不是 main，而是 _start 等啟動程式碼，先進行初始化後再呼叫 main。","url":"https://semiconroom.com/zh-hant/term/entry-point/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"main 是 C 程式的進入點嗎？","acceptedAnswer":{"@type":"Answer","text":"通常不是。執行檔的進入點是 _start 之類的啟動程式碼，它會準備引數與執行環境、呼叫 main，然後將 main 的回傳值傳給 exit。"}},{"@type":"Question","name":"ELF 檔案的進入點存放在哪裡？","acceptedAnswer":{"@type":"Answer","text":"存放在 ELF 標頭的 e_entry 欄位中，它保存程式載入後開始執行的虛擬位址。"}},{"@type":"Question","name":"C 程式在 main 之前會執行什麼？","acceptedAnswer":{"@type":"Answer","text":"C 執行環境的啟動程式碼、函式庫初始化以及全域物件的建構子；在動態連結的程式中，動態連結器還會先載入共享函式庫並進行重定位。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/linker-loader/">連結器與載入器與執行檔格式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>進入點與 main 的區別</h2>
+  <p>進入點是<a class="term-link" href="/zh-hant/term/program-loader/">載入器</a>轉交控制權時第一條指令的位址，儲存在執行檔的標頭中，例如 <a class="term-link" href="/zh-hant/term/executable-and-linkable-format/">ELF</a> 檔案的 e_entry 欄位。對 C 程式而言，進入點通常不是 main。<a class="term-link" href="/zh-hant/term/linker/">連結器</a>會加入 C 執行環境的啟動物件，例如 crt1.o，並將其中的 _start 符號設為進入點。對 C 程式碼來說，main 看起來是起點，但它只是被這段啟動程式碼呼叫的普通函式。必要時，連結器允許指定不同的進入符號。</p>
+</section>
+<section class="term-about">
+  <h2>啟動程式碼做了什麼</h2>
+  <p>在 Linux 上，核心啟動新行程時，會在堆疊上排好 argc、argv 指標、環境變數指標與輔助向量（auxiliary vector）。_start 常式會蒐集這些資料、對齊堆疊，並呼叫 C 函式庫的初始化，後者會設定標準函式庫、執行全域物件的建構子與初始化函式，然後呼叫 main。當 main 返回時，其回傳值會傳給 exit，exit 會執行已註冊的 atexit 處理函式、清空緩衝的輸出，最後要求核心終止該行程。</p>
+</section>
+<section class="term-about">
+  <h2>動態連結的程式</h2>
+  <p><a class="term-link" href="/zh-hant/term/dynamic-linking/">動態連結</a>的執行檔會在程式標頭中指定其<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>，例如 Linux 上的 ld.so。核心會同時映射程式與動態連結器，並從動態連結器自己的進入點開始執行，而不是從程式的進入點。動態連結器載入所需的<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>、套用<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>、繫結符號並執行函式庫的初始化函式，然後跳到程式的進入點 _start。因此在動態連結的行程中，在程式自己的第一條指令之前，就已經執行了相當多的程式碼。</p>
+</section>
+<section class="term-about">
+  <h2>核心與微控制器中的進入點</h2>
+  <p>這個術語也涵蓋其他開始執行的地方。作業系統會向 CPU 註冊例外與<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>的進入點；例如在 RISC-V 上，ecall 指令會引發例外，切換到較高的<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>，並跳到作業系統所設定的陷阱向量（trap vector）。在裸機<a class="term-link" href="/zh-hant/term/microcontroller/">微控制器</a>上，重置向量指向啟動程式碼，由它準備堆疊、將已初始化資料從快閃記憶體複製到 RAM、將未初始化的 .<a class="term-link" href="/zh-hant/term/bss-section/">bss 區段</a>清零，之後才呼叫 main。</p>
+</section>
 <section>
   <h2>練習進入點（Entry point）的題目</h2>
   <article class="q-mini" data-qid="linker-loader-031" data-cat="linker-loader" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 通常不是main，而是_start等啟動用的程式碼，完成初始化後才呼叫main</p><p class="explanation"><a class="term-link" href="/zh-hant/term/linker/">連結器</a>會將C執行期（runtime）所提供的啟動用<a class="term-link" href="/zh-hant/term/object-file/">目的檔</a>（crt1.o等）嵌入程式，並以其中的_start作為入口。_start會從堆疊取出命令列引數，進行標準函式庫與全域物件的初始化後，才呼叫main。main返回後，則使用其回傳值呼叫exit，進行結束處理。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>main 是 C 程式的進入點嗎？</h3>
+  <p>通常不是。執行檔的進入點是 _start 之類的啟動程式碼，它會準備引數與執行環境、呼叫 main，然後將 main 的回傳值傳給 exit。</p>
+  <h3>ELF 檔案的進入點存放在哪裡？</h3>
+  <p>存放在 ELF 標頭的 e_entry 欄位中，它保存程式載入後開始執行的虛擬位址。</p>
+  <h3>C 程式在 main 之前會執行什麼？</h3>
+  <p>C 執行環境的啟動程式碼、函式庫初始化以及全域物件的建構子；在動態連結的程式中，動態連結器還會先載入共享函式庫並進行重定位。</p>
+</section>
 
 <section>
   <h2>出現「進入點（Entry point）」的題目（1題）</h2>

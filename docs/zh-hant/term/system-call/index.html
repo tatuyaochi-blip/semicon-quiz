@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"系統呼叫","item":"https://semiconroom.com/zh-hant/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"系統呼叫","description":"應用程式請求作業系統進行檔案讀寫或記憶體配置等的機制。以專用指令引發例外並切換到特權模式，呼叫核心的處理。","url":"https://semiconroom.com/zh-hant/term/system-call/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"系統呼叫","item":"https://semiconroom.com/zh-hant/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"系統呼叫","description":"應用程式請求作業系統進行檔案讀寫或記憶體配置等的機制。以專用指令引發例外並切換到特權模式，呼叫核心的處理。","url":"https://semiconroom.com/zh-hant/term/system-call/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"系統呼叫和中斷有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"系統呼叫是程式以專用指令刻意觸發的同步陷阱。中斷則是來自計時器或裝置等硬體的非同步訊號，無論程式正在做什麼都會到來。"}},{"@type":"Question","name":"printf 是系統呼叫嗎？","acceptedAnswer":{"@type":"Answer","text":"不是。printf 是在使用者空間格式化輸出的 C 函式庫函式；它最終會呼叫 write 系統呼叫，將緩衝的資料交給核心。"}},{"@type":"Question","name":"為什麼系統呼叫很慢？","acceptedAnswer":{"@type":"Answer","text":"每次呼叫都要切換到特權模式、儲存狀態、驗證參數並返回，還會干擾快取與 TLB。這個成本每次呼叫都是固定的，因此大量的小型呼叫會累積起來。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>系統呼叫的逐步流程</h2>
+  <p>在 RISC-V Linux 上，程式將系統呼叫編號放入暫存器 a7，將參數放入 a0 起的暫存器，然後執行 ecall。這個指令會刻意引發例外：CPU 記錄 ecall 的位址，切換到監督者模式，並跳到核心的陷阱<a class="term-link" href="/zh-hant/term/entry-point/">進入點</a>。核心儲存使用者暫存器，依編號查找處理常式，檢查參數，執行工作，並將結果放入 a0。接著它將儲存的位址推進到 ecall 之後，再以 sret 返回使用者模式。其他架構則使用 x86-64 的 syscall、Arm 的 svc 等指令。</p>
+</section>
+<section class="term-about">
+  <h2>系統呼叫與函式庫函式的差異</h2>
+  <p>程式通常透過函式庫的包裝函式來使用系統呼叫，因此兩者的界線容易被忽略。像 printf 這樣的函式完全在使用者空間執行，將文字格式化到緩衝區中，只偶爾呼叫 write 系統呼叫將該緩衝區交給核心。許多函式庫函式，例如字串處理或數學常式，完全不會進入核心。系統呼叫的定義在於是否切換到<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>，而不是函式的命名方式。</p>
+</section>
+<section class="term-about">
+  <h2>系統呼叫為何耗時</h2>
+  <p>每次呼叫都要付出固定的額外負擔：模式切換、儲存與還原暫存器、參數驗證及返回。進入核心也會干擾快取與 <a class="term-link" href="/zh-hant/term/tlb/">TLB</a>，而針對<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a>攻擊的對策，例如核心<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>隔離（<a class="term-link" href="/zh-hant/term/kernel-page-table-isolation/">KPTI</a>），還會在每次進入時加上一次頁表切換。因此，每次呼叫只寫入一個位元組，會比在使用者空間緩衝數 KB 再以一次呼叫寫入慢得多。</p>
+</section>
+<section class="term-about">
+  <h2>避免呼叫的方法</h2>
+  <p>除了緩衝之外，程式也可以用 mmap 將檔案對映到記憶體，之後的讀取就是一般的載入，首次存取時由<a class="term-link" href="/zh-hant/term/page-fault/">頁面錯誤</a>處理，而不必每次讀取都進行一次呼叫。以一次呼叫提交多個操作的介面，可進一步減少跨越次數。某些作業系統也會將唯讀的核心資料（例如目前時間）對映到使用者空間，使頻繁的查詢完全不需要陷阱。</p>
+</section>
 <section>
   <h2>練習系統呼叫的題目</h2>
   <article class="q-mini" data-qid="os-hardware-050" data-cat="os-hardware" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 因為可以藉由減少次數，來壓低每次系統呼叫的固定負擔</p><p class="explanation"><a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>每次都需要從使用者模式切換到<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>、儲存暫存器、檢查引數、返回等處理，即使處理的量只有1位元組，也會產生這些固定的負擔。此外，進入核心還會擾亂快取與<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>的內容。若先暫存在緩衝區，再以數KB為單位一併寫出，系統呼叫的次數就會大幅減少，整體也會變快。要寫出的資料總量不變，最終也會寫入磁碟。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>系統呼叫和中斷有什麼不同？</h3>
+  <p>系統呼叫是程式以專用指令刻意觸發的同步陷阱。中斷則是來自計時器或裝置等硬體的非同步訊號，無論程式正在做什麼都會到來。</p>
+  <h3>printf 是系統呼叫嗎？</h3>
+  <p>不是。printf 是在使用者空間格式化輸出的 C 函式庫函式；它最終會呼叫 write 系統呼叫，將緩衝的資料交給核心。</p>
+  <h3>為什麼系統呼叫很慢？</h3>
+  <p>每次呼叫都要切換到特權模式、儲存狀態、驗證參數並返回，還會干擾快取與 TLB。這個成本每次呼叫都是固定的，因此大量的小型呼叫會累積起來。</p>
+</section>
 <section>
   <h2>解析中的「系統呼叫」</h2>
   <ul class="term-quotes"><li><p>系統呼叫每次都需要從使用者模式切換到特權模式、儲存暫存器、檢查引數、返回等處理，即使處理的量只有1位元組，也會產生這些固定的負擔。</p><a href="/zh-hant/q/os-hardware/os-hardware-050/">寫出小量資料時，與其逐位元組每次都呼叫系統呼叫，不如先暫存在使用者空間的緩衝區再一併寫出，速度會比較快，其主要理由為何？</a></li><li><p>ABI是讓編譯完成的程式或函式庫能一起運作的機器語言層級的約定，包含呼叫慣例、int、long與指標的大小、結構體的對齊、系統呼叫的呼叫方式等。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-049/">下列何者是對ABI（應用程式二進位介面）的正確說明？</a></li><li><p>所以要使用系統呼叫，透過專用指令切換到特權模式並呼叫核心的處理程序，來請求檔案讀寫、記憶體配置、行程建立等服務。</p><a href="/zh-hant/q/os-hardware/os-hardware-002/">應用程式請求作業系統進行檔案讀寫等操作的機制稱為什麼？</a></li><li><p>核心依據a7的編號判斷是哪一個系統呼叫，將a0～a2當作引數進行處理，回傳結果後再回到使用者模式。</p><a href="/zh-hant/q/os-hardware/os-hardware-003/">上方RISC-V程式碼最後的ecall指令被執行時，會發生下列何事？</a></li><li><p>例外則是除以零、非法指令、分頁錯誤（page fault）、系統呼叫指令等，因執行特定指令的結果而發生（同步）。</p><a href="/zh-hant/q/os-hardware/os-hardware-004/">關於中斷與例外的差異，下列何者是一般的說明？</a></li></ul>
@@ -108,7 +131,11 @@
 </section>
 
 <div data-ad="term"></div>
-
+<section>
+  <h2>出現這個名詞的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/user-mode-vs-kernel-mode/"><strong>使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較</strong><span>從可執行的指令、可存取的記憶體、切換的觸發條件、切換的成本、錯誤的影響、保護的目的等面向，以表格比較使用者模式與核心模式。</span></a></li></ul>
+</section>
 
 <section>
   <h2>相關名詞</h2>

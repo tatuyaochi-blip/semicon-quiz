@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"偽共享（False sharing）","item":"https://semiconroom.com/zh-hant/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"偽共享（False sharing）","description":"不同執行緒各自改寫不同的變數，但因這些變數位於同一條快取行，使得該行在核心之間來回傳遞而變慢的現象。","url":"https://semiconroom.com/zh-hant/term/false-sharing/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"偽共享（False sharing）","item":"https://semiconroom.com/zh-hant/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"偽共享（False sharing）","description":"不同執行緒各自改寫不同的變數，但因這些變數位於同一條快取行，使得該行在核心之間來回傳遞而變慢的現象。","url":"https://semiconroom.com/zh-hant/term/false-sharing/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"偽共享會導致錯誤的結果嗎？","acceptedAnswer":{"@type":"Answer","text":"不會。一致性協定會讓每個變數保持正確；偽共享只會耗費時間，因為存放這些變數的快取行會不斷在核心之間移動。"}},{"@type":"Question","name":"要避免偽共享需要多少填充？","acceptedAnswer":{"@type":"Answer","text":"填充到讓每個獨立寫入的變數各佔一條快取行即可，通常為 64 位元組。有些程式使用 128 位元組，因為某些 CPU 會成對預取相鄰的快取行。"}},{"@type":"Question","name":"唯讀的共享資料會造成偽共享嗎？","acceptedAnswer":{"@type":"Answer","text":"不會。多個核心可以同時以共享狀態保有同一條快取行；只有在至少一個執行緒寫入該行時才會出現問題。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>一致性為何以快取行而非變數為單位</h2>
+  <p>MESI（Modified、Exclusive、Shared、Invalid）等<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a>協定追蹤的是整條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>（通常為 64 位元組）的所有權，而非個別變數。核心在寫入之前必須獨占該行，這會使其他所有核心的副本失效。若核心 0 不斷寫入變數 a，核心 1 不斷寫入同一行中的變數 b，每次寫入都會迫使該行在兩個快取之間移動。兩個執行緒都不讀取對方的資料，因此結果仍然正確，但原本只需數個週期的 L1 命中，會變成緩慢的跨核心傳輸。</p>
+</section>
+<section class="term-about">
+  <h2>偽共享與真共享的差異</h2>
+  <p>真共享是指執行緒確實存取同一個變數，例如全域計數器或鎖的字組；這種競爭是本質性的，只能透過改變演算法來消除，例如將計數器拆分。偽共享則是指資料在邏輯上互相獨立，只是剛好在記憶體中相鄰，因此解法是改變資料配置。兩者會產生相同的症狀：少數<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>上出現大量一致性通訊。唯讀共享則不會造成任何問題，因為許多快取可同時以 Shared 狀態持有同一行；只有寫入才會迫使失效。</p>
+</section>
+<section class="term-about">
+  <h2>典型的元凶</h2>
+  <p>典型案例是每個執行緒各一個計數器的陣列：元素為 8 位元組時，一條 64 位元組的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>可容納 8 個，因此最多會有 8 個執行緒爭奪同一行。其他常見來源包括欄位由不同執行緒<a class="term-link" href="/zh-hant/term/refresh/">更新</a>的結構、與受另一個鎖保護的資料放在同一行的鎖，以及由生產者與消費者分別寫入的頭尾索引相鄰的工作佇列。常見的徵兆是：雖然每個執行緒看似只存取自己的資料，但隨著執行緒增加，程式的<a class="term-link" href="/zh-hant/term/speedup/">加速比</a>卻趨於平緩甚至下降。</p>
+</section>
+<section class="term-about">
+  <h2>如何修正與找出偽共享</h2>
+  <p>將每個獨立寫入的項目填充或對齊到<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>大小，例如在 C 或 C++ 中使用 alignas(64)，讓每個執行緒擁有自己的快取行。有些處理器會成對擷取相鄰的快取行，這就是有時會使用 128 位元組間隔的原因。更好的做法是讓每個執行緒在區域變數或暫存器中累加，最後只寫入共享位置一次。硬體<a class="term-link" href="/zh-hant/term/performance-counter/">效能計數器</a>可以揭露此問題；在 Linux 上，perf c2c 工具會回報經常被某個核心修改、隨後又被另一個核心存取的快取行。</p>
+</section>
 <section>
   <h2>練習偽共享（False sharing）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 在各計數器之間加入填充或進行對齊，使它們放在不同的快取列</p><p class="explanation">若long為8位元組，8個計數器就會收進64位元組的一條快取列，所有執行緒都會爭奪同一條快取列。只要加入填充使各計數器每隔64位元組放置，或將結構對齊到快取列的大小，每個執行緒就能使用各自不同的快取列。此外，讓各執行緒以區域變數計數，最後只加總到共用位置一次，也是有效的方法。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>偽共享會導致錯誤的結果嗎？</h3>
+  <p>不會。一致性協定會讓每個變數保持正確；偽共享只會耗費時間，因為存放這些變數的快取行會不斷在核心之間移動。</p>
+  <h3>要避免偽共享需要多少填充？</h3>
+  <p>填充到讓每個獨立寫入的變數各佔一條快取行即可，通常為 64 位元組。有些程式使用 128 位元組，因為某些 CPU 會成對預取相鄰的快取行。</p>
+  <h3>唯讀的共享資料會造成偽共享嗎？</h3>
+  <p>不會。多個核心可以同時以共享狀態保有同一條快取行；只有在至少一個執行緒寫入該行時才會出現問題。</p>
+</section>
 <section>
   <h2>解析中的「偽共享（False sharing）」</h2>
   <ul class="term-quotes"><li><p>明明結果正確，效能卻大幅下降，這就是偽共享。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-010/">關於多執行緒程式中發生的偽共享（false sharing），下列說明何者正確？</a></li><li><p>在多執行緒程式中，必須注意若不同的變數位於同一條快取列，會發生互相爭奪的「偽共享」（false sharing）。</p><a href="/zh-hant/q/cpu/cpu-039/">目前許多 CPU 所使用之快取列（快取區塊）的大小，下列何者為一般情況？</a></li><li><p>妨礙平行化效果的主要原因包括：無法平行化的部分（阿姆達爾定律）、鎖或屏障造成的等待、共用資料或偽共享造成的快取列來回移動、工作的偏差，以及記憶體頻寬不足等。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-043/">在平行程式中，即使增加核心數量，效能仍未如預期成長，下列何者不屬於其原因？</a></li></ul>

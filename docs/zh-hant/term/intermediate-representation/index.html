@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"中間表示法(IR)","item":"https://semiconroom.com/zh-hant/term/intermediate-representation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"中間表示法(IR)","description":"在編譯器內部，以不依賴原始語言也不依賴CPU的形式表示程式。多數最佳化在此之上進行，可將每種語言的前半部與每種CPU的後半部分開。","url":"https://semiconroom.com/zh-hant/term/intermediate-representation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"中間表示法(IR)","item":"https://semiconroom.com/zh-hant/term/intermediate-representation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"中間表示法(IR)","description":"在編譯器內部，以不依賴原始語言也不依賴CPU的形式表示程式。多數最佳化在此之上進行，可將每種語言的前半部與每種CPU的後半部分開。","url":"https://semiconroom.com/zh-hant/term/intermediate-representation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"編譯器中的中間表示法是什麼？","acceptedAnswer":{"@type":"Answer","text":"它是編譯器在產生機器碼之前，將原始碼翻譯成的形式，既不依賴原始語言，也不依賴目標 CPU，因此最佳化可以共用。"}},{"@type":"Question","name":"什麼是 SSA 形式？","acceptedAnswer":{"@type":"Answer","text":"靜態單一賦值是一種 IR 形式，其中每個變數只被賦值一次，並在控制流程匯合處以 phi 節點選擇值，可簡化許多最佳化。"}},{"@type":"Question","name":"LLVM IR 是機器碼嗎？","acceptedAnswer":{"@type":"Answer","text":"不是。LLVM IR 是不依賴目標平台的中間表示法；必須由後端將其翻譯成特定處理器的機器碼。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
-
+<section class="term-about">
+  <h2>編譯器為何使用 IR</h2>
+  <p>若要以各自獨立的編譯器，讓 M 種原始語言支援 N 種處理器，就需要 M × N 個編譯器。有了共用的中間表示法（IR），每種語言只需要一個翻譯成 IR 的前端，每種處理器只需要一個從 IR 翻譯出去的後端，總共 M + N 個部分。在 IR 上撰寫一次的最佳化，便能讓所有語言與目標平台受益。<a class="term-link" href="/zh-hant/term/llvm/">LLVM</a> 是最知名的例子：Clang 等前端輸出 LLVM IR，後端再為 x86、Arm、RISC-V 及其他目標產生程式碼。</p>
+</section>
+<section class="term-about">
+  <h2>常見形式</h2>
+  <p>編譯器常使用多個層級的 IR。接近原始碼的是<a class="term-link" href="/zh-hant/term/abstract-syntax-tree/">抽象語法樹</a>。較低層級的三位址碼將運算式拆解為簡單步驟，例如 t1 = a + b; x = t1 * c，並以暫存變數存放中間值。這些指令被分組為<a class="term-link" href="/zh-hant/term/basic-block/">基本區塊</a>，並以<a class="term-link" href="/zh-hant/term/control-flow-graph/">控制流程圖</a>相連。許多現代 IR（包括 <a class="term-link" href="/zh-hant/term/llvm/">LLVM</a> IR）採用靜態單一賦值（SSA）形式，每個變數只被賦值一次，並在控制路徑匯合處以特殊的 phi 節點合併值。</p>
+</section>
+<section class="term-about">
+  <h2>在 IR 上進行的處理</h2>
+  <p>大多數最佳化步驟都在 IR 上執行：常數傳播、無用程式碼消除、<a class="term-link" href="/zh-hant/term/common-subexpression-elimination/">共同子運算式消除</a>、將迴圈不變的計算移出迴圈，以及函式內嵌。SSA 形式讓許多最佳化變得更簡單，因為每個使用處都恰好指向一個定義。連結時最佳化（LTO）在<a class="term-link" href="/zh-hant/term/object-file/">目的檔</a>中儲存 IR 而非機器碼，讓整個程式能一起最佳化，從而實現跨原始檔的內嵌與無用函式移除。</p>
+</section>
+<section class="term-about">
+  <h2>IR 與位元組碼及機器碼的差異</h2>
+  <p>編譯器內部的 IR 是供分析與轉換使用的工作形式；CPU 無法執行它，後端仍必須進行指令選擇、<a class="term-link" href="/zh-hant/term/register-allocation/">暫存器配置</a>與程式碼排程。Java 位元組碼或 WebAssembly 等可攜式位元組碼與之相關，但目的不同：它們是穩定的發布格式，由虛擬機器直譯或<a class="term-link" href="/zh-hant/term/jit-compilation/">即時編譯</a>；而內部 IR 則可能隨編譯器版本而改變。</p>
+</section>
 <section>
   <h2>練習中間表示法(IR)的題目</h2>
   <article class="q-mini" data-qid="compiler-005" data-cat="compiler" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 因為可以將各語言專屬的前端與各CPU專屬的後端分開，且最佳化也能共用</p><p class="explanation">要支援M種語言與N種CPU時，若依每種組合各做一個編譯器就需要M×N個，但若透過共用的中介表示，只需要M個從語言到中介表示的前端（frontend），以及N個從中介表示到CPU的後端（backend）。多數最佳化只要在中介表示上做一次，所有語言與CPU都能使用。中介表示並非CPU可直接執行的東西，最後仍需轉換為機器碼。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>編譯器中的中間表示法是什麼？</h3>
+  <p>它是編譯器在產生機器碼之前，將原始碼翻譯成的形式，既不依賴原始語言，也不依賴目標 CPU，因此最佳化可以共用。</p>
+  <h3>什麼是 SSA 形式？</h3>
+  <p>靜態單一賦值是一種 IR 形式，其中每個變數只被賦值一次，並在控制流程匯合處以 phi 節點選擇值，可簡化許多最佳化。</p>
+  <h3>LLVM IR 是機器碼嗎？</h3>
+  <p>不是。LLVM IR 是不依賴目標平台的中間表示法；必須由後端將其翻譯成特定處理器的機器碼。</p>
+</section>
 <section>
   <h2>解析中的「中間表示法(IR)」</h2>
   <ul class="term-quotes"><li><p>分流電阻是串聯在電流路徑中的小阻值電阻，利用兩端電壓以 V = IR 求出電流。</p><a href="/zh-hant/q/power/power-035/">在電源電路等中，為了測量電流而串聯在電流路徑中的小電阻稱為什麼？</a></li><li><p>負責分色的是彩色濾光片，阻擋紅外線的是IR截止濾光片。</p><a href="/zh-hant/q/image-sensor/image-sensor-007/">設置在影像感測器每個像素上方的微透鏡，其作用為下列何者？</a></li><li><p>高效能晶片有時會消耗超過100 A的電流，電流急遽變化時，會因電源路徑的電阻而產生電壓降（IR drop），並因電感而產生電壓的波動。</p><a href="/zh-hant/q/package/package-042/">在高腳數的BGA封裝中，將大部分的球分配給電源與接地，其主要原因為何？</a></li><li><p>LLVM是以稱為LLVM IR的共通中介表示為中心的編譯器基礎架構。</p><a href="/zh-hant/q/compiler/compiler-026/">關於LLVM的基本架構，下列何者正確？</a></li><li><p>當許多電路同時切換時，會因電源配線電阻造成的電壓降（IR drop），以及電流急遽變化所產生的電感電壓，使電壓瞬間下降。</p><a href="/zh-hant/q/power-management/power-management-026/">晶片的電源電壓需要保留餘裕（margin）的理由中，下列何者不是？</a></li></ul>

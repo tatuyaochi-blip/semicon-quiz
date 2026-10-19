@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"虛擬指令(Pseudo-instruction)","item":"https://semiconroom.com/zh-hant/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"虛擬指令(Pseudo-instruction)","description":"在組合語言中可以像指令一樣書寫，但由組譯器替換成一個以上真正指令的東西。RISC-V的nop、mv、li、j、ret等。","url":"https://semiconroom.com/zh-hant/term/pseudo-instruction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"虛擬指令(Pseudo-instruction)","item":"https://semiconroom.com/zh-hant/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"虛擬指令(Pseudo-instruction)","description":"在組合語言中可以像指令一樣書寫，但由組譯器替換成一個以上真正指令的東西。RISC-V的nop、mv、li、j、ret等。","url":"https://semiconroom.com/zh-hant/term/pseudo-instruction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"虛擬指令和真正的指令有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"真正的指令有自己的機器編碼，由 CPU 執行。虛擬指令只是組譯器的語法，在執行前會被翻譯成一個以上的真正指令。"}},{"@type":"Question","name":"RISC-V 的 li 會展開成什麼？","acceptedAnswer":{"@type":"Answer","text":"對於可放入 12 位元有號數的小常數，會變成以 x0 為來源的單一 addi；較大的 32 位元值則變成 lui 後接 addi；64 位元常數則需要更長的序列。"}},{"@type":"Question","name":"nop 在 RISC-V 中是真正的指令嗎？","acceptedAnswer":{"@type":"Answer","text":"不是。nop 是虛擬指令，編碼為 addi x0, x0, 0；由於寫入 x0 會被捨棄，它不會改變任何狀態。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/isa-assembly/">指令集與組合語言</a></p>
 </article>
-
+<section class="term-about">
+  <h2>組譯器如何展開虛擬指令</h2>
+  <p>虛擬指令是沒有自己編碼的組合語言語法；<a class="term-link" href="/zh-hant/term/assembler/">組譯器</a>會將其替換成一個以上的真正指令。在 RISC-V 中，nop 變成 addi x0, x0, 0，mv rd, rs 變成 addi rd, rs, 0，j label 變成 jal x0, label，ret 變成 jalr x0, 0(ra)，bnez rs, label 則變成 bne rs, x0, label。許多虛擬指令依賴暫存器 x0，它讀取時永遠為零，寫入則會被捨棄。反組譯器通常會再以虛擬指令的形式輸出，使程式列表更容易閱讀。</p>
+</section>
+<section class="term-about">
+  <h2>一行對應多個指令</h2>
+  <p>有些虛擬指令會展開成數量不定的真正指令。li（載入<a class="term-link" href="/zh-hant/term/immediate-operand/">立即值</a>）在常數可放入 12 位元有號立即值時，會變成單一 addi；若是較大的 32 位元值，則變成 lui 後接 addi；64 位元常數則需要更長的序列。la（載入位址）以及呼叫遠處函式的 call，會使用 auipc 加上第二個指令來形成 PC 相對位址。手動計算程式碼大小與偏移時，必須考慮到這一點。</p>
+</section>
+<section class="term-about">
+  <h2>ISA 為何依賴虛擬指令</h2>
+  <p>若將 nop、mv 或單純的跳躍定義為獨立的硬體指令，會增加運算碼與解碼邏輯，卻不會增加任何能力，因為搭配 x0 的現有指令已經能完成這些工作。虛擬指令讓硬體指令集保持精簡（這是 RISC-V 的核心設計目標），同時為函式返回或與零比較等常見慣用寫法，提供程式設計者易讀的名稱。</p>
+</section>
+<section class="term-about">
+  <h2>虛擬指令與指示詞及巨集的差異</h2>
+  <p>.text、.globl 或 .word 等<a class="term-link" href="/zh-hant/term/assembler/">組譯器</a>指示詞是給組譯器本身的指令：它們選擇區段、匯出符號或輸出資料，並不對應任何機器指令。虛擬指令則一定會轉換成真正的指令，其意義由工具鏈固定定義。巨集是類似的展開，但由程式設計者自行定義。工具鏈之後也可能縮短某些展開，例如當目標夠近時，在連結時將 auipc 加 jalr 的呼叫改為單一 jal。</p>
+</section>
 <section>
   <h2>練習虛擬指令(Pseudo-instruction)的題目</h2>
   <article class="q-mini" data-qid="isa-assembly-006" data-cat="isa-assembly" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. jalr x0, 0(ra)</p><p class="explanation">jalr（jump and link register）會跳躍到暫存器的值加上位移的位址，並將下一個指令的位址放入寫入目的地。ret是「jalr x0, 0(ra)」，跳到ra的位址，並將連結捨棄到x0。jalr也用於函式指標或虛擬函式的呼叫這類在執行時才決定目的地的跳躍。還原ra的「lw ra, …」是在ret之前進行的準備。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>虛擬指令和真正的指令有什麼不同？</h3>
+  <p>真正的指令有自己的機器編碼，由 CPU 執行。虛擬指令只是組譯器的語法，在執行前會被翻譯成一個以上的真正指令。</p>
+  <h3>RISC-V 的 li 會展開成什麼？</h3>
+  <p>對於可放入 12 位元有號數的小常數，會變成以 x0 為來源的單一 addi；較大的 32 位元值則變成 lui 後接 addi；64 位元常數則需要更長的序列。</p>
+  <h3>nop 在 RISC-V 中是真正的指令嗎？</h3>
+  <p>不是。nop 是虛擬指令，編碼為 addi x0, x0, 0；由於寫入 x0 會被捨棄，它不會改變任何狀態。</p>
+</section>
 <section>
   <h2>解析中的「虛擬指令(Pseudo-instruction)」</h2>
   <ul class="term-quotes"><li><p>不過「li」或「mv」這類虛擬指令，組譯器會將其替換為一個以上的真正指令。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-005/">下列何者是組合語言與機器語言之間的關係？</a></li><li><p>bnez是「bne t1, zero, loop」的虛擬指令。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-023/">執行完上述RISC-V程式碼時，t0的值是多少？</a></li><li><p>依呼叫慣例，返回位址放在ra（x1），所以函式的呼叫寫成「jal ra, func」，以虛擬指令則寫成「call func」。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-025/">下列何者是RISC-V指令「jal ra, func」的動作？</a></li></ul>

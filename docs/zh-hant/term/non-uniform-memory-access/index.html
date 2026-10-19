@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA（非均勻記憶體存取）","item":"https://semiconroom.com/zh-hant/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA（非均勻記憶體存取）","description":"Non-Uniform Memory Access 的縮寫。有離核心近與離核心遠的記憶體，存取遠處記憶體需要較長時間的架構。將資料與執行緒放在同一側會比較快。","url":"https://semiconroom.com/zh-hant/term/non-uniform-memory-access/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA（非均勻記憶體存取）","item":"https://semiconroom.com/zh-hant/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA（非均勻記憶體存取）","description":"Non-Uniform Memory Access 的縮寫。有離核心近與離核心遠的記憶體，存取遠處記憶體需要較長時間的架構。將資料與執行緒放在同一側會比較快。","url":"https://semiconroom.com/zh-hant/term/non-uniform-memory-access/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"如何確認我的機器是不是 NUMA？","acceptedAnswer":{"@type":"Answer","text":"在 Linux 上執行 lscpu 或 numactl --hardware；若列出一個以上的 NUMA 節點，就表示記憶體存取成本取決於位置。大多數雙插槽伺服器至少會顯示兩個節點。"}},{"@type":"Question","name":"程式需要為 NUMA 重新改寫嗎？","acceptedAnswer":{"@type":"Answer","text":"不需要，ccNUMA 機器呈現單一一致的位址空間，因此程式可以原樣正確執行。改寫只與效能有關，主要是讓每個執行緒的資料位於其所在的節點上。"}},{"@type":"Question","name":"什麼是首次存取（first-touch）策略？","acceptedAnswer":{"@type":"Answer","text":"這是一種常見規則：實體頁面會配置在第一次寫入它的執行緒所在的 NUMA 節點上。這就是在 NUMA 系統上平行初始化陣列很重要的原因。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>記憶體存取為何變得不均勻</h2>
+  <p>現代處理器整合了記憶體控制器，因此在多插槽伺服器中，每個插槽都有自己直接連接的 DRAM。核心存取自己插槽上的記憶體時，直接經過本地控制器；存取另一個插槽上的記憶體時，則必須跨越插槽間連結，再經過遠端控制器。一組核心加上其本地記憶體稱為一個 NUMA 節點。遠端存取的延遲通常明顯較高，常落在本地的約 1.3 至 2 倍範圍內，頻寬也較低，確切比例取決於平台以及連結的負載程度。</p>
+</section>
+<section class="term-about">
+  <h2>NUMA 與 UMA 及叢集的比較</h2>
+  <p>在均勻記憶體存取（UMA）系統中（通常是只有一組記憶體控制器的單插槽機器），每個核心存取每個位址的成本大致相同。<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a> NUMA（ccNUMA）系統維持單一共享位址空間與硬體快取一致性，因此未經修改的程式也能正確執行；只有速度取決於資料所在位置。這點與由獨立電腦組成的叢集不同，叢集的每個節點都有私有的位址空間，資料必須透過訊息傳遞明確地交換。大型<a class="term-link" href="/zh-hant/term/chiplet/">小晶片</a>架構的處理器，在單一插槽內也可能呈現多個 NUMA 節點。</p>
+</section>
+<section class="term-about">
+  <h2>首次存取配置及其陷阱</h2>
+  <p>Linux 通常會將頁面放在第一次寫入它的執行緒所在的節點上，而不是配置它的執行緒所在的節點，因為 malloc 只會保留虛擬位址。若由單一執行緒將大型陣列初始化為零，所有頁面都會落在該執行緒的節點上；之後其他節點上的平行迴圈幾乎完全從遠端記憶體執行，造成一個記憶體控制器飽和，其他控制器則閒置。解法是以與運算相同的工作分割方式平行初始化資料，使每個執行緒負責的部分最終都位於其本地。</p>
+</section>
+<section class="term-about">
+  <h2>工具與良好做法</h2>
+  <p>在 Linux 上，numactl --hardware 會列出各節點、其記憶體以及距離表；依慣例，本地存取為 10，遠端值則較大。同一工具可將行程綁定到某個節點的 CPU 與記憶體，或將頁面交錯分配到各節點，後者適合所有執行緒平均讀取的資料。固定執行緒（設定 CPU 親和性）可避免排程器將執行緒遷移到遠離其資料的地方，並使效能測試結果可重現。核心也能自動將頁面遷移到使用它們的執行緒附近，但對於效能關鍵的程式碼，明確的配置更可預測。</p>
+</section>
 <section>
   <h2>練習NUMA（非均勻記憶體存取）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-041" data-cat="multicore-sync" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 只用一個執行緒將大型陣列初始化為0的話，整個陣列會全部放在同一個節點，其他節點的執行緒就得使用遠處的記憶體</p><p class="explanation">僅以malloc配置並不會分配實體頁面，而是在第一次寫入時發生的分頁錯誤（page fault）中，將頁面放在該執行緒所在節點的記憶體。因此，若以一個執行緒進行初始化，整個陣列都會集中在那個節點，在平行運算時，各執行緒負責的部分大多會落在遠處的記憶體。若初始化也以與運算相同的分工平行進行，各部分就會被放在負責它的執行緒附近。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>如何確認我的機器是不是 NUMA？</h3>
+  <p>在 Linux 上執行 lscpu 或 numactl --hardware；若列出一個以上的 NUMA 節點，就表示記憶體存取成本取決於位置。大多數雙插槽伺服器至少會顯示兩個節點。</p>
+  <h3>程式需要為 NUMA 重新改寫嗎？</h3>
+  <p>不需要，ccNUMA 機器呈現單一一致的位址空間，因此程式可以原樣正確執行。改寫只與效能有關，主要是讓每個執行緒的資料位於其所在的節點上。</p>
+  <h3>什麼是首次存取（first-touch）策略？</h3>
+  <p>這是一種常見規則：實體頁面會配置在第一次寫入它的執行緒所在的 NUMA 節點上。這就是在 NUMA 系統上平行初始化陣列很重要的原因。</p>
+</section>
 <section>
   <h2>解析中的「NUMA（非均勻記憶體存取）」</h2>
   <ul class="term-quotes"><li><p>移動後的核心快取中沒有所需的資料，而在NUMA系統中，也可能移到離放置資料的記憶體較遠的插槽（socket）上。</p><a href="/zh-hant/q/performance/performance-045/">在多核心或NUMA系統上測量效能時，有時會將執行緒固定在特定的核心上（設定親和性，affinity），其理由下列何者正…</a></li><li><p>在具有多顆CPU的伺服器中，會形成直接連接到各CPU的記憶體速度較快的NUMA架構。</p><a href="/zh-hant/q/dram/dram-043/">在現今多數電腦用處理器中，控制DRAM的記憶體控制器位於何處？</a></li></ul>

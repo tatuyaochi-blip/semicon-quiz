@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"寫入配置(Write-allocate)","item":"https://semiconroom.com/zh-hant/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"寫入配置(Write-allocate)","description":"寫入時發生快取失誤，先將該行載入快取再進行寫入的方式。多與寫回方式組合使用。不載入而直接寫到下層的方式稱為非寫入配置。","url":"https://semiconroom.com/zh-hant/term/write-allocate/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"寫入配置(Write-allocate)","item":"https://semiconroom.com/zh-hant/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"寫入配置(Write-allocate)","description":"寫入時發生快取失誤，先將該行載入快取再進行寫入的方式。多與寫回方式組合使用。不載入而直接寫到下層的方式稱為非寫入配置。","url":"https://semiconroom.com/zh-hant/term/write-allocate/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"寫入配置和非寫入配置有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"在寫入失誤時，寫入配置會將快取行載入快取並在快取中寫入；非寫入配置則直接寫入下層，不載入該行。"}},{"@type":"Question","name":"為什麼寫入配置通常與寫回搭配？","acceptedAnswer":{"@type":"Answer","text":"快取行一旦進入寫回快取，之後對它的寫入都會命中，並在不產生記憶體通訊量的情況下被吸收，因此最初擷取的成本得以回收。"}},{"@type":"Question","name":"非時間性儲存（non-temporal store）有什麼用途？","acceptedAnswer":{"@type":"Answer","text":"它們將近期不會再使用的大量資料直接寫入記憶體，避免寫入配置所造成的逐行讀取，並讓快取保留給有用的資料。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/memory-hierarchy/">記憶體階層與效能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>寫入失誤時會發生什麼</h2>
+  <p>採用寫入配置時，發生失誤的儲存會先從下層擷取整條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>並放入快取，再將要儲存的位元組合併進去。在寫回快取中，該行接著會被標記為髒，直到之後被逐出時才寫入記憶體。在多核心系統中，這次擷取也會取得該行的獨占所有權，因此其他核心的副本會在寫入前失效；這種為取得所有權而讀取（read-for-ownership）的動作，正是儲存失誤在記憶體匯流排上看起來像讀取的原因。</p>
+</section>
+<section class="term-about">
+  <h2>寫入配置與非寫入配置的比較</h2>
+  <p>非寫入配置會將失誤的儲存直接送往下層，而不動到快取。當寫入的資料很快會再次被讀取或寫入時，寫入配置較划算，因為之後的存取會命中；因此它通常與寫回搭配。非寫入配置適合只寫一次且不再使用的資料，通常與<a class="term-link" href="/zh-hant/term/write-through/">寫穿</a>搭配。請注意，寫回或寫穿決定的是命中時如何傳遞，而配置與否決定的是失誤時的處理方式；兩者是各自獨立的選擇。</p>
+</section>
+<section class="term-about">
+  <h2>只寫資料的隱藏成本</h2>
+  <p>當程式寫入一個近期不會讀取的大型緩衝區時，例如清除記憶體或產生輸出，寫入配置會先從記憶體讀取每一條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>，只是為了覆寫它，之後再寫回，使通訊量大約加倍。這些快取行也會逐出有用的資料。非時間性（non-temporal）或串流式儲存可避免這個問題，它們會合併寫入並直接送往記憶體。有些 <a class="term-link" href="/zh-hant/term/instruction-set-architecture/">ISA</a> 也提供不擷取舊內容即可將整條快取行清零的指令。</p>
+</section>
+<section class="term-about">
+  <h2>相關的失誤處理技術</h2>
+  <p>寫入配置決定是否將<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>帶入，但其他技術會影響失誤需要多久時間。關鍵字優先（critical word first）會先送出所要求的字，再送 64 位元組快取行的其餘部分，讓 CPU 能提早恢復執行。寫入緩衝區可在<a class="term-link" href="/zh-hant/term/write-through/">寫穿</a>快取中隱藏儲存延遲，受害者快取（victim cache）則保存最近被逐出的快取行。它們各自針對失誤成本的不同部分，這是常見的混淆來源。</p>
+</section>
 <section>
   <h2>練習寫入配置(Write-allocate)的題目</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 不寫入配置（no-write-allocate）</p><p class="explanation">寫入未命中時不載入<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>、直接寫入下一層階層的方式是不<a class="term-link" href="/zh-hant/term/write-allocate/">寫入配置</a>，多與直寫方式搭配使用。對於寫過一次就不會再讀回的資料，可以省去多餘的載入。寫入配置則相反，是先載入快取行再寫入的方式，在寫入的資料馬上又會被使用的情況下有利，因此多與寫回方式搭配使用。寫回是決定寫入命中時如何處理的方式，與未命中時是否載入屬於不同的軸線。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>寫入配置和非寫入配置有什麼不同？</h3>
+  <p>在寫入失誤時，寫入配置會將快取行載入快取並在快取中寫入；非寫入配置則直接寫入下層，不載入該行。</p>
+  <h3>為什麼寫入配置通常與寫回搭配？</h3>
+  <p>快取行一旦進入寫回快取，之後對它的寫入都會命中，並在不產生記憶體通訊量的情況下被吸收，因此最初擷取的成本得以回收。</p>
+  <h3>非時間性儲存（non-temporal store）有什麼用途？</h3>
+  <p>它們將近期不會再使用的大量資料直接寫入記憶體，避免寫入配置所造成的逐行讀取，並讓快取保留給有用的資料。</p>
+</section>
 <section>
   <h2>解析中的「寫入配置(Write-allocate)」</h2>
   <ul class="term-quotes"><li><p>未命中的快取行是否要載入，是寫入配置（write-allocate）的選擇，與寫入緩衝器是不同的問題。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-011/">在直寫（write-through）快取中，設置寫入緩衝器（write buffer）的主要目的為下列何者？</a></li><li><p>寫入未命中時不載入快取行、直接寫入下一層階層的方式是不寫入配置，多與直寫方式搭配使用。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-013/">寫入時發生快取未命中，不載入該快取行而直接寫入下一層階層的方式為下列何者？</a></li><li><p>一般的寫入會因寫入配置而先從主記憶體載入快取行再寫入，所以即使是只寫入的資料也會產生載入的傳輸，並把其他會重複使用的資料逐出。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-043/">寫出一次寫入後暫時不會再讀回的大量資料時，使用不經過快取的儲存（非暫存儲存，non-temporal store）的主…</a></li><li><p>寫入配置是寫入未命中時是否載入快取行的方式，犧牲快取則是暫時保存被逐出快取行的小型緩衝器。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-045/">從主記憶體載入未命中的快取行時，先送出CPU所需的字組（word），其餘的稍後再送的手法為下列何者？</a></li></ul>

@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"指數欄位","item":"https://semiconroom.com/zh-hant/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"指數欄位","description":"浮點數中表示乘以2的幾次方的位元序列。為了也能表示負指數，以實際指數加上偏移量(單精度為127)的值來記錄。","url":"https://semiconroom.com/zh-hant/term/exponent-field/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"指數欄位","item":"https://semiconroom.com/zh-hant/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"指數欄位","description":"浮點數中表示乘以2的幾次方的位元序列。為了也能表示負指數，以實際指數加上偏移量(單精度為127)的值來記錄。","url":"https://semiconroom.com/zh-hant/term/exponent-field/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"IEEE 754 的指數為什麼要加偏移量？","acceptedAnswer":{"@type":"Answer","text":"偏移量讓欄位能以無號數儲存，同時仍可表示負指數；並使正浮點數的大小順序，與其位元模式以整數讀取時的順序相同。"}},{"@type":"Question","name":"雙精度的指數偏移量是多少？","acceptedAnswer":{"@type":"Answer","text":"1023，指數欄位為 11 位元；單精度為 127，使用 8 位元；半精度為 15，使用 5 位元。"}},{"@type":"Question","name":"指數欄位全為 0 代表什麼？","acceptedAnswer":{"@type":"Answer","text":"有效數為零時代表零，否則代表次正規數；此時沒有隱含的前導 1，指數固定為正規數的最小值。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/computer-arithmetic/">電腦算術</a></p>
 </article>
+<section class="term-about">
+  <h2>偏移量如何運作</h2>
+  <p>指數欄位是一個無號整數，儲存的是實際指數加上固定的偏移量，因此負指數不需要符號。單精度（FP32）使用 8 位元、偏移量 127；雙精度（FP64）使用 11 位元、偏移量 1023；半精度（FP16）使用 5 位元、偏移量 15。在 FP32 中，儲存值 1 至 254 涵蓋實際指數 −126 至 +127；儲存值 130 代表 2³。忘記減去偏移量是最常見的解碼錯誤。</p>
+</section>
+<section class="term-about">
+  <h2>保留值</h2>
+  <p>有兩種指數模式是特殊的。全為 0 代表零或次正規數：省略隱含的前導 1，指數固定為正規數的最小值（FP32 中為 −126），使數值能逐漸縮小趨近於零。全為 1 時，若<a class="term-link" href="/zh-hant/term/significand/">有效數</a>為零則代表無限大，否則代表 <a class="term-link" href="/zh-hant/term/nan/">NaN</a>（非數值）。因此 FP32 最大的正規指數欄位值為 254，而 FP16 的上限為 65504，因為其指數欄位最大只到 30。</p>
+</section>
+<section class="term-about">
+  <h2>指數位元與有效數位元</h2>
+  <p>指數寬度決定範圍，<a class="term-link" href="/zh-hant/term/significand/">有效數</a>寬度決定精度。FP32 的 8 個指數位元可達約 3.4 × 10³⁸，正規數可小至約 1.2 × 10⁻³⁸；FP16 的 5 個位元則止於 65504，這就是 FP16 訓練必須注意溢位的原因。<a class="term-link" href="/zh-hant/term/bfloat16/">bfloat16</a> 格式保留 FP32 的 8 位元指數，有效數只有 7 位元，因此與 FP32 範圍相同但精度低得多，這種取捨很適合許多神經網路工作負載。</p>
+</section>
+<section class="term-about">
+  <h2>為何使用偏移而非二補數</h2>
+  <p>將偏移後的指數放在符號位元之下、<a class="term-link" href="/zh-hant/term/significand/">有效數</a>之上，意味著對正數而言，數值越大，以整數讀取時的位元模式也越大。因此比較與排序可以使用整數硬體，只需額外處理符號即可。實例：10.0 為 1.25 × 2³，因此符號為 0，指數欄位為 130（二進位 10000010），小數部分為 .01，得到 FP32 位元模式 0x41200000。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>IEEE 754 的指數為什麼要加偏移量？</h3>
+  <p>偏移量讓欄位能以無號數儲存，同時仍可表示負指數；並使正浮點數的大小順序，與其位元模式以整數讀取時的順序相同。</p>
+  <h3>雙精度的指數偏移量是多少？</h3>
+  <p>1023，指數欄位為 11 位元；單精度為 127，使用 8 位元；半精度為 15，使用 5 位元。</p>
+  <h3>指數欄位全為 0 代表什麼？</h3>
+  <p>有效數為零時代表零，否則代表次正規數；此時沒有隱含的前導 1，指數固定為正規數的最小值。</p>
+</section>
 
 
 

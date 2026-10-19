@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/zh-hant/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"由作業系統通知 SSD 已刪除檔案所在區域的指令。SSD 因而能掌握不再需要的資料，使垃圾回收的效率提高。","url":"https://semiconroom.com/zh-hant/term/trim/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/zh-hant/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"由作業系統通知 SSD 已刪除檔案所在區域的指令。SSD 因而能掌握不再需要的資料，使垃圾回收的效率提高。","url":"https://semiconroom.com/zh-hant/term/trim/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TRIM 會立即抹除資料嗎？","acceptedAnswer":{"@type":"Answer","text":"不一定。TRIM 會將資料標記為無效並移除其位址對應；實體抹除會在之後垃圾回收回收該區塊時進行，不過讀取已 TRIM 的位址時可能已經會回傳零。"}},{"@type":"Question","name":"NVMe SSD 支援 TRIM 嗎？","acceptedAnswer":{"@type":"Answer","text":"支援，透過 NVMe Dataset Management 指令的 Deallocate 選項達成相同功能；作業系統通常仍稱之為 TRIM 或 discard。"}},{"@type":"Question","name":"傳統硬碟需要 TRIM 嗎？","acceptedAnswer":{"@type":"Answer","text":"傳統硬碟可以就地覆寫磁區，因此無法從 TRIM 獲益；TRIM 對快閃記憶體儲存裝置才重要，因為其區塊必須先抹除才能重複使用。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sram-flash/">SRAM與快閃記憶體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼需要通知 SSD</h2>
+  <p>SSD 的控制器執行快閃轉換層（FTL），將作業系統使用的邏輯區塊位址對應到實體快閃記憶體頁面。刪除檔案只會<a class="term-link" href="/zh-hant/term/refresh/">更新</a>檔案系統本身的記錄；SSD 沒有收到任何寫入，仍將舊資料視為有效。因此在<a class="term-link" href="/zh-hant/term/garbage-collection/">垃圾回收</a>期間，硬碟會持續複製再也不會被讀取的資料，浪費時間與快閃記憶體耐久度。TRIM 彌補了這個資訊落差：作業系統送出不再保存有用資料的位址範圍，讓硬碟可以不必再保留它們。</p>
+</section>
+<section class="term-about">
+  <h2>TRIM 之後會發生什麼</h2>
+  <p>收到 TRIM 後，FTL 會移除這些邏輯位址的對應，並將相應的實體頁面標記為無效。資料不一定會立即被抹除；抹除會在之後<a class="term-link" href="/zh-hant/term/garbage-collection/">垃圾回收</a>回收空間時，以區塊為單位進行。主要由無效頁面構成的區塊，便可在幾乎不需複製的情況下被抹除，從而降低<a class="term-link" href="/zh-hant/term/write-amplification/">寫入放大</a>，並在硬碟逐漸寫滿時維持穩定的寫入效能。視硬碟而定，之後讀取已 TRIM 的位址可能回傳零或未定義的資料，因此 SSD 上被刪除的檔案通常比硬碟上的更難救回。</p>
+</section>
+<section class="term-about">
+  <h2>介面與發出方式</h2>
+  <p>TRIM 是 ATA（SATA）指令選項的名稱；SCSI 與 SAS 系統使用 UNMAP，而 <a class="term-link" href="/zh-hant/term/nvme/">NVMe</a> 則透過其 Dataset Management 指令的 Deallocate 選項提供相同功能。作業系統發出此指令的方式有兩種：持續式，在每個檔案刪除時送出 discard；或定期批次處理，以避免拖慢刪除動作。位於檔案系統與硬碟之間的層，例如某些 RAID 或磁碟加密配置以及虛擬磁碟，必須將此指令往下傳遞，它才能到達快閃記憶體，而這些層可能需要另外設定才會這樣做。</p>
+</section>
+<section class="term-about">
+  <h2>容易混淆的概念</h2>
+  <p>TRIM 只是主機給出的提示；<a class="term-link" href="/zh-hant/term/garbage-collection/">垃圾回收</a>則是硬碟內部實際搬移有效資料並抹除區塊的程序，不論有無 TRIM 都會執行。在半導體製造中，<a class="term-link" href="/zh-hant/term/photoresist/">光阻</a>修整（resist trimming）是一種無關的<a class="term-link" href="/zh-hant/term/plasma/">電漿</a>製程，用來將光阻線寬削減到曝光極限以下；雷射修整（laser trimming）則是調整類比晶片中的電阻值。傳統硬碟會就地覆寫資料，不需要 TRIM，不過精簡配置（thin-provisioned）的儲存系統會使用相當的 unmap 指令來回收空間。</p>
+</section>
 <section>
   <h2>練習TRIM的題目</h2>
   <article class="q-mini" data-qid="sram-flash-028" data-cat="sram-flash" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 實際寫入快閃記憶體的資料量，多於主機所寫入的資料量</p><p class="explanation">快閃記憶體無法覆寫、抹除又以區塊為單位，因此<a class="term-link" href="/zh-hant/term/garbage-collection/">垃圾回收</a>時會發生將有效資料複製到別的區塊等額外寫入，使實際寫入量多於主機的寫入量。這個比值就是<a class="term-link" href="/zh-hant/term/write-amplification/">寫入放大</a>係數（WAF），隨機的小量寫入多時，可能達到數倍。藉由 <a class="term-link" href="/zh-hant/term/trim/">TRIM</a>、預留空間、資料壓縮等將其降低，以保護壽命與效能。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>TRIM 會立即抹除資料嗎？</h3>
+  <p>不一定。TRIM 會將資料標記為無效並移除其位址對應；實體抹除會在之後垃圾回收回收該區塊時進行，不過讀取已 TRIM 的位址時可能已經會回傳零。</p>
+  <h3>NVMe SSD 支援 TRIM 嗎？</h3>
+  <p>支援，透過 NVMe Dataset Management 指令的 Deallocate 選項達成相同功能；作業系統通常仍稱之為 TRIM 或 discard。</p>
+  <h3>傳統硬碟需要 TRIM 嗎？</h3>
+  <p>傳統硬碟可以就地覆寫磁區，因此無法從 TRIM 獲益；TRIM 對快閃記憶體儲存裝置才重要，因為其區塊必須先抹除才能重複使用。</p>
+</section>
 <section>
   <h2>解析中的「TRIM」</h2>
   <ul class="term-quotes"><li><p>若以 TRIM 指令通知不需要的區域，SSD 會將那些頁視為無效，不必複製即可抹除，寫入放大減少，效能與壽命因而改善。</p><a href="/zh-hant/q/sram-flash/sram-flash-028/">作業系統把已刪除檔案的區域通知 SSD、使垃圾回收更有效率的指令，下列何者正確？</a></li><li><p>藉由 TRIM、預留空間、資料壓縮等將其降低，以保護壽命與效能。</p><a href="/zh-hant/q/sram-flash/sram-flash-042/">關於 SSD 的「寫入放大（Write Amplification）」，下列說明何者正確？</a></li></ul>

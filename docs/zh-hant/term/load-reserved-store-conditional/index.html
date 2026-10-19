@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"LR/SC（載入保留／條件式儲存）","item":"https://semiconroom.com/zh-hant/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"LR/SC（載入保留／條件式儲存）","description":"載入保留（LR）與條件式儲存（SC）指令的組合。亦稱 LL 與 SC。在 LR 之後若其他核心寫入該位址，SC 就會失敗，因此可實現不可分割的更新。","url":"https://semiconroom.com/zh-hant/term/load-reserved-store-conditional/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"LR/SC（載入保留／條件式儲存）","item":"https://semiconroom.com/zh-hant/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"LR/SC（載入保留／條件式儲存）","description":"載入保留（LR）與條件式儲存（SC）指令的組合。亦稱 LL 與 SC。在 LR 之後若其他核心寫入該位址，SC 就會失敗，因此可實現不可分割的更新。","url":"https://semiconroom.com/zh-hant/term/load-reserved-store-conditional/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"條件式儲存什麼時候會失敗？","acceptedAnswer":{"@type":"Answer","text":"當載入保留所建立的保留已經遺失時就會失敗，最常見的原因是另一個核心寫入了該位址，但也可能是中斷、內容切換或快取逐出所致。"}},{"@type":"Question","name":"LR/SC 能解決 ABA 問題嗎？","acceptedAnswer":{"@type":"Answer","text":"能。LR/SC 會偵測對被保留位置的任何中途寫入，因此即使值改變後又改回原值，條件式儲存仍會失敗，這一點與比較並交換不同。"}},{"@type":"Question","name":"LL/SC 和 LR/SC 有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"它們是同一概念的不同名稱：load-linked/store-conditional 是傳統用語，load-reserved/store-conditional 則是 RISC-V 的名稱。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>這對指令如何運作</h2>
+  <p>載入保留（LR）讀取一個記憶體字組，同時對該位址登記一個保留，通常涵蓋其所在的快取線。程式在暫存器中計算新值，然後由條件式儲存（SC）嘗試寫入。只有在保留仍然完好時，SC 才會寫入，並回傳表示成功或失敗的狀態碼；在 RISC-V 上，零表示成功。軟體會將這段序列包在重試迴圈中。RISC-V 將這對指令稱為 lr 與 sc，Arm 提供相當的 load-exclusive 與 store-exclusive 指令，而一般名稱為 LL/SC。</p>
+</section>
+<section class="term-about">
+  <h2>什麼會破壞保留</h2>
+  <p>失敗的主要原因，是在 LR 與 SC 之間有另一個核心寫入了被保留的位置。核心透過<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a>偵測到這一點：該寫入會使其快取線副本失效並清除保留。保留也可能因<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>或內容切換、另一個 SC，或快取線被逐出而被清除，因此即使沒有真正的衝突，SC 也可能失敗。正確的程式碼必須隨時準備重試，而 RISC-V 只對遵循規定限制的短迴圈保證最終會成功。</p>
+</section>
+<section class="term-about">
+  <h2>LR/SC 與 CAS 的比較及 ABA 問題</h2>
+  <p><a class="term-link" href="/zh-hant/term/compare-and-swap/">比較並交換</a>（CAS）檢查記憶體是否仍保存預期值。若另一個執行緒將值從 A 改為 B 再改回 A，CAS 無法察覺而會成功，這可能破壞鏈結串列等無鎖結構：即 <a class="term-link" href="/zh-hant/term/aba-problem/">ABA 問題</a>。LR/SC 檢查的是是否發生過任何寫入，而不是值為何，因此 A-B-A 序列仍會破壞保留。LR/SC 也能以軟體建構任何單一字組的讀取－修改－寫入，包括 CAS 本身與 fetch-and-add。其弱點是偽失敗，以及在競爭激烈時可能發生活結（livelock）。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼載入－儲存架構偏好它</h2>
+  <p>單一 CAS 指令必須在一個步驟中讀取、比較並寫入記憶體，這很難融入每條指令最多只進行一次記憶體存取的管線。LR/SC 維持了這種載入／儲存的規則：LR 的行為如同一個載入加上一個保留暫存器，SC 則如同受該暫存器控制的儲存。不需要鎖住匯流排，因為一致性協定本來就會告訴核心何時有其他處理器寫入該快取線。因此，這對指令長期以來都被用於 RISC 指令集中，常與單一指令的原子操作並存。</p>
+</section>
 <section>
   <h2>練習LR/SC（載入保留／條件式儲存）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-017" data-cat="multicore-sync" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 從LR讀取到SC之間，其他核心寫入該位址等，使保留失效時</p><p class="explanation">LR在讀取值的同時，會「保留」該位址。之後以SC寫入時，若保留仍然有效就寫入並成功；若因其他核心的寫入等使保留失效，則不寫入並回傳失敗。相對於CAS檢查值是否一致，<a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC</a>檢查的是有無寫入，因此即使值曾改變又變回原樣，也能偵測到。ARM也有同樣的指令組。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>條件式儲存什麼時候會失敗？</h3>
+  <p>當載入保留所建立的保留已經遺失時就會失敗，最常見的原因是另一個核心寫入了該位址，但也可能是中斷、內容切換或快取逐出所致。</p>
+  <h3>LR/SC 能解決 ABA 問題嗎？</h3>
+  <p>能。LR/SC 會偵測對被保留位置的任何中途寫入，因此即使值改變後又改回原值，條件式儲存仍會失敗，這一點與比較並交換不同。</p>
+  <h3>LL/SC 和 LR/SC 有什麼不同？</h3>
+  <p>它們是同一概念的不同名稱：load-linked/store-conditional 是傳統用語，load-reserved/store-conditional 則是 RISC-V 的名稱。</p>
+</section>
 <section>
   <h2>解析中的「LR/SC（載入保留／條件式儲存）」</h2>
   <ul class="term-quotes"><li><p>相對於CAS檢查值是否一致，LR/SC檢查的是有無寫入，因此即使值曾改變又變回原樣，也能偵測到。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-017/">在RISC-V的LR/SC（載入保留／條件式儲存）這類指令組中，SC（條件式儲存）會在什麼情況下失敗？</a></li><li><p>有CAS（比較並交換）、取得並相加（fetch-and-add），以及RISC-V的LR/SC與AMO指令等，是建構鎖與無鎖資料結構的基礎。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-014/">關於原子指令（不可分割指令），下列說明何者正確？</a></li><li><p>可以用在指標上附加更新次數一起比較的方法，或使用LR/SC的方法來防止。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-018/">關於使用CAS的無鎖資料結構中會出現的ABA問題，下列說明何者正確？</a></li></ul>

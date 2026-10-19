@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"PLT（程序連結表）","item":"https://semiconroom.com/zh-hant/term/procedure-linkage-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PLT（程序連結表）","description":"排列了呼叫共享函式庫函式所用的小型入口的表。在延遲繫結中，第一次呼叫時由動態連結器解析位址並寫入 GOT。","url":"https://semiconroom.com/zh-hant/term/procedure-linkage-table/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"PLT（程序連結表）","item":"https://semiconroom.com/zh-hant/term/procedure-linkage-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PLT（程序連結表）","description":"排列了呼叫共享函式庫函式所用的小型入口的表。在延遲繫結中，第一次呼叫時由動態連結器解析位址並寫入 GOT。","url":"https://semiconroom.com/zh-hant/term/procedure-linkage-table/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"PLT 和 GOT 有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"PLT 包含外部呼叫所跳往的小型可執行樁程式，而 GOT 是保存已解析位址的資料表；每個 PLT 樁程式都透過其 GOT 項目進行間接跳躍。"}},{"@type":"Question","name":"動態連結中的延遲繫結是什麼？","acceptedAnswer":{"@type":"Answer","text":"延遲繫結是將共享函式庫函式位址的解析延後到第一次呼叫時，屆時動態連結器會查找該位址並存入 GOT，供之後所有呼叫使用。"}},{"@type":"Question","name":"full RELRO 有什麼作用？","acceptedAnswer":{"@type":"Answer","text":"它讓動態連結器在啟動時解析所有符號，然後將 GOT 重新映射為唯讀，使攻擊者無法覆寫 GOT 項目來重新導向函式呼叫。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/linker-loader/">連結器與載入器與執行檔格式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼呼叫要經過樁程式</h2>
+  <p><a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>在每個行程中可能被載入到不同的位址，因此在程式連結時，像 printf 這樣的函式位址是未知的。在載入時修補每一條呼叫指令，會使程式碼頁面變成可寫入，且無法在行程之間共享。因此，<a class="term-link" href="/zh-hant/term/linker/">連結器</a>將每個外部呼叫指向程序連結表（PLT）中的一個小型樁程式（stub）。樁程式會透過<a class="term-link" href="/zh-hant/term/global-offset-table/">全域偏移表</a>（GOT）中的一個槽位進行間接跳躍，GOT 是一個可寫入的資料區域，由<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>填入實際位址。</p>
+</section>
+<section class="term-about">
+  <h2>延遲繫結的逐步流程</h2>
+  <p>在延遲繫結下，每個 <a class="term-link" href="/zh-hant/term/global-offset-table/">GOT</a> 槽位一開始都指回其自身的 PLT 樁程式。第一次呼叫時，樁程式推入一個識別該函式<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>項目的索引，並跳到共同的 PLT 標頭，由此進入<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>的解析器。解析器在已載入的函式庫中查找該符號，將其位址寫入 GOT 槽位，然後跳到該函式。之後的每次呼叫都依樁程式、GOT、函式的順序進行，不再查找。從未被呼叫的函式永遠不會被解析，這縮短了程式的啟動時間。</p>
+</section>
+<section class="term-about">
+  <h2>立即繫結與唯讀 GOT</h2>
+  <p>由於 <a class="term-link" href="/zh-hant/term/global-offset-table/">GOT</a> 可寫入且保存程式碼位址，能夠覆寫記憶體的攻擊者可能將某個 GOT 項目重新導向，以劫持控制流程。因此許多系統在啟動時就解析所有符號，例如在 Linux 上以 -z now 連結或設定 LD_BIND_NOW，然後將 GOT 標記為唯讀，這種強化稱為 full RELRO（<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>唯讀）。取捨在於：匯入許多函式的程式啟動較慢，換來的是移除一個常見的攻擊目標。</p>
+</section>
+<section class="term-about">
+  <h2>符號可見性與內部呼叫</h2>
+  <p><a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>中匯出的函式可能被另一個模組中同名的定義覆蓋，即插入（interpose），因此即使是函式庫內部的呼叫，通常也必須經過 PLT。將內部函式設為隱藏（hidden）可見性，會將其從動態<a class="term-link" href="/zh-hant/term/symbol-table/">符號表</a>中移除，於是對它們的呼叫變成直接的 PC 相對呼叫，<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>需要處理的符號變少，也能避免與其他函式庫的名稱衝突。<a class="term-link" href="/zh-hant/term/global-offset-table/">GOT</a> 也保存外部資料的位址，但資料存取是直接讀取 GOT，不經過 PLT 樁程式。</p>
+</section>
 <section>
   <h2>練習PLT（程序連結表）的題目</h2>
   <article class="q-mini" data-qid="linker-loader-026" data-cat="linker-loader" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 共用函式庫函式的位址，在該函式第一次被呼叫時才解析，第二次起直接跳到已解析的位址</p><p class="explanation">程式是透過<a class="term-link" href="/zh-hant/term/procedure-linkage-table/">PLT</a>的小入口來呼叫外部函式。在延遲繫結中，第一次呼叫時入口會跳到<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>的解析處理，尋找真正的位址並寫入<a class="term-link" href="/zh-hant/term/global-offset-table/">GOT</a>。第二次起則直接跳到GOT中的位址。可省去對未使用函式的解析，因此啟動較快。不過基於安全考量，在啟動時全部解析並將GOT設為唯讀的設定也被廣泛使用。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>PLT 和 GOT 有什麼不同？</h3>
+  <p>PLT 包含外部呼叫所跳往的小型可執行樁程式，而 GOT 是保存已解析位址的資料表；每個 PLT 樁程式都透過其 GOT 項目進行間接跳躍。</p>
+  <h3>動態連結中的延遲繫結是什麼？</h3>
+  <p>延遲繫結是將共享函式庫函式位址的解析延後到第一次呼叫時，屆時動態連結器會查找該位址並存入 GOT，供之後所有呼叫使用。</p>
+  <h3>full RELRO 有什麼作用？</h3>
+  <p>它讓動態連結器在啟動時解析所有符號，然後將 GOT 重新映射為唯讀，使攻擊者無法覆寫 GOT 項目來重新導向函式呼叫。</p>
+</section>
 <section>
   <h2>解析中的「PLT（程序連結表）」</h2>
   <ul class="term-quotes"><li><p>程式是透過PLT的小入口來呼叫外部函式。</p><a href="/zh-hant/q/linker-loader/linker-loader-026/">在動態連結中，使用PLT（程序連結表，Procedure Linkage Table）進行延遲繫結（lazy bind…</a></li><li><p>若是動態連結，則會改寫為指向PLT的入口，而實際的函式庫函式位址由動態連結器在執行時填入GOT。</p><a href="/zh-hant/q/linker-loader/linker-loader-038/">對目的檔進行反組譯時，發現呼叫外部函式printf之指令的跳躍目標是0這樣的暫時值。這個值會在何時被正確填入？</a></li><li><p>共用函式庫中公開的符號，可能被其他模組中的同名定義所取代，因此即使是內部的呼叫也必須經過PLT或GOT。</p><a href="/zh-hant/q/linker-loader/linker-loader-049/">建置共用函式庫時，只公開要從外部使用的函式，並將內部函式的符號可見性（visibility）設為「hidden」，其優…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Roofline 模型（Roofline model）","item":"https://semiconroom.com/zh-hant/term/roofline-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Roofline 模型（Roofline model）","description":"將可達成的效能表示為「峰值效能」與「記憶體頻寬×運算強度」中較小者的模型。用於分辨處理是受運算限制還是受記憶體限制。","url":"https://semiconroom.com/zh-hant/term/roofline-model/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Roofline 模型（Roofline model）","item":"https://semiconroom.com/zh-hant/term/roofline-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Roofline 模型（Roofline model）","description":"將可達成的效能表示為「峰值效能」與「記憶體頻寬×運算強度」中較小者的模型。用於分辨處理是受運算限制還是受記憶體限制。","url":"https://semiconroom.com/zh-hant/term/roofline-model/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Roofline 模型中的脊點是什麼？","acceptedAnswer":{"@type":"Answer","text":"它是頻寬斜線與運算上限交會處的運算強度，等於峰值 FLOP/s 除以以每秒位元組數表示的記憶體頻寬。低於此點的工作負載受記憶體限制，高於此點者則可能受運算限制。"}},{"@type":"Question","name":"如何量測核心的運算強度？","acceptedAnswer":{"@type":"Answer","text":"將運算次數除以實際從 DRAM 傳輸的位元組數，後者可以手動估算，或以硬體計數器或效能剖析工具量測。當快取會改變資料搬移量時，應使用實測的通訊量。"}},{"@type":"Question","name":"為什麼即使在高速 GPU 上，我的工作負載仍受記憶體限制？","acceptedAnswer":{"@type":"Answer","text":"高速加速器的脊點非常高，常達每位元組數十至數百 FLOP，因此逐元素運算與小批次的矩陣向量運算無法達到峰值。融合運算以及提高資料重複使用率或批次大小，都能提高運算強度。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -107,7 +107,22 @@
 </svg><figcaption class="fig-cap">屋頂線模型 · <a href="/zh-hant/figures/#fig-roofline">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>圖表如何建構</h2>
+  <p>Roofline 模型將可達成的效能（每秒運算次數，通常為 FLOP/s）對<a class="term-link" href="/zh-hant/term/arithmetic-intensity/">運算強度</a>（每移入或移出記憶體 1 位元組所進行的運算次數）作圖，一般採用雙對數座標軸。每個工作負載都受兩條上限約束：一條是等於記憶體頻寬乘以運算強度的斜線，另一條是位於峰值運算效能的水平線。可達成的效能為兩者中較低者。兩線交會的轉折點稱為脊點（ridge point），位於峰值運算效能除以頻寬處。以 100 TFLOPS 與 2 TB/s 為例，脊點為 50 FLOP/byte，因此 10 FLOP/byte 的核心是受記憶體限制，效能為 20 TFLOPS。</p>
+</section>
+<section class="term-about">
+  <h2>計算運算強度</h2>
+  <p>計算有用的運算次數，再除以實際通過記憶體介面的位元組數。將兩個 8 位元組倍精度陣列相加存入第三個陣列，每次執行 1 FLOP 並搬移 24 位元組，約 0.04 FLOP/byte，因此在任何現代晶片上都毫無疑問受記憶體限制。兩個 n×n 矩陣相乘約進行 2n³ 次 FLOP，處理約 3n² 個元素，因此強度隨 n 增加，前提是快取或分塊確實實現了這種重複使用。由於強度取決於實際的通訊量，同一演算法會依分塊方式、快取大小與資料型別而落在不同的位置。</p>
+</section>
+<section class="term-about">
+  <h2>解讀圖表並據以行動</h2>
+  <p>位於斜線屋頂下方的核心，不會因為增加運算單元而加速；它需要的是降低每次運算的位元組數。透過分塊（blocking 或 tiling）在快取中重複使用資料、融合連續運算使中間結果不必寫到 DRAM，以及使用較低精度的資料，都能使該點向右或向上移動。靠近水平屋頂的核心則需要更好地利用運算能力：<a class="term-link" href="/zh-hant/term/vectorization/">向量化</a>、融合乘加、矩陣單元以及足夠的平行度。圖上常會為缺少的最佳化另外畫出較低的上限，例如不使用 <a class="term-link" href="/zh-hant/term/simd/">SIMD</a> 時的峰值，也可以為每一層快取分別畫出各自的 roofline。</p>
+</section>
+<section class="term-about">
+  <h2>數值來源與限制</h2>
+  <p>水平屋頂通常是廠商針對相應資料型別公布的峰值；斜線則最好採用實測頻寬（例如 STREAM 效能測試），而非理論值。此模型是上限，而非預測：由於延遲、記憶體與運算的重疊不完美、同步以及負載不平衡，實際的核心會落在屋頂之下。一個常見的應用是<a class="term-link" href="/zh-hant/term/batch-size/">批次大小</a>為 1 的大型語言模型推論，每個權重被讀取後只進行約兩次運算，在 16 位元精度下強度接近 1 FLOP/byte，結果明確屬於受記憶體限制。</p>
+</section>
 <section>
   <h2>練習Roofline 模型（Roofline model）的題目</h2>
   <article class="q-mini" data-qid="performance-036" data-cat="performance" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -116,7 +131,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 透過增加資料的重複利用等來提高運算強度，或是減少記憶體讀寫的量</p><p class="explanation">在屋頂線圖中，位於斜線下方的處理，其效能上限是由記憶體頻寬決定。增加運算單元，上限也不會改變。藉由分塊或<a class="term-link" href="/zh-hant/term/operator-fusion/">運算融合</a>（fusion）反覆使用資料，增加每位元組的運算數（<a class="term-link" href="/zh-hant/term/arithmetic-intensity/">運算強度</a>），處理就會往圖的右方移動，上限也隨之提高。降低資料的精度以減少讀寫量，也有相同的效果。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>Roofline 模型中的脊點是什麼？</h3>
+  <p>它是頻寬斜線與運算上限交會處的運算強度，等於峰值 FLOP/s 除以以每秒位元組數表示的記憶體頻寬。低於此點的工作負載受記憶體限制，高於此點者則可能受運算限制。</p>
+  <h3>如何量測核心的運算強度？</h3>
+  <p>將運算次數除以實際從 DRAM 傳輸的位元組數，後者可以手動估算，或以硬體計數器或效能剖析工具量測。當快取會改變資料搬移量時，應使用實測的通訊量。</p>
+  <h3>為什麼即使在高速 GPU 上，我的工作負載仍受記憶體限制？</h3>
+  <p>高速加速器的脊點非常高，常達每位元組數十至數百 FLOP，因此逐元素運算與小批次的矩陣向量運算無法達到峰值。融合運算以及提高資料重複使用率或批次大小，都能提高運算強度。</p>
+</section>
 
 <section>
   <h2>出現「Roofline 模型（Roofline model）」的題目（1題）</h2>

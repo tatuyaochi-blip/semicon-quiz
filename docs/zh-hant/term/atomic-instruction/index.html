@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"原子指令（Atomic instruction）","item":"https://semiconroom.com/zh-hant/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"原子指令（Atomic instruction）","description":"將記憶體的讀取與寫入，作為不會被其他核心中途打斷的單一操作來進行的指令。包括 CAS、fetch-and-add、LR/SC 等。","url":"https://semiconroom.com/zh-hant/term/atomic-instruction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"原子指令（Atomic instruction）","item":"https://semiconroom.com/zh-hant/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"原子指令（Atomic instruction）","description":"將記憶體的讀取與寫入，作為不會被其他核心中途打斷的單一操作來進行的指令。包括 CAS、fetch-and-add、LR/SC 等。","url":"https://semiconroom.com/zh-hant/term/atomic-instruction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"原子指令和鎖有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"原子指令由硬體使對單一記憶體位置的一次讀取－修改－寫入不可分割；鎖則是以原子操作建構的軟體機制，用來保護存取許多位置的較長程式碼區段。"}},{"@type":"Question","name":"什麼是比較並交換（compare-and-swap）？","acceptedAnswer":{"@type":"Answer","text":"比較並交換只有在記憶體位置仍含有預期值時才寫入新值，並回報成功或失敗，這一切都作為單一原子操作完成。"}},{"@type":"Question","name":"為什麼原子操作很慢？","acceptedAnswer":{"@type":"Answer","text":"核心必須取得快取線的獨占所有權，且常需強制記憶體排序；當多個核心爭用同一條快取線時，它會在核心之間反覆傳遞與失效。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼一般的載入與儲存不夠</h2>
+  <p>像 counter++ 這樣的敘述會被編譯成一個載入、一個加法與一個儲存。若兩個核心同時執行它，兩者可能都載入相同的舊值，並都儲存 舊值 + 1，導致少加一次。原子指令將整個讀取－修改－寫入作為一個不可分割的操作來執行：其他核心對該位置的存取無法插入其中，其他核心只會觀察到操作之前或之後的值。這項保證是多核心處理器上鎖、計數器與無鎖資料結構的基礎。</p>
+</section>
+<section class="term-about">
+  <h2>常見的原子操作種類</h2>
+  <p>測試並設定（test-and-set）與原子交換會寫入新值並回傳舊值。fetch-and-add 對記憶體加上一個值並回傳先前的值。<a class="term-link" href="/zh-hant/term/compare-and-swap/">比較並交換</a>（CAS）只有在記憶體仍保存預期值時才寫入新值，並回報是否成功。<a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">載入保留／條件式儲存</a>（LR/SC）將操作分為一個建立保留的載入，以及一個在保留遺失時會失敗的儲存。RISC-V 也提供 amoadd 與 amoswap 等原子記憶體操作（AMO）指令，而 x86 則在 cmpxchg 與 xadd 等指令上加上 LOCK 前綴。</p>
+</section>
+<section class="term-about">
+  <h2>硬體如何維持原子性</h2>
+  <p>早期系統在操作期間鎖住共享匯流排。現代核心則改用<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a>協定：核心取得該快取線的獨占所有權，即 MESI 式協定中的 Modified 或 Exclusive 狀態，並延後其他核心對該快取線的要求，直到讀取－修改－寫入完成為止。因此原子操作比一般的快取載入慢得多，而在競爭激烈時，該快取線會在核心之間來回傳遞。原子操作也與記憶體排序有關；在 x86 上，加上 LOCK 的指令會作為完整的<a class="term-link" href="/zh-hant/term/memory-barrier/">記憶體屏障</a>。</p>
+</section>
+<section class="term-about">
+  <h2>從原子操作到鎖</h2>
+  <p><a class="term-link" href="/zh-hant/term/spinlock/">自旋鎖</a>嘗試以原子指令設定鎖變數，若鎖已被占用，就在迴圈中重試。直接重試原子寫入會造成大量一致性流量，因為每次嘗試都要求獨占所有權。test-and-test-and-set 模式則是以一般讀取在本地快取中的共享副本上自旋，只有在鎖看起來空閒時才嘗試原子操作。無鎖結構直接使用 CAS 或 <a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC</a>，但以 CAS 為基礎的設計必須防範 <a class="term-link" href="/zh-hant/term/aba-problem/">ABA 問題</a>，即某個值改變後又改回原值而未被察覺。</p>
+</section>
 <section>
   <h2>練習原子指令（Atomic instruction）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-014" data-cat="multicore-sync" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 因為只是讀取的話可以在自己的快取內等待，能大幅減少快取列在核心之間來回移動的通訊</p><p class="explanation"><a class="term-link" href="/zh-hant/term/atomic-instruction/">原子指令</a>伴隨寫入，所以等待的執行緒若重複執行，每次都會以M狀態爭奪快取列，並持續使其他核心的副本失效。若是一般的讀取，各核心只需持續在自己的快取內讀取S狀態的副本，不會產生通訊。只有在鎖被釋放而值改變時，才以原子指令去取得。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>原子指令和鎖有什麼不同？</h3>
+  <p>原子指令由硬體使對單一記憶體位置的一次讀取－修改－寫入不可分割；鎖則是以原子操作建構的軟體機制，用來保護存取許多位置的較長程式碼區段。</p>
+  <h3>什麼是比較並交換（compare-and-swap）？</h3>
+  <p>比較並交換只有在記憶體位置仍含有預期值時才寫入新值，並回報成功或失敗，這一切都作為單一原子操作完成。</p>
+  <h3>為什麼原子操作很慢？</h3>
+  <p>核心必須取得快取線的獨占所有權，且常需強制記憶體排序；當多個核心爭用同一條快取線時，它會在核心之間反覆傳遞與失效。</p>
+</section>
 <section>
   <h2>解析中的「原子指令（Atomic instruction）」</h2>
   <ul class="term-quotes"><li><p>原子指令會以不讓其他核心的讀寫插入其間的方式，執行讀取、運算、寫入這一連串的處理。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-014/">關於原子指令（不可分割指令），下列說明何者正確？</a></li><li><p>原子指令伴隨寫入，所以等待的執行緒若重複執行，每次都會以M狀態爭奪快取列，並持續使其他核心的副本失效。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-022/">在自旋鎖中，不直接用原子指令去改寫鎖的變數，而是平時以一般的讀取等待鎖被釋放，只有看到鎖空出來時才使用原子指令（tes…</a></li><li><p>M擴充加入mul、div、rem等乘法與除法，A擴充加入原子指令，F與D加入單精度與雙精度浮點數，C則加入16位元的壓縮指令。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-044/">下列何者是RISC-V的M擴充加到基本整數指令集的指令？</a></li><li><p>自旋鎖會以原子指令嘗試取得鎖，若取不到就立刻反覆再試。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-020/">關於自旋鎖（spinlock），下列說明何者正確？</a></li><li><p>若針對每個元素更新共用變數，鎖或原子指令的等待，加上快取列的來回移動，會變得非常慢。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-045/">以多個執行緒計算陣列所有元素的總和時，為了效能，適合的方法為下列何者？</a></li></ul>

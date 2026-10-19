@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"環境切換","item":"https://semiconroom.com/zh-hant/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"環境切換","description":"切換在CPU上執行的行程或執行緒。儲存並還原暫存器與程式計數器等狀態，切換行程時也會切換位址空間。","url":"https://semiconroom.com/zh-hant/term/context-switch/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"環境切換","item":"https://semiconroom.com/zh-hant/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"環境切換","description":"切換在CPU上執行的行程或執行緒。儲存並還原暫存器與程式計數器等狀態，切換行程時也會切換位址空間。","url":"https://semiconroom.com/zh-hant/term/context-switch/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"環境切換時會儲存什麼？","acceptedAnswer":{"@type":"Answer","text":"即將讓出的執行緒的 CPU 狀態：暫存器、程式計數器、堆疊指標與狀態資訊；切換行程時還包括頁表指標。記憶體本身不會被儲存，因為它留在原處。"}},{"@type":"Question","name":"為什麼環境切換的成本很高？","acceptedAnswer":{"@type":"Answer","text":"除了核心本身的工作之外，切入的行程一開始面對的快取與 TLB 都存放著另一個行程的內容，因此在重新填入之前會發生許多失誤。"}},{"@type":"Question","name":"系統呼叫算是環境切換嗎？","acceptedAnswer":{"@type":"Answer","text":"不算。系統呼叫是同一行程內的模式切換；只有當核心決定在返回前改為執行其他執行緒或行程時，才會發生環境切換。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>儲存與還原哪些內容</h2>
+  <p>核心會儲存即將讓出的執行緒的 CPU 狀態，也就是其通用暫存器、程式計數器、<a class="term-link" href="/zh-hant/term/stack-pointer/">堆疊指標</a>，以及先前模式等狀態位元，之後再重新載入，使該執行緒能從停止處精確地繼續執行。浮點與向量暫存器也是狀態的一部分，有些核心只在下一個執行緒實際使用時才延遲儲存它們。在行程之間切換時，指向<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>的暫存器也會變更，讓新行程擁有自己的位址空間。記憶體內容與開啟的檔案則留在原處，不會被複製。</p>
+</section>
+<section class="term-about">
+  <h2>何時發生切換</h2>
+  <p>當執行中的執行緒被阻塞（例如等待磁碟 I/O 或鎖）、主動讓出，或計時器<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>告知排程器其時間片已用完、應改由其他執行緒執行時，就會觸發切換。在每種情況下，CPU 都已經在核心中處理<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>或中斷，由排程器挑選下一個執行緒。同一行程內的執行緒之間切換成本較低，因為位址空間不會改變。</p>
+</section>
+<section class="term-about">
+  <h2>直接成本與間接成本</h2>
+  <p>儲存與載入暫存器花費的時間很少；包含排程在內的整個核心路徑，通常約為微秒量級。更大的成本往往是間接的：新行程會發現快取與 <a class="term-link" href="/zh-hant/term/tlb/">TLB</a> 中充滿前一個行程的資料與位址轉換，因此在它們暖機之前會反覆失誤。以<a class="term-link" href="/zh-hant/term/asid/">位址空間識別碼</a>（ASID）標記 TLB 項目的 CPU，可避免每次切換都清空 TLB，但快取暖機的成本仍然存在。因此，頻繁的切換對<a class="term-link" href="/zh-hant/term/throughput/">吞吐量</a>的影響，會比單看切換時間所預期的更大。</p>
+</section>
+<section class="term-about">
+  <h2>環境切換與模式切換的差異</h2>
+  <p><a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>或<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>會使 CPU 從使用者模式切換到<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>再返回，但之後繼續執行的是同一個行程；這是模式切換，而不是環境切換。環境切換會改變由哪個執行緒或行程擁有 CPU。兩者經常同時發生，因為切換總是在核心內進行，但返回原呼叫者的系統呼叫完全不涉及環境切換。</p>
+</section>
 <section>
   <h2>練習環境切換的題目</h2>
   <article class="q-mini" data-qid="os-hardware-023" data-cat="os-hardware" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 因為切換之後，快取與TLB的未命中會增加</p><p class="explanation">儲存與還原暫存器本身只需很短的時間，但對切換後的行程而言，快取與<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>裡的內容是前一個行程的，在重新載入所需的資料與轉換結果之前，未命中會持續發生。在沒有<a class="term-link" href="/zh-hant/term/asid/">ASID</a>的CPU上，切換位址空間時還必須清空TLB。這種間接的成本，有時會比直接的切換時間更大。時脈並不會下降，也不會從磁碟重新讀取程式。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>環境切換時會儲存什麼？</h3>
+  <p>即將讓出的執行緒的 CPU 狀態：暫存器、程式計數器、堆疊指標與狀態資訊；切換行程時還包括頁表指標。記憶體本身不會被儲存，因為它留在原處。</p>
+  <h3>為什麼環境切換的成本很高？</h3>
+  <p>除了核心本身的工作之外，切入的行程一開始面對的快取與 TLB 都存放著另一個行程的內容，因此在重新填入之前會發生許多失誤。</p>
+  <h3>系統呼叫算是環境切換嗎？</h3>
+  <p>不算。系統呼叫是同一行程內的模式切換；只有當核心決定在返回前改為執行其他執行緒或行程時，才會發生環境切換。</p>
+</section>
 <section>
   <h2>解析中的「環境切換」</h2>
   <ul class="term-quotes"><li><p>在環境切換時，為了之後能從相同狀態繼續執行，會儲存通用暫存器、程式計數器、堆疊指標、運作模式等CPU的狀態，並載入接下來要執行行程的狀態。</p><a href="/zh-hant/q/os-hardware/os-hardware-023/">在環境切換（context switch）時，必須儲存切換前行程的哪些內容？</a></li><li><p>環境切換是切換要執行的行程，需求分頁則是在需要時才載入分頁的方式。</p><a href="/zh-hant/q/os-hardware/os-hardware-002/">應用程式請求作業系統進行檔案讀寫等操作的機制稱為什麼？</a></li><li><p>一旦發生中斷，CPU必定會轉移到核心的中斷處理常式，因此即使程式陷入無限迴圈，作業系統也能取回控制權，並環境切換到其他行程。</p><a href="/zh-hant/q/os-hardware/os-hardware-026/">作業系統即使面對不主動釋出CPU的程式，仍能每隔一段時間取回CPU並切換到其他行程，主要是靠什麼機制？</a></li></ul>
@@ -110,7 +133,8 @@
 <section>
   <h2>出現這個名詞的比較</h2>
   <ul class="cmp-list">
-  <li><a class="cmp-card" href="/zh-hant/compare/process-vs-thread/"><strong>行程與執行緒的差異：比較記憶體、切換與使用時機</strong><span>以記憶體、建立成本、情境切換、通訊、隔離、同步與用途等面向，用表格比較行程與執行緒。</span></a></li></ul>
+  <li><a class="cmp-card" href="/zh-hant/compare/process-vs-thread/"><strong>行程與執行緒的差異：比較記憶體、切換與使用時機</strong><span>以記憶體、建立成本、情境切換、通訊、隔離、同步與用途等面向，用表格比較行程與執行緒。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/user-mode-vs-kernel-mode/"><strong>使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較</strong><span>從可執行的指令、可存取的記憶體、切換的觸發條件、切換的成本、錯誤的影響、保護的目的等面向，以表格比較使用者模式與核心模式。</span></a></li></ul>
 </section>
 
 <section>

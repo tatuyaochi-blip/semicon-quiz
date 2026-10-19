@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"寫穿(Write-through)","item":"https://semiconroom.com/zh-hant/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"寫穿(Write-through)","description":"寫入快取的同時，也寫入下層(主記憶體等)的方式。下層始終保持最新，但寫入的通訊量多，因此與寫入緩衝區組合使用。","url":"https://semiconroom.com/zh-hant/term/write-through/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"寫穿(Write-through)","item":"https://semiconroom.com/zh-hant/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"寫穿(Write-through)","description":"寫入快取的同時，也寫入下層(主記憶體等)的方式。下層始終保持最新，但寫入的通訊量多，因此與寫入緩衝區組合使用。","url":"https://semiconroom.com/zh-hant/term/write-through/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"寫穿快取和寫回快取有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"寫穿在每次儲存時都寫入下層，使下層始終保持最新。寫回只寫入快取，並在被修改的快取行逐出時才更新下層一次，從而減少通訊量。"}},{"@type":"Question","name":"寫穿快取為什麼需要寫入緩衝區？","acceptedAnswer":{"@type":"Answer","text":"沒有寫入緩衝區，CPU 就必須等待每一次儲存在較慢的記憶體中完成。緩衝區會將寫入排入佇列，讓 CPU 在寫入於背景排出的同時繼續執行。"}},{"@type":"Question","name":"寫穿快取需要髒位元嗎？","acceptedAnswer":{"@type":"Answer","text":"不需要。由於每次寫入都會立即傳遞下去，快取行永遠不會與下層不同，因此逐出時不必寫回任何資料。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/memory-hierarchy/">記憶體階層與效能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>寫穿快取如何處理儲存</h2>
+  <p>在儲存命中時，寫穿快取會<a class="term-link" href="/zh-hant/term/refresh/">更新</a>自身的副本，同時也將寫入送往下一層，例如 L2 快取或主記憶體。因此<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>永遠不會是髒的：不需要髒位元，被逐出的快取行可以直接丟棄，因為下層已持有相同的資料。在儲存失誤時，寫穿快取通常採用非<a class="term-link" href="/zh-hant/term/write-allocate/">寫入配置</a>，直接將寫入送往下層而不載入該行，因為反正之後也不需要寫回。</p>
+</section>
+<section class="term-about">
+  <h2>寫入緩衝區</h2>
+  <p>若每次儲存都要等待寫入記憶體完成，CPU 會不斷停頓，因此寫入會先進入寫入緩衝區，在 CPU 繼續執行的同時於背景排入下層。只有在緩衝區滿時 CPU 才會停頓，這發生在儲存到達的速度快於記憶體可吸收的速度時。發生失誤的載入必須檢查緩衝區，或等待其清空，才不會從記憶體讀到過時的資料。緩衝區常會將對同一<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>的多筆寫入合併為一次傳輸。</p>
+</section>
+<section class="term-about">
+  <h2>寫穿與寫回的比較</h2>
+  <p>寫回只<a class="term-link" href="/zh-hant/term/refresh/">更新</a>快取，並在髒<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>被逐出時才寫入記憶體一次，因此對同一行的重複寫入會合併為一次傳輸。這可節省頻寬與功耗，這也是大多數 CPU 的 L1 至 L3 快取都採用寫回的原因。寫穿在每次儲存時都會產生通訊量，但能讓下層始終保持最新，簡化與其他核心及 <a class="term-link" href="/zh-hant/term/dma/">DMA</a> 之間的一致性，並使復原變得容易：採用寫穿的 L1 可用簡單的同位元保護資料，並在發生錯誤時重新擷取乾淨的副本。</p>
+</section>
+<section class="term-about">
+  <h2>使用場合</h2>
+  <p>寫穿出現在由寫回 L2 支援的小型第一層快取、簡單的嵌入式處理器，以及下層必須即時看到每一次寫入的記憶體區域；許多架構允許作業系統透過記憶體類型屬性，以分頁為單位選擇此方式。它較不適合 DRAM 之前的最後一層快取，因為儲存所產生的通訊量會消耗記憶體頻寬，而寫回策略原本可以省下這些頻寬。</p>
+</section>
 <section>
   <h2>練習寫穿(Write-through)的題目</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 讓CPU不必等待對主記憶體的寫入完成，即可進行下一個處理</p><p class="explanation">直寫方式每次寫入時也會寫入主記憶體，若直接等待其完成，CPU會頻繁停頓。若將寫入暫時存放在寫入緩衝器，CPU就能立刻進入下一條指令，由緩衝器在背景寫出到主記憶體。讓快取比主記憶體<a class="term-link" href="/zh-hant/term/refresh/">更新</a>是寫回（write-back）方式的性質，在直寫中兩者反而是一致的。未命中的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>是否要載入，是<a class="term-link" href="/zh-hant/term/write-allocate/">寫入配置</a>（write-allocate）的選擇，與寫入緩衝器是不同的問題。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>寫穿快取和寫回快取有什麼不同？</h3>
+  <p>寫穿在每次儲存時都寫入下層，使下層始終保持最新。寫回只寫入快取，並在被修改的快取行逐出時才更新下層一次，從而減少通訊量。</p>
+  <h3>寫穿快取為什麼需要寫入緩衝區？</h3>
+  <p>沒有寫入緩衝區，CPU 就必須等待每一次儲存在較慢的記憶體中完成。緩衝區會將寫入排入佇列，讓 CPU 在寫入於背景排出的同時繼續執行。</p>
+  <h3>寫穿快取需要髒位元嗎？</h3>
+  <p>不需要。由於每次寫入都會立即傳遞下去，快取行永遠不會與下層不同，因此逐出時不必寫回任何資料。</p>
+</section>
 <section>
   <h2>解析中的「寫穿(Write-through)」</h2>
   <ul class="term-quotes"><li><p>限制的主要原因，是每次改寫穿隧氧化膜都會一點一點劣化。</p><a href="/zh-hant/q/sram-flash/sram-flash-039/">SLC 型 NAND 快閃記憶體的可改寫次數標準，最接近下列何者？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"儲存緩衝區（Store buffer）","item":"https://semiconroom.com/zh-hant/term/store-buffer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"儲存緩衝區（Store buffer）","description":"核心暫時累積寫入的小型緩衝區。不必等待寫入完成即可前進到下一個指令，但從其他核心看來寫入會延遲。","url":"https://semiconroom.com/zh-hant/term/store-buffer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"儲存緩衝區（Store buffer）","item":"https://semiconroom.com/zh-hant/term/store-buffer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"儲存緩衝區（Store buffer）","description":"核心暫時累積寫入的小型緩衝區。不必等待寫入完成即可前進到下一個指令，但從其他核心看來寫入會延遲。","url":"https://semiconroom.com/zh-hant/term/store-buffer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"什麼是儲存到載入的轉送？","acceptedAnswer":{"@type":"Answer","text":"就是載入在儲存緩衝區中找到仍在等待的相符先前儲存，並直接從那裡取得資料，使核心不必等待寫入到達快取，就能看到自己尚未完成的寫入。"}},{"@type":"Question","name":"為什麼在儲存緩衝 litmus 測試中兩個執行緒都可能讀到 0？","acceptedAnswer":{"@type":"Answer","text":"每個核心的寫入都停留在自己的儲存緩衝區中，對另一個核心不可見，而其後續的載入從快取讀到舊值；在儲存與載入之間加入記憶體屏障即可防止這種情況。"}},{"@type":"Question","name":"儲存緩衝區和 TSO 有什麼關係？","acceptedAnswer":{"@type":"Answer","text":"總儲存順序基本上就是 FIFO 儲存緩衝區的行為：它唯一允許的重排，是後面對不同位址的載入在前面的儲存變為可見之前就完成。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼核心要緩衝其儲存</h2>
+  <p>核心執行儲存時，目標快取線可能不在快取中，或被另一個核心持有，而透過一致性協定取得寫入所有權可能需要許多週期。核心不會停頓，而是將位址與資料放入儲存緩衝區並繼續執行。這些項目之後才會寫入 L1 快取，在 x86 上通常依程式順序進行。在<a class="term-link" href="/zh-hant/term/out-of-order-execution/">亂序執行</a>處理器中，儲存緩衝區也保存推測性的儲存，這些儲存在指令提交並確定不會被撤銷之前，不能寫入快取。</p>
+</section>
+<section class="term-about">
+  <h2>儲存到載入的轉送</h2>
+  <p>由於最近的儲存可能仍留在緩衝區中，每個載入都會檢查緩衝區中是否有相符的位址。若找到，載入就從最新的相符項目取得資料，而非從快取取得，這種機制稱為儲存到載入的轉送（store-to-load forwarding）。這維持了單執行緒的行為：核心總是能依程式順序立即看到自己的寫入。當載入所讀取的位元組正好是先前單一儲存所寫入的位元組時，轉送效果最好；載入與緩衝中的儲存部分重疊時，常會迫使載入等到那些儲存寫出為止。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼其他核心較晚看到寫入</h2>
+  <p>其他核心無法查看某個核心的儲存緩衝區，因此被緩衝的寫入在寫出之前對它們是不可見的。考慮 x 與 y 皆為 0，核心 1 執行 x = 1 再執行 r1 = y，核心 2 執行 y = 1 再執行 r2 = x。在<a class="term-link" href="/zh-hant/term/sequential-consistency/">循序一致性</a>下，至少一個載入必須看到 1。有了儲存緩衝區，兩個儲存可能都在各自的緩衝區中等待，而兩個載入都從快取讀到 0，因此在實際的 x86 機器上會出現 r1 = r2 = 0。在儲存與載入之間加入<a class="term-link" href="/zh-hant/term/memory-barrier/">記憶體屏障</a>，等待緩衝區清空，即可禁止此結果。</p>
+</section>
+<section class="term-about">
+  <h2>儲存緩衝區與記憶體一致性模型</h2>
+  <p>x86 的模型，即總儲存順序（<a class="term-link" href="/zh-hant/term/total-store-order/">TSO</a>），基本上描述的就是先進先出的儲存緩衝區：儲存與儲存之間、載入與載入之間保持順序，只有後面對不同位址的載入可能看起來超越前面的儲存。Arm 與 RISC-V 等較弱的模型，除了其他重排之外，也允許儲存以亂序方式變為可見，因此更常需要屏障（fence）或 acquire/release 指令。程式設計者通常仰賴語言層級的原子操作，由編譯器將其對應到正確的屏障。</p>
+</section>
 <section>
   <h2>練習儲存緩衝區（Store buffer）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-026" data-cat="multicore-sync" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 所有核心的操作被排成某一個順序，且各核心的操作看起來會依程式所寫的順序出現</p><p class="explanation">在<a class="term-link" href="/zh-hant/term/sequential-consistency/">循序一致性</a>中，多個核心的操作就像洗牌一樣被排成一列，而各核心的操作在其中看起來維持程式的順序。對程式設計師而言這是最容易理解的模型，但它會大幅限制硬體以<a class="term-link" href="/zh-hant/term/store-buffer/">儲存緩衝區</a>等方式調換順序的最佳化，所以實際上許多CPU採用更寬鬆的模型。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>什麼是儲存到載入的轉送？</h3>
+  <p>就是載入在儲存緩衝區中找到仍在等待的相符先前儲存，並直接從那裡取得資料，使核心不必等待寫入到達快取，就能看到自己尚未完成的寫入。</p>
+  <h3>為什麼在儲存緩衝 litmus 測試中兩個執行緒都可能讀到 0？</h3>
+  <p>每個核心的寫入都停留在自己的儲存緩衝區中，對另一個核心不可見，而其後續的載入從快取讀到舊值；在儲存與載入之間加入記憶體屏障即可防止這種情況。</p>
+  <h3>儲存緩衝區和 TSO 有什麼關係？</h3>
+  <p>總儲存順序基本上就是 FIFO 儲存緩衝區的行為：它唯一允許的重排，是後面對不同位址的載入在前面的儲存變為可見之前就完成。</p>
+</section>
 <section>
   <h2>解析中的「儲存緩衝區（Store buffer）」</h2>
   <ul class="term-quotes"><li><p>CPU為了提升效能，會把寫入暫存在儲存緩衝區（store buffer），或先行執行讀取，因此有時會改變記憶體操作的順序。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-026/">記憶體一致性模型（memory consistency model）所規定的是下列何者？</a></li><li><p>對程式設計師而言這是最容易理解的模型，但它會大幅限制硬體以儲存緩衝區等方式調換順序的最佳化，所以實際上許多CPU採用更寬鬆的模型。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-027/">關於循序一致性（sequential consistency），下列說明何者正確？</a></li><li><p>然而在實際的CPU上，x = 1會先進入核心的儲存緩衝區，在其他核心看得到之前，後面的讀取r1 = y就可以先從主記憶體或快取讀取值。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-028/">將上方的兩個執行緒在不同的核心上同時執行（假設編譯器不進行重新排序）。下列哪一個結果在循序一致性下不會發生，但在x86…</a></li><li><p>這是直接反映儲存緩衝區存在的模型。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-029/">關於x86的記憶體一致性模型（TSO，Total Store Order，全域儲存順序）的特徵，下列何者正確？</a></li></ul>

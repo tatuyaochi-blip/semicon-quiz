@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"計算圖（Computational graph）","item":"https://semiconroom.com/zh-hant/term/computational-graph/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"計算圖（Computational graph）","description":"以節點表示運算、以箭頭表示張量傳遞，來表現模型運算的圖。是自動微分與 AI 編譯器最佳化的基礎。","url":"https://semiconroom.com/zh-hant/term/computational-graph/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"計算圖（Computational graph）","item":"https://semiconroom.com/zh-hant/term/computational-graph/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"計算圖（Computational graph）","description":"以節點表示運算、以箭頭表示張量傳遞，來表現模型運算的圖。是自動微分與 AI 編譯器最佳化的基礎。","url":"https://semiconroom.com/zh-hant/term/computational-graph/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"深度學習中的計算圖是什麼？","acceptedAnswer":{"@type":"Answer","text":"它將模型表示為由彼此傳遞的張量（邊）所連接的運算（節點）。框架利用它自動計算梯度，編譯器則利用它最佳化執行。"}},{"@type":"Question","name":"為什麼運算子融合能加速神經網路？","acceptedAnswer":{"@type":"Answer","text":"激活函數與正規化等許多運算受記憶體限制，將其輸出寫入 DRAM 再讀回所花的時間佔了大部分。將它們融合成一個核心，可讓中間結果留在晶片上，減少記憶體通訊量。"}},{"@type":"Question","name":"即時執行（eager execution）和圖模式有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"即時執行會在 Python 執行到每個運算時立即執行它；圖模式則先建構或擷取整張圖，再加以最佳化並執行。即時執行較容易除錯；圖模式則可進行融合與其他針對整個模型的最佳化。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>節點、邊及其承載的內容</h2>
+  <p>計算圖通常是有向無環圖。節點是運算，例如矩陣乘法、卷積、加法或激活函數；邊是張量，每個張量都有已知的形狀與資料型別，從產生它的運算流向使用它的運算。輸入與可訓練的權重則以來源節點表示。由於相依關係是明確的，計算圖能讓人一眼看出哪些運算可以平行執行、哪些必須等待；它也為軟體提供一份完整、可分析的模型描述，與建立它的 Python 程式碼無關。</p>
+</section>
+<section class="term-about">
+  <h2>計算圖與自動微分</h2>
+  <p>訓練需要求出損失對每個權重的梯度。在前向傳遞期間，框架會記錄計算圖；接著反向模式自動微分會從損失開始反向走訪計算圖，套用每個運算的局部導數規則與連鎖律來累積梯度，這就是<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>。這需要在前向傳遞中保存的中間輸出（激活值），這也是訓練比推論使用多得多的記憶體的原因。激活檢查點（activation checkpointing）會捨棄部分激活值，並在反向傳遞時重新計算，以運算換取記憶體。</p>
+</section>
+<section class="term-about">
+  <h2>靜態圖與動態圖</h2>
+  <p>在靜態的先定義後執行（define-and-run）風格中，會先建構整張圖再執行，容易進行全域最佳化，但依賴資料的控制流程與除錯會變得複雜。在動態的邊執行邊定義（define-by-run）或即時（eager）風格中，運算在程式執行時立即執行，並同步記錄計算圖，具有彈性，但幾乎沒有跨運算最佳化的空間。現代框架通常混合兩者：程式碼以即時方式撰寫，再透過編譯步驟追蹤或擷取計算圖，讓編譯器在執行前加以最佳化。</p>
+</section>
+<section class="term-about">
+  <h2>編譯器與執行環境如何運用計算圖</h2>
+  <p><a class="term-link" href="/zh-hant/term/ai-compiler/">AI 編譯器</a>會在產生程式碼之前改寫計算圖。運算子融合會將矩陣乘法、加偏差與激活函數等一連串運算合併成一個核心，使中間張量留在晶片上的記憶體中，而不必往返 DRAM。其他處理步驟包括常數折疊、移除未使用的節點、選擇張量的記憶體配置、為配合快取或暫存記憶體而進行分塊，以及重複使用生命週期不重疊之緩衝區的記憶體規劃。<a class="term-link" href="/zh-hant/term/onnx/">ONNX</a>（Open Neural Network Exchange）等交換格式會將計算圖與權重序列化，讓不同的執行環境與硬體工具鏈能執行同一個模型。</p>
+</section>
 <section>
   <h2>練習計算圖（Computational graph）的題目</h2>
   <article class="q-mini" data-qid="ai-stack-021" data-cat="ai-stack" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 以運算為節點、以資料（張量）的傳遞為箭頭，來表示模型計算的圖</p><p class="explanation"><a class="term-link" href="/zh-hant/term/computational-graph/">計算圖</a>是將矩陣相乘、加法、啟動函數等運算作為節點，將在它們之間流動的張量作為箭頭的模型計算藍圖。框架逆向走訪這張圖，自動計算<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>的梯度，編譯器則檢視整張圖來進行融合與重新排序的最佳化。哪些運算彼此獨立而可以平行進行，也能從圖中看出。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>深度學習中的計算圖是什麼？</h3>
+  <p>它將模型表示為由彼此傳遞的張量（邊）所連接的運算（節點）。框架利用它自動計算梯度，編譯器則利用它最佳化執行。</p>
+  <h3>為什麼運算子融合能加速神經網路？</h3>
+  <p>激活函數與正規化等許多運算受記憶體限制，將其輸出寫入 DRAM 再讀回所花的時間佔了大部分。將它們融合成一個核心，可讓中間結果留在晶片上，減少記憶體通訊量。</p>
+  <h3>即時執行（eager execution）和圖模式有什麼不同？</h3>
+  <p>即時執行會在 Python 執行到每個運算時立即執行它；圖模式則先建構或擷取整張圖，再加以最佳化並執行。即時執行較容易除錯；圖模式則可進行融合與其他針對整個模型的最佳化。</p>
+</section>
 <section>
   <h2>解析中的「計算圖（Computational graph）」</h2>
   <ul class="term-quotes"><li><p>計算圖是將矩陣相乘、加法、啟動函數等運算作為節點，將在它們之間流動的張量作為箭頭的模型計算藍圖。</p><a href="/zh-hant/q/ai-stack/ai-stack-021/">AI框架或編譯器中使用的「計算圖」，下列說明何者正確？</a></li><li><p>AI編譯器將模型視為運算與資料流動的計算圖來接收，進行可合併運算的融合、不必要計算的刪除、記憶體排列方式的選擇、圖塊大小的調整等，並產生適合GPU或NPU等目標的kernel。</p><a href="/zh-hant/q/ai-stack/ai-stack-020/">XLA、TVM、PyTorch的編譯功能這類AI編譯器所進行的主要處理，下列何者正確？</a></li><li><p>ONNX（Open Neural Network Exchange）是以通用格式表示模型的計算圖與權重的規格。</p><a href="/zh-hant/q/ai-stack/ai-stack-022/">關於ONNX，下列說明何者正確？</a></li><li><p>框架與AI編譯器、執行環境將計算圖最佳化，矩陣相乘或卷積等則呼叫高度最佳化的運算函式庫的kernel。</p><a href="/zh-hant/q/ai-stack/ai-stack-050/">將AI的軟體堆疊從貼近使用者的上層，依序排列到貼近硬體的下層，下列何者正確？</a></li></ul>

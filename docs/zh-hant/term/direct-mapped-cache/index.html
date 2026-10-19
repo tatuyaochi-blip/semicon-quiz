@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"直接映射快取","item":"https://semiconroom.com/zh-hant/term/direct-mapped-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"直接映射快取","description":"每個位址的資料在快取中可放置的位置只固定在一處的快取結構。電路簡單、命中時間短，但容易發生爭用同一位置的衝突失誤。","url":"https://semiconroom.com/zh-hant/term/direct-mapped-cache/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"直接映射快取","item":"https://semiconroom.com/zh-hant/term/direct-mapped-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"直接映射快取","description":"每個位址的資料在快取中可放置的位置只固定在一處的快取結構。電路簡單、命中時間短，但容易發生爭用同一位置的衝突失誤。","url":"https://semiconroom.com/zh-hant/term/direct-mapped-cache/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"直接映射快取的標籤位元數怎麼計算？","acceptedAnswer":{"@type":"Answer","text":"從位址寬度中減去位移位元數（快取線大小的 log2）與索引位元數（快取線數量的 log2）；例如，64 位元組快取線的 32 KB 快取為 32 − 6 − 9 = 17 位元。"}},{"@type":"Question","name":"為什麼直接映射快取的衝突失誤比較多？","acceptedAnswer":{"@type":"Answer","text":"每個區塊只能放在一條快取線中，因此共用同一索引的區塊即使在其他快取線空著時也會互相逐出；相聯快取則讓每個索引有多個位置。"}},{"@type":"Question","name":"直接映射快取比集合相聯快取快嗎？","acceptedAnswer":{"@type":"Answer","text":"由於只比較一個標籤，其命中時間通常較短，但較高的失誤率可能使整體平均存取時間更差，因此比較結果取決於工作負載與失誤懲罰。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/memory-hierarchy/">記憶體階層與效能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>位址如何分割</h2>
+  <p>直接映射快取將每個位址分成三個欄位。位移（offset）選擇快取線內的位元組，索引（index）選擇該區塊唯一可存放的那一條快取線，其餘高位元則構成與快取線一起儲存的標籤（tag）。以 32 位元位址、32 KB 快取與 64 位元組快取線為例，位移為 6 位元，共有 512 條快取線，因此索引為 9 位元，標籤為 32 − 9 − 6 = 17 位元。當儲存的標籤相符且有效位元已設定時，即為命中。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼命中時間短</h2>
+  <p>由於一個區塊只有一個可能的位置，查詢時只需讀取一個標籤與一筆資料，並使用單一<a class="term-link" href="/zh-hant/term/comparator/">比較器</a>。不需要<a class="term-link" href="/zh-hant/term/multiplexer/">多工器</a>在各路（way）之間做選擇，而且因為候選只有一個，資料可以在標籤檢查完成前就推測性地轉送。也不需要替換策略：發生失誤時，直接替換該快取線中的區塊即可。這種簡單性帶來短的命中時間、小面積與每次存取的低能耗，這也是小型且對速度要求嚴格的快取有時會採用直接映射的原因。</p>
+</section>
+<section class="term-about">
+  <h2>衝突失誤的問題</h2>
+  <p>失誤通常分為<a class="term-link" href="/zh-hant/term/compulsory-miss/">強制性失誤</a>（首次存取）、<a class="term-link" href="/zh-hant/term/capacity-miss/">容量失誤</a>（工作集大於快取）與<a class="term-link" href="/zh-hant/term/conflict-miss/">衝突失誤</a>。在直接映射快取中，任何兩個相差快取大小整數倍的位址都會映射到同一條快取線。若迴圈在兩個這樣的區塊之間交替存取，例如兩個對齊在相同 2 的冪次邊界上的陣列，即使快取大部分是空的，每次存取都會把另一個逐出。對其中一個陣列加入填充或位移，或者加入一個小型全相聯的受害者快取（victim cache）來保存最近被逐出的快取線，可以減少這種顛簸（<a class="term-link" href="/zh-hant/term/thrashing/">thrashing</a>）。</p>
+</section>
+<section class="term-about">
+  <h2>直接映射與集合相聯的比較</h2>
+  <p>直接映射快取其實就是 1 路集合相聯快取，而<a class="term-link" href="/zh-hant/term/fully-associative-cache/">全相聯快取</a>則是只有單一集合的另一個極端。從直接映射改為 n 路相聯，可讓 n 個具有相同索引的區塊共存，減少<a class="term-link" href="/zh-hant/term/conflict-miss/">衝突失誤</a>，但需要平行比較 n 個標籤並選出相符的那一路，這往往會拉長命中時間並提高功耗。在相同容量下，4 路快取的集合數只有四分之一，因此索引減少 2 位元，標籤增加 2 位元。正確的選擇取決於<a class="term-link" href="/zh-hant/term/average-memory-access-time/">平均記憶體存取時間</a>。</p>
+</section>
 <section>
   <h2>練習直接映射快取的題目</h2>
   <article class="q-mini" data-qid="memory-hierarchy-007" data-cat="memory-hierarchy" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 衝突未命中</p><p class="explanation">快取整體明明還有餘裕，卻因兩筆資料爭奪同一組而互相逐出的未命中，就是衝突未命中。可以藉由提高相聯度讓同一組能放入兩條以上，或錯開陣列的起始位置使其對應到不同的組來減少。容量未命中的原因是工作集大於整個快取，即使改為全相聯也不會減少。強制性未命中發生在第一次存取時，不適用於重複的存取。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>直接映射快取的標籤位元數怎麼計算？</h3>
+  <p>從位址寬度中減去位移位元數（快取線大小的 log2）與索引位元數（快取線數量的 log2）；例如，64 位元組快取線的 32 KB 快取為 32 − 6 − 9 = 17 位元。</p>
+  <h3>為什麼直接映射快取的衝突失誤比較多？</h3>
+  <p>每個區塊只能放在一條快取線中，因此共用同一索引的區塊即使在其他快取線空著時也會互相逐出；相聯快取則讓每個索引有多個位置。</p>
+  <h3>直接映射快取比集合相聯快取快嗎？</h3>
+  <p>由於只比較一個標籤，其命中時間通常較短，但較高的失誤率可能使整體平均存取時間更差，因此比較結果取決於工作負載與失誤懲罰。</p>
+</section>
 
 <section>
   <h2>出現「直接映射快取」的題目（1題）</h2>

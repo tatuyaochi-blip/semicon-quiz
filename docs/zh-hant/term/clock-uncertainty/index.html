@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"時脈不確定性","item":"https://semiconroom.com/zh-hant/term/clock-uncertainty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"時脈不確定性","description":"作為抖動及尚未確定之時脈偏斜的預估，從時序分析可用時間中扣除的餘裕。在 SDC 中以 set_clock_uncertainty 指定，在時脈樹建立前的階段會連同偏斜部分設定得較大。","url":"https://semiconroom.com/zh-hant/term/clock-uncertainty/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"時脈不確定性","item":"https://semiconroom.com/zh-hant/term/clock-uncertainty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"時脈不確定性","description":"作為抖動及尚未確定之時脈偏斜的預估，從時序分析可用時間中扣除的餘裕。在 SDC 中以 set_clock_uncertainty 指定，在時脈樹建立前的階段會連同偏斜部分設定得較大。","url":"https://semiconroom.com/zh-hant/term/clock-uncertainty/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"時脈不確定性也適用於保持時間檢查嗎？","acceptedAnswer":{"@type":"Answer","text":"是的，但它是以 set_clock_uncertainty -hold 另外設定，且通常較小，因為發射與擷取共用同一邊緣時，週期抖動大多會互相抵消。在 CTS 之前，它仍包含預期的偏斜。"}},{"@type":"Question","name":"為什麼時脈樹合成後要降低時脈不確定性？","acceptedAnswer":{"@type":"Answer","text":"時脈樹一旦存在，工具便會根據時脈樹的延遲計算實際的時脈偏斜，因此餘裕中用來估計偏斜的部分就不再需要。只剩下抖動與設計餘裕。"}},{"@type":"Question","name":"如何在考慮時脈不確定性的情況下計算建立時間餘裕（slack）？","acceptedAnswer":{"@type":"Answer","text":"要求時間等於時脈週期減去建立時間再減去不確定性（並依時脈延遲調整），餘裕則是要求時間減去資料抵達時間。例如，要求時間 1.25 − 0.05 − 0.05 = 1.15 ns，抵達時間 1.05 ns，餘裕為 0.10 ns。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sta-cdc/">時序分析與CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>如何納入時序檢查</h2>
+  <p>在<a class="term-link" href="/zh-hant/term/sta/">靜態時序分析</a>中，時脈不確定性是由使用者指定的餘裕，使建立時間與<a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a>檢查更加嚴格。對建立時間而言，它會從擷取邊緣之前的可用時間中扣除：週期 1.25 ns、建立時間 0.05 ns、不確定性 0.05 ns 時，資料必須在 1.15 ns 之前抵達。對保持時間而言，它會加到保持要求上，因此資料在邊緣之後必須維持穩定更久。它在 <a class="term-link" href="/zh-hant/term/sdc/">SDC</a>（Synopsys Design Constraints）中以 set_clock_uncertainty -setup 0.05 [get_clocks clk] 等指令指定，並另外指定 -hold 的值。</p>
+</section>
+<section class="term-about">
+  <h2>餘裕涵蓋哪些內容</h2>
+  <p>通常會納入三項要素。來自<a class="term-link" href="/zh-hant/term/pll/">鎖相迴路</a>（PLL）與時脈分配的<a class="term-link" href="/zh-hant/term/jitter/">抖動</a>，會使邊緣在每個週期提早或延遲抵達。在時脈樹合成（CTS）之前，時脈是理想的，<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>之間的偏斜未知，因此會加入其估計值。許多團隊還會為該階段未精確建模的效應（例如電源雜訊）加上設計餘裕。週期抖動對跨越兩個不同邊緣的建立時間有影響，但對發射與擷取使用同一邊緣的<a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a>則幾乎互相抵消；偏斜估計值則兩者都適用。</p>
+</section>
+<section class="term-about">
+  <h2>數值在流程中如何變化</h2>
+  <p>在使用理想時脈的合成與擺置階段，不確定性會設得相對較大，以涵蓋<a class="term-link" href="/zh-hant/term/jitter/">抖動</a>加上預期的偏斜。CTS 之後，時脈變為傳播時脈：工具會計算每個<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>實際的時脈延遲，因此偏斜會被明確分析，並從不確定性中移除，只留下抖動與餘裕。也可以使用 -from 與 -to 選項，在特定的時脈對之間設定不確定性，例如由不同 <a class="term-link" href="/zh-hant/term/pll/">PLL</a> 輸出產生的相關時脈之間的路徑。數值太大會過度約束設計，增加面積與功耗；太小則有在矽晶片上失效的風險。</p>
+</section>
+<section class="term-about">
+  <h2>不確定性與偏斜及降額的差異</h2>
+  <p>偏斜是計算出來的兩個<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>時脈抵達時間差，只有在時脈樹存在後才能得知。時脈不確定性則不是計算出來的，而是套用在該時脈每條路徑上的假設性整體餘裕。晶片上變異（<a class="term-link" href="/zh-hant/term/ocv/">OCV</a>）<a class="term-link" href="/zh-hant/term/derating/">降額</a>又是另一回事：它以係數縮放元件與導線延遲，使發射路徑變慢、擷取路徑變快（或反之），而不是扣除固定的時間。完整的簽核設定通常會結合傳播偏斜、降額以及少量剩餘的不確定性。</p>
+</section>
 <section>
   <h2>練習時脈不確定性的題目</h2>
   <article class="q-mini" data-qid="sta-cdc-002" data-cat="sta-cdc" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 0.10 ns</p><p class="explanation"><a class="term-link" href="/zh-hant/term/clock-uncertainty/">時脈不確定性</a>是作為<a class="term-link" href="/zh-hant/term/jitter/">抖動</a>或尚未確定之時脈偏移的預估，從可用時間中扣除的裕度。要求時間為 1.25 − 0.05（不確定性）− 0.05（建立時間）= 1.15 ns，到達時間為 1.05 ns，因此餘裕為 0.10 ns。0.15 ns 是忘了減去不確定性的值，0.20 ns 是建立時間與不確定性都沒有減去的值。在佈局繞線之前還沒有時脈樹，因此一般會把時脈偏移的部分也納入不確定性，設定得大一些。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>時脈不確定性也適用於保持時間檢查嗎？</h3>
+  <p>是的，但它是以 set_clock_uncertainty -hold 另外設定，且通常較小，因為發射與擷取共用同一邊緣時，週期抖動大多會互相抵消。在 CTS 之前，它仍包含預期的偏斜。</p>
+  <h3>為什麼時脈樹合成後要降低時脈不確定性？</h3>
+  <p>時脈樹一旦存在，工具便會根據時脈樹的延遲計算實際的時脈偏斜，因此餘裕中用來估計偏斜的部分就不再需要。只剩下抖動與設計餘裕。</p>
+  <h3>如何在考慮時脈不確定性的情況下計算建立時間餘裕（slack）？</h3>
+  <p>要求時間等於時脈週期減去建立時間再減去不確定性（並依時脈延遲調整），餘裕則是要求時間減去資料抵達時間。例如，要求時間 1.25 − 0.05 − 0.05 = 1.15 ns，抵達時間 1.05 ns，餘裕為 0.10 ns。</p>
+</section>
 <section>
   <h2>解析中的「時脈不確定性」</h2>
   <ul class="term-quotes"><li><p>時脈不確定性是作為抖動或尚未確定之時脈偏移的預估，從可用時間中扣除的裕度。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-009/">在時脈週期 1.25 ns（800 MHz）的路徑上，時脈→輸出延遲與組合電路延遲的總和為 1.05 ns，建立時間為…</a></li><li><p>時脈不確定性是用來在時序分析中，將時脈抖動，或佈局繞線前預估的偏斜等影響，作為餘裕扣除的設定。</p><a href="/zh-hant/q/eda/eda-047/">在時序限制（SDC）中，用來指定作為時脈抖動（jitter）或偏斜預估值等而事先從時脈週期扣除之餘裕的設定，為下列何者？</a></li></ul>

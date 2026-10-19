@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Spectre","item":"https://semiconroom.com/zh-hant/term/spectre/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spectre","description":"使分支預測出錯，讓處理器推測性地讀取機密資料，並從快取中殘留的痕跡推測其值的弱點類型。於 2018 年公布。","url":"https://semiconroom.com/zh-hant/term/spectre/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Spectre","item":"https://semiconroom.com/zh-hant/term/spectre/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spectre","description":"使分支預測出錯，讓處理器推測性地讀取機密資料，並從快取中殘留的痕跡推測其值的弱點類型。於 2018 年公布。","url":"https://semiconroom.com/zh-hant/term/spectre/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"現代 CPU 已經修正 Spectre 了嗎？","acceptedAnswer":{"@type":"Answer","text":"特定變體已透過微碼、編譯器與作業系統的變更以及硬體更新加以緩解，但在不放棄推測執行的情況下，無法根除這一類弱點。自 2018 年以來，仍持續有新的變體被發現。"}},{"@type":"Question","name":"Spectre 和 Meltdown 有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"Meltdown 利用某些處理器中延遲的權限檢查，讓使用者程式碼讀取核心記憶體，修正方式相對直接。Spectre 則誤導分支預測，使程式推測性地洩漏它可定址的資料，因此影響範圍更廣，也更難緩解。"}},{"@type":"Question","name":"為什麼 Spectre 需要量測快取時間？","acceptedAnswer":{"@type":"Answer","text":"推測執行的結果會被捨棄，因此機密永遠不會出現在攻擊者可讀取的暫存器中。將其編碼為載入了哪一條快取行，再對載入計時，才能還原出該值。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hw-security/">硬體安全</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Spectre 攻擊如何運作</h2>
+  <p>典型的邊界檢查繞過形式，針對的是像 if (x &lt; size) y = table[data[x] * 4096] 這樣的程式碼。攻擊者先以有效的 x 多次呼叫它，訓練<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>器預期檢查會通過。接著，攻擊者在 size 不在快取中時提供超出範圍的 x。在等待 size 期間，CPU 會推測性地讀取 data[x]（實際上是記憶體中其他位置的機密位元組），並載入由該位元組選定的 table <a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>。檢查結果確定後，這些工作會被捨棄，但該快取行仍留在快取中；對每條 table 快取行計時存取，就能找出哪一條較快，從而得知機密。</p>
+</section>
+<section class="term-about">
+  <h2>架構狀態與微架構狀態</h2>
+  <p><a class="term-link" href="/zh-hant/term/instruction-set-architecture/">指令集架構</a>（ISA）保證預測錯誤的路徑不會在程式可見的（即架構上的）狀態中留下痕跡：暫存器與記憶體會被精確地回復。微架構狀態，例如快取內容、<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>表與轉換緩衝區，只是為了效能而存在，並不會被還原。Spectre 透過量測時間差（通常使用 flush-and-reload 技術），將這些隱藏狀態變成隱蔽通道。由於並未違反任何 ISA 規則，這個問題才會遍及許多廠商的處理器，也因此被描述為一類弱點，而非單一錯誤。</p>
+</section>
+<section class="term-about">
+  <h2>Spectre 與 Meltdown 的比較</h2>
+  <p>同時公布的 <a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>，利用了某些設計中的<a class="term-link" href="/zh-hant/term/out-of-order-execution/">亂序執行</a>：在權限錯誤被引發之前，使用者模式的載入就能將核心資料轉送給相依的指令。它主要先透過作業系統分離核心與使用者<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>、再透過硬體變更而得到修正。Spectre 則是誘使受害者推測性地存取受害者本身有權定址的記憶體，並以<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>器操控它。由於它依賴的是<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a>本身，而非某一種實作上的捷徑，因此幾乎影響所有高效能 CPU，且沒有單一的完整修正方法。</p>
+</section>
+<section class="term-about">
+  <h2>緩解措施及其代價</h2>
+  <p>軟體防禦會在敏感的邊界檢查之後插入推測屏障，例如 x86 的 lfence，或以遮罩限制索引範圍，使推測性存取也維持在範圍內。污染間接<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>的分支目標注入變體，則以 retpoline 程式碼序列，以及在特權或行程邊界之間限制或清除預測器狀態的微碼與硬體控制來對抗。瀏覽器降低了計時器精度，並將網站隔離在不同的行程中。每一項措施都會犧牲部分效能，因此只會套用在易受攻擊之處，而不是完全停用<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a>。</p>
+</section>
 <section>
   <h2>練習Spectre的題目</h2>
   <article class="q-mini" data-qid="hw-security-006" data-cat="hw-security" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 因為被取消的只有暫存器等架構（architectural）狀態，快取等微架構（microarchitectural）狀態不會復原</p><p class="explanation">CPU被設計成，對於程式可見的狀態（暫存器與記憶體的內容），預測錯誤時會完全復原。然而快取的內容與<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>器的狀態等微架構狀態，屬於為了提升效能的內部狀態，不會被復原。即使遵守了<a class="term-link" href="/zh-hant/term/instruction-set-architecture/">ISA</a>的約定，內部狀態仍會以時間差異的形式被外界看見，這正是此類漏洞的本質。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>現代 CPU 已經修正 Spectre 了嗎？</h3>
+  <p>特定變體已透過微碼、編譯器與作業系統的變更以及硬體更新加以緩解，但在不放棄推測執行的情況下，無法根除這一類弱點。自 2018 年以來，仍持續有新的變體被發現。</p>
+  <h3>Spectre 和 Meltdown 有什麼不同？</h3>
+  <p>Meltdown 利用某些處理器中延遲的權限檢查，讓使用者程式碼讀取核心記憶體，修正方式相對直接。Spectre 則誤導分支預測，使程式推測性地洩漏它可定址的資料，因此影響範圍更廣，也更難緩解。</p>
+  <h3>為什麼 Spectre 需要量測快取時間？</h3>
+  <p>推測執行的結果會被捨棄，因此機密永遠不會出現在攻擊者可讀取的暫存器中。將其編碼為載入了哪一條快取行，再對載入計時，才能還原出該值。</p>
+</section>
 <section>
   <h2>解析中的「Spectre」</h2>
   <ul class="term-quotes"><li><p>在Spectre中，攻擊者讓分支預測出錯，在原本不會執行的路徑上讀取機密資料，並使對應該值的位置被載入快取。</p><a href="/zh-hant/q/hw-security/hw-security-006/">下列關於稱為Spectre的推測執行漏洞的原理，何者正確？</a></li><li><p>因應Spectre的對策，有在條件分支之後插入停止推測執行的指令（x86的lfence等）、遮罩索引使範圍之外無法讀取、避免間接分支預測被濫用的寫法（retpoline等），以及藉由更新CPU微碼控制預測器等。</p><a href="/zh-hant/q/hw-security/hw-security-010/">下列何者不屬於用來因應Spectre這類推測執行漏洞的對策？</a></li><li><p>2018 年公開的 Spectre 與 Meltdown，是利用投機執行的指令結果雖然被取消、但所讀取的資料仍留在快取中的特性，從存取時間的差異（旁通道，side channel）推測出原本無法讀取之機密資料的攻擊。</p><a href="/zh-hant/q/cpu/cpu-027/">利用投機執行的痕跡殘留在快取中，推測本來無法存取之資料的攻擊，其被揭露的漏洞例子是下列何者？</a></li></ul>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較 | 半導體教室</title>
+<meta name="description" content="從可執行的指令、可存取的記憶體、切換的觸發條件、切換的成本、錯誤的影響、保護的目的等面向，以表格比較使用者模式與核心模式。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/compare/user-mode-vs-kernel-mode/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/user-mode-vs-kernel-mode/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/user-mode-vs-kernel-mode/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/user-mode-vs-kernel-mode/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/user-mode-vs-kernel-mode/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較 | 半導體教室">
+<meta property="og:description" content="從可執行的指令、可存取的記憶體、切換的觸發條件、切換的成本、錯誤的影響、保護的目的等面向，以表格比較使用者模式與核心模式。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/compare/user-mode-vs-kernel-mode/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/zh-hant/compare/"},{"@type":"ListItem","position":3,"name":"使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較","item":"https://semiconroom.com/zh-hant/compare/user-mode-vs-kernel-mode/"}]},{"@context":"https://schema.org","@type":"Article","headline":"使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較","description":"從可執行的指令、可存取的記憶體、切換的觸發條件、切換的成本、錯誤的影響、保護的目的等面向，以表格比較使用者模式與核心模式。","inLanguage":"zh-Hant","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/zh-hant/compare/user-mode-vs-kernel-mode/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為什麼要區分使用者模式與核心模式？","acceptedAnswer":{"@type":"Answer","text":"為了防止應用程式擅自操作分頁表或裝置。區分之後，即使某個程式有錯誤，也無法破壞其他行程或 OS 的記憶體，或劫持裝置，只要終止該程式即可。"}},{"@type":"Question","name":"什麼時候會從使用者模式切換到核心模式？","acceptedAnswer":{"@type":"Answer","text":"有 3 種觸發條件：程式主動提出請求的系統呼叫、來自裝置或計時器的中斷，以及分頁錯誤或除以 0 等指令執行所造成的例外。無論哪一種情況，CPU 都會切換模式，從核心固定的入口開始處理。"}},{"@type":"Question","name":"為什麼系統呼叫很慢？","acceptedAnswer":{"@type":"Answer","text":"因為除了模式切換之外，還需要儲存與還原暫存器、檢查參數，以及核心入口與出口的處理。若為了漏洞防護而切換分頁表，負擔會更重。即使單次很短，若每次小量讀寫都呼叫，也會造成很大的負擔。"}},{"@type":"Question","name":"模式切換與上下文切換相同嗎？","acceptedAnswer":{"@type":"Answer","text":"不同。系統呼叫的模式切換只是在同一個行程中進入核心的處理。上下文切換是替換所執行的行程或執行緒本身，還伴隨位址空間的切換等，因此是更重的處理。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/user-mode-vs-kernel-mode/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/compare/user-mode-vs-kernel-mode/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/user-mode-vs-kernel-mode/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>使用者模式與核心模式的差異：指令、記憶體、切換、成本、保護比較</h1>
+  <p class="lead">CPU 具有應用程式執行的使用者模式，以及 OS 核心執行的核心模式（特權模式）。在使用者模式下，無法執行設定分頁表、操作輸入輸出、禁止中斷等特權指令，也只能存取自己行程的記憶體。需要讀寫檔案等操作時，要透過系統呼叫請核心處理。如此一來，就能避免單一應用程式的錯誤或惡意行為波及其他行程、OS 或硬體。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="已複製">複製表格</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="已複製連結">分享</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">使用者模式</th><th scope="col">核心模式</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">執行的程式</th><td>應用程式</td><td>OS 核心、大部分的裝置驅動程式</td></tr>
+        <tr><th scope="row">可執行的指令</th><td>只有一般指令。執行特權指令會發生例外</td><td>所有指令。切換分頁表、允許與禁止中斷、設定控制暫存器等</td></tr>
+        <tr><th scope="row">可存取的記憶體</th><td>只有自己行程的虛擬位址空間中，允許使用者存取的分頁</td><td>包含核心區域在內的全部。也能處理實體記憶體與裝置的暫存器</td></tr>
+        <tr><th scope="row">裝置的操作</th><td>無法直接操作。透過系統呼叫請核心處理</td><td>直接讀寫暫存器，並處理中斷</td></tr>
+        <tr><th scope="row">在架構中的名稱（例）</th><td>x86 的 ring 3、Arm 的 EL0、RISC-V 的 U 模式</td><td>x86 的 ring 0、Arm 的 EL1、RISC-V 的 S 模式</td></tr>
+        <tr><th scope="row">模式切換的觸發條件</th><td>因系統呼叫指令（syscall、svc、ecall 等）、裝置或計時器的中斷、例外（分頁錯誤、除以 0、非法指令等）而進入核心模式</td><td>以專用的返回指令（sret、eret 等）同時還原返回位址與模式，回到使用者模式</td></tr>
+        <tr><th scope="row">切換的成本（參考值）</th><td>系統呼叫往返大約 100 ns 至 1 µs。也可能因漏洞的防護措施而增加</td><td>核心內的處理之間是函式呼叫，沒有模式切換。行程的切換（上下文切換）則更重</td></tr>
+        <tr><th scope="row">錯誤的影響</th><td>只有該行程會被強制終止</td><td>整個系統可能停止（核心恐慌等）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">數值為具代表性的大致參考值，會因世代或產品而異。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>適用於什麼情況</h2>
+  <dl class="compare-when">
+    <dt>使用者模式</dt><dd>應用程式與函式庫的一般處理。計算與記憶體讀寫不經過核心，直接在使用者模式下快速進行。</dd>
+    <dt>核心模式</dt><dd>檔案或網路的輸入輸出、記憶體配置、行程切換、中斷處理等，需要資源管理與保護的處理。</dd>
+    <dt>提升效能的做法</dt><dd>為了減少系統呼叫的次數，會先累積在使用者空間的緩衝區再一次寫出，或利用共用記憶體或專用機制，讓部分處理維持在使用者模式下進行。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為什麼要區分使用者模式與核心模式？</h3>
+  <p>為了防止應用程式擅自操作分頁表或裝置。區分之後，即使某個程式有錯誤，也無法破壞其他行程或 OS 的記憶體，或劫持裝置，只要終止該程式即可。</p>
+  <h3>什麼時候會從使用者模式切換到核心模式？</h3>
+  <p>有 3 種觸發條件：程式主動提出請求的系統呼叫、來自裝置或計時器的中斷，以及分頁錯誤或除以 0 等指令執行所造成的例外。無論哪一種情況，CPU 都會切換模式，從核心固定的入口開始處理。</p>
+  <h3>為什麼系統呼叫很慢？</h3>
+  <p>因為除了模式切換之外，還需要儲存與還原暫存器、檢查參數，以及核心入口與出口的處理。若為了漏洞防護而切換分頁表，負擔會更重。即使單次很短，若每次小量讀寫都呼叫，也會造成很大的負擔。</p>
+  <h3>模式切換與上下文切換相同嗎？</h3>
+  <p>不同。系統呼叫的模式切換只是在同一個行程中進入核心的處理。上下文切換是替換所執行的行程或執行緒本身，還伴隨位址空間的切換等，因此是更重的處理。</p>
+</section>
+<section>
+  <h2>理解度檢測</h2>
+  <article class="q-mini" data-qid="os-hardware-001" data-cat="os-hardware" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/os-hardware/os-hardware-001/">CPU設置特權模式（核心模式）與使用者模式，主要目的為何？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">讓應用程式的指令能比核心的指令更快、更優先地執行</span></li><li><span class="choice-mark">B</span><span class="choice-text">保護頁表與裝置，避免應用程式任意操作</span></li><li><span class="choice-mark">C</span><span class="choice-text">讓一顆CPU能同時執行兩個指令</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 保護頁表與裝置，避免應用程式任意操作</p><p class="explanation">若應用程式能自由改寫<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>、操作輸入輸出裝置或停用<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>，就可能破壞其他程式的記憶體，或讓整個系統停擺。因此CPU規定這些指令只能在<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>下執行，只有作業系統的核心才能使用。若在使用者模式下嘗試執行，就會產生例外。這並不是為了提升速度或同時執行而設計的機制。</p></details>
+  </article>
+  <article class="q-mini" data-qid="os-hardware-002" data-cat="os-hardware" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/os-hardware/os-hardware-002/">應用程式請求作業系統進行檔案讀寫等操作的機制稱為什麼？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">系統呼叫（system call）</span></li><li><span class="choice-mark">B</span><span class="choice-text">環境切換（context switch）</span></li><li><span class="choice-mark">C</span><span class="choice-text">需求分頁（demand paging）</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 系統呼叫（system call）</p><p class="explanation">應用程式在使用者模式下執行，因此無法直接操作磁碟或裝置。所以要使用<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>，透過專用指令切換到<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>並呼叫核心的處理程序，來請求檔案讀寫、記憶體配置、行程建立等服務。處理完成後會回到使用者模式。<a class="term-link" href="/zh-hant/term/context-switch/">環境切換</a>是切換要執行的行程，需求分頁則是在需要時才載入分頁的方式。</p></details>
+  </article>
+  <article class="q-mini" data-qid="os-hardware-004" data-cat="os-hardware" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/os-hardware/os-hardware-004/">關於中斷與例外的差異，下列何者是一般的說明？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">中斷只由軟體引發，例外只由硬體電路引發</span></li><li><span class="choice-mark">B</span><span class="choice-text">中斷由裝置等外部因素引發，例外則是指令執行的結果所引發</span></li><li><span class="choice-mark">C</span><span class="choice-text">中斷處理後無法返回原處，例外則一定能返回原本的處理</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 中斷由裝置等外部因素引發，例外則是指令執行的結果所引發</p><p class="explanation"><a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>是由輸入輸出裝置的完成通知或計時器等，與執行中指令無關的外部因素所引發，何時發生並不固定（非同步）。例外則是除以零、非法指令、分頁錯誤（page fault）、<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>指令等，因執行特定指令的結果而發生（同步）。兩者多半都能在<a class="term-link" href="/zh-hant/term/interrupt-handler/">中斷處理常式</a>處理完後返回原本的處理，並非以能否返回來區分。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/os-hardware/os-hardware-003/">上方RISC-V程式碼最後的ecall指令被執行時，會發生下列何事？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/os-hardware/os-hardware-044/">處理完中斷或例外而回到原本的程式時，不使用一般函式的返回指令，而是使用專用的返回指令（RISC-V的sret、mret等），其理由為何？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/os-hardware/os-hardware-050/">寫出小量資料時，與其逐位元組每次都呼叫系統呼叫，不如先暫存在使用者空間的緩衝區再一併寫出，速度會比較快，其主要理由為何？</a></li></ol>
+  <p><a class="btn btn-primary" href="/zh-hant/c/os-hardware/">前往作業系統與硬體的練習題</a></p>
+</section>
+<section>
+  <h2>相關名詞的解說</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/zh-hant/term/privileged-mode/">特權模式</a></dt><dd>只有作業系統核心可以使用的CPU運作模式。可執行頁表設定或輸入輸出操作等危險指令，與應用程式執行的使用者模式有所區別。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/system-call/">系統呼叫</a></dt><dd>應用程式請求作業系統進行檔案讀寫或記憶體配置等的機制。以專用指令引發例外並切換到特權模式，呼叫核心的處理。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/interrupt-handler/">中斷處理常式</a></dt><dd>發生中斷或例外時CPU所執行的處理。儲存被中斷處理的狀態，依原因進行相應處理後，回到原本的處理。原則上處理要盡可能簡短。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/page-table/">頁表</a></dt><dd>記錄虛擬位址的頁號到實體位址頁號之對應關係的表。由作業系統為每個行程建立，CPU的MMU參照它來轉換位址。每個項目也包含保護用的位元。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/context-switch/">環境切換</a></dt><dd>切換在CPU上執行的行程或執行緒。儲存並還原暫存器與程式計數器等狀態，切換行程時也會切換位址空間。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>相關的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/process-vs-thread/"><strong>行程與執行緒的差異：比較記憶體、切換與使用時機</strong><span>以記憶體、建立成本、情境切換、通訊、隔離、同步與用途等面向，用表格比較行程與執行緒。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/interrupt-vs-polling/"><strong>中斷與輪詢的差異：比較機制與使用時機</strong><span>以機制、CPU 使用、回應時間、額外負擔、複雜度、耗電量，以及在嵌入式與作業系統中的用途等面向，用表格比較中斷與輪詢。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/cpu-vs-gpu/"><strong>CPU 與 GPU 的差異：結構、擅長的運算、用途比較</strong><span>從設計目的、核心數、執行模型、快取、記憶體頻寬、分支、資料傳輸與擅長的運算等面向，以表格比較 CPU 與 GPU。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/i2c-vs-spi-vs-uart/"><strong>I2C、SPI、UART 的差異：佈線、速度、使用時機比較</strong><span>從佈線數量、時脈、速度、連接形態、位址、錯誤偵測與在微控制器上的主要用途等面向，以表格比較 I2C、SPI、UART。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/verilog-vs-vhdl/"><strong>Verilog 與 VHDL 的差異：兩種硬體描述語言比較</strong><span>從來歷、語法、型別、大小寫、驗證功能、使用領域與選擇方式等面向，以表格比較 Verilog 與 VHDL。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/nvme-vs-sata-ssd/"><strong>NVMe 與 SATA SSD 的差異：速度、介面、選擇方式</strong><span>從介面、速度、延遲、指令佇列、外型、耗電量、相容性、價格與適合的使用者等面向，以表格比較 NVMe 與 SATA 的 SSD。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
