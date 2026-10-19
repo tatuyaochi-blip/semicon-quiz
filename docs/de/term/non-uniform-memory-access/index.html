@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA (Non-Uniform Memory Access)","item":"https://semiconroom.com/de/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA (Non-Uniform Memory Access)","description":"Abkürzung für Non-Uniform Memory Access. Architektur mit Speicher, der für einen Kern nah oder fern liegt; Zugriffe auf fernen Speicher dauern länger. Daten und Threads auf derselben Seite zu platzieren ist schneller.","url":"https://semiconroom.com/de/term/non-uniform-memory-access/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA (Non-Uniform Memory Access)","item":"https://semiconroom.com/de/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA (Non-Uniform Memory Access)","description":"Abkürzung für Non-Uniform Memory Access. Architektur mit Speicher, der für einen Kern nah oder fern liegt; Zugriffe auf fernen Speicher dauern länger. Daten und Threads auf derselben Seite zu platzieren ist schneller.","url":"https://semiconroom.com/de/term/non-uniform-memory-access/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wie prüfe ich, ob mein Rechner NUMA hat?","acceptedAnswer":{"@type":"Answer","text":"Unter Linux lscpu oder numactl --hardware ausführen; werden mehr als ein NUMA-Knoten aufgeführt, hängen die Kosten des Speicherzugriffs vom Ort ab. Die meisten Server mit zwei Sockeln zeigen mindestens zwei Knoten."}},{"@type":"Question","name":"Müssen Programme für NUMA umgeschrieben werden?","acceptedAnswer":{"@type":"Answer","text":"Nein, eine ccNUMA-Maschine stellt einen kohärenten Adressraum bereit, sodass Programme unverändert korrekt laufen. Umschreiben lohnt sich nur für die Leistung, vor allem indem die Daten jedes Threads auf seinem eigenen Knoten gehalten werden."}},{"@type":"Question","name":"Was ist die First-Touch-Policy?","acceptedAnswer":{"@type":"Answer","text":"Es ist die übliche Regel, dass eine physische Seite auf dem NUMA-Knoten des Threads angelegt wird, der zuerst in sie schreibt. Deshalb ist die parallele Initialisierung von Arrays auf NUMA-Systemen wichtig."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/multicore-sync/">Multicore und Synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum der Speicherzugriff ungleichförmig wird</h2>
+  <p>Moderne Prozessoren integrieren ihre Speichercontroller, sodass in einem Server mit mehreren Sockeln jeder Sockel seinen eigenen direkt angeschlossenen DRAM hat. Ein Kern, der auf Speicher seines eigenen Sockels zugreift, geht direkt ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> seinen lokalen Controller; der Zugriff auf Speicher eines anderen Sockels erfordert den Weg über die Verbindung zwischen den Sockeln und durch den entfernten Controller. Die Gruppe aus Kernen und ihrem lokalen Speicher heißt NUMA-Knoten. Entfernte Zugriffe zeigen typischerweise eine merklich höhere Latenz, oft etwa das 1,3- bis 2-Fache des lokalen Werts, und eine geringere Bandbreite, wobei das genaue Verhältnis von der Plattform und der <a class="term-link" href="/de/term/gpu-occupancy/">Auslastung</a> der Verbindung abhängt.</p>
+</section>
+<section class="term-about">
+  <h2>NUMA vs. UMA und vs. Cluster</h2>
+  <p>In einem System mit Uniform Memory Access (UMA), oft eine Maschine mit einem Sockel und einem Speichercontroller-Komplex, sieht jeder Kern jede Adresse zu ungefähr denselben Kosten. Ein cache-kohärentes NUMA-System (ccNUMA) behält einen einzigen gemeinsamen Adressraum und hardwareseitige <a class="term-link" href="/de/term/cache-coherency/">Cache-Kohärenz</a> bei, sodass unveränderte Programme korrekt laufen; nur ihre Geschwindigkeit hängt davon ab, wo die Daten liegen. Das unterscheidet es von einem Cluster separater Rechner, bei dem jeder Knoten einen privaten Adressraum hat und Daten explizit per Message Passing ausgetauscht werden müssen. Große chipletbasierte Prozessoren können auch innerhalb eines einzigen Sockels mehr als einen NUMA-Knoten aufweisen.</p>
+</section>
+<section class="term-about">
+  <h2>First-Touch-Platzierung und ihre Falle</h2>
+  <p>Linux legt eine Seite meist auf dem Knoten des Threads an, der sie zuerst beschreibt, nicht dem, der sie alloziert hat, da malloc nur virtuelle Adressen reserviert. Initialisiert ein einzelner Thread ein großes Array mit Nullen, landet jede Seite auf dem Knoten dieses Threads, und spätere parallele Schleifen auf anderen Knoten laufen fast vollständig aus entferntem Speicher, während ein Speichercontroller ausgelastet ist und die anderen untätig bleiben. Die Abhilfe ist, die Daten parallel mit derselben Arbeitsaufteilung wie die Berechnung zu initialisieren, sodass der Anteil jedes Threads lokal bei ihm liegt.</p>
+</section>
+<section class="term-about">
+  <h2>Werkzeuge und bewährte Praxis</h2>
+  <p>Unter Linux listet numactl --hardware die Knoten, ihren Speicher und eine Distanztabelle auf, in der lokaler Zugriff konventionell 10 ist und entfernte Werte größer sind. Dasselbe Werkzeug kann einen Prozess an die CPUs und den Speicher eines Knotens binden oder Seiten ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Knoten verschränken (Interleaving), was zu Daten passt, die jeder Thread gleichmäßig liest. Das Pinnen von Threads (Setzen der CPU-Affinität) hindert den Scheduler daran, einen Thread von seinen Daten wegzuverschieben, und macht Benchmarks reproduzierbar. Der Kernel kann Seiten auch automatisch zu den Threads migrieren, die sie nutzen, aber explizite Platzierung ist für leistungskritischen Code besser vorhersagbar.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu NUMA (Non-Uniform Memory Access)</h2>
   <article class="q-mini" data-qid="multicore-sync-041" data-cat="multicore-sync" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Wird ein großes Array von nur einem Thread auf 0 initialisiert, liegt alles auf einem Knoten, und Threads anderer Knoten müssen entfernten Speicher verwenden</p><p class="explanation">Mit malloc allein werden noch keine physischen Seiten zugewiesen; erst beim <a class="term-link" href="/de/term/page-fault/">Seitenfehler</a> beim ersten Schreiben werden sie im Speicher des Knotens abgelegt, auf dem der Thread läuft. Wird die Initialisierung von einem einzigen Thread ausgeführt, sammelt sich das gesamte Array auf diesem Knoten, und bei paralleler Berechnung liegt ein Großteil der von den einzelnen Threads bearbeiteten Teile im entfernten Speicher. Erfolgt die Initialisierung parallel mit derselben Aufteilung wie die Berechnung, liegen die Teile nahe beim zuständigen Thread.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wie prüfe ich, ob mein Rechner NUMA hat?</h3>
+  <p>Unter Linux lscpu oder numactl --hardware ausführen; werden mehr als ein NUMA-Knoten aufgeführt, hängen die Kosten des Speicherzugriffs vom Ort ab. Die meisten Server mit zwei Sockeln zeigen mindestens zwei Knoten.</p>
+  <h3>Müssen Programme für NUMA umgeschrieben werden?</h3>
+  <p>Nein, eine ccNUMA-Maschine stellt einen kohärenten Adressraum bereit, sodass Programme unverändert korrekt laufen. Umschreiben lohnt sich nur für die Leistung, vor allem indem die Daten jedes Threads auf seinem eigenen Knoten gehalten werden.</p>
+  <h3>Was ist die First-Touch-Policy?</h3>
+  <p>Es ist die übliche Regel, dass eine physische Seite auf dem NUMA-Knoten des Threads angelegt wird, der zuerst in sie schreibt. Deshalb ist die parallele Initialisierung von Arrays auf NUMA-Systemen wichtig.</p>
+</section>
 <section>
   <h2>„NUMA (Non-Uniform Memory Access)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Im Cache des Zielkerns fehlen die benötigten Daten, und in NUMA-Systemen kann der Thread auf einen Sockel wandern, der vom Speicher mit den Daten weit entfernt ist.</p><a href="/de/q/performance/performance-045/">Warum werden bei Leistungsmessungen in Multicore- oder NUMA…</a></li><li><p>Bei Servern mit mehreren CPUs ergibt sich eine NUMA-Konfiguration, in der der direkt an eine CPU angeschlossene Speicher schneller ist.</p><a href="/de/q/dram/dram-043/">Wo befindet sich bei den meisten heutigen PC-Prozessoren de…</a></li></ul>

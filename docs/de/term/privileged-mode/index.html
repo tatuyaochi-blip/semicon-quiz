@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Privilegierter Modus","item":"https://semiconroom.com/de/term/privileged-mode/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Privilegierter Modus","description":"Betriebsmodus der CPU, der nur dem Betriebssystemkern vorbehalten ist. Er erlaubt kritische Befehle wie das Einrichten von Seitentabellen und E/A-Operationen und ist vom Benutzermodus abgegrenzt, in dem Anwendungen laufen.","url":"https://semiconroom.com/de/term/privileged-mode/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Privilegierter Modus","item":"https://semiconroom.com/de/term/privileged-mode/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Privilegierter Modus","description":"Betriebsmodus der CPU, der nur dem Betriebssystemkern vorbehalten ist. Er erlaubt kritische Befehle wie das Einrichten von Seitentabellen und E/A-Operationen und ist vom Benutzermodus abgegrenzt, in dem Anwendungen laufen.","url":"https://semiconroom.com/de/term/privileged-mode/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Kernel-Modus und Benutzermodus","acceptedAnswer":{"@type":"Answer","text":"Im Kernel-Modus (privilegierten Modus) erlaubt die CPU Operationen wie das Ändern von Seitentabellen, das Steuern von Geräten und das Abschalten von Interrupts. Im Benutzermodus lösen diese eine Ausnahme aus, sodass Anwendungen den Kernel über Systemaufrufe bitten müssen."}},{"@type":"Question","name":"Läuft ein Prozess als root im Kernel-Modus?","acceptedAnswer":{"@type":"Answer","text":"Nein. Root ist eine Berechtigungsstufe des Betriebssystems, und Root-Prozesse laufen weiterhin im Benutzermodus; nur der Kernel wird im privilegierten Modus ausgeführt."}},{"@type":"Question","name":"Wie wechselt ein Programm in den Kernel-Modus?","acceptedAnswer":{"@type":"Answer","text":"Nur über einen Trap, etwa durch Ausführen eines Systemaufrufbefehls, oder über eine Ausnahme oder einen Interrupt, die alle an vom Betriebssystem eingerichteten Einsprungpunkten in den Kernel eintreten."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,14 +70,41 @@
   
   <p>Fachgebiet: <a href="/de/c/os-hardware/">Betriebssystem und Hardware</a></p>
 </article>
+<section class="term-about">
+  <h2>Was der privilegierte Modus schützt</h2>
+  <p>Bestimmte Operationen würden es einem Programm erlauben, die ganze Maschine zu übernehmen: Seitentabellen oder das auf sie zeigende Register ändern, direkt auf E/A-Geräte zugreifen, Interrupts abschalten, den Timer umprogrammieren, ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> den das Betriebssystem die Kontrolle zurückerhält, oder die CPU anhalten. Der Prozessor erlaubt diese nur im privilegierten Modus, auch Kernel- oder Supervisor-Modus genannt. Versucht im Benutzermodus laufender Code eine davon, löst die CPU eine Ausnahme aus, und das Betriebssystem entscheidet, was zu tun ist, typischerweise das Programm zu beenden.</p>
+</section>
+<section class="term-about">
+  <h2>Eintritt und Austritt</h2>
+  <p>Benutzercode kann nicht einfach in den privilegierten Modus springen. Die einzigen Wege hinein sind Ausnahmen, Interrupts und gezielte Traps wie Systemaufrufe, und jeder davon übergibt die Kontrolle an einen <a class="term-link" href="/de/term/entry-point/">Einsprungpunkt</a>, den das Betriebssystem vorab konfiguriert hat. Die CPU sichert <a class="term-link" href="/de/term/return-address/">Rücksprungadresse</a>, vorherigen Modus und <a class="term-link" href="/de/term/interrupt/">Interrupt</a>-Freigabezustand in eigenen Registern. Ein spezieller Rücksprungbefehl, etwa sret oder mret bei RISC-V, stellt all dies auf einmal wieder her, sodass die Ausführung nie in Benutzercode fortgesetzt wird, während noch Privilegien bestehen.</p>
+</section>
+<section class="term-about">
+  <h2>Stufen in realen CPUs</h2>
+  <p>Viele Architekturen haben mehr als zwei Stufen. RISC-V definiert Machine-, Supervisor- und User-Modus; x86 hat die Ringe 0 bis 3, wobei Betriebssysteme hauptsächlich Ring 0 für den Kernel und Ring 3 für Anwendungen nutzen; Arm verwendet die Exception Levels EL0 bis EL3. Ein <a class="term-link" href="/de/term/hypervisor/">Hypervisor</a> läuft oberhalb der Gast-Kernel, und wenn ein Gast einen privilegierten Befehl ausführt, löst dieser einen Trap zum Hypervisor aus, der die Wirkung emuliert. Dieses Trap-and-Emulate-Schema nutzt dieselbe Schutzidee eine Ebene höher.</p>
+</section>
+<section class="term-about">
+  <h2>Privilegierter Modus vs. Administratorrechte</h2>
+  <p>Der privilegierte Modus ist ein Hardwarezustand der CPU, kein Benutzerkonto. Ein von einem Administrator oder Root-Benutzer gestarteter Prozess läuft trotzdem im Benutzermodus; seine zusätzlichen Rechte sind Berechtigungen, die der Kernel bei der Bearbeitung der Systemaufrufe dieses Prozesses prüft. Nur Kernel-Code und in manchen Systemen Firmware oder ein <a class="term-link" href="/de/term/hypervisor/">Hypervisor</a> laufen im privilegierten Modus. Der Speicherschutz ergänzt das Modusbit: Seitentabelleneinträge kennzeichnen, auf welche Seiten der Benutzermodus zugreifen darf.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Kernel-Modus und Benutzermodus</h3>
+  <p>Im Kernel-Modus (privilegierten Modus) erlaubt die CPU Operationen wie das Ändern von Seitentabellen, das Steuern von Geräten und das Abschalten von Interrupts. Im Benutzermodus lösen diese eine Ausnahme aus, sodass Anwendungen den Kernel über Systemaufrufe bitten müssen.</p>
+  <h3>Läuft ein Prozess als root im Kernel-Modus?</h3>
+  <p>Nein. Root ist eine Berechtigungsstufe des Betriebssystems, und Root-Prozesse laufen weiterhin im Benutzermodus; nur der Kernel wird im privilegierten Modus ausgeführt.</p>
+  <h3>Wie wechselt ein Programm in den Kernel-Modus?</h3>
+  <p>Nur über einen Trap, etwa durch Ausführen eines Systemaufrufbefehls, oder über eine Ausnahme oder einen Interrupt, die alle an vom Betriebssystem eingerichteten Einsprungpunkten in den Kernel eintreten.</p>
+</section>
 
 
 
 <div data-ad="term"></div>
-
+<section>
+  <h2>Vergleiche mit diesem Begriff</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/de/compare/user-mode-vs-kernel-mode/"><strong>User-Mode vs. Kernel-Mode: Unterschiede im Überblick</strong><span>User-Mode und Kernel-Mode im Tabellenvergleich: ausführbare Befehle, zugängliche Speicherbereiche, Auslöser u…</span></a></li></ul>
+</section>
 
 <section>
   <h2>Verwandte Begriffe</h2>

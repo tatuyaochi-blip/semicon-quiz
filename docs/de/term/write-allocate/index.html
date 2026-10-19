@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Write-Allocate","item":"https://semiconroom.com/de/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-Allocate","description":"Verfahren, bei dem bei einem Schreib-Cache-Miss die Zeile zuerst in den Cache geladen und dann beschrieben wird. Meist mit Write-Back kombiniert. Das direkte Schreiben in die untere Ebene ohne Laden heißt No-Write-Allocate.","url":"https://semiconroom.com/de/term/write-allocate/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Write-Allocate","item":"https://semiconroom.com/de/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-Allocate","description":"Verfahren, bei dem bei einem Schreib-Cache-Miss die Zeile zuerst in den Cache geladen und dann beschrieben wird. Meist mit Write-Back kombiniert. Das direkte Schreiben in die untere Ebene ohne Laden heißt No-Write-Allocate.","url":"https://semiconroom.com/de/term/write-allocate/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Write-Allocate und No-Write-Allocate","acceptedAnswer":{"@type":"Answer","text":"Bei einem Schreib-Miss lädt Write-Allocate die Zeile in den Cache und schreibt dort, während No-Write-Allocate direkt in die untere Ebene schreibt, ohne die Zeile zu laden."}},{"@type":"Question","name":"Warum wird Write-Allocate meist mit Write-Back kombiniert?","acceptedAnswer":{"@type":"Answer","text":"Sobald die Zeile in einem Write-Back-Cache liegt, treffen weitere Schreibvorgänge auf sie und werden ohne Speicherverkehr aufgenommen, sodass sich die Kosten des anfänglichen Holens amortisieren."}},{"@type":"Question","name":"Wofür werden Non-temporal-Stores verwendet?","acceptedAnswer":{"@type":"Answer","text":"Sie schreiben große Datenmengen, die nicht bald wiederverwendet werden, direkt in den Speicher, vermeiden so das Lesen jeder Zeile, das Write-Allocate verursachen würde, und halten den Cache für nützliche Daten frei."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was bei einem Schreib-Miss passiert</h2>
+  <p>Bei Write-Allocate holt ein Store mit Miss zuerst die ganze Zeile aus der unteren Ebene, legt sie im Cache ab und fügt dann die gespeicherten Bytes darin ein. In einem Write-Back-Cache wird die Zeile anschließend als dirty markiert und erreicht den Speicher erst, wenn sie später verdrängt wird. In einem Mehrkernsystem erwirbt das Holen zugleich exklusiven Besitz an der Zeile, sodass die Kopien anderer Kerne vor dem Schreiben invalidiert werden; dieses Read-for-Ownership ist der Grund, warum ein Store-Miss auf dem Speicherbus wie ein Lesevorgang aussieht.</p>
+</section>
+<section class="term-about">
+  <h2>Write-Allocate vs. No-Write-Allocate</h2>
+  <p>No-Write-Allocate sendet einen Store mit Miss direkt an die untere Ebene und lässt den Cache unberührt. Write-Allocate lohnt sich, wenn geschriebene Daten bald erneut gelesen oder geschrieben werden, weil spätere Zugriffe treffen; es ist daher der übliche Partner von Write-Back. No-Write-Allocate eignet sich für einmal geschriebene und nicht wiederverwendete Daten und ist der übliche Partner von <a class="term-link" href="/de/term/write-through/">Write-Through</a>. Zu beachten ist, dass Write-Back vs. Write-Through bestimmt, wie Hits weitergegeben werden, während die Allokation bestimmt, was bei einem Miss geschieht; beides sind getrennte Entscheidungen.</p>
+</section>
+<section class="term-about">
+  <h2>Die versteckten Kosten bei reinen Schreibdaten</h2>
+  <p>Schreibt ein Programm einen großen Puffer, den es nicht bald liest, etwa beim Löschen von Speicher oder beim Erzeugen von Ausgaben, liest Write-Allocate zuerst jede Zeile aus dem Speicher, nur um sie zu überschreiben, und schreibt sie später zurück, was den Verkehr ungefähr verdoppelt. Diese Zeilen verdrängen zudem nützliche Daten. Non-temporal- oder Streaming-Stores vermeiden dies, indem sie Schreibvorgänge zusammenfassen und direkt in den Speicher senden. Manche ISAs bieten auch Befehle, die eine ganze <a class="term-link" href="/de/term/cache-line/">Cache-Zeile</a> nullen, ohne ihren alten Inhalt zu holen.</p>
+</section>
+<section class="term-about">
+  <h2>Verwandte Techniken der Miss-Behandlung</h2>
+  <p>Write-Allocate bestimmt, ob eine Zeile geholt wird, andere Techniken beeinflussen aber, wie lange der Miss dauert. Critical Word First sendet das angeforderte Wort vor dem Rest der 64-Byte-Zeile, damit die CPU früh weiterarbeiten kann. Ein Schreibpuffer verbirgt die Store-Latenz in <a class="term-link" href="/de/term/write-through/">Write-Through</a>-Caches, und ein Victim-Cache hält kürzlich verdrängte Zeilen. Jede davon setzt an einem anderen Teil der Miss-Kosten an, was eine häufige Quelle von Verwechslungen ist.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Write-Allocate</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. No-Write-Allocate</p><p class="explanation">Das Verfahren, bei einem Schreib-Miss direkt in die untere Ebene zu schreiben, ohne die Zeile zu laden, ist No-<a class="term-link" href="/de/term/write-allocate/">Write-Allocate</a> und wird häufig mit <a class="term-link" href="/de/term/write-through/">Write-Through</a> kombiniert. Bei Daten, die nach dem Schreiben nicht wieder gelesen werden, spart es unnötiges Laden. Write-Allocate lädt dagegen die Zeile vor dem Schreiben, ist vorteilhaft, wenn geschriebene Daten bald wieder verwendet werden, und wird häufig mit Write-Back kombiniert. Write-Back legt die Behandlung von Schreibtreffern fest und ist eine andere Achse als die Frage, ob bei einem Miss geladen wird.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Write-Allocate und No-Write-Allocate</h3>
+  <p>Bei einem Schreib-Miss lädt Write-Allocate die Zeile in den Cache und schreibt dort, während No-Write-Allocate direkt in die untere Ebene schreibt, ohne die Zeile zu laden.</p>
+  <h3>Warum wird Write-Allocate meist mit Write-Back kombiniert?</h3>
+  <p>Sobald die Zeile in einem Write-Back-Cache liegt, treffen weitere Schreibvorgänge auf sie und werden ohne Speicherverkehr aufgenommen, sodass sich die Kosten des anfänglichen Holens amortisieren.</p>
+  <h3>Wofür werden Non-temporal-Stores verwendet?</h3>
+  <p>Sie schreiben große Datenmengen, die nicht bald wiederverwendet werden, direkt in den Speicher, vermeiden so das Lesen jeder Zeile, das Write-Allocate verursachen würde, und halten den Cache für nützliche Daten frei.</p>
+</section>
 <section>
   <h2>„Write-Allocate“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Ob eine Miss-Zeile geladen wird, ist die Wahl Write-Allocate und eine andere Frage als der Schreibpuffer.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-011/">Was ist der Hauptzweck eines Schreibpuffers bei einem Write…</a></li><li><p>Das Verfahren, bei einem Schreib-Miss direkt in die untere Ebene zu schreiben, ohne die Zeile zu laden, ist No-Write-Allocate und wird häufig mit Write-Through kombiniert.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-013/">Welches Verfahren schreibt bei einem Cache-Miss beim Schrei…</a></li><li><p>Bei gewöhnlichen Schreibzugriffen wird per Write-Allocate die Zeile erst aus dem Hauptspeicher geladen und dann beschrieben; selbst bei Daten, die nur geschrieben werden, entsteht daher Ladeverkehr, und andere Daten, die wiederverwendet würden, werden verdrängt.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-043/">Was ist der Hauptvorteil von Stores, die den Cache umgehen …</a></li><li><p>Write-Allocate ist ein Verfahren dafür, ob bei einem Schreib-Miss die Zeile geladen wird, und der Victim Cache ein kleiner Puffer, der verdrängte Zeilen vorübergehend hält.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-045/">Welches Verfahren sendet beim Laden einer Miss-Zeile aus de…</a></li></ul>

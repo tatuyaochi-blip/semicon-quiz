@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"레지스터 할당(Register Allocation)","item":"https://semiconroom.com/ko/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"레지스터 할당(Register Allocation)","description":"프로그램의 변수와 중간 값을 한정된 수의 CPU 레지스터에 배정하는 컴파일러 처리. 동시에 쓰이는 값끼리 같은 레지스터가 되지 않도록 간섭 그래프의 채색 등으로 정한다.","url":"https://semiconroom.com/ko/term/register-allocation/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"레지스터 할당(Register Allocation)","item":"https://semiconroom.com/ko/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"레지스터 할당(Register Allocation)","description":"프로그램의 변수와 중간 값을 한정된 수의 CPU 레지스터에 배정하는 컴파일러 처리. 동시에 쓰이는 값끼리 같은 레지스터가 되지 않도록 간섭 그래프의 채색 등으로 정한다.","url":"https://semiconroom.com/ko/term/register-allocation/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"레지스터 스필이란 무엇인가요?","acceptedAnswer":{"@type":"Answer","text":"그 지점에서 활성인 모든 값을 담기에 레지스터가 부족하여 값을 메모리, 보통 스택 슬롯에 두는 것입니다. 컴파일러가 사용 위치 앞뒤로 저장과 로드를 삽입하므로 코드가 느려집니다."}},{"@type":"Question","name":"레지스터 할당이 그래프 채색 문제인 이유는?","acceptedAnswer":{"@type":"Answer","text":"동시에 활성인 값은 서로 간섭하여 다른 레지스터가 필요하므로, 값을 노드로, 간섭을 에지로 하면 이웃끼리 같지 않게 각 노드에 k색 중 하나를 주는 것이 곧 k개의 레지스터를 배정하는 것이기 때문입니다."}},{"@type":"Question","name":"그래프 채색과 선형 스캔 레지스터 할당의 차이는?","acceptedAnswer":{"@type":"Answer","text":"그래프 채색은 전체 간섭 그래프를 만들어 보통 더 좋은 코드를 생성하지만 시간이 더 걸립니다. 선형 스캔은 정렬된 활성 구간을 한 번 훑어 할당하므로 코드 품질을 조금 희생하는 대신 컴파일이 훨씬 빠릅니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/compiler/">컴파일러</a></p>
 </article>
-
+<section class="term-about">
+  <h2>가상 레지스터에서 물리 레지스터로</h2>
+  <p>컴파일러는 무제한의 가상 레지스터나 임시 값을 사용해 중간 코드를 생성하지만, 실제 CPU에는 보통 16~32개의 범용 레지스터라는 작은 고정 집합만 있습니다. 레지스터 할당은 각 지점에서 어떤 값을 어떤 물리 레지스터에 둘지, 어떤 값을 대신 메모리에 둬야 할지를 결정합니다. 레지스터는 L1 캐시 접근보다도 훨씬 빠르므로, 좋은 할당은 특히 루프 안에서 속도에 큰 영향을 줍니다. 절대 규칙은 동시에 필요한 두 값이 레지스터를 공유할 수 없다는 것입니다.</p>
+</section>
+<section class="term-about">
+  <h2>활성 범위와 간섭 그래프</h2>
+  <p>할당기는 먼저 <a class="term-link" href="/ko/term/control-flow-graph/">제어 흐름 그래프</a> 위에서 활성 변수 분석을 실행하여 각 지점에서 나중에 읽힐 수 있는 값을 찾습니다. 그다음 간섭 그래프를 만듭니다. 각 값이 노드가 되고, 동시에 활성인 두 값은 에지로 연결됩니다. 레지스터 할당은 사용 가능한 레지스터 수 k에 대해, 이웃끼리 같은 색이 되지 않도록 그래프를 k색으로 칠하는 문제가 됩니다. 최적 채색은 일반적으로 NP-완전이므로, 컴파일러는 이웃이 k개 미만인 노드를 반복해서 제거하는 Chaitin식 단순화 같은 휴리스틱을 사용합니다.</p>
+</section>
+<section class="term-about">
+  <h2>스필과 그 비용</h2>
+  <p>그래프를 k색으로 칠할 수 없으면 일부 값을 <a class="term-link" href="/ko/term/register-spilling/">스필</a>합니다. 즉 스택 슬롯에 두고, 정의할 때마다 저장하고 사용하기 전마다 로드합니다. 스필은 명령어와 메모리 트래픽을 늘리므로, 할당기는 후보마다 루프 중첩 깊이로 사용 횟수에 가중치를 둔 스필 비용을 추정하고, 드물게 사용되지만 다른 많은 값과 간섭하는 값을 우선 스필합니다. 긴 활성 범위를 짧은 조각으로 분할하면, 가장 중요한 곳에서는 값을 레지스터에 유지할 수도 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>호출 규약, 병합, 선형 스캔</h2>
+  <p>실제 할당기는 <a class="term-link" href="/ko/term/calling-convention/">호출 규약</a>을 지켜야 합니다. 인수와 반환값은 특정 레지스터를 사용하고, <a class="term-link" href="/ko/term/caller-saved-register/">호출자 저장 레지스터</a>는 호출에 의해 덮어써지며, 피호출자 저장 레지스터는 반환 전에 복원해야 합니다. 병합(coalescing)은 복사의 원본과 대상이 간섭하지 않을 때 같은 레지스터를 배정하여 move 명령어를 없앱니다. JIT(just-in-time) 컴파일러는 그래프 채색 대신 정렬된 활성 구간을 한 번에 훑는 선형 스캔 할당을 흔히 사용하며, 코드 품질이 다소 떨어지는 대신 실행 속도가 훨씬 빠릅니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 레지스터 할당(Register Allocation) 관련 문제</h2>
   <article class="q-mini" data-qid="compiler-020" data-cat="compiler" data-answer="2" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 C예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 값을 스택에 내보내고 다시 읽어 들이는 명령이 늘어 느려지기 쉽다</p><p class="explanation"><a class="term-link" href="/ko/term/register-spilling/">스필</a>은 동시에 살아 있는 값이 레지스터 수보다 많을 때 일부 값을 메모리(스택)에 두는 것입니다. 그 값을 사용할 때마다 읽기 명령, 바꿀 때마다 쓰기 명령이 필요해 명령이 늘고 메모리 접근만큼 느려지기 쉽습니다. 그래서 컴파일러는 루프 안 등 자주 사용되는 값을 레지스터에 남기고, 별로 사용되지 않는 값을 골라 스필시킵니다. 레지스터의 수는 CPU로 정해져 있어 늘어나지 않으며, 불필요한 값의 삭제와도 다른 이야기입니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>레지스터 스필이란 무엇인가요?</h3>
+  <p>그 지점에서 활성인 모든 값을 담기에 레지스터가 부족하여 값을 메모리, 보통 스택 슬롯에 두는 것입니다. 컴파일러가 사용 위치 앞뒤로 저장과 로드를 삽입하므로 코드가 느려집니다.</p>
+  <h3>레지스터 할당이 그래프 채색 문제인 이유는?</h3>
+  <p>동시에 활성인 값은 서로 간섭하여 다른 레지스터가 필요하므로, 값을 노드로, 간섭을 에지로 하면 이웃끼리 같지 않게 각 노드에 k색 중 하나를 주는 것이 곧 k개의 레지스터를 배정하는 것이기 때문입니다.</p>
+  <h3>그래프 채색과 선형 스캔 레지스터 할당의 차이는?</h3>
+  <p>그래프 채색은 전체 간섭 그래프를 만들어 보통 더 좋은 코드를 생성하지만 시간이 더 걸립니다. 선형 스캔은 정렬된 활성 구간을 한 번 훑어 할당하므로 코드 품질을 조금 희생하는 대신 컴파일이 훨씬 빠릅니다.</p>
+</section>
 
 <section>
   <h2>레지스터 할당(Register Allocation)이(가) 나오는 문제 (3)</h2>

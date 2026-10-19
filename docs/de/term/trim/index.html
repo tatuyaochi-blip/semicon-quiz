@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/de/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"Befehl, mit dem das Betriebssystem der SSD mitteilt, welche Bereiche gelöschter Dateien frei sind. Die SSD kennt so nicht mehr benötigte Daten, wodurch die Garbage Collection effizienter wird.","url":"https://semiconroom.com/de/term/trim/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/de/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"Befehl, mit dem das Betriebssystem der SSD mitteilt, welche Bereiche gelöschter Dateien frei sind. Die SSD kennt so nicht mehr benötigte Daten, wodurch die Garbage Collection effizienter wird.","url":"https://semiconroom.com/de/term/trim/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Löscht TRIM Daten sofort?","acceptedAnswer":{"@type":"Answer","text":"Nicht unbedingt. TRIM markiert die Daten als ungültig und entfernt ihre Adresszuordnung; das physische Löschen erfolgt später, wenn die Garbage Collection den Block zurückgewinnt, wobei Lesezugriffe auf getrimmte Adressen bereits Nullen liefern können."}},{"@type":"Question","name":"Unterstützen NVMe-SSDs TRIM?","acceptedAnswer":{"@type":"Answer","text":"Ja, über die Deallocate-Option des NVMe-Befehls Dataset Management, die dieselbe Aufgabe erfüllt; Betriebssysteme nennen es meist trotzdem TRIM oder Discard."}},{"@type":"Question","name":"Braucht eine Festplatte (HDD) TRIM?","acceptedAnswer":{"@type":"Answer","text":"Herkömmliche Festplatten können Sektoren an Ort und Stelle überschreiben und profitieren daher nicht von TRIM; wichtig ist es für Flash-Speicher, bei dem Blöcke vor der Wiederverwendung gelöscht werden müssen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/sram-flash/">SRAM und Flash-Speicher</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum man es einer SSD mitteilen muss</h2>
+  <p>Der Controller einer SSD betreibt eine Flash Translation Layer (FTL), die die vom Betriebssystem verwendeten logischen Blockadressen auf physische Flash-Pages abbildet. Das Löschen einer Datei aktualisiert nur die eigene Verwaltung des Dateisystems; die SSD erhält keinen Schreibvorgang und hält die alten Daten weiterhin für gültig. Bei der <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> kopiert das Laufwerk daher weiterhin Daten, die niemand je wieder lesen wird, und verschwendet Zeit und Flash-Lebensdauer. TRIM schließt diese Informationslücke: Das Betriebssystem übermittelt die Adressbereiche, die keine nützlichen Daten mehr enthalten, sodass das Laufwerk sie nicht mehr erhalten muss.</p>
+</section>
+<section class="term-about">
+  <h2>Was nach einem TRIM passiert</h2>
+  <p>Beim Empfang von TRIM entfernt die FTL die Zuordnung für diese logischen Adressen und markiert die entsprechenden physischen Pages als ungültig. Die Daten werden nicht unbedingt sofort gelöscht; das Löschen erfolgt später blockweise, wenn die <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> den Platz zurückgewinnt. Blöcke, die überwiegend ungültige Pages enthalten, lassen sich dann mit wenig oder ganz ohne Kopieren löschen, was die <a class="term-link" href="/de/term/write-amplification/">Schreibverstärkung</a> verringert und die Schreibleistung auch bei zunehmender Füllung stabil hält. Je nach Laufwerk liefert das spätere Lesen einer getrimmten Adresse Nullen oder undefinierte Daten, daher sind gelöschte Dateien auf SSDs typischerweise viel schwerer wiederherzustellen als auf Festplatten.</p>
+</section>
+<section class="term-about">
+  <h2>Schnittstellen und Auslösung</h2>
+  <p>TRIM ist der Name der Befehlsoption bei ATA (SATA); SCSI- und SAS-Systeme verwenden UNMAP, und <a class="term-link" href="/de/term/nvme/">NVMe</a> bietet dieselbe Funktion ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> die Deallocate-Option seines Dataset-Management-Befehls. Betriebssysteme senden den Befehl entweder fortlaufend, indem sie bei jedem Löschen einer Datei ein Discard senden, oder periodisch gebündelt, was eine Verlangsamung des Löschens vermeidet. Schichten zwischen Dateisystem und Laufwerk, etwa manche RAID- oder Festplattenverschlüsselungs-Konfigurationen und virtuelle Datenträger, müssen den Befehl durchreichen, damit er den Flash erreicht, und müssen dafür unter Umständen entsprechend konfiguriert werden.</p>
+</section>
+<section class="term-about">
+  <h2>Nicht zu verwechseln mit</h2>
+  <p>TRIM ist nur ein Hinweis des Hosts; die <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> ist der interne Prozess des Laufwerks, der gültige Daten tatsächlich umlagert und Blöcke löscht, und sie läuft mit oder ohne TRIM. In der Halbleiterfertigung ist das Resist-Trimming ein davon unabhängiger Plasmaprozess, der Resistlinien unter die Belichtungsgrenze verschmälert, und das Lasertrimmen gleicht Widerstandswerte in Analogchips ab. Herkömmliche Festplatten überschreiben Daten an Ort und Stelle und benötigen kein TRIM, wobei Thin-Provisioning-Speicher den entsprechenden Unmap-Befehl nutzt, um Speicherplatz zurückzugewinnen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu TRIM</h2>
   <article class="q-mini" data-qid="sram-flash-028" data-cat="sram-flash" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Die tatsächlich in den Flash-Speicher geschriebene Datenmenge ist größer als die vom Host geschriebene Datenmenge</p><p class="explanation">Da Flash nicht überschrieben werden kann und blockweise gelöscht wird, entstehen zusätzliche Schreibvorgänge, etwa das Kopieren gültiger Daten in einen anderen Block bei der <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a>, und die tatsächliche Schreibmenge wird größer als die des Hosts. Dieses Verhältnis ist der Schreibverstärkungsfaktor (WAF), der bei vielen kleinen wahlfreien Schreibvorgängen mehrere Male betragen kann. Er wird durch <a class="term-link" href="/de/term/trim/">TRIM</a>, Reservebereiche und Datenkompression verringert, um Lebensdauer und Leistung zu schützen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Löscht TRIM Daten sofort?</h3>
+  <p>Nicht unbedingt. TRIM markiert die Daten als ungültig und entfernt ihre Adresszuordnung; das physische Löschen erfolgt später, wenn die Garbage Collection den Block zurückgewinnt, wobei Lesezugriffe auf getrimmte Adressen bereits Nullen liefern können.</p>
+  <h3>Unterstützen NVMe-SSDs TRIM?</h3>
+  <p>Ja, über die Deallocate-Option des NVMe-Befehls Dataset Management, die dieselbe Aufgabe erfüllt; Betriebssysteme nennen es meist trotzdem TRIM oder Discard.</p>
+  <h3>Braucht eine Festplatte (HDD) TRIM?</h3>
+  <p>Herkömmliche Festplatten können Sektoren an Ort und Stelle überschreiben und profitieren daher nicht von TRIM; wichtig ist es für Flash-Speicher, bei dem Blöcke vor der Wiederverwendung gelöscht werden müssen.</p>
+</section>
 <section>
   <h2>„TRIM“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Meldet der TRIM-Befehl nicht benötigte Bereiche, behandelt die SSD diese Seiten als ungültig und kann sie ohne Kopieren löschen; die Schreibverstärkung sinkt, und Leistung und Lebensdauer verbessern sich.</p><a href="/de/q/sram-flash/sram-flash-028/">Welcher Befehl teilt der SSD die vom Betriebssystem gelösch…</a></li><li><p>Er wird durch TRIM, Reservebereiche und Datenkompression verringert, um Lebensdauer und Leistung zu schützen.</p><a href="/de/q/sram-flash/sram-flash-042/">Welche Aussage zur „Schreibverstärkung“ (Write Amplificatio…</a></li></ul>

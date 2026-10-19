@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Write-Through","item":"https://semiconroom.com/de/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-Through","description":"Verfahren, bei dem beim Schreiben in den Cache gleichzeitig auch in die darunterliegende Ebene (z. B. den Hauptspeicher) geschrieben wird. Die untere Ebene ist stets aktuell, aber der Schreibverkehr ist hoch; daher wird es mit einem Schreibpuffer kombiniert.","url":"https://semiconroom.com/de/term/write-through/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Write-Through","item":"https://semiconroom.com/de/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-Through","description":"Verfahren, bei dem beim Schreiben in den Cache gleichzeitig auch in die darunterliegende Ebene (z. B. den Hauptspeicher) geschrieben wird. Die untere Ebene ist stets aktuell, aber der Schreibverkehr ist hoch; daher wird es mit einem Schreibpuffer kombiniert.","url":"https://semiconroom.com/de/term/write-through/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Write-Through- und Write-Back-Cache","acceptedAnswer":{"@type":"Answer","text":"Write-Through schreibt bei jedem Store in die untere Ebene und hält sie so stets aktuell. Write-Back schreibt nur in den Cache und aktualisiert die untere Ebene einmal, wenn die geänderte Zeile verdrängt wird, was den Verkehr reduziert."}},{"@type":"Question","name":"Warum braucht ein Write-Through-Cache einen Schreibpuffer?","acceptedAnswer":{"@type":"Answer","text":"Ohne ihn müsste die CPU warten, bis jeder Store im langsameren Speicher abgeschlossen ist. Der Puffer reiht Schreibvorgänge ein, sodass die CPU weiterarbeiten kann, während sie im Hintergrund abfließen."}},{"@type":"Question","name":"Braucht ein Write-Through-Cache ein Dirty-Bit?","acceptedAnswer":{"@type":"Answer","text":"Nein. Da jeder Schreibvorgang sofort weitergegeben wird, unterscheidet sich eine Zeile nie von der unteren Ebene, sodass sie ohne Zurückschreiben verdrängt werden kann."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie ein Write-Through-Cache einen Store behandelt</h2>
+  <p>Bei einem Store-Hit aktualisiert ein Write-Through-Cache seine eigene Kopie und sendet den Schreibvorgang zusätzlich an die nächste Ebene, etwa einen L2-Cache oder den Hauptspeicher. Zeilen sind daher nie dirty: Es wird kein Dirty-Bit benötigt, und eine verdrängte Zeile kann einfach verworfen werden, weil die untere Ebene bereits dieselben Daten hält. Bei einem Store-Miss verwenden Write-Through-Caches meist No-<a class="term-link" href="/de/term/write-allocate/">Write-Allocate</a> und senden den Schreibvorgang direkt nach unten, ohne die Zeile zu laden, da ein späteres Zurückschreiben ohnehin nicht nötig ist.</p>
+</section>
+<section class="term-about">
+  <h2>Der Schreibpuffer</h2>
+  <p>Auf jeden Store bis zum Speicher zu warten, würde die CPU ständig anhalten, daher gehen Schreibvorgänge in einen Schreibpuffer, der im Hintergrund in die untere Ebene entleert wird, während die CPU weiterarbeitet. Die CPU hält nur an, wenn der Puffer voll ist, was passiert, wenn Stores schneller ankommen, als der Speicher sie aufnehmen kann. Loads mit Miss müssen den Puffer prüfen oder auf seine Entleerung warten, damit sie keine veralteten Daten aus dem Speicher lesen. Puffer fassen oft mehrere Schreibvorgänge in dieselbe Zeile zu einer Übertragung zusammen.</p>
+</section>
+<section class="term-about">
+  <h2>Write-Through vs. Write-Back</h2>
+  <p>Write-Back aktualisiert nur den Cache und schreibt eine Dirty-Zeile einmal in den Speicher, wenn sie verdrängt wird, sodass wiederholte Schreibvorgänge in dieselbe Zeile zu einer Übertragung zusammenfallen. Das spart Bandbreite und Energie, weshalb die meisten L1- bis L3-Caches von CPUs Write-Back sind. Write-Through erzeugt bei jedem Store Verkehr, hält die untere Ebene aber stets aktuell, was die Kohärenz mit anderen Kernen und mit <a class="term-link" href="/de/term/dma/">DMA</a> vereinfacht und die Wiederherstellung leicht macht: Ein Write-Through-L1 kann seine Daten mit einfacher Parität schützen und bei einem Fehler eine saubere Kopie neu holen.</p>
+</section>
+<section class="term-about">
+  <h2>Wo es eingesetzt wird</h2>
+  <p>Write-Through findet sich in kleinen First-Level-Caches mit einem Write-Back-L2 dahinter, in einfachen Embedded-Prozessoren und in Speicherbereichen, in denen die untere Ebene jeden Schreibvorgang zeitnah sehen muss; viele Architekturen lassen das Betriebssystem dies per Seite ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Speichertyp-Attribute wählen. Weniger geeignet ist es für die letzte Cache-Ebene vor dem DRAM, wo der Store-Verkehr Speicherbandbreite verbrauchen würde, die eine Write-Back-Strategie einsparen würde.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Write-Through</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Weil das Schreiben im Cache erledigt wird und beim Verdrängen nur einmal in den Hauptspeicher geschrieben werden muss</p><p class="explanation">Bei Write-Back werden wiederholte Schreibzugriffe auf dieselbe Zeile allein im Cache abgewickelt, und beim Verdrängen wird die dirty-Zeile nur einmal zurückgeschrieben. Der Verkehr zum Hauptspeicher und der Stromverbrauch lassen sich dadurch stark senken. Bei jedem Schreibzugriff auch den Hauptspeicher zu aktualisieren ist eine Eigenschaft von <a class="term-link" href="/de/term/write-through/">Write-Through</a>, bei dem bei wiederholtem Schreiben in dieselbe Zeile jedes Mal Verkehr entsteht. Auch die ständige Übereinstimmung von Cache und Hauptspeicher ist eine Eigenschaft von Write-Through; bei Write-Back gibt es Zeiträume ohne Übereinstimmung.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Write-Through- und Write-Back-Cache</h3>
+  <p>Write-Through schreibt bei jedem Store in die untere Ebene und hält sie so stets aktuell. Write-Back schreibt nur in den Cache und aktualisiert die untere Ebene einmal, wenn die geänderte Zeile verdrängt wird, was den Verkehr reduziert.</p>
+  <h3>Warum braucht ein Write-Through-Cache einen Schreibpuffer?</h3>
+  <p>Ohne ihn müsste die CPU warten, bis jeder Store im langsameren Speicher abgeschlossen ist. Der Puffer reiht Schreibvorgänge ein, sodass die CPU weiterarbeiten kann, während sie im Hintergrund abfließen.</p>
+  <h3>Braucht ein Write-Through-Cache ein Dirty-Bit?</h3>
+  <p>Nein. Da jeder Schreibvorgang sofort weitergegeben wird, unterscheidet sich eine Zeile nie von der unteren Ebene, sodass sie ohne Zurückschreiben verdrängt werden kann.</p>
+</section>
 <section>
   <h2>„Write-Through“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Beim Write-Through wird bei jedem Schreibzugriff auch in den Hauptspeicher geschrieben; würde auf den Abschluss gewartet, hielte die CPU häufig an.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-011/">Was ist der Hauptzweck eines Schreibpuffers bei einem Write…</a></li><li><p>Bei jedem Schreibzugriff auch den Hauptspeicher zu aktualisieren ist eine Eigenschaft von Write-Through, bei dem bei wiederholtem Schreiben in dieselbe Zeile jedes Mal Verkehr entsteht.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-038/">Was ist der Hauptgrund, weshalb Write-Back bei einer Verarb…</a></li><li><p>Das Verfahren, bei einem Schreib-Miss direkt in die untere Ebene zu schreiben, ohne die Zeile zu laden, ist No-Write-Allocate und wird häufig mit Write-Through kombiniert.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-013/">Welches Verfahren schreibt bei einem Cache-Miss beim Schrei…</a></li></ul>

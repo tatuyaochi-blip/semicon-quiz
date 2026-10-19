@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"라이트 스루 방식(write-through)","item":"https://semiconroom.com/ko/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"라이트 스루 방식(write-through)","description":"캐시에 쓰는 동시에 하위 계층(주기억장치 등)에도 쓰는 방식. 하위 계층이 항상 최신으로 유지되지만 쓰기 통신량이 많아 쓰기 버퍼와 함께 쓴다.","url":"https://semiconroom.com/ko/term/write-through/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"라이트 스루 방식(write-through)","item":"https://semiconroom.com/ko/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"라이트 스루 방식(write-through)","description":"캐시에 쓰는 동시에 하위 계층(주기억장치 등)에도 쓰는 방식. 하위 계층이 항상 최신으로 유지되지만 쓰기 통신량이 많아 쓰기 버퍼와 함께 쓴다.","url":"https://semiconroom.com/ko/term/write-through/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"라이트 스루와 라이트백 캐시 차이","acceptedAnswer":{"@type":"Answer","text":"라이트 스루는 스토어마다 하위 계층에 써서 하위 계층을 항상 최신으로 유지합니다. 라이트백은 캐시에만 쓰고, 수정된 라인이 축출될 때 한 번만 하위 계층을 갱신하므로 트래픽이 줄어듭니다."}},{"@type":"Question","name":"라이트 스루 캐시에 쓰기 버퍼가 필요한 이유","acceptedAnswer":{"@type":"Answer","text":"쓰기 버퍼가 없으면 CPU는 느린 메모리에서 모든 스토어가 완료되기를 기다려야 합니다. 버퍼가 쓰기를 대기열에 넣어 두므로 백그라운드에서 배출되는 동안 CPU는 실행을 계속할 수 있습니다."}},{"@type":"Question","name":"라이트 스루 캐시에 더티 비트가 필요한가요","acceptedAnswer":{"@type":"Answer","text":"필요 없습니다. 모든 쓰기가 즉시 전파되므로 라인이 하위 계층과 달라지는 일이 없어, 아무것도 되쓰지 않고 축출할 수 있습니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/memory-hierarchy/">메모리 계층 구조</a></p>
 </article>
-
+<section class="term-about">
+  <h2>라이트 스루 캐시의 스토어 처리</h2>
+  <p>스토어 히트 시 라이트 스루 캐시는 자신의 사본을 갱신하는 동시에 L2 캐시나 주기억장치 같은 하위 계층에도 쓰기를 보냅니다. 따라서 라인이 더티 상태가 되는 일이 없어 더티 비트가 필요 없고, 하위 계층이 이미 같은 데이터를 갖고 있으므로 축출되는 라인은 그냥 버리면 됩니다. 스토어 미스 시 라이트 스루 캐시는 보통 노 <a class="term-link" href="/ko/term/write-allocate/">라이트 얼로케이트</a>를 사용해 라인을 읽어 들이지 않고 쓰기를 그대로 하위로 보냅니다. 어차피 나중에 라이트백할 필요가 없기 때문입니다.</p>
+</section>
+<section class="term-about">
+  <h2>쓰기 버퍼</h2>
+  <p>모든 스토어가 메모리에 도달하기를 기다리면 CPU가 계속 정지하게 되므로, 쓰기는 쓰기 버퍼에 들어가고 CPU가 실행을 계속하는 동안 백그라운드에서 하위 계층으로 배출됩니다. CPU는 버퍼가 가득 찼을 때만 정지하며, 이는 메모리가 흡수할 수 있는 속도보다 빠르게 스토어가 도착할 때 발생합니다. 미스가 난 로드는 메모리에서 오래된 데이터를 읽지 않도록 버퍼를 확인하거나 버퍼가 비워질 때까지 기다려야 합니다. 버퍼는 같은 라인에 대한 여러 쓰기를 하나의 전송으로 병합하는 경우가 많습니다.</p>
+</section>
+<section class="term-about">
+  <h2>라이트 스루와 라이트백 비교</h2>
+  <p>라이트백은 캐시만 갱신하고, 더티 라인은 축출될 때 한 번만 메모리에 씁니다. 따라서 같은 라인에 대한 반복 쓰기가 한 번의 전송으로 줄어듭니다. 이는 대역폭과 전력을 절약하므로 대부분의 CPU L1~L3 캐시는 라이트백입니다. 라이트 스루는 스토어마다 트래픽을 발생시키지만 하위 계층을 항상 최신으로 유지하므로, 다른 코어나 <a class="term-link" href="/ko/term/dma/">DMA</a>와의 일관성 유지가 단순해지고 복구도 쉽습니다. 라이트 스루 L1은 간단한 패리티로 데이터를 보호하고 오류 시 깨끗한 사본을 다시 가져올 수 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>사용되는 곳</h2>
+  <p>라이트 스루는 라이트백 L2가 뒤를 받치는 소형 1차 캐시, 단순한 임베디드 프로세서, 그리고 하위 계층이 모든 쓰기를 즉시 볼 필요가 있는 메모리 영역에 쓰입니다. 많은 아키텍처에서는 운영체제가 메모리 타입 속성을 통해 페이지 단위로 이를 선택할 수 있습니다. DRAM 앞의 마지막 캐시 계층에는 덜 적합한데, 라이트백 정책이라면 절약할 수 있는 메모리 대역폭을 스토어 트래픽이 소비하기 때문입니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 라이트 스루 방식(write-through) 관련 문제</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 쓰기가 캐시 안에서 처리되고 주기억장치에는 쫓아낼 때 한 번만 쓰면 되기 때문</p><p class="explanation">라이트 백 방식에서는 같은 라인에 대한 여러 번의 쓰기를 캐시 안에서만 처리하고, 쫓아낼 때 더티인 라인을 한 번 되쓰기만 하면 됩니다. 따라서 주기억장치로의 통신량과 전력을 크게 줄일 수 있습니다. 쓰기마다 주기억장치도 최신으로 만드는 것은 <a class="term-link" href="/ko/term/write-through/">라이트 스루 방식</a>의 성질이며, 같은 라인에 여러 번 쓰면 그때마다 통신이 발생합니다. 캐시와 주기억장치가 항상 일치하는 것도 라이트 스루의 성질이며, 라이트 백에서는 일치하지 않는 기간이 있습니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>라이트 스루와 라이트백 캐시 차이</h3>
+  <p>라이트 스루는 스토어마다 하위 계층에 써서 하위 계층을 항상 최신으로 유지합니다. 라이트백은 캐시에만 쓰고, 수정된 라인이 축출될 때 한 번만 하위 계층을 갱신하므로 트래픽이 줄어듭니다.</p>
+  <h3>라이트 스루 캐시에 쓰기 버퍼가 필요한 이유</h3>
+  <p>쓰기 버퍼가 없으면 CPU는 느린 메모리에서 모든 스토어가 완료되기를 기다려야 합니다. 버퍼가 쓰기를 대기열에 넣어 두므로 백그라운드에서 배출되는 동안 CPU는 실행을 계속할 수 있습니다.</p>
+  <h3>라이트 스루 캐시에 더티 비트가 필요한가요</h3>
+  <p>필요 없습니다. 모든 쓰기가 즉시 전파되므로 라인이 하위 계층과 달라지는 일이 없어, 아무것도 되쓰지 않고 축출할 수 있습니다.</p>
+</section>
 <section>
   <h2>해설 속 라이트 스루 방식(write-through)</h2>
   <ul class="term-quotes"><li><p>라이트 스루 방식에서는 쓰기마다 주기억장치에도 쓰므로 그대로 완료를 기다리면 CPU가 자주 멈춥니다.</p><a href="/ko/q/memory-hierarchy/memory-hierarchy-011/">라이트 스루 방식 캐시에서 쓰기 버퍼를 두는 주된 목적은?</a></li><li><p>쓰기마다 주기억장치도 최신으로 만드는 것은 라이트 스루 방식의 성질이며, 같은 라인에 여러 번 쓰면 그때마다 통신이 발생합니다.</p><a href="/ko/q/memory-hierarchy/memory-hierarchy-038/">같은 라인에 여러 번 쓰는 처리에서 라이트 스루 방식보다 라이트 백 방식이 유리해지는 주된 이유는?</a></li><li><p>쓰기 미스 시 라인을 읽지 않고 하위 계층에 직접 쓰는 방식은 노 라이트 얼로케이트이며, 라이트 스루 방식과 조합하는 경우가 많습니다.</p><a href="/ko/q/memory-hierarchy/memory-hierarchy-013/">쓰기에서 캐시 미스가 났을 때 그 라인을 읽어 오지 않고 하위 계층에 직접 쓰는 방식은?</a></li></ul>

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de" data-lang="de" data-base="/" data-home="/de/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIMD vs. SIMT: Unterschiede im Überblick | Halbleiter-Raum</title>
+<meta name="description" content="SIMD in CPU-Vektorbefehlen und SIMT in GPU-Warps im Tabellenvergleich: Ausführungsmodell, Programmierung, Parallelitätsbreite, Verzweigungen, Speicherzugriff und Latenzverbergung.">
+<link rel="canonical" href="https://semiconroom.com/de/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/simd-vs-simt/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SIMD vs. SIMT: Unterschiede im Überblick | Halbleiter-Raum">
+<meta property="og:description" content="SIMD in CPU-Vektorbefehlen und SIMT in GPU-Warps im Tabellenvergleich: Ausführungsmodell, Programmierung, Parallelitätsbreite, Verzweigungen, Speicherzugriff und Latenzverbergung.">
+<meta property="og:url" content="https://semiconroom.com/de/compare/simd-vs-simt/">
+<meta property="og:site_name" content="Halbleiter-Raum">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/de/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Vergleiche","item":"https://semiconroom.com/de/compare/"},{"@type":"ListItem","position":3,"name":"SIMD vs. SIMT: Unterschiede im Überblick","item":"https://semiconroom.com/de/compare/simd-vs-simt/"}]},{"@context":"https://schema.org","@type":"Article","headline":"SIMD vs. SIMT: Unterschiede im Überblick","description":"SIMD in CPU-Vektorbefehlen und SIMT in GPU-Warps im Tabellenvergleich: Ausführungsmodell, Programmierung, Parallelitätsbreite, Verzweigungen, Speicherzugriff und Latenzverbergung.","inLanguage":"de","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/de/compare/simd-vs-simt/","author":{"@type":"Organization","name":"Halbleiter-Raum"},"publisher":{"@type":"Organization","name":"Halbleiter-Raum"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Ist SIMT ein völlig anderer Mechanismus als SIMD?","acceptedAnswer":{"@type":"Answer","text":"In der Hardware sind sie sich ähnlich. Jeder Thread eines Warps entspricht einer Lane der SIMD-Recheneinheit und läuft mit demselben Befehl. Der Unterschied liegt in der Darstellung: Bei SIMT verwaltet die Hardware Register, Adressen und Verzweigungen pro Thread, sodass Programmierer die Vektorbreite nicht beachten müssen."}},{"@type":"Question","name":"Wie lässt sich Warp-Divergenz verringern?","acceptedAnswer":{"@type":"Answer","text":"Threads desselben Warps sollten möglichst dieselbe Seite einer Verzweigung nehmen. Möglich ist etwa, Daten so umzusortieren, dass die Bedingungsergebnisse einheitlich sind, Thread-Nummern so zuzuweisen, dass die Bedingung an Warp-Grenzen wechselt, oder kurze Verzweigungen durch Auswahloperationen zu ersetzen."}},{"@type":"Question","name":"Wie schreibt man bei SIMD eine Verarbeitung mit if-Anweisung?","acceptedAnswer":{"@type":"Answer","text":"Man erzeugt mit Vergleichsbefehlen eine Maske der Bedingung pro Element, berechnet beide Ergebnisse und wählt sie dann elementweise gemäß der Maske aus. In Befehlssätzen mit maskierten Befehlen lassen sich nur die Elemente berechnen und speichern, die die Bedingung erfüllen. Da beide Pfade berechnet werden, sinkt die Effizienz bei aufwendigem Verzweigungsinhalt – ähnlich wie bei der Divergenz in SIMT."}},{"@type":"Question","name":"Wann scheitert die automatische Vektorisierung des Compilers?","acceptedAnswer":{"@type":"Answer","text":"Etwa wenn Abhängigkeiten zwischen den Iterationen bestehen (ein Ergebnis wird in der nächsten Iteration verwendet), wenn Zeiger möglicherweise auf denselben Bereich zeigen, wenn die Daten nicht zusammenhängend angeordnet sind oder wenn die Schleife komplexe Verzweigungen oder Funktionsaufrufe enthält. Angaben, die dem Compiler die Abhängigkeitsfreiheit mitteilen, oder eine geänderte Datenanordnung können die Vektorisierung ermöglichen."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/simd-vs-simt/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/de/"><span class="logo-mark" aria-hidden="true"></span><span>Halbleiter-Raum<small></small></span></a>
+    <nav class="header-nav"><a href="/de/#topics">Themen</a><a href="/de/glossary/">Glossar</a><a href="/de/compare/">Vergleiche</a><a href="/de/figures/">Diagramme</a><a href="/de/tools/">Rechner</a><a href="/de/stats/">Fortschritt</a></nav>
+    <form class="site-search" role="search" action="/de/search/" method="get"><input type="search" name="q" placeholder="Suche (z. B. MOSFET)" aria-label="Website durchsuchen" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/de/search/" aria-label="Website durchsuchen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Sprache: Deutsch"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Deutsch</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Sprache"><a href="/compare/simd-vs-simt/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/simd-vs-simt/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/simd-vs-simt/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/simd-vs-simt/" hreflang="ko" lang="ko" data-lang="ko">한국어</a><span aria-current="true" lang="de">Deutsch</span><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menü</summary>
+      <nav class="menu-panel"><a href="/de/">Start</a><a href="/de/#topics">Themen</a><a href="/de/glossary/">Glossar</a><a href="/de/compare/">Vergleiche</a><a href="/de/figures/">Diagramme</a><a href="/de/tools/">Rechner</a><a href="/de/stats/">Fortschritt</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/de/">Start</a> <span>›</span> <a href="/de/compare/">Vergleiche</a></nav>
+<article class="compare-page">
+  <h1>SIMD vs. SIMT: Unterschiede im Überblick</h1>
+  <p class="lead">SIMD und SIMT führen beide mit einem Befehl dieselbe Operation auf vielen Daten aus, unterscheiden sich aber darin, wie sie sich dem Programm darstellen. SIMD sind die Vektorbefehle der CPU: Programmierer oder Compiler legen Daten in Vektorregister fester Breite und verwenden die Befehle explizit. SIMT ist das Verfahren der GPU: Man schreibt die Verarbeitung eines einzelnen Threads ganz normal, und die Hardware bündelt z. B. 32 Threads zu einem Warp, der mit demselben Befehl ausgeführt wird. Verzweigungen lassen sich pro Thread schreiben, doch wenn sie innerhalb eines Warps auseinanderlaufen, werden beide Pfade nacheinander ausgeführt, was die Effizienz senkt.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Kopiert!">Tabelle kopieren</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link kopiert">Teilen</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Merkmal</th><th scope="col">SIMD</th><th scope="col">SIMT</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Ausführungsmodell</th><td>Ein Befehl verarbeitet gleichzeitig mehrere in einem Vektorregister angeordnete Elemente</td><td>Ein Befehl wird gleichzeitig von vielen zu einem Warp gebündelten Threads ausgeführt. Jeder Thread hat eigene Register</td></tr>
+        <tr><th scope="row">Sicht des Programms</th><td>Man schreibt mit Blick auf die Vektorbreite. Intrinsics, Assembler oder automatische Vektorisierung des Compilers</td><td>Man schreibt die Verarbeitung eines Threads als skalaren Code. Die Bündelung übernimmt die Hardware</td></tr>
+        <tr><th scope="row">Parallelitätsbreite</th><td>Durch die Registerbreite bestimmt. Beispiel: Bei 512 Bit sind es 16 Zahlen à 32 Bit</td><td>Warp-Breite (z. B. 32). Der ganze Chip hält gleichzeitig einige zehntausend Threads</td></tr>
+        <tr><th scope="row">Verzweigungen</th><td>Verzweigungen pro Element sind nicht möglich. Beide Seiten werden berechnet und über eine Maske aus dem Vergleichsergebnis ausgewählt</td><td>Pro Thread möglich. Laufen sie im Warp auseinander, werden beide Pfade nacheinander ausgeführt und nicht betroffene Threads pausieren (Divergenz)</td></tr>
+        <tr><th scope="row">Verwaltung aktiver Elemente</th><td>Explizit durch Programmierer oder Compiler mittels maskierter Befehle oder Blend-Befehle</td><td>Die Hardware verwaltet die aktiven Threads automatisch</td></tr>
+        <tr><th scope="row">Speicherzugriff</th><td>Stark beim gebündelten Lesen zusammenhängender Adressen. Verstreute Adressen werden mit Gather/Scatter-Befehlen behandelt, was langsam ist</td><td>Jeder Thread kann Adressen frei angeben. Lesen benachbarte Threads benachbarte Adressen, werden die Zugriffe zusammengefasst (Coalescing)</td></tr>
+        <tr><th scope="row">Verbergen der Speicherlatenz</th><td>Große Caches, Out-of-Order-Ausführung, Prefetching</td><td>Wechsel zwischen vielen Warps: Während ein Warp wartet, läuft ein anderer</td></tr>
+        <tr><th scope="row">Einordnung in Flynns Klassifikation</th><td>SIMD selbst</td><td>Eine Form von SIMD, die in Gestalt von Threads dargestellt wird</td></tr>
+        <tr><th scope="row">Typischer Einsatz</th><td>CPU-Vektorbefehle. Schleifen in Bild- und Audioverarbeitung, Kryptografie, Matrixoperationen usw.</td><td>GPU-Warps. Massiv parallele Berechnungen wie Grafik, KI-Training und -Inferenz sowie wissenschaftlich-technisches Rechnen</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Die Zahlenwerte sind typische Größenordnungen und variieren je nach Prozessgeneration und Produkt.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Wann welche Variante?</h2>
+  <dl class="compare-when">
+    <dt>SIMD</dt><dd>Wenn auf der CPU Schleifen beschleunigt werden sollen, die für jedes Array-Element dieselbe Berechnung ausführen. Am wirksamsten bei zusammenhängend angeordneten Daten ohne Abhängigkeiten zwischen den Iterationen; auch über die automatische Vektorisierung des Compilers nutzbar.</dd>
+    <dt>SIMT</dt><dd>Massiv parallele Berechnungen, die dieselbe Verarbeitung auf Tausende bis Millionen unabhängiger Elemente anwenden. Auf der GPU schreibt und startet man ein Programm pro Thread. Die Effizienz steigt, wenn Verzweigungen und Speicheradressen innerhalb eines Warps einheitlich sind.</dd>
+    <dt>Kombination</dt><dd>In der GPU erfolgt die SIMT-Ausführung in Warp-Einheiten auf SIMD-Recheneinheiten. In Systemen mit CPU und GPU übernimmt die CPU-SIMD Vorverarbeitung und Steuerung, die GPU die großen parallelen Berechnungen.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Ist SIMT ein völlig anderer Mechanismus als SIMD?</h3>
+  <p>In der Hardware sind sie sich ähnlich. Jeder Thread eines Warps entspricht einer Lane der SIMD-Recheneinheit und läuft mit demselben Befehl. Der Unterschied liegt in der Darstellung: Bei SIMT verwaltet die Hardware Register, Adressen und Verzweigungen pro Thread, sodass Programmierer die Vektorbreite nicht beachten müssen.</p>
+  <h3>Wie lässt sich Warp-Divergenz verringern?</h3>
+  <p>Threads desselben Warps sollten möglichst dieselbe Seite einer Verzweigung nehmen. Möglich ist etwa, Daten so umzusortieren, dass die Bedingungsergebnisse einheitlich sind, Thread-Nummern so zuzuweisen, dass die Bedingung an Warp-Grenzen wechselt, oder kurze Verzweigungen durch Auswahloperationen zu ersetzen.</p>
+  <h3>Wie schreibt man bei SIMD eine Verarbeitung mit if-Anweisung?</h3>
+  <p>Man erzeugt mit Vergleichsbefehlen eine Maske der Bedingung pro Element, berechnet beide Ergebnisse und wählt sie dann elementweise gemäß der Maske aus. In Befehlssätzen mit maskierten Befehlen lassen sich nur die Elemente berechnen und speichern, die die Bedingung erfüllen. Da beide Pfade berechnet werden, sinkt die Effizienz bei aufwendigem Verzweigungsinhalt – ähnlich wie bei der Divergenz in SIMT.</p>
+  <h3>Wann scheitert die automatische Vektorisierung des Compilers?</h3>
+  <p>Etwa wenn Abhängigkeiten zwischen den Iterationen bestehen (ein Ergebnis wird in der nächsten Iteration verwendet), wenn Zeiger möglicherweise auf denselben Bereich zeigen, wenn die Daten nicht zusammenhängend angeordnet sind oder wenn die Schleife komplexe Verzweigungen oder Funktionsaufrufe enthält. Angaben, die dem Compiler die Abhängigkeitsfreiheit mitteilen, oder eine geänderte Datenanordnung können die Vektorisierung ermöglichen.</p>
+</section>
+<section>
+  <h2>Verständnis prüfen</h2>
+  <article class="q-mini" data-qid="cpu-019" data-cat="cpu" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
+    <h3><a href="/de/q/cpu/cpu-019/">Welches Verfahren führt mit einem Befehl dieselbe Operation gleichzeitig auf mehreren Daten aus?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">SISD</span></li><li><span class="choice-mark">B</span><span class="choice-text">SIMD</span></li><li><span class="choice-mark">C</span><span class="choice-text">MISD</span></li></ol>
+    <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. SIMD</p><p class="explanation"><a class="term-link" href="/de/term/simd/">SIMD</a> führt mit einem Befehl dieselbe Operation parallel auf mehreren Daten aus; ein 512-Bit-Register kann z. B. 16 Zahlen zu je 32 Bit auf einmal berechnen. Beispiele sind SSE und AVX bei x86 sowie NEON und SVE bei ARM; bei Bildverarbeitung, Videokompression und Matrixoperationen sind Beschleunigungen um ein Mehrfaches erzielbar. In der Flynnschen Klassifikation gibt es außerdem SISD (gewöhnliche sequenzielle Verarbeitung) und MIMD (Multicore).</p></details>
+  </article>
+  <article class="q-mini" data-qid="gpu-programming-009" data-cat="gpu-programming" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
+    <h3><a href="/de/q/gpu-programming/gpu-programming-009/">Wie heißt bei NVIDIA-GPUs die Einheit, in der 32 Threads zu einem Bündel zusammengefasst werden und dieselbe Anweisung gleichzeitig ausführen?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Warp</span></li><li><span class="choice-mark">B</span><span class="choice-text">Grid</span></li><li><span class="choice-mark">C</span><span class="choice-text">Page</span></li></ol>
+    <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Warp</p><p class="explanation">Die Threads eines Blocks werden in der Hardware in Warps zu je 32 Threads aufgeteilt, und die 32 Threads eines Warps führen dieselbe Anweisung gleichzeitig auf unterschiedlichen Daten aus. Diese Methode, als Threads geschriebene Programme in Bündeln mit derselben Anweisung auszuführen, heißt <a class="term-link" href="/de/term/single-instruction-multiple-threads/">SIMT</a>. Bei AMD-GPUs heißt eine ähnliche Einheit Wavefront und umfasst 64 oder 32 Threads. Grundsätzlich sollte die Blockgröße ein Vielfaches von 32 sein.</p></details>
+  </article>
+  <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
+    <h3><a href="/de/q/gpu-programming/gpu-programming-010/">Welche Aussage zum Unterschied zwischen dem SIMT-Verfahren (Single Instruction, Multiple Threads) der GPU und SIMD-Befehlen der CPU ist richtig?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">SIMT führt mehrere Anweisungen gleichzeitig auf einem Datum aus, SIMD wendet eine Anweisung auf ein Datum an</span></li><li><span class="choice-mark">B</span><span class="choice-text">SIMT und SIMD sind genau dasselbe und unterscheiden sich nur im Namen</span></li><li><span class="choice-mark">C</span><span class="choice-text">Bei SIMT lässt sich jeder Thread als unabhängiges Programm schreiben, und die Hardware übernimmt auch Verzweigungen, während bei SIMD Programmierer oder Compiler explizit Vektorbefehle fester Breite verwenden</span></li></ol>
+    <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Bei SIMT lässt sich jeder Thread als unabhängiges Programm schreiben, und die Hardware übernimmt auch Verzweigungen, während bei SIMD Programmierer oder Compiler explizit Vektorbefehle fester Breite verwenden</p><p class="explanation">Bei <a class="term-link" href="/de/term/simd/">SIMD</a> der CPU wird eine Anweisung auf ein Vektorregister angewendet, das z. B. 4 oder 8 Daten bündelt; das Programm wird daher mit Blick auf die Vektorbreite geschrieben. Bei <a class="term-link" href="/de/term/single-instruction-multiple-threads/">SIMT</a> der <a class="term-link" href="/de/term/gpu/">GPU</a> schreibt der Programmierer die Verarbeitung eines einzelnen Threads ganz normal, und die Hardware bündelt je 32 Threads zur Ausführung mit derselben Anweisung. Threads dürfen verzweigen, und die Hardware führt die verzweigten Pfade nacheinander aus, wobei die Effizienz sinkt.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/de/q/gpu-programming/gpu-programming-011/">Innerhalb eines Warps teilt sich durch eine bedingte Verzweigung eine Hälfte der Threads auf die if-Seite und die andere Hälfte auf die else-Seite auf (Warp Divergence). Wie wird dies im Allgemeinen ausgeführt?</a></li>
+  <li data-level="1"><a href="/de/q/gpu-programming/gpu-programming-013/">Welche Aussage zum Memory Coalescing der GPU ist richtig?</a></li>
+  <li data-level="2"><a href="/de/q/compiler/compiler-045/">Welche Befehlsart wird bei der automatischen Vektorisierung des Compilers verwendet?</a></li></ol>
+  <p><a class="btn btn-primary" href="/de/c/gpu-programming/">Übungsfragen zu GPU-Programmierung</a></p>
+</section>
+<section>
+  <h2>Wichtige Begriffe erklärt</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/de/term/simd/">SIMD</a></dt><dd>Abkürzung für Single Instruction, Multiple Data. Verfahren, bei dem ein einziger Befehl dieselbe Operation gleichzeitig auf mehreren Daten ausführt. Beschleunigt Bildverarbeitung und KI-Berechnungen.</dd></div>
+    <div class="term"><dt><a href="/de/term/single-instruction-multiple-threads/">SIMT</a></dt><dd>Verfahren mit einem Befehl und mehreren Threads. Programme werden pro Thread geschrieben, die Hardware bündelt die Threads jedoch zu Warps (bei NVIDIA 32 Threads) und führt sie mit demselben Befehl aus.</dd></div>
+    <div class="term"><dt><a href="/de/term/warp-divergence/">Warp Divergence</a></dt><dd>Phänomen, dass sich innerhalb eines Warps die Wege der Threads durch bedingte Verzweigungen trennen. Die getrennten Pfade werden nacheinander ausgeführt, wodurch die Effizienz sinkt.</dd></div>
+    <div class="term"><dt><a href="/de/term/memory-coalescing/">Memory Coalescing</a></dt><dd>Zusammenfassen der Speicherzugriffe benachbarter Threads eines Warps auf benachbarte Adressen zu wenigen Zugriffen. Auch „zusammengefasster Zugriff“ genannt.</dd></div>
+    <div class="term"><dt><a href="/de/term/vectorization/">Vektorisierung</a></dt><dd>Optimierung, die gleiche Berechnungen je Element in einer Schleife mit SIMD-Befehlen für mehrere Elemente zusammenfasst. Voraussetzung ist, dass zwischen den Iterationen keine Datenabhängigkeit besteht.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Verwandte Vergleiche</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/de/compare/cpu-vs-gpu/"><strong>CPU vs. GPU: Unterschiede in Architektur und Einsatz</strong><span>CPU und GPU im Tabellenvergleich: Entwurfsziel, Kernanzahl, Ausführungsmodell, Caches, Speicherbandbreite, Ve…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs. SPI vs. UART: Unterschiede und Einsatzbereiche</strong><span>I2C, SPI und UART im Tabellenvergleich: Anzahl der Leitungen, Takt, Geschwindigkeit, Topologie, Adressierung,…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/verilog-vs-vhdl/"><strong>Verilog vs. VHDL: Unterschiede der beiden HDLs</strong><span>Verilog und VHDL im Tabellenvergleich: Herkunft, Syntax, Typisierung, Groß-/Kleinschreibung, Verifikationsfun…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/nvme-vs-sata-ssd/"><strong>NVMe vs. SATA-SSD: Geschwindigkeit, Schnittstelle und Kaufberatung</strong><span>NVMe- und SATA-SSDs im Tabellenvergleich: Schnittstelle, Geschwindigkeit, Latenz, Befehlswarteschlangen, Bauf…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/mcu-vs-mpu/"><strong>MCU vs. MPU: Mikrocontroller und Mikroprozessor im Vergleich</strong><span>MCU und MPU im Tabellenvergleich: Integration, Taktfrequenz, Speicher, Betriebssystem, Echtzeitverhalten, Lei…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/process-vs-thread/"><strong>Prozess vs. Thread: Unterschiede im Überblick</strong><span>Prozess und Thread im Tabellenvergleich: Speicher, Erzeugungsaufwand, Kontextwechsel, Kommunikation, Isolatio…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Dies ist eine von einer Privatperson betriebene Lernwebsite zu Halbleitern.</p>
+    <p class="footer-request"><a href="/de/contact/">Wünsche und Rückmeldungen sind willkommen. Senden Sie sie über das Kontaktformular →</a></p>
+    <nav class="footer-nav">
+      <a href="/de/about/">Über die Website</a>
+      <a href="/de/figures/">Diagramme</a>
+      <a href="/de/privacy/">Datenschutzerklärung</a>
+      <a href="/de/disclaimer/">Haftungsausschluss</a>
+      <a href="/de/contact/">Kontakt</a>
+    </nav>
+    <p class="copyright">© 2026 Halbleiter-Raum</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

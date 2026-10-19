@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Interblocage (deadlock)","item":"https://semiconroom.com/fr/term/deadlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interblocage (deadlock)","description":"État où plusieurs threads détiennent chacun une ressource tout en attendant celle d'un autre, si bien qu'aucun ne peut avancer. On l'évite en fixant globalement l'ordre d'acquisition des verrous.","url":"https://semiconroom.com/fr/term/deadlock/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Interblocage (deadlock)","item":"https://semiconroom.com/fr/term/deadlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interblocage (deadlock)","description":"État où plusieurs threads détiennent chacun une ressource tout en attendant celle d'un autre, si bien qu'aucun ne peut avancer. On l'évite en fixant globalement l'ordre d'acquisition des verrous.","url":"https://semiconroom.com/fr/term/deadlock/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelles sont les quatre conditions d'un interblocage ?","acceptedAnswer":{"@type":"Answer","text":"L'exclusion mutuelle, la détention et attente, l'absence de préemption et l'attente circulaire ; les quatre doivent être réunies simultanément, donc en rompre une seule empêche l'interblocage."}},{"@type":"Question","name":"Comment éviter un deadlock avec plusieurs verrous ?","acceptedAnswer":{"@type":"Answer","text":"Définissez un ordre global d'acquisition des verrous et faites-le respecter par chaque thread, ce qui rend l'attente circulaire impossible ; acquérir tous les verrous d'un coup ou reculer avec un try-lock sont des alternatives."}},{"@type":"Question","name":"Quelle différence entre deadlock et livelock ?","acceptedAnswer":{"@type":"Answer","text":"Dans un interblocage, les threads sont bloqués et ne font rien ; dans un livelock, ils continuent de s'exécuter et de changer d'état, par exemple en réessayant en réaction les uns aux autres, mais ne progressent jamais."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Domaine: <a href="/fr/c/multicore-sync/">Multicœur et synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Les quatre conditions nécessaires</h2>
+  <p>Un interblocage ne peut se produire que si quatre conditions, souvent appelées conditions de Coffman, sont réunies simultanément. Exclusion mutuelle : une ressource ne peut être détenue que par un seul thread à la fois. Détention et attente (hold and wait) : un thread conserve ce qu&#39;il détient tout en attendant davantage. Absence de préemption : les ressources ne peuvent pas être retirées de force. Attente circulaire : il existe un cycle de threads dans lequel chacun attend une ressource détenue par le suivant. Comme les quatre sont nécessaires, chaque technique de prévention consiste à rendre au moins l&#39;une d&#39;elles impossible.</p>
+</section>
+<section class="term-about">
+  <h2>À quoi cela ressemble</h2>
+  <p>Le cas classique fait intervenir deux verrous. Le thread 1 détient le verrou A et attend le verrou B, tandis que le thread 2 détient B et attend A ; aucun ne libère ce qu&#39;il détient, si bien que les deux attendent indéfiniment. Avec des verrous qui endorment les threads en attente, le CPU devient inactif et le programme semble simplement figé. Le livelock est différent : les threads restent occupés, par exemple en reculant et en réessayant de manière synchrone à répétition, sans pour autant progresser. La famine (starvation) se produit lorsqu&#39;un thread n&#39;obtient jamais une ressource tandis que les autres progressent, et le <a class="term-link" href="/fr/term/thrashing/">thrashing</a> est un problème de pagination mémoire, non un problème de verrous.</p>
+</section>
+<section class="term-about">
+  <h2>Prévenir et gérer l&#39;interblocage</h2>
+  <p>La règle pratique la plus courante est un ordre global des verrous : si chaque thread acquiert toujours A avant B, aucun thread ne peut détenir B en attendant A, et aucun cycle ne peut se former. D&#39;autres approches acquièrent tous les verrous nécessaires d&#39;un coup, ou utilisent un try-lock et libèrent tout ce qui est détenu lorsqu&#39;un verrou n&#39;est pas disponible, puis réessaient après un délai. Certains systèmes détectent plutôt l&#39;interblocage en recherchant des cycles dans un graphe d&#39;attente (wait-for graph) et le rompent en abandonnant l&#39;un des participants, comme le font les bases de données avec les transactions. Des outils de vérification de l&#39;ordre des verrous peuvent signaler les violations pendant les tests.</p>
+</section>
+<section class="term-about">
+  <h2>L&#39;interblocage dans le matériel</h2>
+  <p>Les interconnexions matérielles peuvent aussi se retrouver en interblocage. Dans un <a class="term-link" href="/fr/term/network-on-chip/">réseau sur puce</a>, les paquets occupent des tampons en attendant les tampons situés devant eux ; si ces dépendances forment un cycle, le trafic s&#39;arrête définitivement. Les concepteurs l&#39;évitent par des règles de routage qui excluent les cycles, comme le routage par ordre de dimension (dimension-order routing) sur un maillage, ou par des canaux virtuels qui rompent la chaîne de dépendances. L&#39;interblocage de protocole, où les réponses ne peuvent pas progresser parce que les requêtes remplissent les mêmes tampons, est évité en attribuant aux messages de requête et de réponse des tampons ou des canaux distincts.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Interblocage (deadlock)</h2>
   <article class="q-mini" data-qid="multicore-sync-024" data-cat="multicore-sync" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. Fixer un ordre unique de prise des verrous, respecté par tous les threads dans tout le programme</p><p class="explanation">L’<a class="term-link" href="/fr/term/deadlock/">interblocage</a> survient lorsqu’un « cycle » se forme, chaque thread attendant le verrou détenu par un autre. Si tous respectent par exemple la règle « toujours prendre A avant B », aucun thread ne détient B en attendant A, et aucun cycle ne se forme. Il existe d’autres méthodes : prendre d’un coup tous les verrous nécessaires, ou relâcher les verrous détenus et recommencer en cas d’échec.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Quelles sont les quatre conditions d&#39;un interblocage ?</h3>
+  <p>L&#39;exclusion mutuelle, la détention et attente, l&#39;absence de préemption et l&#39;attente circulaire ; les quatre doivent être réunies simultanément, donc en rompre une seule empêche l&#39;interblocage.</p>
+  <h3>Comment éviter un deadlock avec plusieurs verrous ?</h3>
+  <p>Définissez un ordre global d&#39;acquisition des verrous et faites-le respecter par chaque thread, ce qui rend l&#39;attente circulaire impossible ; acquérir tous les verrous d&#39;un coup ou reculer avec un try-lock sont des alternatives.</p>
+  <h3>Quelle différence entre deadlock et livelock ?</h3>
+  <p>Dans un interblocage, les threads sont bloqués et ne font rien ; dans un livelock, ils continuent de s&#39;exécuter et de changer d&#39;état, par exemple en réessayant en réaction les uns aux autres, mais ne progressent jamais.</p>
+</section>
 <section>
   <h2>« Interblocage (deadlock) » dans les explications</h2>
   <ul class="term-quotes"><li><p>L’interblocage est une situation où plusieurs threads, conservant chacun des ressources, attendent les ressources détenues par les autres, si bien qu’aucun ne peut progresser.</p><a href="/fr/q/multicore-sync/multicore-sync-024/">Quel est un exemple d’interblocage (deadlock) ?</a></li><li><p>L’interblocage survient lorsqu’un « cycle » se forme, chaque thread attendant le verrou détenu par un autre.</p><a href="/fr/q/multicore-sync/multicore-sync-025/">Dans un programme utilisant plusieurs verrous, quelle est l…</a></li><li><p>L’interblocage est un blocage où chacun attend les ressources de l’autre.</p><a href="/fr/q/os-hardware/os-hardware-021/">Comment s’appelle l’état où, faute de mémoire physique suff…</a></li></ul>

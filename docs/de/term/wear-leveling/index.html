@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Wear-Leveling","item":"https://semiconroom.com/de/term/wear-leveling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Wear-Leveling","description":"Technik, die Schreibzugriffe auf Flash-Speicher verteilt, damit sich Schreibvorgänge nicht auf bestimmte Blöcke konzentrieren, und so die Lebensdauer verlängert.","url":"https://semiconroom.com/de/term/wear-leveling/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Wear-Leveling","item":"https://semiconroom.com/de/term/wear-leveling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Wear-Leveling","description":"Technik, die Schreibzugriffe auf Flash-Speicher verteilt, damit sich Schreibvorgänge nicht auf bestimmte Blöcke konzentrieren, und so die Lebensdauer verlängert.","url":"https://semiconroom.com/de/term/wear-leveling/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen statischem und dynamischem Wear-Leveling","acceptedAnswer":{"@type":"Answer","text":"Dynamisches Wear-Leveling wählt wenig abgenutzte freie Blöcke für neue Schreibvorgänge, während statisches Wear-Leveling zusätzlich selten veränderte Daten aus wenig abgenutzten Blöcken verschiebt, damit diese Blöcke die Schreiblast mittragen können."}},{"@type":"Question","name":"Erhöht Wear-Leveling die Write Amplification?","acceptedAnswer":{"@type":"Answer","text":"Statisches Wear-Leveling fügt einige interne Schreibvorgänge hinzu, weil es Daten verschiebt, die der Host nicht geändert hat, aber der Gewinn durch gleichmäßig verteilte Abnutzung überwiegt diese Kosten bei Weitem."}},{"@type":"Question","name":"Wie viele Schreibzyklen hält NAND-Flash aus?","acceptedAnswer":{"@type":"Answer","text":"Etwa 50.000 bis 100.000 bei SLC, einige Tausend bis 10.000 bei MLC, einige Tausend bei TLC und etwa 1.000 bei QLC, abhängig von Prozess und Bedingungen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/sram-flash/">SRAM und Flash-Speicher</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum Flash es braucht</h2>
+  <p>NAND-Flash kann Daten nicht an Ort und Stelle überschreiben: Pages werden einzeln programmiert, gelöscht werden können aber nur ganze Blöcke mit vielen Pages, und jeder Program/Erase-Zyklus (P/E) schädigt das Tunneloxid ein wenig. Die Lebensdauer hängt daher vom Zelltyp ab: etwa 50.000 bis 100.000 Zyklen bei Single-Level-Cells (<a class="term-link" href="/de/term/slc/">SLC</a>), einige Tausend bis 10.000 bei Multi-Level-Cells (MLC), einige Tausend bei Triple-Level-Cells (<a class="term-link" href="/de/term/tlc/">TLC</a>) und etwa 1.000 bei Quad-Level-Cells (QLC). Träfe eine häufig aktualisierte logische Adresse, etwa ein Log oder Dateisystem-Metadaten, immer denselben Block, wäre dieser Block lange vor dem Rest verschlissen.</p>
+</section>
+<section class="term-about">
+  <h2>Wie es über die FTL funktioniert</h2>
+  <p>Der Controller betreibt eine Flash Translation Layer (FTL), die logische Blockadressen des Hosts auf physische Pages abbildet. Jede Aktualisierung einer logischen Adresse wird in eine frisch gelöschte Page an anderer Stelle geschrieben, und die alte Page wird lediglich als ungültig markiert; die <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> kopiert später die verbliebenen gültigen Pages aus einem Block heraus und löscht ihn. Dynamisches Wear-Leveling lenkt neue Schreibvorgänge auf freie Blöcke mit niedrigen Löschzählern. Statisches Wear-Leveling verlagert zusätzlich selten veränderte kalte Daten, sodass die kaum abgenutzten Blöcke, die sie belegen, wieder in die Rotation kommen und alle Blöcke ähnlich schnell altern.</p>
+</section>
+<section class="term-about">
+  <h2>Write Amplification und Reservebereich</h2>
+  <p><a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> und statisches Wear-Leveling schreiben Daten, deren Schreiben der Host nie angefordert hat. Das Verhältnis von NAND-Schreibvorgängen zu Host-Schreibvorgängen, der Write-Amplification-Faktor, verringert die nutzbare Lebensdauer direkt. Reservekapazität, Over-Provisioning genannt, und <a class="term-link" href="/de/term/trim/">TRIM</a>-Befehle des Hosts, die dem Laufwerk mitteilen, welche Daten gelöscht sind, geben dem Controller Spielraum und senken den Faktor. Die Lebensdauer eines Laufwerks wird als Total Bytes Written (TBW) oder Drive Writes per Day (DWPD) angegeben, ungefähr Kapazität mal Nenn-P/E-Zyklen geteilt durch die <a class="term-link" href="/de/term/write-amplification/">Write Amplification</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Verwandte Mechanismen und wo es läuft</h2>
+  <p>Wear-Leveling gleicht nur die Abnutzung aus; es arbeitet mit anderen Controllerfunktionen zusammen. Fehlerkorrekturcodes (<a class="term-link" href="/de/term/ecc/">ECC</a>), von BCH bis zu Low-Density-Parity-Check-Codes (LDPC) in modernen SSDs, korrigieren die Roh-Bitfehler, die mit dem Altern der Zellen zunehmen, und das Bad-Block-Management nimmt ausfallende Blöcke außer Betrieb. SSDs, USB-Sticks, SD-Karten und eingebettete eMMC-Bausteine erledigen all dies in ihren Controllern, wobei günstige Karten es einfach umsetzen können. Ist rohes NAND direkt an einen Prozessor angeschlossen, müssen stattdessen Flash-fähige Dateisysteme oder die Host-Software das Wear-Leveling bereitstellen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Wear-Leveling</h2>
   <article class="q-mini" data-qid="sram-flash-007" data-cat="sram-flash" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. NAND-Flash-Speicher</p><p class="explanation">In USB-Sticks, SD-Karten und SSDs wird NAND-Flash, ein günstiger <a class="term-link" href="/de/term/nonvolatile-memory/">nichtflüchtiger Speicher</a> großer Kapazität, verwendet; im Inneren befinden sich NAND-Chips und ein Controller, der Fehlerkorrektur und <a class="term-link" href="/de/term/wear-leveling/">Wear-Leveling</a> übernimmt. Bei günstigen Produkten ist der Controller einfach aufgebaut, und die Zuverlässigkeit bei langer Lagerung ist teils gering. DRAM und SRAM sind flüchtig, und die Daten gehen beim Abschalten verloren; sie werden daher nicht für tragbare Speichermedien verwendet.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen statischem und dynamischem Wear-Leveling</h3>
+  <p>Dynamisches Wear-Leveling wählt wenig abgenutzte freie Blöcke für neue Schreibvorgänge, während statisches Wear-Leveling zusätzlich selten veränderte Daten aus wenig abgenutzten Blöcken verschiebt, damit diese Blöcke die Schreiblast mittragen können.</p>
+  <h3>Erhöht Wear-Leveling die Write Amplification?</h3>
+  <p>Statisches Wear-Leveling fügt einige interne Schreibvorgänge hinzu, weil es Daten verschiebt, die der Host nicht geändert hat, aber der Gewinn durch gleichmäßig verteilte Abnutzung überwiegt diese Kosten bei Weitem.</p>
+  <h3>Wie viele Schreibzyklen hält NAND-Flash aus?</h3>
+  <p>Etwa 50.000 bis 100.000 bei SLC, einige Tausend bis 10.000 bei MLC, einige Tausend bei TLC und etwa 1.000 bei QLC, abhängig von Prozess und Bedingungen.</p>
+</section>
 <section>
   <h2>„Wear-Leveling“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Beim Wear-Leveling verwaltet der Controller eine Zuordnungstabelle (FTL) zwischen logischen Adressen und physischen Blöcken und verteilt Schreibvorgänge auf Blöcke mit wenigen Löschzyklen.</p><a href="/de/q/sram-flash/sram-flash-007/">Welcher Zweck des bei SSDs u. Ä. verwendeten Wear-Levelings…</a></li><li><p>In USB-Sticks, SD-Karten und SSDs wird NAND-Flash, ein günstiger nichtflüchtiger Speicher großer Kapazität, verwendet; im Inneren befinden sich NAND-Chips und ein Controller, der Fehlerkorrektur und Wear-Leveling übernimmt.</p><a href="/de/q/sram-flash/sram-flash-032/">Welcher Speicher wird hauptsächlich in USB-Sticks und SD-Ka…</a></li><li><p>Die Lebensdauer von SSDs wird als TBW (insgesamt geschriebene Datenmenge) oder DWPD (wie oft pro Tag die gesamte Kapazität geschrieben werden kann) angegeben und durch Wear-Leveling und Reservebereiche verlängert.</p><a href="/de/q/sram-flash/sram-flash-039/">Welcher Wert kommt der Zahl der Schreibzyklen von NAND-Flas…</a></li></ul>

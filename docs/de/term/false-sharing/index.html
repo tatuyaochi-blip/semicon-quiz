@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"False Sharing","item":"https://semiconroom.com/de/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"False Sharing","description":"Phänomen, bei dem verschiedene Threads verschiedene Variablen beschreiben, diese aber in derselben Cache-Line liegen, sodass die Line zwischen den Kernen hin- und herwandert und die Ausführung langsamer wird.","url":"https://semiconroom.com/de/term/false-sharing/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"False Sharing","item":"https://semiconroom.com/de/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"False Sharing","description":"Phänomen, bei dem verschiedene Threads verschiedene Variablen beschreiben, diese aber in derselben Cache-Line liegen, sodass die Line zwischen den Kernen hin- und herwandert und die Ausführung langsamer wird.","url":"https://semiconroom.com/de/term/false-sharing/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Führt False Sharing zu falschen Ergebnissen?","acceptedAnswer":{"@type":"Answer","text":"Nein. Das Kohärenzprotokoll hält jede Variable korrekt; False Sharing kostet nur Zeit, weil die Cache-Line mit den Variablen ständig zwischen den Kernen wandert."}},{"@type":"Question","name":"Wie viel Padding braucht man gegen False Sharing?","acceptedAnswer":{"@type":"Answer","text":"So viel, dass jede unabhängig geschriebene Variable eine eigene Cache-Line belegt, meist 64 Byte. Mancher Code verwendet 128 Byte, weil bestimmte CPUs benachbarte Line-Paare gemeinsam vorab holen."}},{"@type":"Question","name":"Können nur gelesene gemeinsame Daten False Sharing verursachen?","acceptedAnswer":{"@type":"Answer","text":"Nein. Mehrere Kerne können dieselbe Line gleichzeitig in einem gemeinsamen Zustand halten; das Problem tritt nur auf, wenn mindestens ein Thread in die Line schreibt."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/multicore-sync/">Multicore und Synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum Kohärenz pro Line statt pro Variable arbeitet</h2>
+  <p>Cache-Kohärenzprotokolle wie MESI (Modified, Exclusive, Shared, Invalid) verfolgen den Besitz ganzer Cache-Lines, typischerweise 64 Byte, nicht einzelner Variablen. Bevor ein Kern schreiben kann, muss er die Line exklusiv halten, was die Kopien aller anderen Kerne invalidiert. Schreibt Kern 0 fortlaufend Variable a und Kern 1 fortlaufend Variable b in derselben Line, zwingt jeder Schreibvorgang die Line, zwischen den beiden Caches zu wandern. Keiner der Threads liest die Daten des anderen, sodass die Ergebnisse korrekt bleiben, aber ein Zugriff, der ein L1-Hit von wenigen Zyklen wäre, wird zu einer langsamen Übertragung zwischen Kernen.</p>
+</section>
+<section class="term-about">
+  <h2>False Sharing vs. True Sharing</h2>
+  <p>True Sharing bedeutet, dass Threads wirklich auf dieselbe Variable zugreifen, etwa einen globalen Zähler oder ein Lock-Wort; der Konflikt ist inhärent und lässt sich nur durch eine Änderung des Algorithmus beseitigen, zum Beispiel durch Aufteilen des Zählers. False Sharing bedeutet, dass die Daten logisch unabhängig sind und nur zufällig im Speicher benachbart liegen, sodass die Abhilfe eine Änderung des Datenlayouts ist. Beide erzeugen dasselbe Symptom: starken Kohärenzverkehr auf wenigen Lines. Rein lesendes Teilen verursacht keines der beiden Probleme, weil viele Caches eine Line gleichzeitig im Zustand Shared halten können; nur Schreibvorgänge erzwingen Invalidierungen.</p>
+</section>
+<section class="term-about">
+  <h2>Typische Verursacher</h2>
+  <p>Der klassische Fall ist ein Array von Zählern pro Thread: Bei 8-Byte-Elementen passen acht davon in eine 64-Byte-Line, sodass bis zu acht Threads um sie kämpfen. Weitere häufige Quellen sind Structs, deren Felder von verschiedenen Threads aktualisiert werden, ein Lock in derselben Line wie Daten, die von einem anderen Lock geschützt werden, und Arbeitswarteschlangen, deren Head- und Tail-Indizes, geschrieben von Producer und Consumer, nebeneinanderliegen. Das übliche Anzeichen ist ein Programm, dessen <a class="term-link" href="/de/term/speedup/">Speedup</a> mit mehr Threads abflacht oder sogar sinkt, obwohl jeder Thread scheinbar nur seine eigenen Daten <a class="term-link" href="/de/term/bit-error-rate/">ber</a>ührt.</p>
+</section>
+<section class="term-about">
+  <h2>Wie man es behebt und findet</h2>
+  <p>Jedes unabhängig geschriebene Element auf die Größe einer Cache-Line auffüllen (Padding) oder ausrichten, etwa mit alignas(64) in C oder C++, sodass jeder Thread seine eigene Line besitzt. Manche Prozessoren holen benachbarte Line-Paare gemeinsam, weshalb mitunter ein Abstand von 128 Byte verwendet wird. Noch besser ist es, jeden Thread in einer lokalen Variable oder einem Register akkumulieren zu lassen und die gemeinsame Stelle am Ende einmal zu schreiben. Hardware-Performance-Counter können das Problem aufdecken; unter Linux meldet das Werkzeug perf c2c Cache-Lines, die häufig von einem Kern geändert und dann von einem anderen getroffen werden.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu False Sharing</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Zwischen den Zählern Füllbytes einfügen oder sie ausrichten, sodass sie in verschiedenen Cache-Zeilen liegen</p><p class="explanation">Bei 8 Byte großem long passen die 8 Zähler in eine Zeile von 64 Byte, und alle Threads streiten um dieselbe Zeile. Fügt man Füllbytes ein, sodass jeder Zähler auf einer 64-Byte-Grenze liegt, oder richtet man die Struktur an der Größe der <a class="term-link" href="/de/term/cache-line/">Cache-Zeile</a> aus, kann jeder Thread eine eigene Zeile nutzen. Wirksam ist auch, dass jeder Thread in einer lokalen Variablen zählt und erst am Ende einmal auf den gemeinsamen Speicherplatz addiert.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Führt False Sharing zu falschen Ergebnissen?</h3>
+  <p>Nein. Das Kohärenzprotokoll hält jede Variable korrekt; False Sharing kostet nur Zeit, weil die Cache-Line mit den Variablen ständig zwischen den Kernen wandert.</p>
+  <h3>Wie viel Padding braucht man gegen False Sharing?</h3>
+  <p>So viel, dass jede unabhängig geschriebene Variable eine eigene Cache-Line belegt, meist 64 Byte. Mancher Code verwendet 128 Byte, weil bestimmte CPUs benachbarte Line-Paare gemeinsam vorab holen.</p>
+  <h3>Können nur gelesene gemeinsame Daten False Sharing verursachen?</h3>
+  <p>Nein. Mehrere Kerne können dieselbe Line gleichzeitig in einem gemeinsamen Zustand halten; das Problem tritt nur auf, wenn mindestens ein Thread in die Line schreibt.</p>
+</section>
 <section>
   <h2>„False Sharing“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Das Ergebnis ist korrekt, die Leistung sinkt aber stark; das ist False Sharing.</p><a href="/de/q/multicore-sync/multicore-sync-010/">Welche Aussage zum in Multithread-Programmen auftretenden F…</a></li><li><p>Bei Multithread-Programmen ist auf False Sharing zu achten, bei dem sich getrennte Variablen in derselben Zeile befinden und um diese konkurrieren.</p><a href="/de/q/cpu/cpu-039/">Welche Größe der Cache-Zeile (Cache-Block) wird bei den mei…</a></li><li><p>Zu den Hauptursachen, die die Wirkung der Parallelisierung behindern, gehören nicht parallelisierbare Anteile (Amdahlsches Gesetz), Warten durch Sperren und Barrieren, das Hin- und Herwandern von Cache-Zeilen durch gemeinsame Daten und False Sharing, ungleiche Arbeitsverteilung und mangelnde Speicherbandbreite.</p><a href="/de/q/multicore-sync/multicore-sync-043/">Was trifft nicht als Ursache zu, dass die Leistung eines pa…</a></li></ul>

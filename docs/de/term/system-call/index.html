@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Systemaufruf (System Call)","item":"https://semiconroom.com/de/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Systemaufruf (System Call)","description":"Mechanismus, mit dem eine Anwendung das Betriebssystem z. B. um Lesen/Schreiben von Dateien oder Speicherreservierung bittet. Über einen speziellen Befehl wird eine Ausnahme ausgelöst, in den privilegierten Modus gewechselt und die Kernel-Routine aufgerufen.","url":"https://semiconroom.com/de/term/system-call/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Systemaufruf (System Call)","item":"https://semiconroom.com/de/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Systemaufruf (System Call)","description":"Mechanismus, mit dem eine Anwendung das Betriebssystem z. B. um Lesen/Schreiben von Dateien oder Speicherreservierung bittet. Über einen speziellen Befehl wird eine Ausnahme ausgelöst, in den privilegierten Modus gewechselt und die Kernel-Routine aufgerufen.","url":"https://semiconroom.com/de/term/system-call/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Systemaufruf und Interrupt","acceptedAnswer":{"@type":"Answer","text":"Ein Systemaufruf ist ein synchroner Trap, den das Programm absichtlich mit einem eigenen Befehl auslöst. Ein Interrupt ist ein asynchrones Signal der Hardware, etwa von einem Timer oder Gerät, das unabhängig davon eintrifft, was das Programm gerade tut."}},{"@type":"Question","name":"Ist printf ein Systemaufruf?","acceptedAnswer":{"@type":"Answer","text":"Nein. printf ist eine Funktion der C-Bibliothek, die Ausgaben im User Space formatiert; schließlich ruft sie den Systemaufruf write auf, um die gepufferten Daten an den Kernel zu übergeben."}},{"@type":"Question","name":"Warum sind Systemaufrufe langsam?","acceptedAnswer":{"@type":"Answer","text":"Jeder wechselt in den privilegierten Modus, sichert Zustand, prüft Argumente und kehrt zurück, und er stört Caches und TLB. Die Kosten fallen pro Aufruf fest an, sodass sich viele winzige Aufrufe summieren."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/os-hardware/">Betriebssystem und Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Ein Systemaufruf Schritt für Schritt</h2>
+  <p>Unter RISC-V-Linux legt ein Programm die Systemaufrufnummer in Register a7 und die Argumente ab a0 ab und führt dann ecall aus. Der Befehl löst absichtlich eine Ausnahme aus: Die CPU hält die Adresse des ecall fest, wechselt in den Supervisor-Modus und springt zum Trap-Einsprung des Kernels. Der Kernel sichert die Benutzerregister, sucht den Handler anhand der Nummer, prüft die Argumente, erledigt die Arbeit und legt das Ergebnis in a0. Dann setzt er die gesicherte Adresse hinter den ecall und kehrt mit sret in den Benutzermodus zurück. Andere Architekturen verwenden Befehle wie syscall bei x86-64 und svc bei Arm.</p>
+</section>
+<section class="term-about">
+  <h2>Systemaufruf vs. Bibliotheksfunktion</h2>
+  <p>Programme erreichen Systemaufrufe meist ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Bibliotheks-Wrapper, daher übersieht man die Grenze leicht. Eine Funktion wie printf läuft vollständig im User Space, formatiert Text in einen Puffer und ruft nur gelegentlich den Systemaufruf write auf, um diesen Puffer an den Kernel zu übergeben. Viele Bibliotheksfunktionen, etwa zur Stringverarbeitung oder Mathematikroutinen, betreten den Kernel überhaupt nicht. Ein Systemaufruf ist durch den Wechsel in den privilegierten Modus definiert, nicht durch den Namen der Funktion.</p>
+</section>
+<section class="term-about">
+  <h2>Warum Systemaufrufe Zeit kosten</h2>
+  <p>Jeder Aufruf zahlt einen festen Overhead: den Moduswechsel, das Sichern und Wiederherstellen von Registern, die Argumentprüfung und den Rücksprung. Das Betreten des Kernels stört außerdem Caches und <a class="term-link" href="/de/term/tlb/">TLB</a>, und Gegenmaßnahmen gegen Angriffe auf die <a class="term-link" href="/de/term/speculative-execution/">spekulative Ausführung</a> wie <a class="term-link" href="/de/term/kernel-page-table-isolation/">Kernel Page-Table Isolation</a> (KPTI) fügen bei jedem Eintritt einen Seitentabellenwechsel hinzu. Ein Byte pro Aufruf zu schreiben, ist daher weit langsamer, als mehrere Kilobyte im User Space zu puffern und in einem Aufruf zu schreiben.</p>
+</section>
+<section class="term-about">
+  <h2>Wege, Aufrufe zu vermeiden</h2>
+  <p>Neben dem Puffern können Programme eine Datei mit mmap in den Speicher abbilden; danach sind Lesevorgänge gewöhnliche Loads, die beim ersten Zugriff ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> <a class="term-link" href="/de/term/page-fault/">Seitenfehler</a> bedient werden, statt eines Aufrufs pro Lesevorgang. Schnittstellen, die mehrere Operationen in einem Aufruf übergeben, verringern die Übergänge weiter. Manche Betriebssysteme bilden außerdem schreibgeschützte Kerneldaten wie die aktuelle Uhrzeit in den User Space ab, sodass häufige Abfragen überhaupt keinen Trap benötigen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Systemaufruf (System Call)</h2>
   <article class="q-mini" data-qid="os-hardware-050" data-cat="os-hardware" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Weil sich der feste Aufwand pro Systemaufruf durch weniger Aufrufe begrenzen lässt</p><p class="explanation">Ein <a class="term-link" href="/de/term/system-call/">Systemaufruf</a> erfordert jedes Mal Wechsel vom Benutzer- in den privilegierten Modus, Sichern von Registern, Prüfung der Argumente und Rückkehr; dieser feste Aufwand fällt auch bei nur einem Byte an. Zusätzlich gerät durch den Eintritt in den Kernel der Inhalt von Cache und <a class="term-link" href="/de/term/tlb/">TLB</a> durcheinander. Wird gepuffert und in Blöcken von einigen KB geschrieben, sinkt die Zahl der Systemaufrufe stark, und das Ganze wird schneller. Die Gesamtmenge der Daten ändert sich nicht, und schließlich wird auf die Festplatte geschrieben.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Systemaufruf und Interrupt</h3>
+  <p>Ein Systemaufruf ist ein synchroner Trap, den das Programm absichtlich mit einem eigenen Befehl auslöst. Ein Interrupt ist ein asynchrones Signal der Hardware, etwa von einem Timer oder Gerät, das unabhängig davon eintrifft, was das Programm gerade tut.</p>
+  <h3>Ist printf ein Systemaufruf?</h3>
+  <p>Nein. printf ist eine Funktion der C-Bibliothek, die Ausgaben im User Space formatiert; schließlich ruft sie den Systemaufruf write auf, um die gepufferten Daten an den Kernel zu übergeben.</p>
+  <h3>Warum sind Systemaufrufe langsam?</h3>
+  <p>Jeder wechselt in den privilegierten Modus, sichert Zustand, prüft Argumente und kehrt zurück, und er stört Caches und TLB. Die Kosten fallen pro Aufruf fest an, sodass sich viele winzige Aufrufe summieren.</p>
+</section>
 <section>
   <h2>„Systemaufruf (System Call)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Ein Systemaufruf erfordert jedes Mal Wechsel vom Benutzer- in den privilegierten Modus, Sichern von Registern, Prüfung der Argumente und Rückkehr; dieser feste Aufwand fällt auch bei nur einem Byte an.</p><a href="/de/q/os-hardware/os-hardware-050/">Was ist der Hauptgrund dafür, dass es beim byteweisen Schre…</a></li><li><p>Der Kernel entscheidet anhand der Nummer in a7, welcher Systemaufruf vorliegt, verarbeitet ihn mit a0 bis a2 als Argumenten und kehrt nach Rückgabe des Ergebnisses in den Benutzermodus zurück.</p><a href="/de/q/os-hardware/os-hardware-003/">Was geschieht, wenn der letzte Befehl ecall des obigen RISC…</a></li><li><p>Ausnahmen entstehen als Ergebnis der Ausführung eines bestimmten Befehls, etwa bei Division durch null, ungültigem Befehl, Seitenfehler oder Systemaufruf-Befehl (synchron).</p><a href="/de/q/os-hardware/os-hardware-004/">Welche Erklärung des Unterschieds zwischen Interrupt und Au…</a></li><li><p>Anwendungen bitten das Betriebssystem per Systemaufruf um die Bedienung.</p><a href="/de/q/os-hardware/os-hardware-032/">Was ist der Hauptgrund dafür, dass in üblichen Betriebssyst…</a></li><li><p>Es ist derselbe Mechanismus wie beim Demand Paging, muss bei Lesezugriffen keinen Systemaufruf ausführen und verringert auch unnötiges Kopieren der Daten.</p><a href="/de/q/os-hardware/os-hardware-049/">Welche Erklärung dessen, was beim Lesen von Dateiinhalten ü…</a></li></ul>
@@ -104,7 +127,11 @@
 </section>
 
 <div data-ad="term"></div>
-
+<section>
+  <h2>Vergleiche mit diesem Begriff</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/de/compare/user-mode-vs-kernel-mode/"><strong>User-Mode vs. Kernel-Mode: Unterschiede im Überblick</strong><span>User-Mode und Kernel-Mode im Tabellenvergleich: ausführbare Befehle, zugängliche Speicherbereiche, Auslöser u…</span></a></li></ul>
+</section>
 
 <section>
   <h2>Verwandte Begriffe</h2>

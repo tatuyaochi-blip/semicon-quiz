@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Entry Point (Einsprungpunkt)","item":"https://semiconroom.com/de/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Entry Point (Einsprungpunkt)","description":"Adresse, bei der die Programmausführung beginnt. Im ELF-Header vermerkt. In C ist es meist nicht main, sondern Startcode wie _start, der initialisiert und dann main aufruft.","url":"https://semiconroom.com/de/term/entry-point/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Entry Point (Einsprungpunkt)","item":"https://semiconroom.com/de/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Entry Point (Einsprungpunkt)","description":"Adresse, bei der die Programmausführung beginnt. Im ELF-Header vermerkt. In C ist es meist nicht main, sondern Startcode wie _start, der initialisiert und dann main aufruft.","url":"https://semiconroom.com/de/term/entry-point/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Ist main der Einsprungpunkt eines C-Programms?","acceptedAnswer":{"@type":"Answer","text":"Meist nicht. Der Einsprungpunkt der ausführbaren Datei ist Startcode wie _start, der Argumente und Laufzeitumgebung vorbereitet, main aufruft und dann den Rückgabewert von main an exit übergibt."}},{"@type":"Question","name":"Wo steht der Entry Point in einer ELF-Datei?","acceptedAnswer":{"@type":"Answer","text":"Im Feld e_entry des ELF-Headers, das die virtuelle Adresse enthält, an der die Ausführung nach dem Laden des Programms beginnt."}},{"@type":"Question","name":"Was läuft in einem C-Programm vor main?","acceptedAnswer":{"@type":"Answer","text":"Der Startcode der C-Laufzeitumgebung, die Bibliotheksinitialisierung und Konstruktoren für globale Objekte; in einem dynamisch gelinkten Programm lädt und reloziert zuvor außerdem der dynamische Linker die Shared Libraries."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/linker-loader/">Linker, Loader und ausführbare Formate</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Entry Point im Vergleich zu main</h2>
+  <p>Der Entry Point ist die Adresse des ersten Befehls, an den der <a class="term-link" href="/de/term/program-loader/">Loader</a> die Kontrolle übergibt, gespeichert im Header der ausführbaren Datei, etwa im Feld e_entry einer <a class="term-link" href="/de/term/executable-and-linkable-format/">ELF</a>-Datei. Bei einem C-Programm ist das normalerweise nicht main. Der <a class="term-link" href="/de/term/linker/">Linker</a> fügt Startobjekte der C-Laufzeitumgebung wie crt1.o hinzu und macht das darin enthaltene Symbol _start zum Einsprungpunkt. Für C-Code sieht main wie der Anfang aus, ist aber nur eine gewöhnliche Funktion, die von diesem Startcode aufgerufen wird. Linker erlauben es, bei Bedarf ein anderes Einsprungsymbol zu wählen.</p>
+</section>
+<section class="term-about">
+  <h2>Was der Startcode tut</h2>
+  <p>Unter Linux startet der Kernel einen neuen Prozess mit argc, den argv-Zeigern, den Umgebungszeigern und einem Hilfsvektor (Auxiliary Vector) auf dem Stack. Die Routine _start sammelt diese ein, richtet den Stack aus und ruft die Initialisierung der C-Bibliothek auf, die die Standardbibliothek einrichtet, Konstruktoren und Initialisierer für globale Objekte ausführt und dann main aufruft. Kehrt main zurück, wird sein Rückgabewert an exit übergeben, das registrierte atexit-Handler ausführt, gepufferte Ausgaben schreibt (Flush) und schließlich den Kernel auffordert, den Prozess zu beenden.</p>
+</section>
+<section class="term-about">
+  <h2>Dynamisch gelinkte Programme</h2>
+  <p>Eine dynamisch gelinkte ausführbare Datei nennt in einem Programm-Header ihren dynamischen <a class="term-link" href="/de/term/linker/">Linker</a>, etwa ld.so unter Linux. Der Kernel bildet sowohl das Programm als auch den dynamischen Linker in den Speicher ab und beginnt die Ausführung am eigenen Einsprungpunkt des dynamischen Linkers, nicht an dem des Programms. Der dynamische Linker lädt die benötigten Shared Libraries, führt Relokationen durch, bindet Symbole und führt die Initialisierungsfunktionen der Bibliotheken aus; dann springt er zum Einsprungpunkt des Programms, _start. In einem dynamisch gelinkten Prozess läuft also eine beträchtliche Menge Code, bevor der erste eigene Befehl des Programms ausgeführt wird.</p>
+</section>
+<section class="term-about">
+  <h2>Einsprungpunkte in Kerneln und Mikrocontrollern</h2>
+  <p>Der Begriff umfasst auch andere Stellen, an denen die Ausführung beginnt. Ein Betriebssystem registriert Einsprungpunkte für Ausnahmen und Interrupts bei der CPU; bei RISC-V löst zum Beispiel ein ecall-Befehl eine Ausnahme aus, die in einen höheren Privilegienmodus wechselt und zu dem vom Betriebssystem konfigurierten Trap-Vektor springt. Bei einem Bare-Metal-<a class="term-link" href="/de/term/microcontroller/">Mikrocontroller</a> zeigt der Reset-Vektor auf Startcode, der den Stack vorbereitet, initialisierte Daten aus dem Flash ins RAM kopiert, den uninitialisierten Abschnitt .bss nullt und erst dann main aufruft.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Entry Point (Einsprungpunkt)</h2>
   <article class="q-mini" data-qid="linker-loader-031" data-cat="linker-loader" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Sie ist üblicherweise nicht main, sondern Startcode wie _start, der Initialisierungen durchführt und dann main aufruft</p><p class="explanation">Der <a class="term-link" href="/de/term/linker/">Linker</a> bindet das vom C-Laufzeitsystem bereitgestellte Startobjekt (z. B. crt1.o) in das Programm ein und verwendet darin _start als <a class="term-link" href="/de/term/entry-point/">Einsprungpunkt</a>. _start entnimmt die Kommandozeilenargumente dem Stack, initialisiert die Standardbibliothek und globale Objekte und ruft dann main auf. Kehrt main zurück, ruft es mit dem Rückgabewert exit auf und führt die Beendigung durch.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Ist main der Einsprungpunkt eines C-Programms?</h3>
+  <p>Meist nicht. Der Einsprungpunkt der ausführbaren Datei ist Startcode wie _start, der Argumente und Laufzeitumgebung vorbereitet, main aufruft und dann den Rückgabewert von main an exit übergibt.</p>
+  <h3>Wo steht der Entry Point in einer ELF-Datei?</h3>
+  <p>Im Feld e_entry des ELF-Headers, das die virtuelle Adresse enthält, an der die Ausführung nach dem Laden des Programms beginnt.</p>
+  <h3>Was läuft in einem C-Programm vor main?</h3>
+  <p>Der Startcode der C-Laufzeitumgebung, die Bibliotheksinitialisierung und Konstruktoren für globale Objekte; in einem dynamisch gelinkten Programm lädt und reloziert zuvor außerdem der dynamische Linker die Shared Libraries.</p>
+</section>
 <section>
   <h2>„Entry Point (Einsprungpunkt)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>crt1.o) in das Programm ein und verwendet darin _start als Einsprungpunkt.</p><a href="/de/q/linker-loader/linker-loader-031/">Welche Aussage zur Adresse, an der das Betriebssystem bei e…</a></li><li><p>Dieser sucht und lädt die benötigten Shared Libraries, führt Relokation und Symbolbindung durch und übergibt dann die Kontrolle an den Einsprungpunkt des Programms.</p><a href="/de/q/linker-loader/linker-loader-027/">Welche Aufgabe hat der dynamische Linker (z. B. ld.so), der…</a></li></ul>

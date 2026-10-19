@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Faux partage (false sharing)","item":"https://semiconroom.com/fr/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Faux partage (false sharing)","description":"Phénomène où des threads distincts modifient des variables distinctes situées sur la même ligne de cache, ce qui fait circuler la ligne entre les cœurs et ralentit le traitement.","url":"https://semiconroom.com/fr/term/false-sharing/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Faux partage (false sharing)","item":"https://semiconroom.com/fr/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Faux partage (false sharing)","description":"Phénomène où des threads distincts modifient des variables distinctes situées sur la même ligne de cache, ce qui fait circuler la ligne entre les cœurs et ralentit le traitement.","url":"https://semiconroom.com/fr/term/false-sharing/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Le faux partage provoque-t-il des résultats erronés ?","acceptedAnswer":{"@type":"Answer","text":"Non. Le protocole de cohérence garantit que chaque variable reste correcte ; le faux partage ne coûte que du temps, car la ligne de cache contenant les variables ne cesse de passer d'un cœur à l'autre."}},{"@type":"Question","name":"Quel padding faut-il pour éviter le faux partage ?","acceptedAnswer":{"@type":"Answer","text":"Suffisamment pour que chaque variable écrite indépendamment occupe sa propre ligne de cache, généralement 64 octets. Certains codes utilisent 128 octets car certains CPU préchargent ensemble des paires de lignes adjacentes."}},{"@type":"Question","name":"Des données partagées en lecture seule peuvent-elles causer du faux partage ?","acceptedAnswer":{"@type":"Answer","text":"Non. Plusieurs cœurs peuvent conserver simultanément la même ligne à l'état partagé ; le problème n'apparaît que lorsqu'au moins un thread écrit dans la ligne."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Domaine: <a href="/fr/c/multicore-sync/">Multicœur et synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Pourquoi la cohérence fonctionne par ligne et non par variable</h2>
+  <p>Les protocoles de <a class="term-link" href="/fr/term/cache-coherency/">cohérence de cache</a> comme MESI (Modified, Exclusive, Shared, Invalid) suivent la propriété de lignes de cache entières, typiquement de 64 octets, et non de variables individuelles. Avant de pouvoir écrire, un cœur doit détenir la ligne en exclusivité, ce qui invalide la copie de tous les autres cœurs. Si le cœur 0 écrit sans cesse la variable a et le cœur 1 la variable b dans la même ligne, chaque écriture force la ligne à passer d&#39;un cache à l&#39;autre. Aucun thread ne lit les données de l&#39;autre, si bien que les résultats restent corrects, mais un accès qui serait un hit L1 de quelques cycles devient un transfert lent entre cœurs.</p>
+</section>
+<section class="term-about">
+  <h2>Faux partage et vrai partage</h2>
+  <p>Le vrai partage signifie que les threads accèdent réellement à la même variable, comme un compteur global ou un mot de verrou ; la contention est inhérente et ne peut être supprimée qu&#39;en modifiant l&#39;algorithme, par exemple en scindant le compteur. Le faux partage signifie que les données sont logiquement indépendantes et se trouvent simplement voisines en mémoire ; le remède est donc un changement de disposition des données. Les deux produisent le même symptôme : un trafic de cohérence intense sur quelques lignes. Le partage en lecture seule ne pose ni l&#39;un ni l&#39;autre problème, car de nombreux caches peuvent détenir une ligne à l&#39;état Shared simultanément ; seules les écritures forcent des invalidations.</p>
+</section>
+<section class="term-about">
+  <h2>Les coupables typiques</h2>
+  <p>Le cas classique est un tableau de compteurs par thread : avec des éléments de 8 octets, huit tiennent dans une ligne de 64 octets, et jusqu&#39;à huit threads se la disputent. D&#39;autres sources courantes sont les structures dont les champs sont mis à jour par des threads différents, un verrou placé dans la même ligne que des données protégées par un autre verrou, et les files de travail dont les indices de tête et de queue, écrits par le producteur et le consommateur, sont côte à côte. Le signe habituel est un programme dont l&#39;accélération plafonne, voire baisse, à mesure qu&#39;on ajoute des threads, alors que chaque thread semble ne toucher que ses propres données.</p>
+</section>
+<section class="term-about">
+  <h2>Comment le corriger et le détecter</h2>
+  <p>Complétez (padding) ou alignez chaque élément écrit indépendamment sur la taille d&#39;une <a class="term-link" href="/fr/term/cache-line/">ligne de cache</a>, par exemple avec alignas(64) en C ou C++, afin que chaque thread possède sa propre ligne. Certains processeurs chargent ensemble des paires de lignes adjacentes, ce qui explique qu&#39;on utilise parfois un écart de 128 octets. Mieux encore, laissez chaque thread accumuler dans une variable locale ou un registre et n&#39;écrire l&#39;emplacement partagé qu&#39;une seule fois à la fin. Les compteurs de performance matériels peuvent révé<a class="term-link" href="/fr/term/line-edge-roughness/">ler</a> le problème ; sous Linux, l&#39;outil perf c2c signale les lignes de cache fréquemment modifiées par un cœur puis accédées par un autre.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Faux partage (false sharing)</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Insérer un remplissage entre les compteurs ou les aligner pour les placer dans des lignes de cache distinctes</p><p class="explanation">Si un long fait 8 octets, les 8 compteurs tiennent dans une seule ligne de 64 octets, que tous les threads se disputent. En insérant un remplissage pour placer chaque compteur tous les 64 octets, ou en alignant une structure sur la taille d’une <a class="term-link" href="/fr/term/cache-line/">ligne de cache</a>, chaque thread utilise une ligne distincte. Il est aussi efficace que chaque thread compte dans une variable locale et n’ajoute qu’une seule fois le résultat à l’emplacement partagé, à la fin.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Le faux partage provoque-t-il des résultats erronés ?</h3>
+  <p>Non. Le protocole de cohérence garantit que chaque variable reste correcte ; le faux partage ne coûte que du temps, car la ligne de cache contenant les variables ne cesse de passer d&#39;un cœur à l&#39;autre.</p>
+  <h3>Quel padding faut-il pour éviter le faux partage ?</h3>
+  <p>Suffisamment pour que chaque variable écrite indépendamment occupe sa propre ligne de cache, généralement 64 octets. Certains codes utilisent 128 octets car certains CPU préchargent ensemble des paires de lignes adjacentes.</p>
+  <h3>Des données partagées en lecture seule peuvent-elles causer du faux partage ?</h3>
+  <p>Non. Plusieurs cœurs peuvent conserver simultanément la même ligne à l&#39;état partagé ; le problème n&#39;apparaît que lorsqu&#39;au moins un thread écrit dans la ligne.</p>
+</section>
 <section>
   <h2>« Faux partage (false sharing) » dans les explications</h2>
   <ul class="term-quotes"><li><p>Le résultat est correct, mais les performances chutent fortement : c’est le faux partage.</p><a href="/fr/q/multicore-sync/multicore-sync-010/">Quelle description du faux partage (false sharing), qui sur…</a></li><li><p>Dans les programmes multithreads, il faut prendre garde au « faux partage », conflit qui survient lorsque des variables distinctes se trouvent sur la même ligne.</p><a href="/fr/q/cpu/cpu-039/">Quelle est la taille usuelle d&#39;une ligne de cache (bloc de …</a></li><li><p>Les principales causes qui limitent le gain de la parallélisation sont la partie non parallélisable (loi d’Amdahl), les attentes dues aux verrous et barrières, les allers-retours de lignes de cache dus aux données partagées et au faux partage, le déséquilibre de charge et l’insuffisance de bande passante mémoire.</p><a href="/fr/q/multicore-sync/multicore-sync-043/">Parmi les causes suivantes expliquant que les performances …</a></li></ul>

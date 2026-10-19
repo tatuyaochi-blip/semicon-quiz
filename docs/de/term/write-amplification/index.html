@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Schreibverstärkung (Write Amplification)","item":"https://semiconroom.com/de/term/write-amplification/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Schreibverstärkung (Write Amplification)","description":"Phänomen, dass wegen Garbage Collection u. Ä. tatsächlich mehr Daten in den Flash-Speicher geschrieben werden als der Host geschrieben hat. Je größer der Wert, desto kürzer die Lebensdauer der SSD.","url":"https://semiconroom.com/de/term/write-amplification/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Schreibverstärkung (Write Amplification)","item":"https://semiconroom.com/de/term/write-amplification/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Schreibverstärkung (Write Amplification)","description":"Phänomen, dass wegen Garbage Collection u. Ä. tatsächlich mehr Daten in den Flash-Speicher geschrieben werden als der Host geschrieben hat. Je größer der Wert, desto kürzer die Lebensdauer der SSD.","url":"https://semiconroom.com/de/term/write-amplification/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist ein guter Write Amplification Factor?","acceptedAnswer":{"@type":"Answer","text":"Ein WAF nahe 1 ist ideal und typisch für sequentielle Arbeitslasten; kleine zufällige Schreibvorgänge auf einem fast vollen Laufwerk können ihn auf ein Mehrfaches treiben. Niedriger ist sowohl für die Lebensdauer als auch für die dauerhafte Schreibgeschwindigkeit besser."}},{"@type":"Question","name":"Kann die Schreibverstärkung kleiner als 1 sein?","acceptedAnswer":{"@type":"Answer","text":"Ja. Komprimiert oder dedupliziert der Controller Daten, kann er weniger in den Flash schreiben, als der Host gesendet hat, was bei komprimierbaren Daten einen effektiven WAF unter 1 ergibt."}},{"@type":"Question","name":"Verringert Over-Provisioning die Schreibverstärkung?","acceptedAnswer":{"@type":"Answer","text":"Ja. Zusätzliche Reservefläche bedeutet, dass die Garbage Collection Blöcke mit weniger zu kopierenden gültigen Pages wählen kann, was den WAF senkt, besonders bei zufälligen Schreiblasten."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/sram-flash/">SRAM und Flash-Speicher</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Woher die zusätzlichen Schreibvorgänge kommen</h2>
+  <p>NAND-Flash wird in Pages programmiert, aber nur in viel größeren Blöcken mit Hunderten oder mehr Pages gelöscht, und eine Page kann nicht an Ort und Stelle überschrieben werden. Aktualisiert der Host Daten, schreibt die SSD die neue Version in eine freie Page und markiert die alte als ungültig. Um Platz zurückzugewinnen, wählt die <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> einen Block mit vielen ungültigen Pages, kopiert seine verbleibenden gültigen Pages an eine andere Stelle und löscht ihn. Diese Kopien sind Schreibvorgänge, die der Host nie angefordert hat. Wear Leveling, das selten geänderte Daten von wenig abgenutzten Blöcken verschiebt, und die Aktualisierungen der laufwerkseigenen Zuordnungstabellen kommen hinzu.</p>
+</section>
+<section class="term-about">
+  <h2>Definition und Abschätzung des WAF</h2>
+  <p>Der Write Amplification Factor (WAF) ist die in den Flash geschriebene Datenmenge geteilt durch die vom Host geschriebene Datenmenge. Große sequentielle Schreibvorgänge machen meist ganze Blöcke auf einmal ungültig, sodass die <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> wenig zu kopieren hat und der WAF nahe 1 bleibt. Kleine zufällige Schreibvorgänge verteilen ungültige Pages ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> viele Blöcke, sodass jeder zurückgewonnene Block noch viele gültige Daten enthält und der WAF ein Mehrfaches erreichen kann. Je voller das Laufwerk und je geringer seine Reservefläche, desto weniger weitgehend leere Blöcke stehen zur Verfügung, und sowohl die Schreibverstärkung als auch der Leistungsverlust nehmen zu.</p>
+</section>
+<section class="term-about">
+  <h2>Auswirkung auf die Lebensdauer</h2>
+  <p>Jeder Flash-Block übersteht nur eine begrenzte Zahl von Program/Erase-Zyklen, daher verbraucht die Schreibverstärkung direkt Lebensdauer. Ein einfaches Beispiel: Könnte der Flash eines 1-TB-Laufwerks 1.000 Zyklen aushalten, läge sein Rohbudget bei etwa 1 PB an Flash-Schreibvorgängen; bei einem WAF von 3 könnte der Host nur etwa ein Drittel davon schreiben. Die Lebensdauerangaben von Laufwerken in geschriebenen Terabyte (TBW) setzen bereits einen typischen WAF der Arbeitslast voraus, sodass eine von kleinen zufälligen Schreibvorgängen dominierte Arbeitslast ein Laufwerk schneller verschleißen kann, als seine Angabe vermuten lässt.</p>
+</section>
+<section class="term-about">
+  <h2>Wie man sie verringert</h2>
+  <p><a class="term-link" href="/de/term/trim/">TRIM</a> teilt dem Laufwerk mit, welche Daten veraltet sind, sodass die <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> sie nicht kopiert. Over-Provisioning, also vor dem Host verborgene zusätzliche Flash-Kapazität, gibt der Garbage Collection mehr freie Blöcke, sodass die zu räumenden Blöcke weniger gültige Pages enthalten; Enterprise-Laufwerke reservieren aus diesem Grund einen größeren Anteil. Controller, die Daten vor dem Schreiben komprimieren, können den effektiven WAF bei komprimierbaren Daten unter 1 drücken. Auch das Schreiben in großen, ausgerichteten, sequentiellen Blöcken und die Trennung kurzlebiger von langlebigen Daten in verschiedene Blöcke helfen; darauf beruhen Zoned-Storage-Schnittstellen, mit denen der Host Daten gezielt platzieren kann.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Schreibverstärkung (Write Amplification)</h2>
   <article class="q-mini" data-qid="sram-flash-042" data-cat="sram-flash" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Die tatsächlich in den Flash-Speicher geschriebene Datenmenge ist größer als die vom Host geschriebene Datenmenge</p><p class="explanation">Da Flash nicht überschrieben werden kann und blockweise gelöscht wird, entstehen zusätzliche Schreibvorgänge, etwa das Kopieren gültiger Daten in einen anderen Block bei der <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a>, und die tatsächliche Schreibmenge wird größer als die des Hosts. Dieses Verhältnis ist der Schreibverstärkungsfaktor (WAF), der bei vielen kleinen wahlfreien Schreibvorgängen mehrere Male betragen kann. Er wird durch <a class="term-link" href="/de/term/trim/">TRIM</a>, Reservebereiche und Datenkompression verringert, um Lebensdauer und Leistung zu schützen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist ein guter Write Amplification Factor?</h3>
+  <p>Ein WAF nahe 1 ist ideal und typisch für sequentielle Arbeitslasten; kleine zufällige Schreibvorgänge auf einem fast vollen Laufwerk können ihn auf ein Mehrfaches treiben. Niedriger ist sowohl für die Lebensdauer als auch für die dauerhafte Schreibgeschwindigkeit besser.</p>
+  <h3>Kann die Schreibverstärkung kleiner als 1 sein?</h3>
+  <p>Ja. Komprimiert oder dedupliziert der Controller Daten, kann er weniger in den Flash schreiben, als der Host gesendet hat, was bei komprimierbaren Daten einen effektiven WAF unter 1 ergibt.</p>
+  <h3>Verringert Over-Provisioning die Schreibverstärkung?</h3>
+  <p>Ja. Zusätzliche Reservefläche bedeutet, dass die Garbage Collection Blöcke mit weniger zu kopierenden gültigen Pages wählen kann, was den WAF senkt, besonders bei zufälligen Schreiblasten.</p>
+</section>
 <section>
   <h2>„Schreibverstärkung (Write Amplification)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Dieses zusätzliche Kopieren ist die Ursache der Schreibverstärkung; je weniger freier Platz, desto häufiger tritt es auf, und die Schreibleistung sinkt.</p><a href="/de/q/sram-flash/sram-flash-015/">Welche Aussage zur Garbage Collection bei SSDs ist richtig?</a></li><li><p>Meldet der TRIM-Befehl nicht benötigte Bereiche, behandelt die SSD diese Seiten als ungültig und kann sie ohne Kopieren löschen; die Schreibverstärkung sinkt, und Leistung und Lebensdauer verbessern sich.</p><a href="/de/q/sram-flash/sram-flash-028/">Welcher Befehl teilt der SSD die vom Betriebssystem gelösch…</a></li></ul>

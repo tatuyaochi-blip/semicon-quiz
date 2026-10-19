@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA","item":"https://semiconroom.com/fr/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA","description":"Abréviation de Non-Uniform Memory Access. Architecture où il existe des mémoires proches et éloignées d'un cœur, l'accès à une mémoire éloignée étant plus lent. Placer données et threads du même côté accélère le traitement.","url":"https://semiconroom.com/fr/term/non-uniform-memory-access/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA","item":"https://semiconroom.com/fr/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA","description":"Abréviation de Non-Uniform Memory Access. Architecture où il existe des mémoires proches et éloignées d'un cœur, l'accès à une mémoire éloignée étant plus lent. Placer données et threads du même côté accélère le traitement.","url":"https://semiconroom.com/fr/term/non-uniform-memory-access/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Comment savoir si ma machine est NUMA ?","acceptedAnswer":{"@type":"Answer","text":"Sous Linux, lancez lscpu ou numactl --hardware ; si plus d'un nœud NUMA est listé, le coût d'accès mémoire dépend de l'emplacement. La plupart des serveurs bisocket présentent au moins deux nœuds."}},{"@type":"Question","name":"Faut-il réécrire les programmes pour NUMA ?","acceptedAnswer":{"@type":"Answer","text":"Non, une machine ccNUMA présente un espace d'adressage cohérent unique, et les programmes s'exécutent donc correctement tels quels. La réécriture n'a d'intérêt que pour les performances, principalement en gardant les données de chaque thread sur son propre nœud."}},{"@type":"Question","name":"Qu'est-ce que la politique first-touch ?","acceptedAnswer":{"@type":"Answer","text":"C'est la règle courante selon laquelle une page physique est allouée sur le nœud NUMA du thread qui y écrit en premier. C'est pourquoi l'initialisation parallèle des tableaux est importante sur les systèmes NUMA."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Domaine: <a href="/fr/c/multicore-sync/">Multicœur et synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Pourquoi l&#39;accès mémoire devient non uniforme</h2>
+  <p>Les processeurs modernes intègrent leurs contrôleurs mémoire : dans un serveur multisocket, chaque socket dispose donc de sa propre DRAM directement attachée. Un cœur qui accède à la mémoire de son propre socket passe directement par son contrôleur local ; accéder à la mémoire d&#39;un autre socket exige un trajet par la liaison inter-sockets et par le contrôleur distant. L&#39;ensemble formé des cœurs et de leur mémoire locale est appelé nœud NUMA. Les accès distants présentent généralement une latence nettement plus élevée, souvent de l&#39;ordre de 1,3 à 2 fois celle d&#39;un accès local, et une bande passante plus faible, le rapport exact dépendant de la plateforme et de la charge de la liaison.</p>
+</section>
+<section class="term-about">
+  <h2>NUMA, UMA et clusters</h2>
+  <p>Dans un système à accès mémoire uniforme (UMA), souvent une machine monosocket avec un seul ensemble de contrôleurs mémoire, chaque cœur voit chaque adresse à peu près au même coût. Un système NUMA à <a class="term-link" href="/fr/term/cache-coherency/">cohérence de cache</a> (ccNUMA) conserve un espace d&#39;adressage partagé unique et une cohérence de cache matérielle, de sorte que les programmes non modifiés s&#39;exécutent correctement ; seule leur vitesse dépend de l&#39;emplacement des données. C&#39;est ce qui le distingue d&#39;un cluster d&#39;ordinateurs séparés, où chaque nœud a un espace d&#39;adressage privé et où les données doivent être échangées explicitement par passage de messages. Les grands processeurs à chiplets peuvent aussi présenter plus d&#39;un nœud NUMA au sein d&#39;un même socket.</p>
+</section>
+<section class="term-about">
+  <h2>Le placement au premier accès et son piège</h2>
+  <p>Linux place généralement une page sur le nœud du thread qui l&#39;écrit en premier, et non sur celui qui l&#39;a allouée, puisque malloc ne fait que réserver des adresses virtuelles. Si un seul thread initialise à zéro un grand tableau, toutes les pages atterrissent sur le nœud de ce thread, et les boucles parallèles ultérieures sur d&#39;autres nœuds s&#39;exécutent presque entièrement depuis la mémoire distante, tandis qu&#39;un contrôleur mémoire est saturé et que les autres restent inactifs. La solution consiste à initialiser les données en parallèle avec le même partitionnement du travail que le calcul, afin que la portion de chaque thread lui soit locale.</p>
+</section>
+<section class="term-about">
+  <h2>Outils et bonnes pratiques</h2>
+  <p>Sous Linux, numactl --hardware liste les nœuds, leur mémoire et une table de distances dans laquelle l&#39;accès local vaut conventionnellement 10 et les valeurs distantes sont plus élevées. Le même outil peut lier un processus aux CPU et à la mémoire d&#39;un nœud, ou entrelacer les pages entre les nœuds, ce qui convient aux données lues uniformément par tous les threads. Épingler les threads (définir l&#39;affinité CPU) empêche l&#39;ordonnanceur d&#39;éloigner un thread de ses données et rend les mesures de performance reproductibles. Le noyau peut aussi migrer automatiquement les pages vers les threads qui les utilisent, mais un placement explicite est plus prévisible pour le code critique en performances.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur NUMA</h2>
   <article class="q-mini" data-qid="multicore-sync-041" data-cat="multicore-sync" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Si un seul thread initialise à 0 un grand tableau, tout est placé sur un seul nœud, et les threads des autres nœuds utilisent une mémoire éloignée</p><p class="explanation">Une simple allocation par malloc n’attribue pas de pages physiques ; c’est lors du <a class="term-link" href="/fr/term/page-fault/">défaut de page</a> de la première écriture que la page est placée dans la mémoire du nœud du thread concerné. Si l’initialisation est faite par un seul thread, tout le tableau se concentre sur ce nœud, et dans le calcul parallèle une grande partie de la zone dont chaque thread a la charge se trouve en mémoire éloignée. En parallélisant l’initialisation avec la même répartition que le calcul, chaque partie est placée près du thread qui en a la charge.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Comment savoir si ma machine est NUMA ?</h3>
+  <p>Sous Linux, lancez lscpu ou numactl --hardware ; si plus d&#39;un nœud NUMA est listé, le coût d&#39;accès mémoire dépend de l&#39;emplacement. La plupart des serveurs bisocket présentent au moins deux nœuds.</p>
+  <h3>Faut-il réécrire les programmes pour NUMA ?</h3>
+  <p>Non, une machine ccNUMA présente un espace d&#39;adressage cohérent unique, et les programmes s&#39;exécutent donc correctement tels quels. La réécriture n&#39;a d&#39;intérêt que pour les performances, principalement en gardant les données de chaque thread sur son propre nœud.</p>
+  <h3>Qu&#39;est-ce que la politique first-touch ?</h3>
+  <p>C&#39;est la règle courante selon laquelle une page physique est allouée sur le nœud NUMA du thread qui y écrit en premier. C&#39;est pourquoi l&#39;initialisation parallèle des tableaux est importante sur les systèmes NUMA.</p>
+</section>
 <section>
   <h2>« NUMA » dans les explications</h2>
   <ul class="term-quotes"><li><p>Le cache du cœur de destination ne contient pas les données nécessaires et, sur un système NUMA, le thread peut se retrouver sur un socket éloigné de la mémoire où résident ses données.</p><a href="/fr/q/performance/performance-045/">Pourquoi, lors de mesures de performances sur un système mu…</a></li><li><p>Dans les serveurs à plusieurs processeurs, la mémoire directement reliée à chaque processeur est plus rapide : c&#39;est une organisation NUMA.</p><a href="/fr/q/dram/dram-043/">Dans la plupart des processeurs de PC actuels, où se trouve…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"거짓 공유(False Sharing)","item":"https://semiconroom.com/ko/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"거짓 공유(False Sharing)","description":"서로 다른 스레드가 서로 다른 변수를 쓰고 있는데도 그 변수들이 같은 캐시 라인에 있어 라인이 코어 사이를 오가며 느려지는 현상.","url":"https://semiconroom.com/ko/term/false-sharing/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"거짓 공유(False Sharing)","item":"https://semiconroom.com/ko/term/false-sharing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"거짓 공유(False Sharing)","description":"서로 다른 스레드가 서로 다른 변수를 쓰고 있는데도 그 변수들이 같은 캐시 라인에 있어 라인이 코어 사이를 오가며 느려지는 현상.","url":"https://semiconroom.com/ko/term/false-sharing/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"거짓 공유 때문에 결과가 틀릴 수 있나요","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 일관성 프로토콜이 모든 변수를 올바르게 유지합니다. 거짓 공유는 변수를 담은 캐시 라인이 코어 사이를 계속 오가기 때문에 시간만 손해 봅니다."}},{"@type":"Question","name":"거짓 공유를 피하려면 패딩을 얼마나 해야 하나요","acceptedAnswer":{"@type":"Answer","text":"독립적으로 쓰이는 각 변수가 자기만의 캐시 라인을 차지할 만큼이며, 보통 64바이트입니다. 일부 CPU는 인접한 라인 쌍을 함께 프리페치하므로 128바이트를 쓰는 코드도 있습니다."}},{"@type":"Question","name":"읽기 전용 공유 데이터도 거짓 공유를 일으키나요","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 여러 코어가 같은 라인을 동시에 공유 상태로 보유할 수 있습니다. 문제는 적어도 한 스레드가 그 라인에 쓸 때만 나타납니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/multicore-sync/">멀티코어와 동기화</a></p>
 </article>
-
+<section class="term-about">
+  <h2>일관성이 변수 단위가 아니라 라인 단위로 동작하는 이유</h2>
+  <p>MESI(Modified, Exclusive, Shared, Invalid) 같은 <a class="term-link" href="/ko/term/cache-coherency/">캐시 일관성</a> 프로토콜은 개별 변수가 아니라 보통 64바이트인 <a class="term-link" href="/ko/term/cache-line/">캐시 라인</a> 전체의 소유권을 추적합니다. 코어가 쓰기를 하려면 먼저 라인을 배타적으로 보유해야 하며, 이때 다른 모든 코어의 사본이 무효화됩니다. 코어 0이 변수 a를, 코어 1이 같은 라인에 있는 변수 b를 계속 쓰면, 쓸 때마다 라인이 두 캐시 사이를 오가게 됩니다. 어느 스레드도 상대의 데이터를 읽지 않으므로 결과는 올바르지만, 몇 사이클짜리 L1 히트였을 접근이 느린 코어 간 전송으로 바뀝니다.</p>
+</section>
+<section class="term-about">
+  <h2>거짓 공유와 진짜 공유의 차이</h2>
+  <p>진짜 공유는 전역 카운터나 락 워드처럼 스레드들이 실제로 같은 변수에 접근하는 경우입니다. 이 경합은 본질적이며, 카운터를 분할하는 것처럼 알고리즘을 바꿔야만 없앨 수 있습니다. 거짓 공유는 데이터가 논리적으로 독립인데 메모리에서 우연히 이웃해 있을 뿐인 경우이므로, 데이터 배치를 바꾸면 해결됩니다. 둘 다 소수의 라인에 일관성 트래픽이 집중된다는 같은 증상을 보입니다. 읽기 전용 공유는 어느 쪽 문제도 일으키지 않습니다. 여러 캐시가 한 라인을 동시에 Shared 상태로 보유할 수 있고, 무효화를 강제하는 것은 쓰기뿐이기 때문입니다.</p>
+</section>
+<section class="term-about">
+  <h2>전형적인 원인</h2>
+  <p>고전적인 예는 스레드별 카운터 배열입니다. 원소가 8바이트이면 64바이트 라인 하나에 8개가 들어가므로 최대 8개 스레드가 한 라인을 두고 다툽니다. 그 밖의 흔한 원인으로는 서로 다른 스레드가 갱신하는 필드를 가진 구조체, 다른 락이 보호하는 데이터와 같은 라인에 놓인 락, 생산자와 소비자가 각각 쓰는 head와 tail 인덱스가 나란히 놓인 작업 큐가 있습니다. 각 스레드가 자기 데이터만 다루는 것처럼 보이는데도 스레드를 늘릴수록 속도 향상이 정체되거나 오히려 떨어지는 것이 대표적인 징후입니다.</p>
+</section>
+<section class="term-about">
+  <h2>해결과 탐지 방법</h2>
+  <p>독립적으로 쓰이는 항목을 C나 C++의 alignas(64) 등으로 <a class="term-link" href="/ko/term/cache-line/">캐시 라인</a> 크기에 맞춰 패딩하거나 정렬하면, 각 스레드가 자기 라인을 갖게 됩니다. 일부 프로세서는 인접한 라인 쌍을 함께 가져오므로 128바이트 간격을 쓰기도 합니다. 더 좋은 방법은 각 스레드가 지역 변수나 레지스터에 누적하고 마지막에 한 번만 공유 위치에 쓰는 것입니다. 하드웨어 <a class="term-link" href="/ko/term/performance-counter/">성능 카운터</a>로 문제를 드러낼 수 있으며, Linux에서는 perf c2c 도구가 한 코어가 자주 수정하고 다른 코어가 접근하는 캐시 라인을 보고합니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 거짓 공유(False Sharing) 관련 문제</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: B. 각 카운터 사이에 패딩을 넣거나 정렬하여 서로 다른 캐시 라인에 둔다</p><p class="explanation">long이 8바이트라면 8개의 카운터는 64바이트의 라인 하나에 들어가, 모든 스레드가 같은 라인을 두고 경합합니다. 각 카운터를 64바이트마다 배치되도록 패딩을 넣거나 구조체를 <a class="term-link" href="/ko/term/cache-line/">캐시 라인</a> 크기에 정렬하면 스레드마다 다른 라인을 사용할 수 있습니다. 또한 각 스레드가 지역 변수로 센 뒤 마지막에 한 번만 공유 위치에 더하는 방법도 효과적입니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>거짓 공유 때문에 결과가 틀릴 수 있나요</h3>
+  <p>아닙니다. 일관성 프로토콜이 모든 변수를 올바르게 유지합니다. 거짓 공유는 변수를 담은 캐시 라인이 코어 사이를 계속 오가기 때문에 시간만 손해 봅니다.</p>
+  <h3>거짓 공유를 피하려면 패딩을 얼마나 해야 하나요</h3>
+  <p>독립적으로 쓰이는 각 변수가 자기만의 캐시 라인을 차지할 만큼이며, 보통 64바이트입니다. 일부 CPU는 인접한 라인 쌍을 함께 프리페치하므로 128바이트를 쓰는 코드도 있습니다.</p>
+  <h3>읽기 전용 공유 데이터도 거짓 공유를 일으키나요</h3>
+  <p>아닙니다. 여러 코어가 같은 라인을 동시에 공유 상태로 보유할 수 있습니다. 문제는 적어도 한 스레드가 그 라인에 쓸 때만 나타납니다.</p>
+</section>
 <section>
   <h2>해설 속 거짓 공유(False Sharing)</h2>
   <ul class="term-quotes"><li><p>결과는 올바른데 성능이 크게 떨어지는 것이 거짓 공유입니다.</p><a href="/ko/q/multicore-sync/multicore-sync-010/">멀티스레드 프로그램에서 일어나는 거짓 공유(false sharing)에 대한 설명으로 올바른 것은 무엇입니…</a></li><li><p>멀티스레드 프로그램에서는 서로 다른 변수가 같은 라인에 있으면 경합이 일어나는 「거짓 공유」에 주의해야 합니다.</p><a href="/ko/q/cpu/cpu-039/">현재 많은 CPU에서 사용하는 캐시 라인(캐시 블록)의 크기로 일반적인 것은?</a></li><li><p>병렬화의 효과를 방해하는 주된 원인으로는 병렬화할 수 없는 부분(암달의 법칙), 락이나 배리어에 의한 대기, 공유 데이터나 거짓 공유로 인한 캐시 라인의 이동, 작업의 편차, 메모리 대역폭 부족 등이 있습니다.</p><a href="/ko/q/multicore-sync/multicore-sync-043/">병렬 프로그램에서 코어 수를 늘려도 성능이 기대만큼 늘지 않는 원인에 해당하지 않는 것은 무엇입니까?</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Kontextwechsel","item":"https://semiconroom.com/de/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Kontextwechsel","description":"Umschalten des auf der CPU ausgeführten Prozesses oder Threads. Zustände wie Register und Programmzähler werden gesichert und wiederhergestellt; beim Prozesswechsel wird auch der Adressraum umgeschaltet.","url":"https://semiconroom.com/de/term/context-switch/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Kontextwechsel","item":"https://semiconroom.com/de/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Kontextwechsel","description":"Umschalten des auf der CPU ausgeführten Prozesses oder Threads. Zustände wie Register und Programmzähler werden gesichert und wiederhergestellt; beim Prozesswechsel wird auch der Adressraum umgeschaltet.","url":"https://semiconroom.com/de/term/context-switch/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was wird bei einem Kontextwechsel gesichert?","acceptedAnswer":{"@type":"Answer","text":"Der CPU-Zustand des abgelösten Threads: Register, Programmzähler, Stackpointer und Statusinformationen sowie beim Prozesswechsel der Seitentabellenzeiger. Der Speicher selbst wird nicht gesichert, da er an Ort und Stelle bleibt."}},{"@type":"Question","name":"Warum sind Kontextwechsel teuer?","acceptedAnswer":{"@type":"Answer","text":"Über die eigentliche Kernelarbeit hinaus startet der neue Prozess mit Caches und TLB, die Inhalte eines anderen Prozesses halten, sodass er viele Misses erleidet, bis sie neu gefüllt sind."}},{"@type":"Question","name":"Ist ein Systemaufruf ein Kontextwechsel?","acceptedAnswer":{"@type":"Answer","text":"Nein. Ein Systemaufruf ist ein Moduswechsel innerhalb desselben Prozesses; ein Kontextwechsel findet nur statt, wenn der Kernel vor der Rückkehr entscheidet, einen anderen Thread oder Prozess auszuführen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/os-hardware/">Betriebssystem und Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was gesichert und wiederhergestellt wird</h2>
+  <p>Der Kernel sichert den CPU-Zustand des abgelösten Threads, also seine Allzweckregister, den Programmzähler, den <a class="term-link" href="/de/term/stack-pointer/">Stackpointer</a> und Statusbits wie den vorherigen Modus, und lädt ihn später wieder, sodass der Thread genau dort weiterläuft, wo er aufgehört hat. Gleitkomma- und Vektorregister gehören ebenfalls zum Zustand, und manche Kernel sichern sie verzögert (lazy) nur dann, wenn der nächste Thread sie tatsächlich nutzt. Erfolgt der Wechsel zwischen Prozessen, wird auch das auf die <a class="term-link" href="/de/term/page-table/">Seitentabelle</a> zeigende Register geändert, was dem neuen Prozess seinen eigenen Adressraum gibt. Speicherinhalte und geöffnete Dateien bleiben an Ort und Stelle und werden nicht kopiert.</p>
+</section>
+<section class="term-about">
+  <h2>Wann Wechsel stattfinden</h2>
+  <p>Ein Wechsel wird ausgelöst, wenn der laufende Thread blockiert, etwa beim Warten auf Platten-E/A oder einen Lock, wenn er freiwillig abgibt oder wenn ein Timer-<a class="term-link" href="/de/term/interrupt/">Interrupt</a> dem Scheduler meldet, dass seine Zeitscheibe abgelaufen ist und ein anderer Thread laufen soll. In jedem Fall befindet sich die CPU bereits im Kernel und bearbeitet einen <a class="term-link" href="/de/term/system-call/">Systemaufruf</a> oder Interrupt, und der Scheduler wählt den nächsten Thread. Ein Wechsel zwischen Threads desselben Prozesses ist günstiger, weil sich der Adressraum nicht ändert.</p>
+</section>
+<section class="term-about">
+  <h2>Direkte und indirekte Kosten</h2>
+  <p>Das Sichern und Laden von Registern kostet wenig Zeit; der gesamte Kernelpfad einschließlich Scheduling kostet typischerweise in der Größenordnung von Mikrosekunden. Die größeren Kosten sind oft indirekt: Der neue Prozess findet Caches und <a class="term-link" href="/de/term/tlb/">TLB</a> mit Daten und Übersetzungen des vorherigen Prozesses gefüllt und erleidet wiederholt Misses, bis sie aufgewärmt sind. CPUs, die TLB-Einträge mit einer <a class="term-link" href="/de/term/asid/">Adressraumkennung</a> (ASID) markieren, vermeiden das Leeren des TLB bei jedem Wechsel, das Aufwärmen der Caches bleibt aber. Häufiges Wechseln senkt den <a class="term-link" href="/de/term/throughput/">Durchsatz</a> daher stärker, als die reine Wechselzeit vermuten lässt.</p>
+</section>
+<section class="term-about">
+  <h2>Kontextwechsel vs. Moduswechsel</h2>
+  <p>Ein <a class="term-link" href="/de/term/system-call/">Systemaufruf</a> oder <a class="term-link" href="/de/term/interrupt/">Interrupt</a> bringt die CPU vom Benutzermodus in den privilegierten Modus und zurück, danach läuft aber derselbe Prozess weiter; das ist ein Moduswechsel, kein Kontextwechsel. Ein Kontextwechsel ändert, welcher Thread oder Prozess die CPU besitzt. Beides tritt oft zusammen auf, da ein Wechsel immer im Kernel stattfindet, aber ein Systemaufruf, der zu seinem Aufrufer zurückkehrt, umfasst überhaupt keinen Kontextwechsel.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Kontextwechsel</h2>
   <article class="q-mini" data-qid="os-hardware-023" data-cat="os-hardware" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Weil nach dem Wechsel Cache- und TLB-Misses zunehmen</p><p class="explanation">Sichern und Wiederherstellen der Register selbst dauert nur kurz, doch für den neu geschalteten Prozess enthalten Cache und <a class="term-link" href="/de/term/tlb/">TLB</a> Inhalte des vorherigen Prozesses, und es kommt zu Misses, bis die benötigten Daten und Umsetzungen neu geladen sind. Bei CPUs ohne <a class="term-link" href="/de/term/asid/">ASID</a> muss beim Wechsel des Adressraums außerdem der TLB geleert werden. Dieser indirekte Aufwand kann größer sein als die direkte Wechselzeit. Der Takt sinkt nicht, und das Programm wird nicht von der Festplatte neu gelesen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was wird bei einem Kontextwechsel gesichert?</h3>
+  <p>Der CPU-Zustand des abgelösten Threads: Register, Programmzähler, Stackpointer und Statusinformationen sowie beim Prozesswechsel der Seitentabellenzeiger. Der Speicher selbst wird nicht gesichert, da er an Ort und Stelle bleibt.</p>
+  <h3>Warum sind Kontextwechsel teuer?</h3>
+  <p>Über die eigentliche Kernelarbeit hinaus startet der neue Prozess mit Caches und TLB, die Inhalte eines anderen Prozesses halten, sodass er viele Misses erleidet, bis sie neu gefüllt sind.</p>
+  <h3>Ist ein Systemaufruf ein Kontextwechsel?</h3>
+  <p>Nein. Ein Systemaufruf ist ein Moduswechsel innerhalb desselben Prozesses; ein Kontextwechsel findet nur statt, wenn der Kernel vor der Rückkehr entscheidet, einen anderen Thread oder Prozess auszuführen.</p>
+</section>
 <section>
   <h2>„Kontextwechsel“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Beim Kontextwechsel wird der CPU-Zustand gesichert, also Allzweckregister, Programmzähler, Stapelzeiger, Betriebsmodus usw., damit später im gleichen Zustand fortgesetzt werden kann, und der Zustand des als Nächstes laufenden Prozesses wird geladen.</p><a href="/de/q/os-hardware/os-hardware-023/">Was muss beim Kontextwechsel für den Prozess, von dem wegge…</a></li><li><p>Ein Kontextwechsel ist das Umschalten des ausgeführten Prozesses, Demand Paging ein Verfahren, Seiten erst bei Bedarf zu laden.</p><a href="/de/q/os-hardware/os-hardware-002/">Wie heißt der Mechanismus, mit dem eine Anwendung das Betri…</a></li><li><p>Tritt der Interrupt auf, springt die CPU stets in den Interrupt-Handler des Kernels, sodass das Betriebssystem auch bei einer Endlosschleife des Programms die Kontrolle zurückerlangt und per Kontextwechsel auf einen anderen Prozess umschalten kann.</p><a href="/de/q/os-hardware/os-hardware-026/">Durch welchen Mechanismus kann das Betriebssystem auch von …</a></li><li><p>Da beim Warten keine CPU-Zeit verschwendet wird, eignet er sich für langes Warten, doch Schlaf-/Aufweckvorgang und Kontextwechsel kosten einige Mikrosekunden.</p><a href="/de/q/multicore-sync/multicore-sync-023/">Welche Aussage im Vergleich von Mutex (schlafend wartende S…</a></li></ul>
@@ -111,7 +134,8 @@
 <section>
   <h2>Vergleiche mit diesem Begriff</h2>
   <ul class="cmp-list">
-  <li><a class="cmp-card" href="/de/compare/process-vs-thread/"><strong>Prozess vs. Thread: Unterschiede im Überblick</strong><span>Prozess und Thread im Tabellenvergleich: Speicher, Erzeugungsaufwand, Kontextwechsel, Kommunikation, Isolatio…</span></a></li></ul>
+  <li><a class="cmp-card" href="/de/compare/process-vs-thread/"><strong>Prozess vs. Thread: Unterschiede im Überblick</strong><span>Prozess und Thread im Tabellenvergleich: Speicher, Erzeugungsaufwand, Kontextwechsel, Kommunikation, Isolatio…</span></a></li>
+  <li><a class="cmp-card" href="/de/compare/user-mode-vs-kernel-mode/"><strong>User-Mode vs. Kernel-Mode: Unterschiede im Überblick</strong><span>User-Mode und Kernel-Mode im Tabellenvergleich: ausführbare Befehle, zugängliche Speicherbereiche, Auslöser u…</span></a></li></ul>
 </section>
 
 <section>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Registerzuteilung (Register Allocation)","item":"https://semiconroom.com/de/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Registerzuteilung (Register Allocation)","description":"Compilerschritt, der Variablen und Zwischenwerte des Programms auf die begrenzte Zahl von CPU-Registern verteilt. Gleichzeitig benötigte Werte dürfen nicht im selben Register liegen; dies wird z. B. durch Färben des Interferenzgraphen entschieden.","url":"https://semiconroom.com/de/term/register-allocation/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Registerzuteilung (Register Allocation)","item":"https://semiconroom.com/de/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Registerzuteilung (Register Allocation)","description":"Compilerschritt, der Variablen und Zwischenwerte des Programms auf die begrenzte Zahl von CPU-Registern verteilt. Gleichzeitig benötigte Werte dürfen nicht im selben Register liegen; dies wird z. B. durch Färben des Interferenzgraphen entschieden.","url":"https://semiconroom.com/de/term/register-allocation/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist Register Spilling?","acceptedAnswer":{"@type":"Answer","text":"Spilling bedeutet, einen Wert im Speicher, meist in einem Stack-Slot, zu halten, weil nicht genug Register für alles vorhanden sind, was an dieser Stelle lebendig ist; der Compiler fügt um seine Verwendungen Speicher- und Ladebefehle ein, was den Code verlangsamt."}},{"@type":"Question","name":"Warum ist Registerzuteilung ein Graphfärbungsproblem?","acceptedAnswer":{"@type":"Answer","text":"Gleichzeitig lebendige Werte interferieren und benötigen verschiedene Register; sind Werte Knoten und Interferenzen Kanten, entspricht die Vergabe einer von k Farben an jeden Knoten ohne gleichfarbige Nachbarn genau der Zuweisung von k Registern."}},{"@type":"Question","name":"Unterschied zwischen Graphfärbung und Linear Scan bei der Registerzuteilung","acceptedAnswer":{"@type":"Answer","text":"Die Graphfärbung baut einen vollständigen Interferenzgraphen auf und erzeugt meist besseren Code, braucht aber länger; Linear Scan teilt in einem Durchlauf über sortierte Lebensintervalle zu und tauscht etwas Codequalität gegen viel schnellere Kompilierung."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/compiler/">Compiler</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Von virtuellen zu physischen Registern</h2>
+  <p>Compiler erzeugen Zwischencode mit einem unbegrenzten Vorrat an virtuellen Registern oder temporären Werten, eine reale CPU hat aber nur einen kleinen festen Satz, typischerweise 16 bis 32 Universalregister. Die Registerzuteilung entscheidet, welche Werte an jeder Stelle in welchen physischen Registern liegen und welche stattdessen im Speicher gehalten werden müssen. Da Register weit schneller sind als selbst ein L1-Cache-Zugriff, hat eine gute Zuteilung großen Einfluss auf die Geschwindigkeit, besonders in Schleifen. Die harte Regel lautet, dass zwei gleichzeitig benötigte Werte nicht dasselbe Register teilen können.</p>
+</section>
+<section class="term-about">
+  <h2>Lebendigkeit und der Interferenzgraph</h2>
+  <p>Der Allokator führt zunächst eine Lebendigkeitsanalyse ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> den Kontrollflussgraphen durch, um an jeder Stelle zu ermitteln, welche Werte später noch gelesen werden können. Dann baut er einen Interferenzgraphen auf: Jeder Wert ist ein Knoten, und eine Kante verbindet zwei Werte, die gleichzeitig lebendig sind. Die Registerzuweisung wird so zur Färbung des Graphen mit k Farben, wobei k die Zahl der verfügbaren Register ist, sodass keine Nachbarn dieselbe Farbe haben. Optimale Färbung ist im Allgemeinen NP-vollständig, daher verwenden Compiler Heuristiken wie die Vereinfachung nach Chaitin, bei der wiederholt Knoten mit weniger als k Nachbarn entfernt werden.</p>
+</section>
+<section class="term-about">
+  <h2>Spilling und seine Kosten</h2>
+  <p>Lässt sich der Graph nicht mit k Farben färben, werden einige Werte ausgelagert (Spilling): Sie werden in einem Stack-Slot gehalten, mit einem Speicherbefehl nach jeder Definition und einem Ladebefehl vor jeder Verwendung. Spills fügen Befehle und Speicherverkehr hinzu, daher schätzt der Allokator für jeden Kandidaten <a class="term-link" href="/de/term/register-spilling/">Spill</a>-Kosten, wobei Verwendungen nach Schleifenschachtelungstiefe gewichtet werden, und lagert bevorzugt Werte aus, die selten verwendet werden, aber mit vielen anderen interferieren. Das Aufteilen eines langen Lebensbereichs (Live Range) in kürzere Stücke kann einem Wert zudem ermöglichen, dort im Register zu bleiben, wo es am meisten zählt.</p>
+</section>
+<section class="term-about">
+  <h2>Aufrufkonventionen, Coalescing und Linear Scan</h2>
+  <p>Reale Allokatoren müssen die <a class="term-link" href="/de/term/calling-convention/">Aufrufkonvention</a> einhalten: Argumente und Rückgabewerte nutzen bestimmte Register, <a class="term-link" href="/de/term/caller-saved-register/">Caller-Saved-Register</a> werden durch Aufrufe überschrieben, und <a class="term-link" href="/de/term/callee-saved-register/">Callee-Saved-Register</a> müssen vor der Rückkehr wiederhergestellt werden. Coalescing weist Quelle und Ziel einer Kopie dasselbe Register zu, wenn sie nicht interferieren, und löscht so den Move-Befehl. Just-in-Time-Compiler (JIT) verwenden statt Graphfärbung oft die Linear-Scan-Zuteilung, die sortierte Lebensintervalle in einem einzigen Durchlauf abarbeitet; das ist viel schneller, geht aber auf Kosten einer etwas geringeren Codequalität.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Registerzuteilung (Register Allocation)</h2>
   <article class="q-mini" data-qid="compiler-020" data-cat="compiler" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Befehle zum Auslagern in den Stack und Zurücklesen kommen hinzu, und der Code wird tendenziell langsamer</p><p class="explanation">Ein <a class="term-link" href="/de/term/register-spilling/">Spill</a> bedeutet, dass einige Werte im Speicher (Stack) abgelegt werden, wenn mehr Werte gleichzeitig lebendig sind, als Register vorhanden sind. Für jede Verwendung dieses Werts ist ein Ladebefehl und für jede Änderung ein Speicherbefehl nötig, sodass die Befehlszahl steigt und der Code durch die Speicherzugriffe tendenziell langsamer wird. Der Compiler behält daher häufig verwendete Werte, etwa in Schleifen, in Registern und lagert selten verwendete Werte aus. Die Registerzahl ist durch die CPU festgelegt und wächst nicht, und das Entfernen unnötiger Werte ist eine andere Sache.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist Register Spilling?</h3>
+  <p>Spilling bedeutet, einen Wert im Speicher, meist in einem Stack-Slot, zu halten, weil nicht genug Register für alles vorhanden sind, was an dieser Stelle lebendig ist; der Compiler fügt um seine Verwendungen Speicher- und Ladebefehle ein, was den Code verlangsamt.</p>
+  <h3>Warum ist Registerzuteilung ein Graphfärbungsproblem?</h3>
+  <p>Gleichzeitig lebendige Werte interferieren und benötigen verschiedene Register; sind Werte Knoten und Interferenzen Kanten, entspricht die Vergabe einer von k Farben an jeden Knoten ohne gleichfarbige Nachbarn genau der Zuweisung von k Registern.</p>
+  <h3>Unterschied zwischen Graphfärbung und Linear Scan bei der Registerzuteilung</h3>
+  <p>Die Graphfärbung baut einen vollständigen Interferenzgraphen auf und erzeugt meist besseren Code, braucht aber länger; Linear Scan teilt in einem Durchlauf über sortierte Lebensintervalle zu und tauscht etwas Codequalität gegen viel schnellere Kompilierung.</p>
+</section>
 
 <section>
   <h2>Fragen mit „Registerzuteilung (Register Allocation)“ (3)</h2>

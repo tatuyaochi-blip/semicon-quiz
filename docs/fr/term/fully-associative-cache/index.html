@@ -16,7 +16,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Cache entièrement associatif","item":"https://semiconroom.com/fr/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Cache entièrement associatif","description":"Organisation de cache où toute donnée peut être placée à n'importe quel emplacement. Il n'y a pas de défauts de conflit, mais toutes les étiquettes doivent être comparées, ce qui ne convient pas aux grands caches. Utilisé notamment pour les TLB.","url":"https://semiconroom.com/fr/term/fully-associative-cache/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Cache entièrement associatif","item":"https://semiconroom.com/fr/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Cache entièrement associatif","description":"Organisation de cache où toute donnée peut être placée à n'importe quel emplacement. Il n'y a pas de défauts de conflit, mais toutes les étiquettes doivent être comparées, ce qui ne convient pas aux grands caches. Utilisé notamment pour les TLB.","url":"https://semiconroom.com/fr/term/fully-associative-cache/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Combien de bits d'index a un cache entièrement associatif ?","acceptedAnswer":{"@type":"Answer","text":"Zéro. Tout le cache forme un seul ensemble ; l'adresse se compose donc uniquement d'une étiquette et d'un déplacement, et l'étiquette est comparée à chaque ligne."}},{"@type":"Question","name":"Pourquoi les TLB sont-ils souvent entièrement associatifs ?","acceptedAnswer":{"@type":"Answer","text":"Les TLB sont petits et chaque défaut impose un parcours coûteux de la table des pages ; les comparateurs supplémentaires valent donc la peine pour éviter complètement les défauts par conflit."}},{"@type":"Question","name":"Un cache entièrement associatif élimine-t-il tous les défauts ?","acceptedAnswer":{"@type":"Answer","text":"Non. Il supprime les défauts par conflit, mais les défauts obligatoires à la première utilisation et les défauts de capacité dus à un ensemble de travail plus grand que le cache se produisent toujours."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Domaine: <a href="/fr/c/memory-hierarchy/">Hiérarchie mémoire</a></p>
 </article>
+<section class="term-about">
+  <h2>Pas d&#39;index, seulement étiquette et déplacement</h2>
+  <p>Dans un cache entièrement associatif, tout le cache forme un seul ensemble ; n&#39;importe quel bloc peut donc être stocké dans n&#39;importe quelle ligne. Aucun bit n&#39;est nécessaire pour sélectionner un ensemble : l&#39;index fait 0 bit, et l&#39;adresse est divisée uniquement en un déplacement dans la ligne et une étiquette composée de tous les bits restants. À chaque accès, l&#39;étiquette demandée doit être comparée simultanément aux étiquettes de toutes les lignes valides, ce qui se fait généralement avec une mémoire adressable par contenu (CAM), où chaque entrée possède son propre <a class="term-link" href="/fr/term/comparator/">comparateur</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Pourquoi on le réserve aux petites structures</h2>
+  <p>Une CAM de N entrées nécessite N comparateurs larges actifs à chaque recherche, plus un grand <a class="term-link" href="/fr/term/multiplexer/">multiplexeur</a> pour délivrer les données correspondantes. La surface, la consommation et le temps de succès augmentent rapidement avec le nombre d&#39;entrées ; les grands caches de données sont donc plutôt associatifs par ensembles. L&#39;associativité totale est abordable et intéressante dans de petites structures très sollicitées où chaque défaut coûte cher, comme les <a class="term-link" href="/fr/term/tlb/">TLB</a> (translation lookaside buffers) qui mettent en cache les entrées de <a class="term-link" href="/fr/term/page-table/">table des pages</a>, ou les petits caches de victimes qui conservent les lignes récemment évincées d&#39;un cache à <a class="term-link" href="/fr/term/direct-mapped-cache/">correspondance directe</a>.</p>
+</section>
+<section class="term-about">
+  <h2>La politique de remplacement détermine les performances</h2>
+  <p>Comme n&#39;importe quelle ligne peut être évincée, le cache a besoin d&#39;une politique de remplacement. <a class="term-link" href="/fr/term/lru-replacement/">LRU (least recently used)</a> évince la ligne inutilisée depuis le plus longtemps. Avec deux lignes et la séquence de références A, B, A, C, B, A, LRU donne cinq défauts : le succès sur A fait de B la victime à l&#39;arrivée de C, puis A et C sont évincés tour à tour. Un LRU exact devient coûteux à suivre pour de nombreuses entrées ; le matériel utilise donc souvent un pseudo-LRU ou un remplacement aléatoire. LRU donne aussi de mauvais résultats sur des motifs cycliques légèrement plus grands que le cache, où le remplacement aléatoire peut faire mieux.</p>
+</section>
+<section class="term-about">
+  <h2>Ce que l&#39;associativité totale ne peut pas corriger</h2>
+  <p>L&#39;associativité totale élimine les défauts par conflit, car les blocs ne se disputent jamais un ensemble particulier. Dans le modèle habituel à trois catégories, les défauts par conflit sont d&#39;ailleurs définis comme ceux qu&#39;un cache entièrement associatif de même taille éviterait. Les défauts obligatoires au premier accès subsistent, de même que les défauts de capacité lorsque l&#39;ensemble de travail dépasse la taille totale du cache. Ceux-ci exigent un cache plus grand, du <a class="term-link" href="/fr/term/prefetching/">préchargement</a> (prefetching) ou une restructuration du code pour réutiliser les données plus tôt, par exemple par découpage de boucles en blocs (tiling).</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Combien de bits d&#39;index a un cache entièrement associatif ?</h3>
+  <p>Zéro. Tout le cache forme un seul ensemble ; l&#39;adresse se compose donc uniquement d&#39;une étiquette et d&#39;un déplacement, et l&#39;étiquette est comparée à chaque ligne.</p>
+  <h3>Pourquoi les TLB sont-ils souvent entièrement associatifs ?</h3>
+  <p>Les TLB sont petits et chaque défaut impose un parcours coûteux de la table des pages ; les comparateurs supplémentaires valent donc la peine pour éviter complètement les défauts par conflit.</p>
+  <h3>Un cache entièrement associatif élimine-t-il tous les défauts ?</h3>
+  <p>Non. Il supprime les défauts par conflit, mais les défauts obligatoires à la première utilisation et les défauts de capacité dus à un ensemble de travail plus grand que le cache se produisent toujours.</p>
+</section>
 
 
 

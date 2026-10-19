@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"시스템 콜(system call)","item":"https://semiconroom.com/ko/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"시스템 콜(system call)","description":"애플리케이션이 파일 읽기·쓰기나 메모리 할당 등을 OS에 요청하는 구조. 전용 명령으로 예외를 일으켜 특권 모드로 전환하고 커널 처리를 호출한다.","url":"https://semiconroom.com/ko/term/system-call/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"시스템 콜(system call)","item":"https://semiconroom.com/ko/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"시스템 콜(system call)","description":"애플리케이션이 파일 읽기·쓰기나 메모리 할당 등을 OS에 요청하는 구조. 전용 명령으로 예외를 일으켜 특권 모드로 전환하고 커널 처리를 호출한다.","url":"https://semiconroom.com/ko/term/system-call/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"시스템 콜과 인터럽트 차이","acceptedAnswer":{"@type":"Answer","text":"시스템 콜은 프로그램이 전용 명령어로 의도적으로 일으키는 동기적 트랩입니다. 인터럽트는 타이머나 장치 같은 하드웨어로부터 오는 비동기 신호로, 프로그램이 무엇을 하고 있든 상관없이 도착합니다."}},{"@type":"Question","name":"printf는 시스템 콜인가요","acceptedAnswer":{"@type":"Answer","text":"아닙니다. printf는 사용자 공간에서 출력을 포맷하는 C 라이브러리 함수이며, 최종적으로 write 시스템 콜을 호출해 버퍼링된 데이터를 커널에 넘깁니다."}},{"@type":"Question","name":"시스템 콜이 느린 이유","acceptedAnswer":{"@type":"Answer","text":"호출할 때마다 특권 모드로 전환하고 상태를 저장하며 인수를 검증하고 복귀해야 하고, 캐시와 TLB도 교란되기 때문입니다. 비용이 호출당 고정이므로 작은 호출이 많으면 누적됩니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/os-hardware/">OS와 하드웨어</a></p>
 </article>
-
+<section class="term-about">
+  <h2>시스템 콜의 단계별 흐름</h2>
+  <p>RISC-V Linux에서는 프로그램이 시스템 콜 번호를 레지스터 a7에, 인수를 a0부터 차례로 넣은 뒤 ecall을 실행합니다. 이 명령어는 의도적으로 예외를 발생시키며, CPU는 ecall의 주소를 기록하고 슈퍼바이저 모드로 전환해 커널의 트랩 진입점으로 점프합니다. 커널은 사용자 레지스터를 저장하고, 번호로 핸들러를 찾아 인수를 검사한 뒤 처리를 수행하고 결과를 a0에 넣습니다. 그런 다음 저장된 주소를 ecall 다음으로 진행시키고 sret으로 사용자 모드로 복귀합니다. 다른 아키텍처에서는 x86-64의 syscall, Arm의 svc 같은 명령어를 사용합니다.</p>
+</section>
+<section class="term-about">
+  <h2>시스템 콜과 라이브러리 함수의 차이</h2>
+  <p>프로그램은 보통 라이브러리 래퍼를 통해 시스템 콜을 호출하므로 경계를 놓치기 쉽습니다. printf 같은 함수는 전부 사용자 공간에서 실행되어 텍스트를 버퍼에 포맷하며, 가끔씩만 write 시스템 콜을 호출해 그 버퍼를 커널에 넘깁니다. 문자열 처리나 수학 루틴 같은 많은 라이브러리 함수는 커널에 전혀 들어가지 않습니다. 시스템 콜인지 여부는 함수 이름이 아니라 <a class="term-link" href="/ko/term/privileged-mode/">특권 모드</a>로의 전환 여부로 정해집니다.</p>
+</section>
+<section class="term-about">
+  <h2>시스템 콜에 시간이 걸리는 이유</h2>
+  <p>호출마다 모드 전환, 레지스터 저장과 복원, 인수 검증, 복귀라는 고정 오버헤드가 듭니다. 커널에 진입하면 캐시와 <a class="term-link" href="/ko/term/tlb/">TLB</a>도 교란되며, 커널 <a class="term-link" href="/ko/term/page-table/">페이지 테이블</a> 격리(<a class="term-link" href="/ko/term/kernel-page-table-isolation/">KPTI</a>) 같은 <a class="term-link" href="/ko/term/speculative-execution/">투기적 실행</a> 공격 대책은 진입할 때마다 페이지 테이블 전환을 추가합니다. 따라서 호출 한 번에 1바이트씩 쓰면, 사용자 공간에서 수 KB를 버퍼링해 한 번의 호출로 쓰는 것보다 훨씬 느립니다.</p>
+</section>
+<section class="term-about">
+  <h2>호출을 줄이는 방법</h2>
+  <p>버퍼링 외에도 mmap으로 파일을 메모리에 매핑할 수 있습니다. 그러면 읽기는 일반 로드가 되어, 읽을 때마다 호출하는 대신 처음 접근할 때의 <a class="term-link" href="/ko/term/page-fault/">페이지 폴트</a>로 처리됩니다. 한 번의 호출로 여러 작업을 제출하는 인터페이스는 경계 통과를 더 줄여 줍니다. 일부 운영체제는 현재 시각 같은 읽기 전용 커널 데이터를 사용자 공간에 매핑해, 자주 하는 조회에 트랩이 전혀 필요 없게 하기도 합니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 시스템 콜(system call) 관련 문제</h2>
   <article class="q-mini" data-qid="os-hardware-050" data-cat="os-hardware" data-answer="1" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 B예요.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: B. 시스템 콜 1회마다의 고정 부담을 횟수를 줄여 억제할 수 있기 때문에</p><p class="explanation"><a class="term-link" href="/ko/term/system-call/">시스템 콜</a>에서는 사용자 모드에서 <a class="term-link" href="/ko/term/privileged-mode/">특권 모드</a>로의 전환, 레지스터 저장, 인수 확인, 복귀 처리 등이 매번 필요하며, 처리하는 양이 1바이트여도 이 고정 부담이 듭니다. 또한 커널에 진입하면 캐시나 <a class="term-link" href="/ko/term/tlb/">TLB</a>의 내용도 흐트러집니다. 버퍼에 모아 수 KB씩 한꺼번에 쓰면 시스템 콜 횟수가 크게 줄어 전체가 빨라집니다. 기록하는 데이터의 총량은 변하지 않으며, 결국에는 디스크에 기록됩니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>시스템 콜과 인터럽트 차이</h3>
+  <p>시스템 콜은 프로그램이 전용 명령어로 의도적으로 일으키는 동기적 트랩입니다. 인터럽트는 타이머나 장치 같은 하드웨어로부터 오는 비동기 신호로, 프로그램이 무엇을 하고 있든 상관없이 도착합니다.</p>
+  <h3>printf는 시스템 콜인가요</h3>
+  <p>아닙니다. printf는 사용자 공간에서 출력을 포맷하는 C 라이브러리 함수이며, 최종적으로 write 시스템 콜을 호출해 버퍼링된 데이터를 커널에 넘깁니다.</p>
+  <h3>시스템 콜이 느린 이유</h3>
+  <p>호출할 때마다 특권 모드로 전환하고 상태를 저장하며 인수를 검증하고 복귀해야 하고, 캐시와 TLB도 교란되기 때문입니다. 비용이 호출당 고정이므로 작은 호출이 많으면 누적됩니다.</p>
+</section>
 <section>
   <h2>해설 속 시스템 콜(system call)</h2>
   <ul class="term-quotes"><li><p>시스템 콜에서는 사용자 모드에서 특권 모드로의 전환, 레지스터 저장, 인수 확인, 복귀 처리 등이 매번 필요하며, 처리하는 양이 1바이트여도 이 고정 부담이 듭니다.</p><a href="/ko/q/os-hardware/os-hardware-050/">작은 데이터를 1바이트씩 쓸 때, 매번 시스템 콜을 호출하는 것보다 사용자 공간의 버퍼에 모았다가 한꺼번에…</a></li><li><p>ABI는 컴파일된 프로그램이나 라이브러리가 함께 동작하기 위한 기계어 수준의 약속으로, 호출 규약, int·long·포인터의 크기, 구조체 정렬, 시스템 콜 호출 방법 등을 포함합니다.</p><a href="/ko/q/isa-assembly/isa-assembly-049/">ABI(애플리케이션 바이너리 인터페이스)에 대한 설명으로 올바른 것은?</a></li><li><p>malloc은 스스로 빈 영역을 관리하고, 부족해지면 OS에 요청하여 영역을 넓힙니다(Linux에서는 brk나 mmap 시스템 콜).</p><a href="/ko/q/linker-loader/linker-loader-016/">C 언어의 malloc으로 확보한 메모리는 일반적으로 프로세스의 어느 영역에서 가져옵니까?</a></li><li><p>그래서 시스템 콜을 사용하여 전용 명령으로 특권 모드로 전환하고 커널의 처리를 호출해 파일 읽기·쓰기, 메모리 할당, 프로세스 생성 등을 요청합니다.</p><a href="/ko/q/os-hardware/os-hardware-002/">애플리케이션이 파일 읽기·쓰기 등을 OS에 요청하는 구조를 무엇이라고 합니까?</a></li><li><p>커널은 a7의 번호로 어떤 시스템 콜인지 판단하고 a0~a2를 인수로 처리한 뒤 결과를 돌려주고 사용자 모드로 돌아갑니다.</p><a href="/ko/q/os-hardware/os-hardware-003/">위 RISC-V 코드의 마지막 ecall 명령이 실행되었을 때 일어나는 일로 올바른 것은?</a></li></ul>
@@ -109,7 +132,11 @@
 </section>
 
 <div data-ad="term"></div>
-
+<section>
+  <h2>이 용어가 포함된 비교</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/ko/compare/user-mode-vs-kernel-mode/"><strong>사용자 모드와 커널 모드의 차이점 정리</strong><span>사용자 모드와 커널 모드를 표로 비교합니다. 실행할 수 있는 명령어, 접근할 수 있는 메모리, 전환 계기, 전환 비용, 오류의 영향, 보호의 목적을 다룹니다.</span></a></li></ul>
+</section>
 
 <section>
   <h2>관련 용어</h2>

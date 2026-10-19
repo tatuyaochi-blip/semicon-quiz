@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/ko/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"OS가 삭제한 파일 영역을 SSD에 알려 주는 명령. 불필요해진 데이터를 SSD가 파악할 수 있어 가비지 컬렉션의 효율이 높아진다.","url":"https://semiconroom.com/ko/term/trim/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/ko/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"OS가 삭제한 파일 영역을 SSD에 알려 주는 명령. 불필요해진 데이터를 SSD가 파악할 수 있어 가비지 컬렉션의 효율이 높아진다.","url":"https://semiconroom.com/ko/term/trim/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TRIM하면 데이터가 바로 지워지나요?","acceptedAnswer":{"@type":"Answer","text":"반드시 그렇지는 않습니다. TRIM은 데이터를 무효로 표시하고 주소 매핑을 제거하며, 물리적 소거는 나중에 가비지 컬렉션이 블록을 회수할 때 일어납니다. 다만 TRIM된 주소를 읽으면 이미 0이 반환될 수도 있습니다."}},{"@type":"Question","name":"NVMe SSD도 TRIM을 지원하나요?","acceptedAnswer":{"@type":"Answer","text":"네. NVMe Dataset Management 명령의 Deallocate 옵션이 같은 역할을 하며, 운영체제에서는 여전히 TRIM 또는 discard라고 부르는 경우가 많습니다."}},{"@type":"Question","name":"하드 디스크(HDD)에도 TRIM이 필요한가요?","acceptedAnswer":{"@type":"Answer","text":"기존 하드 드라이브는 섹터를 제자리에서 덮어쓸 수 있으므로 TRIM의 이점이 없습니다. TRIM은 재사용 전에 블록을 소거해야 하는 플래시 스토리지에서 중요합니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/sram-flash/">SRAM과 플래시 메모리</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SSD에 알려 줘야 하는 이유</h2>
+  <p>SSD의 컨트롤러는 운영체제가 사용하는 논리 블록 주소를 물리 플래시 페이지에 대응시키는 플래시 변환 계층(FTL)을 실행합니다. 파일을 삭제해도 파일 시스템 자체의 관리 정보만 갱신될 뿐, SSD에는 아무 쓰기도 전달되지 않으므로 SSD는 이전 데이터를 여전히 유효하다고 간주합니다. 그 결과 <a class="term-link" href="/ko/term/garbage-collection/">가비지 컬렉션</a> 중에 드라이브는 아무도 다시 읽지 않을 데이터를 계속 복사하여 시간과 플래시 내구성을 낭비합니다. TRIM은 이 정보 격차를 해소합니다. 운영체제가 더 이상 유용한 데이터를 담고 있지 않은 주소 범위를 보내면 드라이브는 그 데이터를 보존하지 않아도 됩니다.</p>
+</section>
+<section class="term-about">
+  <h2>TRIM 이후에 일어나는 일</h2>
+  <p>TRIM을 받으면 FTL은 해당 논리 주소의 매핑을 제거하고 대응하는 물리 페이지를 무효로 표시합니다. 데이터가 반드시 즉시 소거되는 것은 아니며, 소거는 나중에 <a class="term-link" href="/ko/term/garbage-collection/">가비지 컬렉션</a>이 공간을 회수할 때 블록 단위로 이루어집니다. 대부분 무효 페이지로 채워진 블록은 복사가 거의 또는 전혀 없이 소거할 수 있으므로, <a class="term-link" href="/ko/term/write-amplification/">쓰기 증폭</a>이 줄고 드라이브가 채워져도 쓰기 성능이 안정적으로 유지됩니다. 드라이브에 따라 TRIM된 주소를 이후에 읽으면 0이나 정의되지 않은 데이터가 반환될 수 있으므로, SSD에서 삭제된 파일은 일반적으로 하드 디스크보다 복구하기가 훨씬 어렵습니다.</p>
+</section>
+<section class="term-about">
+  <h2>인터페이스와 발행 방식</h2>
+  <p>TRIM은 ATA(SATA) 명령 옵션의 이름입니다. SCSI와 SAS 시스템은 UNMAP을 사용하며, <a class="term-link" href="/ko/term/nvme/">NVMe</a>는 Dataset Management 명령의 Deallocate 옵션으로 같은 기능을 제공합니다. 운영체제는 파일이 삭제될 때마다 discard를 보내는 연속 방식이나, 삭제 속도 저하를 피하는 주기적 일괄 방식으로 이 명령을 발행합니다. 일부 RAID나 디스크 암호화 구성, 가상 디스크처럼 파일 시스템과 드라이브 사이에 있는 계층은 명령이 플래시까지 도달하도록 전달해야 하며, 이를 위해 별도 설정이 필요할 수 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>혼동하기 쉬운 개념</h2>
+  <p>TRIM은 호스트가 주는 힌트일 뿐이며, <a class="term-link" href="/ko/term/garbage-collection/">가비지 컬렉션</a>은 실제로 유효 데이터를 <a class="term-link" href="/ko/term/relocation/">재배치</a>하고 블록을 소거하는 드라이브 내부 프로세스로 TRIM 유무와 관계없이 실행됩니다. 반도체 제조에서 레지스트 트리밍은 노광 한계 이하로 레지스트 라인을 가늘게 만드는 무관한 <a class="term-link" href="/ko/term/plasma/">플라즈마</a> 공정이고, 레이저 트리밍은 아날로그 칩의 저항값을 조정하는 것입니다. 기존 하드 디스크는 데이터를 제자리에서 덮어쓰므로 TRIM이 필요 없지만, 씬 프로비저닝 스토리지는 공간을 회수하기 위해 동등한 unmap 명령을 사용합니다.</p>
+</section>
 <section>
   <h2>도전해 보기: TRIM 관련 문제</h2>
   <article class="q-mini" data-qid="sram-flash-028" data-cat="sram-flash" data-answer="2" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 C예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 호스트가 쓴 데이터량보다 플래시 메모리에 실제로 쓰이는 데이터량이 많아지는 것</p><p class="explanation">플래시는 덮어쓰기가 불가능하고 소거가 블록 단위이므로, <a class="term-link" href="/ko/term/garbage-collection/">가비지 컬렉션</a>에서 유효한 데이터를 다른 블록으로 복사하는 등 추가 쓰기가 발생하여 실제 쓰기량이 호스트의 쓰기량보다 많아집니다. 이 비율이 <a class="term-link" href="/ko/term/write-amplification/">쓰기 증폭</a> 계수(WAF)이며, 랜덤한 작은 쓰기가 많으면 몇 배가 되기도 합니다. <a class="term-link" href="/ko/term/trim/">TRIM</a>, 여분 영역, 데이터 압축 등으로 줄여 수명과 성능을 지킵니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>TRIM하면 데이터가 바로 지워지나요?</h3>
+  <p>반드시 그렇지는 않습니다. TRIM은 데이터를 무효로 표시하고 주소 매핑을 제거하며, 물리적 소거는 나중에 가비지 컬렉션이 블록을 회수할 때 일어납니다. 다만 TRIM된 주소를 읽으면 이미 0이 반환될 수도 있습니다.</p>
+  <h3>NVMe SSD도 TRIM을 지원하나요?</h3>
+  <p>네. NVMe Dataset Management 명령의 Deallocate 옵션이 같은 역할을 하며, 운영체제에서는 여전히 TRIM 또는 discard라고 부르는 경우가 많습니다.</p>
+  <h3>하드 디스크(HDD)에도 TRIM이 필요한가요?</h3>
+  <p>기존 하드 드라이브는 섹터를 제자리에서 덮어쓸 수 있으므로 TRIM의 이점이 없습니다. TRIM은 재사용 전에 블록을 소거해야 하는 플래시 스토리지에서 중요합니다.</p>
+</section>
 <section>
   <h2>해설 속 TRIM</h2>
   <ul class="term-quotes"><li><p>TRIM 명령으로 불필요한 영역을 통지하면 SSD는 그 페이지를 무효로 취급하여 복사하지 않고 소거할 수 있으므로, 쓰기 증폭이 줄어 성능과 수명이 개선됩니다.</p><a href="/ko/q/sram-flash/sram-flash-028/">OS가 삭제한 파일의 영역을 SSD에 통지하여 가비지 컬렉션을 효율화하기 위한 명령은 무엇입니까?</a></li><li><p>TRIM, 여분 영역, 데이터 압축 등으로 줄여 수명과 성능을 지킵니다.</p><a href="/ko/q/sram-flash/sram-flash-042/">SSD의 &#39;쓰기 증폭(Write Amplification)&#39;의 설명으로 올바른 것은 무엇입니까?</a></li></ul>

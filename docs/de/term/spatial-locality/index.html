@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Räumliche Lokalität","item":"https://semiconroom.com/de/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Räumliche Lokalität","description":"Eigenschaft, dass nach dem Zugriff auf eine Adresse bald auch auf benachbarte Adressen zugegriffen wird. Beispiel ist das sequenzielle Lesen eines Arrays; Grund dafür, dass Daten in Cache-Zeilen gebündelt geladen werden.","url":"https://semiconroom.com/de/term/spatial-locality/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Räumliche Lokalität","item":"https://semiconroom.com/de/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Räumliche Lokalität","description":"Eigenschaft, dass nach dem Zugriff auf eine Adresse bald auch auf benachbarte Adressen zugegriffen wird. Beispiel ist das sequenzielle Lesen eines Arrays; Grund dafür, dass Daten in Cache-Zeilen gebündelt geladen werden.","url":"https://semiconroom.com/de/term/spatial-locality/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Beispiel für räumliche Lokalität","acceptedAnswer":{"@type":"Answer","text":"Ein Array von Anfang bis Ende lesen: Nachdem Element i verwendet wurde, wird Element i+1 an der nächsten Adresse verwendet, und es wurde wahrscheinlich durch dieselbe Zeilenfüllung in den Cache geholt."}},{"@type":"Question","name":"Wie nutzen Caches räumliche Lokalität aus?","acceptedAnswer":{"@type":"Answer","text":"Sie übertragen bei jedem Miss ganze Cache-Zeilen, üblicherweise 64 Byte, und holen oft die folgenden Zeilen im Voraus, sodass benachbarte Daten bereits vorhanden sind, wenn das Programm sie anfordert."}},{"@type":"Question","name":"Warum ist spaltenweises Durchlaufen eines C-Arrays langsam?","acceptedAnswer":{"@type":"Answer","text":"C speichert Arrays zeilenweise, sodass das Fortschreiten entlang einer Spalte bei jedem Zugriff eine ganze Zeile springt und nur einen kleinen Teil jeder geholten Cache-Zeile nutzt."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum Programme sie aufweisen</h2>
+  <p>Befehle werden bis zu einer Verzweigung nacheinander von aufeinanderfolgenden Adressen geholt, Arrays werden üblicherweise Element für Element durchlaufen, und die Felder einer Struktur oder die lokalen Variablen eines Stackframes liegen nebeneinander. Daher folgen auf einen Zugriff auf eine Adresse oft bald Zugriffe auf benachbarte Adressen. Räumliche Lokalität ist diese Tendenz, und sie ist eine Eigenschaft des Zugriffsmusters des Programms, nicht der Hardware.</p>
+</section>
+<section class="term-about">
+  <h2>Wie Hardware sie ausnutzt</h2>
+  <p>Caches übertragen Daten in Zeilen, bei aktuellen CPUs typischerweise 64 Byte, sodass ein Miss Nachbarn mitbringt, die wahrscheinlich als Nächstes benötigt werden. Das passt auch zu DRAM-Bursts: Bei DDR4 liefern acht Übertragungen zu 8 Byte genau 64 Byte. Hardware-Prefetcher erkennen sequenzielle Ströme oder solche mit konstantem Stride und holen kommende Zeilen im Voraus, und offen gehaltene DRAM-Zeilen bedienen benachbarte Zugriffe schneller. Auch Seiten und der <a class="term-link" href="/de/term/tlb/">TLB</a> profitieren, da eine Übersetzung viele benachbarte Adressen abdeckt.</p>
+</section>
+<section class="term-about">
+  <h2>Räumliche vs. zeitliche Lokalität</h2>
+  <p><a class="term-link" href="/de/term/temporal-locality/">Zeitliche Lokalität</a> bedeutet, dieselben Daten bald wiederzuverwenden, etwa einen Schleifenzähler oder eine laufende Summe; räumliche Lokalität bedeutet, bald benachbarte Daten zu verwenden, etwa das nächste Array-Element. Ein einzelner Durchlauf ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> ein großes Array hat starke räumliche, aber keine zeitliche Lokalität, während das wiederholte Aktualisieren einer Variable zeitliche, aber kaum räumliche Lokalität hat. Zufällige Zugriffe auf einen großen Datenbestand, wie bei manchen Hashtabellen oder Graphtraversierungen, haben von beidem wenig und erzeugen häufig Misses.</p>
+</section>
+<section class="term-about">
+  <h2>Code schreiben, der sie besitzt</h2>
+  <p>In C werden zweidimensionale Arrays zeilenweise (row-major) gespeichert, sodass eine innere Schleife ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> die Spalten aufeinanderfolgende Adressen berührt, während vertauschte Schleifen bei jedem Schritt eine ganze Zeile springen. Ein Structure-of-Arrays-Layout, wenn nur ein Feld verarbeitet wird, vermeidet das Laden ungenutzter Felder. Größere Cache-Zeilen nutzen räumliche Lokalität besser, erhöhen aber die Miss-Penalty und können unnötige Daten laden, und in Multithread-Code verursachen unabhängige Variablen in derselben Zeile <a class="term-link" href="/de/term/false-sharing/">False Sharing</a>.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Räumliche Lokalität</h2>
   <article class="q-mini" data-qid="cpu-002" data-cat="cpu" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. 64 Byte</p><p class="explanation">Die meisten CPUs tauschen Daten zwischen Cache und Hauptspeicher in Zeilen von 64 Byte aus. Daten benachbarter Adressen werden oft nacheinander verwendet (<a class="term-link" href="/de/term/spatial-locality/">räumliche Lokalität</a>), sodass gebündeltes Laden effizient ist; es passt auch zum Burst-Transfer von DRAM (bei DDR4 8 × 8 Byte = 64 Byte). Bei Multithread-Programmen ist auf <a class="term-link" href="/de/term/false-sharing/">False Sharing</a> zu achten, bei dem sich getrennte Variablen in derselben Zeile befinden und um diese konkurrieren.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Beispiel für räumliche Lokalität</h3>
+  <p>Ein Array von Anfang bis Ende lesen: Nachdem Element i verwendet wurde, wird Element i+1 an der nächsten Adresse verwendet, und es wurde wahrscheinlich durch dieselbe Zeilenfüllung in den Cache geholt.</p>
+  <h3>Wie nutzen Caches räumliche Lokalität aus?</h3>
+  <p>Sie übertragen bei jedem Miss ganze Cache-Zeilen, üblicherweise 64 Byte, und holen oft die folgenden Zeilen im Voraus, sodass benachbarte Daten bereits vorhanden sind, wenn das Programm sie anfordert.</p>
+  <h3>Warum ist spaltenweises Durchlaufen eines C-Arrays langsam?</h3>
+  <p>C speichert Arrays zeilenweise, sodass das Fortschreiten entlang einer Spalte bei jedem Zugriff eine ganze Zeile springt und nur einen kleinen Teil jeder geholten Cache-Zeile nutzt.</p>
+</section>
 <section>
   <h2>„Räumliche Lokalität“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Genutzt werden die zeitliche Lokalität (dieselben Daten werden bald wieder verwendet) und die räumliche Lokalität (benachbarte Adressen werden nacheinander verwendet); der Zugriff dauert bei L1 einige Takte und selbst bei L3 einige zehn Takte.</p><a href="/de/q/cpu/cpu-002/">Was ist der Hauptzweck eines Cache-Speichers?</a></li><li><p>Daten benachbarter Adressen werden oft nacheinander verwendet (räumliche Lokalität), sodass gebündeltes Laden effizient ist; es passt auch zum Burst-Transfer von DRAM (bei DDR4 8 × 8 Byte = 64 Byte).</p><a href="/de/q/cpu/cpu-039/">Welche Größe der Cache-Zeile (Cache-Block) wird bei den mei…</a></li><li><p>Das Lesen eines Arrays vom Anfang an ist ein Beispiel für räumliche Lokalität, bei der nahe beieinanderliegende Adressen nacheinander verwendet werden, und eine andere Eigenschaft als zeitliche Lokalität.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-001/">Welches ist das am besten geeignete Beispiel für zeitliche …</a></li></ul>

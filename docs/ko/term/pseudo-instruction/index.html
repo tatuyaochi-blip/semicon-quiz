@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"의사 명령어(pseudo-instruction)","item":"https://semiconroom.com/ko/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"의사 명령어(pseudo-instruction)","description":"어셈블리에서는 명령처럼 쓸 수 있지만 어셈블러가 하나 이상의 실제 명령으로 바꾸는 것. RISC-V의 nop, mv, li, j, ret 등.","url":"https://semiconroom.com/ko/term/pseudo-instruction/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"의사 명령어(pseudo-instruction)","item":"https://semiconroom.com/ko/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"의사 명령어(pseudo-instruction)","description":"어셈블리에서는 명령처럼 쓸 수 있지만 어셈블러가 하나 이상의 실제 명령으로 바꾸는 것. RISC-V의 nop, mv, li, j, ret 등.","url":"https://semiconroom.com/ko/term/pseudo-instruction/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"의사 명령어와 실제 명령어 차이","acceptedAnswer":{"@type":"Answer","text":"실제 명령어는 CPU가 실행하는 고유한 기계어 인코딩을 가집니다. 의사 명령어는 어셈블러 문법일 뿐이며, 실행 전에 하나 이상의 실제 명령어로 번역됩니다."}},{"@type":"Question","name":"RISC-V li 명령어 전개","acceptedAnswer":{"@type":"Answer","text":"부호 있는 12비트에 들어가는 작은 상수라면 x0에서의 addi 하나, 더 큰 32비트 값이라면 lui 뒤에 addi, 64비트 상수라면 더 긴 시퀀스로 전개됩니다."}},{"@type":"Question","name":"RISC-V에서 nop은 실제 명령어인가요","acceptedAnswer":{"@type":"Answer","text":"아닙니다. nop은 addi x0, x0, 0으로 인코딩되는 의사 명령어이며, x0에 대한 쓰기는 버려지므로 아무것도 바꾸지 않습니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/isa-assembly/">ISA와 어셈블리</a></p>
 </article>
-
+<section class="term-about">
+  <h2>어셈블러의 전개 방식</h2>
+  <p>의사 명령어는 고유한 인코딩이 없는 어셈블리 문법으로, <a class="term-link" href="/ko/term/assembler/">어셈블러</a>가 이를 하나 이상의 실제 명령어로 바꿉니다. RISC-V에서 nop은 addi x0, x0, 0으로, mv rd, rs는 addi rd, rs, 0으로, j label은 jal x0, label로, ret은 jalr x0, 0(ra)로, bnez rs, label은 bne rs, x0, label로 바뀝니다. 상당수는 항상 0으로 읽히고 쓰기는 버려지는 레지스터 x0에 의존합니다. 디스어셈블러는 보통 의사 명령어 형태로 되돌려 출력하므로 리스팅을 읽기가 쉬워집니다.</p>
+</section>
+<section class="term-about">
+  <h2>한 줄이 여러 명령어로</h2>
+  <p>일부 의사 명령어는 가변 개수의 실제 명령어로 전개됩니다. li(load <a class="term-link" href="/ko/term/immediate-operand/">immediate</a>)는 상수가 12비트 부호 있는 즉치값에 들어가면 addi 하나가 되지만, 더 큰 32비트 값이면 lui 뒤에 addi가 오고, 64비트 상수면 더 긴 시퀀스가 됩니다. la(load address)와 먼 함수에 대한 call은 auipc와 두 번째 명령어를 조합해 PC 상대 주소를 만듭니다. 코드 크기나 오프셋을 손으로 계산할 때는 이 점을 고려해야 합니다.</p>
+</section>
+<section class="term-about">
+  <h2>ISA가 의사 명령어에 의존하는 이유</h2>
+  <p>nop, mv, 단순 점프를 별도의 하드웨어 명령어로 정의하면 기능은 늘지 않으면서 옵코드와 <a class="term-link" href="/ko/term/decoder/">디코더</a> 로직만 늘어납니다. x0을 쓰는 기존 명령어로 이미 같은 일을 할 수 있기 때문입니다. 의사 명령어는 RISC-V의 핵심 설계 목표인 작은 하드웨어 명령어 세트를 유지하면서, 함수 복귀나 0과의 비교 같은 흔한 관용구에 읽기 쉬운 이름을 프로그래머에게 제공합니다.</p>
+</section>
+<section class="term-about">
+  <h2>의사 명령어와 디렉티브, 매크로의 차이</h2>
+  <p>.text, .globl, .word 같은 <a class="term-link" href="/ko/term/assembler/">어셈블러</a> 디렉티브는 어셈블러 자체에 대한 지시입니다. 섹션을 선택하거나 심볼을 외부에 공개하거나 데이터를 출력하며, 기계어 명령어에 대응하지 않습니다. 의사 명령어는 항상 툴체인이 정의한 고정된 의미의 실제 명령어로 바뀝니다. 매크로도 비슷한 전개이지만 프로그래머가 정의합니다. 툴체인이 나중에 일부 전개를 줄이기도 하는데, 예를 들어 타깃이 충분히 가까우면 링크 시에 auipc와 jalr로 된 call을 jal 하나로 바꿉니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 의사 명령어(pseudo-instruction) 관련 문제</h2>
   <article class="q-mini" data-qid="isa-assembly-006" data-cat="isa-assembly" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: B. jalr x0, 0(ra)</p><p class="explanation">jalr(jump and link register)은 레지스터의 값에 오프셋을 더한 주소로 점프하고, 다음 명령어의 주소를 쓰기 대상에 넣습니다. ret은 &#39;jalr x0, 0(ra)&#39;이며, ra의 주소로 점프하고 링크는 x0에 버립니다. jalr은 함수 포인터나 가상 함수 호출처럼 목적지가 실행 시에 정해지는 점프에도 사용됩니다. ra를 복원하는 &#39;lw ra, …&#39;는 ret 전에 하는 준비입니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>의사 명령어와 실제 명령어 차이</h3>
+  <p>실제 명령어는 CPU가 실행하는 고유한 기계어 인코딩을 가집니다. 의사 명령어는 어셈블러 문법일 뿐이며, 실행 전에 하나 이상의 실제 명령어로 번역됩니다.</p>
+  <h3>RISC-V li 명령어 전개</h3>
+  <p>부호 있는 12비트에 들어가는 작은 상수라면 x0에서의 addi 하나, 더 큰 32비트 값이라면 lui 뒤에 addi, 64비트 상수라면 더 긴 시퀀스로 전개됩니다.</p>
+  <h3>RISC-V에서 nop은 실제 명령어인가요</h3>
+  <p>아닙니다. nop은 addi x0, x0, 0으로 인코딩되는 의사 명령어이며, x0에 대한 쓰기는 버려지므로 아무것도 바꾸지 않습니다.</p>
+</section>
 <section>
   <h2>해설 속 의사 명령어(pseudo-instruction)</h2>
   <ul class="term-quotes"><li><p>다만 &#39;li&#39;나 &#39;mv&#39; 같은 의사 명령어는 어셈블러가 하나 이상의 실제 명령어로 치환합니다.</p><a href="/ko/q/isa-assembly/isa-assembly-005/">어셈블리 언어와 기계어의 관계로 올바른 것은?</a></li><li><p>bnez는 &#39;bne t1, zero, loop&#39;의 의사 명령어입니다.</p><a href="/ko/q/isa-assembly/isa-assembly-023/">위의 RISC-V 코드를 실행 완료했을 때 t0의 값은 얼마인가?</a></li><li><p>호출 규약에서는 복귀 주소를 ra(x1)에 넣으므로, 함수 호출은 &#39;jal ra, func&#39;이며 의사 명령어로는 &#39;call func&#39;라고 씁니다.</p><a href="/ko/q/isa-assembly/isa-assembly-025/">RISC-V 명령어 &#39;jal ra, func&#39;의 동작으로 올바른 것은?</a></li></ul>

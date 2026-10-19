@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Atomarer Befehl","item":"https://semiconroom.com/de/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Atomarer Befehl","description":"Befehl, der Lesen und Schreiben im Speicher als eine einzige Operation ausführt, die von anderen Kernen nicht unterbrochen werden kann. Beispiele sind CAS, Fetch-and-Add und LR/SC.","url":"https://semiconroom.com/de/term/atomic-instruction/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Atomarer Befehl","item":"https://semiconroom.com/de/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Atomarer Befehl","description":"Befehl, der Lesen und Schreiben im Speicher als eine einzige Operation ausführt, die von anderen Kernen nicht unterbrochen werden kann. Beispiele sind CAS, Fetch-and-Add und LR/SC.","url":"https://semiconroom.com/de/term/atomic-instruction/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen atomarem Befehl und Lock","acceptedAnswer":{"@type":"Answer","text":"Ein atomarer Befehl macht ein einzelnes Read-Modify-Write auf einer Speicherstelle in Hardware unteilbar; eine Sperre (Lock) ist ein aus atomaren Befehlen aufgebautes Softwarekonstrukt, das einen längeren Codeabschnitt schützt, der auf viele Speicherstellen zugreift."}},{"@type":"Question","name":"Was ist Compare-and-Swap?","acceptedAnswer":{"@type":"Answer","text":"Compare-and-Swap schreibt einen neuen Wert nur dann in eine Speicherstelle, wenn diese noch einen erwarteten Wert enthält, und meldet Erfolg oder Misserfolg, alles als eine atomare Operation."}},{"@type":"Question","name":"Warum sind atomare Operationen langsam?","acceptedAnswer":{"@type":"Answer","text":"Der Kern muss exklusiven Besitz der Cache-Zeile erlangen und oft die Speicherordnung erzwingen, und wenn mehrere Kerne um dieselbe Zeile konkurrieren, wird sie wiederholt zwischen ihnen übertragen und invalidiert."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/multicore-sync/">Multicore und Synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum gewöhnliche Lade- und Speicherbefehle nicht genügen</h2>
+  <p>Eine Anweisung wie counter++ wird in einen Ladebefehl, eine Addition und einen Speicherbefehl übersetzt. Führen zwei Kerne sie gleichzeitig aus, können beide denselben alten Wert laden und beide alt + 1 speichern, wodurch ein Inkrement verloren geht. Ein atomarer Befehl führt das gesamte <a class="term-link" href="/de/term/read-modify-write/">Read-Modify-Write</a> als eine unteilbare Operation aus: Kein Zugriff eines anderen Kerns auf diese Speicherstelle kann dazwischenkommen, und andere Kerne sehen nur den Wert davor oder danach. Diese Garantie ist die Grundlage für Sperren (Locks), Zähler und <a class="term-link" href="/de/term/lock-free-algorithm/">Lock-free</a>-Datenstrukturen auf Mehrkernprozessoren.</p>
+</section>
+<section class="term-about">
+  <h2>Gängige Arten atomarer Operationen</h2>
+  <p>Test-and-Set und atomarer Swap schreiben einen neuen Wert und geben den alten zurück. Fetch-and-Add addiert zum Speicherinhalt und gibt den vorherigen Wert zurück. <a class="term-link" href="/de/term/compare-and-swap/">Compare-and-Swap (CAS)</a> schreibt einen neuen Wert nur, wenn der Speicher noch einen erwarteten Wert enthält, und meldet, ob dies gelungen ist. Load-Reserved/Store-Conditional (<a class="term-link" href="/de/term/load-reserved-store-conditional/">LR/SC</a>) teilt die Operation in einen reservierenden Ladebefehl und einen Speicherbefehl, der fehlschlägt, wenn die Reservierung verloren gegangen ist. RISC-V bietet zudem AMO-Befehle (Atomic Memory Operation) wie amoadd und amoswap, während x86 Befehle wie cmpxchg und xadd mit einem LOCK-Präfix versieht.</p>
+</section>
+<section class="term-about">
+  <h2>Wie die Hardware die Atomarität sicherstellt</h2>
+  <p>Frühe Systeme sperrten den gemeinsamen Bus für die Dauer der Operation. Moderne Kerne nutzen stattdessen das Cache-Kohärenzprotokoll: Der Kern erlangt exklusiven Besitz der <a class="term-link" href="/de/term/cache-line/">Cache-Zeile</a>, im Zustand Modified oder Exclusive eines MESI-artigen Protokolls, und hält Anfragen anderer Kerne nach dieser Zeile zurück, bis das <a class="term-link" href="/de/term/read-modify-write/">Read-Modify-Write</a> abgeschlossen ist. Ein atomarer Befehl ist daher viel langsamer als ein einfacher Ladebefehl aus dem Cache, und bei Konkurrenz springt die Zeile zwischen den Kernen hin und her. Atomare Befehle wirken auch auf die Speicherordnung; bei x86 wirken Befehle mit LOCK-Präfix als vollständige Speicherbarrieren.</p>
+</section>
+<section class="term-about">
+  <h2>Von atomaren Befehlen zu Sperren</h2>
+  <p>Ein <a class="term-link" href="/de/term/spinlock/">Spinlock</a> versucht, eine Sperrvariable mit einem atomaren Befehl zu setzen, und wiederholt dies in einer Schleife, wenn sie bereits belegt ist. Das direkte Wiederholen des atomaren Schreibens verursacht starken Kohärenzverkehr, weil jeder Versuch exklusiven Besitz verlangt. Das Muster Test-and-Test-and-Set wartet mit gewöhnlichen Lesezugriffen auf eine geteilte Kopie im lokalen Cache und versucht den atomaren Befehl erst, wenn die Sperre frei erscheint. <a class="term-link" href="/de/term/lock-free-algorithm/">Lock-free</a>-Strukturen verwenden <a class="term-link" href="/de/term/compare-and-swap/">CAS</a> oder <a class="term-link" href="/de/term/load-reserved-store-conditional/">LR/SC</a> direkt, doch CAS-basierte Entwürfe müssen sich gegen das <a class="term-link" href="/de/term/aba-problem/">ABA-Problem</a> absichern, bei dem sich ein Wert unbemerkt ändert und wieder zurückändert.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Atomarer Befehl</h2>
   <article class="q-mini" data-qid="multicore-sync-014" data-cat="multicore-sync" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Weil bei bloßem Lesen im eigenen Cache gewartet werden kann und so die Kommunikation, bei der die Cache-Zeile zwischen den Kernen hin- und herwandert, stark verringert wird</p><p class="explanation">Ein <a class="term-link" href="/de/term/atomic-instruction/">atomarer Befehl</a> beinhaltet einen Schreibvorgang; führt ein wartender Thread ihn wiederholt aus, streiten die Kerne jedes Mal im M-Zustand um die Zeile und machen fortwährend die Kopien anderer Kerne ungültig. Bei gewöhnlichem Lesen liest jeder Kern dagegen nur weiter seine Kopie im S-Zustand im eigenen Cache, und es entsteht keine Kommunikation. Nur wenn die Sperre freigegeben wird und sich der Wert ändert, wird mit dem atomaren Befehl zugegriffen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen atomarem Befehl und Lock</h3>
+  <p>Ein atomarer Befehl macht ein einzelnes Read-Modify-Write auf einer Speicherstelle in Hardware unteilbar; eine Sperre (Lock) ist ein aus atomaren Befehlen aufgebautes Softwarekonstrukt, das einen längeren Codeabschnitt schützt, der auf viele Speicherstellen zugreift.</p>
+  <h3>Was ist Compare-and-Swap?</h3>
+  <p>Compare-and-Swap schreibt einen neuen Wert nur dann in eine Speicherstelle, wenn diese noch einen erwarteten Wert enthält, und meldet Erfolg oder Misserfolg, alles als eine atomare Operation.</p>
+  <h3>Warum sind atomare Operationen langsam?</h3>
+  <p>Der Kern muss exklusiven Besitz der Cache-Zeile erlangen und oft die Speicherordnung erzwingen, und wenn mehrere Kerne um dieselbe Zeile konkurrieren, wird sie wiederholt zwischen ihnen übertragen und invalidiert.</p>
+</section>
 <section>
   <h2>„Atomarer Befehl“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Ein atomarer Befehl führt die Folge aus Lesen, Rechnen und Schreiben so aus, dass keine Lese- oder Schreibvorgänge anderer Kerne dazwischenkommen.</p><a href="/de/q/multicore-sync/multicore-sync-014/">Welche Aussage zu atomaren Befehlen (unteilbaren Befehlen) …</a></li><li><p>Ein atomarer Befehl beinhaltet einen Schreibvorgang; führt ein wartender Thread ihn wiederholt aus, streiten die Kerne jedes Mal im M-Zustand um die Zeile und machen fortwährend die Kopien anderer Kerne ungültig.</p><a href="/de/q/multicore-sync/multicore-sync-022/">Warum wartet man bei Spinlocks (Test-and-Test-and-Set) norm…</a></li></ul>

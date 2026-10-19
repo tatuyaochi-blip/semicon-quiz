@@ -16,7 +16,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Allocation en écriture (write allocate)","item":"https://semiconroom.com/fr/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Allocation en écriture (write allocate)","description":"Politique qui, lors d'un défaut de cache en écriture, charge la ligne dans le cache avant d'écrire. Souvent combinée à l'écriture différée (write-back). La politique qui écrit directement au niveau inférieur sans charger est la non-allocation en écriture (no-write allocate).","url":"https://semiconroom.com/fr/term/write-allocate/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Allocation en écriture (write allocate)","item":"https://semiconroom.com/fr/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Allocation en écriture (write allocate)","description":"Politique qui, lors d'un défaut de cache en écriture, charge la ligne dans le cache avant d'écrire. Souvent combinée à l'écriture différée (write-back). La politique qui écrit directement au niveau inférieur sans charger est la non-allocation en écriture (no-write allocate).","url":"https://semiconroom.com/fr/term/write-allocate/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelle différence entre write allocate et no-write allocate ?","acceptedAnswer":{"@type":"Answer","text":"Lors d'un défaut en écriture, l'allocation en écriture charge la ligne dans le cache et y écrit, tandis que la non-allocation écrit directement dans le niveau inférieur sans charger la ligne."}},{"@type":"Question","name":"Pourquoi le write allocate est-il généralement associé au write-back ?","acceptedAnswer":{"@type":"Answer","text":"Une fois la ligne dans un cache à écriture différée, les écritures suivantes font mouche et sont absorbées sans trafic mémoire, ce qui amortit le coût du chargement initial."}},{"@type":"Question","name":"À quoi servent les écritures non temporelles ?","acceptedAnswer":{"@type":"Answer","text":"Elles écrivent directement en mémoire de grandes quantités de données qui ne seront pas réutilisées bientôt, évitant la lecture de chaque ligne qu'entraînerait l'allocation en écriture et laissant le cache libre pour des données utiles."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Domaine: <a href="/fr/c/memory-hierarchy/">Hiérarchie mémoire</a></p>
 </article>
+<section class="term-about">
+  <h2>Ce qui se passe lors d&#39;un défaut en écriture</h2>
+  <p>Avec l&#39;allocation en écriture, une écriture en défaut commence par charger la ligne entière depuis le niveau inférieur, la place dans le cache, puis y fusionne les octets écrits. Dans un cache à écriture différée, la ligne est ensuite marquée comme modifiée (dirty) et n&#39;atteint la mémoire que lors de son éviction ultérieure. Dans un système multicœur, le chargement obtient aussi la propriété exclusive de la ligne, de sorte que les copies des autres cœurs sont invalidées avant l&#39;écriture ; c&#39;est cette lecture pour propriété (read-for-ownership) qui fait qu&#39;un défaut en écriture ressemble à une lecture sur le bus mémoire.</p>
+</section>
+<section class="term-about">
+  <h2>Allocation ou non-allocation en écriture</h2>
+  <p>La non-allocation en écriture envoie une écriture en défaut directement au niveau inférieur et laisse le cache intact. L&#39;allocation en écriture est rentable lorsque les données écrites sont bientôt relues ou réécrites, car les accès suivants font mouche ; c&#39;est donc le partenaire habituel de l&#39;écriture différée. La non-allocation convient aux données écrites une seule fois et non réutilisées, et c&#39;est le partenaire habituel de l&#39;<a class="term-link" href="/fr/term/write-through/">écriture immédiate</a>. Notez que le choix entre écriture différée et écriture immédiate détermine comment les hits sont propagés, tandis que l&#39;allocation détermine ce que fait un défaut : ce sont deux choix distincts.</p>
+</section>
+<section class="term-about">
+  <h2>Le coût caché pour les données en écriture seule</h2>
+  <p>Lorsqu&#39;un programme écrit un grand tampon qu&#39;il ne relira pas bientôt, par exemple pour effacer de la mémoire ou produire une sortie, l&#39;allocation en écriture lit d&#39;abord chaque ligne en mémoire uniquement pour l&#39;écraser, puis la réécrit plus tard, ce qui double à peu près le trafic. Ces lignes évincent aussi des données utiles. Les écritures non temporelles (streaming stores) évitent cela en regroupant les écritures et en les envoyant directement en mémoire. Certaines <a class="term-link" href="/fr/term/instruction-set-architecture/">ISA</a> proposent aussi des instructions qui mettent à zéro une <a class="term-link" href="/fr/term/cache-line/">ligne de cache</a> entière sans charger son ancien contenu.</p>
+</section>
+<section class="term-about">
+  <h2>Techniques connexes de traitement des défauts</h2>
+  <p>L&#39;allocation en écriture détermine si une ligne est chargée, mais d&#39;autres techniques influent sur la durée du défaut. Le mot critique en premier (critical word first) envoie le mot demandé avant le reste de la ligne de 64 octets pour que le CPU puisse reprendre plus tôt. Un <a class="term-link" href="/fr/term/store-buffer/">tampon d&#39;écriture</a> masque la latence des écritures dans les caches à <a class="term-link" href="/fr/term/write-through/">écriture immédiate</a>, et un cache de victimes conserve les lignes récemment évincées. Chacune traite une partie différente du coût d&#39;un défaut, ce qui est une source fréquente de confusion.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Quelle différence entre write allocate et no-write allocate ?</h3>
+  <p>Lors d&#39;un défaut en écriture, l&#39;allocation en écriture charge la ligne dans le cache et y écrit, tandis que la non-allocation écrit directement dans le niveau inférieur sans charger la ligne.</p>
+  <h3>Pourquoi le write allocate est-il généralement associé au write-back ?</h3>
+  <p>Une fois la ligne dans un cache à écriture différée, les écritures suivantes font mouche et sont absorbées sans trafic mémoire, ce qui amortit le coût du chargement initial.</p>
+  <h3>À quoi servent les écritures non temporelles ?</h3>
+  <p>Elles écrivent directement en mémoire de grandes quantités de données qui ne seront pas réutilisées bientôt, évitant la lecture de chaque ligne qu&#39;entraînerait l&#39;allocation en écriture et laissant le cache libre pour des données utiles.</p>
+</section>
 
 
 

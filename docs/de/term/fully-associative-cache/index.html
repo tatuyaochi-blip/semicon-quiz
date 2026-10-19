@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Voll assoziativ","item":"https://semiconroom.com/de/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Voll assoziativ","description":"Cache-Organisation, bei der jedes Datum an jeder beliebigen Stelle im Cache liegen kann. Es gibt keine Konfliktfehlzugriffe, aber alle Tags müssen verglichen werden, weshalb sie sich für große Caches nicht eignet. Verwendet u. a. bei TLBs.","url":"https://semiconroom.com/de/term/fully-associative-cache/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Voll assoziativ","item":"https://semiconroom.com/de/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Voll assoziativ","description":"Cache-Organisation, bei der jedes Datum an jeder beliebigen Stelle im Cache liegen kann. Es gibt keine Konfliktfehlzugriffe, aber alle Tags müssen verglichen werden, weshalb sie sich für große Caches nicht eignet. Verwendet u. a. bei TLBs.","url":"https://semiconroom.com/de/term/fully-associative-cache/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wie viele Index-Bits hat ein voll assoziativer Cache?","acceptedAnswer":{"@type":"Answer","text":"Null. Der gesamte Cache ist ein einziger Satz, daher besteht die Adresse nur aus Tag und Offset, und das Tag wird mit jeder Zeile verglichen."}},{"@type":"Question","name":"Warum sind TLBs oft voll assoziativ?","acceptedAnswer":{"@type":"Answer","text":"TLBs sind klein, und jeder Fehlzugriff erzwingt einen aufwendigen Page-Table-Walk; die zusätzlichen Komparatoren lohnen sich daher, um Konfliktfehlzugriffe vollständig zu vermeiden."}},{"@type":"Question","name":"Beseitigt ein voll assoziativer Cache alle Fehlzugriffe?","acceptedAnswer":{"@type":"Answer","text":"Nein. Er beseitigt Konfliktfehlzugriffe, doch Pflichtfehlzugriffe bei der ersten Nutzung und Kapazitätsfehlzugriffe durch eine Arbeitsmenge, die größer als der Cache ist, treten weiterhin auf."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
+<section class="term-about">
+  <h2>Kein Index, nur Tag und Offset</h2>
+  <p>In einem voll assoziativen Cache ist der gesamte Cache ein einziger Satz, sodass jeder Block in jeder Zeile gespeichert werden kann. Zur Auswahl eines Satzes werden keine Bits benötigt: Der Index hat 0 Bit, und die Adresse wird nur in einen Offset innerhalb der Zeile und ein Tag aus allen übrigen Bits aufgeteilt. Bei jedem Zugriff muss das angeforderte Tag gleichzeitig mit den Tags aller gültigen Zeilen verglichen werden, was typischerweise mit inhaltsadressierbarem Speicher (CAM) geschieht, bei dem jeder Eintrag seinen eigenen <a class="term-link" href="/de/term/comparator/">Komparator</a> hat.</p>
+</section>
+<section class="term-about">
+  <h2>Warum er nur für kleine Strukturen verwendet wird</h2>
+  <p>Ein CAM mit N Einträgen benötigt N breite Komparatoren, die bei jedem Nachschlagen aktiv sind, sowie einen großen <a class="term-link" href="/de/term/multiplexer/">Multiplexer</a> zur Ausgabe der passenden Daten. Fläche, Leistungsaufnahme und Trefferzeit wachsen schnell mit der Zahl der Einträge, daher sind große Datencaches stattdessen satzassoziativ. Volle Assoziativität ist bezahlbar und lohnend bei kleinen, stark genutzten Strukturen, bei denen jeder Fehlzugriff teuer ist, etwa Translation Lookaside Buffers (TLBs), die Seitentabelleneinträge zwischenspeichern, oder kleine Victim-Caches, die kürzlich aus einem direkt abgebildeten Cache verdrängte Zeilen aufnehmen.</p>
+</section>
+<section class="term-about">
+  <h2>Die Ersetzungsstrategie bestimmt die Leistung</h2>
+  <p>Da jede Zeile verdrängt werden kann, benötigt der Cache eine Ersetzungsstrategie. <a class="term-link" href="/de/term/lru-replacement/">Least Recently Used</a> (LRU) verdrängt die am längsten nicht genutzte Zeile. Bei zwei Zeilen und der Zugriffsfolge A, B, A, C, B, A ergibt LRU fünf Fehlzugriffe: Der Treffer auf A macht B zum Opfer, wenn C ankommt, danach werden nacheinander A und C verdrängt. Echtes LRU wird bei vielen Einträgen aufwendig zu verfolgen, daher verwendet Hardware oft Pseudo-LRU oder zufällige Ersetzung. LRU schneidet zudem bei zyklischen Zugriffsmustern, die etwas größer als der Cache sind, schlecht ab; dort kann zufällige Ersetzung besser sein.</p>
+</section>
+<section class="term-about">
+  <h2>Was volle Assoziativität nicht beheben kann</h2>
+  <p>Volle Assoziativität beseitigt Konfliktfehlzugriffe, weil Blöcke nie um einen bestimmten Satz konkurrieren. Im üblichen Drei-Kategorien-Modell sind Konfliktfehlzugriffe sogar als die Fehlzugriffe definiert, die ein voll assoziativer Cache gleicher Größe vermeiden würde. Pflichtfehlzugriffe beim ersten Zugriff bleiben bestehen, ebenso Kapazitätsfehlzugriffe, wenn die Arbeitsmenge größer als der gesamte Cache ist. Dagegen helfen nur ein größerer Cache, <a class="term-link" href="/de/term/prefetching/">Prefetching</a> oder eine Umstrukturierung des Codes, damit Daten früher wiederverwendet werden, zum Beispiel durch <a class="term-link" href="/de/term/loop-blocking/">Loop Blocking</a> (Tiling).</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wie viele Index-Bits hat ein voll assoziativer Cache?</h3>
+  <p>Null. Der gesamte Cache ist ein einziger Satz, daher besteht die Adresse nur aus Tag und Offset, und das Tag wird mit jeder Zeile verglichen.</p>
+  <h3>Warum sind TLBs oft voll assoziativ?</h3>
+  <p>TLBs sind klein, und jeder Fehlzugriff erzwingt einen aufwendigen Page-Table-Walk; die zusätzlichen Komparatoren lohnen sich daher, um Konfliktfehlzugriffe vollständig zu vermeiden.</p>
+  <h3>Beseitigt ein voll assoziativer Cache alle Fehlzugriffe?</h3>
+  <p>Nein. Er beseitigt Konfliktfehlzugriffe, doch Pflichtfehlzugriffe bei der ersten Nutzung und Kapazitätsfehlzugriffe durch eine Arbeitsmenge, die größer als der Cache ist, treten weiterhin auf.</p>
+</section>
 
 
 
