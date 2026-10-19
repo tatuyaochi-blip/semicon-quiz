@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko" data-lang="ko" data-base="/" data-home="/ko/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FP32, FP16, BF16, INT8의 차이점 정리 | 반도체 교실</title>
+<meta name="description" content="FP32, FP16, BF16, INT8을 표로 비교합니다. 비트 구성(부호·지수·가수), 표현 범위, 정밀도, FP32에서의 변환, 메모리, 연산기 효율, 학습과 추론 용도를 안내합니다.">
+<link rel="canonical" href="https://semiconroom.com/ko/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FP32, FP16, BF16, INT8의 차이점 정리 | 반도체 교실">
+<meta property="og:description" content="FP32, FP16, BF16, INT8을 표로 비교합니다. 비트 구성(부호·지수·가수), 표현 범위, 정밀도, FP32에서의 변환, 메모리, 연산기 효율, 학습과 추론 용도를 안내합니다.">
+<meta property="og:url" content="https://semiconroom.com/ko/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<meta property="og:site_name" content="반도체 교실">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/ko/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"비교","item":"https://semiconroom.com/ko/compare/"},{"@type":"ListItem","position":3,"name":"FP32, FP16, BF16, INT8의 차이점 정리","item":"https://semiconroom.com/ko/compare/fp32-vs-fp16-vs-bf16-vs-int8/"}]},{"@context":"https://schema.org","@type":"Article","headline":"FP32, FP16, BF16, INT8의 차이점 정리","description":"FP32, FP16, BF16, INT8을 표로 비교합니다. 비트 구성(부호·지수·가수), 표현 범위, 정밀도, FP32에서의 변환, 메모리, 연산기 효율, 학습과 추론 용도를 안내합니다.","inLanguage":"ko","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/ko/compare/fp32-vs-fp16-vs-bf16-vs-int8/","author":{"@type":"Organization","name":"반도체 교실"},"publisher":{"@type":"Organization","name":"반도체 교실"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"AI 학습에서 FP16보다 BF16이 선호되는 경우가 많은 이유는 무엇인가요?","acceptedAnswer":{"@type":"Answer","text":"BF16은 지수부가 FP32와 같은 8비트이므로 표현 범위가 FP32와 거의 같습니다. FP16에서는 작은 기울기가 0이 되거나 큰 값이 오버플로하는 것을 막기 위해 손실 스케일링이 필요하지만, BF16에서는 대부분 필요 없고 FP32에서의 변환도 간단합니다. 정밀도는 낮아지지만 신경망 학습에서는 문제가 되기 어렵습니다."}},{"@type":"Question","name":"FP16의 최댓값이 65504인 이유는 무엇인가요?","acceptedAnswer":{"@type":"Answer","text":"FP16은 지수부가 5비트(바이어스 15)이고, 모두 1인 값은 무한대와 NaN에 쓰이므로 지수의 최댓값은 2의 15제곱입니다. 가수 10비트를 모두 1로 한 (2 − 2⁻¹⁰) × 2¹⁵가 최대 유한값이며, 이것이 65504입니다."}},{"@type":"Question","name":"INT8로 소수를 포함한 값을 어떻게 표현하나요?","acceptedAnswer":{"@type":"Answer","text":"실수 ≈ 스케일 × (정수 − 영점)의 형태로 근사합니다. 0을 중심으로 대칭으로 양자화하는 경우에는 영점을 0으로 하고, 스케일을 '값의 최대 절댓값 ÷ 127' 등으로 정합니다. 스케일은 텐서별이나 채널별로 둡니다."}},{"@type":"Question","name":"INT8로 학습도 할 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"일반적으로 학습에는 부동소수점 형식을 사용합니다. 학습에서는 기울기 값의 범위가 넓고, 가중치에 대한 작은 업데이트도 다뤄야 하기 때문입니다. INT8은 주로 학습된 모델을 양자화한 추론에 쓰이며, 양자화 인식 학습에서도 가중치 업데이트는 부동소수점으로 수행합니다."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/ko/"><span class="logo-mark" aria-hidden="true"></span><span>반도체 교실<small></small></span></a>
+    <nav class="header-nav"><a href="/ko/#topics">분야</a><a href="/ko/glossary/">용어집</a><a href="/ko/compare/">비교</a><a href="/ko/figures/">도해</a><a href="/ko/tools/">계산 도구</a><a href="/ko/stats/">성적</a></nav>
+    <form class="site-search" role="search" action="/ko/search/" method="get"><input type="search" name="q" placeholder="검색 (예: MOSFET)" aria-label="사이트 내 검색" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/ko/search/" aria-label="사이트 내 검색"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="언어: 한국어"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>한국어</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="언어"><a href="/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><span aria-current="true" lang="ko">한국어</span><a href="/de/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="de" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>메뉴</summary>
+      <nav class="menu-panel"><a href="/ko/">홈</a><a href="/ko/#topics">분야</a><a href="/ko/glossary/">용어집</a><a href="/ko/compare/">비교</a><a href="/ko/figures/">도해</a><a href="/ko/tools/">계산 도구</a><a href="/ko/stats/">성적</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/ko/">홈</a> <span>›</span> <a href="/ko/compare/">비교</a></nav>
+<article class="compare-page">
+  <h1>FP32, FP16, BF16, INT8의 차이점 정리</h1>
+  <p class="lead">FP32는 32비트 단정밀도 부동소수점 수로, 계산의 기준으로 쓰입니다. FP16과 BF16은 둘 다 16비트이지만 비트 배분이 다릅니다. FP16은 가수에 많은 비트를 써서 정밀도를 확보하고, 표현 범위는 최대 65504로 좁아집니다. BF16은 지수부를 FP32와 같은 8비트로 해서 범위를 FP32 수준으로 유지하고, 그만큼 정밀도를 낮췄습니다. INT8은 8비트 정수로, 스케일을 곱해 실수를 근사하는 양자화에 쓰이며, AI 추론에서 메모리와 전력을 크게 줄일 수 있습니다.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="복사했어요!">표 복사</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="링크를 복사했어요">공유</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">비교 항목</th><th scope="col">FP32</th><th scope="col">FP16</th><th scope="col">BF16</th><th scope="col">INT8</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">비트 수</th><td>32비트</td><td>16비트</td><td>16비트</td><td>8비트</td></tr>
+        <tr><th scope="row">부호·지수·가수 비트 수</th><td>1·8·23</td><td>1·5·10</td><td>1·8·7</td><td>지수와 가수가 없음. 2의 보수 정수로 −128~127</td></tr>
+        <tr><th scope="row">표현 가능한 최댓값</th><td>약 3.4 × 10³⁸</td><td>65504</td><td>약 3.4 × 10³⁸(FP32와 거의 같음)</td><td>127(실수는 스케일을 곱해 표현)</td></tr>
+        <tr><th scope="row">최소 정규화 수</th><td>약 1.2 × 10⁻³⁸</td><td>약 6.1 × 10⁻⁵(2⁻¹⁴)</td><td>약 1.2 × 10⁻³⁸</td><td>없음(표현 가능한 값의 간격은 스케일로 결정)</td></tr>
+        <tr><th scope="row">정밀도 기준</th><td>10진수로 약 7자리(1과 다음 수의 차이는 2⁻²³ ≈ 1.2 × 10⁻⁷)</td><td>10진수로 약 3자리(2⁻¹⁰ ≈ 9.8 × 10⁻⁴)</td><td>10진수로 2~3자리(2⁻⁷ ≈ 7.8 × 10⁻³)</td><td>256단계의 눈금</td></tr>
+        <tr><th scope="row">FP32에서의 변환</th><td>없음(기준)</td><td>범위가 좁아 큰 값은 오버플로하고, 작은 값은 0이 될 수 있음</td><td>상위 16비트를 꺼내 반올림하기만 하면 되며, 범위는 넘치지 않음</td><td>스케일(과 영점)을 정해 양자화. 값의 범위를 조사하는 캘리브레이션이 필요</td></tr>
+        <tr><th scope="row">값 하나의 메모리</th><td>4바이트</td><td>2바이트</td><td>2바이트</td><td>1바이트</td></tr>
+        <tr><th scope="row">연산기 효율</th><td>곱셈기가 커서 같은 면적에서의 곱셈 누산 수가 적음</td><td>FP32보다 작은 연산기로 많은 곱셈 누산을 배치 가능</td><td>FP16과 비슷함. 가수가 짧은 만큼 곱셈기는 더 작음</td><td>곱셈기가 가장 작고 전력 효율이 좋음. 곱은 32비트 정수로 누산하는 경우가 많음</td></tr>
+        <tr><th scope="row">학습에서의 사용</th><td>마스터 웨이트, 옵티마이저 상태, 곱의 누산</td><td>혼합 정밀도 학습. 손실 스케일링으로 작은 기울기가 0이 되는 것을 방지</td><td>혼합 정밀도 학습에서 널리 쓰임. 대부분 손실 스케일링이 불필요</td><td>일반적으로 쓰지 않음(양자화 인식 학습에서는 양자화의 영향을 모사)</td></tr>
+        <tr><th scope="row">추론에서의 사용</th><td>정밀도의 기준. 성능보다 정확도를 우선할 때</td><td>GPU 등에서의 추론</td><td>GPU나 AI 가속기에서의 추론</td><td>양자화한 모델의 추론. 특히 엣지 NPU 등</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">수치는 대략적인 자릿수 기준이며, 공정 세대와 제품에 따라 달라져요.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>상황별 선택 기준</h2>
+  <dl class="compare-when">
+    <dt>FP32</dt><dd>정밀도가 필요한 계산, 학습의 마스터 웨이트나 곱의 누산, 낮은 정밀도 결과를 확인하는 기준.</dd>
+    <dt>FP16·BF16</dt><dd>AI 학습과 추론에서 메모리와 계산을 절반으로 줄이고 싶을 때. 범위를 중시하는 학습에는 BF16, 범위 안에 들어오는 값에서 정밀도를 중시한다면 FP16.</dd>
+    <dt>INT8</dt><dd>학습된 모델을 양자화해 추론을 빠르고 저전력으로 하고 싶을 때. 메모리나 전력이 제한된 엣지 기기에서의 추론.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>AI 학습에서 FP16보다 BF16이 선호되는 경우가 많은 이유는 무엇인가요?</h3>
+  <p>BF16은 지수부가 FP32와 같은 8비트이므로 표현 범위가 FP32와 거의 같습니다. FP16에서는 작은 기울기가 0이 되거나 큰 값이 오버플로하는 것을 막기 위해 손실 스케일링이 필요하지만, BF16에서는 대부분 필요 없고 FP32에서의 변환도 간단합니다. 정밀도는 낮아지지만 신경망 학습에서는 문제가 되기 어렵습니다.</p>
+  <h3>FP16의 최댓값이 65504인 이유는 무엇인가요?</h3>
+  <p>FP16은 지수부가 5비트(바이어스 15)이고, 모두 1인 값은 무한대와 NaN에 쓰이므로 지수의 최댓값은 2의 15제곱입니다. 가수 10비트를 모두 1로 한 (2 − 2⁻¹⁰) × 2¹⁵가 최대 유한값이며, 이것이 65504입니다.</p>
+  <h3>INT8로 소수를 포함한 값을 어떻게 표현하나요?</h3>
+  <p>실수 ≈ 스케일 × (정수 − 영점)의 형태로 근사합니다. 0을 중심으로 대칭으로 양자화하는 경우에는 영점을 0으로 하고, 스케일을 &#39;값의 최대 절댓값 ÷ 127&#39; 등으로 정합니다. 스케일은 텐서별이나 채널별로 둡니다.</p>
+  <h3>INT8로 학습도 할 수 있나요?</h3>
+  <p>일반적으로 학습에는 부동소수점 형식을 사용합니다. 학습에서는 기울기 값의 범위가 넓고, 가중치에 대한 작은 업데이트도 다뤄야 하기 때문입니다. INT8은 주로 학습된 모델을 양자화한 추론에 쓰이며, 양자화 인식 학습에서도 가중치 업데이트는 부동소수점으로 수행합니다.</p>
+</section>
+<section>
+  <h2>이해도 확인</h2>
+  <article class="q-mini" data-qid="computer-arithmetic-003" data-cat="computer-arithmetic" data-answer="1" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 B예요.">
+    <h3><a href="/ko/q/computer-arithmetic/computer-arithmetic-003/">IEEE 754 단정밀도(32비트) 부동소수점수에서 부호·지수부·가수에 할당되는 비트 수의 조합은 무엇입니까?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">1·11·20</span></li><li><span class="choice-mark">B</span><span class="choice-text">1·8·23</span></li><li><span class="choice-mark">C</span><span class="choice-text">1·5·26</span></li></ol>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: B. 1·8·23</p><p class="explanation">단정밀도(FP32)는 부호 1비트, <a class="term-link" href="/ko/term/exponent-field/">지수부</a> 8비트, <a class="term-link" href="/ko/term/significand/">가수</a> 23비트로 합계 32비트입니다. 정규화된 수에서는 가수의 맨 앞 1을 생략하므로 정밀도는 24비트분이 되며, 10진수로 약 7자리입니다. 배정밀도(FP64)는 부호 1·지수부 11·가수 52비트로, 지수부가 넓고 정밀도도 높습니다. 1·11·20은 배정밀도의 지수부 폭과 혼동한 조합이고, 1·5·26은 반정밀도의 지수부 폭과 혼동한 것입니다.</p></details>
+  </article>
+  <article class="q-mini" data-qid="computer-arithmetic-028" data-cat="computer-arithmetic" data-answer="2" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 C예요.">
+    <h3><a href="/ko/q/computer-arithmetic/computer-arithmetic-028/">FP16(부호 1·지수부 5비트(바이어스 15)·가수 10비트)으로 나타낼 수 있는 최대 유한값은 얼마입니까?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">32768</span></li><li><span class="choice-mark">B</span><span class="choice-text">65536</span></li><li><span class="choice-mark">C</span><span class="choice-text">65504</span></li></ol>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 65504</p><p class="explanation"><a class="term-link" href="/ko/term/exponent-field/">지수부</a>의 모두 1(31)은 무한대와 <a class="term-link" href="/ko/term/nan/">NaN</a>에 사용되므로 최대 지수부는 30이고, 실제 지수는 30 − 15 = 15입니다. <a class="term-link" href="/ko/term/significand/">가수</a>가 모두 1일 때 값은 (1 + 1 − 2⁻¹⁰) × 2¹⁵ = (2 − 2⁻¹⁰) × 32768 = 65536 − 32 = 65504가 됩니다. 이를 넘는 결과는 무한대가 되므로 FP16 학습에서는 오버플로에도 주의해야 합니다. 32768은 가수가 0일 때의 2¹⁵, 65536은 2¹⁶으로 둘 다 최댓값이 아닙니다.</p></details>
+  </article>
+  <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
+    <h3><a href="/ko/q/computer-arithmetic/computer-arithmetic-026/">bfloat16이 AI 학습에서 사용되는 주된 이유는 무엇입니까?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">지수부가 FP32와 같은 8비트라서 표현할 수 있는 수의 범위가 넓기 때문</span></li><li><span class="choice-mark">B</span><span class="choice-text">가수부가 FP32보다 길어 정밀도가 높기 때문</span></li><li><span class="choice-mark">C</span><span class="choice-text">정수 연산으로 계산할 수 있기 때문</span></li></ol>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 지수부가 FP32와 같은 8비트라서 표현할 수 있는 수의 범위가 넓기 때문</p><p class="explanation"><a class="term-link" href="/ko/term/bfloat16/">bfloat16</a>은 부호 1비트, <a class="term-link" href="/ko/term/exponent-field/">지수부</a> 8비트, <a class="term-link" href="/ko/term/significand/">가수</a>부 7비트의 16비트 형식입니다. 지수부가 FP32와 같으므로 표현 범위가 거의 같아, 학습 중의 그래디언트처럼 매우 작거나 큰 값에서도 오버플로나 언더플로가 일어나기 어렵고, FP32 모델에서의 전환도 간단합니다. 정밀도는 낮지만 학습은 다소의 오차에 강해 문제가 되기 어렵고, 데이터양과 연산기 면적을 절반으로 줄일 수 있습니다. 가수부는 FP32보다 짧으며, 정수가 아니라 부동소수점 연산으로 계산합니다.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/ko/q/computer-arithmetic/computer-arithmetic-027/">FP16(반정밀도: 부호 1·지수부 5·가수 10비트)으로 신경망을 학습시킬 때 문제가 되기 쉬우며, 손실 값을 몇 배로 확대하여 계산하는 방법(로스 스케일링)으로 대처하는 것은 무엇입니까?</a></li>
+  <li data-level="1"><a href="/ko/q/computer-arithmetic/computer-arithmetic-030/">AI 추론에서 가중치를 FP32에서 INT8로 변환(양자화)하는 주된 이점은 무엇입니까?</a></li>
+  <li data-level="3"><a href="/ko/q/computer-arithmetic/computer-arithmetic-050/">AI 혼합 정밀도 학습에서 계산의 대부분을 FP16이나 bfloat16으로 수행하면서 가중치의 원래 값(마스터 가중치)을 FP32로 유지해 두는 주된 이유는 무엇입니까?</a></li></ol>
+  <p><a class="btn btn-primary" href="/ko/c/computer-arithmetic/">컴퓨터 산술 문제 풀기</a></p>
+</section>
+<section>
+  <h2>주요 용어 설명</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/ko/term/ieee-754/">IEEE 754</a></dt><dd>부동소수점 수의 표현 방식과 연산 규칙을 정한 국제 규격. 단정밀도(32비트)·배정밀도(64비트) 등의 형식, 반올림 방법, 무한대와 NaN 같은 특수값을 정하여 계산 결과가 컴퓨터에 관계없이 일치하도록 한다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/bfloat16/">bfloat16</a></dt><dd>부호 1비트, 지수 8비트, 가수 7비트의 16비트 부동소수점 형식. 지수가 FP32와 같아 표현 범위가 넓고, 정밀도는 낮지만 AI 학습에 쓰인다. FP16은 지수 5비트·가수 10비트로 정밀도는 높지만 범위가 좁다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/int8/">INT8</a></dt><dd>8비트 부호 있는 정수(−128~127). AI 추론에서 가중치와 활성화 값에 스케일을 곱해 INT8로 변환(양자화)하면 연산과 메모리가 크게 줄고 정수 소형 회로에서 고속으로 처리할 수 있다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/mixed-precision/">혼합 정밀도(Mixed Precision)</a></dt><dd>계산의 부분마다 다른 정밀도의 수치를 사용하는 것. 곱셈을 FP16 등으로 수행하고 누적을 FP32로 수행하여 속도와 정확도를 양립시킨다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/post-training-quantization/">학습 후 양자화(Post-training Quantization)</a></dt><dd>학습이 끝난 모델의 가중치와 활성화를 대표 데이터로 값의 범위를 조사한 뒤 낮은 정밀도로 바꾸는 방법. PTQ.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>관련 비교</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/ko/compare/fixed-vs-floating-point/"><strong>고정소수점과 부동소수점의 차이점 정리</strong><span>고정소수점과 부동소수점을 표로 비교합니다. 표현 방식, 표현 범위와 정밀도, 연산기의 규모와 전력, 오버플로 처리, 프로그래밍의 수고, 사용처를 다룹니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/cpu-vs-gpu-vs-npu/"><strong>CPU·GPU·NPU의 차이: 설계 사상·연산기·데이터 타입·전력 효율 비교</strong><span>CPU·GPU·NPU를 설계 사상, 연산기 구성, 제어 방식, 메모리, 데이터 타입(INT8, FP16 등), 성능 표기, 전력 효율, 유연성, 프로그래밍 관점에서 비교합니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/training-vs-inference/"><strong>AI 학습과 추론의 차이점 정리</strong><span>AI 학습과 추론을 표로 비교합니다. 계산 내용(순전파·역전파), 계산량, 필요 메모리, 수치 형식, 배치 크기, 지연과 처리량, 하드웨어, 에너지를 안내합니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/cpu-vs-gpu/"><strong>CPU와 GPU의 구조와 용도 차이</strong><span>CPU와 GPU를 표로 비교합니다. 설계 목표, 코어 수, 실행 모델, 캐시, 메모리 대역폭, 분기 처리, 데이터 전송, 대표 워크로드를 다룹니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/i2c-vs-spi-vs-uart/"><strong>I2C, SPI, UART의 차이와 선택 기준</strong><span>I2C, SPI, UART를 표로 비교합니다. 배선 수, 클록, 속도, 토폴로지, 주소 지정, 오류 검사, 마이크로컨트롤러 프로젝트에서의 대표 용도를 다룹니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/verilog-vs-vhdl/"><strong>Verilog와 VHDL: 두 HDL의 차이점</strong><span>Verilog와 VHDL을 표로 비교합니다. 기원, 문법, 타입 체계, 대소문자 구분, 검증 기능, 사용층, 선택 방법을 다룹니다.</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">개인이 운영하는 반도체 학습 사이트입니다.</p>
+    <p class="footer-request"><a href="/ko/contact/">요청이나 의견은 언제든 환영해요. 문의 페이지에서 보내 주세요 →</a></p>
+    <nav class="footer-nav">
+      <a href="/ko/about/">사이트 소개</a>
+      <a href="/ko/figures/">도해</a>
+      <a href="/ko/privacy/">개인정보 처리방침</a>
+      <a href="/ko/disclaimer/">면책 사항</a>
+      <a href="/ko/contact/">문의</a>
+    </nav>
+    <p class="copyright">© 2026 반도체 교실</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

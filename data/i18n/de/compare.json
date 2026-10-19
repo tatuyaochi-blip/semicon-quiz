@@ -7679,5 +7679,1330 @@
         "Nicht so bald. Für schnelle Backbones, Kameras usw. wird Ethernet verwendet, doch für Kommunikation mit kleinen Datenmengen, bei der Zuverlässigkeit zählt – etwa Schalter, Motoren und Steuerungsdaten –, werden die günstigen und bewährten Systeme CAN und LIN weiterhin eingesetzt."
       ]
     ]
+  },
+  "open-drain-vs-push-pull": {
+    "title": "Open-Drain vs. Push-Pull: Ausgänge im Vergleich",
+    "description": "Open-Drain- und Push-Pull-Ausgang im Tabellenvergleich: Aufbau der Ausgangsstufe, Erzeugung von H, Anstiegszeit, Wired-AND, Pegelanpassung, Stromaufnahme und typische Anwendungen.",
+    "lead": "Beide sind Ausgangsstufen für digitale Signale, unterscheiden sich aber darin, wie sie H erzeugen. Ein Push-Pull-Ausgang kombiniert einen pMOS zur Versorgung und einen nMOS zur Masse und treibt H und L aktiv über Transistoren. Er ist daher schnell, und im Ruhezustand fließt kaum Strom. Ein Open-Drain-Ausgang besitzt nur den nMOS zur Masse: L zieht er aktiv nach unten, für H trennt er den Ausgang ab und ein Pull-up-Widerstand zieht die Leitung hoch. Die Anstiegsflanke ist dadurch langsamer, aber mehrere Ausgänge lassen sich an eine Leitung anschließen (Wired-AND), und die Pull-up-Spannung ist frei wählbar. Deshalb wird er für I2C und Interrupt-Leitungen verwendet.",
+    "items": [
+      "Push-Pull-Ausgang",
+      "Open-Drain-Ausgang"
+    ],
+    "rows": [
+      [
+        "Aufbau der Ausgangsstufe",
+        "Zwei Transistoren: pMOS zur Versorgung und nMOS zur Masse (gleiche Form wie ein CMOS-Inverter)",
+        "Nur ein nMOS zur Masse. Der Drain ist auf den Pin geführt, zur Versorgung hin gibt es nichts"
+      ],
+      [
+        "Erzeugung von H",
+        "Der pMOS schaltet ein und verbindet den Pin mit der Versorgung",
+        "Der nMOS schaltet aus und trennt den Pin ab (hochohmig); ein externer Pull-up-Widerstand zieht ihn hoch"
+      ],
+      [
+        "Erzeugung von L",
+        "Der nMOS schaltet ein und verbindet den Pin mit Masse",
+        "Der nMOS schaltet ein und verbindet den Pin mit Masse (gleich)"
+      ],
+      [
+        "Anstiegsgeschwindigkeit",
+        "Schnell. Der pMOS lädt die Leitung",
+        "Langsam. Bestimmt durch die Zeitkonstante RC aus Pull-up-Widerstand R und Leitungskapazität C (z. B. etwa 0,47 µs bei 4,7 kΩ und 100 pF)"
+      ],
+      [
+        "Abfallgeschwindigkeit",
+        "Schnell. Der nMOS entlädt die Leitung",
+        "Schnell. Der nMOS entlädt die Leitung"
+      ],
+      [
+        "Mehrere Ausgänge an einer Leitung",
+        "Nicht möglich. Treffen H und L aufeinander, fließt ein großer Strom von der Versorgung zur Masse",
+        "Möglich. Sobald ein Ausgang L ausgibt, liegt die Leitung auf L (Wired-AND)"
+      ],
+      [
+        "Verbindung mit Schaltungen anderer Spannung",
+        "Die H-Spannung entspricht der eigenen Versorgungsspannung. Für Schaltungen mit anderer Spannung ist ein Pegelwandler nötig",
+        "Die H-Spannung wird durch die Pull-up-Spannung bestimmt und lässt sich im Rahmen der Spannungsfestigkeit des Pins an die Gegenseite anpassen"
+      ],
+      [
+        "Stromaufnahme",
+        "Im Ruhezustand nahezu null (nur Leckstrom). Beim Umschalten fließen Lade- und Entladeströme",
+        "Solange L ausgegeben wird, fließt dauerhaft Strom durch den Pull-up-Widerstand (etwa 0,7 mA bei 3,3 V und 4,7 kΩ)"
+      ],
+      [
+        "Typische Geschwindigkeit",
+        "Auch einige zehn MHz und mehr möglich",
+        "Begrenzt durch Pull-up-Widerstand und Kapazität. Bei I2C z. B. 100 kHz, 400 kHz, 1 MHz"
+      ],
+      [
+        "Typische Anwendungen",
+        "Schnelle Signale wie SPI- und UART-Signale, Takte, allgemeine GPIOs und Speicherbusse",
+        "I2C und SMBus, von mehreren Bauteilen gemeinsam genutzte Interrupt- und Reset-Leitungen, Verbindung mit Schaltungen anderer Spannung, Ansteuerung von LEDs"
+      ]
+    ],
+    "when": [
+      [
+        "Push-Pull-Ausgang",
+        "Wenn ein Ausgang einen Eingang treibt und Geschwindigkeit oder geringe Stromaufnahme wichtig sind. Gewöhnliche Digitalsignale wie GPIO, SPI und UART gehören hierher."
+      ],
+      [
+        "Open-Drain-Ausgang",
+        "Wenn mehrere Bauteile dieselbe Leitung treiben (I2C, gemeinsame Interrupt- oder Reset-Leitungen) oder wenn ein Signal über eine andere Pull-up-Spannung an eine Schaltung mit anderer Spannung übergeben werden soll."
+      ],
+      [
+        "Umschaltung",
+        "Bei vielen Mikrocontrollern lassen sich GPIOs per Konfiguration zwischen Push-Pull und Open-Drain umschalten. Für I2C verwendete Pins werden als Open-Drain konfiguriert und mit externen Pull-up-Widerständen versehen."
+      ]
+    ],
+    "faq": [
+      [
+        "Wie wählt man den Wert des Pull-up-Widerstands?",
+        "Je kleiner der Widerstand, desto schneller die Anstiegsflanke, aber desto größer der Strom, solange L ausgegeben wird, und desto höher die L-Spannung (VOL). Die Obergrenze ergibt sich aus der Leitungskapazität und der geforderten Anstiegszeit, die Untergrenze aus dem Strom, den der Ausgang aufnehmen kann, und der VOL-Spezifikation. Bei I2C sind einige kΩ üblich (etwa 2,2–10 kΩ)."
+      ],
+      [
+        "Was passiert, wenn man zwei Push-Pull-Ausgänge direkt verbindet?",
+        "Gibt einer H und der andere L aus, fließt über den pMOS der H-Seite und den nMOS der L-Seite ein großer Strom von der Versorgung zur Masse (Buskonflikt). Die Leitungsspannung bleibt zudem auf einem undefinierten Zwischenwert, und es drohen Erwärmung und Zerstörung von Bauteilen. Für gemeinsam genutzte Leitungen verwendet man daher Open-Drain- oder Tri-State-Ausgänge, deren Ausgang sich abtrennen lässt."
+      ],
+      [
+        "Warum verwendet I2C Open-Drain?",
+        "Weil mehrere Geräte dieselben SDA- und SCL-Leitungen treiben. Dass der Empfänger SDA auf L zieht, um ein ACK zu senden, dass ein Slave SCL auf L hält, um den Master warten zu lassen (Clock Stretching), und dass bei gleichzeitigem Sendebeginn mehrerer Master arbitriert wird – all das nutzt die Wired-AND-Eigenschaft, nach der die Leitung auf L liegt, sobald ein Teilnehmer L ausgibt."
+      ],
+      [
+        "Was ist der Unterschied zu Open-Collector?",
+        "Das Prinzip ist dasselbe: Ist der Ausgangstransistor ein Bipolartransistor, spricht man von Open-Collector, bei einem MOSFET von Open-Drain. Beide ziehen nur L aktiv nach unten, H wird über einen Pull-up-Widerstand erzeugt."
+      ]
+    ]
+  },
+  "class-a-vs-ab-vs-d-amplifier": {
+    "title": "Class-A- vs. Class-AB- vs. Class-D-Verstärker im Vergleich",
+    "description": "Class-A-, Class-AB- und Class-D-Leistungsverstärker im Tabellenvergleich: Funktionsprinzip, Stromflusswinkel, theoretischer Wirkungsgrad, Verzerrungen, Wärme, Störungen, Anwendungen und Bezug zu Class B.",
+    "lead": "Die Verstärkerklasse beschreibt, wie die Ausgangstransistoren betrieben werden. Bei Class A fließt während der gesamten Signalperiode Strom durch den Transistor. Die Verzerrungen sind daher am geringsten, doch auch ohne Signal wird Leistung verbraucht, und der Wirkungsgrad liegt selbst theoretisch bei 25 % oder 50 %. Class AB ist ein Class-B-Verstärker, bei dem sich zwei Transistoren die positive und negative Halbwelle teilen, ergänzt um einen kleinen Ruhestrom, der Übernahmeverzerrungen unterdrückt. Der Wirkungsgrad nähert sich dem theoretischen Maximum von Class B (etwa 78,5 %). Class D schaltet die Transistoren als Schalter ein und aus und gewinnt das ursprüngliche Signal aus PWM- oder ähnlichen Pulsen per Filter zurück. Bei hoher Ausgangsleistung erreicht er so hohe Wirkungsgrade um 90 %.",
+    "items": [
+      "Class A",
+      "Class AB",
+      "Class D"
+    ],
+    "rows": [
+      [
+        "Funktionsprinzip",
+        "Durch den Transistor fließt ständig Strom (linearer Bereich), der je nach Signal zu- oder abnimmt",
+        "Zwei Transistoren im Push-Pull-Betrieb teilen sich die positive und negative Halbwelle. Ein kleiner Ruhestrom fließt ständig",
+        "Die Transistoren werden als Schalter ein- und ausgeschaltet; das Signal wird in PWM- oder ähnliche Pulse umgewandelt, verstärkt und durch ein LC-Tiefpassfilter zurückgewonnen"
+      ],
+      [
+        "Stromflusswinkel (Zeitraum, in dem ein Transistor Strom führt)",
+        "360° (gesamte Periode)",
+        "Größer als 180° und kleiner als 360° (Class B: 180°)",
+        "Wird nur voll ein- oder ausgeschaltet betrieben und daher nicht nach dem Stromflusswinkel eingeteilt"
+      ],
+      [
+        "Theoretischer maximaler Wirkungsgrad",
+        "25 % (bei in Reihe geschalteter ohmscher Last). Mit Transformator- oder Drosselkopplung 50 %",
+        "Etwas unter den etwa 78,5 % (π/4) von Class B",
+        "Mit idealen Schaltern 100 %. In der Praxis bei hoher Ausgangsleistung um 90 %"
+      ],
+      [
+        "Wirkungsgrad bei kleiner Ausgangsleistung",
+        "Sehr niedrig. Auch ohne Signal wird dieselbe Leistung verbraucht",
+        "Sinkt mit der Ausgangsleistung, ist aber deutlich besser als bei Class A",
+        "Lässt sich leicht hoch halten (bei sehr kleiner Ausgangsleistung steigt der Anteil der Schaltverluste)"
+      ],
+      [
+        "Verzerrungen",
+        "Am geringsten. Keine Übernahmeverzerrungen",
+        "Gering. Ruhestrom und Gegenkopplung unterdrücken Übernahmeverzerrungen",
+        "Verzerrungen durch Totzeit, unvollkommenes Schalten und Schwankungen der Versorgung. Durch Gegenkopplung u. Ä. reduzierbar"
+      ],
+      [
+        "Wärmeentwicklung",
+        "Am größten. Maximal, wenn kein Signal anliegt",
+        "Mittel. Oft ist ein Kühlkörper nötig",
+        "Gering. Der Kühlkörper kann klein ausfallen oder entfallen"
+      ],
+      [
+        "Störungen/EMV",
+        "Keine Schaltstörungen",
+        "Keine Schaltstörungen",
+        "Das Schalten mit einigen hundert kHz bis einigen MHz erzeugt EMI. Ausgangsfilter und Leitungsführung erfordern Sorgfalt"
+      ],
+      [
+        "Schaltung/Bauteile",
+        "Einfach. Auch mit einem einzigen Transistor realisierbar",
+        "Ausgangstransistorpaar und Bias-Schaltung",
+        "Pulsmodulator, Gate-Treiber, Ausgangsfilter (Spule und Kondensator)"
+      ],
+      [
+        "Typische Anwendungen",
+        "Kleinsignalverstärkung, Vorverstärker, Treiberstufen für nachfolgende Stufen, einige hochwertige Audiogeräte",
+        "Audio-Endstufen, Kopfhörerverstärker, Ausgangsstufen von Operationsverstärkern",
+        "Lautsprecheransteuerung in Smartphones und Fernsehern, Autoradios, tragbare Lautsprecher, Verstärker hoher Leistung"
+      ]
+    ],
+    "when": [
+      [
+        "Class A",
+        "Wenn die Ausgangsleistung klein ist und geringe Verzerrungen oberste Priorität haben: Kleinsignalverstärkung, Vorverstärker und Treiberstufen für nachfolgende Stufen."
+      ],
+      [
+        "Class AB",
+        "Wenn geringe Verzerrungen und guter Wirkungsgrad zugleich gefragt sind: Audio-Endstufen, Kopfhörerverstärker sowie Ausgangsstufen von Operationsverstärkern und Puffern."
+      ],
+      [
+        "Class D",
+        "Wenn lange Batterielaufzeit gefragt ist, Wärmeentwicklung und Kühlkörper klein bleiben sollen oder hohe Ausgangsleistung benötigt wird: Lautsprecher in Smartphones und Fernsehern, Autoradios."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum gibt es für Class A zwei maximale Wirkungsgrade, 25 % und 50 %?",
+        "Weil die Last unterschiedlich angeschlossen wird. Liegt der Lastwiderstand in Reihe mit dem Transistor, fließt auch durch die Last ein Gleichstrom, der Leistung verschwendet; das theoretische Maximum beträgt dann 25 %. Bei Kopplung über einen Transformator oder eine Drossel wird keine Gleichstromleistung in der Last verschwendet, und die Ausgangsspannung kann bis zum Doppelten der Versorgungsspannung schwingen, sodass maximal 50 % erreicht werden."
+      ],
+      [
+        "Was sind Übernahmeverzerrungen?",
+        "Bei einer Class-B-Push-Pull-Stufe gibt es beim Nulldurchgang des Signals einen Bereich, in dem keiner der beiden Transistoren leitet, wodurch die Ausgangskurvenform verzerrt wird. Bei Bipolartransistoren entsteht dies, weil erst ab etwa 0,6–0,7 V zwischen Basis und Emitter Strom fließt. Class AB beseitigt diesen Bereich durch einen kleinen Ruhestrom."
+      ],
+      [
+        "Steht das D in Class D für digital?",
+        "Nein. Die Bezeichnung folgt einfach auf Class A, B und C und bedeutet nicht digital. Viele Class-D-Verstärker arbeiten, indem sie ein analoges Eingangssignal mit einem Komparator mit einer Dreieckspannung vergleichen und so in PWM-Pulse umwandeln."
+      ],
+      [
+        "Warum ist der Wirkungsgrad von Class D so hoch?",
+        "Weil die Ausgangstransistoren nur voll ein- oder ausgeschaltet betrieben werden. Im eingeschalteten Zustand ist die Spannung nahezu null, im ausgeschalteten der Strom, daher wird im Transistor nur wenig Leistung in Wärme umgesetzt. Übrig bleiben Verluste durch den Einschaltwiderstand, Verluste während des Umschaltens und die Leistung für die Gate-Ansteuerung."
+      ]
+    ]
+  },
+  "op-amp-vs-comparator": {
+    "title": "Operationsverstärker vs. Komparator: die Unterschiede",
+    "description": "Operationsverstärker und Komparator im Tabellenvergleich: Gegenkopplung oder offene Schleife, Ausgangsstufe, Geschwindigkeit, Erholung aus der Sättigung, Frequenzkompensation, Hysterese und Austauschbarkeit.",
+    "lead": "Beide haben dasselbe Dreieckssymbol und verstärken die Spannungsdifferenz zwischen zwei Eingängen stark, sind aber für unterschiedliche Zwecke gebaut. Ein Operationsverstärker ist für den Betrieb mit Gegenkopplung ausgelegt, enthält eine Frequenzkompensation gegen Schwingen und bewegt seinen Ausgang gleichmäßig als analoge Spannung. Ein Komparator wird in offener Schleife betrieben und ist darauf ausgelegt, schnell auszugeben, welche von zwei Spannungen größer ist, als binären Wert H oder L. Er hat keine Frequenzkompensation, und sein Ausgang lässt sich leicht an Logik anschließen. Deshalb ist ein Operationsverstärker als Komparator-Ersatz langsam, und ein gegengekoppelter Komparator neigt zum Schwingen.",
+    "items": [
+      "Operationsverstärker",
+      "Komparator"
+    ],
+    "rows": [
+      [
+        "Typische Betriebsart",
+        "Mit Gegenkopplung; Verstärkung und Frequenzgang werden durch externe Widerstände und Kondensatoren festgelegt",
+        "In offener Schleife (oder mit Mitkopplung für Hysterese); entscheidet, welche Spannung größer ist"
+      ],
+      [
+        "Ausgang",
+        "Analoge Spannung, die sich stetig mit dem Eingang ändert",
+        "Binär H oder L. In der Regel in einem der beiden Zustände gesättigt"
+      ],
+      [
+        "Ausgangsstufe",
+        "Push-Pull. Es gibt Rail-to-Rail-Typen, die fast bis an die Versorgungsspannungen aussteuern",
+        "Open-Drain (Open-Collector) oder Push-Pull mit an Logikpegel angepassten Pegeln"
+      ],
+      [
+        "Frequenzkompensation",
+        "Intern vorhanden. Viele Typen schwingen auch bei Verstärkung 1 mit Gegenkopplung nicht",
+        "Nicht vorhanden. Dadurch schaltet er schneller"
+      ],
+      [
+        "Kenngrößen für die Geschwindigkeit",
+        "Verstärkungs-Bandbreite-Produkt (GBW) und Slew-Rate",
+        "Laufzeitverzögerung (je nach Typ einige ns bis einige µs) sowie Anstiegs- und Abfallzeit des Ausgangs"
+      ],
+      [
+        "Erholung aus der Sättigung",
+        "Betrieb in Sättigung ist nicht vorgesehen. Die Erholung kann dauern und ist meist nicht spezifiziert",
+        "Für wiederholtes Sättigen und Umschalten ausgelegt; schaltet schnell um"
+      ],
+      [
+        "Hysterese",
+        "Wird normalerweise nicht verwendet",
+        "Mitkopplung über externe Widerstände oder Typen mit integrierter Hysterese verhindern rauschbedingtes Flattern des Ausgangs"
+      ],
+      [
+        "Eingang",
+        "Durch die Gegenkopplung bleiben die Spannungen beider Eingänge nahezu gleich (virtueller Kurzschluss). Manche Typen haben Schutzdioden zwischen den Eingängen",
+        "Große Differenzen zwischen den Eingängen sind vorgesehen. Viele Typen erlauben große Differenzspannungen"
+      ],
+      [
+        "Austauschbarkeit",
+        "Kann manchmal als Komparator eingesetzt werden, wenn Geschwindigkeit unkritisch ist und die Ausgangspegel passen",
+        "Nicht als Operationsverstärker einsetzbar. Mit Gegenkopplung neigt er zum Schwingen"
+      ],
+      [
+        "Typische Anwendungen",
+        "Verstärker, Filter, Puffer, Integratoren, Aufbereitung von Sensorsignalen",
+        "Schwellwerterkennung, Nulldurchgangserkennung, Spannungsüberwachung, Flash-ADCs, PWM-Erzeugung"
+      ]
+    ],
+    "when": [
+      [
+        "Operationsverstärker",
+        "Wenn Signale analog verstärkt oder Filter und Puffer aufgebaut werden sollen – Anwendungen mit Gegenkopplung, bei denen sich der Ausgang stetig bewegt."
+      ],
+      [
+        "Komparator",
+        "Wenn schnell und zuverlässig erkannt und an die Logik gemeldet werden soll, ob eine Spannung eine Schwelle überschreitet: Überwachung der Batteriespannung, Nulldurchgangserkennung, Vergleiche innerhalb eines ADCs u. Ä."
+      ],
+      [
+        "Ersatz durch einen Operationsverstärker",
+        "Wenn eine langsame Reaktion genügt und die Ausgangspegel zur nachfolgenden Schaltung passen. Vor dem Einsatz im Datenblatt den zulässigen Differenzeingangsspannungsbereich und das Verhalten bei Sättigung prüfen."
+      ]
+    ],
+    "faq": [
+      [
+        "Kann man einen Operationsverstärker als Komparator verwenden?",
+        "In Anwendungen, bei denen Geschwindigkeit unkritisch ist, manchmal ja. Wegen der Frequenzkompensation schaltet er jedoch langsam, braucht Zeit, um sich aus der Sättigung zu erholen, und seine H- und L-Spannungen passen möglicherweise nicht zur Logik. Bei Typen mit Schutzdioden zwischen den Eingängen fließt bei großen Differenzspannungen Strom, daher ist Vorsicht geboten."
+      ],
+      [
+        "Was passiert, wenn man einen Komparator gegenkoppelt?",
+        "In den meisten Fällen schwingt er. Da ein Komparator für schnelles Umschalten keine Frequenzkompensation hat, reicht die Phasenreserve der Gegenkopplungsschleife nicht aus. Für Verstärkung und Ähnliches verwendet man einen Operationsverstärker."
+      ],
+      [
+        "Warum versieht man einen Komparator mit Hysterese?",
+        "Ändert sich der Eingang langsam in der Nähe der Schwelle, kann schon geringes Rauschen den Ausgang mehrfach zwischen H und L hin- und herspringen lassen. Verschiebt man mit Mitkopplung die Schwellen für steigenden und fallenden Eingang gegeneinander (Schmitt-Trigger), schaltet der Ausgang nur einmal um."
+      ],
+      [
+        "Warum haben so viele Komparatoren einen Open-Drain-Ausgang?",
+        "Weil sich der Ausgang durch Wahl der Pull-up-Spannung direkt an Logik mit einer anderen Spannung als der Versorgung des Komparators anschließen lässt. Außerdem kann man die Ausgänge mehrerer Komparatoren auf eine Leitung zusammenführen, die auf L geht, sobald einer anspricht (Wired-AND)."
+      ]
+    ]
+  },
+  "pll-vs-dll": {
+    "title": "PLL vs. DLL: die wichtigsten Unterschiede im Überblick",
+    "description": "PLL und DLL im Tabellenvergleich: Stellgröße, VCO und Verzögerungsleitung, Frequenzvervielfachung, Jitter-Akkumulation, Schleifenstabilität und Anwendungen wie Takterzeugung und Deskew.",
+    "lead": "Beide erfassen die Phasenabweichung zu einem Referenztakt und regeln sie per Rückkopplung auf null, verstellen dabei aber unterschiedliche Größen. Eine PLL verstellt die Frequenz eines spannungsgesteuerten Oszillators (VCO) und gleicht den selbst erzeugten Takt an die Referenz an; in Kombination mit einem Frequenzteiler kann sie so ein Vielfaches der Referenzfrequenz erzeugen. Eine DLL schickt den Eingangstakt selbst durch eine Verzögerungsleitung und richtet nur durch Einstellen dieser Verzögerung die Phase aus. Die Frequenz kann sie daher nicht ändern, dafür akkumuliert sich kein Jitter, und die Schleife ist stabil und leicht zu entwerfen.",
+    "items": [
+      "PLL",
+      "DLL"
+    ],
+    "rows": [
+      [
+        "Name",
+        "Phase-Locked Loop (Phasenregelschleife)",
+        "Delay-Locked Loop (Verzögerungsregelschleife)"
+      ],
+      [
+        "Stellgröße",
+        "Frequenz des VCO (die Phase ist das Integral der Frequenz)",
+        "Verzögerung der Verzögerungsleitung"
+      ],
+      [
+        "Hauptkomponenten",
+        "Phasen-Frequenz-Detektor, Ladungspumpe, Schleifenfilter, VCO, Rückkopplungsteiler",
+        "Phasendetektor, Ladungspumpe, Schleifenfilter (Kondensator), spannungsgesteuerte Verzögerungsleitung"
+      ],
+      [
+        "Ausgangstakt",
+        "Vom VCO selbst erzeugter Takt",
+        "Verzögerter Eingangstakt"
+      ],
+      [
+        "Frequenzvervielfachung",
+        "Möglich. Mit einem 1/N-Teiler in der Rückkopplung das N-Fache der Referenz (auch gebrochenzahlige Verfahren existieren)",
+        "Grundsätzlich nicht möglich. Der Ausgang hat dieselbe Frequenz wie der Eingang (es gibt Verfahren, die mehrphasige Ausgänge zur Vervielfachung kombinieren)"
+      ],
+      [
+        "Jitter",
+        "Schwankungen des VCO akkumulieren sich Periode für Periode; nur Anteile unterhalb der Schleifenbandbreite werden ausgeregelt. Vom Referenzjitter werden Anteile oberhalb der Bandbreite entfernt",
+        "Die Verzögerungsleitung akkumuliert keinen Jitter. Der Eingangsjitter gelangt nahezu unverändert zum Ausgang"
+      ],
+      [
+        "Schleifenstabilität",
+        "Der VCO wirkt als Integrator, daher ist die Schleife mindestens zweiter Ordnung; das Schleifenfilter muss mit Blick auf die Phasenreserve entworfen werden",
+        "Die Verzögerungsleitung wirkt nicht integrierend, daher ist eine Schleife erster Ordnung möglich – stabil und leicht zu entwerfen"
+      ],
+      [
+        "Einrasten (Lock)",
+        "Kann über einen weiten Frequenzbereich einrasten, braucht aber relativ lange bis zum Lock",
+        "Rastet schnell ein, aber der Verzögerungsbereich ist begrenzt; Vorsicht vor Falsch-Lock auf eine um eine Periode verschobene Position"
+      ],
+      [
+        "Typische Anwendungen",
+        "Erzeugung hochfrequenter Takte aus einer Quarzreferenz, Frequenzsynthesizer im Funk, SerDes-Takte und Clock-and-Data-Recovery (CDR)",
+        "Ausrichtung von Ausgang und Takt bei DDR-DRAM, Takt-Deskew, Erzeugung mehrphasiger Takte"
+      ]
+    ],
+    "when": [
+      [
+        "PLL",
+        "Wenn ein Takt mit einer anderen Frequenz als der Referenz benötigt wird (meist einem Vielfachen davon): Erzeugung von CPU- oder SerDes-Takten aus einer Quarzreferenz oder von Funkfrequenzen."
+      ],
+      [
+        "DLL",
+        "Wenn die Frequenz gleich bleiben darf und chipinterne Verzögerungen kompensiert werden sollen, um die Taktphase auszurichten: Ausrichtung der Datenausgabe bei DDR-DRAM oder Takt-Deskew."
+      ],
+      [
+        "Kombination",
+        "Häufig erzeugt eine PLL einen Takt der benötigten Frequenz, und in Speicherschnittstellen u. Ä. nimmt eine DLL auf Basis dieses Takts die feine Phasenjustierung vor (z. B. Verschieben des Strobes um eine Viertelperiode)."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum kann eine DLL die Frequenz nicht ändern?",
+        "Weil der Ausgang einer DLL der durch die Verzögerungsleitung verzögerte Eingangstakt ist. Wie auch immer man die Verzögerung ändert, der Flankenabstand bleibt derselbe wie am Eingang, also ändert sich die Frequenz nicht. Eine PLL besitzt einen selbst schwingenden VCO und gleicht den geteilten Takt an die Referenz an, daher kann sie das N-Fache der Referenzfrequenz erzeugen."
+      ],
+      [
+        "Warum akkumuliert sich in einer DLL kein Jitter?",
+        "Jede Ausgangsflanke einer DLL ist eine verzögerte Eingangsflanke und übernimmt keinen Fehler aus der vorherigen Periode. Beim VCO einer PLL beginnt jede Periode am Ende der vorherigen, daher summieren sich die Schwankungen und bleiben bestehen, bis die Schleife sie ausregelt. Im Gegenzug reicht eine DLL den Eingangsjitter unverändert durch."
+      ],
+      [
+        "Wie legt man die Schleifenbandbreite einer PLL fest?",
+        "Eine größere Bandbreite regelt VCO-Schwankungen schneller aus, lässt aber mehr Jitter des Referenztakts durch. Eine kleinere Bandbreite filtert den Referenzjitter gut, lässt aber VCO-Schwankungen bestehen und verlangsamt das Einrasten. Man entscheidet danach, ob Referenz oder VCO weniger rauscht, und nach der Schleifenstabilität (Phasenreserve)."
+      ],
+      [
+        "Warum wird in DDR-DRAM eine DLL verwendet?",
+        "Der chipinterne Taktpfad und die Ausgangsschaltung haben Verzögerungen, die sich mit Spannung und Temperatur ändern. Kompensiert eine DLL diese Verzögerung, können die Daten ausgerichtet an den Flanken des externen Takts ausgegeben werden. Da die Frequenz nicht geändert werden muss, eignet sich die DLL, die kaum zusätzlichen Jitter verursacht."
+      ]
+    ]
+  },
+  "single-ended-vs-differential-signaling": {
+    "title": "Single-Ended vs. differentielle Signale: die Unterschiede",
+    "description": "Single-Ended- und differentielle Signalübertragung im Tabellenvergleich: Leitungsanzahl, Bezugspotenzial, Störfestigkeit, Abstrahlung, Pegel und Geschwindigkeit, Layout und Standards wie LVDS, USB, PCIe.",
+    "lead": "Bei Single-Ended wird die Spannung einer einzelnen Signalleitung gegen Masse gemessen; das Verfahren kommt mit wenigen Leitungen aus und ist einfach. Bei differentieller Übertragung führen zwei Leitungen gegenphasige Signale, und 0 und 1 werden aus der Spannungsdifferenz der beiden Leitungen gelesen. Störungen oder Massepotenzialunterschiede, die beide Leitungen gleichermaßen treffen, heben sich bei der Differenzbildung auf, und auch die elektromagnetischen Felder der gegenläufigen Ströme kompensieren sich. So lassen sich Signale mit kleinem Hub schnell und über weite Strecken übertragen. Dafür sind pro Signal zwei Leitungen nötig, und Länge und Abstand beider Leitungen müssen im Layout angeglichen werden.",
+    "items": [
+      "Single-Ended",
+      "Differentiell"
+    ],
+    "rows": [
+      [
+        "Leitungen pro Signal",
+        "Eine (der Rückstrom teilt sich die Masse)",
+        "Zwei (Paar aus positiver und negativer Leitung)"
+      ],
+      [
+        "Bezug beim Lesen",
+        "Spannung gegenüber Masse",
+        "Spannungsdifferenz zwischen den beiden Leitungen"
+      ],
+      [
+        "Gleichtaktstörungen",
+        "Gelangen direkt ins Signal",
+        "Heben sich bei der Differenzbildung auf (abhängig von der CMRR des Empfängers)"
+      ],
+      [
+        "Massepotenzialunterschied",
+        "Der Masseversatz zwischen Sender und Empfänger wird direkt zum Fehler",
+        "Kaum Einfluss, solange er im zulässigen Gleichtaktbereich des Empfängers bleibt"
+      ],
+      [
+        "Abgestrahlte Störungen (EMI)",
+        "Große Stromschleife, daher eher hoch",
+        "Die Felder der gegenläufigen Ströme heben sich auf, daher gering"
+      ],
+      [
+        "Signalhub",
+        "Groß. Nahe der Versorgungsspannung (z. B. 0–3,3 V)",
+        "Klein. Einige hundert mV (LVDS etwa 350 mV)"
+      ],
+      [
+        "Typische Geschwindigkeit",
+        "Etwa einige zehn bis einige hundert Mbit/s. Bei Speicherbussen mit ausgefeilter Terminierung u. Ä. einige Gbit/s pro Leitung",
+        "Einige hundert Mbit/s bis einige zehn Gbit/s pro Paar"
+      ],
+      [
+        "Layout",
+        "Einfach. Bei schnellen Signalen auf Wellenwiderstand und Terminierung achten",
+        "Länge und Abstand der beiden Leitungen angleichen und die differentielle Impedanz (meist 85–100 Ω) einhalten"
+      ],
+      [
+        "Kosten/Pinanzahl",
+        "Günstig, wenige Pins",
+        "Doppelt so viele Pins und Leitungen. Auch Sende- und Empfangsschaltungen sind komplexer"
+      ],
+      [
+        "Typische Beispiele",
+        "GPIO, I2C, SPI, UART, DDR-Daten (DQ)",
+        "LVDS, USB, PCI Express, SATA, HDMI, Ethernet, CAN, RS-485"
+      ]
+    ],
+    "when": [
+      [
+        "Single-Ended",
+        "Wenn die Geschwindigkeit nicht allzu hoch und die Strecke kurz ist oder Pinanzahl und Kosten gering bleiben sollen: GPIO, I2C, SPI u. Ä. auf der Leiterplatte."
+      ],
+      [
+        "Differentiell",
+        "Für schnelle Signale im Gbit/s-Bereich, für Kabelverbindungen zwischen entfernten Geräten, in störreicher Umgebung oder wenn Abstrahlung gering gehalten werden soll: PCIe, USB, Ethernet, CAN im Fahrzeug u. Ä."
+      ],
+      [
+        "Beispiel für die Aufteilung",
+        "Bei DDR-Speicher sind die zahlreichen Datenleitungen (DQ) Single-Ended, während Takt und Strobe (DQS), die als Zeitbezug dienen, differentiell ausgeführt sind – so werden Pinanzahl und Zuverlässigkeit in Einklang gebracht."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum sind differentielle Signale robust gegen Gleichtaktstörungen?",
+        "Verlaufen zwei Leitungen dicht nebeneinander, koppeln äußere Störungen nahezu gleich stark in beide ein. Der Empfänger liest nur die Differenz der beiden Spannungen, daher verschwinden gleich große Störanteile (Gleichtaktstörungen) durch die Subtraktion. Auch ein Versatz des Massepotenzials wirkt gleichermaßen auf beide Leitungen und hat daher kaum Einfluss."
+      ],
+      [
+        "Warum sind differentielle Signale schneller, obwohl sie zwei Leitungen brauchen?",
+        "Weil sie störfest sind, lässt sich der Hub auf einige hundert mV verringern; da weniger Spannung umgeladen werden muss, kann schneller umgeschaltet werden. Zudem ist die Abstrahlung gering und der Massepotenzialversatz weniger kritisch, sodass bei serieller Übertragung einige zehn Gbit/s pro Paar möglich sind."
+      ],
+      [
+        "Worauf ist beim Layout differentieller Paare zu achten?",
+        "Zuerst darauf, die Längen der beiden Leitungen anzugleichen. Bei ungleicher Länge kommen die Signale versetzt an, die Differenzkurvenform verschlechtert sich, ein Teil wird zu Gleichtaktstörung, und die Abstrahlung nimmt zu. Außerdem hält man den Abstand der Leitungen konstant, um die differentielle Impedanz auf dem Normwert (meist 85–100 Ω) zu halten, und terminiert auf der Empfängerseite."
+      ],
+      [
+        "Brauchen differentielle Signale keine Masse?",
+        "Ganz ohne geht es nicht. Der Mittelwert der beiden Spannungen (Gleichtaktspannung) muss im zulässigen Bereich des Empfängers liegen. Dazu verwendet man entweder eine gemeinsame Masse oder trennt den Gleichanteil mit Kondensatoren oder Übertragern ab und erzeugt die Gleichtaktspannung auf der Empfängerseite neu. Bei Ethernet sind die Geräte über Übertrager galvanisch getrennt."
+      ]
+    ]
+  },
+  "buck-vs-boost-converter": {
+    "title": "Abwärts- vs. Aufwärtswandler: Buck und Boost im Vergleich",
+    "description": "Abwärts- (Buck) und Aufwärtswandler (Boost) im Vergleich: Ausgangsspannung, ideales Spannungsverhältnis (D bzw. 1/(1−D)), Bauteilanordnung, Ein- und Ausgangsstrom, Wirkungsgrad, Regelung und Anwendungen.",
+    "lead": "Beide sind getaktete DC-DC-Wandler aus denselben Bauteilen – Schalter, Spule, Diode (oder zweiter Schalter) und Kondensator –, die jedoch unterschiedlich angeordnet sind. Der Abwärtswandler hat den Schalter zwischen Eingang und Spule, zerhackt die Eingangsspannung entsprechend dem Einschaltanteil (Tastgrad D) und mittelt sie, sodass er idealerweise eine niedrigere Spannung vom D-Fachen ausgibt. Der Aufwärtswandler hat die Spule auf der Eingangsseite, verbindet sie über den Schalter mit Masse, speichert so Energie in der Spule und gibt sie dann an den Ausgang ab; idealerweise erzeugt er eine höhere Spannung vom 1/(1−D)-Fachen.",
+    "items": [
+      "Abwärtswandler (Buck)",
+      "Aufwärtswandler (Boost)"
+    ],
+    "rows": [
+      [
+        "Bereich der Ausgangsspannung",
+        "Niedriger als der Eingang (0 bis Eingangsspannung)",
+        "Höher als der Eingang (Eingangsspannung oder mehr)"
+      ],
+      [
+        "Ideales Spannungsverhältnis (nicht lückender Betrieb)",
+        "Vout/Vin = D",
+        "Vout/Vin = 1/(1−D)"
+      ],
+      [
+        "Beispiel (bei D = 0,5)",
+        "Von 12 V auf 6 V",
+        "Von 12 V auf 24 V"
+      ],
+      [
+        "Bauteilanordnung",
+        "Schalter zwischen Eingang und Spule, Spule auf der Ausgangsseite. Diode zwischen dem Knoten zwischen Schalter und Spule und Masse",
+        "Spule auf der Eingangsseite, Schalter zwischen dem Knoten hinter der Spule und Masse. Diode zwischen diesem Knoten und dem Ausgang"
+      ],
+      [
+        "Funktionsweise",
+        "Eingeschaltet fließt Strom über die Spule zum Ausgang; ausgeschaltet fließt der Spulenstrom über die Diode weiter",
+        "Eingeschaltet wird Energie in der Spule gespeichert; ausgeschaltet addiert sich die Spulenspannung zur Eingangsspannung, und die Energie wird an den Ausgang abgegeben"
+      ],
+      [
+        "Eingangsstrom",
+        "Pulsierend (fließt nur, solange der Schalter eingeschaltet ist). Der Eingangskondensator ist wichtig",
+        "Kontinuierlich (fließt ständig durch die Spule)"
+      ],
+      [
+        "Ausgangsstrom",
+        "Kontinuierlich (fließt ständig aus der Spule). Geringe Ausgangswelligkeit",
+        "Pulsierend (kommt nur an, solange der Schalter ausgeschaltet ist). Hoher Rippelstrom im Ausgangskondensator"
+      ],
+      [
+        "Wirkungsgrad",
+        "Je nach Bedingungen etwa 80–95 %",
+        "Je nach Bedingungen etwa 80–95 %. Sinkt bei großem Übersetzungsverhältnis"
+      ],
+      [
+        "Regelung",
+        "Regelschleife leicht auszulegen",
+        "Im nicht lückenden Betrieb gibt es eine Nullstelle in der rechten Halbebene, die eine hohe Regelbandbreite erschwert"
+      ],
+      [
+        "Bei gestopptem Schalter",
+        "Eingang und Ausgang sind getrennt",
+        "Die Eingangsspannung liegt über Spule und Diode weiterhin am Ausgang an. Zum vollständigen Abschalten ist ein zusätzlicher Schalter nötig"
+      ],
+      [
+        "Typische Anwendungen",
+        "Erzeugung der Kernspannung von CPUs und SoCs (um 1 V) aus 12 V oder 5 V, Erzeugung niedriger Spannungen aus Batterien",
+        "Erzeugung von 5 V aus Lithium-Ionen-Akkus (etwa 3,0–4,2 V), Ansteuerung in Reihe geschalteter LEDs, Leistungsfaktorkorrektur (PFC) an Wechselstromnetzteilen"
+      ]
+    ],
+    "when": [
+      [
+        "Abwärtswandler (Buck)",
+        "Wenn eine niedrigere Spannung als der Eingang mit hohem Strom effizient erzeugt werden soll: Kernversorgung von CPUs und SoCs, Erzeugung verschiedener Spannungen aus 12 V oder 5 V."
+      ],
+      [
+        "Aufwärtswandler (Boost)",
+        "Wenn eine höhere Spannung als der Eingang benötigt wird: 5-V-USB-Ausgang aus einer Batterie, Ansteuerung in Reihe geschalteter LEDs, Erzeugung einer hohen Gleichspannung mit PFC."
+      ],
+      [
+        "Auf- und Abwärtswandlung",
+        "Wenn die Batteriespannung im Lauf der Nutzung über und unter die Ausgangsspannung wandert, verwendet man einen Buck-Boost-Wandler, der beide Funktionen vereint."
+      ]
+    ],
+    "faq": [
+      [
+        "Wie leitet man die Verhältnisse D und 1/(1−D) her?",
+        "Aus der Bedingung, dass im eingeschwungenen Zustand der Mittelwert der Spulenspannung über eine Periode null ist (das Spannungs-Zeit-Produkt ist ausgeglichen). Beim Abwärtswandler liegt im eingeschalteten Zustand (Vin − Vout) und im ausgeschalteten −Vout an, also folgt aus (Vin − Vout) × D = Vout × (1 − D) Vout = D × Vin. Beim Aufwärtswandler folgt aus Vin × D = (Vout − Vin) × (1 − D) Vout = Vin/(1 − D)."
+      ],
+      [
+        "Warum liefert ein Aufwärtswandler eine höhere Spannung als der Eingang?",
+        "Solange der Schalter eingeschaltet ist, fließt Strom durch die Spule und speichert Energie. Wird der Schalter ausgeschaltet, erzeugt die Spule eine Spannung, um den Strom aufrechtzuerhalten. Diese addiert sich zur Eingangsspannung und treibt den Strom über die Diode zum Ausgang, weshalb der Ausgang höher liegt als der Eingang."
+      ],
+      [
+        "Lässt sich das Übersetzungsverhältnis beliebig erhöhen, wenn D gegen 1 geht?",
+        "Idealerweise wächst 1/(1−D) unbegrenzt, in der Praxis nehmen jedoch die Verluste durch die Widerstände von Spule und Schalter zu, die Ausgangsspannung erreicht eine Obergrenze, und der Wirkungsgrad sinkt. Praktikabel sind Verhältnisse bis etwa zum Mehrfachen; für höhere Verhältnisse wählt man z. B. Topologien mit Transformator."
+      ],
+      [
+        "Was ist Synchrongleichrichtung?",
+        "Ein Verfahren, bei dem statt der Diode ein MOSFET eingesetzt und genau dann eingeschaltet wird, wenn die Diode Strom führen würde. Es verringert die Verluste durch die Durchlassspannung der Diode (selbst bei Schottky-Dioden etwa 0,3–0,5 V), sodass der Wirkungsgrad umso stärker steigt, je niedriger die Ausgangsspannung ist."
+      ]
+    ]
+  },
+  "clock-gating-vs-power-gating": {
+    "title": "Clock-Gating vs. Power-Gating: die Unterschiede",
+    "description": "Clock-Gating und Power-Gating im Vergleich: eingesparte Leistung (dynamisch oder statisch), Abgeschaltetes, Aufwachzeit, Zustandserhalt, benötigte Schaltungen (ICG, Leistungsschalter, Isolationszellen) und Granularität.",
+    "lead": "Beide sind Low-Power-Entwurfstechniken, die den Leistungsbedarf ungenutzter Schaltungen senken, schalten aber Unterschiedliches ab. Clock-Gating hält den Takt zu Registern an, unterbindet so Signalwechsel und senkt die dynamische Leistung. Die Versorgung bleibt eingeschaltet, daher bleibt der Zustand erhalten, und der Betrieb kann nach 1 bis wenigen Zyklen sofort fortgesetzt werden. Power-Gating trennt die Versorgung eines Blocks über Schalter ab und beseitigt neben der dynamischen Leistung auch die statische Leistung durch Leckströme nahezu vollständig. Dafür geht der Zustand verloren, sodass ein Sicherungsmechanismus nötig ist, und das Aufwachen dauert länger.",
+    "items": [
+      "Clock-Gating",
+      "Power-Gating"
+    ],
+    "rows": [
+      [
+        "Eingesparte Leistung",
+        "Dynamische Leistung (Umschalten von Taktnetz, Flipflops und nachfolgender Logik)",
+        "Sowohl statische (Leckstrom) als auch dynamische Leistung"
+      ],
+      [
+        "Was abgeschaltet wird",
+        "Takt zu den Registern",
+        "Versorgung des Blocks"
+      ],
+      [
+        "Versorgung",
+        "Bleibt eingeschaltet. Leckstrom fließt weiter",
+        "Leistungsschalter trennen die Versorgungsleitungen des Blocks ab"
+      ],
+      [
+        "Zustandserhalt",
+        "Bleibt erhalten",
+        "Geht verloren. Benötigte Zustände werden in Retention-Flipflops (Retention-Registern) oder Speichern gesichert"
+      ],
+      [
+        "Aufwachzeit",
+        "1 bis wenige Zyklen",
+        "Lang. Die Versorgung wird unter Begrenzung des Einschaltstroms zugeschaltet und der Zustand wiederhergestellt, meist im µs-Bereich"
+      ],
+      [
+        "Benötigte Schaltungen",
+        "ICG (Clock-Gate-Zelle aus Latch und AND) und Logik zur Erzeugung des Enable-Signals",
+        "Leistungsschalter (Header oder Footer), Isolationszellen, Retention-Flipflops, Schaltung zur Steuerung der Einschaltreihenfolge"
+      ],
+      [
+        "Granularität",
+        "Fein. Schon ab wenigen Registern einsetzbar",
+        "Grob. Auf Ebene von Blöcken (Power-Domains) wie CPU-Kernen oder IPs"
+      ],
+      [
+        "Entwurf/Verifikation",
+        "Logiksynthese-Werkzeuge können es aus Enable-Bedingungen automatisch einfügen. Clock-Gating-Prüfungen erfolgen in der STA",
+        "Die Power-Intention wird z. B. in UPF beschrieben; verifiziert werden auch das Verhalten bei abgeschalteter Versorgung und die Reihenfolge"
+      ],
+      [
+        "Overhead",
+        "Gering. Fläche und Verzögerung der ICG",
+        "Fläche und Spannungsabfall der Leistungsschalter, Energie für Sichern und Wiederherstellen. Bei kurzen Pausen lohnt es sich nicht"
+      ],
+      [
+        "Typischer Einsatz",
+        "In nahezu allen Digitalschaltungen, um Register gerade nicht aktiver Funktionen anzuhalten",
+        "Abschalten lange ungenutzter Blöcke: tiefe Idle-Zustände von CPUs, ungenutzte Blöcke in Smartphone-SoCs"
+      ]
+    ],
+    "when": [
+      [
+        "Clock-Gating",
+        "Immer dann, wenn eine Schaltung zeitweise untätig ist – von wenigen Zyklen bis zu langen Zeiträumen. Da sofortige Rückkehr möglich ist und der Zustand erhalten bleibt, wird es in nahezu allen Digitalschaltungen eingesetzt."
+      ],
+      [
+        "Power-Gating",
+        "Wenn ein Block lange nicht benutzt wird oder der Anteil der Leckleistung hoch ist (feine Prozesse oder hohe Temperatur). Es wird eingesetzt, wenn die Pause lang genug ist, um die Energie für Sichern und Wiederherstellen wieder hereinzuholen."
+      ],
+      [
+        "Kombination",
+        "Üblich ist ein gestuftes Vorgehen: zuerst den Takt anhalten und, wenn die Pause voraussichtlich länger dauert, den Zustand sichern und auch die Versorgung abschalten. Zusätzlich wird es mit DVFS kombiniert."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum reicht ein einfaches AND-Gatter zum Anhalten des Takts nicht?",
+        "Ändert sich das Enable-Signal, während der Takt 1 ist, entsteht im Takt ein kurzer Puls (Glitch), und Flipflops schalten fälschlich. Eine ICG hält das Enable in einem Latch, das nur bei Takt 0 durchlässig ist, und verknüpft erst dann per AND, sodass kein Glitch entsteht."
+      ],
+      [
+        "Warum dauert das Aufwachen beim Power-Gating so lange?",
+        "Weil die große Kapazität des abgeschalteten Blocks erneut geladen werden muss. Schaltet man alle Schalter auf einmal ein, fließt ein großer Einschaltstrom, und die Versorgungsspannung anderer aktiver Schaltungen bricht ein. Deshalb werden die Schalter schrittweise nacheinander eingeschaltet. Danach sind noch Reset und Wiederherstellung des Zustands nötig."
+      ],
+      [
+        "Wozu braucht man Isolationszellen?",
+        "Die Ausgänge eines abgeschalteten Blocks nehmen eine Spannung an, die weder eindeutig 0 noch 1 ist. Übernimmt ein aktiver Block diese direkt, kann es zu Fehlfunktionen oder Querströmen in den Eingangsgattern kommen. Isolationszellen legen die Signale an der Grenze auf einen definierten Wert (0 oder 1) fest."
+      ],
+      [
+        "Lohnt es sich, auch bei kurzen Pausen die Versorgung abzuschalten?",
+        "Nicht unbedingt. Das Abschalten kostet Energie für Sichern und Wiederherstellen des Zustands und für das Laden der Kapazitäten. Wenn die Pause nicht länger ist als die Zeit, in der die eingesparte Leckleistung diese Energie wieder hereinholt (Break-even-Zeit), ist es sogar nachteilig. Für kurze Pausen verwendet man Clock-Gating."
+      ]
+    ]
+  },
+  "scan-test-vs-bist": {
+    "title": "Scan-Test vs. BIST: die wichtigsten Unterschiede",
+    "description": "Scan-Test und BIST (Built-in Self-Test) im Vergleich: Erzeugung der Testmuster (ATPG oder integrierter Generator), Testerabhängigkeit, Logik und Speicher, Fehlerabdeckung, Zusatzschaltungen und Testzeit.",
+    "lead": "Beim Scan-Test werden die Flipflops im Chip zu Schieberegistern (Scan-Ketten) verbunden; ein externer Tester schiebt Testmuster hinein, liest die Antwort der Schaltung heraus und vergleicht sie mit den Sollwerten. Die Muster erzeugt ein ATPG-Werkzeug aus der Netzliste. Beim BIST sind Schaltungen zur Mustererzeugung und zur Ergebnisbewertung im Chip integriert, und der Chip testet sich selbst. Im Produktionstest ist die Kombination aus Scan-Test für die Logik und Speicher-BIST für eingebettete Speicher üblich; BIST eignet sich zudem für die Selbstdiagnose nach der Auslieferung.",
+    "items": [
+      "Scan-Test",
+      "BIST (Built-in Self-Test)"
+    ],
+    "rows": [
+      [
+        "Grundprinzip",
+        "Flipflops werden zu Scan-Ketten verbunden; Muster werden hineingeschoben, die Schaltung wird einmal getaktet, und das Ergebnis wird herausgeschoben und verglichen",
+        "Schaltungen zur Mustererzeugung und Antwortbewertung sind im Chip integriert; der Chip testet sich selbst und meldet Bestanden/Nicht bestanden"
+      ],
+      [
+        "Erzeugung der Testmuster",
+        "ATPG erzeugt aus der Netzliste deterministische Muster, die gezielt Haftfehler und Transition-Delay-Fehler adressieren",
+        "Logik-BIST erzeugt pseudozufällige Muster mit einem LFSR. Speicher-BIST erzeugt Adressen und Daten nach festen Abläufen wie March-Tests"
+      ],
+      [
+        "Bewertung der Antwort",
+        "Der Tester vergleicht mit den Sollwerten (bei Testkompression werden im Chip komprimierte Antworten verglichen)",
+        "Logik-BIST komprimiert die Antworten mit einem MISR zu einer Signatur und vergleicht sie mit dem Sollwert. Speicher-BIST prüft die gelesenen Werte direkt mit einem Komparator"
+      ],
+      [
+        "Abhängigkeit vom Tester",
+        "Muster und Sollwerte liegen im Testerspeicher. Scan-Pins sowie Leistung und Speicherkapazität des Testers sind erforderlich",
+        "Nur Start und Auslesen des Ergebnisses (z. B. über JTAG) nötig; ein einfacher Tester genügt"
+      ],
+      [
+        "Hauptziel",
+        "Logikschaltungen (kombinatorische Logik und Flipflops)",
+        "Speicher-BIST: eingebettete Speicher wie SRAM. Logik-BIST: Logikschaltungen"
+      ],
+      [
+        "Fehlerabdeckung",
+        "Leicht hoch zu erreichen, da die Muster gezielt auf Fehler erzeugt werden",
+        "Bei Logik-BIST bleiben leicht Fehler übrig, die pseudozufällig schwer zu finden sind; Ausgleich durch Einfügen von Testpunkten. Speicher-BIST erreicht mit auf Speicherfehlermodelle abgestimmten Abläufen eine hohe Abdeckung"
+      ],
+      [
+        "Zusatzschaltungen",
+        "Flipflops werden durch Scan-Flipflops (mit Umschalt-Multiplexer) ersetzt, und die Kettenverdrahtung kommt hinzu",
+        "Mustergenerator, Antwortkompressor und Steuerschaltung sind nötig. Bei Logik-BIST muss die Schaltung zudem so angepasst werden, dass keine unbestimmten Werte (X) entstehen"
+      ],
+      [
+        "Testzeit",
+        "Bei langen Ketten dauert das Schieben lange und ist durch die Testergeschwindigkeit begrenzt. Testkompression verkürzt sie",
+        "Mit dem chipinternen Takt lassen sich viele Muster schnell durchlaufen. Logik-BIST benötigt eine große Zahl von Mustern"
+      ],
+      [
+        "Einsatzzeitpunkt",
+        "Vor allem im Wafertest und Endtest der Serienfertigung. Auch für die Fehlerdiagnose defekter Bauteile",
+        "Neben dem Produktionstest auch für Prüfungen nach der Bestückung auf der Leiterplatte und zur Selbstdiagnose nach der Auslieferung, etwa beim Einschalten"
+      ]
+    ],
+    "when": [
+      [
+        "Scan-Test",
+        "Wenn im Produktionstest strukturelle Logikfehler mit hoher Abdeckung gefunden werden sollen oder bei ausgefallenen Chips der Fehlerort eingegrenzt werden soll."
+      ],
+      [
+        "BIST",
+        "Für den Test eingebetteter Speicher, die von außen schwer direkt zugänglich sind; wenn Testerpins oder Testerspeicher eingespart werden sollen; wenn wie im Automobilbereich nach der Auslieferung eine Selbstdiagnose beim Einschalten oder vor der Fahrt nötig ist."
+      ],
+      [
+        "Kombination",
+        "In realen Chips ist es üblich, für die Logik den Scan-Test (mit Testkompression) und für Speicher den Speicher-BIST einzusetzen. Auch Logik-BIST baut auf Scan-Ketten auf."
+      ]
+    ],
+    "faq": [
+      [
+        "Ist mit BIST kein Scan-Test mehr nötig?",
+        "Viele Chips nutzen beides. Da Logik-BIST pseudozufällige Muster verwendet, bleiben leicht schwer zu findende Fehler übrig; im Produktionstest sichert man daher üblicherweise eine hohe Fehlerabdeckung durch Scan-Tests mit ATPG-Mustern. Speicher werden wegen ihrer regelmäßigen Struktur mit Speicher-BIST getestet."
+      ],
+      [
+        "Wie hängen Logik-BIST und Scan-Test zusammen?",
+        "Auch Logik-BIST nutzt Scan-Ketten. Vom LFSR erzeugte Muster werden in die Ketten geschoben, die Schaltung wird getaktet, die ausgegebenen Antworten werden im MISR komprimiert, und die am Ende entstehende Signatur wird mit dem Sollwert verglichen. Das Scan-Design bildet die Grundlage."
+      ],
+      [
+        "Warum wird für eingebettete Speicher so oft BIST verwendet?",
+        "Im Chip eingebettete Speicher sind über externe Pins schwer direkt zu lesen und zu beschreiben, und dank ihrer regelmäßigen Struktur lassen sich Adressen und Daten nach festen Abläufen wie March-Tests mit einer kleinen Schaltung erzeugen. Häufig wird dies mit einer Reparatur kombiniert, bei der gefundene defekte Bits durch Reservezeilen oder -spalten ersetzt werden."
+      ],
+      [
+        "Warum führen Automobil-Chips beim Einschalten einen BIST aus?",
+        "Um Fehler, die nach der Auslieferung entstanden sind, sowie latente Fehler zu finden, die im normalen Betrieb nicht in Erscheinung treten. Da der Chip den BIST ohne Tester selbst ausführen kann, eignet er sich für die Selbstdiagnose im Fahrzeug."
+      ]
+    ]
+  },
+  "wafer-test-vs-final-test": {
+    "title": "Wafertest vs. Endtest: die wichtigsten Unterschiede",
+    "description": "Wafertest (Probe-Test) und Endtest im Tabellenvergleich: Zeitpunkt und Prüfling, Kontaktierung (Nadelkarte oder Sockel), Temperatur, Testumfang, Ziel der Fehlererkennung und KGD.",
+    "lead": "Der Wafertest prüft nach Abschluss des Front-End-Prozesses und vor dem Vereinzeln (Dicing) jeden Chip auf dem Wafer, indem die Nadeln einer Nadelkarte auf die Kontaktpads aufgesetzt werden. Werden defekte Chips vor der Montage aussortiert, werden Gehäuse- und Montagekosten nicht verschwendet. Der Endtest (Final Test) misst die fertig ins Gehäuse montierten ICs, die ein Handler in einen Sockel einsetzt; dabei wird – einschließlich in der Montage entstandener Fehler – bestätigt, dass die ICs spezifikationsgemäß funktionieren, bevor sie ausgeliefert werden.",
+    "items": [
+      "Wafertest (Probe-Test)",
+      "Endtest (Final Test)"
+    ],
+    "rows": [
+      [
+        "Zeitpunkt",
+        "Nach dem Front-End-Prozess, vor dem Vereinzeln",
+        "Nach der Montage (Verkapselung im Gehäuse), vor der Auslieferung"
+      ],
+      [
+        "Prüfling",
+        "Alle Chips auf dem Wafer",
+        "Im Gehäuse verkapselte ICs (aus Chips montiert, die im Wafertest gut waren)"
+      ],
+      [
+        "Kontaktierung",
+        "Der Prober bewegt den Wafer und setzt die Nadeln der Nadelkarte auf die Kontaktpads der Chips",
+        "Der Handler setzt den IC in einen Sockel; Pogo-Pins o. Ä. kontaktieren die Gehäuseanschlüsse (Beinchen oder Balls)"
+      ],
+      [
+        "Ausrüstung",
+        "Tester, Prober, Nadelkarte",
+        "Tester, Handler, Loadboard mit Sockel"
+      ],
+      [
+        "Temperatur",
+        "Gemessen wird bei variierter Temperatur des Chucks, auf dem der Wafer liegt. Neben Raumtemperatur teils auch bei hoher oder niedriger Temperatur",
+        "Der Handler heizt oder kühlt den IC; gemessen wird oft an den Grenzen des garantierten Temperaturbereichs des Produkts"
+      ],
+      [
+        "Wichtigste Testpunkte",
+        "DC-Parameter (Leckströme u. a.), Funktionstest, Scan-Test. Bei Speichern Messungen für die Reparatur, bei der defekte Bits durch Reserve ersetzt werden",
+        "Funktion, DC-Parameter, AC-Parameter wie Timing, Betrieb mit realer Geschwindigkeit. Einstufung (Binning) nach Geschwindigkeit u. a."
+      ],
+      [
+        "Messung schneller Signale",
+        "Die elektrischen Eigenschaften der Nadeln begrenzen die Möglichkeiten; schnelle Signale oder hohe Ströme sind teils schwer zu messen",
+        "Der Sockel ist elektrisch günstiger, schnelle Signale lassen sich leichter messen"
+      ],
+      [
+        "Ziel der Fehlererkennung",
+        "Defekte Chips vor der Montage aussortieren und Gehäuse- und Montagekosten sparen. Prozessprobleme früh über die Wafermap erkennen",
+        "Auch in der Montage entstandene Fehler (z. B. Verbindungsfehler) aussortieren und mit gesicherter Qualität ausliefern"
+      ],
+      [
+        "Umgang mit Ausfällen",
+        "Defekte Chips werden in den elektronischen Daten der Wafermap erfasst und nicht montiert (früher mit Tinte markiert)",
+        "Ausfälle werden aussortiert, gute Teile nach Leistung u. a. klassifiziert und ausgeliefert"
+      ],
+      [
+        "Bezug zu KGD",
+        "Werden mehrere Chips in einem Gehäuse montiert, sind in diesem Schritt als gut bestätigte Chips (KGD) erforderlich",
+        "Wird nach der Montage ein Defekt festgestellt, lässt sich nur der defekte Chip kaum austauschen"
+      ]
+    ],
+    "when": [
+      [
+        "Wafertest",
+        "Wenn defekte Chips vor der Montage aussortiert und Gehäuse- und Montagekosten gespart werden sollen; wenn bei Produkten mit mehreren Chips in einem Gehäuse nur als gut bestätigte Chips (KGD) verwendet werden sollen."
+      ],
+      [
+        "Endtest",
+        "Wenn vor der Auslieferung im montierten Zustand garantiert werden soll, dass das Bauteil spezifikationsgemäß funktioniert; wenn der garantierte Temperaturbereich und der Betrieb mit realer Geschwindigkeit geprüft werden sollen."
+      ],
+      [
+        "Kombination",
+        "Übliche Produkte durchlaufen beide Tests in der Reihenfolge Wafertest → Montage → Endtest → Auslieferung. Die Testpunkte werden auf beide Tests aufgeteilt, um Überschneidungen und Testkosten zu verringern."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum gibt es einen Wafertest, wenn doch ein Endtest stattfindet?",
+        "Weil das Montieren defekter Chips Gehäusematerial und Montagekosten verschwendet. Werden Ausfälle schon auf Wafer-Ebene aussortiert, werden nur gute Chips montiert. Zudem lässt sich aus der Fehlerverteilung auf der Wafermap der verursachende Prozessschritt früh erkennen."
+      ],
+      [
+        "Was ist der Unterschied zwischen Wafertest und WAT (parametrischer Test)?",
+        "Der WAT misst an TEGs (Teststrukturen) auf dem Wafer Größen wie Schwellenspannung und Schichtwiderstand und prüft, ob der Prozess spezifikationsgemäß gelaufen ist. Der Wafertest prüft, ob jeder einzelne Produktchip korrekt funktioniert, und bewertet ihn als gut oder schlecht."
+      ],
+      [
+        "Was bedeutet KGD?",
+        "Known Good Die: ein Chip, dessen einwandfreie Qualität vor der Montage bestätigt wurde. Werden mehrere Chips in einem Gehäuse montiert, macht schon ein einziger defekter Chip das ganze Gehäuse unbrauchbar, daher muss im Wafertest gründlich geprüft werden."
+      ],
+      [
+        "In welchem Schritt findet das Burn-in statt?",
+        "Burn-in ist ein Test, der durch hohe Temperatur und Spannung Chips mit Neigung zu Frühausfällen aussortiert; er erfolgt meist nach der Montage im Gehäuse. Wenn KGD benötigt werden, gibt es auch ein Wafer-Level-Burn-in im Waferzustand."
+      ]
+    ]
+  },
+  "damascene-vs-subtractive-etch-interconnect": {
+    "title": "Damascene vs. subtraktive Leiterbahnen im Vergleich",
+    "description": "Damascene-Verfahren und geätzte Leiterbahnen (subtraktives Verfahren) im Vergleich: Prozessreihenfolge, Metall (Kupfer und Aluminium), CMP, Via-Herstellung und Neubewertung bei feinsten Leiterbahnen.",
+    "lead": "Bei durch Ätzen strukturierten Leiterbahnen (subtraktives Verfahren) wird ganzflächig eine Metallschicht abgeschieden, mit einer Lackmaske werden die überflüssigen Teile trocken weggeätzt, und die Zwischenräume der verbleibenden Leiterbahnen werden mit Isolator gefüllt. Dieses Verfahren wurde lange für Aluminium-Leiterbahnen eingesetzt. Beim Damascene-Verfahren ist die Reihenfolge umgekehrt: Zuerst werden Gräben in den Isolator geätzt, dann wird Metall eingefüllt und überschüssiges Metall per CMP abgetragen. Da Kupfer kaum flüchtige Verbindungen bildet und sich schwer trocken ätzen lässt, wurde das Damascene-Verfahren zum Standard für Kupfer-Leiterbahnen. Für die feinsten Leiterbahnen wird auch das Strukturieren von Ruthenium u. Ä. durch Ätzen untersucht.",
+    "items": [
+      "Damascene-Verfahren",
+      "Durch Ätzen strukturierte Leiterbahnen (subtraktives Verfahren)"
+    ],
+    "rows": [
+      [
+        "Prozessreihenfolge",
+        "Isolator abscheiden → Gräben und Via-Löcher ätzen → Barrieremetall und Seed-Schicht → Kupfer galvanisch abscheiden → Überschuss per CMP entfernen",
+        "Metallschicht abscheiden → Lithografie → Metall trocken ätzen → Zwischenräume mit Isolator füllen und planarisieren"
+      ],
+      [
+        "Was geätzt wird",
+        "Isolator",
+        "Metallschicht"
+      ],
+      [
+        "Wichtigstes Metall",
+        "Kupfer (Cu)",
+        "Aluminium (Al-Cu-Legierung). Für die feinsten Leiterbahnen wird auch Ruthenium u. Ä. untersucht"
+      ],
+      [
+        "Füllen mit Metall",
+        "Gräben werden galvanisch gefüllt. Bei schmalen Gräben ist das hohlraumfreie (voidfreie) Füllen eine Herausforderung",
+        "Es genügt, per Sputtern o. Ä. eine ebene Schicht abzuscheiden"
+      ],
+      [
+        "Füllen mit Isolator",
+        "Der Isolator wird vorab eben abgeschieden und ist daher kaum problematisch",
+        "Enge Zwischenräume zwischen Leiterbahnen müssen lückenlos mit Isolator gefüllt werden (bisher z. B. mit HDP-CVD)"
+      ],
+      [
+        "CMP",
+        "Unverzichtbar. Kupfer und Barrieremetall außerhalb der Gräben werden abgetragen und die Leiterbahnen voneinander getrennt",
+        "Nicht für die Metallstrukturierung. Wird zur Planarisierung des Isolators verwendet"
+      ],
+      [
+        "Barriereschicht",
+        "Gegen Kupferdiffusion werden Boden und Seitenwände der Gräben mit TaN/Ta o. Ä. beschichtet. Bei schmalen Leiterbahnen wächst ihr Anteil am Querschnitt",
+        "Bei Aluminium ist Diffusion kaum ein Problem; ober- und unterhalb werden Schichten wie Ti/TiN aufgebracht"
+      ],
+      [
+        "Via-Herstellung",
+        "Beim Dual-Damascene-Verfahren werden Leiterbahngräben und Vias gemeinsam gefüllt und mit einem CMP-Schritt fertiggestellt",
+        "Vias werden in einem eigenen Schritt geöffnet, mit Wolfram o. Ä. gefüllt und per CMP planarisiert, bevor die nächste Leiterbahnebene entsteht"
+      ],
+      [
+        "Herausforderungen bei feinen Leiterbahnen",
+        "Mit abnehmender Breite steigt der spezifische Widerstand von Kupfer (Größeneffekt), und der Anteil der Barriereschicht nimmt zu",
+        "Präzision beim Ätzen feiner Metalllinien und das Füllen der Zwischenräume mit Isolator"
+      ]
+    ],
+    "when": [
+      [
+        "Damascene-Verfahren",
+        "Für Kupfer-Leiterbahnen: Mehrlagenverdrahtung in modernsten LSIs, die niederohmige und elektromigrationsfeste Leiterbahnen benötigen."
+      ],
+      [
+        "Durch Ätzen strukturierte Leiterbahnen",
+        "Für Aluminium-Leiterbahnen: Produkte mit wenigen Verdrahtungsebenen oder relativ breite Leiterbahnen. Für die feinsten Leiterbahnen wird es als Verfahren mit Ruthenium u. Ä. untersucht."
+      ],
+      [
+        "Trend",
+        "Moderne LSIs fertigen den Großteil der Verdrahtung im Kupfer-Dual-Damascene-Verfahren. Für die feinsten Ebenen wird das Ätzen von Metallen neu bewertet, deren Widerstand weniger stark ansteigt und die dünnere Barriereschichten erlauben."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum lässt sich Kupfer schwer trocken ätzen?",
+        "Die Kupferverbindungen, die bei der Reaktion mit Ätzgasen wie Chlor entstehen, sind kaum flüchtig und bleiben bei Temperaturen um Raumtemperatur auf der Oberfläche zurück. Bei hoher Temperatur ließen sie sich verflüchtigen, doch der Fotolack u. a. hält dem nicht stand, sodass eine praxistaugliche Strukturierung schwierig wird. Deshalb wird Kupfer in Gräben eingefüllt und per CMP in Form gebracht."
+      ],
+      [
+        "Was ist das Dual-Damascene-Verfahren?",
+        "Ein Verfahren, bei dem im Isolator sowohl Leiterbahngräben als auch Via-Löcher zur darunterliegenden Ebene angelegt, in einem einzigen Galvanikschritt gemeinsam mit Kupfer gefüllt und mit einem einzigen CMP-Schritt fertiggestellt werden. Gegenüber dem Single-Damascene-Verfahren, bei dem Gräben und Vias getrennt hergestellt werden, spart es Prozessschritte."
+      ],
+      [
+        "Woher stammt der Name Damascene?",
+        "Er stammt von der dekorativen Einlegetechnik (Tauschierung), bei der Rillen in eine Metalloberfläche graviert und mit einem anderen Metall ausgelegt werden. Der Name wurde gewählt, weil das Einfüllen von Metall in Gräben eines Isolators dieser Technik ähnelt."
+      ],
+      [
+        "Kehrt man künftig zu geätzten Leiterbahnen zurück?",
+        "Nicht vollständig. Ebenen mit breiten Leiterbahnen werden weiterhin im Kupfer-Damascene-Verfahren gefertigt. Bei Ebenen mit sehr kleiner Linienbreite werden der steigende spezifische Widerstand von Kupfer und die Dicke der Barriereschicht zum Problem, daher wird das Strukturieren von Metallen wie Ruthenium durch Ätzen untersucht."
+      ]
+    ]
+  },
+  "msi-vs-mesi-vs-moesi": {
+    "title": "MSI vs. MESI vs. MOESI: Kohärenzprotokolle im Vergleich",
+    "description": "Die Cache-Kohärenzprotokolle MSI, MESI und MOESI im Tabellenvergleich: Anzahl und Bedeutung der Zustände, Vorteile von Exclusive und Owned, Rückschreiben in den Speicher und Schaltungsaufwand.",
+    "lead": "MSI, MESI und MOESI sind Protokolle, die den Cache-Zeilen der einzelnen Caches eines Mehrkernsystems Zustände zuweisen, damit die Daten derselben Adresse nicht inkonsistent werden. MSI ist die Grundform mit nur drei Zuständen: Modified, Shared und Invalid. MESI ergänzt Exclusive (nur dieser Cache hält die Zeile, Inhalt identisch mit dem Speicher), wodurch beim Schreiben auf Daten, die kein anderer Kern hält, die Buskommunikation entfällt. MOESI fügt zusätzlich den Zustand Owned hinzu, sodass geänderte Daten mit anderen Caches geteilt werden können, ohne sie in den Speicher zurückzuschreiben.",
+    "items": [
+      "MSI",
+      "MESI",
+      "MOESI"
+    ],
+    "rows": [
+      [
+        "Anzahl der Zustände",
+        "3 (M, S, I)",
+        "4 (M, E, S, I)",
+        "5 (M, O, E, S, I)"
+      ],
+      [
+        "Modified (M)",
+        "Nur dieser Cache hält die Zeile; Inhalt weicht vom Speicher ab",
+        "Gleich",
+        "Gleich"
+      ],
+      [
+        "Shared (S)",
+        "Andere Caches halten die Zeile möglicherweise auch. Inhalt identisch mit dem Speicher",
+        "Gleich",
+        "Andere Caches halten die Zeile möglicherweise auch. Inhalt kann vom Speicher abweichen (wenn eine Zeile im Zustand O existiert)"
+      ],
+      [
+        "Exclusive (E)",
+        "Nicht vorhanden",
+        "Nur dieser Cache hält die Zeile; Inhalt identisch mit dem Speicher",
+        "Vorhanden (wie bei MESI)"
+      ],
+      [
+        "Owned (O)",
+        "Nicht vorhanden",
+        "Nicht vorhanden",
+        "Inhalt weicht vom Speicher ab, wird aber von anderen Caches im Zustand S geteilt. Trägt die Verantwortung für das Rückschreiben in den Speicher"
+      ],
+      [
+        "Lesen von Daten, die kein anderer Kern hält",
+        "Zeile wird im Zustand S geladen",
+        "Zeile wird im Zustand E geladen",
+        "Zeile wird im Zustand E geladen"
+      ],
+      [
+        "Anschließendes Schreiben",
+        "Für den Wechsel von S nach M muss eine Anfrage zum Invalidieren der anderen Kopien auf den Bus o. Ä. gesendet werden",
+        "Wechsel von E nach M ohne Kommunikation",
+        "Wechsel von E nach M ohne Kommunikation"
+      ],
+      [
+        "Ein anderer Kern liest eine M-Zeile",
+        "Rückschreiben in den Speicher, beide wechseln nach S",
+        "Rückschreiben in den Speicher, beide wechseln nach S (Daten werden teils direkt aus dem Cache übergeben)",
+        "Daten werden ohne Rückschreiben übergeben; der eigene Cache wechselt nach O, der andere nach S"
+      ],
+      [
+        "Rückschreiben in den Speicher",
+        "Jedes Mal, wenn ein anderer Kern eine geänderte Zeile liest",
+        "Jedes Mal, wenn ein anderer Kern eine geänderte Zeile liest",
+        "Kann aufgeschoben werden, bis die O-Zeile verdrängt wird"
+      ],
+      [
+        "Zustandsbits und Komplexität",
+        "2 Bit. Am einfachsten",
+        "2 Bit. Mittel",
+        "3 Bit. Am komplexesten"
+      ]
+    ],
+    "when": [
+      [
+        "MSI",
+        "Als Grundform zum Erlernen der Kohärenzmechanismen; wenn die Zustandsübergänge so einfach wie möglich sein sollen."
+      ],
+      [
+        "MESI",
+        "Wenn viele Lese- und Schreibzugriffe auf Daten erfolgen, die nur ein Kern nutzt. Dank des Zustands E entfällt bei Lesen-dann-Schreiben die Kommunikation. Bildet die Grundlage der Protokolle vieler Mehrkern-CPUs."
+      ],
+      [
+        "MOESI",
+        "Wenn Kerne geänderte Daten häufig untereinander weitergeben; wenn Rückschreibvorgänge in den Speicher reduziert und Speicherbandbreite gespart werden soll."
+      ]
+    ],
+    "faq": [
+      [
+        "Was bringt der Zustand E bei MESI?",
+        "Liest ein Kern Daten, die kein anderer Kern hält, gelangt die Zeile in den Zustand E und kann bei einem anschließenden Schreibzugriff ohne Benachrichtigung anderer Kerne nach M wechseln. Bei MSI wird die Zeile im gleichen Fall im Zustand S geladen, sodass bei jedem Schreiben eine Invalidierungsanfrage nötig ist. Bei Lesen-dann-Schreiben auf Daten, die nur ein Thread nutzt, verringert sich so die Buskommunikation."
+      ],
+      [
+        "Was bringt der Zustand O bei MOESI?",
+        "Liest ein anderer Kern geänderte Daten (Zustand M), werden sie bei MESI erst in den Speicher zurückgeschrieben und dann geteilt. Bei MOESI werden die Daten ohne Rückschreiben direkt zwischen den Caches übergeben, und der ursprüngliche Cache behält im Zustand O die Verantwortung für das Rückschreiben. So werden Schreibzugriffe auf den Speicher reduziert."
+      ],
+      [
+        "Was ist der Unterschied zwischen den Zuständen E und M?",
+        "In beiden Fällen hält nur der eigene Cache die Zeile. Im Zustand E ist der Inhalt identisch mit dem Speicher, daher ist beim Verdrängen kein Rückschreiben nötig. Im Zustand M wurde die Zeile geändert und weicht vom Speicher ab, daher muss sie beim Verdrängen zurückgeschrieben werden."
+      ],
+      [
+        "Werden diese Protokolle mit Snooping oder mit Verzeichnissen eingesetzt?",
+        "Mit beidem. MSI, MESI und MOESI legen fest, wie die Zustände der Zeilen definiert sind; das ist unabhängig davon, wie andere Caches benachrichtigt werden (Snooping, das einen gemeinsamen Bus o. Ä. überwacht, oder verzeichnisbasiert, wobei die Besitzer der Zeilen protokolliert werden)."
+      ]
+    ]
+  },
+  "spinlock-vs-mutex": {
+    "title": "Spinlock vs. Mutex: die wichtigsten Unterschiede",
+    "description": "Spinlock und Mutex im Vergleich: Warteverfahren (Busy-Waiting oder Schlafen), CPU-Nutzung, geeignete Haltedauer, Einsatz im Kernel (Interrupt-Kontext), Prioritätsinversion und Implementierung (futex).",
+    "lead": "Spinlock und Mutex sind beides Sperren, die jeweils nur einen Thread gleichzeitig in einen kritischen Abschnitt lassen, unterscheiden sich aber darin, wie auf die Freigabe der Sperre gewartet wird. Ein Spinlock wartet aktiv (Busy-Waiting), indem er die Sperrvariable in einer Schleife ständig abfragt. Er belegt also auch während des Wartens die CPU, kann die Sperre aber sofort übernehmen, sobald sie frei wird. Ein Mutex legt den wartenden Thread schlafen und gibt die CPU ab; wird die Sperre freigegeben, weckt ihn das Betriebssystem. Bei sehr kurzer Haltedauer oder in Interrupt-Handlern, die nicht schlafen dürfen, verwendet man Spinlocks; bei langer Haltedauer oder wenn während des Haltens geschlafen werden könnte, Mutexe.",
+    "items": [
+      "Spinlock",
+      "Mutex"
+    ],
+    "rows": [
+      [
+        "Warteverfahren",
+        "Fragt die Variable in einer Schleife ab, bis die Sperre frei ist (Busy-Waiting)",
+        "Ist die Sperre belegt, schläft der Thread und wird bei der Freigabe geweckt"
+      ],
+      [
+        "CPU während des Wartens",
+        "Wird weiter belegt",
+        "Wird abgegeben. In dieser Zeit können andere Threads die CPU nutzen"
+      ],
+      [
+        "Aufwand des Wartens",
+        "Kein Kontextwechsel; die Sperre kann sofort übernommen werden, sobald sie frei ist",
+        "Beim Einschlafen und Aufwachen fallen Systemaufrufe und Kontextwechsel an"
+      ],
+      [
+        "Geeignete Haltedauer",
+        "Sehr kurz (kürzer als die Dauer eines Kontextwechsels)",
+        "Lang. Wenn während des Haltens geschlafen werden könnte, etwa beim Warten auf I/O"
+      ],
+      [
+        "Schlafen während des Haltens",
+        "Verboten. Die wartende Seite würde die CPU weiter belegen",
+        "Möglich"
+      ],
+      [
+        "Bei nur einem Kern",
+        "Während des Wartens kann der Thread, der die Sperre hält, nicht laufen; das Spinnen gibt sie nie frei. Im Kernel wird er mit abgeschalteter Präemption verwendet",
+        "Problemlos verwendbar"
+      ],
+      [
+        "Einsatz im Kernel",
+        "Auch in Situationen nutzbar, in denen nicht geschlafen werden darf, etwa in Interrupt-Handlern (Interrupt-Kontext). Werden Daten mit einem Interrupt geteilt, werden vor dem Sperren die Interrupts gesperrt",
+        "Da er schlafen kann, nur im Prozesskontext verwendbar, nicht in Interrupt-Handlern"
+      ],
+      [
+        "Prioritätsinversion",
+        "Wird der Thread, der die Sperre hält, angehalten, spinnt die wartende Seite weiter. Im Kernel wird dies durch Abschalten der Präemption während des Haltens verhindert",
+        "Abhilfe durch Mutexe mit Prioritätsvererbung"
+      ],
+      [
+        "Implementierungsbeispiel",
+        "Die Variable wird mit atomaren Befehlen (Test-and-Set oder Compare-and-Swap) geändert. Test-and-Test-and-Set wartet normalerweise mit gewöhnlichen Lesezugriffen und verringert so die Kommunikation zwischen den Kernen",
+        "Bei futex unter Linux wird ohne Konkurrenz allein mit atomaren Befehlen im Userspace gesperrt; nur bei Konkurrenz legt der Kernel den Thread schlafen. Manche Implementierungen spinnen erst kurz und schlafen dann"
+      ]
+    ],
+    "when": [
+      [
+        "Spinlock",
+        "Auf Mehrkernsystemen, wenn die Sperre nur sehr kurz gehalten wird (kürzer als der Aufwand eines Kontextwechsels); bei Verarbeitung im Kernel, bei der Schlafen nicht erlaubt ist, etwa in Interrupt-Handlern."
+      ],
+      [
+        "Mutex",
+        "Wenn die Sperre lange gehalten wird oder während des Haltens durch I/O, Speicherallokation u. Ä. geschlafen werden könnte; für den gewöhnlichen wechselseitigen Ausschluss in Userspace-Anwendungen."
+      ],
+      [
+        "Kombination",
+        "Viele Mutex-Implementierungen kombinieren die Vorteile beider: Ohne Konkurrenz wird die Sperre ohne Schlafen allein mit atomaren Befehlen erworben, und gelingt dies nicht, wird erst kurz gespinnt und dann geschlafen."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum verwendet man Spinlocks, obwohl sie CPU-Zeit verschwenden?",
+        "Weil bei sehr kurzer Haltedauer kurzes Spinnen schneller ist als der Kontextwechsel für Einschlafen und Aufwachen. Außerdem sind in Situationen, in denen Schlafen nicht erlaubt ist, etwa in Interrupt-Handlern des Kernels, nur Spinlocks verwendbar."
+      ],
+      [
+        "Warum kann man in Interrupt-Handlern keinen Mutex verwenden?",
+        "Ein Mutex legt den wartenden Thread schlafen, wenn er die Sperre nicht erhält. Ein Interrupt-Handler läuft jedoch nicht als bestimmter Thread und kann daher nicht schlafen und später geweckt werden. Werden Daten mit einem Interrupt-Handler geteilt, kombiniert man einen Spinlock mit dem Sperren der Interrupts."
+      ],
+      [
+        "Was ist futex?",
+        "Ein Mechanismus unter Linux, um Mutexe u. Ä. schnell zu implementieren. Ohne Konkurrenz genügt es, die Sperrvariable im Userspace mit atomaren Befehlen zu ändern; nur wenn bei Konkurrenz gewartet werden muss, legt der Kernel den Thread per Systemaufruf schlafen. Da die meisten Sperren nicht umkämpft sind, entfällt so der Aufwand für Systemaufrufe."
+      ],
+      [
+        "Was passiert, wenn man auf einem System mit nur einem Kern einen Spinlock verwendet?",
+        "Auch wenn im Userspace gespinnt wird, kann der Thread, der die Sperre hält, auf diesem Kern nicht laufen; die Sperre wird daher nicht frei, bis die eigene Zeitscheibe aufgebraucht ist. Im Kernel von Systemen mit nur einem Kern wird der wechselseitige Ausschluss deshalb statt mit Spinlocks durch Abschalten von Präemption oder Interrupts erreicht."
+      ]
+    ]
+  },
+  "fp32-vs-fp16-vs-bf16-vs-int8": {
+    "title": "FP32 vs. FP16 vs. BF16 vs. INT8: Zahlenformate im Vergleich",
+    "description": "FP32, FP16, BF16 und INT8 im Tabellenvergleich: Bitaufteilung (Vorzeichen, Exponent, Mantisse), Wertebereich, Genauigkeit, Umwandlung aus FP32, Speicher, Recheneinheiten, Training und Inferenz.",
+    "lead": "FP32 ist eine 32-Bit-Gleitkommazahl einfacher Genauigkeit und dient als Referenz für Berechnungen. FP16 und BF16 haben beide 16 Bit, teilen die Bits aber unterschiedlich auf. FP16 verwendet mehr Bits für die Mantisse und gewinnt so Genauigkeit, sein Wertebereich ist mit einem Maximum von 65504 jedoch schmal. BF16 hat wie FP32 einen 8-Bit-Exponenten und behält so einen Wertebereich auf FP32-Niveau, büßt dafür aber Genauigkeit ein. INT8 ist eine 8-Bit-Ganzzahl, die bei der Quantisierung reelle Zahlen über einen Skalierungsfaktor annähert und bei der KI-Inferenz Speicher und Energie stark reduziert.",
+    "items": [
+      "FP32",
+      "FP16",
+      "BF16",
+      "INT8"
+    ],
+    "rows": [
+      [
+        "Bitbreite",
+        "32 Bit",
+        "16 Bit",
+        "16 Bit",
+        "8 Bit"
+      ],
+      [
+        "Bits für Vorzeichen/Exponent/Mantisse",
+        "1/8/23",
+        "1/5/10",
+        "1/8/7",
+        "Kein Exponent und keine Mantisse. Ganzzahl im Zweierkomplement von −128 bis 127"
+      ],
+      [
+        "Größter darstellbarer Wert",
+        "Etwa 3,4 × 10³⁸",
+        "65504",
+        "Etwa 3,4 × 10³⁸ (nahezu wie FP32)",
+        "127 (reelle Zahlen werden mit Skalierungsfaktor dargestellt)"
+      ],
+      [
+        "Kleinste normalisierte Zahl",
+        "Etwa 1,2 × 10⁻³⁸",
+        "Etwa 6,1 × 10⁻⁵ (2⁻¹⁴)",
+        "Etwa 1,2 × 10⁻³⁸",
+        "Keine (die Schrittweite der darstellbaren Werte ergibt sich aus dem Skalierungsfaktor)"
+      ],
+      [
+        "Typische Genauigkeit",
+        "Etwa 7 Dezimalstellen (Abstand zwischen 1 und der nächsten Zahl: 2⁻²³ ≈ 1,2 × 10⁻⁷)",
+        "Etwa 3 Dezimalstellen (2⁻¹⁰ ≈ 9,8 × 10⁻⁴)",
+        "2–3 Dezimalstellen (2⁻⁷ ≈ 7,8 × 10⁻³)",
+        "Skala mit 256 Stufen"
+      ],
+      [
+        "Umwandlung aus FP32",
+        "Entfällt (Referenz)",
+        "Wegen des schmalen Bereichs können große Werte überlaufen und kleine Werte zu 0 werden",
+        "Es genügt, die oberen 16 Bit zu übernehmen und zu runden; kein Überlauf des Wertebereichs",
+        "Quantisierung mit festgelegtem Skalierungsfaktor (und Nullpunkt). Eine Kalibrierung zur Ermittlung des Wertebereichs ist nötig"
+      ],
+      [
+        "Speicher pro Wert",
+        "4 Byte",
+        "2 Byte",
+        "2 Byte",
+        "1 Byte"
+      ],
+      [
+        "Effizienz der Recheneinheiten",
+        "Große Multiplizierer, daher wenige Multiply-Accumulate-Einheiten pro Fläche",
+        "Kleinere Recheneinheiten als FP32, viele Multiply-Accumulate-Einheiten möglich",
+        "Ähnlich wie FP16. Dank kürzerer Mantisse noch kleinere Multiplizierer",
+        "Kleinste und sparsamste Multiplizierer. Produkte werden meist als 32-Bit-Ganzzahlen akkumuliert"
+      ],
+      [
+        "Einsatz im Training",
+        "Master-Gewichte, Optimiererzustände, Akkumulation von Produkten",
+        "Training mit gemischter Genauigkeit. Loss Scaling verhindert, dass kleine Gradienten zu 0 werden",
+        "Weit verbreitet im Training mit gemischter Genauigkeit. Loss Scaling meist nicht nötig",
+        "Im Allgemeinen nicht verwendet (beim quantisierungsbewussten Training wird der Quantisierungseffekt nachgebildet)"
+      ],
+      [
+        "Einsatz in der Inferenz",
+        "Genauigkeitsreferenz. Wenn Genauigkeit Vorrang vor Leistung hat",
+        "Inferenz auf GPUs u. Ä.",
+        "Inferenz auf GPUs und KI-Beschleunigern",
+        "Inferenz quantisierter Modelle, besonders auf Edge-NPUs u. Ä."
+      ]
+    ],
+    "when": [
+      [
+        "FP32",
+        "Für Berechnungen, die Genauigkeit erfordern, für Master-Gewichte und Akkumulation im Training sowie als Referenz zur Prüfung von Ergebnissen niedrigerer Genauigkeit."
+      ],
+      [
+        "FP16/BF16",
+        "Wenn bei KI-Training und -Inferenz Speicher und Rechenaufwand halbiert werden sollen. BF16 für Training, bei dem der Wertebereich wichtig ist; FP16, wenn die Werte in den Bereich passen und Genauigkeit Vorrang hat."
+      ],
+      [
+        "INT8",
+        "Wenn ein trainiertes Modell quantisiert werden soll, um die Inferenz schneller und sparsamer zu machen; für Inferenz auf Edge-Geräten mit begrenztem Speicher und begrenzter Energie."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum wird beim KI-Training oft BF16 gegenüber FP16 bevorzugt?",
+        "BF16 hat wie FP32 einen 8-Bit-Exponenten und damit nahezu denselben Wertebereich wie FP32. Bei FP16 ist Loss Scaling nötig, um zu verhindern, dass kleine Gradienten zu 0 werden oder große Werte überlaufen; bei BF16 ist es meist nicht nötig, und auch die Umwandlung aus FP32 ist einfach. Die Genauigkeit ist geringer, doch beim Training neuronaler Netze ist das selten ein Problem."
+      ],
+      [
+        "Warum ist der größte Wert von FP16 genau 65504?",
+        "FP16 hat einen 5-Bit-Exponenten (Bias 15), und Werte mit lauter Einsen im Exponenten sind für Unendlich und NaN reserviert, daher ist der größte Exponent 2 hoch 15. Mit allen 10 Mantissenbits auf 1 ergibt (2 − 2⁻¹⁰) × 2¹⁵ den größten endlichen Wert, nämlich 65504."
+      ],
+      [
+        "Wie stellt INT8 Werte mit Nachkommastellen dar?",
+        "Durch die Näherung reelle Zahl ≈ Skalierungsfaktor × (Ganzzahl − Nullpunkt). Bei symmetrischer Quantisierung um 0 ist der Nullpunkt 0, und der Skalierungsfaktor wird z. B. als „größter Absolutwert ÷ 127“ festgelegt. Skalierungsfaktoren werden pro Tensor oder pro Kanal geführt."
+      ],
+      [
+        "Kann man auch in INT8 trainieren?",
+        "Im Allgemeinen wird für das Training ein Gleitkommaformat verwendet, weil Gradienten einen großen Wertebereich haben und auch kleine Aktualisierungen der Gewichte verarbeitet werden müssen. INT8 wird hauptsächlich für die Inferenz quantisierter, bereits trainierter Modelle eingesetzt; auch beim quantisierungsbewussten Training erfolgen die Gewichtsaktualisierungen in Gleitkomma."
+      ]
+    ]
+  },
+  "training-vs-inference": {
+    "title": "KI-Training vs. Inferenz: die wichtigsten Unterschiede",
+    "description": "KI-Training und Inferenz im Vergleich: Berechnungen (Vorwärts- und Rückwärtsdurchlauf), Rechenaufwand, Speicherbedarf, Zahlenformate, Batchgröße, Latenz und Durchsatz, Hardware und Energie.",
+    "lead": "Beim Training werden die Gewichte eines Modells festgelegt, indem in großer Zahl wiederholt wird: Daten vorwärts durch das Netz schicken und den Verlust berechnen, per Backpropagation die Gradienten berechnen und mit einem Optimierer die Gewichte aktualisieren. Bei der Inferenz wird mit festen Gewichten nur der Vorwärtsdurchlauf ausgeführt, um für neue Eingaben eine Antwort zu liefern. Im Training werden neben den Gewichten auch Gradienten, Optimiererzustände und Aktivierungen für den Rückwärtsdurchlauf gespeichert, daher braucht es weit mehr Speicher und Rechenleistung als die Inferenz desselben Modells. Die einzelne Inferenzberechnung ist klein, wird aber bei jeder Nutzung ausgeführt, und es kommt auf schnelle Antworten an.",
+    "items": [
+      "Training",
+      "Inferenz"
+    ],
+    "rows": [
+      [
+        "Zweck",
+        "Die Gewichte des Modells aus Daten bestimmen",
+        "Mit festen Gewichten Antworten auf neue Eingaben liefern"
+      ],
+      [
+        "Berechnungen",
+        "Wiederholung von Vorwärtsdurchlauf → Verlustberechnung → Gradientenberechnung per Backpropagation → Gewichtsaktualisierung durch den Optimierer",
+        "Nur Vorwärtsdurchlauf"
+      ],
+      [
+        "Typischer Rechenaufwand",
+        "Pro Eingabe etwa das Dreifache des Vorwärtsdurchlaufs (Rückwärtsdurchlauf etwa das Doppelte des Vorwärtsdurchlaufs). Bei Transformern insgesamt etwa 6 × Parameterzahl × Tokenzahl",
+        "Bei einem Modell mit N Parametern etwa 2N pro Token"
+      ],
+      [
+        "Speicherbedarf",
+        "Gewichte, Gradienten, Optimiererzustände (bei Adam zwei), Aktivierungen für den Rückwärtsdurchlauf. Alles in FP32 ergibt 16 Byte pro Parameter plus Aktivierungen",
+        "Gewichte und Aktivierungen während der Berechnung (bei großen Sprachmodellen auch der KV-Cache). In FP16 2 Byte pro Parameter"
+      ],
+      [
+        "Zahlenformat",
+        "Gemischte Genauigkeit mit BF16 oder FP16 (Master-Gewichte in FP32)",
+        "FP16 oder BF16 sowie auf INT8, INT4 u. Ä. quantisierte Formate"
+      ],
+      [
+        "Batchgröße",
+        "Große Batches erhöhen die Auslastung der Recheneinheiten",
+        "Klein, wenn schnelle Antworten gefragt sind (teils 1). Server bündeln mehrere Anfragen, um die Effizienz zu steigern"
+      ],
+      [
+        "Wichtigste Leistungsgröße",
+        "Durchsatz (Zeit bis zum Abschluss des Trainings, Auslastung der Recheneinheiten)",
+        "Ausgewogenes Verhältnis von Latenz (Antwortzeit pro Anfrage) und Durchsatz, Kosten pro Verarbeitung"
+      ],
+      [
+        "Hardware",
+        "Viele GPUs oder Beschleuniger mit großem HBM und hoher Rechenleistung, über schnelle Netzwerke verbunden",
+        "Große Bandbreite: von Rechenzentrums-GPUs und Inferenzbeschleunigern bis zu Smartphone-NPUs und Mikrocontrollern"
+      ],
+      [
+        "Parallelisierung",
+        "Daten-, Tensor- und Pipeline-Parallelität. Gradienten werden per All-Reduce zusammengeführt",
+        "Mehrere Anfragen werden parallel verarbeitet. Große Modelle werden per Tensor-Parallelität u. Ä. auf mehrere Chips verteilt"
+      ],
+      [
+        "Energie",
+        "Ein Trainingslauf betreibt viele Chips über lange Zeit und verbraucht viel Strom",
+        "Pro Durchlauf gering, wird aber bei jeder Nutzung ausgeführt; bei intensiver Nutzung ist die Summe groß"
+      ]
+    ],
+    "when": [
+      [
+        "Training",
+        "Wenn ein neues Modell erstellt oder ein bestehendes Modell durch zusätzliches Training (Fine-Tuning) an eigene Daten angepasst werden soll."
+      ],
+      [
+        "Inferenz",
+        "Wenn ein trainiertes Modell in einem Dienst oder Produkt eingesetzt wird: Bilderkennung, Textgenerierung, Spracherkennung u. Ä."
+      ],
+      [
+        "Optimierungen",
+        "Bei der Inferenz werden Modelle durch Quantisierung, Pruning und Wissensdestillation verkleinert. Beim Training sparen gemischte Genauigkeit und Gradient Checkpointing Speicher und Rechenaufwand."
+      ]
+    ],
+    "faq": [
+      [
+        "Warum braucht Training so viel mehr Speicher als Inferenz?",
+        "Beim Training hält man neben den Gewichten ebenso viele Gradienten sowie die Optimiererzustände (bei Adam zwei) und speichert zusätzlich die Zwischenaktivierungen des Vorwärtsdurchlaufs für den Rückwärtsdurchlauf. Bei einem Modell mit 7 Milliarden Parametern ergibt das, alles in FP32 gehalten, ohne Aktivierungen etwa 112 GB, während für die Inferenz nur mit FP16-Gewichten etwa 14 GB genügen."
+      ],
+      [
+        "Was passiert, wenn man bei der Inferenz die Batchgröße erhöht?",
+        "Einmal geladene Gewichte lassen sich für die Berechnung mehrerer Eingaben nutzen, daher werden die Recheneinheiten effizient ausgelastet und der Gesamtdurchsatz steigt. Andererseits wachsen die Wartezeit, bis genug Eingaben vorliegen, und die Dauer einer einzelnen Verarbeitung, sodass die Antwort auf eine einzelne Anfrage (Latenz) langsamer wird; zudem wird mehr Speicher belegt."
+      ],
+      [
+        "Kann man für Training und Inferenz dieselbe Hardware verwenden?",
+        "Ja. GPUs werden sowohl für Training als auch für Inferenz eingesetzt. Für reine Inferenz sind jedoch weder Backpropagation noch großer Speicher nötig, daher kommt auch auf Energieeffizienz ausgelegte Hardware zum Einsatz, etwa Inferenzbeschleuniger mit vielen Recheneinheiten niedriger Genauigkeit wie INT8 oder Smartphone-NPUs."
+      ],
+      [
+        "Wie viel Rechenaufwand erfordert das Training?",
+        "Für Transformer-Modelle wird häufig die Näherung verwendet, dass die Gesamtzahl der Rechenoperationen etwa 6ND beträgt, wobei N die Parameterzahl und D die Zahl der Trainings-Tokens ist. Der Grund: Der Vorwärtsdurchlauf kostet pro Token etwa 2N, der Rückwärtsdurchlauf etwa das Doppelte davon."
+      ]
+    ]
   }
 }
