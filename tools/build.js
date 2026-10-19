@@ -285,6 +285,14 @@ function buildLang(L) {
   const mark = n => String.fromCharCode(65 + n);
   const short = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
   const qUrl = (cat, id, l = L) => `${l.path}q/${cat}/${id}/`;
+  // 問題ページのタイトル。問題文の頭が同じ問題で重ならないように、重なったら長めに出し、それでも重なれば番号を添える
+  const qTitles = new Set();
+  const qTitle = (c, q) => {
+    const make = len => t('question_title', { name: c.name, q: short(q.question, len) });
+    let title = [50, 80, 120].map(make).find(x => !qTitles.has(x)) ?? `${make(50)} (${q.id.split('-').pop()})`;
+    qTitles.add(title);
+    return title;
+  };
   const linked = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? esc(p)
     : `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`)).join('');
   const reportLink = id => (config.reportFormUrl
@@ -573,6 +581,20 @@ function buildLang(L) {
 
     // 問題ページ /q/{分野ID}/{問題ID}/
     const solve = modes.find(m => m.id === 'category');
+    // 検索結果の説明文: 問題文のあとに解説の最初の文を続ける(文の途中で切らない。日中韓は短めに)
+    const cjk = ['ja', 'zh-hant', 'ko', 'zh'].includes(code);
+    const descMax = cjk ? 110 : 155;
+    const joint = text => (/[。！？]$/.test(text) || (code !== 'ko' && cjk && /[?]$/.test(text)) ? '' : ' '); // 文と文の間の空白(日本語・中国語の句点のあとは入れない)
+    const qDescription = q => {
+      let text = q.question.trim();
+      for (const x of q.explanation.match(/[^。.!?！？]+(?:[。！？]|[.!?](?=\s|$))\s*/g) ?? []) {
+        if ((text + joint(text) + x).trim().length > descMax) break;
+        text = (text + joint(text) + x).trim();
+      }
+      // 最初の文も収まらないときは、収まるところで切る
+      if (text === q.question.trim()) text = short(`${text}${joint(text)}${q.explanation.trim()}`, descMax);
+      return short(text, descMax + 5);
+    };
     pqs.forEach((q, n) => {
       // 関連問題: 同じ分野で後ろに続く5問(末尾の次は先頭)
       const related = [...new Set([1, 2, 3, 4, 5].map(k => pqs[(n + k) % pqs.length]))].filter(r => r !== q);
@@ -580,8 +602,8 @@ function buildLang(L) {
         path: qUrl(c.id, q.id),
         alt: Object.fromEntries(langs.filter(x => hasQ[x.code].has(q.id)).map(x => [x.code, qUrl(c.id, q.id, x)])),
         fallback: x => `${x.path}c/${c.id}/`,
-        title: t('question_title', { name: c.name, q: short(q.question, 50) }),
-        description: short(q.question, 150),
+        title: qTitle(c, q),
+        description: qDescription(q),
         scripts: ['answer.js'],
         content: fill(qTpl, {
           ...common,
