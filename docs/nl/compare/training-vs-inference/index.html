@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="nl" data-lang="nl" data-base="/" data-home="/nl/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-training versus inferentie: rekenwerk, geheugen, formaten en hardware | Halfgeleiderkamer</title>
+<meta name="description" content="AI-training en inferentie vergeleken: forward en backward pass, rekenvolume, geheugen (gradiënten, optimizertoestand), getalformaten, batchgrootte, latentie en doorvoer, hardware en energie.">
+<link rel="canonical" href="https://semiconroom.com/nl/compare/training-vs-inference/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/training-vs-inference/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/training-vs-inference/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/training-vs-inference/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/training-vs-inference/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/training-vs-inference/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/training-vs-inference/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/training-vs-inference/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/training-vs-inference/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AI-training versus inferentie: rekenwerk, geheugen, formaten en hardware | Halfgeleiderkamer">
+<meta property="og:description" content="AI-training en inferentie vergeleken: forward en backward pass, rekenvolume, geheugen (gradiënten, optimizertoestand), getalformaten, batchgrootte, latentie en doorvoer, hardware en energie.">
+<meta property="og:url" content="https://semiconroom.com/nl/compare/training-vs-inference/">
+<meta property="og:site_name" content="Halfgeleiderkamer">
+<meta property="og:locale" content="nl_NL">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/nl/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Vergelijkingen","item":"https://semiconroom.com/nl/compare/"},{"@type":"ListItem","position":3,"name":"AI-training versus inferentie: rekenwerk, geheugen, formaten en hardware","item":"https://semiconroom.com/nl/compare/training-vs-inference/"}]},{"@context":"https://schema.org","@type":"Article","headline":"AI-training versus inferentie: rekenwerk, geheugen, formaten en hardware","description":"AI-training en inferentie vergeleken: forward en backward pass, rekenvolume, geheugen (gradiënten, optimizertoestand), getalformaten, batchgrootte, latentie en doorvoer, hardware en energie.","inLanguage":"nl","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/nl/compare/training-vs-inference/","author":{"@type":"Organization","name":"Halfgeleiderkamer"},"publisher":{"@type":"Organization","name":"Halfgeleiderkamer"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom gebruikt training veel meer geheugen dan inferentie?","acceptedAnswer":{"@type":"Answer","text":"Omdat training naast de gewichten evenveel gradiënten en de optimizertoestand (twee bij Adam) bijhoudt, en daarbovenop de tussentijdse activaties van de forward pass bewaart voor de backward pass. Bij een model met 7 miljard parameters bijvoorbeeld komt dit, allemaal in FP32 en zonder activaties, uit op ongeveer 112 GB, terwijl inferentie met alleen FP16-gewichten met ongeveer 14 GB toekan."}},{"@type":"Question","name":"Wat gebeurt er als je bij inferentie de batchgrootte vergroot?","acceptedAnswer":{"@type":"Answer","text":"Eenmaal ingelezen gewichten kunnen voor de berekening van meerdere invoeren worden gebruikt, zodat de rekeneenheden beter worden benut en de totale doorvoer stijgt. Anderzijds nemen de wachttijd tot alle invoer binnen is en de verwerkingstijd per keer toe, zodat het antwoord op één verzoek (latentie) trager wordt en er ook meer geheugen wordt gebruikt."}},{"@type":"Question","name":"Kan dezelfde hardware voor training en inferentie worden gebruikt?","acceptedAnswer":{"@type":"Answer","text":"Ja. GPU's worden zowel voor training als voor inferentie gebruikt. Voor alleen inferentie zijn de backward pass en een groot geheugen echter niet nodig, dus wordt ook hardware gebruikt die op energie-efficiëntie is gericht, zoals inferentieaccelerators met veel rekeneenheden voor lage precisie zoals INT8 en de NPU's in smartphones."}},{"@type":"Question","name":"Hoeveel rekenwerk vraagt training?","acceptedAnswer":{"@type":"Answer","text":"Voor transformermodellen wordt vaak de benadering gebruikt dat het totale aantal bewerkingen ongeveer 6ND is, met N het aantal parameters en D het aantal trainingstokens. Dat komt doordat de forward pass ongeveer 2N per token kost en de backward pass ongeveer het dubbele daarvan."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/training-vs-inference/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/nl/"><span class="logo-mark" aria-hidden="true"></span><span>Halfgeleiderkamer<small></small></span></a>
+    <nav class="header-nav"><a href="/nl/#topics">Onderwerpen</a><a href="/nl/glossary/">Woordenlijst</a><a href="/nl/compare/">Vergelijkingen</a><a href="/nl/figures/">Figuren</a><a href="/nl/tools/">Rekentools</a><a href="/nl/stats/">Voortgang</a></nav>
+    <form class="site-search" role="search" action="/nl/search/" method="get"><input type="search" name="q" placeholder="Zoeken (bijv. MOSFET)" aria-label="Site doorzoeken" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/nl/search/" aria-label="Site doorzoeken"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Taal: Nederlands"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Nederlands</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Taal"><a href="/compare/training-vs-inference/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/training-vs-inference/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/training-vs-inference/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/training-vs-inference/" hreflang="ko" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/training-vs-inference/" hreflang="de" lang="de" data-lang="de">Deutsch</a><span aria-current="true" lang="nl">Nederlands</span><a href="/fr/compare/training-vs-inference/" hreflang="fr" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/nl/">Home</a><a href="/nl/#topics">Onderwerpen</a><a href="/nl/glossary/">Woordenlijst</a><a href="/nl/compare/">Vergelijkingen</a><a href="/nl/figures/">Figuren</a><a href="/nl/tools/">Rekentools</a><a href="/nl/stats/">Voortgang</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/nl/">Home</a> <span>›</span> <a href="/nl/compare/">Vergelijkingen</a></nav>
+<article class="compare-page">
+  <h1>AI-training versus inferentie: rekenwerk, geheugen, formaten en hardware</h1>
+  <p class="lead">Training is het proces waarbij de gewichten van een model worden bepaald door heel vaak te herhalen: data door de forward pass sturen om het verlies te berekenen, met de backward pass de gradiënten bepalen en met een optimizer de gewichten bijwerken. Inferentie is het proces waarbij met vaste gewichten alleen de forward pass wordt uitgevoerd om een antwoord op nieuwe invoer te geven. Bij training worden naast de gewichten ook gradiënten, de optimizertoestand en activaties voor de backward pass bewaard, zodat veel meer geheugen en rekenwerk nodig is dan bij inferentie met hetzelfde model. Eén inferentieberekening is klein, maar wordt bij elk gebruik uitgevoerd, en de reactiesnelheid is daarbij belangrijk.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Gekopieerd!">Tabel kopiëren</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link gekopieerd">Delen</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Kenmerk</th><th scope="col">Training</th><th scope="col">Inferentie</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Doel</th><td>De gewichten van het model uit data bepalen</td><td>Met vaste gewichten een antwoord geven op nieuwe invoer</td></tr>
+        <tr><th scope="row">Soort berekening</th><td>Herhaling van forward pass → verliesberekening → gradiënten via de backward pass → gewichten bijwerken met de optimizer</td><td>Alleen de forward pass</td></tr>
+        <tr><th scope="row">Indicatie van het rekenvolume</th><td>Per invoer ongeveer 3 keer de forward pass (de backward pass kost ongeveer 2 keer de forward pass). Bij transformers in totaal ongeveer 6 × aantal parameters × aantal tokens</td><td>Voor een model met N parameters ongeveer 2N per token</td></tr>
+        <tr><th scope="row">Benodigd geheugen</th><td>Gewichten, gradiënten, optimizertoestand (twee bij Adam) en activaties voor de backward pass. Alles in FP32 betekent 16 bytes per parameter, plus de activaties</td><td>Gewichten en activaties tijdens de berekening (bij grote taalmodellen ook de KV-cache). In FP16 2 bytes per parameter</td></tr>
+        <tr><th scope="row">Getalformaten</th><td>Gemengde precisie met BF16 of FP16 (masterweights in FP32)</td><td>FP16 of BF16, of gekwantiseerde formaten zoals INT8 of INT4</td></tr>
+        <tr><th scope="row">Batchgrootte</th><td>Grote batches om de bezetting van de rekeneenheden te verhogen</td><td>Klein als een snel antwoord nodig is (soms 1). Servers bundelen meerdere verzoeken om de efficiëntie te verhogen</td></tr>
+        <tr><th scope="row">Belangrijkste prestatiemaat</th><td>Doorvoer (tijd tot de training klaar is, bezetting van de rekeneenheden)</td><td>Een evenwicht tussen latentie (reactietijd op één verzoek) en doorvoer, en kosten per verwerking</td></tr>
+        <tr><th scope="row">Hardware</th><td>Grote aantallen GPU&#39;s of accelerators met veel HBM en hoge rekenkracht, verbonden via een snel netwerk</td><td>Breed: van datacenter-GPU&#39;s en accelerators voor inferentie tot NPU&#39;s in smartphones en microcontrollers</td></tr>
+        <tr><th scope="row">Parallellisatie</th><td>Dataparallellisme, tensorparallellisme en pipelineparallellisme. Gradiënten worden met all-reduce verzameld</td><td>Meerdere verzoeken parallel verwerken. Grote modellen worden met onder meer tensorparallellisme over meerdere chips verdeeld</td></tr>
+        <tr><th scope="row">Energie</th><td>Eén trainingsrun laat veel chips lange tijd draaien en verbruikt veel elektriciteit</td><td>Per keer klein, maar wordt bij elk gebruik uitgevoerd; bij intensief gebruik wordt het totaal groot</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">De getalswaarden zijn typische ordegroottes en variëren per procesgeneratie en product.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Wanneer welke variant?</h2>
+  <dl class="compare-when">
+    <dt>Training</dt><dd>Bij het maken van een nieuw model, of bij het verder trainen van een bestaand model op eigen data (finetuning).</dd>
+    <dt>Inferentie</dt><dd>Bij het gebruik van een getraind model in een dienst of product. Beeldherkenning, tekstgeneratie, spraakherkenning en dergelijke.</dd>
+    <dt>Optimalisaties</dt><dd>Bij inferentie worden modellen lichter gemaakt met kwantisatie, pruning en knowledge distillation. Bij training besparen gemengde precisie en gradient checkpointing geheugen en rekenwerk.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom gebruikt training veel meer geheugen dan inferentie?</h3>
+  <p>Omdat training naast de gewichten evenveel gradiënten en de optimizertoestand (twee bij Adam) bijhoudt, en daarbovenop de tussentijdse activaties van de forward pass bewaart voor de backward pass. Bij een model met 7 miljard parameters bijvoorbeeld komt dit, allemaal in FP32 en zonder activaties, uit op ongeveer 112 GB, terwijl inferentie met alleen FP16-gewichten met ongeveer 14 GB toekan.</p>
+  <h3>Wat gebeurt er als je bij inferentie de batchgrootte vergroot?</h3>
+  <p>Eenmaal ingelezen gewichten kunnen voor de berekening van meerdere invoeren worden gebruikt, zodat de rekeneenheden beter worden benut en de totale doorvoer stijgt. Anderzijds nemen de wachttijd tot alle invoer binnen is en de verwerkingstijd per keer toe, zodat het antwoord op één verzoek (latentie) trager wordt en er ook meer geheugen wordt gebruikt.</p>
+  <h3>Kan dezelfde hardware voor training en inferentie worden gebruikt?</h3>
+  <p>Ja. GPU&#39;s worden zowel voor training als voor inferentie gebruikt. Voor alleen inferentie zijn de backward pass en een groot geheugen echter niet nodig, dus wordt ook hardware gebruikt die op energie-efficiëntie is gericht, zoals inferentieaccelerators met veel rekeneenheden voor lage precisie zoals INT8 en de NPU&#39;s in smartphones.</p>
+  <h3>Hoeveel rekenwerk vraagt training?</h3>
+  <p>Voor transformermodellen wordt vaak de benadering gebruikt dat het totale aantal bewerkingen ongeveer 6ND is, met N het aantal parameters en D het aantal trainingstokens. Dat komt doordat de forward pass ongeveer 2N per token kost en de backward pass ongeveer het dubbele daarvan.</p>
+</section>
+<section>
+  <h2>Test uw begrip</h2>
+  <article class="q-mini" data-qid="ai-stack-001" data-cat="ai-stack" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
+    <h3><a href="/nl/q/ai-stack/ai-stack-001/">Welke uitspraak over het verschil tussen &quot;training&quot; en &quot;inferentie&quot; van een neuraal netwerk is juist?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Bij training worden voorwaartse propagatie, terugwaartse propagatie en gewichtsupdate herhaald om de gewichten te bepalen; bij inferentie wordt met vaste gewichten alleen voorwaarts gepropageerd om het antwoord te geven</span></li><li><span class="choice-mark">B</span><span class="choice-text">Zowel bij training als bij inferentie wordt alleen voorwaarts gepropageerd</span></li><li><span class="choice-mark">C</span><span class="choice-text">Bij inferentie worden gewichten bijgewerkt en bij training worden geen gewichten gebruikt</span></li></ol>
+    <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Bij training worden voorwaartse propagatie, terugwaartse propagatie en gewichtsupdate herhaald om de gewichten te bepalen; bij inferentie wordt met vaste gewichten alleen voorwaarts gepropageerd om het antwoord te geven</p><p class="explanation">Bij training worden de ingangen in volgorde doorgerekend tot de uitgang (voorwaartse propagatie), wordt de fout ten opzichte van het juiste antwoord van de uitgang naar de ingang teruggevoerd om de gradiënt van elk gewicht te bepalen (backpropagation) en worden de gewichten volgens de gradiënt stapsgewijs aangepast; dit wordt met grote hoeveelheden data herhaald. Bij <a class="term-link" href="/nl/term/ai-inference/">inferentie</a> wordt met de tijdens de training bepaalde gewichten alleen voorwaarts gepropageerd. Backpropagation vergt ongeveer tweemaal zoveel rekenwerk als voorwaartse propagatie en vereist ook het opslaan van tussenresultaten, zodat training veel zwaarder is dan inferentie.</p></details>
+  </article>
+  <article class="q-mini" data-qid="ai-stack-002" data-cat="ai-stack" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
+    <h3><a href="/nl/q/ai-stack/ai-stack-002/">Welke van de volgende is GEEN reden waarom het geheugen voor training veel groter is dan voor inferentie met hetzelfde model?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Omdat het aantal gewichten bij training een veelvoud is van dat bij inferentie</span></li><li><span class="choice-mark">B</span><span class="choice-text">Omdat tussenresultaten (activaties) van de voorwaartse propagatie moeten worden opgeslagen voor gebruik bij backpropagation</span></li><li><span class="choice-mark">C</span><span class="choice-text">Omdat evenveel gradiënten als gewichten en de toestand van de optimizer moeten worden bijgehouden</span></li></ol>
+    <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Omdat het aantal gewichten bij training een veelvoud is van dat bij inferentie</p><p class="explanation">Het aantal gewichten van het model is bij training en <a class="term-link" href="/nl/term/ai-inference/">inferentie</a> gelijk. Bij training moeten echter voor de gradiëntberekening bij backpropagation de tussenresultaten van de voorwaartse propagatie per laag worden opgeslagen, en zijn evenveel gradiënten als gewichten nodig, plus waarden per gewicht van de optimizer, zoals Adam (twee voortschrijdende gemiddelden). Het trainingsgeheugen is daardoor een veelvoud van dat voor inferentie, waar alleen gewichten volstaan, en voor het trainen van grote modellen zijn veel <a class="term-link" href="/nl/term/gpu/">GPU</a>&#39;s nodig.</p></details>
+  </article>
+  <article class="q-mini" data-qid="ai-stack-003" data-cat="ai-stack" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
+    <h3><a href="/nl/q/ai-stack/ai-stack-003/">Een model met 7 miljard (7B) parameters wordt getraind waarbij gewichten, gradiënten en de twee toestanden van Adam allemaal in FP32 (4 bytes) worden bijgehouden. Welke waarde benadert het benodigde geheugen, exclusief activaties, het best?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Circa 28 GB</span></li><li><span class="choice-mark">B</span><span class="choice-text">Circa 112 GB</span></li><li><span class="choice-mark">C</span><span class="choice-text">Circa 14 GB</span></li></ol>
+    <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Circa 112 GB</p><p class="explanation">Per parameter is dat 4 bytes voor het gewicht, 4 bytes voor de gradiënt en 4 bytes elk voor het eerste en tweede voortschrijdend gemiddelde van Adam, samen 16 bytes. 7 miljard × 16 bytes = 112 miljard bytes, circa 112 GB, waarbij nog het geheugen voor activaties komt. Omdat dit vaak niet in het geheugen van één <a class="term-link" href="/nl/term/gpu/">GPU</a> past, worden maatregelen gebruikt zoals het verdelen van de optimizertoestand over meerdere GPU&#39;s en het bijhouden met lagere precisie.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/nl/q/ai-stack/ai-stack-010/">Waarom neemt de efficiëntie van de totale verwerking bij inferentie gemakkelijk toe als de batchgrootte (het aantal gezamenlijk verwerkte ingangen) wordt vergroot?</a></li>
+  <li data-level="2"><a href="/nl/q/ai-stack/ai-stack-011/">Welke uitspraak over het nadeel van een te grote batchgrootte bij inferentie is juist?</a></li>
+  <li data-level="3"><a href="/nl/q/ai-stack/ai-stack-045/">Wat is een veelgebruikte benadering voor het aantal bewerkingen dat nodig is om een Transformer-model te trainen, bij N parameters en D trainingstokens?</a></li></ol>
+  <p><a class="btn btn-primary" href="/nl/c/ai-stack/">Oefenvragen over AI-hardware en softwarestack</a></p>
+</section>
+<section>
+  <h2>Belangrijke termen uitgelegd</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/nl/term/ai-inference/">Inferentie (inference)</a></dt><dd>AI-verwerking waarbij met de tijdens training bepaalde gewichten alleen forward propagation wordt uitgevoerd om uit de invoer een antwoord te geven. Vraagt minder rekenwerk en geheugen dan training.</dd></div>
+    <div class="term"><dt><a href="/nl/term/backpropagation/">Backpropagatie</a></dt><dd>Berekening bij het trainen van neurale netwerken waarbij de fout tussen uitvoer en juist antwoord van de uitgang naar de ingang wordt teruggevoerd om de gradiënt van elk gewicht te bepalen.</dd></div>
+    <div class="term"><dt><a href="/nl/term/batch-size/">Batchgrootte</a></dt><dd>Aantal ingangen dat gezamenlijk wordt verwerkt. Een grotere batch maakt hergebruik van gewichten en dus hogere efficiëntie mogelijk, maar vergroot de vertraging van de respons en het geheugengebruik.</dd></div>
+    <div class="term"><dt><a href="/nl/term/mixed-precision/">Gemengde precisie (mixed precision)</a></dt><dd>Het gebruik van getallen met verschillende precisie voor verschillende delen van een berekening. Vermenigvuldigen gebeurt in bijvoorbeeld FP16 en accumuleren in FP32, zodat snelheid en nauwkeurigheid samengaan.</dd></div>
+    <div class="term"><dt><a href="/nl/term/gradient-checkpointing/">Gradient checkpointing</a></dt><dd>Methode waarbij van de tussenresultaten van de voorwaartse doorgang slechts een deel wordt bewaard en de rest bij backpropagation opnieuw wordt berekend wanneer die nodig is, zodat geheugen wordt bespaard ten koste van meer rekenwerk.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Verwante vergelijkingen</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/nl/compare/cpu-vs-gpu-vs-npu/"><strong>CPU versus GPU versus NPU: ontwerp, datatypes en energie-efficiëntie</strong><span>CPU, GPU en NPU: ontwerp, rekeneenheden, besturing, geheugen, datatypes (INT8, FP16 enz.), prestatiemaat, eff…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/fp32-vs-fp16-vs-bf16-vs-int8/"><strong>FP32, FP16, BF16 en INT8: bitindeling, bereik, precisie en toepassingen</strong><span>FP32, FP16, BF16 en INT8 vergeleken: bitindeling (teken, exponent, mantisse), bereik, precisie, conversie van…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/cpu-vs-gpu/"><strong>CPU versus GPU: architectuur, sterke punten en toepassingen vergeleken</strong><span>CPU en GPU vergeleken in een tabel: ontwerpdoel, aantal cores, uitvoeringsmodel, cache, geheugenbandbreedte, …</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/i2c-vs-spi-vs-uart/"><strong>I2C, SPI en UART: bedrading, snelheid en keuzecriteria vergeleken</strong><span>I2C, SPI en UART vergeleken in een tabel: aantal draden, klok, snelheid, topologie, adressering, foutdetectie…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/verilog-vs-vhdl/"><strong>Verilog versus VHDL: twee hardwarebeschrijvingstalen vergeleken</strong><span>Verilog en VHDL vergeleken in een tabel: herkomst, syntaxis, typen, hoofdlettergevoeligheid, verificatiemogel…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/nvme-vs-sata-ssd/"><strong>NVMe- versus SATA-SSD: snelheid, interface en keuzehulp</strong><span>NVMe- en SATA-SSD&#39;s vergeleken in een tabel: interface, snelheid, latency, commandowachtrijen, vormfactor, ve…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Dit is een leersite over halfgeleiders, beheerd door een particulier.</p>
+    <p class="footer-request"><a href="/nl/contact/">Wensen en feedback zijn welkom. Stuur ze via het contactformulier →</a></p>
+    <nav class="footer-nav">
+      <a href="/nl/about/">Over deze site</a>
+      <a href="/nl/figures/">Figuren</a>
+      <a href="/nl/privacy/">Privacyverklaring</a>
+      <a href="/nl/disclaimer/">Disclaimer</a>
+      <a href="/nl/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Halfgeleiderkamer</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

@@ -7679,5 +7679,1330 @@
         "Niet op korte termijn. Voor snelle backbones en camera's wordt Ethernet gebruikt, maar voor kleine hoeveelheden communicatie waarbij betrouwbaarheid telt, zoals schakelaars, motoren en besturingsdata, blijven het goedkope en beproefde CAN en LIN in gebruik."
       ]
     ]
+  },
+  "open-drain-vs-push-pull": {
+    "title": "Open-drain versus push-pull: opbouw, stijgtijd, wired-AND en toepassingen",
+    "description": "Open-drain- en push-pulluitgangen vergeleken: opbouw van de uitgangstrap, hoe H wordt gemaakt, stijgsnelheid, wired-AND, koppeling met andere spanningen, stroomverbruik en toepassingen.",
+    "lead": "Beide zijn uitgangstrappen die digitale signalen afgeven, maar ze verschillen in hoe ze een H maken. Een push-pulluitgang combineert een pMOS aan de voedingszijde met een nMOS aan de massazijde en stuurt zowel H als L actief met transistors; daardoor is hij snel en loopt er in rust vrijwel geen stroom. Een open-drainuitgang heeft alleen een nMOS aan de massazijde: L wordt omlaag getrokken, maar voor H wordt de uitgang losgekoppeld en trekt een pull-upweerstand de lijn omhoog. De stijgflank is trager, maar meerdere uitgangen kunnen op één lijn worden aangesloten (wired-AND) en de pull-upspanning is vrij te kiezen, waardoor open-drain wordt gebruikt voor I2C en interruptlijnen.",
+    "items": [
+      "Push-pulluitgang",
+      "Open-drainuitgang"
+    ],
+    "rows": [
+      [
+        "Opbouw van de uitgangstrap",
+        "Twee transistors: een pMOS aan de voedingszijde en een nMOS aan de massazijde (dezelfde vorm als een CMOS-inverter)",
+        "Alleen een nMOS aan de massazijde. De drain is naar de pin uitgevoerd; aan de voedingszijde zit niets"
+      ],
+      [
+        "Hoe H wordt gemaakt",
+        "De pMOS gaat aan en verbindt de pin met de voeding",
+        "De nMOS gaat uit en koppelt de pin los (hoogohmig); een externe pull-upweerstand trekt de lijn omhoog"
+      ],
+      [
+        "Hoe L wordt gemaakt",
+        "De nMOS gaat aan en verbindt de pin met massa",
+        "De nMOS gaat aan en verbindt de pin met massa (hetzelfde)"
+      ],
+      [
+        "Stijgsnelheid",
+        "Snel. De pMOS laadt de lijn op",
+        "Traag. Bepaald door de tijdconstante RC van pull-upweerstand R en lijncapaciteit C (bijv. 4,7 kΩ en 100 pF geven ongeveer 0,47 µs)"
+      ],
+      [
+        "Daalsnelheid",
+        "Snel. De nMOS ontlaadt de lijn",
+        "Snel. De nMOS ontlaadt de lijn"
+      ],
+      [
+        "Meerdere uitgangen op één lijn",
+        "Niet mogelijk. Als H en L botsen, loopt er een grote stroom van de voeding naar massa",
+        "Mogelijk. Zodra één uitgang L geeft, wordt de lijn L (wired-AND)"
+      ],
+      [
+        "Koppeling met circuits op een andere spanning",
+        "De H-spanning wordt bepaald door de eigen voedingsspanning. Voor circuits op een andere spanning is een niveauomzetter nodig",
+        "De H-spanning wordt bepaald door waar de pull-up op is aangesloten, zodat die binnen de maximale pinspanning aan de spanning van de ontvanger kan worden aangepast"
+      ],
+      [
+        "Stroomverbruik",
+        "In rust vrijwel nul (alleen lekstroom). Bij het schakelen lopen laad- en ontlaadstromen",
+        "Zolang L wordt gegeven, blijft er stroom door de pull-upweerstand lopen (bij 3,3 V en 4,7 kΩ ongeveer 0,7 mA)"
+      ],
+      [
+        "Indicatie van de snelheid",
+        "Enkele tientallen MHz of meer is haalbaar",
+        "Beperkt door pull-upweerstand en capaciteit. Bij I2C bijvoorbeeld 100 kHz, 400 kHz of 1 MHz"
+      ],
+      [
+        "Belangrijkste toepassingen",
+        "Snelle signalen zoals SPI- en UART-signalen, klokken, algemene GPIO en geheugenbussen",
+        "I2C en SMBus, interrupt- en resetlijnen die door meerdere componenten worden gedeeld, koppeling met circuits op een andere spanning en het aansturen van leds"
+      ]
+    ],
+    "when": [
+      [
+        "Push-pulluitgang",
+        "Wanneer één uitgang een ingang aanstuurt en snelheid en een laag stroomverbruik belangrijk zijn. Gewone digitale signalen zoals GPIO, SPI en UART gebruiken deze uitgang."
+      ],
+      [
+        "Open-drainuitgang",
+        "Wanneer meerdere componenten dezelfde lijn aansturen (I2C, gedeelde interrupt- of resetlijnen), of wanneer een signaal via een andere pull-upspanning aan een circuit op een andere spanning moet worden doorgegeven."
+      ],
+      [
+        "Omschakelen",
+        "Bij veel microcontrollers kan een GPIO-pin via de configuratie tussen push-pull en open-drain worden omgeschakeld. Pinnen voor I2C worden als open-drain ingesteld en krijgen een externe pull-upweerstand."
+      ]
+    ],
+    "faq": [
+      [
+        "Hoe kies je de waarde van de pull-upweerstand?",
+        "Hoe kleiner de weerstand, hoe sneller de stijgflank, maar ook hoe groter de stroom zolang L wordt gegeven en hoe hoger de L-spanning (VOL). De bovengrens volgt uit de lijncapaciteit en de vereiste stijgtijd, de ondergrens uit de stroom die de uitgang kan opnemen en de VOL-specificatie. Bij I2C worden vaak enkele kΩ gebruikt (bijvoorbeeld ongeveer 2,2 tot 10 kΩ)."
+      ],
+      [
+        "Wat gebeurt er als je twee push-pulluitgangen rechtstreeks met elkaar verbindt?",
+        "Als de ene H en de andere L geeft, loopt er via de pMOS van de H-zijde en de nMOS van de L-zijde een grote stroom van de voeding naar massa (busconflict). De lijnspanning komt bovendien ergens tussenin te liggen, wat warmte en schade aan componenten kan veroorzaken. Gebruik voor gedeelde lijnen daarom open-drain of een tri-state-uitgang die zich kan loskoppelen."
+      ],
+      [
+        "Waarom gebruikt I2C open-drain?",
+        "Omdat meerdere apparaten dezelfde SDA- en SCL-lijnen aansturen. Dat de ontvanger SDA omlaag trekt om een ACK terug te geven, dat een slave SCL laag houdt om de ander te laten wachten (clock stretching) en dat er arbitrage plaatsvindt als meerdere masters tegelijk beginnen te zenden, berust allemaal op de wired-AND-eigenschap: zodra één apparaat L geeft, is de lijn L."
+      ],
+      [
+        "Wat is het verschil met open-collector?",
+        "Het principe is hetzelfde: met een bipolaire transistor als uitgangstransistor heet het open-collector, met een MOSFET open-drain. Beide trekken alleen L omlaag en maken H met een pull-upweerstand."
+      ]
+    ]
+  },
+  "class-a-vs-ab-vs-d-amplifier": {
+    "title": "Klasse A, AB en D versterkers: werking, rendement en vervorming vergeleken",
+    "description": "Klasse A-, AB- en D-vermogensversterkers vergeleken in een tabel: werking, geleidingshoek, theoretisch maximaal rendement, vervorming, warmte, ruis en toepassingen, plus de relatie met klasse B.",
+    "lead": "De klasse van een versterker beschrijft hoe de uitgangstransistors worden aangestuurd. Een klasse A-versterker laat gedurende de hele signaalperiode stroom door de transistor lopen; de vervorming is het kleinst, maar hij verbruikt ook zonder signaal vermogen en het rendement is zelfs theoretisch maar 25% of 50%. Klasse AB is klasse B, waarbij twee transistors de positieve en negatieve halve periode verdelen, met een kleine ruststroom om cross-oververvorming te onderdrukken; het rendement benadert het theoretische maximum van klasse B van ongeveer 78,5%. Klasse D schakelt de transistors als schakelaars aan en uit en zet pulsen zoals PWM met een filter terug in het oorspronkelijke signaal, waardoor bij groot uitgangsvermogen een hoog rendement van rond de 90% wordt gehaald.",
+    "items": [
+      "Klasse A",
+      "Klasse AB",
+      "Klasse D"
+    ],
+    "rows": [
+      [
+        "Werking",
+        "Er loopt altijd stroom door de transistor (lineair gebied) en de stroom neemt toe en af met het signaal",
+        "Twee transistors in push-pull verdelen de positieve en negatieve halve periode. Er loopt een kleine ruststroom",
+        "De transistors schakelen als schakelaars aan en uit; het signaal wordt omgezet in pulsen zoals PWM, versterkt en met een LC-laagdoorlaatfilter teruggezet"
+      ],
+      [
+        "Geleidingshoek (deel van de periode waarin één transistor stroom voert)",
+        "360° (hele periode)",
+        "Groter dan 180° en kleiner dan 360° (klasse B: 180°)",
+        "Wordt volledig aan of uit gebruikt en wordt dus niet naar geleidingshoek ingedeeld"
+      ],
+      [
+        "Theoretisch maximaal rendement",
+        "25% (met een ohmse belasting in serie). 50% bij koppeling via een transformator of smoorspoel",
+        "Iets lager dan de ongeveer 78,5% (π/4) van klasse B",
+        "100% met ideale schakelaars. In de praktijk rond de 90% bij groot uitgangsvermogen"
+      ],
+      [
+        "Rendement bij laag uitgangsvermogen",
+        "Zeer laag. Verbruikt ook zonder signaal hetzelfde vermogen",
+        "Daalt met het uitgangsvermogen, maar is veel beter dan bij klasse A",
+        "Blijft gemakkelijk hoog (bij zeer laag uitgangsvermogen neemt het aandeel van de schakelverliezen toe)"
+      ],
+      [
+        "Vervorming",
+        "Het kleinst. Geen cross-oververvorming",
+        "Klein. Ruststroom en tegenkoppeling onderdrukken de cross-oververvorming",
+        "Vervorming door dode tijd, onvolmaakt schakelen en schommelingen in de voeding. Te verkleinen met onder meer tegenkoppeling"
+      ],
+      [
+        "Warmteontwikkeling",
+        "Het grootst. Maximaal zonder signaal",
+        "Gemiddeld. Vaak is een koellichaam nodig",
+        "Klein. Het koellichaam kan kleiner of overbodig worden"
+      ],
+      [
+        "Ruis en EMI",
+        "Geen schakelruis",
+        "Geen schakelruis",
+        "EMI door schakelen op enkele honderden kHz tot enkele MHz. Uitgangsfilter en bedrading vragen aandacht"
+      ],
+      [
+        "Schakeling en componenten",
+        "Eenvoudig. Kan met één transistor worden gebouwd",
+        "Een paar uitgangstransistors en een biasschakeling",
+        "Pulsmodulator, gate-driver en uitgangsfilter (spoel en condensator)"
+      ],
+      [
+        "Belangrijkste toepassingen",
+        "Versterking van kleine signalen, voorversterkers, drivertrappen die de volgende trap aansturen en sommige high-end audio",
+        "Audio-eindversterkers, hoofdtelefoonversterkers en uitgangstrappen van opamps",
+        "Aansturing van luidsprekers in smartphones en tv's, autoaudio, draagbare luidsprekers en versterkers met groot vermogen"
+      ]
+    ],
+    "when": [
+      [
+        "Klasse A",
+        "Wanneer het uitgangsvermogen klein is en minimale vervorming voorop staat. Versterking van kleine signalen, voorversterkers en drivertrappen die de volgende trap aansturen."
+      ],
+      [
+        "Klasse AB",
+        "Wanneer lage vervorming en rendement allebei belangrijk zijn. Audio-eindversterkers, hoofdtelefoonversterkers en uitgangstrappen van opamps en buffers."
+      ],
+      [
+        "Klasse D",
+        "Wanneer een lange batterijduur gewenst is, wanneer warmte en koellichaam klein moeten blijven of wanneer een groot uitgangsvermogen nodig is. Luidsprekers van smartphones en tv's en autoaudio."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom heeft klasse A twee maximale rendementen, 25% en 50%?",
+        "Omdat de belasting op verschillende manieren wordt aangesloten. Staat de belastingsweerstand in serie met de transistor, dan loopt er ook gelijkstroom door de belasting die vermogen verspilt, en is het theoretische maximum 25%. Bij koppeling via een transformator of smoorspoel gaat het gelijkstroomvermogen niet in de belasting verloren en kan de uitgangsspanning tot tweemaal de voedingsspanning zwaaien, waardoor het maximum 50% wordt."
+      ],
+      [
+        "Wat is cross-oververvorming?",
+        "Bij push-pull in klasse B ontstaat, wanneer het signaal rond nul passeert, een gebied waarin geen van beide transistors aan staat, waardoor de uitgangsgolfvorm vervormt. Bij bipolaire transistors komt dat doordat er pas stroom loopt als er ongeveer 0,6 tot 0,7 V tussen basis en emitter staat. Klasse AB laat een kleine ruststroom lopen om dit gebied te laten verdwijnen."
+      ],
+      [
+        "Staat de D in klasse D voor digitaal?",
+        "Nee. De naam volgt gewoon op klasse A, B en C en betekent niet digitaal. Veel klasse D-versterkers werken met een analoog ingangssignaal dat met een comparator wordt vergeleken met een driehoeksgolf en zo wordt omgezet in PWM-pulsen."
+      ],
+      [
+        "Waarom is het rendement van klasse D zo hoog?",
+        "Omdat de uitgangstransistors volledig aan of volledig uit worden gebruikt. Aan staat er vrijwel geen spanning over, uit loopt er vrijwel geen stroom, zodat er weinig vermogen in de transistor als warmte verloren gaat. Wat overblijft zijn verliezen door de aan-weerstand, verliezen tijdens het omschakelen en het vermogen voor het aansturen van de gate."
+      ]
+    ]
+  },
+  "op-amp-vs-comparator": {
+    "title": "Opamp versus comparator: gebruik, uitgangstrap, snelheid en compensatie",
+    "description": "Opamp en comparator vergeleken: gebruik (tegenkoppeling of open lus), uitgangstrap, reactiesnelheid, herstel uit verzadiging, fasecompensatie, hysterese en of de een de ander kan vervangen.",
+    "lead": "Beide hebben hetzelfde driehoekige symbool en versterken het spanningsverschil tussen twee ingangen sterk, maar ze zijn voor een ander doel ontworpen. Een opamp is bedoeld voor gebruik met tegenkoppeling: hij heeft fasecompensatie om oscillatie te voorkomen en laat de uitgang vloeiend bewegen als analoge spanning. Een comparator wordt in open lus gebruikt en is ontworpen om snel als binaire H of L aan te geven welke van twee spanningen groter is; hij heeft geen fasecompensatie en een uitgang die gemakkelijk op logica aansluit. Daarom is een opamp als comparator traag, en gaat een comparator met tegenkoppeling gemakkelijk oscilleren.",
+    "items": [
+      "Opamp",
+      "Comparator"
+    ],
+    "rows": [
+      [
+        "Belangrijkste gebruik",
+        "Met tegenkoppeling; versterking en frequentiegedrag worden bepaald door externe weerstanden en condensatoren",
+        "In open lus (of met meekoppeling voor hysterese) om te bepalen welke spanning groter is"
+      ],
+      [
+        "Uitgang",
+        "Een analoge spanning die continu met de ingang meeverandert",
+        "Binair H of L. Normaal verzadigd naar een van beide kanten"
+      ],
+      [
+        "Uitgangstrap",
+        "Push-pull. Er zijn rail-to-railtypen die tot dicht bij de voedingsspanning zwaaien",
+        "Open-drain (open-collector) of push-pull afgestemd op logische niveaus"
+      ],
+      [
+        "Fasecompensatie",
+        "Intern aanwezig. Veel typen oscilleren niet, zelfs niet met tegenkoppeling bij een versterking van 1",
+        "Niet aanwezig. Daardoor schakelt hij sneller"
+      ],
+      [
+        "Maat voor de snelheid",
+        "Versterking-bandbreedteproduct (GBW) en slew rate",
+        "Propagatievertraging (afhankelijk van het type enkele ns tot enkele µs) en de stijg- en daaltijd van de uitgang"
+      ],
+      [
+        "Herstel uit verzadiging",
+        "Niet bedoeld om in verzadiging te gaan. Herstel kan lang duren en is meestal niet gespecificeerd",
+        "Ontworpen om herhaaldelijk te verzadigen en om te slaan, en schakelt snel"
+      ],
+      [
+        "Hysterese",
+        "Normaal niet gebruikt",
+        "Meekoppeling via externe weerstanden of een type met ingebouwde hysterese voorkomt dat de uitgang door ruis heen en weer klappert"
+      ],
+      [
+        "Ingangen",
+        "Door tegenkoppeling blijven de twee ingangsspanningen vrijwel gelijk (virtuele kortsluiting). Sommige typen hebben beveiligingsdiodes tussen de ingangen",
+        "Gaat ervan uit dat er een groot verschil tussen de ingangen staat. Veel typen laten een grote differentiële spanning toe"
+      ],
+      [
+        "Vervanging",
+        "Kan soms een comparator vervangen als traagheid geen probleem is en de uitgangsniveaus passen",
+        "Kan geen opamp vervangen. Met tegenkoppeling gaat hij gemakkelijk oscilleren"
+      ],
+      [
+        "Belangrijkste toepassingen",
+        "Versterkers, filters, buffers, integratoren en signaalconditionering van sensoren",
+        "Drempeldetectie, nuldoorgangsdetectie, spanningsbewaking, flash-ADC's en PWM-opwekking"
+      ]
+    ],
+    "when": [
+      [
+        "Opamp",
+        "Wanneer een signaal analoog moet worden versterkt of wanneer je filters en buffers bouwt. Toepassingen waarbij de uitgang met tegenkoppeling continu beweegt."
+      ],
+      [
+        "Comparator",
+        "Wanneer snel en betrouwbaar moet worden vastgesteld of een spanning een drempel overschrijdt en dit aan logica moet worden doorgegeven. Bewaking van de batterijspanning, nuldoorgangsdetectie en vergelijkingen in een ADC."
+      ],
+      [
+        "Opamp als vervanging",
+        "Wanneer een trage reactie geen probleem is en het uitgangsniveau past bij de volgende schakeling. Controleer in de datasheet eerst het toegestane differentiële ingangsspanningsbereik en het gedrag bij verzadiging."
+      ]
+    ],
+    "faq": [
+      [
+        "Mag je een opamp als comparator gebruiken?",
+        "Voor toepassingen waarbij snelheid niet belangrijk is kan dat soms. Door de fasecompensatie schakelt hij echter traag, herstelt hij langzaam uit verzadiging en passen de H- en L-spanningen van de uitgang soms niet bij de logica. Bij typen met beveiligingsdiodes tussen de ingangen gaat er stroom lopen als er een grote differentiële spanning op staat, dus let daarop."
+      ],
+      [
+        "Wat gebeurt er als je een comparator tegenkoppelt?",
+        "Meestal gaat hij oscilleren. Een comparator heeft geen fasecompensatie zodat hij snel kan schakelen, waardoor de fasemarge van de tegenkoppelingslus tekortschiet. Gebruik voor versterking en vergelijkbare toepassingen een opamp."
+      ],
+      [
+        "Waarom geef je een comparator hysterese?",
+        "Als de ingang langzaam rond de drempel verandert, kan een klein beetje ruis de uitgang vele malen tussen H en L laten wisselen. Door met meekoppeling de drempel voor een stijgende en een dalende ingang te laten verschillen (schmitttrigger), schakelt de uitgang maar één keer."
+      ],
+      [
+        "Waarom hebben comparators vaak een open-drainuitgang?",
+        "Omdat je door de pull-upspanning te kiezen de uitgang direct kunt aansluiten op logica die op een andere spanning werkt dan de comparator. Bovendien kun je de uitgangen van meerdere comparators op één lijn samenvoegen, zodat de lijn L wordt zodra er één reageert (wired-AND)."
+      ]
+    ]
+  },
+  "pll-vs-dll": {
+    "title": "PLL versus DLL: regeling, frequentievermenigvuldiging, jitter en toepassingen",
+    "description": "PLL (phase-locked loop) en DLL (delay-locked loop) vergeleken: wat geregeld wordt, VCO en vertragingslijn, frequentievermenigvuldiging, jitteropbouw, lusstabiliteit en toepassingen.",
+    "lead": "Beide detecteren het faseverschil met een referentieklok en regelen via terugkoppeling tot dat verschil nul is, maar ze sturen iets anders bij. Een PLL regelt de frequentie van een spanningsgestuurde oscillator (VCO) en brengt een zelf opgewekte klok in lijn met de referentie, zodat hij samen met een deler een veelvoud van de referentiefrequentie kan maken. Een DLL stuurt de ingangsklok zelf door een vertragingslijn en past alleen die vertraging aan om de fase gelijk te trekken; de frequentie kan hij niet veranderen, maar er stapelt zich geen jitter op en de lus is stabiel en eenvoudig te ontwerpen.",
+    "items": [
+      "PLL",
+      "DLL"
+    ],
+    "rows": [
+      [
+        "Naam",
+        "Phase-Locked Loop (fasevergrendelde lus)",
+        "Delay-Locked Loop (vertragingsvergrendelde lus)"
+      ],
+      [
+        "Wat wordt geregeld",
+        "De frequentie van de VCO (fase is de integraal van de frequentie)",
+        "De vertraging van de vertragingslijn"
+      ],
+      [
+        "Belangrijkste onderdelen",
+        "Fase-frequentiedetector, ladingspomp, lusfilter, VCO en terugkoppeldeler",
+        "Fasedetector, ladingspomp, lusfilter (condensator) en spanningsgestuurde vertragingslijn"
+      ],
+      [
+        "Uitgangsklok",
+        "Een klok die de VCO zelf opwekt",
+        "Een vertraagde versie van de ingangsklok"
+      ],
+      [
+        "Frequentievermenigvuldiging",
+        "Mogelijk. Met een 1/N-deler in de terugkoppeling ontstaat N keer de referentie (er zijn ook fractionele methoden)",
+        "In principe niet. De uitgang heeft dezelfde frequentie als de ingang (er zijn methoden die meerfasige uitgangen combineren om te vermenigvuldigen)"
+      ],
+      [
+        "Jitter",
+        "Fluctuaties van de VCO stapelen zich elke periode op en alleen componenten onder de lusbandbreedte worden gecorrigeerd. Van de referentiejitter worden componenten boven de bandbreedte verwijderd",
+        "De vertragingslijn stapelt geen jitter op. Ingangsjitter komt vrijwel ongewijzigd op de uitgang"
+      ],
+      [
+        "Lusstabiliteit",
+        "De VCO werkt als integrator, waardoor de lus van de tweede orde of hoger is en het lusfilter met oog op de fasemarge moet worden ontworpen",
+        "De vertragingslijn integreert niet, zodat de lus van de eerste orde kan zijn; stabiel en eenvoudig te ontwerpen"
+      ],
+      [
+        "Vergrendeling",
+        "Kan over een breed frequentiebereik vergrendelen, maar het vergrendelen duurt relatief lang",
+        "Vergrendelt snel, maar het vertragingsbereik is beperkt en er moet worden gewaakt voor een foute vergrendeling één periode verschoven"
+      ],
+      [
+        "Belangrijkste toepassingen",
+        "Hoogfrequente klokken maken uit een kristalreferentie, frequentiesynthesizers voor radio, SerDes-klokken en clock and data recovery (CDR)",
+        "Uitlijning van uitgang en klok in DDR-DRAM, klok-deskew en het opwekken van meerfasige klokken"
+      ]
+    ],
+    "when": [
+      [
+        "PLL",
+        "Wanneer een klok met een andere frequentie dan de referentie nodig is (meestal een veelvoud hoger). Bij het maken van CPU- of SerDes-klokken uit een kristalreferentie en bij het opwekken van radiofrequenties."
+      ],
+      [
+        "DLL",
+        "Wanneer de frequentie hetzelfde mag blijven en je de interne vertraging van de chip wilt opheffen om de klokfase uit te lijnen. Uitlijning van de data-uitgang van DDR-DRAM en klok-deskew."
+      ],
+      [
+        "Combinatie",
+        "Een veelgebruikte combinatie is dat een PLL de klok met de benodigde frequentie maakt, waarna in bijvoorbeeld geheugeninterfaces een DLL op basis van die klok de fijne faseafstelling doet (bijvoorbeeld de strobe een kwart periode verschuiven)."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom kan een DLL de frequentie niet veranderen?",
+        "Omdat de uitgang van een DLL de ingangsklok is, vertraagd door een vertragingslijn. Hoe je de vertraging ook verandert, de afstand tussen de flanken blijft gelijk aan die van de ingang en de frequentie verandert niet. Een PLL heeft een zelf oscillerende VCO en brengt de gedeelde klok in lijn met de referentie, zodat hij N keer de referentiefrequentie kan maken."
+      ],
+      [
+        "Waarom stapelt jitter zich in een DLL niet op?",
+        "Elke uitgangsflank van een DLL is een vertraagde ingangsflank en neemt de fout van de vorige periode niet over. Bij de VCO van een PLL begint elke periode waar de vorige eindigde, zodat fluctuaties zich opstapelen en blijven bestaan tot de lus ze corrigeert. Daar staat tegenover dat een DLL ingangsjitter ongewijzigd doorlaat."
+      ],
+      [
+        "Hoe kies je de lusbandbreedte van een PLL?",
+        "Een bredere bandbreedte corrigeert VCO-fluctuaties sneller, maar laat jitter van de referentieklok gemakkelijker door. Een smallere bandbreedte filtert referentiejitter goed weg, maar laat VCO-fluctuaties over en vergrendelt ook langzamer. De keuze hangt af van welke van de twee, referentie of VCO, minder ruis heeft en van de lusstabiliteit (fasemarge)."
+      ],
+      [
+        "Waarom wordt in DDR-DRAM een DLL gebruikt?",
+        "Het interne klokpad en de uitgangsschakeling van de chip hebben vertraging die met spanning en temperatuur verandert. Door die vertraging met een DLL op te heffen, kan de data in lijn met de flanken van de externe klok worden uitgegeven. De frequentie hoeft niet te veranderen, dus een DLL, die nauwelijks jitter toevoegt, is hier geschikt."
+      ]
+    ]
+  },
+  "single-ended-vs-differential-signaling": {
+    "title": "Single-ended versus differentieel: bedrading, ruisongevoeligheid en snelheid",
+    "description": "Single-ended en differentiële signalen vergeleken: aantal draden, referentiespanning, ruisongevoeligheid, uitgestraalde ruis, amplitude en snelheid, routing en standaarden zoals LVDS, USB en PCIe.",
+    "lead": "Bij single-ended signalering wordt de spanning op één signaaldraad ten opzichte van massa gelezen; dat vraagt weinig draden en is eenvoudig. Bij differentiële signalering lopen tegengestelde signalen over twee draden en worden 0 en 1 gelezen uit het spanningsverschil tussen de twee. Ruis en verschillen in massapotentiaal die op beide draden gelijk terechtkomen, vallen weg bij het nemen van het verschil, en de elektromagnetische velden van de tegengestelde stromen heffen elkaar op, zodat met een kleine amplitude snel en over grotere afstand kan worden verzonden. Daar staat tegenover dat elk signaal twee draden nodig heeft en dat lengte en onderlinge afstand van beide draden gelijk moeten worden gehouden.",
+    "items": [
+      "Single-ended",
+      "Differentieel signaal"
+    ],
+    "rows": [
+      [
+        "Aantal draden per signaal",
+        "Eén (de retourstroom deelt de massa)",
+        "Twee (een positief en negatief paar)"
+      ],
+      [
+        "Referentie bij het lezen",
+        "Spanning ten opzichte van massa",
+        "Spanningsverschil tussen de twee draden"
+      ],
+      [
+        "Common-moderuis",
+        "Komt ongewijzigd op het signaal terecht",
+        "Valt weg bij het nemen van het verschil (afhankelijk van de CMRR van de ontvanger)"
+      ],
+      [
+        "Verschil in massapotentiaal",
+        "Een verschil tussen de massa van zender en ontvanger wordt direct een fout",
+        "Heeft weinig invloed zolang het binnen het common-modebereik van de ontvanger blijft"
+      ],
+      [
+        "Uitgestraalde ruis (EMI)",
+        "Grote stroomlus, straalt gemakkelijk uit",
+        "De velden van de tegengestelde stromen heffen elkaar op, straalt weinig uit"
+      ],
+      [
+        "Signaalamplitude",
+        "Groot. Dicht bij de voedingsspanning (bijv. 0 tot 3,3 V)",
+        "Klein. Enkele honderden mV (LVDS ongeveer 350 mV)"
+      ],
+      [
+        "Indicatie van de snelheid",
+        "Enkele tientallen tot enkele honderden Mbit/s. Bij geheugenbussen met zorgvuldige afsluiting enkele Gbit/s per draad",
+        "Enkele honderden Mbit/s tot enkele tientallen Gbit/s per paar"
+      ],
+      [
+        "Routing",
+        "Eenvoudig. Bij snelle signalen letten op karakteristieke impedantie en afsluiting",
+        "Lengte en afstand van de twee draden gelijk houden en de differentiële impedantie (meestal 85 tot 100 Ω) handhaven"
+      ],
+      [
+        "Kosten en aantal pinnen",
+        "Goedkoop, weinig pinnen",
+        "Twee keer zoveel pinnen en bedrading. Ook zend- en ontvangstschakelingen zijn complexer"
+      ],
+      [
+        "Typische voorbeelden",
+        "GPIO, I2C, SPI, UART, DDR-data (DQ)",
+        "LVDS, USB, PCI Express, SATA, HDMI, ethernet, CAN, RS-485"
+      ]
+    ],
+    "when": [
+      [
+        "Single-ended",
+        "Wanneer de snelheid niet zo hoog is en de afstand kort, of wanneer het aantal pinnen en de kosten laag moeten blijven. GPIO, I2C, SPI en dergelijke op een printplaat."
+      ],
+      [
+        "Differentieel signaal",
+        "Snelle signalen in de Gbit/s-klasse, verbindingen via kabels tussen apparaten op afstand, omgevingen met veel ruis en wanneer uitgestraalde ruis beperkt moet blijven. PCIe, USB, ethernet en CAN in auto's."
+      ],
+      [
+        "Voorbeeld van een combinatie",
+        "In DDR-geheugen zijn de talrijke datalijnen (DQ) single-ended, terwijl de klok en de strobe (DQS), die als timingreferentie dienen, differentieel zijn. Zo worden het aantal pinnen en de betrouwbaarheid met elkaar in evenwicht gebracht."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom is een differentieel signaal ongevoelig voor common-moderuis?",
+        "Als de twee draden dicht naast elkaar liggen, komt ruis van buitenaf in vrijwel gelijke mate op beide terecht. De ontvanger leest alleen het spanningsverschil tussen de twee, dus ruis die op beide gelijk is (common-moderuis) valt weg bij het aftrekken. Ook een verschil in massapotentiaal werkt op beide draden gelijk en heeft dus weinig invloed."
+      ],
+      [
+        "Waarom kan een differentieel signaal sneller verzenden, terwijl het twee draden nodig heeft?",
+        "Omdat het ongevoelig is voor ruis, kan de amplitude tot enkele honderden mV worden verkleind, en door die kleinere spanning die moet worden op- en ontladen kan sneller worden geschakeld. Er is ook weinig uitgestraalde ruis en een verschil in massapotentiaal speelt nauwelijks een rol, zodat seriële verbindingen tot enkele tientallen Gbit/s per paar halen."
+      ],
+      [
+        "Waar let je op bij het routeren van een differentieel paar?",
+        "Allereerst dat beide draden even lang zijn. Bij een lengteverschil komen de twee signalen op verschillende momenten aan, vervormt de verschilgolfvorm, wordt een deel omgezet in common-moderuis en neemt de uitstraling toe. Verder moet de afstand tussen de twee draden constant zijn om de differentiële impedantie op de voorgeschreven waarde (meestal 85 tot 100 Ω) te houden, en moet het paar aan de ontvangstzijde worden afgesloten."
+      ],
+      [
+        "Is massa bij differentiële signalen dan niet nodig?",
+        "Niet helemaal. Het gemiddelde van de twee spanningen (de common-modespanning) moet binnen het bereik liggen dat de ontvanger toelaat. Daarom wordt de massa gedeeld, of wordt de gelijkspanning met een condensator of transformator geblokkeerd en aan de ontvangstzijde een nieuwe common-modespanning gemaakt. Ethernet isoleert de apparaten onderling met transformatoren."
+      ]
+    ]
+  },
+  "buck-vs-boost-converter": {
+    "title": "Buck- versus boostconverter: omzetverhouding, opbouw, stroom en toepassingen",
+    "description": "Buck- en boostconverters vergeleken: uitgangsspanningsbereik, ideale omzetverhouding (D en 1/(1−D)), plaatsing van componenten, in- en uitgangsstroom, rendement, regeling en toepassingen.",
+    "lead": "Beide zijn schakelende DC-DC-converters die uit dezelfde componenten bestaan, een schakelaar, een spoel, een diode (of een tweede schakelaar) en een condensator, maar die anders zijn gerangschikt. Een buckconverter plaatst de schakelaar tussen de ingang en de spoel, hakt de ingangsspanning op volgens het aandeel van de aan-tijd (duty cycle D) en middelt die, zodat idealiter een D maal lagere spanning ontstaat. Een boostconverter plaatst de spoel aan de ingangszijde, verbindt die via de schakelaar met massa om energie in de spoel op te slaan en geeft die daarna af aan de uitgang, zodat idealiter een 1/(1−D) maal hogere spanning ontstaat.",
+    "items": [
+      "Buckconverter (step-down)",
+      "Boostconverter (step-up)"
+    ],
+    "rows": [
+      [
+        "Bereik van de uitgangsspanning",
+        "Lager dan de ingang (0 tot de ingangsspanning)",
+        "Hoger dan de ingang (de ingangsspanning of hoger)"
+      ],
+      [
+        "Ideale omzetverhouding (continue stroommodus)",
+        "Vout/Vin = D",
+        "Vout/Vin = 1/(1−D)"
+      ],
+      [
+        "Voorbeeld (bij D = 0,5)",
+        "Van 12 V naar 6 V",
+        "Van 12 V naar 24 V"
+      ],
+      [
+        "Plaatsing van componenten",
+        "Schakelaar tussen ingang en spoel, spoel aan de uitgangszijde. Diode tussen het knooppunt van schakelaar en spoel en massa",
+        "Spoel aan de ingangszijde, schakelaar tussen het knooppunt na de spoel en massa. Diode tussen dat knooppunt en de uitgang"
+      ],
+      [
+        "Werking",
+        "Aan: stroom loopt via de spoel naar de uitgang; uit: de spoelstroom blijft via de diode lopen",
+        "Aan: energie wordt in de spoel opgeslagen; uit: de spoelspanning komt bovenop de ingangsspanning en de energie wordt aan de uitgang afgegeven"
+      ],
+      [
+        "Ingangsstroom",
+        "Discontinu (loopt alleen als de schakelaar aan is). De ingangscondensator is belangrijk",
+        "Continu (blijft via de spoel lopen)"
+      ],
+      [
+        "Uitgangsstroom",
+        "Continu (blijft uit de spoel lopen). Kleine uitgangsrimpel",
+        "Discontinu (komt alleen aan als de schakelaar uit is). Grote rimpelstroom in de uitgangscondensator"
+      ],
+      [
+        "Rendement",
+        "Afhankelijk van de omstandigheden ongeveer 80 tot 95%",
+        "Afhankelijk van de omstandigheden ongeveer 80 tot 95%. Daalt bij een grote boostverhouding"
+      ],
+      [
+        "Regeling",
+        "Regellus eenvoudig te ontwerpen",
+        "In continue stroommodus is er een nulpunt in het rechterhalfvlak, waardoor de bandbreedte van de regellus moeilijk te verhogen is"
+      ],
+      [
+        "Als de schakelaar stilstaat",
+        "Ingang en uitgang zijn van elkaar gescheiden",
+        "De ingangsspanning blijft via spoel en diode op de uitgang staan. Volledig afschakelen vraagt een extra schakelaar"
+      ],
+      [
+        "Belangrijkste toepassingen",
+        "De kernspanning (rond 1 V) van CPU's en SoC's maken uit 12 V of 5 V, lage spanningen maken uit een batterij",
+        "5 V maken uit een lithium-ionbatterij (ongeveer 3,0 tot 4,2 V), in serie geschakelde leds aansturen, arbeidsfactorcorrectie (PFC) in wisselstroomvoedingen"
+      ]
+    ],
+    "when": [
+      [
+        "Buckconverter (step-down)",
+        "Wanneer een spanning lager dan de ingang efficiënt bij grote stroom moet worden gemaakt. Kernvoeding van CPU's en SoC's, het afleiden van diverse spanningen uit 12 V of 5 V."
+      ],
+      [
+        "Boostconverter (step-up)",
+        "Wanneer een hogere spanning dan de ingang nodig is. Een USB-uitgang van 5 V maken uit een batterij, in serie geschakelde leds aansturen of met PFC een hoge gelijkspanning maken."
+      ],
+      [
+        "Buck-boost",
+        "Als de batterijspanning tijdens gebruik van boven naar onder de uitgangsspanning zakt, gebruik je een buck-boostconverter die beide functies heeft."
+      ]
+    ],
+    "faq": [
+      [
+        "Hoe leid je de omzetverhoudingen D en 1/(1−D) af?",
+        "Uit het feit dat in stabiele toestand de spanning over de spoel, gemiddeld over één periode, nul is (het product van spanning en tijd is in evenwicht). Bij buck staat er tijdens de aan-tijd (Vin − Vout) en tijdens de uit-tijd −Vout over de spoel, dus uit (Vin − Vout) × D = Vout × (1 − D) volgt Vout = D × Vin. Bij boost volgt uit Vin × D = (Vout − Vin) × (1 − D) dat Vout = Vin/(1 − D)."
+      ],
+      [
+        "Waarom levert een boostconverter een hogere spanning dan de ingang?",
+        "Zolang de schakelaar aan is, loopt er stroom door de spoel en wordt er energie opgeslagen. Gaat de schakelaar uit, dan probeert de spoel de stroom in stand te houden en wekt een spanning op die bovenop de ingangsspanning komt en via de diode naar de uitgang stroomt, zodat de uitgang hoger wordt dan de ingang."
+      ],
+      [
+        "Kun je de boostverhouding onbeperkt vergroten door D naar 1 te brengen?",
+        "Idealiter wordt 1/(1−D) onbeperkt groot, maar in de praktijk nemen de verliezen door de weerstand van spoel en schakelaar toe, zodat de uitgangsspanning afvlakt en het rendement daalt. Praktische boostverhoudingen gaan tot enkele keren; voor grotere verhoudingen kies je bijvoorbeeld een topologie met een transformator."
+      ],
+      [
+        "Wat is synchrone gelijkrichting?",
+        "Een methode waarbij in plaats van een diode een MOSFET wordt gebruikt die aangaat op het moment dat de diode stroom zou voeren. Zo worden de verliezen door de doorlaatspanning van de diode (ook bij een schottkydiode ongeveer 0,3 tot 0,5 V) kleiner, waardoor het rendement meer stijgt naarmate de uitgangsspanning lager is."
+      ]
+    ]
+  },
+  "clock-gating-vs-power-gating": {
+    "title": "Clock gating versus power gating: vermogen, hersteltijd en toestandsbehoud",
+    "description": "Clock gating en power gating vergeleken: welk vermogen wordt bespaard (dynamisch of statisch), wat wordt stilgelegd, hersteltijd, toestandsbehoud, benodigde schakelingen en granulariteit.",
+    "lead": "Beide zijn technieken voor energiezuinig ontwerp die het vermogen van ongebruikte schakelingen verlagen, maar ze leggen iets anders stil. Clock gating stopt de klok naar registers zodat signalen niet meer schakelen, en verlaagt zo het dynamische vermogen. De voeding blijft aan, dus de toestand blijft behouden en de schakeling kan binnen één tot enkele cycli weer verder. Power gating schakelt de voeding van een blok met een schakelaar af en elimineert naast het dynamische vermogen ook vrijwel het statische vermogen door lekstroom. De toestand gaat daarbij echter verloren, zodat een mechanisme om die op te slaan nodig is, en het herstel kost ook tijd.",
+    "items": [
+      "Clock gating",
+      "Power gating"
+    ],
+    "rows": [
+      [
+        "Bespaard vermogen",
+        "Dynamisch vermogen (schakelen van klokbedrading, flipflops en de logica erachter)",
+        "Zowel statisch vermogen (lekstroom) als dynamisch vermogen"
+      ],
+      [
+        "Wat wordt stilgelegd",
+        "De klok naar de registers",
+        "De voeding naar het blok"
+      ],
+      [
+        "Voeding",
+        "Blijft aan. Er blijft lekstroom lopen",
+        "Een vermogensschakelaar koppelt de voedingslijn van het blok los"
+      ],
+      [
+        "Toestandsbehoud",
+        "Blijft behouden",
+        "Gaat verloren. De benodigde toestand wordt opgeslagen in retentie-flipflops (retentieregisters) of in geheugen"
+      ],
+      [
+        "Hersteltijd",
+        "Eén tot enkele cycli",
+        "Lang. De voeding wordt ingeschakeld terwijl de inschakelstroom wordt beperkt en de toestand wordt teruggezet, meestal in de orde van µs"
+      ],
+      [
+        "Benodigde schakelingen",
+        "ICG (een clock-gatecel met latch en AND) en logica die het enable-signaal maakt",
+        "Vermogensschakelaars (header of footer), isolatiecellen, retentie-flipflops en een schakeling die de voedingsvolgorde regelt"
+      ],
+      [
+        "Granulariteit",
+        "Fijn. Bruikbaar vanaf enkele registers",
+        "Grof. Per blok (spanningsdomein), zoals een CPU-kern of IP-blok"
+      ],
+      [
+        "Ontwerp en verificatie",
+        "Logicasynthesetools kunnen het automatisch invoegen op basis van enable-condities. STA voert clock-gatingcontroles uit",
+        "De power intent wordt beschreven in onder meer UPF, en ook het gedrag bij uitgeschakelde voeding en de volgorde worden geverifieerd"
+      ],
+      [
+        "Overhead",
+        "Klein. Oppervlak en vertraging van de ICG",
+        "Oppervlak en spanningsval van de vermogensschakelaar en de energie voor opslaan en herstellen. Bij korte pauzes levert het niets op"
+      ],
+      [
+        "Belangrijkste gebruik",
+        "In vrijwel alle digitale schakelingen om registers van niet-actieve functies stil te leggen",
+        "Blokken uitschakelen die lange tijd niet worden gebruikt. Diepe idle-toestanden van CPU's, ongebruikte blokken in smartphone-SoC's"
+      ]
+    ],
+    "when": [
+      [
+        "Clock gating",
+        "Altijd wanneer een schakeling niet actief is, van enkele cycli tot lange tijd. Herstel is direct en de toestand blijft behouden, dus het wordt in vrijwel alle digitale schakelingen gebruikt."
+      ],
+      [
+        "Power gating",
+        "Wanneer een blok lange tijd niet wordt gebruikt en wanneer lekvermogen een groot aandeel heeft (fijne processen of hoge temperatuur). Te gebruiken als de pauze lang genoeg is om de energie voor opslaan en herstellen terug te verdienen."
+      ],
+      [
+        "Combinatie",
+        "Gebruikelijk is een getrapte aanpak: eerst de klok stoppen en, als de pauze lang dreigt te worden, de toestand opslaan en ook de voeding uitschakelen. Het wordt ook gecombineerd met DVFS."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom volstaat een AND-poort niet om de klok te stoppen?",
+        "Als het enable-signaal verandert terwijl de klok 1 is, ontstaat er een korte puls (glitch) op de klok en kunnen flipflops onterecht schakelen. Een ICG houdt het enable-signaal vast in een latch die alleen doorlaat als de klok 0 is en neemt pas daarna de AND, zodat er geen glitches ontstaan."
+      ],
+      [
+        "Waarom duurt herstel bij power gating lang?",
+        "Omdat de grote capaciteit van het uitgeschakelde blok opnieuw moet worden opgeladen. Als alle schakelaars tegelijk aangaan, loopt er een grote inschakelstroom en zakt de voedingsspanning van andere, actieve schakelingen, dus worden de schakelaars geleidelijk na elkaar ingeschakeld. Daarna zijn ook een reset en het herstellen van de toestand nodig."
+      ],
+      [
+        "Waarom zijn isolatiecellen nodig?",
+        "De uitgangen van een uitgeschakeld blok krijgen een spanning die noch 0 noch 1 is. Als een actief blok die rechtstreeks ontvangt, kan het fout gaan werken of kan er kortsluitstroom door de ingangspoorten lopen. Isolatiecellen zetten de signalen op de grens vast op een bepaalde waarde (0 of 1)."
+      ],
+      [
+        "Moet je ook bij korte pauzes de voeding uitschakelen?",
+        "Niet per se. Uitschakelen kost energie voor het opslaan en herstellen van de toestand en het opladen van capaciteiten. Als de pauze niet langer is dan de tijd waarin het bespaarde lekvermogen dat terugverdient (de break-eventijd), kost het juist meer. Gebruik voor korte pauzes clock gating."
+      ]
+    ]
+  },
+  "scan-test-vs-bist": {
+    "title": "Scantest versus BIST: patroongeneratie, tester, doel en extra logica vergeleken",
+    "description": "Scantest en BIST (built-in self-test) vergeleken: patroongeneratie (ATPG of ingebouwde generator), afhankelijkheid van de tester, logica en geheugen, foutdekking, extra logica en testtijd.",
+    "lead": "Bij een scantest worden de flipflops in de chip aan elkaar gekoppeld tot schuifregisters (scanketens); een externe tester schuift testpatronen naar binnen, haalt de respons van de schakeling naar buiten en vergelijkt die met de verwachte waarden. De patronen worden door ATPG-tools uit de netlijst gegenereerd. Bij BIST worden een schakeling die patronen maakt en een schakeling die het resultaat beoordeelt in de chip ingebouwd, zodat de chip zichzelf test. Bij productietests is de combinatie van scantests voor logica en memory BIST voor ingebouwd geheugen gebruikelijk, en BIST kan ook na levering voor zelfdiagnose worden gebruikt.",
+    "items": [
+      "Scantest",
+      "BIST (built-in self-test)"
+    ],
+    "rows": [
+      [
+        "Basisidee",
+        "Flipflops worden tot scanketens gekoppeld; patronen worden ingeschoven, de schakeling draait één keer en het resultaat wordt uitgeschoven en vergeleken",
+        "Een schakeling die patronen maakt en een schakeling die de respons beoordeelt zijn in de chip ingebouwd; de chip test zichzelf en geeft een geslaagd/gezakt-oordeel"
+      ],
+      [
+        "Patroongeneratie",
+        "ATPG maakt uit de netlijst deterministische patronen gericht op stuck-at-fouten en transitievertragingsfouten",
+        "Logic BIST maakt pseudowillekeurige patronen met een LFSR. Memory BIST maakt adressen en data volgens vaste procedures zoals marchtests"
+      ],
+      [
+        "Beoordeling van de respons",
+        "De tester vergelijkt met de verwachte waarden (bij testcompressie worden in de chip gecomprimeerde responsen vergeleken)",
+        "Logic BIST comprimeert de respons met een MISR en vergelijkt de signatuur met de verwachte waarde. Memory BIST controleert gelezen waarden direct met een comparator"
+      ],
+      [
+        "Afhankelijkheid van de tester",
+        "Patronen en verwachte waarden staan in het testergeheugen. Er zijn scanpinnen en voldoende testerprestaties en geheugencapaciteit nodig",
+        "Alleen een startopdracht en het uitlezen van het resultaat (bijv. via JTAG); een eenvoudige tester volstaat"
+      ],
+      [
+        "Belangrijkste doel",
+        "Logicaschakelingen (combinatorische logica en flipflops)",
+        "Memory BIST: ingebouwde geheugens zoals SRAM. Logic BIST: logicaschakelingen"
+      ],
+      [
+        "Foutdekking",
+        "Gemakkelijk hoog, omdat patronen gericht op specifieke fouten worden gemaakt",
+        "Bij logic BIST blijven fouten die met pseudowillekeurige patronen moeilijk te vinden zijn vaak over, wat wordt aangevuld met testpunten. Memory BIST haalt een hoge dekking met procedures die zijn afgestemd op foutmodellen voor geheugen"
+      ],
+      [
+        "Extra logica",
+        "Flipflops worden vervangen door scanflipflops (met een omschakelmultiplexer) en de ketenbedrading wordt toegevoegd",
+        "Patroongenerator, responscompressor en besturingslogica nodig. Bij logic BIST moet de schakeling bovendien zo worden aangepast dat er geen onbepaalde waarden (X) ontstaan"
+      ],
+      [
+        "Testtijd",
+        "Lange ketens maken het schuiven tijdrovend, en de snelheid van de tester is een beperking. Testcompressie verkort dit",
+        "Met de klok op de chip kunnen veel patronen snel worden doorlopen. Logic BIST vraagt wel veel patronen"
+      ],
+      [
+        "Wanneer gebruikt",
+        "Vooral bij wafertests en eindtests in de productie. Ook voor foutdiagnose van defecte chips",
+        "Naast productietests ook voor inspectie na montage op de printplaat en voor zelfdiagnose na levering, bijvoorbeeld bij het inschakelen"
+      ]
+    ],
+    "when": [
+      [
+        "Scantest",
+        "Wanneer bij productietests structurele fouten in de logica met hoge dekking moeten worden gevonden. Wanneer de plaats van de fout in een defecte chip moet worden ingeperkt."
+      ],
+      [
+        "BIST",
+        "Testen van ingebouwd geheugen dat van buitenaf moeilijk direct toegankelijk is. Wanneer testerpinnen en testergeheugen moeten worden beperkt. Wanneer na levering zelfdiagnose bij het inschakelen of vóór het rijden nodig is, zoals in auto's."
+      ],
+      [
+        "Combinatie",
+        "In echte chips is het gebruikelijk om voor logica scantests (met testcompressie) en voor geheugen memory BIST te gebruiken. Ook logic BIST draait op basis van scanketens."
+      ]
+    ],
+    "faq": [
+      [
+        "Is een scantest overbodig als er BIST is?",
+        "Veel chips gebruiken beide. Logic BIST gebruikt pseudowillekeurige patronen, waardoor moeilijk te vinden fouten vaak overblijven; bij productietests wordt daarom gebruikelijk een hoge foutdekking verzekerd met scantests op basis van ATPG-patronen. Geheugen heeft een regelmatige structuur en wordt met memory BIST getest."
+      ],
+      [
+        "Hoe hangen logic BIST en scantest met elkaar samen?",
+        "Ook logic BIST gebruikt scanketens. Patronen uit een LFSR worden in de ketens geschoven, de schakeling draait, de responsen die eruit komen worden met een MISR gecomprimeerd en de uiteindelijke signatuur wordt met de verwachte waarde vergeleken. Scanontwerp vormt de basis."
+      ],
+      [
+        "Waarom wordt BIST vaak gebruikt voor het testen van ingebouwd geheugen?",
+        "Geheugen dat in de chip is ingebed, is moeilijk direct via externe pinnen te lezen en te beschrijven, en de structuur is regelmatig, zodat adressen en data volgens vaste procedures zoals marchtests met een kleine schakeling kunnen worden gemaakt. Vaak wordt dit gecombineerd met reparatie, waarbij gevonden defecte bits worden vervangen door reserverijen of -kolommen."
+      ],
+      [
+        "Waarom voeren autochips bij het inschakelen BIST uit?",
+        "Om fouten te vinden die na levering zijn ontstaan en latente fouten die bij normaal gebruik niet aan het licht komen. BIST kan zonder tester door de chip zelf worden uitgevoerd en is daardoor bruikbaar voor zelfdiagnose in de auto."
+      ]
+    ]
+  },
+  "wafer-test-vs-final-test": {
+    "title": "Wafertest versus eindtest: moment, contact, temperatuur en doel vergeleken",
+    "description": "Wafertest (probetest) en eindtest vergeleken in een tabel: moment en object, contactwijze (probekaart of socket), temperatuur, testitems, doel van het uitfilteren van defecten en KGD.",
+    "lead": "De wafertest wordt uitgevoerd op de wafer na de front-endprocessen en vóór het zagen: de naalden van een probekaart worden op de contactpads van elke chip gezet om te bepalen of die goed of fout is. Door defecte chips vóór de assemblage te verwijderen, worden geen behuizings- en assemblagekosten verspild. De eindtest (final test) meet de in een behuizing geassembleerde IC's, die een handler in een socket plaatst; daarbij wordt, inclusief defecten die tijdens de assemblage zijn ontstaan, bevestigd dat de IC volgens specificatie werkt voordat hij wordt geleverd.",
+    "items": [
+      "Wafertest (probetest)",
+      "Eindtest (final test)"
+    ],
+    "rows": [
+      [
+        "Moment",
+        "Na de front-endprocessen, vóór het zagen",
+        "Na de assemblage (inkapseling in de behuizing), vóór levering"
+      ],
+      [
+        "Object",
+        "Alle chips op de wafer",
+        "In een behuizing ingekapselde IC's (geassembleerd uit chips die bij de wafertest goed waren)"
+      ],
+      [
+        "Contactwijze",
+        "Een prober beweegt de wafer en zet de naalden van de probekaart op de contactpads van de chip",
+        "Een handler plaatst de IC in een socket en maakt met onder meer pogopinnen contact met de aansluitingen van de behuizing (pootjes of balls)"
+      ],
+      [
+        "Gebruikte apparatuur",
+        "Tester, prober, probekaart",
+        "Tester, handler, loadboard met socket"
+      ],
+      [
+        "Temperatuur",
+        "Gemeten door de temperatuur van de chuck waarop de wafer ligt te variëren. Naast kamertemperatuur wordt soms ook bij hoge of lage temperatuur gemeten",
+        "De handler verwarmt of koelt de IC; er wordt vaak gemeten bij de hoge en lage temperatuur van het door het product gegarandeerde temperatuurbereik"
+      ],
+      [
+        "Belangrijkste testitems",
+        "DC-karakteristieken (zoals lekstroom), functionele tests en scantests. Bij geheugen metingen voor reparatie, waarbij defecte bits door reserves worden vervangen",
+        "Functie, DC-karakteristieken, AC-karakteristieken zoals timing en werking op de werkelijke snelheid. Indeling in klassen naar bijvoorbeeld snelheid"
+      ],
+      [
+        "Meten van snelle signalen",
+        "Door de elektrische eigenschappen van de naalden is het meten van snelle signalen of grote stromen soms lastig",
+        "Een socket is elektrisch gunstiger, waardoor snelle signalen gemakkelijker te meten zijn"
+      ],
+      [
+        "Doel van het opsporen van defecten",
+        "Defecte chips vóór de assemblage verwijderen en zo behuizings- en assemblagekosten besparen. Procesproblemen vroeg vinden via de wafermap",
+        "Ook defecten die tijdens de assemblage zijn ontstaan (zoals slechte verbindingen) verwijderen en met gegarandeerde kwaliteit leveren"
+      ],
+      [
+        "Omgang met defecten",
+        "Defecte chips worden elektronisch in de wafermap vastgelegd en niet geassembleerd (vroeger werden ze met inkt gemarkeerd)",
+        "Defecte exemplaren worden verwijderd; goede worden naar onder meer prestaties ingedeeld en geleverd"
+      ],
+      [
+        "Relatie met KGD",
+        "Als meerdere chips in één behuizing worden geplaatst, zijn chips nodig die in dit stadium als goed zijn bevestigd (KGD)",
+        "Als na de assemblage een defect blijkt, is het moeilijk om alleen de defecte chip te vervangen"
+      ]
+    ],
+    "when": [
+      [
+        "Wafertest",
+        "Wanneer defecte chips vóór de assemblage moeten worden verwijderd om behuizings- en assemblagekosten te besparen. Bij producten met meerdere chips in één behuizing, wanneer alleen als goed bevestigde chips (KGD) mogen worden gebruikt."
+      ],
+      [
+        "Eindtest",
+        "Wanneer na de assemblage moet worden gegarandeerd dat de IC in de behuizing volgens specificatie werkt voordat hij wordt geleverd. Wanneer de werking binnen het gegarandeerde temperatuurbereik en op de werkelijke snelheid moet worden bevestigd."
+      ],
+      [
+        "Combinatie",
+        "Bij gangbare producten worden beide tests uitgevoerd, in de volgorde wafertest → assemblage → eindtest → levering. De testitems worden over de twee tests verdeeld om overlap en daarmee de testkosten te verminderen."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom ook een wafertest als er al een eindtest is?",
+        "Omdat het assembleren van defecte chips behuizingsmateriaal en assemblagekosten verspilt. Door defecten in het waferstadium te verwijderen, worden alleen goede chips geassembleerd. Bovendien kan uit de verdeling van defecten op de wafermap snel het proces worden gevonden dat de oorzaak was."
+      ],
+      [
+        "Wat is het verschil tussen de wafertest en WAT (parametrische test)?",
+        "WAT is een inspectie waarbij op TEG's (testpatronen voor evaluatie) op de wafer onder meer de drempelspanning en de vlakweerstand worden gemeten om te bevestigen dat het proces volgens specificatie is verlopen. De wafertest controleert of elke chip van het product correct werkt en beoordeelt of die goed of fout is."
+      ],
+      [
+        "Wat is KGD?",
+        "Een chip waarvan vóór de montage is bevestigd dat hij goed is (Known Good Die). Als meerdere chips in één behuizing worden geplaatst, maakt één defecte chip de hele behuizing defect, dus moet dit in het stadium van de wafertest grondig worden gecontroleerd."
+      ],
+      [
+        "In welk stadium vindt burn-in plaats?",
+        "Burn-in is een test waarbij hoge temperatuur en spanning worden aangelegd om chips die vatbaar zijn voor vroege uitval te verwijderen; die vindt meestal plaats na de assemblage in de behuizing. Wanneer bijvoorbeeld KGD nodig is, bestaat er ook burn-in op waferniveau, uitgevoerd op de wafer."
+      ]
+    ]
+  },
+  "damascene-vs-subtractive-etch-interconnect": {
+    "title": "Damascene versus subtractief etsen: procesvolgorde, metaal en CMP vergeleken",
+    "description": "Het damasceneproces en door etsen gevormde interconnect (subtractief proces) vergeleken: procesvolgorde, metaal (koper of aluminium), CMP, vormen van via's en heroverweging bij de fijnste lijnen.",
+    "lead": "Bij door etsen gevormde interconnect (het subtractieve proces) wordt een metaallaag over het hele oppervlak gedeponeerd, wordt het overbodige deel met een resistpatroon droog weggeëtst en worden de ruimtes tussen de overgebleven lijnen met isolatiemateriaal gevuld; zo werd lang aluminium interconnect gemaakt. Het damasceneproces werkt in omgekeerde volgorde: eerst worden sleuven in de isolatielaag geëtst, dan wordt metaal erin gevuld en wordt het overtollige metaal met CMP weggepolijst. Koper vormt nauwelijks vluchtige verbindingen en is moeilijk droog te etsen, waardoor het damasceneproces de standaard werd voor koperinterconnect. Voor de allerfijnste lijnen wordt ook onderzocht om onder meer ruthenium door etsen te vormen.",
+    "items": [
+      "Damasceneproces",
+      "Door etsen gevormde interconnect (subtractief proces)"
+    ],
+    "rows": [
+      [
+        "Procesvolgorde",
+        "Isolatielaag deponeren → sleuven en via-gaten etsen → barrièremetaal en seedlaag → koper galvaniseren → overtollig materiaal met CMP verwijderen",
+        "Metaallaag deponeren → lithografie → metaal droog etsen → ruimte tussen de lijnen met isolatiemateriaal vullen en vlakken"
+      ],
+      [
+        "Wat wordt geëtst",
+        "De isolatielaag",
+        "De metaallaag"
+      ],
+      [
+        "Belangrijkste metaal",
+        "Koper (Cu)",
+        "Aluminium (Al-Cu-legering). Voor de allerfijnste lijnen wordt ook onder meer ruthenium onderzocht"
+      ],
+      [
+        "Vullen met metaal",
+        "Sleuven worden met elektrolytisch galvaniseren gevuld. In smalle sleuven is vullen zonder holtes (voids) een uitdaging",
+        "Het volstaat om met onder meer sputteren een vlakke laag te maken"
+      ],
+      [
+        "Vullen met isolatiemateriaal",
+        "De isolatielaag wordt eerst vlak gedeponeerd en is dus nauwelijks een probleem",
+        "De smalle ruimtes tussen de lijnen moeten zonder holtes met isolatiemateriaal worden gevuld (hiervoor werd onder meer HDP-CVD gebruikt)"
+      ],
+      [
+        "CMP",
+        "Essentieel. Polijst het koper en het barrièremetaal buiten de sleuven weg en scheidt zo de lijnen van elkaar",
+        "Niet gebruikt voor de metaalbewerking. Gebruikt om de isolatielaag te vlakken"
+      ],
+      [
+        "Barrièrelaag",
+        "Om koperdiffusie te voorkomen worden bodem en zijwanden van de sleuf bekleed met onder meer TaN/Ta. Bij smalle lijnen neemt die een groter deel van de doorsnede in",
+        "Bij aluminium is diffusie nauwelijks een probleem; boven en onder worden lagen zoals Ti/TiN gestapeld"
+      ],
+      [
+        "Vormen van via's",
+        "Bij dual damascene worden de lijnsleuven en via's tegelijk gevuld en met één CMP-stap afgewerkt",
+        "Via's worden in een aparte stap geopend, met onder meer wolfraam gevuld en met CMP gevlakt, waarna de volgende interconnectlaag wordt gemaakt"
+      ],
+      [
+        "Uitdagingen bij fijne lijnen",
+        "Bij smallere lijnen stijgt de soortelijke weerstand van koper (grootte-effect) en neemt ook het aandeel van de barrièrelaag toe",
+        "De nauwkeurigheid van het etsen van smalle metaallijnen en het vullen van de ruimte tussen de lijnen met isolatiemateriaal"
+      ]
+    ],
+    "when": [
+      [
+        "Damasceneproces",
+        "Voor koperinterconnect. Meerlaagse interconnect van geavanceerde LSI's, waarvoor lijnen met lage weerstand en goede bestandheid tegen elektromigratie nodig zijn."
+      ],
+      [
+        "Door etsen gevormde interconnect",
+        "Voor aluminiuminterconnect. Producten met weinig interconnectlagen of relatief brede lijnen. Voor de allerfijnste lijnen wordt het onderzocht als methode met onder meer ruthenium."
+      ],
+      [
+        "Trend",
+        "Geavanceerde LSI's maken vandaag het grootste deel van de interconnect met het koperen dual-damasceneproces. Voor de allerfijnste lagen wordt het vormen door etsen heroverwogen, met metalen waarvan de weerstand minder sterk stijgt en waarbij de barrièrelaag dunner kan."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom is koper moeilijk droog te etsen?",
+        "Omdat de koperverbindingen die ontstaan bij reactie met etsgassen zoals chloor nauwelijks vluchtig zijn en rond kamertemperatuur op het oppervlak achterblijven. Bij hoge temperatuur kunnen ze wel verdampen, maar resist en dergelijke houden dat niet uit, waardoor praktische bewerking moeilijk wordt. Daarom wordt koper in sleuven gevuld en met CMP in vorm gebracht."
+      ],
+      [
+        "Wat is het dual-damasceneproces?",
+        "Een methode waarbij in de isolatielaag zowel de lijnsleuven als de via-gaten naar de onderliggende laag worden gemaakt, die met één kopergalvanisatie tegelijk worden gevuld en met één CMP-stap worden afgewerkt. Dit vergt minder processtappen dan het single-damasceneproces, waarbij sleuven en via's afzonderlijk worden gemaakt."
+      ],
+      [
+        "Waar komt de naam damascene vandaan?",
+        "Van damasceren (inlegwerk), een decoratietechniek waarbij groeven in een metalen oppervlak worden gegraveerd en met een ander metaal worden ingelegd. De naam is gekozen omdat het vullen van sleuven in een isolatielaag met metaal op deze techniek lijkt."
+      ],
+      [
+        "Gaat men in de toekomst terug naar door etsen gevormde interconnect?",
+        "Niet volledig. Lagen met brede lijnen worden nog steeds met het koperen damasceneproces gemaakt. Voor lagen met zeer kleine lijnbreedte worden de stijgende soortelijke weerstand van koper en de dikte van de barrièrelaag een probleem, en daarom wordt onderzocht om metalen zoals ruthenium door etsen te bewerken."
+      ]
+    ]
+  },
+  "msi-vs-mesi-vs-moesi": {
+    "title": "MSI, MESI en MOESI: toestanden, Exclusive, Owned en busverkeer vergeleken",
+    "description": "De cachecoherentieprotocollen MSI, MESI en MOESI vergeleken in een tabel: aantal en betekenis van de toestanden, voordeel van Exclusive en Owned, terugschrijven naar geheugen en complexiteit.",
+    "lead": "MSI, MESI en MOESI zijn protocollen die een toestand toekennen aan de regels in de caches van een multicoreprocessor, zodat data van hetzelfde adres niet uiteenlopen. MSI is de basisvorm met slechts drie toestanden: Modified, Shared en Invalid. MESI voegt Exclusive toe (alleen deze cache heeft de regel, met dezelfde inhoud als het geheugen), waardoor schrijven naar data die geen andere kern heeft geen busverkeer vraagt. MOESI voegt daarnaast de toestand Owned toe, waardoor gewijzigde data met andere caches kan worden gedeeld zonder eerst naar het geheugen te worden teruggeschreven.",
+    "items": [
+      "MSI",
+      "MESI",
+      "MOESI"
+    ],
+    "rows": [
+      [
+        "Aantal toestanden",
+        "3 (M, S, I)",
+        "4 (M, E, S, I)",
+        "5 (M, O, E, S, I)"
+      ],
+      [
+        "Modified (M)",
+        "Alleen deze cache heeft de regel; de inhoud verschilt van het geheugen",
+        "Hetzelfde",
+        "Hetzelfde"
+      ],
+      [
+        "Shared (S)",
+        "Andere caches kunnen de regel ook hebben. De inhoud is gelijk aan het geheugen",
+        "Hetzelfde",
+        "Andere caches kunnen de regel ook hebben. De inhoud kan van het geheugen verschillen (als er een regel in toestand O is)"
+      ],
+      [
+        "Exclusive (E)",
+        "Niet aanwezig",
+        "Alleen deze cache heeft de regel; de inhoud is gelijk aan het geheugen",
+        "Aanwezig (hetzelfde als bij MESI)"
+      ],
+      [
+        "Owned (O)",
+        "Niet aanwezig",
+        "Niet aanwezig",
+        "De inhoud verschilt van het geheugen, maar andere caches delen de regel ook in toestand S. Deze cache is verantwoordelijk voor het terugschrijven naar het geheugen"
+      ],
+      [
+        "Lezen van data die geen andere kern heeft",
+        "Komt binnen in toestand S",
+        "Komt binnen in toestand E",
+        "Komt binnen in toestand E"
+      ],
+      [
+        "Schrijven naar die data",
+        "Om van S naar M te gaan wordt een verzoek om andere kopieën ongeldig te maken op onder meer de bus gezet",
+        "Kan zonder communicatie van E naar M gaan",
+        "Kan zonder communicatie van E naar M gaan"
+      ],
+      [
+        "Een andere kern leest een regel in M",
+        "Terugschrijven naar het geheugen; beide komen in toestand S",
+        "Terugschrijven naar het geheugen; beide komen in toestand S (de data kan ook rechtstreeks vanuit de cache worden doorgegeven)",
+        "De data wordt zonder terugschrijven doorgegeven; deze cache komt in toestand O, de andere in toestand S"
+      ],
+      [
+        "Terugschrijven naar het geheugen",
+        "Telkens wanneer een gewijzigde regel door een andere kern wordt gelezen",
+        "Telkens wanneer een gewijzigde regel door een andere kern wordt gelezen",
+        "Kan worden uitgesteld tot de regel in toestand O uit de cache wordt verdreven"
+      ],
+      [
+        "Aantal toestandsbits en complexiteit",
+        "2 bits. Het eenvoudigst",
+        "2 bits. Gemiddeld",
+        "3 bits. Het complexst"
+      ]
+    ],
+    "when": [
+      [
+        "MSI",
+        "De basisvorm om te leren hoe coherentie werkt. Wanneer de toestandsovergangen zo eenvoudig mogelijk moeten blijven."
+      ],
+      [
+        "MESI",
+        "Wanneer veel data wordt gelezen en geschreven die door slechts één kern wordt gebruikt. Dankzij de toestand E vraagt lezen-en-dan-schrijven geen communicatie. Het vormt de basis van de protocollen van veel multicore-CPU's."
+      ],
+      [
+        "MOESI",
+        "Wanneer kernen gewijzigde data vaak aan elkaar doorgeven. Wanneer terugschrijven naar het geheugen moet worden beperkt om geheugenbandbreedte te besparen."
+      ]
+    ],
+    "faq": [
+      [
+        "Wat is het voordeel van de toestand E in MESI?",
+        "Data die geen andere kern heeft, komt bij het inlezen in toestand E binnen, en bij een latere schrijfactie kan de regel zonder andere kernen te informeren naar toestand M gaan. Bij MSI komt de regel in hetzelfde geval in toestand S binnen, zodat bij elke schrijfactie een ongeldigmakingsverzoek nodig is. Zo vermindert het busverkeer bij lezen-en-dan-schrijven van data die door slechts één thread wordt gebruikt."
+      ],
+      [
+        "Wat is het voordeel van de toestand O in MOESI?",
+        "Als een andere kern gewijzigde data (toestand M) leest, schrijft MESI die eerst naar het geheugen terug voordat ze wordt gedeeld. MOESI geeft de data zonder terugschrijven van cache naar cache door, en de oorspronkelijke cache blijft in toestand O verantwoordelijk voor het terugschrijven. Zo zijn er minder schrijfacties naar het geheugen."
+      ],
+      [
+        "Wat is het verschil tussen toestand E en toestand M?",
+        "In beide gevallen is de eigen cache de enige die de regel heeft. In toestand E is de inhoud gelijk aan het geheugen, zodat bij verdringing niet hoeft te worden teruggeschreven. In toestand M is de inhoud gewijzigd en verschilt die van het geheugen, zodat bij verdringing terugschrijven nodig is."
+      ],
+      [
+        "Worden deze protocollen gebruikt met snooping of met een directory?",
+        "Met beide. MSI, MESI en MOESI bepalen de toestanden van een regel; hoe andere caches worden geïnformeerd (snooping, waarbij een gedeelde bus of iets dergelijks wordt bewaakt, of een directory, waarin wordt bijgehouden wie een regel heeft) is een aparte kwestie."
+      ]
+    ]
+  },
+  "spinlock-vs-mutex": {
+    "title": "Spinlock versus mutex: wachten, CPU-gebruik en gebruik in de kernel vergeleken",
+    "description": "Spinlock en mutex vergeleken: manier van wachten (busy waiting of slapen), CPU-gebruik, geschikte houdtijd, gebruik in de kernel (interruptcontext), prioriteitsinversie en implementatie (futex).",
+    "lead": "Spinlocks en mutexen zijn allebei locks die slechts één thread tegelijk in een kritieke sectie toelaten, maar ze wachten op een andere manier tot de lock vrijkomt. Een spinlock wacht met busy waiting, waarbij de lockvariabele in een lus steeds opnieuw wordt gecontroleerd; hij blijft tijdens het wachten CPU-tijd gebruiken, maar kan de lock direct nemen zodra die vrij is. Een mutex laat de wachtende thread slapen en geeft de CPU vrij; zodra de lock wordt vrijgegeven, wekt het besturingssysteem de thread. Spinlocks worden gebruikt bij zeer korte houdtijden en in interrupthandlers die niet mogen slapen, mutexen bij lange houdtijden of als de thread tijdens het vasthouden mogelijk moet slapen.",
+    "items": [
+      "Spinlock",
+      "Mutex"
+    ],
+    "rows": [
+      [
+        "Manier van wachten",
+        "Controleert de variabele in een lus tot de lock vrij is (busy waiting)",
+        "Slaapt als de lock bezet is en wordt gewekt zodra die wordt vrijgegeven"
+      ],
+      [
+        "CPU tijdens het wachten",
+        "Blijft die gebruiken",
+        "Geeft die vrij. Andere threads kunnen de CPU in die tijd gebruiken"
+      ],
+      [
+        "Overhead van het wachten",
+        "Geen contextwissel; de lock wordt direct genomen zodra die vrij is",
+        "Bij inslapen en ontwaken kosten systeemaanroepen en contextwissels tijd"
+      ],
+      [
+        "Geschikte houdtijd",
+        "Zeer kort (korter dan de tijd van een contextwissel)",
+        "Lang. Wanneer de thread tijdens het vasthouden mogelijk slaapt, bijvoorbeeld bij het wachten op I/O"
+      ],
+      [
+        "Slapen terwijl de lock wordt vastgehouden",
+        "Niet toegestaan. De wachtende kant zou dan CPU-tijd blijven verbruiken",
+        "Toegestaan"
+      ],
+      [
+        "Bij één kern",
+        "Tijdens het wachten kan de thread die de lock heeft niet draaien, dus spinnen maakt de lock niet vrij. In de kernel wordt preëmptie uitgeschakeld tijdens het gebruik",
+        "Werkt zonder problemen"
+      ],
+      [
+        "Gebruik in de kernel",
+        "Ook bruikbaar waar niet mag worden geslapen, zoals in interrupthandlers (interruptcontext). Bij data die met een interrupt wordt gedeeld, worden eerst interrupts uitgeschakeld en daarna wordt de lock genomen",
+        "Kan slapen en is dus alleen in procescontext bruikbaar, niet in interrupthandlers"
+      ],
+      [
+        "Prioriteitsinversie",
+        "Als de thread die de lock heeft wordt onderbroken, blijft de wachtende kant spinnen. De kernel voorkomt dit door preëmptie tijdens het vasthouden uit te schakelen",
+        "Te ondervangen met een mutex met prioriteitsovererving"
+      ],
+      [
+        "Voorbeeld van implementatie",
+        "De variabele wordt aangepast met atomaire instructies (test-and-set of compare-and-swap). Test-and-test-and-set wacht normaal met gewone leesacties en vermindert zo het verkeer tussen kernen",
+        "Met futex in Linux wordt bij geen concurrentie alleen met atomaire instructies in user space gelockt, en alleen bij concurrentie laat de kernel de thread slapen. Er zijn ook implementaties die eerst even spinnen en dan slapen"
+      ]
+    ],
+    "when": [
+      [
+        "Spinlock",
+        "Op multicoresystemen wanneer de lock zeer kort wordt vastgehouden (korter dan de overhead van een contextwissel). Kernelcode waarin slapen niet is toegestaan, zoals interrupthandlers."
+      ],
+      [
+        "Mutex",
+        "Wanneer de lock lang wordt vastgehouden of wanneer de thread tijdens het vasthouden mogelijk slaapt, bijvoorbeeld voor I/O of geheugentoewijzing. Gewone wederzijdse uitsluiting in applicaties in user space."
+      ],
+      [
+        "Combinatie",
+        "Veel muteximplementaties combineren de voordelen van beide: zonder concurrentie wordt de lock zonder te slapen alleen met atomaire instructies genomen, en lukt dat niet, dan wordt eerst even gespind voordat de thread gaat slapen."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom worden spinlocks gebruikt als ze CPU-tijd verspillen?",
+        "Omdat bij een zeer korte houdtijd even spinnen sneller is dan de contextwissels voor inslapen en ontwaken. Bovendien zijn spinlocks het enige wat werkt op plekken waar slapen niet mag, zoals interrupthandlers in de kernel."
+      ],
+      [
+        "Waarom kan een interrupthandler geen mutex gebruiken?",
+        "Een mutex laat de wachtende thread slapen als de lock niet beschikbaar is, maar een interrupthandler draait niet als een bepaalde thread en kan dus niet inslapen om later te worden gewekt. Bij data die met een interrupthandler wordt gedeeld, combineer je een spinlock met het uitschakelen van interrupts."
+      ],
+      [
+        "Wat is een futex?",
+        "Een mechanisme in Linux om onder meer mutexen snel te implementeren. Zonder concurrentie volstaat het om de lockvariabele in user space met atomaire instructies aan te passen; alleen als er concurrentie is en gewacht moet worden, laat een systeemaanroep de kernel de thread slapen. Omdat de meeste locks niet worden betwist, bespaart dit de overhead van systeemaanroepen."
+      ],
+      [
+        "Wat gebeurt er als je een spinlock gebruikt op een systeem met één kern?",
+        "Ook als je in user space spint om te wachten, kan de thread die de lock heeft niet op die kern draaien, zodat de lock pas vrijkomt als je eigen tijdsquantum op is. Daarom regelt de kernel op systemen met één kern wederzijdse uitsluiting niet met spinlocks, maar door preëmptie of interrupts uit te schakelen."
+      ]
+    ]
+  },
+  "fp32-vs-fp16-vs-bf16-vs-int8": {
+    "title": "FP32, FP16, BF16 en INT8: bitindeling, bereik, precisie en toepassingen",
+    "description": "FP32, FP16, BF16 en INT8 vergeleken: bitindeling (teken, exponent, mantisse), bereik, precisie, conversie vanuit FP32, geheugen, rekenefficiëntie en gebruik bij training en inferentie.",
+    "lead": "FP32 is een 32-bits floating-pointgetal met enkele precisie en dient als referentie voor berekeningen. FP16 en BF16 zijn allebei 16 bits, maar verdelen de bits anders. FP16 besteedt veel bits aan de mantisse voor precisie, waardoor het bereik smal is, met een maximum van 65504. BF16 geeft de exponent dezelfde 8 bits als FP32 en houdt het bereik zo op FP32-niveau, ten koste van precisie. INT8 is een 8-bits integer die wordt gebruikt voor kwantisatie, waarbij reële getallen met een schaalfactor worden benaderd; zo kunnen geheugen en vermogen bij AI-inferentie sterk worden verlaagd.",
+    "items": [
+      "FP32",
+      "FP16",
+      "BF16",
+      "INT8"
+    ],
+    "rows": [
+      [
+        "Aantal bits",
+        "32 bits",
+        "16 bits",
+        "16 bits",
+        "8 bits"
+      ],
+      [
+        "Bits voor teken, exponent en mantisse",
+        "1, 8, 23",
+        "1, 5, 10",
+        "1, 8, 7",
+        "Geen exponent of mantisse. Integer in tweecomplement van −128 tot 127"
+      ],
+      [
+        "Grootste representeerbare waarde",
+        "Ongeveer 3,4 × 10³⁸",
+        "65504",
+        "Ongeveer 3,4 × 10³⁸ (vrijwel gelijk aan FP32)",
+        "127 (reële getallen worden met een schaalfactor weergegeven)"
+      ],
+      [
+        "Kleinste genormaliseerde getal",
+        "Ongeveer 1,2 × 10⁻³⁸",
+        "Ongeveer 6,1 × 10⁻⁵ (2⁻¹⁴)",
+        "Ongeveer 1,2 × 10⁻³⁸",
+        "Niet van toepassing (de stapgrootte van de waarden wordt door de schaalfactor bepaald)"
+      ],
+      [
+        "Indicatie van de precisie",
+        "Ongeveer 7 decimale cijfers (verschil tussen 1 en het volgende getal 2⁻²³ ≈ 1,2 × 10⁻⁷)",
+        "Ongeveer 3 decimale cijfers (2⁻¹⁰ ≈ 9,8 × 10⁻⁴)",
+        "2 tot 3 decimale cijfers (2⁻⁷ ≈ 7,8 × 10⁻³)",
+        "Een schaal met 256 stappen"
+      ],
+      [
+        "Conversie vanuit FP32",
+        "Niet nodig (referentie)",
+        "Door het smalle bereik kunnen grote waarden overlopen en kleine waarden 0 worden",
+        "Alleen de bovenste 16 bits nemen en afronden; het bereik loopt niet over",
+        "Kwantiseren na het bepalen van schaal (en nulpunt). Kalibratie om het waardebereik te onderzoeken is nodig"
+      ],
+      [
+        "Geheugen per waarde",
+        "4 bytes",
+        "2 bytes",
+        "2 bytes",
+        "1 byte"
+      ],
+      [
+        "Efficiëntie van rekeneenheden",
+        "Grote vermenigvuldigers; weinig multiply-accumulates per oppervlak",
+        "Kleinere rekeneenheden dan FP32; er passen veel multiply-accumulates naast elkaar",
+        "Vergelijkbaar met FP16. Door de kortere mantisse is de vermenigvuldiger nog kleiner",
+        "Kleinste en zuinigste vermenigvuldigers. Producten worden vaak in 32-bits integers opgeteld"
+      ],
+      [
+        "Gebruik bij training",
+        "Masterweights, optimizertoestand en accumulatie van producten",
+        "Training met gemengde precisie. Loss scaling voorkomt dat kleine gradiënten 0 worden",
+        "Veel gebruikt bij training met gemengde precisie. Loss scaling is meestal niet nodig",
+        "Normaal niet gebruikt (bij quantization-aware training wordt het effect van kwantisatie nagebootst)"
+      ],
+      [
+        "Gebruik bij inferentie",
+        "Referentie voor nauwkeurigheid. Wanneer juistheid voorgaat op prestaties",
+        "Inferentie op onder meer GPU's",
+        "Inferentie op GPU's en AI-accelerators",
+        "Inferentie met gekwantiseerde modellen. Vooral op edge-NPU's en dergelijke"
+      ]
+    ],
+    "when": [
+      [
+        "FP32",
+        "Berekeningen die precisie vereisen, masterweights en accumulatie van producten bij training, en als referentie om resultaten met lage precisie te controleren."
+      ],
+      [
+        "FP16 en BF16",
+        "Wanneer geheugen en rekenwerk bij AI-training en -inferentie moeten worden gehalveerd. BF16 voor training waarbij bereik telt; FP16 als de waarden binnen het bereik blijven en precisie belangrijk is."
+      ],
+      [
+        "INT8",
+        "Wanneer een getraind model moet worden gekwantiseerd om inferentie sneller en zuiniger te maken. Inferentie op edge-apparaten met beperkt geheugen en vermogen."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom heeft BF16 bij AI-training vaak de voorkeur boven FP16?",
+        "BF16 heeft dezelfde 8-bits exponent als FP32 en dus vrijwel hetzelfde bereik. Bij FP16 is loss scaling nodig om te voorkomen dat kleine gradiënten 0 worden of grote waarden overlopen, maar bij BF16 is dat meestal niet nodig en is ook de conversie vanuit FP32 eenvoudig. De precisie is lager, maar dat is bij het trainen van neurale netwerken zelden een probleem."
+      ],
+      [
+        "Waarom is de maximale waarde van FP16 65504?",
+        "FP16 heeft een exponent van 5 bits (bias 15), en de waarde met alle bits op 1 wordt gebruikt voor oneindig en NaN, zodat de grootste exponent 2 tot de macht 15 is. Met alle 10 mantissebits op 1 is (2 − 2⁻¹⁰) × 2¹⁵ de grootste eindige waarde, en dat is 65504."
+      ],
+      [
+        "Hoe stelt INT8 waarden met decimalen voor?",
+        "Door te benaderen in de vorm reëel getal ≈ schaal × (integer − nulpunt). Bij symmetrische kwantisatie rond 0 is het nulpunt 0 en wordt de schaal bijvoorbeeld gekozen als ‘grootste absolute waarde ÷ 127’. De schaal wordt per tensor of per kanaal vastgelegd."
+      ],
+      [
+        "Kan INT8 ook voor training worden gebruikt?",
+        "Voor training worden doorgaans floating-pointformaten gebruikt. Bij training hebben gradiënten een breed waardebereik en moeten ook kleine updates van de gewichten worden verwerkt. INT8 wordt vooral gebruikt voor inferentie met gekwantiseerde getrainde modellen; ook bij quantization-aware training worden de gewichten in floating point bijgewerkt."
+      ]
+    ]
+  },
+  "training-vs-inference": {
+    "title": "AI-training versus inferentie: rekenwerk, geheugen, formaten en hardware",
+    "description": "AI-training en inferentie vergeleken: forward en backward pass, rekenvolume, geheugen (gradiënten, optimizertoestand), getalformaten, batchgrootte, latentie en doorvoer, hardware en energie.",
+    "lead": "Training is het proces waarbij de gewichten van een model worden bepaald door heel vaak te herhalen: data door de forward pass sturen om het verlies te berekenen, met de backward pass de gradiënten bepalen en met een optimizer de gewichten bijwerken. Inferentie is het proces waarbij met vaste gewichten alleen de forward pass wordt uitgevoerd om een antwoord op nieuwe invoer te geven. Bij training worden naast de gewichten ook gradiënten, de optimizertoestand en activaties voor de backward pass bewaard, zodat veel meer geheugen en rekenwerk nodig is dan bij inferentie met hetzelfde model. Eén inferentieberekening is klein, maar wordt bij elk gebruik uitgevoerd, en de reactiesnelheid is daarbij belangrijk.",
+    "items": [
+      "Training",
+      "Inferentie"
+    ],
+    "rows": [
+      [
+        "Doel",
+        "De gewichten van het model uit data bepalen",
+        "Met vaste gewichten een antwoord geven op nieuwe invoer"
+      ],
+      [
+        "Soort berekening",
+        "Herhaling van forward pass → verliesberekening → gradiënten via de backward pass → gewichten bijwerken met de optimizer",
+        "Alleen de forward pass"
+      ],
+      [
+        "Indicatie van het rekenvolume",
+        "Per invoer ongeveer 3 keer de forward pass (de backward pass kost ongeveer 2 keer de forward pass). Bij transformers in totaal ongeveer 6 × aantal parameters × aantal tokens",
+        "Voor een model met N parameters ongeveer 2N per token"
+      ],
+      [
+        "Benodigd geheugen",
+        "Gewichten, gradiënten, optimizertoestand (twee bij Adam) en activaties voor de backward pass. Alles in FP32 betekent 16 bytes per parameter, plus de activaties",
+        "Gewichten en activaties tijdens de berekening (bij grote taalmodellen ook de KV-cache). In FP16 2 bytes per parameter"
+      ],
+      [
+        "Getalformaten",
+        "Gemengde precisie met BF16 of FP16 (masterweights in FP32)",
+        "FP16 of BF16, of gekwantiseerde formaten zoals INT8 of INT4"
+      ],
+      [
+        "Batchgrootte",
+        "Grote batches om de bezetting van de rekeneenheden te verhogen",
+        "Klein als een snel antwoord nodig is (soms 1). Servers bundelen meerdere verzoeken om de efficiëntie te verhogen"
+      ],
+      [
+        "Belangrijkste prestatiemaat",
+        "Doorvoer (tijd tot de training klaar is, bezetting van de rekeneenheden)",
+        "Een evenwicht tussen latentie (reactietijd op één verzoek) en doorvoer, en kosten per verwerking"
+      ],
+      [
+        "Hardware",
+        "Grote aantallen GPU's of accelerators met veel HBM en hoge rekenkracht, verbonden via een snel netwerk",
+        "Breed: van datacenter-GPU's en accelerators voor inferentie tot NPU's in smartphones en microcontrollers"
+      ],
+      [
+        "Parallellisatie",
+        "Dataparallellisme, tensorparallellisme en pipelineparallellisme. Gradiënten worden met all-reduce verzameld",
+        "Meerdere verzoeken parallel verwerken. Grote modellen worden met onder meer tensorparallellisme over meerdere chips verdeeld"
+      ],
+      [
+        "Energie",
+        "Eén trainingsrun laat veel chips lange tijd draaien en verbruikt veel elektriciteit",
+        "Per keer klein, maar wordt bij elk gebruik uitgevoerd; bij intensief gebruik wordt het totaal groot"
+      ]
+    ],
+    "when": [
+      [
+        "Training",
+        "Bij het maken van een nieuw model, of bij het verder trainen van een bestaand model op eigen data (finetuning)."
+      ],
+      [
+        "Inferentie",
+        "Bij het gebruik van een getraind model in een dienst of product. Beeldherkenning, tekstgeneratie, spraakherkenning en dergelijke."
+      ],
+      [
+        "Optimalisaties",
+        "Bij inferentie worden modellen lichter gemaakt met kwantisatie, pruning en knowledge distillation. Bij training besparen gemengde precisie en gradient checkpointing geheugen en rekenwerk."
+      ]
+    ],
+    "faq": [
+      [
+        "Waarom gebruikt training veel meer geheugen dan inferentie?",
+        "Omdat training naast de gewichten evenveel gradiënten en de optimizertoestand (twee bij Adam) bijhoudt, en daarbovenop de tussentijdse activaties van de forward pass bewaart voor de backward pass. Bij een model met 7 miljard parameters bijvoorbeeld komt dit, allemaal in FP32 en zonder activaties, uit op ongeveer 112 GB, terwijl inferentie met alleen FP16-gewichten met ongeveer 14 GB toekan."
+      ],
+      [
+        "Wat gebeurt er als je bij inferentie de batchgrootte vergroot?",
+        "Eenmaal ingelezen gewichten kunnen voor de berekening van meerdere invoeren worden gebruikt, zodat de rekeneenheden beter worden benut en de totale doorvoer stijgt. Anderzijds nemen de wachttijd tot alle invoer binnen is en de verwerkingstijd per keer toe, zodat het antwoord op één verzoek (latentie) trager wordt en er ook meer geheugen wordt gebruikt."
+      ],
+      [
+        "Kan dezelfde hardware voor training en inferentie worden gebruikt?",
+        "Ja. GPU's worden zowel voor training als voor inferentie gebruikt. Voor alleen inferentie zijn de backward pass en een groot geheugen echter niet nodig, dus wordt ook hardware gebruikt die op energie-efficiëntie is gericht, zoals inferentieaccelerators met veel rekeneenheden voor lage precisie zoals INT8 en de NPU's in smartphones."
+      ],
+      [
+        "Hoeveel rekenwerk vraagt training?",
+        "Voor transformermodellen wordt vaak de benadering gebruikt dat het totale aantal bewerkingen ongeveer 6ND is, met N het aantal parameters en D het aantal trainingstokens. Dat komt doordat de forward pass ongeveer 2N per token kost en de backward pass ongeveer het dubbele daarvan."
+      ]
+    ]
   }
 }

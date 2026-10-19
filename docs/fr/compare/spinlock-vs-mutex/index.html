@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr" data-lang="fr" data-base="/" data-home="/fr/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spinlock vs mutex : les principales différences | Salle des semi-conducteurs</title>
+<meta name="description" content="Spinlock et mutex comparés : mode d’attente (attente active ou sommeil), usage du CPU, durée de détention adaptée, usage dans le noyau (contexte d’interruption), inversion de priorité et futex.">
+<link rel="canonical" href="https://semiconroom.com/fr/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/spinlock-vs-mutex/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spinlock vs mutex : les principales différences | Salle des semi-conducteurs">
+<meta property="og:description" content="Spinlock et mutex comparés : mode d’attente (attente active ou sommeil), usage du CPU, durée de détention adaptée, usage dans le noyau (contexte d’interruption), inversion de priorité et futex.">
+<meta property="og:url" content="https://semiconroom.com/fr/compare/spinlock-vs-mutex/">
+<meta property="og:site_name" content="Salle des semi-conducteurs">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/fr/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Comparatifs","item":"https://semiconroom.com/fr/compare/"},{"@type":"ListItem","position":3,"name":"Spinlock vs mutex : les principales différences","item":"https://semiconroom.com/fr/compare/spinlock-vs-mutex/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Spinlock vs mutex : les principales différences","description":"Spinlock et mutex comparés : mode d’attente (attente active ou sommeil), usage du CPU, durée de détention adaptée, usage dans le noyau (contexte d’interruption), inversion de priorité et futex.","inLanguage":"fr","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/fr/compare/spinlock-vs-mutex/","author":{"@type":"Organization","name":"Salle des semi-conducteurs"},"publisher":{"@type":"Organization","name":"Salle des semi-conducteurs"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Pourquoi utilise-t-on le spinlock alors qu’il gaspille du CPU ?","acceptedAnswer":{"@type":"Answer","text":"Parce que, si le verrou est tenu très brièvement, tourner un peu en attendant est plus rapide que les changements de contexte nécessaires pour s’endormir et se réveiller. De plus, là où il est interdit de dormir, comme dans les gestionnaires d’interruption du noyau, seul le spinlock est utilisable."}},{"@type":"Question","name":"Pourquoi ne peut-on pas utiliser de mutex dans un gestionnaire d’interruption ?","acceptedAnswer":{"@type":"Answer","text":"Un mutex endort le thread en attente lorsqu’il ne peut pas prendre le verrou, mais un gestionnaire d’interruption ne s’exécute pas en tant que thread particulier : il ne peut donc pas s’endormir pour être réveillé plus tard. Pour des données partagées avec un gestionnaire d’interruption, on combine un spinlock et la désactivation des interruptions."}},{"@type":"Question","name":"Qu’est-ce qu’un futex ?","acceptedAnswer":{"@type":"Answer","text":"C’est un mécanisme de Linux pour implémenter rapidement les mutex, entre autres. Sans contention, il suffit de modifier la variable du verrou en espace utilisateur par des instructions atomiques ; ce n’est qu’en cas de contention, quand il faut attendre, qu’un appel système demande au noyau d’endormir le thread. Comme la plupart des verrous ne sont pas contestés, on économise le coût des appels système."}},{"@type":"Question","name":"Que se passe-t-il si l’on utilise un spinlock sur un système à un seul cœur ?","acceptedAnswer":{"@type":"Answer","text":"Même en tournant en boucle en espace utilisateur, le thread qui tient le verrou ne peut pas s’exécuter sur ce cœur : le verrou ne se libère pas avant que le thread en attente ait épuisé son quantum de temps. C’est pourquoi, sur un système à un seul cœur, le noyau assure l’exclusion mutuelle en désactivant la préemption ou les interruptions plutôt qu’avec des spinlocks."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/spinlock-vs-mutex/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/fr/"><span class="logo-mark" aria-hidden="true"></span><span>Salle des semi-conducteurs<small></small></span></a>
+    <nav class="header-nav"><a href="/fr/#topics">Thèmes</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/figures/">Schémas</a><a href="/fr/tools/">Calculateurs</a><a href="/fr/stats/">Progression</a></nav>
+    <form class="site-search" role="search" action="/fr/search/" method="get"><input type="search" name="q" placeholder="Rechercher (p. ex. MOSFET)" aria-label="Rechercher sur le site" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/fr/search/" aria-label="Rechercher sur le site"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Langue: Français"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Français</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Langue"><a href="/compare/spinlock-vs-mutex/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/spinlock-vs-mutex/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/spinlock-vs-mutex/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/spinlock-vs-mutex/" hreflang="ko" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/spinlock-vs-mutex/" hreflang="de" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/spinlock-vs-mutex/" hreflang="nl" lang="nl" data-lang="nl">Nederlands</a><span aria-current="true" lang="fr">Français</span></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/fr/">Accueil</a><a href="/fr/#topics">Thèmes</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/figures/">Schémas</a><a href="/fr/tools/">Calculateurs</a><a href="/fr/stats/">Progression</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/fr/">Accueil</a> <span>›</span> <a href="/fr/compare/">Comparatifs</a></nav>
+<article class="compare-page">
+  <h1>Spinlock vs mutex : les principales différences</h1>
+  <p class="lead">Le spinlock et le mutex sont deux verrous qui ne laissent entrer qu’un seul thread à la fois dans une section critique, mais ils n’attendent pas de la même façon que le verrou se libère. Le spinlock attend activement en testant en boucle la variable du verrou : il continue d’utiliser le CPU pendant l’attente, mais prend le verrou dès qu’il se libère. Le mutex endort le thread en attente et libère le CPU ; lorsque le verrou est relâché, l’OS réveille le thread. On utilise le spinlock pour des durées de détention très courtes ou dans les gestionnaires d’interruption, qui ne peuvent pas dormir, et le mutex pour des détentions longues ou lorsque le thread risque de dormir pendant qu’il tient le verrou.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copié !">Copier le tableau</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Lien copié">Partager</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Critère</th><th scope="col">Spinlock</th><th scope="col">Mutex</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Mode d’attente</th><td>Teste la variable en boucle jusqu’à ce que le verrou se libère (attente active)</td><td>S’endort si le verrou est occupé et est réveillé lorsqu’il est libéré</td></tr>
+        <tr><th scope="row">CPU pendant l’attente</th><td>Continue de l’utiliser</td><td>Le libère. D’autres threads peuvent utiliser le CPU entre-temps</td></tr>
+        <tr><th scope="row">Coût de l’attente</th><td>Pas de changement de contexte ; le verrou est pris dès qu’il se libère</td><td>L’endormissement et le réveil coûtent des appels système et des changements de contexte</td></tr>
+        <tr><th scope="row">Durée de détention adaptée</th><td>Très courte (plus courte que la durée d’un changement de contexte)</td><td>Longue. Lorsque le thread risque de dormir pendant la détention, par exemple en attendant une E/S</td></tr>
+        <tr><th scope="row">Dormir en tenant le verrou</th><td>Interdit. Le côté en attente continuerait de consommer du CPU</td><td>Possible</td></tr>
+        <tr><th scope="row">Avec un seul cœur</th><td>Pendant l’attente, le thread qui tient le verrou ne peut pas s’exécuter : tourner en boucle ne libère pas le verrou. Dans le noyau, on l’utilise en désactivant la préemption</td><td>Fonctionne sans problème</td></tr>
+        <tr><th scope="row">Usage dans le noyau</th><td>Utilisable aussi là où l’on ne peut pas dormir, comme dans les gestionnaires d’interruption (contexte d’interruption). Pour des données partagées avec une interruption, on désactive les interruptions avant de prendre le verrou</td><td>Risque de dormir : utilisable uniquement en contexte de processus, pas dans les gestionnaires d’interruption</td></tr>
+        <tr><th scope="row">Inversion de priorité</th><td>Si le thread qui tient le verrou est interrompu, le côté en attente continue de tourner. Le noyau l’évite en désactivant la préemption pendant la détention</td><td>Peut être traitée par un mutex à héritage de priorité</td></tr>
+        <tr><th scope="row">Exemple d’implémentation</th><td>La variable est modifiée par des instructions atomiques (test-and-set ou compare-and-swap). Le test-and-test-and-set attend normalement par des lectures ordinaires, ce qui réduit les communications entre cœurs</td><td>Avec le futex de Linux, en l’absence de contention, le verrouillage se fait uniquement par des instructions atomiques en espace utilisateur ; ce n’est qu’en cas de contention que le noyau endort le thread. Certaines implémentations tournent un peu avant de dormir</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Les valeurs indiquées sont des ordres de grandeur typiques et varient selon la génération de procédé et le produit.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Quand choisir l&#39;un ou l&#39;autre ?</h2>
+  <dl class="compare-when">
+    <dt>Spinlock</dt><dd>Sur un système multicœur, lorsque le verrou est tenu très brièvement (moins que le coût d’un changement de contexte), ou dans le code noyau où il est interdit de dormir, comme les gestionnaires d’interruption.</dd>
+    <dt>Mutex</dt><dd>Lorsque le verrou est tenu longtemps, ou que le thread risque de dormir pendant la détention, par exemple pour une E/S ou une allocation mémoire. Exclusion mutuelle ordinaire dans les applications en espace utilisateur.</dd>
+    <dt>Combinaison</dt><dd>De nombreuses implémentations de mutex combinent les avantages des deux : sans contention, le verrou est pris sans dormir, uniquement par des instructions atomiques, et en cas d’échec, le thread tourne un peu avant de s’endormir.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Pourquoi utilise-t-on le spinlock alors qu’il gaspille du CPU ?</h3>
+  <p>Parce que, si le verrou est tenu très brièvement, tourner un peu en attendant est plus rapide que les changements de contexte nécessaires pour s’endormir et se réveiller. De plus, là où il est interdit de dormir, comme dans les gestionnaires d’interruption du noyau, seul le spinlock est utilisable.</p>
+  <h3>Pourquoi ne peut-on pas utiliser de mutex dans un gestionnaire d’interruption ?</h3>
+  <p>Un mutex endort le thread en attente lorsqu’il ne peut pas prendre le verrou, mais un gestionnaire d’interruption ne s’exécute pas en tant que thread particulier : il ne peut donc pas s’endormir pour être réveillé plus tard. Pour des données partagées avec un gestionnaire d’interruption, on combine un spinlock et la désactivation des interruptions.</p>
+  <h3>Qu’est-ce qu’un futex ?</h3>
+  <p>C’est un mécanisme de Linux pour implémenter rapidement les mutex, entre autres. Sans contention, il suffit de modifier la variable du verrou en espace utilisateur par des instructions atomiques ; ce n’est qu’en cas de contention, quand il faut attendre, qu’un appel système demande au noyau d’endormir le thread. Comme la plupart des verrous ne sont pas contestés, on économise le coût des appels système.</p>
+  <h3>Que se passe-t-il si l’on utilise un spinlock sur un système à un seul cœur ?</h3>
+  <p>Même en tournant en boucle en espace utilisateur, le thread qui tient le verrou ne peut pas s’exécuter sur ce cœur : le verrou ne se libère pas avant que le thread en attente ait épuisé son quantum de temps. C’est pourquoi, sur un système à un seul cœur, le noyau assure l’exclusion mutuelle en désactivant la préemption ou les interruptions plutôt qu’avec des spinlocks.</p>
+</section>
+<section>
+  <h2>Vérifier vos connaissances</h2>
+  <article class="q-mini" data-qid="multicore-sync-020" data-cat="multicore-sync" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
+    <h3><a href="/fr/q/multicore-sync/multicore-sync-020/">Quelle description du verrou à attente active (spinlock) est correcte ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Verrou qui endort le thread jusqu’à la libération et le fait réveiller par l’OS</span></li><li><span class="choice-mark">B</span><span class="choice-text">Verrou qui attend la libération en examinant en boucle la variable de verrou</span></li><li><span class="choice-mark">C</span><span class="choice-text">Mécanisme qui protège les données en faisant tourner un disque</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Verrou qui attend la libération en examinant en boucle la variable de verrou</p><p class="explanation">Le <a class="term-link" href="/fr/term/spinlock/">spinlock</a> tente de prendre le verrou avec une <a class="term-link" href="/fr/term/atomic-instruction/">instruction atomique</a> et, en cas d’échec, réessaie immédiatement, de façon répétée. Sans le coût d’appeler l’OS pour s’endormir puis se réveiller, il est rapide lorsque le verrou n’est détenu que très brièvement. Il est très utilisé dans le noyau de l’OS et pour l’exclusion mutuelle avec les gestionnaires d’<a class="term-link" href="/fr/term/interrupt/">interruption</a>. En revanche, il a l’inconvénient de continuer à consommer du CPU pendant l’attente.</p></details>
+  </article>
+  <article class="q-mini" data-qid="multicore-sync-021" data-cat="multicore-sync" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
+    <h3><a href="/fr/q/multicore-sync/multicore-sync-021/">Dans quelle situation le spinlock est-il le moins adapté ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Lorsque le verrou est détenu longtemps et que les threads en attente gaspillent du CPU</span></li><li><span class="choice-mark">B</span><span class="choice-text">Lorsque le verrou n’est détenu que quelques dizaines de nanosecondes</span></li><li><span class="choice-mark">C</span><span class="choice-text">Dans un traitement du noyau de l’OS qui ne peut pas s’endormir</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. Lorsque le verrou est détenu longtemps et que les threads en attente gaspillent du CPU</p><p class="explanation">Un thread qui attend un <a class="term-link" href="/fr/term/spinlock/">spinlock</a> continue d’utiliser le CPU jusqu’à la libération. Si le verrou est détenu longtemps, tout ce <a class="term-link" href="/fr/term/cpu-time/">temps CPU</a> est gaspillé et gêne l’exécution des autres threads. En particulier, avec un seul cœur, le verrou ne se libère que si le thread détenteur s’exécute ; l’attente dure donc jusqu’à la fin du quantum de temps. Pour les attentes longues, on utilise un <a class="term-link" href="/fr/term/mutex/">mutex</a> qui attend en dormant ; il existe aussi des méthodes qui tournent brièvement avant de s’endormir.</p></details>
+  </article>
+  <article class="q-mini" data-qid="multicore-sync-022" data-cat="multicore-sync" data-answer="2" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est C.">
+    <h3><a href="/fr/q/multicore-sync/multicore-sync-022/">Dans un spinlock, pourquoi attendre la libération par des lectures ordinaires et n’utiliser l’instruction atomique que lorsque le verrou semble libre (test-and-test-and-set), plutôt que de tenter directement la modification par instruction atomique ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Parce que la lecture ordinaire est plus exacte que l’instruction atomique</span></li><li><span class="choice-mark">B</span><span class="choice-text">Parce qu’une instruction atomique ne peut être utilisée qu’une fois par programme</span></li><li><span class="choice-mark">C</span><span class="choice-text">Parce qu’une simple lecture peut attendre dans son propre cache, ce qui réduit fortement les allers-retours de la ligne de cache entre les cœurs</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Parce qu’une simple lecture peut attendre dans son propre cache, ce qui réduit fortement les allers-retours de la ligne de cache entre les cœurs</p><p class="explanation">Une <a class="term-link" href="/fr/term/atomic-instruction/">instruction atomique</a> implique une écriture ; si les threads en attente l’exécutent de façon répétée, ils se disputent à chaque fois la ligne en état M et invalident sans cesse les copies des autres cœurs. Avec des lectures ordinaires, chaque cœur se contente de lire sa copie en état S dans son propre cache, sans aucun échange. Ce n’est que lorsque le verrou est libéré et que la valeur change que l’instruction atomique est utilisée pour le prendre.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/fr/q/multicore-sync/multicore-sync-023/">Quelle comparaison entre mutex (verrou à attente en sommeil) et spinlock est correcte ?</a></li>
+  <li data-level="3"><a href="/fr/q/embedded/embedded-032/">Quelle description de l&#39;inversion de priorité dans un RTOS est correcte ?</a></li>
+  <li data-level="3"><a href="/fr/q/embedded/embedded-033/">Quel est le principe correct de « l&#39;héritage de priorité », utilisé pour prévenir l&#39;inversion de priorité ?</a></li></ol>
+  <p><a class="btn btn-primary" href="/fr/c/multicore-sync/">Questions d&#39;entraînement sur Multicœur et synchronisation</a></p>
+</section>
+<section>
+  <h2>Termes clés expliqués</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/fr/term/spinlock/">Verrou tournant (spinlock)</a></dt><dd>Verrou dont l&#39;attente consiste à tester en boucle la variable de verrou jusqu&#39;à ce qu&#39;il se libère. Rapide pour les attentes courtes, mais le CPU reste occupé pendant l&#39;attente.</dd></div>
+    <div class="term"><dt><a href="/fr/term/mutex/">Mutex</a></dt><dd>Verrou qui ne peut être détenu que par un seul thread à la fois. En général, un thread qui ne peut l&#39;obtenir est endormi et cède le CPU, puis réveillé par le système d&#39;exploitation à la libération.</dd></div>
+    <div class="term"><dt><a href="/fr/term/context-switch/">Changement de contexte</a></dt><dd>Bascule du processus ou du thread exécuté par le CPU. L&#39;état (registres, compteur ordinal, etc.) est sauvegardé et restauré ; lors d&#39;un changement de processus, l&#39;espace d&#39;adressage est aussi changé.</dd></div>
+    <div class="term"><dt><a href="/fr/term/atomic-instruction/">Instruction atomique</a></dt><dd>Instruction qui effectue lecture et écriture mémoire en une seule opération indivisible, sans interruption par un autre cœur : CAS, fetch-and-add, LR/SC, etc.</dd></div>
+    <div class="term"><dt><a href="/fr/term/priority-inversion/">Inversion de priorité</a></dt><dd>Phénomène où, pendant qu&#39;une tâche de haute priorité attend une ressource détenue par une tâche de basse priorité, une tâche de priorité intermédiaire préempte cette dernière et continue de s&#39;exécuter, faisant attendre longtemps la tâche prioritaire.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Comparatifs associés</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/fr/compare/mutex-vs-semaphore/"><strong>Mutex vs sémaphore : les différences expliquées</strong><span>Mutex et sémaphore comparés dans un tableau : objectif, valeur, propriété, opérations, signalisation, inversi…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/process-vs-thread/"><strong>Processus vs thread : les différences expliquées</strong><span>Processus et thread comparés dans un tableau : mémoire, coût de création, changement de contexte, communicati…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/msi-vs-mesi-vs-moesi/"><strong>MSI vs MESI vs MOESI : les protocoles de cohérence comparés</strong><span>Protocoles de cohérence de cache MSI, MESI et MOESI comparés : nombre et sens des états, intérêt des états Ex…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/user-mode-vs-kernel-mode/"><strong>Mode utilisateur vs mode noyau : instructions et protection</strong><span>Mode utilisateur et mode noyau comparés : instructions exécutables, mémoire accessible, déclencheurs du chang…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/cpu-vs-gpu/"><strong>CPU vs GPU : différences d&#39;architecture et d&#39;usage</strong><span>CPU et GPU comparés dans un tableau : objectif de conception, nombre de cœurs, modèle d&#39;exécution, caches, ba…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs SPI vs UART : différences et cas d&#39;utilisation</strong><span>I2C, SPI et UART comparés dans un tableau : nombre de fils, horloge, vitesse, topologie, adressage, contrôle …</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Ce site d'apprentissage sur les semi-conducteurs est géré par un particulier.</p>
+    <p class="footer-request"><a href="/fr/contact/">Vos demandes et commentaires sont les bienvenus. Envoyez-les via le formulaire de contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/fr/about/">À propos</a>
+      <a href="/fr/figures/">Schémas</a>
+      <a href="/fr/privacy/">Politique de confidentialité</a>
+      <a href="/fr/disclaimer/">Avertissement</a>
+      <a href="/fr/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Salle des semi-conducteurs</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
