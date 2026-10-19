@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Slack","item":"https://semiconroom.com/fr/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Slack","description":"Valeur exprimant la marge temporelle. Pour le setup, c'est le temps requis moins le temps d'arrivée, et pour le hold, le temps d'arrivée moins le temps requis ; une valeur négative signifie une violation.","url":"https://semiconroom.com/fr/term/slack/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Slack","item":"https://semiconroom.com/fr/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Slack","description":"Valeur exprimant la marge temporelle. Pour le setup, c'est le temps requis moins le temps d'arrivée, et pour le hold, le temps d'arrivée moins le temps requis ; une valeur négative signifie une violation.","url":"https://semiconroom.com/fr/term/slack/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Que signifie une slack négative en analyse temporelle ?","acceptedAnswer":{"@type":"Answer","text":"Cela signifie que le chemin viole sa contrainte : pour le setup, la donnée arrive trop tard pour le front de capture, et pour le hold, elle arrive trop tôt et pourrait écraser la valeur en cours de capture. Sa valeur absolue indique combien de retard il faut supprimer ou ajouter."}},{"@type":"Question","name":"Quelle différence entre WNS et TNS ?","acceptedAnswer":{"@type":"Answer","text":"Le WNS est la slack du pire chemin unique, tandis que le TNS est la somme de toutes les slacks négatives des points d'arrivée. Une conception peut avoir un petit WNS mais un grand TNS lorsque de nombreux chemins échouent de peu."}},{"@type":"Question","name":"Comment corriger une violation de hold ?","acceptedAnswer":{"@type":"Answer","text":"Ajoutez du retard sur le chemin de données court, généralement avec des cellules buffer ou de retard, ou réduisez le skew qui retarde l'horloge de capture. Abaisser la fréquence d'horloge n'aide pas, car la vérification de hold ne fait pas intervenir la période."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Domaine: <a href="/fr/c/sta-cdc/">Analyse temporelle et CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Calcul de la slack de setup</h2>
+  <p>L&#39;<a class="term-link" href="/fr/term/sta/">analyse temporelle statique</a> (STA) compare l&#39;instant d&#39;arrivée des données à l&#39;instant où elles sont requises. Pour le setup, la donnée lancée sur un front d&#39;horloge doit arriver avant le front de capture suivant moins le temps de setup, donc slack = requis − arrivée. Avec une période de 2,0 ns, un temps horloge-sortie de 0,2 ns, 1,4 ns de logique et un setup de 0,1 ns, l&#39;arrivée est à 1,6 ns, le temps requis à 1,9 ns et la slack vaut +0,3 ns. L&#39;<a class="term-link" href="/fr/term/clock-uncertainty/">incertitude d&#39;horloge</a>, pour la <a class="term-link" href="/fr/term/jitter/">gigue</a> et les arbres d&#39;horloge non encore construits, est aussi retranchée du temps requis, et un <a class="term-link" href="/fr/term/multicycle-path/">chemin multicycle</a> de 2 décale le front de capture d&#39;une période supplémentaire.</p>
+</section>
+<section class="term-about">
+  <h2>Slack de hold et pourquoi la fréquence n&#39;y change rien</h2>
+  <p>Le hold pose la question inverse : la nouvelle donnée lancée par un front arrive-t-elle si tôt qu&#39;elle corrompt la valeur que ce même front est en train de capturer ? Ici slack = arrivée − requis, avec les retards minimaux et requis = arrivée de l&#39;horloge de capture + temps de hold. Comme les deux vérifications se rapportent au même front, la période d&#39;horloge n&#39;intervient pas ; ralentir l&#39;horloge ne corrige donc jamais une violation de hold, et sur le silicium elle est généralement fatale. Les problèmes de hold apparaissent sur des chemins courts comme les registres à décalage et se corrigent normalement en insérant des cellules de retard sur le chemin de données.</p>
+</section>
+<section class="term-about">
+  <h2>Skew, OCV et CRPR</h2>
+  <p>Le <a class="term-link" href="/fr/term/clock-skew/">décalage d&#39;horloge</a> (skew) déplace les deux vérifications en sens opposés. Si l&#39;horloge de capture arrive plus tard que l&#39;horloge de lancement (skew positif), la slack de setup augmente de cette valeur et la slack de hold diminue d&#39;autant ; un skew négatif fait l&#39;inverse. Le <a class="term-link" href="/fr/term/derating/">déclassement</a> pour <a class="term-link" href="/fr/term/ocv/">variation sur puce</a> (OCV) rend l&#39;analyse pessimiste : pour le setup, il ralentit l&#39;horloge de lancement et les chemins de données et accélère l&#39;horloge de capture. Là où les deux chemins d&#39;horloge partagent des buffers depuis la racine, cette section commune ne peut pas être à la fois rapide et lente ; la suppression du pessimisme du chemin commun (<a class="term-link" href="/fr/term/crpr/">CRPR</a>) réintègre donc la différence.</p>
+</section>
+<section class="term-about">
+  <h2>Lire un rapport de timing</h2>
+  <p>Les rapports résument la slack par point d&#39;arrivée (<a class="term-link" href="/fr/term/endpoint-detection/">endpoint</a>). Le <a class="term-link" href="/fr/term/wns/">WNS (worst negative slack)</a> est la pire valeur unique et indique à quelle distance l&#39;horloge est de la fermeture ; le TNS (total negative slack) additionne les slacks négatives de tous les points en violation et indique la quantité de travail restante. Trois points à −0,1 ns donnent un WNS de −0,1 ns et un TNS de −0,3 ns. Les deux sont rapportés séparément pour le setup et le hold, et par groupe d&#39;horloges. Les violations de setup se traitent en raccourcissant la logique, en augmentant la taille des cellules ou en restructurant ; une exception multicycle n&#39;est légitime que si la logique capture réellement un cycle sur deux.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Slack</h2>
   <article class="q-mini" data-qid="sta-cdc-001" data-cat="sta-cdc" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. 0,3 ns</p><p class="explanation">La marge de setup se calcule par « instant requis − instant d&#39;arrivée ». L&#39;instant d&#39;arrivée des données est 0,2 + 1,4 = 1,6 ns, et l&#39;instant requis, obtenu en retranchant le <a class="term-link" href="/fr/term/setup-time/">temps d&#39;établissement</a> au front d&#39;horloge suivant, est 2,0 − 0,1 = 1,9 ns ; la marge vaut donc 1,9 − 1,6 = 0,3 ns. Elle est positive : la contrainte est respectée. 0,4 ns est la valeur obtenue en oubliant de retrancher le temps d&#39;établissement, et 0,5 ns celle obtenue en l&#39;ajoutant par erreur. Une marge négative indique une violation.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Que signifie une slack négative en analyse temporelle ?</h3>
+  <p>Cela signifie que le chemin viole sa contrainte : pour le setup, la donnée arrive trop tard pour le front de capture, et pour le hold, elle arrive trop tôt et pourrait écraser la valeur en cours de capture. Sa valeur absolue indique combien de retard il faut supprimer ou ajouter.</p>
+  <h3>Quelle différence entre WNS et TNS ?</h3>
+  <p>Le WNS est la slack du pire chemin unique, tandis que le TNS est la somme de toutes les slacks négatives des points d&#39;arrivée. Une conception peut avoir un petit WNS mais un grand TNS lorsque de nombreux chemins échouent de peu.</p>
+  <h3>Comment corriger une violation de hold ?</h3>
+  <p>Ajoutez du retard sur le chemin de données court, généralement avec des cellules buffer ou de retard, ou réduisez le skew qui retarde l&#39;horloge de capture. Abaisser la fréquence d&#39;horloge n&#39;aide pas, car la vérification de hold ne fait pas intervenir la période.</p>
+</section>
 <section>
   <h2>« Slack » dans les explications</h2>
   <ul class="term-quotes"><li><p>Le TNS (Total Negative Slack) est la somme des marges négatives de chaque point d&#39;arrivée en violation.</p><a href="/fr/q/sta-cdc/sta-cdc-003/">Quelle description du WNS et du TNS, qui apparaissent dans …</a></li></ul>
