@@ -120,6 +120,7 @@ function answer(n) {
   const ok = n === q.answer;
   store.record(q.id, q.cat, ok);
   answers.push({ q, choice: n, ok });
+  track('answer', { source: 'quiz', first: answers.length === 1, ok });
 
   const buttons = app.querySelectorAll('.choice');
   buttons.forEach(b => (b.disabled = true));

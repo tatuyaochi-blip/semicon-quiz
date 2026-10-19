@@ -264,6 +264,9 @@ function buildLang(L) {
   const choiceNotes = q => (q.choiceNotes ? '<ul class="choice-notes">' + q.choiceNotes.map((note, k) =>
     (note ? `<li><b>${mark(k)}. </b>${esc(note)}</li>` : '')).join('') + '</ul>' : '');
 
+  // 静的な問題ブロック(個別問題・用語・比較ページ)を、その場で解けるようにするための属性(動きは answer.js)
+  const qData = q => ` data-qid="${esc(q.id)}" data-cat="${esc(q.cat)}" data-answer="${q.answer}" data-correct="${esc(t('correct'))}" data-incorrect="${esc(t('incorrect', { mark: mark(q.answer) }))}"`;
+
   // 学習コース: トップの一覧と /course/{id}/ のページ(進み具合の表示は course.js)
   // コースの分野のうち、問題がまだない分野は準備ができるまで外す
   const liveCourses = courses.map(co => ({ ...co, steps: co.steps.filter(id => qs[id]?.length) })).filter(co => co.steps.length);
@@ -514,12 +517,16 @@ function buildLang(L) {
         fallback: x => `${x.path}c/${c.id}/`,
         title: t('question_title', { name: c.name, q: short(q.question, 50) }),
         description: short(q.question, 150),
+        scripts: ['answer.js'],
         content: fill(qTpl, {
           ...common,
           catUrl: `${home}c/${c.id}/`,
           catName: esc(c.name),
           groupName: esc(g.name),
           question: esc(q.question),
+          qData: qData({ ...q, cat: c.id }),
+          continueUrl: `${home}quiz/?mode=category&amp;c=${c.id}&amp;n=9&amp;skip=${q.id}`,
+          continueLabel: esc(t('q_continue', { name: c.name })),
           code: q.code ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
@@ -572,7 +579,7 @@ function buildLang(L) {
   }
 
   const miniQ = q => `
-  <article class="q-mini">
+  <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
     <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
     <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
@@ -598,7 +605,7 @@ function buildLang(L) {
         fallback: x => `${x.path}compare/`,
         title: e.title,
         description: e.description,
-        scripts: ['compare.js'],
+        scripts: ['compare.js', 'answer.js'],
         jsonld: [
           crumbs(topCrumb, idxCrumb, [e.title, cmpUrl(e)]),
           { '@context': 'https://schema.org', '@type': 'Article', headline: e.title, description: e.description, inLanguage: L.htmlLang, dateModified: modified,
@@ -683,7 +690,7 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
     const pick = (pickable.some(q => q.inQ) ? pickable.filter(q => q.inQ) : pickable).slice(0, 2);
     const practiceHtml = pick.length ? `<section>
   <h2>${esc(t('term_practice', { term: g.term }))}</h2>${pick.map(q => `
-  <article class="q-mini">
+  <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
     <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
     <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
@@ -694,6 +701,7 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
       alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
       title: t('term_title', { term: g.term }),
       description: short(g.desc, 150),
+      scripts: ['answer.js'],
       noindex: !list.length, // 問題に一度も出てこない用語のページは検索に出さない
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
 <article class="term-page">
