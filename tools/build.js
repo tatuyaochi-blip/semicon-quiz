@@ -161,7 +161,8 @@ function buildLang(L) {
   // 問題がまだない分野(準備中)は、一覧・コース・分野数から外す。分野ページだけは「準備中」で作る(noindex)
   const live = cats.filter(c => qs[c.id].length);
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
-  const terms = glossary.map(g => ({ ...g, ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
+  // 詳しい解説(about)とよくある質問(faq)は言語ごとに持つ。既定言語の分がほかの言語のページに混ざらないよう外す
+  const terms = glossary.map(({ about, faq, ...g }) => ({ ...g, ...(isDef ? { about, faq } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
   const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key] }));
   const matcher = termMatcher(glossaryIndex);
   write(`data/${code}/index.json`, JSON.stringify({
