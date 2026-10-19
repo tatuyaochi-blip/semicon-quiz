@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"組相聯快取","item":"https://semiconroom.com/zh-hant/term/set-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"組相聯快取","description":"資料可放在由位址決定的某一組內的多個位置(路)中任一處的快取結構。n路的話，每次存取要並行比對n個標籤。","url":"https://semiconroom.com/zh-hant/term/set-associative-cache/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"組相聯快取","item":"https://semiconroom.com/zh-hant/term/set-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"組相聯快取","description":"資料可放在由位址決定的某一組內的多個位置(路)中任一處的快取結構。n路的話，每次存取要並行比對n個標籤。","url":"https://semiconroom.com/zh-hant/term/set-associative-cache/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"組相聯快取的組數怎麼計算？","acceptedAnswer":{"@type":"Answer","text":"將容量除以行大小得到行數，再除以路數。32 KB、4 路、64 位元組快取行的快取有 512 行，因此有 128 組。"}},{"@type":"Question","name":"關聯度越高，快取就一定越快嗎？","acceptedAnswer":{"@type":"Answer","text":"不一定。它能降低衝突未命中，但每次存取必須比較更多標籤、在更多路中選擇，因此往往會拉長命中時間並增加功耗。最佳選擇需針對該快取層級，在未命中率與命中時間之間取得平衡。"}},{"@type":"Question","name":"快取的「組」和「路」有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"組是由一個索引值選出的一群位置，路則是組內的一個位置。8 路快取的每個組都有八路，區塊可以放在其中任何一路。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -122,7 +122,22 @@
 </svg><figcaption class="fig-cap">集合關聯式快取的查找 · <a href="/zh-hant/figures/#fig-cache-address">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/memory-hierarchy/">記憶體階層與效能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>位址如何切分</h2>
+  <p>快取位址分為三個欄位。低位的偏移位元選擇<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>中的位元組，索引位元選擇一個組，其餘的高位元則構成與快取行一起儲存的標籤。組數等於容量除以（行大小乘以路數）。以 32 KB 快取、64 位元組快取行、32 位元位址為例，共有 512 行：直接映射時有 512 組、9 位元索引與 17 位元標籤；4 路時則有 128 組、7 位元索引與 19 位元標籤。關聯度每加倍一次，索引就少一個位元，標籤就多一個位元。</p>
+</section>
+<section class="term-about">
+  <h2>存取時發生什麼事</h2>
+  <p>索引選出一個組，該組內全部 n 路的標籤會同時被讀出並與位址標籤比較，因此 8 路快取需要八個<a class="term-link" href="/zh-hant/term/comparator/">比較器</a>。每次比較也會檢查有效位元。標籤相符的那一路會驅動<a class="term-link" href="/zh-hant/term/multiplexer/">多工器</a>以送出資料；許多高速 L1 設計會在檢查標籤的同時平行讀出每一路的資料，最後再選擇，以功耗換取速度。未命中時，則由 <a class="term-link" href="/zh-hant/term/lru-replacement/">LRU</a>（最近最少使用）或較便宜的近似 LRU 等替換策略，決定要逐出組內的哪一路。</p>
+</section>
+<section class="term-about">
+  <h2>直接映射、組相聯與全相聯</h2>
+  <p>這些是同一光譜上的不同點。<a class="term-link" href="/zh-hant/term/direct-mapped-cache/">直接映射快取</a>是 1 路：每個位址只有一個可能的位置，因此共用同一索引的兩個熱門區塊會反覆互相逐出，這就是衝突未命中。<a class="term-link" href="/zh-hant/term/fully-associative-cache/">全相聯快取</a>只有單一個組，任何<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>都可放在任何位置，消除了衝突未命中，但需要與每一個標籤比較。組相聯快取則介於兩者之間。提高關聯度可減少衝突未命中，但無法減少強制性未命中或容量未命中，且超過約 8 路後效益遞減，而<a class="term-link" href="/zh-hant/term/comparator/">比較器</a>、<a class="term-link" href="/zh-hant/term/multiplexer/">多工器</a>延遲、命中時間與功耗則持續增加。</p>
+</section>
+<section class="term-about">
+  <h2>典型數值</h2>
+  <p>L1 快取通常為 8 到 12 路，因為命中時間至關重要且快取容量小。末級快取的未命中需要存取 DRAM，常使用約 16 路，因為為了減少未命中，稍慢的命中是可以接受的。<a class="term-link" href="/zh-hant/term/tlb/">轉譯後備緩衝區</a>（TLB）由於項目少且未命中代價高，常採用高度相聯或全相聯。估算硬體成本時要記得，標籤儲存量也會隨關聯度增加，因為每多一路就少一個索引位元，使每個儲存的標籤變長。</p>
+</section>
 <section>
   <h2>練習組相聯快取的題目</h2>
   <article class="q-mini" data-qid="memory-hierarchy-036" data-cat="memory-hierarchy" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -131,7 +146,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 8個</p><p class="explanation">在組相聯方式中，先以位址的索引選出一個組，再平行比較該組中所有路的標籤。8路時一組有8條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>，所以比較的標籤為8個，所需的<a class="term-link" href="/zh-hant/term/comparator/">比較器</a>也是8個。比較快取整體行數的標籤是全相聯方式，只比較1個的是直接映射方式。增加路數會使比較器與耗電量增加，因此L1的相聯度往往會保守一些。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>組相聯快取的組數怎麼計算？</h3>
+  <p>將容量除以行大小得到行數，再除以路數。32 KB、4 路、64 位元組快取行的快取有 512 行，因此有 128 組。</p>
+  <h3>關聯度越高，快取就一定越快嗎？</h3>
+  <p>不一定。它能降低衝突未命中，但每次存取必須比較更多標籤、在更多路中選擇，因此往往會拉長命中時間並增加功耗。最佳選擇需針對該快取層級，在未命中率與命中時間之間取得平衡。</p>
+  <h3>快取的「組」和「路」有什麼差別？</h3>
+  <p>組是由一個索引值選出的一群位置，路則是組內的一個位置。8 路快取的每個組都有八路，區塊可以放在其中任何一路。</p>
+</section>
 
 <section>
   <h2>出現「組相聯快取」的題目（1題）</h2>

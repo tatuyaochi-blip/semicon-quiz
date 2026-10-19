@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"非同步 FIFO","item":"https://semiconroom.com/zh-hant/term/asynchronous-fifo/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"非同步 FIFO","description":"寫入與讀取使用不同時脈的 FIFO，用於在時脈域之間傳遞多位元資料。將指標轉換為格雷碼後同步到對方的時脈域，以判定滿(full)與空(empty)。指標比位址多 1 位元，用以區分繞回。","url":"https://semiconroom.com/zh-hant/term/asynchronous-fifo/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"非同步 FIFO","item":"https://semiconroom.com/zh-hant/term/asynchronous-fifo/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"非同步 FIFO","description":"寫入與讀取使用不同時脈的 FIFO，用於在時脈域之間傳遞多位元資料。將指標轉換為格雷碼後同步到對方的時脈域，以判定滿(full)與空(empty)。指標比位址多 1 位元，用以區分繞回。","url":"https://semiconroom.com/zh-hant/term/asynchronous-fifo/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為什麼非同步 FIFO 的指標要用格雷碼？","acceptedAnswer":{"@type":"Answer","text":"每次遞增只改變一個位元，因此即使另一個時脈在變化途中取樣指標，也會穩定成遞增前或遞增後的有效值。二進位指標則可能被擷取成完全錯誤的值，破壞 full 或 empty 的判定。"}},{"@type":"Question","name":"為什麼 FIFO 指標比位址多 1 位元？","acceptedAnswer":{"@type":"Answer","text":"多出的位元用來計算圈數。位址相同時，圈數位元相等代表 empty，圈數位元不同則代表寫入端已超前一整圈，也就是 full。"}},{"@type":"Question","name":"跨時脈域該用非同步 FIFO 還是交握？","acceptedAnswer":{"@type":"Answer","text":"像設定暫存器這種偶發性的傳輸，可以接受每筆資料 8 個以上週期的代價，就使用交握。若資料必須以最高每週期一個字組的速率持續流動，則使用非同步 FIFO。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sta-cdc/">時序分析與CDC</a></p>
 </article>
+<section class="term-about">
+  <h2>非同步 FIFO 的架構</h2>
+  <p>非同步 FIFO 是一種雙埠記憶體，以發送端的時脈寫入、以接收端的時脈讀取。寫入指標位於寫入<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>，讀取指標位於讀取時脈域。每個指標都經由<a class="term-link" href="/zh-hant/term/synchronizer/">同步器</a>傳到對方的時脈域：寫入端將自己的指標與同步過來的讀取指標比較，產生 full；讀取端將自己的指標與同步過來的寫入指標比較，產生 empty。資料本身從不經過同步，而是穩定地存放在記憶體中，直到指標顯示可以讀取為止。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼指標要用格雷碼</h2>
+  <p>二進位計數器可能一次翻轉許多位元，例如從 0111 變為 1000，而分別同步的各位元可能在不同週期穩定，產生與前後兩值都無關的數值。<a class="term-link" href="/zh-hant/term/gray-code/">格雷碼</a>每次遞增只改變一個位元，因此即使該位元在變化途中被擷取，接收端看到的也只會是舊指標或新指標，頂多落後一步。深度通常是 2 的冪次，讓序列能乾淨地繞回。指標位元不應直接宣告為 <a class="term-link" href="/zh-hant/term/false-path/">false path</a>：應以最大延遲限制，把它們的偏移控制在一個發送週期以內。</p>
+</section>
+<section class="term-about">
+  <h2>區分 full 與 empty</h2>
+  <p>有 16 個項目時，4 位元位址無法區分空的 FIFO 與已經繞了一整圈的 FIFO，因為兩者的位址相同。加上第五個圈數位元即可解決。以二進位表示時，五個位元全部相等代表 empty，只有 MSB 不同代表 full。以<a class="term-link" href="/zh-hant/term/gray-code/">格雷碼</a>表示時，full 的條件變成最高兩個位元反相、較低三個位元相等；讀取指標為 00000 時，full 為 11000。由於雙方看到的都是對方指標稍舊的副本，full 與 empty 可能會被維持得稍久一些，但絕不會過早解除，因此誤差總是偏向安全側。</p>
+</section>
+<section class="term-about">
+  <h2>決定深度</h2>
+  <p>深度必須能吸收突發傳輸期間的速率差。若寫入端以 100 MHz 送出 100 個字組，讀取端以 80 MHz 每週期取出一個字組，則突發持續 1000 ns，讀取端取走 80 個字組，剩下 20 個，這可由 突發長度 × (1 − 讀取速率 / 寫入速率) 求得。實際設計會再多加幾個項目，以涵蓋 2 至 3 個週期的指標同步延遲。相較於每筆資料需要 8 個以上週期的 req/ack <a class="term-link" href="/zh-hant/term/handshake/">交握</a>，非同步 FIFO 可持續每週期傳送一個字組，是串流資料的標準選擇。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為什麼非同步 FIFO 的指標要用格雷碼？</h3>
+  <p>每次遞增只改變一個位元，因此即使另一個時脈在變化途中取樣指標，也會穩定成遞增前或遞增後的有效值。二進位指標則可能被擷取成完全錯誤的值，破壞 full 或 empty 的判定。</p>
+  <h3>為什麼 FIFO 指標比位址多 1 位元？</h3>
+  <p>多出的位元用來計算圈數。位址相同時，圈數位元相等代表 empty，圈數位元不同則代表寫入端已超前一整圈，也就是 full。</p>
+  <h3>跨時脈域該用非同步 FIFO 還是交握？</h3>
+  <p>像設定暫存器這種偶發性的傳輸，可以接受每筆資料 8 個以上週期的代價，就使用交握。若資料必須以最高每週期一個字組的速率持續流動，則使用非同步 FIFO。</p>
+</section>
 
 
 

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"電源閘控（Power gating）","item":"https://semiconroom.com/zh-hant/term/power-gating/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"電源閘控（Power gating）","description":"以開關切斷對未使用之電路區塊的電源供應，使漏電功耗也幾乎歸零的低功耗手法。需要注意狀態保存與恢復的時間。","url":"https://semiconroom.com/zh-hant/term/power-gating/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"電源閘控（Power gating）","item":"https://semiconroom.com/zh-hant/term/power-gating/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"電源閘控（Power gating）","description":"以開關切斷對未使用之電路區塊的電源供應，使漏電功耗也幾乎歸零的低功耗手法。需要注意狀態保存與恢復的時間。","url":"https://semiconroom.com/zh-hant/term/power-gating/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"電源閘控和時脈閘控有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"時脈閘控停止時脈以削減動態功耗，幾乎能立即恢復，但漏電會持續。電源閘控切斷電源，連漏電也一併消除，但除非事先保存，否則狀態會遺失，而且喚醒需要較長時間。"}},{"@type":"Question","name":"電源閘控中的隔離單元是什麼？","acceptedAnswer":{"@type":"Answer","text":"它是位於可關閉電源域輸出端的閘，在該電源域關閉時將輸出強制為固定的邏輯值，使不確定的浮接訊號不會傳到仍在供電的邏輯。"}},{"@type":"Question","name":"為什麼短暫的閒置期間不使用電源閘控？","acceptedAnswer":{"@type":"Answer","text":"每次關閉與喚醒都要花費能量來為區塊重新充電、保存與恢復狀態，而且需要時間。若閒置期間短於損益平衡時間，節省的漏電就無法抵銷這些開銷。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/power-management/">電源管理（軟體控制）</a></p>
 </article>
-
+<section class="term-about">
+  <h2>電源閘控如何實作</h2>
+  <p>電源開關（也稱為睡眠電晶體）被放在區塊與其電源之間：header 開關是位於主電源與區塊局部虛擬電源軌之間的 PMOS 元件，footer 開關則是位於接地側的 NMOS 元件。它們使用高<a class="term-link" href="/zh-hant/term/threshold-voltage/">臨界電壓</a>電晶體，使關閉時漏電很少，並大量分散配置在區塊各處以維持低電阻。區塊關閉時，<a class="term-link" href="/zh-hant/term/isolation-cell/">隔離單元（isolation cell）</a>會將其輸出鉗制在確定的邏輯位準，避免浮接訊號干擾仍在供電的區塊。</p>
+</section>
+<section class="term-about">
+  <h2>保存狀態</h2>
+  <p>切斷電源會清除<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>與記憶體的內容。設計上可以接受狀態遺失並重新初始化、在關閉前將重要狀態存到常開（always-on）<a class="term-link" href="/zh-hant/term/power-domain/">電源域</a>中的記憶體，或使用保持型正反器（retention flip-flop），其額外的小型閂鎖在主正反器關閉期間仍由常開電源供電。SRAM 則可改用降低電壓的保持模式，保留資料但削減大部分漏電。負責依序控制隔離、狀態保存與開關的電源控制器，本身必須位於常開電源域中。</p>
+</section>
+<section class="term-about">
+  <h2>成本與損益平衡點</h2>
+  <p>開關會增加串聯電阻，使區塊看到一些電壓降而運作稍慢，並且佔用面積。開啟時，區塊電容充電會造成湧入電流，因此開關會逐步開啟，通常先開弱的、再開強的，以免拉低共用電源。因此喚醒所需的時間遠長於從<a class="term-link" href="/zh-hant/term/clock-gating/">時脈閘控</a>恢復。每次關閉–開啟循環也會消耗能量，所以只有當閒置期間超過<a class="term-link" href="/zh-hant/term/break-even-time/">損益平衡時間</a>、使節省的漏電能量大於這些額外開銷時，關閉才划算。</p>
+</section>
+<section class="term-about">
+  <h2>電源閘控與時脈閘控、DVFS 的比較</h2>
+  <p><a class="term-link" href="/zh-hant/term/clock-gating/">時脈閘控</a>停止時脈，使區塊停止切換，消除<a class="term-link" href="/zh-hant/term/dynamic-power/">動態功耗</a>並能在一個週期內恢復，但由於電源仍然連接，漏電會持續。電源閘控連漏電也一併消除，代價是需要處理狀態以及喚醒延遲。<a class="term-link" href="/zh-hant/term/dvfs/">DVFS</a> 則為仍在工作的區塊降低電壓與頻率。實際晶片會三者並用：數個週期的閒置期使用時脈閘控，處於深度睡眠狀態的閒置 CPU 核心、<a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 與加速器使用電源閘控，運作中的區塊則使用 DVFS。</p>
+</section>
 <section>
   <h2>練習電源閘控（Power gating）的題目</h2>
   <article class="q-mini" data-qid="power-management-007" data-cat="power-management" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 正反器的內容會消失，因此必須先將所需的狀態儲存到保留暫存器或外部記憶體後再切斷</p><p class="explanation">電源被切斷的區塊中，<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>與SRAM會遺失內容，因此為了在恢復時能從<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>處繼續運作，必須在切斷前先儲存狀態。做法包括使用同時具備小型常時供電記憶的保留暫存器，或是以軟體將狀態寫出到記憶體。儲存與還原以及電源的啟動都需要時間與能量，因此在短暫的休息時間內，有時不切斷反而比較好。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>電源閘控和時脈閘控有什麼差別？</h3>
+  <p>時脈閘控停止時脈以削減動態功耗，幾乎能立即恢復，但漏電會持續。電源閘控切斷電源，連漏電也一併消除，但除非事先保存，否則狀態會遺失，而且喚醒需要較長時間。</p>
+  <h3>電源閘控中的隔離單元是什麼？</h3>
+  <p>它是位於可關閉電源域輸出端的閘，在該電源域關閉時將輸出強制為固定的邏輯值，使不確定的浮接訊號不會傳到仍在供電的邏輯。</p>
+  <h3>為什麼短暫的閒置期間不使用電源閘控？</h3>
+  <p>每次關閉與喚醒都要花費能量來為區塊重新充電、保存與恢復狀態，而且需要時間。若閒置期間短於損益平衡時間，節省的漏電就無法抵銷這些開銷。</p>
+</section>
 <section>
   <h2>解析中的「電源閘控（Power gating）」</h2>
   <ul class="term-quotes"><li><p>電源閘控則是將設置在區塊與電源之間的大型電晶體開關關閉，切斷電源本身，因此洩漏功耗也幾乎消除。</p><a href="/zh-hant/q/power-management/power-management-007/">關於電源閘控（power gating）的說明，下列何者正確？</a></li><li><p>電源閘控因為切斷了電源，洩漏功耗也會減少，但需要狀態的儲存與還原，以及等待電源穩定的時間等。</p><a href="/zh-hant/q/power-management/power-management-009/">比較時脈閘控與電源閘控的說明，下列何者正確？</a></li><li><p>對策上會組合High-k膜、多Vth、關閉不使用區塊電源的電源閘控、基板偏壓的控制等。</p><a href="/zh-hant/q/mosfet/mosfet-030/">關於MOSFET在關閉狀態下流過的漏電流的主要成分組合，下列何者正確？</a></li><li><p>但漏電流並不會減少，所以要搭配直接切斷電源的電源閘控（power gating）。</p><a href="/zh-hant/q/eda/eda-015/">停止對未使用的電路區塊供應時脈，以減少無謂耗電量的低功耗設計手法為下列何者？</a></li><li><p>靜態功率即使停止時脈也不會減少，因此要以切斷電源本身的電源閘控（power gating）等方式因應。</p><a href="/zh-hant/q/power-management/power-management-005/">關於CMOS電路的靜態功耗（洩漏功耗）的說明，下列何者正確？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"同步器(Synchronizer)","item":"https://semiconroom.com/zh-hant/term/synchronizer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"同步器(Synchronizer)","description":"將非同步訊號對齊到接收端時脈的電路。基本構成是將 2 級正反器串聯，提高第 1 級即使進入亞穩態，也能在下一個邊緣之前穩定下來的機率。","url":"https://semiconroom.com/zh-hant/term/synchronizer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"同步器(Synchronizer)","item":"https://semiconroom.com/zh-hant/term/synchronizer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"同步器(Synchronizer)","description":"將非同步訊號對齊到接收端時脈的電路。基本構成是將 2 級正反器串聯，提高第 1 級即使進入亞穩態，也能在下一個邊緣之前穩定下來的機率。","url":"https://semiconroom.com/zh-hant/term/synchronizer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"雙正反器同步器就夠了嗎？","acceptedAnswer":{"@type":"Answer","text":"在時脈速率適中的多數設計中，是的：雙級同步器通常可將 MTBF 推到數千年以上。若接收頻率非常高，或正反器的 τ 很大，則會加上第三級，以多爭取一個時脈週期的穩定時間。"}},{"@type":"Question","name":"多位元匯流排可以每個位元各用一個同步器來同步嗎？","acceptedAnswer":{"@type":"Answer","text":"對任意資料而言不行，因為不同位元可能在不同週期被擷取，產生從未存在過的值。計數器應使用格雷碼，或是保持資料穩定並透過交握同步單一控制位元，或使用非同步 FIFO。"}},{"@type":"Question","name":"為什麼從快時脈跨到慢時脈時脈衝會遺失？","acceptedAnswer":{"@type":"Answer","text":"如果脈衝比接收時脈週期還短，它可能在兩個接收邊緣之間開始並結束，完全不會被取樣到。應將其延展到遠超過一個接收週期，或轉換成翻轉（toggle）訊號，再經同步後做邊緣偵測。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -106,7 +106,22 @@
 </svg><figcaption class="fig-cap">二級正反器同步電路 · <a href="/zh-hant/figures/#fig-sync-2ff">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sta-cdc/">時序分析與CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼要用兩個正反器</h2>
+  <p>當非同步輸入在<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>的建立–<a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a>窗內變化時，正反器可能進入<a class="term-link" href="/zh-hant/term/metastability/">亞穩態</a>，輸出會在 0 與 1 之間徘徊一段無法預測的時間。這無法避免，但仍未穩定的機率會隨等待時間呈指數下降。雙正反器同步器正是利用這一點：第一級可能進入亞穩態，第二級則在整整一個時脈週期之後才取樣，此時第一級幾乎必定已經穩定。接收<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>中的其他電路只會看到第二級乾淨的輸出。</p>
+</section>
+<section class="term-about">
+  <h2>MTBF 與穩定時間</h2>
+  <p>同步器的可靠度以<a class="term-link" href="/zh-hant/term/mtbf/">平均故障間隔</a>表示，近似為 MTBF = e^(t_r/τ) / (T_0 × f_clk × f_data)，其中 t_r 是可用於穩定的時間，τ 和 T_0 是<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>的常數。由於 t_r 位於指數上，微小的變化影響極大：在 τ = 20 ps 時，多出 1 奈秒就會讓 MTBF 乘上 e^50。增加第三級大約可多出一個時脈週期的穩定時間。提高接收端時脈頻率會造成雙重傷害，一是取樣次數增加，二是週期縮短，這就是極高速<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>常使用三級的原因。</p>
+</section>
+<section class="term-about">
+  <h2>保護 MTBF 的設計規則</h2>
+  <p>第一級與第二級<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>要直接相連，中間不放任何組合邏輯或緩衝器，並且擺放得很近；這段路徑上的任何延遲都會從 t_r 中扣除。絕不能把第一級的輸出扇出到其他邏輯，因為不同的負載可能會把<a class="term-link" href="/zh-hant/term/metastability/">亞穩態</a>電位解讀成不同的值。進入同步器的訊號必須直接來自發送<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>的正反器，而不是組合邏輯，因為非同步的邊緣可能把瞬間的<a class="term-link" href="/zh-hant/term/glitch/">突波</a>當成有效脈衝抓進來。跨時脈域（CDC）驗證工具會自動檢查這些規則。</p>
+</section>
+<section class="term-about">
+  <h2>同步器無法解決的問題</h2>
+  <p>同步器一次只處理一個位元。若匯流排的每個位元各自使用同步器，各位元可能在不同週期穩定，因此從 0111 變為 1000 時，可能會短暫被讀成 1111 或 0000。分別同步後再重新組合的訊號（稱為再匯聚，reconvergence）也有同樣的風險。短脈衝是另一個陷阱：2 ns 的脈衝可能完全落在 100 MHz 時脈的兩個邊緣之間而消失。對策包括<a class="term-link" href="/zh-hant/term/gray-code/">格雷碼</a>計數器、在同步單一有效位元期間保持資料不變、<a class="term-link" href="/zh-hant/term/handshake/">交握</a>、<a class="term-link" href="/zh-hant/term/asynchronous-fifo/">非同步 FIFO</a>，以及將位準訊號延展到約 1.5 個接收週期以上。</p>
+</section>
 <section>
   <h2>練習同步器(Synchronizer)的題目</h2>
   <article class="q-mini" data-qid="sta-cdc-026" data-cat="sta-cdc" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -120,7 +135,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 亞穩態穩定下來可用的時間約增加1個週期，MTBF呈指數性延長</p><p class="explanation"><a class="term-link" href="/zh-hant/term/synchronizer/">同步器</a>的<a class="term-link" href="/zh-hant/term/mtbf/">MTBF</a>大致可表示為 MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data)。t_r 是<a class="term-link" href="/zh-hant/term/metastability/">亞穩態</a>穩定下來可用的時間，τ 與 T_0 是由<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>特性決定的常數。每增加1級，t_r 約延長1個週期。例如 τ = 20 ps 時，若 t_r 增加 1 ns，MTBF會延長為 e^50 倍，也就是10的21次方倍以上。第1級成為亞穩態的機率不變，但在傳到下一級之前穩定下來的機率會大幅提高。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>雙正反器同步器就夠了嗎？</h3>
+  <p>在時脈速率適中的多數設計中，是的：雙級同步器通常可將 MTBF 推到數千年以上。若接收頻率非常高，或正反器的 τ 很大，則會加上第三級，以多爭取一個時脈週期的穩定時間。</p>
+  <h3>多位元匯流排可以每個位元各用一個同步器來同步嗎？</h3>
+  <p>對任意資料而言不行，因為不同位元可能在不同週期被擷取，產生從未存在過的值。計數器應使用格雷碼，或是保持資料穩定並透過交握同步單一控制位元，或使用非同步 FIFO。</p>
+  <h3>為什麼從快時脈跨到慢時脈時脈衝會遺失？</h3>
+  <p>如果脈衝比接收時脈週期還短，它可能在兩個接收邊緣之間開始並結束，完全不會被取樣到。應將其延展到遠超過一個接收週期，或轉換成翻轉（toggle）訊號，再經同步後做邊緣偵測。</p>
+</section>
 <section>
   <h2>解析中的「同步器(Synchronizer)」</h2>
   <ul class="term-quotes"><li><p>這類非同步時脈之間無法以STA保證，因此需要同步器。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-026/">在兩個時脈域之間的路徑中，需要同步器的是哪一種？</a></li><li><p>同步器的MTBF大致可表示為 MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data)。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-027/">將2級正反器的同步器增加為3級時，因亞穩態造成之故障的平均間隔（MTBF）如何變化，下列何者正確？</a></li><li><p>高速時脈使用3級同步器正是這個原因。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-028/">提高同步器接收端的時脈頻率，MTBF就會縮短。其理由何者正確？</a></li><li><p>第1級正反器可能成為亞穩態，同步器的概念是以到第2級建立時間為止的時間，確保其輸出穩定下來所需的時間。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-029/">關於2級正反器同步器的第1級與第2級之間，下列注意事項何者正確？</a></li><li><p>亞穩態並非每次都會發生，CDC驗證工具也會對同步器前方的組合電路發出警告。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-030/">不可將發送端時脈域中組合電路的輸出直接送入接收端同步器的理由，何者正確？</a></li></ul>

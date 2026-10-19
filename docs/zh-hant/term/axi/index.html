@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"AXI","item":"https://semiconroom.com/zh-hant/term/axi/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AXI","description":"Arm AMBA 規格之一，是連接 SoC 內部各區塊的匯流排。具有 5 個獨立通道與 VALID、READY 交握，另有 AXI4-Lite 與 AXI4-Stream 等種類。","url":"https://semiconroom.com/zh-hant/term/axi/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"AXI","item":"https://semiconroom.com/zh-hant/term/axi/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AXI","description":"Arm AMBA 規格之一，是連接 SoC 內部各區塊的匯流排。具有 5 個獨立通道與 VALID、READY 交握，另有 AXI4-Lite 與 AXI4-Stream 等種類。","url":"https://semiconroom.com/zh-hant/term/axi/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"AXI4、AXI4-Lite 和 AXI4-Stream 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"完整的 AXI4 支援突發、ID 與多筆未完成交易，用於高吞吐量的記憶體流量。AXI4-Lite 每筆交易處理一個字組，用於暫存器存取；AXI4-Stream 則完全省略位址，用於承載連續資料流。"}},{"@type":"Question","name":"AXI 中 VALID 可以依賴 READY 嗎？","acceptedAnswer":{"@type":"Answer","text":"不可以。發送端有資料時就必須拉高 VALID，不能等待 READY，否則雙方可能永遠互相等待。接收端則可以等到 VALID 之後再拉高 READY。"}},{"@type":"Question","name":"AXI 和 APB 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"AXI 是高效能、管線化的介面，具有獨立的讀取與寫入通道以及突發傳輸。APB 則是用於周邊暫存器的簡單低速匯流排，通常經由橋接器連接到 AXI。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/io-interface/">介面與匯流排規格</a></p>
 </article>
-
+<section class="term-about">
+  <h2>通道與交握</h2>
+  <p>Advanced eXtensible Interface（AXI）將每個連接分成五個單向通道：讀取位址、讀取資料、寫入位址、寫入資料與寫入回應。每個通道都以相同的 VALID/READY <a class="term-link" href="/zh-hant/term/handshake/">交握</a>傳遞資訊，在兩個訊號皆為高的時脈邊緣完成一次傳輸。發送端不得等待 READY 之後才拉高 VALID，以避免<a class="term-link" href="/zh-hant/term/deadlock/">死結</a>；接收端則可以將 READY 保持為低以施加反壓。由於每個通道都是簡單的交握，因此可以在任何通道上插入管線暫存器切片，以利時序收斂而不改變行為。</p>
+</section>
+<section class="term-about">
+  <h2>突發傳輸與交易</h2>
+  <p>一次位址<a class="term-link" href="/zh-hant/term/handshake/">交握</a>可以啟動包含許多資料拍（beat）的突發傳輸。位址通道攜帶起始位址、突發長度、每拍大小與突發類型：類 FIFO 位址用 fixed，一般記憶體區塊用 incrementing，從關鍵字組開始的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>填充則用 wrapping。在 AXI4 中，incrementing 突發最多可達 256 拍，而且突發不得跨越 4 KB 位址邊界，因此互連永遠不必把一個突發拆分到兩個目標。每個讀取拍與每個寫入突發都會回傳表示成功或錯誤的回應碼。</p>
+</section>
+<section class="term-about">
+  <h2>ID、未完成請求與互連</h2>
+  <p>每筆交易都帶有一個 ID。主控端（manager）可以在先前的請求完成前發出許多請求，在記憶體延遲很長時仍讓匯流排保持忙碌。相同 ID 的交易必須依序完成，不同 ID 的交易則可以亂序完成，因此快速的周邊不必排在緩慢的 DRAM 後面等待。在 <a class="term-link" href="/zh-hant/term/soc/">SoC</a> 中，互連或交叉開關會解碼位址、在 CPU 與 <a class="term-link" href="/zh-hant/term/dma/">DMA</a> 引擎等主控端之間仲裁，並將請求路由到記憶體控制器等從屬端（subordinate），通常還會加入寬度、<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>與協定轉換器。</p>
+</section>
+<section class="term-about">
+  <h2>AXI4-Lite、AXI4-Stream 與 APB</h2>
+  <p>AXI4-Lite 保留五個通道，但省略了突發與大部分交易選項，每筆交易傳送一個資料字組，適合控制與狀態暫存器。AXI4-Stream 則完全沒有位址：單一的 TVALID/TREADY 通道承載連續資料，以 TLAST 標示封包結尾，適合影像、訊號處理與網路的資料路徑。Advanced Peripheral Bus（APB）是 Arm AMBA 規格的另一個成員，更加簡單且無管線，通常經由橋接器用於低速周邊。AXI 的一致性擴充則加入了用於<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a>的<a class="term-link" href="/zh-hant/term/bus-snooping/">窺探</a>（snooping）功能。</p>
+</section>
 <section>
   <h2>練習AXI的題目</h2>
   <article class="q-mini" data-qid="io-interface-028" data-cat="io-interface" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 傳送方的VALID與接收方的READY兩者都為1的時脈邊緣</p><p class="explanation">傳送方在有有效資料時將VALID設為1，接收方在能夠接收時將READY設為1。在時脈邊緣兩者皆為1時，傳遞即成立。接收方忙碌時可將READY設為0讓傳送方等待（背壓，backpressure），因此即使是速度不同的區塊之間，也能在不遺失資料的情況下相連。規定傳送方不等待READY就輸出VALID，以防止因互相等待而停滯。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>AXI4、AXI4-Lite 和 AXI4-Stream 有什麼差別？</h3>
+  <p>完整的 AXI4 支援突發、ID 與多筆未完成交易，用於高吞吐量的記憶體流量。AXI4-Lite 每筆交易處理一個字組，用於暫存器存取；AXI4-Stream 則完全省略位址，用於承載連續資料流。</p>
+  <h3>AXI 中 VALID 可以依賴 READY 嗎？</h3>
+  <p>不可以。發送端有資料時就必須拉高 VALID，不能等待 READY，否則雙方可能永遠互相等待。接收端則可以等到 VALID 之後再拉高 READY。</p>
+  <h3>AXI 和 APB 有什麼差別？</h3>
+  <p>AXI 是高效能、管線化的介面，具有獨立的讀取與寫入通道以及突發傳輸。APB 則是用於周邊暫存器的簡單低速匯流排，通常經由橋接器連接到 AXI。</p>
+</section>
 <section>
   <h2>解析中的「AXI」</h2>
   <ul class="term-quotes"><li><p>AXI具有讀取位址（AR）與資料（R）、寫入位址（AW）、資料（W）與回應（B）共5個通道。</p><a href="/zh-hant/q/io-interface/io-interface-028/">下列關於AXI匯流排之特徵，何者正確？</a></li><li><p>由於常需要像讀取快取列（cache line）那樣，一次處理連續位址的資料，AXI只傳送起始位址與長度，就能連續傳遞資料，這就是突發傳輸。</p><a href="/zh-hant/q/io-interface/io-interface-030/">下列關於AXI突發傳輸（burst transfer）之優點，何者正確？</a></li><li><p>AXI可為請求附上ID並同時發出多個，因此在延遲期間資料也會陸續回傳，能有效利用頻寬。</p><a href="/zh-hant/q/io-interface/io-interface-031/">在AXI中，不必等待前一次讀取的回應就能發出下一次讀取請求（可同時持有多個未完成的請求），其優點為下列何者？</a></li><li><p>需要速度的大量資料傳輸，則視情況使用完整的AXI，或沒有位址的AXI4-Stream。</p><a href="/zh-hant/q/io-interface/io-interface-032/">在AXI的各種類型中，AXI4-Lite主要用於下列何種用途？</a></li><li><p>AXI（Advanced eXtensible Interface）是Arm公開的AMBA規格群之一，廣泛用作連接晶片內區塊之間的匯流排。</p><a href="/zh-hant/q/io-interface/io-interface-027/">在SoC內部，廣泛用於連接CPU、記憶體控制器與周邊電路等區塊的Arm AMBA規格匯流排為下列何者？</a></li></ul>

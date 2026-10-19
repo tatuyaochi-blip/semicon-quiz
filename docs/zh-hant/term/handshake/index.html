@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"交握(Handshake)","item":"https://semiconroom.com/zh-hant/term/handshake/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"交握(Handshake)","description":"透過交換發送端的請求(req)與接收端的回應(ack)，確實傳遞資料的方式。在時脈域之間只同步 req 與 ack，期間資料保持不變，因此安全，但每次傳輸需要數個週期以上。","url":"https://semiconroom.com/zh-hant/term/handshake/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"交握(Handshake)","item":"https://semiconroom.com/zh-hant/term/handshake/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"交握(Handshake)","description":"透過交換發送端的請求(req)與接收端的回應(ack)，確實傳遞資料的方式。在時脈域之間只同步 req 與 ack，期間資料保持不變，因此安全，但每次傳輸需要數個週期以上。","url":"https://semiconroom.com/zh-hant/term/handshake/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"兩相交握和四相交握有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"在四相訊號中，req 與 ack 各自上升後再歸零，因此一次傳輸使用四次轉態。在兩相訊號中，每次翻轉都是一個事件，一次傳輸只需兩次轉態，延遲大約減半，但需要邊緣偵測。"}},{"@type":"Question","name":"AXI 的 VALID/READY 交握需要同步器嗎？","acceptedAnswer":{"@type":"Answer","text":"不需要，VALID/READY 在單一時脈域內運作，在兩者皆為高的任何邊緣上完成傳輸。當 AXI 流量必須跨時脈域時，會插入非同步橋接器，通常由非同步 FIFO 構成。"}},{"@type":"Question","name":"為什麼 req/ack 交握用於跨時脈域會很慢？","acceptedAnswer":{"@type":"Answer","text":"每次 req 和 ack 轉態都要經過多週期的同步器，而且發送端必須等待回應，因此一次完整傳輸需要 8 個以上週期。對偶發性資料而言可以接受，但不適合連續資料流。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sta-cdc/">時序分析與CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>四相交握的順序</h2>
+  <p>在四相（歸零式）交握中，發送端先將資料放到匯流排上並保持，接著拉高 req。接收端看到同步後的 req，擷取資料並拉高 ack。發送端看到同步後的 ack 後拉低 req，接收端看到 req 下降後再拉低 ack。每個訊號各上升、下降一次，每次傳輸共四次轉態。關鍵規則在於順序：資料必須在 req 上升之前就已穩定，並且在 ack 確認擷取之前不得改變，否則接收端可能抓到正在轉態中的值。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼跨時脈域也安全</h2>
+  <p>只有 req 和 ack 會在<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>之間傳遞，而且各自都是單一位元，經過一般的雙<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a><a class="term-link" href="/zh-hant/term/synchronizer/">同步器</a>即可。多位元資料從不經過同步；當接收端看到 req 時，資料已經穩定了好幾個週期，可以直接擷取。這消除了逐位元同步匯流排時會出問題的位元偏移，適用於任何頻率比，而且由於發送端會等待確認，事件永遠不會遺失。這種等待正是它與翻轉同步（toggle synchronization）的區別，後者要求事件之間必須保證有最小間隔。</p>
+</section>
+<section class="term-about">
+  <h2>代價是延遲</h2>
+  <p>每次轉態都必須經過<a class="term-link" href="/zh-hant/term/synchronizer/">同步器</a>，通常單向各需 2 個週期，而四相訊號需要兩次來回，因此一次傳輸在兩個<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>合計要花 8 個以上週期。兩相變體將 req 或 ack 的每次翻轉視為一個事件，轉態次數減半，代價是需要邊緣偵測邏輯。無論哪一種，<a class="term-link" href="/zh-hant/term/throughput/">吞吐量</a>都遠低於每週期一個字組，因此交握適合像寫入控制暫存器這類偶發性傳輸，串流資料則走<a class="term-link" href="/zh-hant/term/asynchronous-fifo/">非同步 FIFO</a>。</p>
+</section>
+<section class="term-about">
+  <h2>單一時脈內的交握：VALID/READY</h2>
+  <p>同樣的請求–回應概念也出現在同步匯流排中，只是不需要<a class="term-link" href="/zh-hant/term/synchronizer/">同步器</a>。在 <a class="term-link" href="/zh-hant/term/axi/">AXI</a> 中，每個通道都使用發送端的 VALID 與接收端的 READY，在兩者皆為 1 的任何時脈邊緣上完成傳輸。將 READY 保持為低即可施加反壓（backpressure），讓速度不同的區塊能夠連接而不遺失資料。為避免<a class="term-link" href="/zh-hant/term/deadlock/">死結</a>，發送端不得等待 READY 之後才拉高 VALID。AXI 有讀取位址、讀取資料、寫入位址、寫入資料與寫入回應五個獨立通道；AXI4-Stream 則省略位址，用於單向資料流。</p>
+</section>
 <section>
   <h2>練習交握(Handshake)的題目</h2>
   <article class="q-mini" data-qid="sta-cdc-037" data-cat="sta-cdc" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. req與ack的同步化需要往返，1次傳輸需花費許多週期，不適合連續大量傳輸</p><p class="explanation">在4相<a class="term-link" href="/zh-hant/term/handshake/">交握</a>中，req傳到接收端需要同步化的2個週期，ack傳回發送端需要2個週期，各自回到0也需要同樣的時間，因此1次傳輸在兩個<a class="term-link" href="/zh-hant/term/clock-domain/">時脈域</a>合計需要8個週期以上。所以適合用於如控制暫存器設定值這類偶爾才傳遞的資料。資料在傳輸期間一直保持穩定，因此不會發生位元錯開造成的錯誤，也不受頻率比限制。若要幾乎每個週期都傳送資料，則使用非同步FIFO。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>兩相交握和四相交握有什麼差別？</h3>
+  <p>在四相訊號中，req 與 ack 各自上升後再歸零，因此一次傳輸使用四次轉態。在兩相訊號中，每次翻轉都是一個事件，一次傳輸只需兩次轉態，延遲大約減半，但需要邊緣偵測。</p>
+  <h3>AXI 的 VALID/READY 交握需要同步器嗎？</h3>
+  <p>不需要，VALID/READY 在單一時脈域內運作，在兩者皆為高的任何邊緣上完成傳輸。當 AXI 流量必須跨時脈域時，會插入非同步橋接器，通常由非同步 FIFO 構成。</p>
+  <h3>為什麼 req/ack 交握用於跨時脈域會很慢？</h3>
+  <p>每次 req 和 ack 轉態都要經過多週期的同步器，而且發送端必須等待回應，因此一次完整傳輸需要 8 個以上週期。對偶發性資料而言可以接受，但不適合連續資料流。</p>
+</section>
 <section>
   <h2>解析中的「交握(Handshake)」</h2>
   <ul class="term-quotes"><li><p>在4相交握中，req與ack各上升、下降1次，共4次變化完成1次傳遞。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-037/">在使用req與ack的4相交握中，傳遞1筆資料時訊號的順序何者正確？</a></li><li><p>在4相交握中，req傳到接收端需要同步化的2個週期，ack傳回發送端需要2個週期，各自回到0也需要同樣的時間，因此1次傳輸在兩個時脈域合計需要8個週期以上。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-038/">以交握進行時脈域間資料傳輸的缺點，何者正確？</a></li><li><p>多位元的資料則以FIFO或交握（handshake）來傳遞。</p><a href="/zh-hant/q/logic/logic-017/">以正反器接收非同步訊號時，因無法滿足設置時間或保持時間，導致輸出暫時無法確定是0還是1的狀態，稱為什麼？</a></li><li><p>若是計數器的值，可轉換為格雷碼使每次只有1個位元改變；若是任意資料，則使用交握或非同步FIFO。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-031/">對4位元資料的各位元分別加上2級同步器，傳到另一個時脈域。當資料從 0111 變為 1000 時，可能發生的問題何者正…</a></li><li><p>從快速時脈域將脈衝傳到慢速時脈域時，應將脈衝延長到比接收端的週期足夠長，或使用翻轉同步或交握。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-033/">將在 500 MHz 時脈域中只有1個週期（2 ns）為1的脈衝，以2級同步器傳到 100 MHz 時脈域。可能發生的…</a></li></ul>

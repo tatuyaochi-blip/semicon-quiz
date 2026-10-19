@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Slack(時序裕度)","item":"https://semiconroom.com/zh-hant/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Slack(時序裕度)","description":"表示時序餘裕的值。設定檢查以要求時間減去到達時間，保持檢查以到達時間減去要求時間求得，為負值即表示違反。","url":"https://semiconroom.com/zh-hant/term/slack/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"Slack(時序裕度)","item":"https://semiconroom.com/zh-hant/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Slack(時序裕度)","description":"表示時序餘裕的值。設定檢查以要求時間減去到達時間，保持檢查以到達時間減去要求時間求得，為負值即表示違反。","url":"https://semiconroom.com/zh-hant/term/slack/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"時序分析中的負 slack 是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"表示該路徑違反了時序限制：就設定時間而言，資料到得太晚，趕不上擷取邊緣；就保持時間而言，資料到得太早，可能覆寫正在擷取的值。其大小表示必須減少或增加多少延遲。"}},{"@type":"Question","name":"WNS 和 TNS 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"WNS 是單一最差路徑的 slack，TNS 則是所有端點負 slack 的總和。當許多路徑都只差一點點而失敗時，設計可能 WNS 很小但 TNS 很大。"}},{"@type":"Question","name":"保持時間違反要怎麼修正？","acceptedAnswer":{"@type":"Answer","text":"在較短的資料路徑上增加延遲，通常是使用緩衝器或延遲單元；或減少使擷取時脈延後的時脈偏移。降低時脈頻率沒有幫助，因為保持時間檢查與週期無關。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/sta-cdc/">時序分析與CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>計算設定時間的 slack</h2>
+  <p><a class="term-link" href="/zh-hant/term/sta/">靜態時序分析</a>（STA）比較資料的到達時間與要求時間。就<a class="term-link" href="/zh-hant/term/setup-time/">設定時間</a>而言，在某個時脈邊緣發出的資料，必須在下一個擷取邊緣減去設定時間之前到達，因此 slack = 要求時間 − 到達時間。若週期為 2.0 ns、時脈到輸出延遲 0.2 ns、邏輯延遲 1.4 ns、設定時間 0.1 ns，則到達時間為 1.6 ns，要求時間為 1.9 ns，slack 為 +0.3 ns。代表<a class="term-link" href="/zh-hant/term/jitter/">抖動</a>與尚未建構之時脈樹的時脈不確定度，也要從要求時間中扣除；而設定為 2 的<a class="term-link" href="/zh-hant/term/multicycle-path/">多週期路徑</a>，會讓擷取邊緣再往後延一個週期。</p>
+</section>
+<section class="term-about">
+  <h2>保持時間的 slack，以及為何降頻沒有幫助</h2>
+  <p><a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a>檢查的是相反的問題：由某個邊緣發出的新資料，是否到得太早，以致破壞了同一個邊緣正在擷取的值？此時 slack = 到達時間 − 要求時間，使用最小延遲，且要求時間 = 擷取時脈到達時間 + 保持時間。由於兩者都參照同一個邊緣，時脈週期不會出現在式子裡，因此降低時脈頻率永遠無法修正保持時間違反；在實際晶片上這通常是致命的。保持時間問題出現在<a class="term-link" href="/zh-hant/term/shift-register/">移位暫存器</a>等短路徑上，一般是在資料路徑上插入延遲單元來修正。</p>
+</section>
+<section class="term-about">
+  <h2>時脈偏移、OCV 與 CRPR</h2>
+  <p>時脈偏移（skew）會讓這兩種檢查朝相反方向變化。若擷取時脈比發出時脈晚到（正偏移），<a class="term-link" href="/zh-hant/term/setup-time/">設定時間</a> slack 會增加該量，<a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a> slack 則減少同樣的量；負偏移則相反。<a class="term-link" href="/zh-hant/term/ocv/">晶片內變異</a>（OCV）<a class="term-link" href="/zh-hant/term/derating/">降額</a>讓分析趨於悲觀，以設定時間檢查為例，會讓發出時脈與資料路徑變慢，並讓擷取時脈變快。當兩條時脈路徑從根部開始共用緩衝器時，這段共用部分不可能同時又快又慢，因此共同路徑悲觀消除（<a class="term-link" href="/zh-hant/term/crpr/">CRPR</a>）會把這個差值加回來。</p>
+</section>
+<section class="term-about">
+  <h2>解讀時序報告</h2>
+  <p>報告會按每個端點彙整 slack。<a class="term-link" href="/zh-hant/term/wns/">WNS</a>（最差負 slack）是單一最差值，顯示時脈距離收斂還有多遠；TNS（總負 slack）則加總所有違反端點的負 slack，顯示還剩下多少工作量。三個端點各為 −0.1 ns 時，WNS 為 −0.1 ns，TNS 為 −0.3 ns。兩者都會針對<a class="term-link" href="/zh-hant/term/setup-time/">設定時間</a>與<a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a>、以及各時脈群組分別報告。設定時間違反的對策是縮短邏輯、加大單元尺寸或重新架構；只有在邏輯確實每隔一個週期才擷取時，設定多週期例外才是正當的。</p>
+</section>
 <section>
   <h2>練習Slack(時序裕度)的題目</h2>
   <article class="q-mini" data-qid="sta-cdc-003" data-cat="sta-cdc" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. WNS是最差的餘裕值，TNS是負餘裕的總和</p><p class="explanation"><a class="term-link" href="/zh-hant/term/wns/">WNS</a>（Worst Negative <a class="term-link" href="/zh-hant/term/slack/">Slack</a>）是所有路徑中最差的餘裕，可作為頻率能提高到多少的參考。TNS（Total Negative Slack）是將違規路徑各終點的負餘裕加總的值。例如若有3個 −0.1 ns 的終點，WNS為 −0.1 ns，TNS為 −0.3 ns。即使WNS的絕對值小，若TNS的絕對值大，就需要修正許多路徑。違規的條數以其他指標表示，WNS與TNS則分別針對建立時間與<a class="term-link" href="/zh-hant/term/hold-time/">保持時間</a>求出。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>時序分析中的負 slack 是什麼意思？</h3>
+  <p>表示該路徑違反了時序限制：就設定時間而言，資料到得太晚，趕不上擷取邊緣；就保持時間而言，資料到得太早，可能覆寫正在擷取的值。其大小表示必須減少或增加多少延遲。</p>
+  <h3>WNS 和 TNS 有什麼差別？</h3>
+  <p>WNS 是單一最差路徑的 slack，TNS 則是所有端點負 slack 的總和。當許多路徑都只差一點點而失敗時，設計可能 WNS 很小但 TNS 很大。</p>
+  <h3>保持時間違反要怎麼修正？</h3>
+  <p>在較短的資料路徑上增加延遲，通常是使用緩衝器或延遲單元；或減少使擷取時脈延後的時脈偏移。降低時脈頻率沒有幫助，因為保持時間檢查與週期無關。</p>
+</section>
 <section>
   <h2>解析中的「Slack(時序裕度)」</h2>
   <ul class="term-quotes"><li><p>WNS（Worst Negative Slack）是所有路徑中最差的餘裕，可作為頻率能提高到多少的參考。</p><a href="/zh-hant/q/sta-cdc/sta-cdc-003/">關於STA報告中出現的WNS與TNS，下列說明何者正確？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"頁表","item":"https://semiconroom.com/zh-hant/term/page-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"頁表","description":"記錄虛擬位址的頁號到實體位址頁號之對應關係的表。由作業系統為每個行程建立，CPU的MMU參照它來轉換位址。每個項目也包含保護用的位元。","url":"https://semiconroom.com/zh-hant/term/page-table/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"頁表","item":"https://semiconroom.com/zh-hant/term/page-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"頁表","description":"記錄虛擬位址的頁號到實體位址頁號之對應關係的表。由作業系統為每個行程建立，CPU的MMU參照它來轉換位址。每個項目也包含保護用的位元。","url":"https://semiconroom.com/zh-hant/term/page-table/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為什麼要用多層頁表而不是單一頁表？","acceptedAnswer":{"@type":"Answer","text":"單一頁表需要為每一個可能的虛擬頁準備一個項目，即使是 32 位元位址，每個行程也要好幾 MB。多層樹狀結構只會為實際使用中的區域配置下層頁表。"}},{"@type":"Question","name":"頁表和 TLB 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"頁表是作業系統保存在記憶體中的完整對應。TLB 則是 CPU 中的小型硬體快取，存放最近使用的轉換結果，讓大多數存取不必走訪頁表。"}},{"@type":"Question","name":"頁表項目不存在時會發生什麼事？","acceptedAnswer":{"@type":"Answer","text":"MMU 會引發頁錯誤，由作業系統處理，例如從儲存裝置讀入該頁並更新項目，然後重新執行發生錯誤的指令。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -94,7 +94,22 @@
 </svg><figcaption class="fig-cap">虛擬位址轉換為實體位址（TLB與分頁表） · <a href="/zh-hant/figures/#fig-page-translation">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>位址轉換如何使用頁表</h2>
+  <p>虛擬位址被分成虛擬頁號（VPN）與頁內偏移量；使用 4 KB 頁時，低 12 位元是偏移量。記憶體管理單元（MMU）在頁表中查找 VPN 以取得實體頁框號碼，再接上不變的偏移量。每個頁表項目（PTE）也包含有效（present）位元、讀取/寫入/執行權限、使用者或核心旗標，以及作業系統使用的已存取（accessed）與已修改（dirty）位元。有一個暫存器指向目前行程的最上層頁表，並在每次內容切換時切換。</p>
+</section>
+<section class="term-about">
+  <h2>為什麼頁表是多層的</h2>
+  <p>單層頁表必須為每一個可能的頁都準備一個項目。在 32 位元位址、4 KB 頁、4 位元組項目的情況下，就是 2²⁰ 個項目，每個行程 4 MB，而且大部分描述的是未使用的空間。多層頁表形成一棵樹，上層項目不存在就表示整個區域未對應，因此不需要下層的表。典型的 64 位元設計以四層、每層 512 個 8 位元組項目來轉換 48 個位址位元，每張表剛好佔滿一個 4 KB 頁。提早一或兩層結束查表，就能得到 2 MB 等大頁。</p>
+</section>
+<section class="term-about">
+  <h2>頁表與 TLB</h2>
+  <p>頁表存放在一般記憶體中，因此完整的查表可能需要數次相依的記憶體存取：四層的情況最多四次，在虛擬化下由於客體與主機的頁表都要走訪，次數更多。<a class="term-link" href="/zh-hant/term/tlb/">轉譯後備緩衝區</a>（TLB）是 CPU 內部存放最近轉換結果的小型快取，可避免大多數的查表。發生 TLB 未命中時，多數現代處理器中的硬體查表器會讀取頁表，並借助上層項目的快取。大頁能增加每個 TLB 項目所涵蓋的記憶體量。</p>
+</section>
+<section class="term-about">
+  <h2>作業系統如何運用頁表</h2>
+  <p>若 PTE 不存在，存取就會引發頁錯誤（page fault），由作業系統決定如何處理：從儲存裝置載入該頁、配置一個填零的頁，或因非法存取而終止行程。讓多個行程的項目指向同一個頁框，就能實現<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>；將共享頁標記為唯讀，則能在 fork 之後實現<a class="term-link" href="/zh-hant/term/copy-on-write/">寫入時複製</a>（copy-on-write）。在多核心系統上，當作業系統撤銷或變更某個對應時，也必須讓其他核心上過時的 <a class="term-link" href="/zh-hant/term/tlb/">TLB</a> 副本失效，這個操作稱為 <a class="term-link" href="/zh-hant/term/tlb-shootdown/">TLB shootdown</a>。</p>
+</section>
 <section>
   <h2>練習頁表的題目</h2>
   <article class="q-mini" data-qid="os-hardware-010" data-cat="os-hardware" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -108,7 +123,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 因為可以省略不使用範圍的表，節省頁表所佔用的記憶體</p><p class="explanation">單層<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>不論是否使用，都需要涵蓋虛擬位址空間所有分頁的項目，在64位元環境下表會變得非常龐大。改成多層後，只需為使用中的範圍建立下層的表，沒有使用的範圍則在上層表中將項目設為無效即可，因此只需依程式使用量配置記憶體。相對地，發生<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>未命中時要走訪的表會隨層數增加而變多，速度變慢。這與實體記憶體的大小無關。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為什麼要用多層頁表而不是單一頁表？</h3>
+  <p>單一頁表需要為每一個可能的虛擬頁準備一個項目，即使是 32 位元位址，每個行程也要好幾 MB。多層樹狀結構只會為實際使用中的區域配置下層頁表。</p>
+  <h3>頁表和 TLB 有什麼差別？</h3>
+  <p>頁表是作業系統保存在記憶體中的完整對應。TLB 則是 CPU 中的小型硬體快取，存放最近使用的轉換結果，讓大多數存取不必走訪頁表。</p>
+  <h3>頁表項目不存在時會發生什麼事？</h3>
+  <p>MMU 會引發頁錯誤，由作業系統處理，例如從儲存裝置讀入該頁並更新項目，然後重新執行發生錯誤的指令。</p>
+</section>
 <section>
   <h2>解析中的「頁表」</h2>
   <ul class="term-quotes"><li><p>頁表是一張依虛擬分頁編號，記錄對應的實體分頁編號與讀寫許可等保護資訊的表，由作業系統為每個行程建立，並由CPU的MMU參照。</p><a href="/zh-hant/q/os-hardware/os-hardware-010/">關於頁表（page table）的作用，下列何者正確？</a></li><li><p>單層頁表不論是否使用，都需要涵蓋虛擬位址空間所有分頁的項目，在64位元環境下表會變得非常龐大。</p><a href="/zh-hant/q/os-hardware/os-hardware-013/">將頁表做成多層（階層式）而非單層，其主要理由為下列何者？</a></li><li><p>每個行程都需要4 MB，所以一般會採用多層頁表來省略不使用的部分。</p><a href="/zh-hant/q/os-hardware/os-hardware-014/">虛擬位址為32位元、分頁大小為4 KB、頁表每個項目為4位元組時，單層頁表的大小是多少？</a></li><li><p>發生TLB未命中時，最多需要讀取4次記憶體，因此如何快取TLB與頁表項目的設計十分重要。</p><a href="/zh-hant/q/os-hardware/os-hardware-015/">使用48位元的虛擬位址、分頁大小4 KB、每層表為512個項目（9位元）的多層頁表，需要走訪幾層表？</a></li><li><p>頁表的項目中，除了對應的實體分頁編號外，還包含：表示該分頁是否在實體記憶體中的有效位元；讀寫、執行及使用者模式存取的許可；以及由硬體設定的已存取（參照）位元與已修改（dirty）位元。</p><a href="/zh-hant/q/os-hardware/os-hardware-016/">關於頁表的各個項目中通常包含的資訊組合，下列何者正確？</a></li></ul>

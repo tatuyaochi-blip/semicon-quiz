@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"動態連結（Dynamic linking）","item":"https://semiconroom.com/zh-hant/term/dynamic-linking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"動態連結（Dynamic linking）","description":"在執行時載入共享函式庫並加以結合的方式。函式庫可在行程間共用，抽換即可反映修正，但執行環境需要相符的函式庫。","url":"https://semiconroom.com/zh-hant/term/dynamic-linking/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"動態連結（Dynamic linking）","item":"https://semiconroom.com/zh-hant/term/dynamic-linking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"動態連結（Dynamic linking）","description":"在執行時載入共享函式庫並加以結合的方式。函式庫可在行程間共用，抽換即可反映修正，但執行環境需要相符的函式庫。","url":"https://semiconroom.com/zh-hant/term/dynamic-linking/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"靜態連結和動態連結有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"靜態連結在建置時將函式庫程式碼複製到執行檔中，因此不需外部函式庫即可執行。動態連結則保留參照，由動態連結器在執行期解析，讓各行程共用一份函式庫副本，並可透過替換函式庫來取得修正。"}},{"@type":"Question","name":"PLT 和 GOT 是什麼？","acceptedAnswer":{"@type":"Answer","text":"全域偏移表（GOT）是一張可寫入的資料表，存放外部函式與變數在執行期的位址。程序連結表（PLT）包含程式碼所呼叫的小型樁程式，它們會透過 GOT 跳轉到實際的函式庫函式。"}},{"@type":"Question","name":"error while loading shared libraries: cannot open shared object file 是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"動態連結器在其搜尋路徑中找不到程式所依賴的函式庫。解決方法是安裝該函式庫，或將其位置加入搜尋路徑，例如透過系統的連結器設定或 rpath。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/linker-loader/">連結器與載入器與執行檔格式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>程式啟動時發生了什麼</h2>
+  <p>動態連結的執行檔並不包含函式庫程式碼。它記錄了需要哪些<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>、使用其中哪些符號，在 Linux 上還會指定一個程式直譯器，也就是<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>。程式啟動時，核心將執行檔與動態連結器對應到記憶體，動態連結器再沿著搜尋路徑找到每個函式庫、將其對應到記憶體、解析符號參照、套用剩餘的<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>，並執行函式庫的初始化程序，然後才跳到程式的<a class="term-link" href="/zh-hant/term/entry-point/">進入點</a>。Windows 則利用每個執行檔的匯入表，為 DLL 完成相同的工作。</p>
+</section>
+<section class="term-about">
+  <h2>位置無關程式碼、GOT 與 PLT</h2>
+  <p>為了讓函式庫程式碼的一份實體副本能服務多個行程，即使函式庫在每個行程中可能載入到不同位址，程式碼頁也絕不能被修改。因此<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>會編譯成<a class="term-link" href="/zh-hant/term/position-independent-code/">位置無關程式碼</a>（PIC），而會變動的位址則放進一張資料表，也就是<a class="term-link" href="/zh-hant/term/global-offset-table/">全域偏移表</a>（GOT）。對外部函式的呼叫會經過小型的<a class="term-link" href="/zh-hant/term/procedure-linkage-table/">程序連結表</a>（PLT）樁程式（stub），再透過 GOT 跳轉。採用延遲繫結（lazy binding）時，GOT 項目在第一次呼叫時才填入；在啟動時就解析所有符號，然後將 GOT 設為唯讀，則是常見的強化做法。</p>
+</section>
+<section class="term-about">
+  <h2>動態連結與靜態連結</h2>
+  <p><a class="term-link" href="/zh-hant/term/static-linking/">靜態連結</a>在建置時將所需的目的碼複製到執行檔中。結果是自給自足的，並且免除了執行期的符號查找，但檔案較大，而且必須重新建置才能套用函式庫的修正。動態連結讓各行程<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>頁、節省磁碟空間，並只需替換一個檔案就能讓安全性修正生效於所有程式。代價是啟動時的工作量以及對目標系統的依賴：缺少或不相容的函式庫會使程式無法啟動，這就是函式庫帶有版本名稱與版本化符號的原因。</p>
+</section>
+<section class="term-about">
+  <h2>按需載入函式庫</h2>
+  <p>除了在啟動時就確定的函式庫之外，執行中的程式也可以明確地載入函式庫，在 POSIX 系統上使用 dlopen，在 Windows 上使用 LoadLibrary，然後以 dlsym 或 GetProcAddress 依名稱查找函式。外掛架構與選用功能就是以這種方式運作的。由於符號繫結發生在執行期，預先載入的函式庫也可以插入自己版本的函式，分析器與記憶體除錯工具便利用了這個機制。ldd 等工具可以列出執行檔將載入哪些<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>，以及它們位於何處。</p>
+</section>
 <section>
   <h2>練習動態連結（Dynamic linking）的題目</h2>
   <article class="q-mini" data-qid="linker-loader-020" data-cat="linker-loader" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 沒有安裝所需的共用函式庫，或只有不相容的版本</p><p class="explanation"><a class="term-link" href="/zh-hant/term/dynamic-linking/">動態連結</a>的程式會使用執行它的電腦上的共用函式庫。如果沒有所需的函式庫，或只有缺少函式的舊版本，<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>就無法結合，導致啟動失敗。在Linux中可用ldd指令確認程式所需的共用函式庫，以及是否能找到它們。為了便於散布，有時也會刻意採用<a class="term-link" href="/zh-hant/term/static-linking/">靜態連結</a>。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>靜態連結和動態連結有什麼差別？</h3>
+  <p>靜態連結在建置時將函式庫程式碼複製到執行檔中，因此不需外部函式庫即可執行。動態連結則保留參照，由動態連結器在執行期解析，讓各行程共用一份函式庫副本，並可透過替換函式庫來取得修正。</p>
+  <h3>PLT 和 GOT 是什麼？</h3>
+  <p>全域偏移表（GOT）是一張可寫入的資料表，存放外部函式與變數在執行期的位址。程序連結表（PLT）包含程式碼所呼叫的小型樁程式，它們會透過 GOT 跳轉到實際的函式庫函式。</p>
+  <h3>error while loading shared libraries: cannot open shared object file 是什麼意思？</h3>
+  <p>動態連結器在其搜尋路徑中找不到程式所依賴的函式庫。解決方法是安裝該函式庫，或將其位置加入搜尋路徑，例如透過系統的連結器設定或 rpath。</p>
+</section>
 <section>
   <h2>解析中的「動態連結（Dynamic linking）」</h2>
   <ul class="term-quotes"><li><p>在動態連結中，執行檔只記錄「要使用哪個共用函式庫的哪個函式」，執行時由動態連結器載入函式庫並加以結合。</p><a href="/zh-hant/q/linker-loader/linker-loader-020/">關於動態連結（共用函式庫）的優點，下列何者正確？</a></li><li><p>動態連結的程式會使用執行它的電腦上的共用函式庫。</p><a href="/zh-hant/q/linker-loader/linker-loader-021/">將使用動態連結的程式複製到另一部電腦上執行，卻無法啟動。最可能的原因為下列何者？</a></li><li><p>動態連結的執行檔中記載了要使用的動態連結器的位置，作業系統載入程式後，會先把處理交給動態連結器。</p><a href="/zh-hant/q/linker-loader/linker-loader-027/">在Linux等系統中啟動動態連結的程式時，動態連結器（ld.so等）的功用，下列何者正確？</a></li><li><p>在動態連結中，類似的改寫有一部分是在執行時由動態連結器進行。</p><a href="/zh-hant/q/linker-loader/linker-loader-004/">關於連結器所進行的重定位（relocation），下列說明何者正確？</a></li><li><p>若是動態連結，就從動態連結器開始，否則從執行檔的入口位址開始執行。</p><a href="/zh-hant/q/linker-loader/linker-loader-030/">啟動程式時（Linux的execve等），作業系統的載入器所進行的事項，下列何者正確？</a></li></ul>

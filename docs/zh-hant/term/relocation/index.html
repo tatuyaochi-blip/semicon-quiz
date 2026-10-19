@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"重定位（Relocation）","item":"https://semiconroom.com/zh-hant/term/relocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"重定位（Relocation）","description":"在程式碼與資料的最終位址確定後，將指令或資料中的暫定位址改寫為正確數值的處理。由連結器進行，動態連結時有一部分由動態連結器在執行時進行。","url":"https://semiconroom.com/zh-hant/term/relocation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"重定位（Relocation）","item":"https://semiconroom.com/zh-hant/term/relocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"重定位（Relocation）","description":"在程式碼與資料的最終位址確定後，將指令或資料中的暫定位址改寫為正確數值的處理。由連結器進行，動態連結時有一部分由動態連結器在執行時進行。","url":"https://semiconroom.com/zh-hant/term/relocation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"符號解析和重定位有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"符號解析決定每個被參考的名稱指的是哪一個定義。重定位接著將這些符號的最終位址或距離，寫入使用它們的指令與資料中。"}},{"@type":"Question","name":"連結器錯誤 relocation truncated to fit 是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"連結器計算出的位址或偏移，對它必須填入的指令欄位而言太大，例如目標超出範圍的分支。改變程式碼模型或記憶體配置，或使用較長的指令序列，通常就能解決。"}},{"@type":"Question","name":"重定位會在執行時進行嗎？","acceptedAnswer":{"@type":"Answer","text":"部分會。大部分由靜態連結器完成，但使用共享函式庫與位置無關可執行檔時，剩餘的重定位會在程式載入時，或函式庫函式第一次被呼叫時，由動態連結器套用。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/linker-loader/">連結器與載入器與執行檔格式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼需要重定位</h2>
+  <p>分開編譯意味著每個原始碼檔案在翻譯時，並不知道自己的程式碼與資料最終會放在記憶體的何處，也不知道其他檔案中定義的函式與變數位於何處。因此編譯器假設每個區段都從位址 0 開始，凡是指令或資料字組需要一個它無法得知的位址時，就寫入預留值並記錄一筆重定位項目。<a class="term-link" href="/zh-hant/term/linker/">連結器</a>配置好所有<a class="term-link" href="/zh-hant/term/object-file/">目的檔</a>的所有區段並決定最終位址之後，會逐一走訪這些項目並寫入正確的數值。少了這一步，各自編譯的部分就無法合併成一個程式。</p>
+</section>
+<section class="term-about">
+  <h2>重定位項目記錄了什麼</h2>
+  <p>每一筆項目指出要修補的位置（以區段內的偏移表示）、需要其位址的符號、一個加數，以及一個類型。類型告訴<a class="term-link" href="/zh-hant/term/linker/">連結器</a>如何計算數值以及如何編碼：絕對的 32 或 64 位元位址、用於分支與呼叫的 PC 相對距離，或是拆分到兩條指令中的數值。例如 RISC-V 以 lui 加 addi 或 auipc 加 jalr 這樣的指令對來建構位址，因此會以不同的重定位類型分別填入上方 20 位元與下方 12 位元。</p>
+</section>
+<section class="term-about">
+  <h2>靜態重定位與動態重定位</h2>
+  <p>在完全靜態的連結中，<a class="term-link" href="/zh-hant/term/linker/">連結器</a>會解決所有重定位，可執行檔可直接執行。<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>則改變了這一點，因為它們的載入位址要到執行時才確定。<a class="term-link" href="/zh-hant/term/position-independent-code/">位置無關程式碼</a>透過位址表，也就是<a class="term-link" href="/zh-hant/term/global-offset-table/">全域偏移表</a>（GOT）存取全域資料，並透過<a class="term-link" href="/zh-hant/term/procedure-linkage-table/">程序連結表</a>（PLT）中的小型 stub 呼叫函式庫函式。<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>會在程式載入時填入 GOT，或在第一次呼叫時延遲填入。載入於隨機位址的<a class="term-link" href="/zh-hant/term/position-independent-executable/">位置無關可執行檔</a>，也帶有簡單的相對重定位，由<a class="term-link" href="/zh-hant/term/program-loader/">載入器</a>加上實際的基底位址來套用。</p>
+</section>
+<section class="term-about">
+  <h2>重定位與符號解析</h2>
+  <p>這兩個步驟很容易混淆。<a class="term-link" href="/zh-hant/term/symbol-resolution/">符號解析</a>是將每個被參考的名稱配對到唯一的一個定義，其失敗會以 undefined reference 或 multiple definition 錯誤呈現。重定位在其後進行，純粹是修補位元：一旦每個符號的位址都已知，就把正確的數字寫入記錄下來的欄位。重定位也有它自己的失敗情形。若計算出的數值放不進指令欄位，例如分支目標超出其可及範圍，GNU <a class="term-link" href="/zh-hant/term/linker/">連結器</a>會回報 relocation truncated to <a class="term-link" href="/zh-hant/term/fit-rate/">fit</a>，這通常需要改用不同的程式碼模型或較長的指令序列。</p>
+</section>
 <section>
   <h2>練習重定位（Relocation）的題目</h2>
   <article class="q-mini" data-qid="linker-loader-004" data-cat="linker-loader" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 程式碼與資料的最終位址決定後，將指令或資料中的位址改寫為正確的值</p><p class="explanation">編譯器是將各檔案視為從位址0開始來產生的，並將要使用其他檔案函式或自身變數位址的位置記錄為<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>資訊。<a class="term-link" href="/zh-hant/term/linker/">連結器</a>排列所有檔案、決定實際位址後，會依所記錄的各個位置計算出正確的位址（或與PC的距離）並寫入指令。在<a class="term-link" href="/zh-hant/term/dynamic-linking/">動態連結</a>中，類似的改寫有一部分是在執行時由<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>進行。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>符號解析和重定位有什麼差別？</h3>
+  <p>符號解析決定每個被參考的名稱指的是哪一個定義。重定位接著將這些符號的最終位址或距離，寫入使用它們的指令與資料中。</p>
+  <h3>連結器錯誤 relocation truncated to fit 是什麼意思？</h3>
+  <p>連結器計算出的位址或偏移，對它必須填入的指令欄位而言太大，例如目標超出範圍的分支。改變程式碼模型或記憶體配置，或使用較長的指令序列，通常就能解決。</p>
+  <h3>重定位會在執行時進行嗎？</h3>
+  <p>部分會。大部分由靜態連結器完成，但使用共享函式庫與位置無關可執行檔時，剩餘的重定位會在程式載入時，或函式庫函式第一次被呼叫時，由動態連結器套用。</p>
+</section>
 <section>
   <h2>解析中的「重定位（Relocation）」</h2>
   <ul class="term-quotes"><li><p>編譯器是將各檔案視為從位址0開始來產生的，並將要使用其他檔案函式或自身變數位址的位置記錄為重定位資訊。</p><a href="/zh-hant/q/linker-loader/linker-loader-004/">關於連結器所進行的重定位（relocation），下列說明何者正確？</a></li><li><p>目的檔中包含該檔案內函式經翻譯後的機器碼、變數的初始值、所定義與所參照的名稱清單（符號表），以及事後要填入位址的位置清單（重定位資訊）。</p><a href="/zh-hant/q/linker-loader/linker-loader-001/">關於編譯器從單一原始檔輸出的目的檔（.o），下列何者正確？</a></li><li><p>連結器會將各目的檔中所參照的名稱（符號），對應到其他地方所定義的實體（符號解析），並排列各檔案的程式碼與資料以決定最終位址，再將指令中的暫時位址改寫為正確的值（重定位）。</p><a href="/zh-hant/q/linker-loader/linker-loader-002/">關於連結器的主要功能，下列何者正確？</a></li><li><p>編譯器在不知道count位址的情況下產生參照它的指令，並將該位置記錄在重定位資訊中。</p><a href="/zh-hant/q/linker-loader/linker-loader-008/">在C語言中寫下「extern int count;」時，下列關於其意義的敘述何者正確？</a></li><li><p>動態連結器會尋找並載入所需的共用函式庫，進行重定位與符號的結合，然後將控制權移交給程式的入口。</p><a href="/zh-hant/q/linker-loader/linker-loader-027/">在Linux等系統中啟動動態連結的程式時，動態連結器（ld.so等）的功用，下列何者正確？</a></li></ul>

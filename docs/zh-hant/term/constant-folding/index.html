@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"常數摺疊","item":"https://semiconroom.com/zh-hant/term/constant-folding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"常數摺疊","description":"將編譯時就能確定值的運算式事先算好，替換成結果常數的最佳化。例如把 3 * 4 變成 12。可減少執行時的計算。","url":"https://semiconroom.com/zh-hant/term/constant-folding/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"常數摺疊","item":"https://semiconroom.com/zh-hant/term/constant-folding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"常數摺疊","description":"將編譯時就能確定值的運算式事先算好，替換成結果常數的最佳化。例如把 3 * 4 變成 12。可減少執行時的計算。","url":"https://semiconroom.com/zh-hant/term/constant-folding/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"常數摺疊和常數傳播有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"常數摺疊是計算所有運算元皆為常數的運算式，例如將 3 * 4 變成 12。常數傳播則是將變數已知的常數值代入其使用處，這常會產生可再被摺疊的新運算式。"}},{"@type":"Question","name":"關閉最佳化時還會進行常數摺疊嗎？","acceptedAnswer":{"@type":"Answer","text":"簡單的字面值運算式即使未開啟最佳化，也常會被摺疊，因為前端在剖析時就會計算它們。經由變數的摺疊、函式內嵌與分支移除，一般則需要開啟最佳化。"}},{"@type":"Question","name":"常數摺疊會改變浮點數的結果嗎？","acceptedAnswer":{"@type":"Answer","text":"符合標準的編譯器會以與硬體相同的 IEEE 754 捨入方式摺疊浮點運算，因此結果不會改變。fast-math 等放寬浮點規則的選項則允許重新結合，可能改變結果的最後幾個位元。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/compiler/">編譯器</a></p>
 </article>
-
+<section class="term-about">
+  <h2>編譯器實際做了什麼</h2>
+  <p>在最佳化過程中，編譯器會掃描其中間表示，找出所有運算元皆為常數的運算，計算其值，再以所得的字面值取代該運算。算術運算、位元運算、移位、型別轉換與比較都可以摺疊。摺疊比較運算的威力特別大：若 10 &gt; 100 這樣的條件成為已知的 false，它所保護的分支就永遠不會執行。編譯器通常會將摺疊與代數化簡一起進行，把 x * 1 或 x + 0 之類的運算式改寫為 x，但嚴格來說這是另一種轉換，因為 x 本身不是常數。</p>
+</section>
+<section class="term-about">
+  <h2>與常數傳播、內嵌及無用程式碼消除的配合</h2>
+  <p>常數摺疊很少單獨發揮作用。常數傳播會將已知持有常數之變數的使用處替換成該常數，為摺疊創造新的機會，而摺疊的結果又可以再傳播。例如 n = 8; m = n * 2; return m + 1 會簡化成 return 17，之後無用程式碼消除會移除未使用的指派。內嵌則讓這個循環持續進行：一旦呼叫 sq(6) 被其函式本體取代，6 * 6 + 1 就會摺疊成 37。以 SSA 形式為基礎的編譯器，常將傳播、摺疊與不可達分支移除結合成一個演算法，稱為稀疏條件常數傳播。</p>
+</section>
+<section class="term-about">
+  <h2>保持程式的語意</h2>
+  <p>摺疊的結果必須與目標機器在執行時計算出的值完全相同。因此編譯器必須模擬目標機器的整數寬度與溢位環繞，這在從 64 位元主機交叉編譯到 32 位元目標時特別重要。浮點數摺疊必須依原始碼順序，對每個運算重現 <a class="term-link" href="/zh-hant/term/ieee-754/">IEEE 754</a> 的捨入，這就是除非 fast-math 等選項允許，否則編譯器不會重新結合浮點運算式的原因。會引發錯誤的運算（例如整數除以零），除非確定該程式碼一定會執行，否則不得變成編譯期錯誤。</p>
+</section>
+<section class="term-about">
+  <h2>常數摺疊與語言層級的常數運算式</h2>
+  <p>有些編譯期求值是語言所要求的，而非最佳化器自行選擇。在 C 語言中，陣列大小、case 標籤與靜態變數的初始值都必須是常數運算式，而 C++ 的 constexpr 函式可依要求在編譯期求值。最佳化層級的常數摺疊範圍更廣，且屬於選擇性：它適用於程式的任何地方，包括經過傳播或內嵌後才成為常數的值，並可發生在多個階段，從前端、中間表示一直到指令選擇；在指令選擇階段，位址偏移加上常數可能被合併成一個<a class="term-link" href="/zh-hant/term/immediate-operand/">立即值</a>。</p>
+</section>
 <section>
   <h2>練習常數摺疊的題目</h2>
   <article class="q-mini" data-qid="compiler-010" data-cat="compiler" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 將 x = 3 * 4 在編譯時計算，變成 x = 12</p><p class="explanation"><a class="term-link" href="/zh-hant/term/constant-folding/">常數摺疊</a>是一種最佳化，會事先計算在編譯時值就已確定的運算式，並替換為結果常數。3 * 4 每次執行都會得到相同的12，因此不需要在執行時做乘法。與常數傳播搭配使用時，連經由變數的計算也能一併摺疊。浮點數還有需要統一捨入方式等注意事項。並排迴圈主體的是<a class="term-link" href="/zh-hant/term/loop-unrolling/">迴圈展開</a>，彙整函式呼叫則是另一種最佳化。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>常數摺疊和常數傳播有什麼差別？</h3>
+  <p>常數摺疊是計算所有運算元皆為常數的運算式，例如將 3 * 4 變成 12。常數傳播則是將變數已知的常數值代入其使用處，這常會產生可再被摺疊的新運算式。</p>
+  <h3>關閉最佳化時還會進行常數摺疊嗎？</h3>
+  <p>簡單的字面值運算式即使未開啟最佳化，也常會被摺疊，因為前端在剖析時就會計算它們。經由變數的摺疊、函式內嵌與分支移除，一般則需要開啟最佳化。</p>
+  <h3>常數摺疊會改變浮點數的結果嗎？</h3>
+  <p>符合標準的編譯器會以與硬體相同的 IEEE 754 捨入方式摺疊浮點運算，因此結果不會改變。fast-math 等放寬浮點規則的選項則允許重新結合，可能改變結果的最後幾個位元。</p>
+</section>
 <section>
   <h2>解析中的「常數摺疊」</h2>
   <ul class="term-quotes"><li><p>常數摺疊是一種最佳化，會事先計算在編譯時值就已確定的運算式，並替換為結果常數。</p><a href="/zh-hant/q/compiler/compiler-010/">關於編譯器的常數摺疊（constant folding），下列哪個範例正確？</a></li><li><p>經常數摺疊將 8 * 2 計算為16後，m = 16，再經傳播與摺疊，m + 1 成為 16 + 1 = 17。</p><a href="/zh-hant/q/compiler/compiler-011/">對上方程式碼反覆進行常數傳播與常數摺疊，最終會變成什麼樣的程式碼？</a></li><li><p>在常數傳播與常數摺疊之後，會產生大量不再被使用的指派，因此經常搭配使用。</p><a href="/zh-hant/q/compiler/compiler-013/">在無用程式碼刪除（死碼消除）中被移除的對象，下列何者正確？</a></li><li><p>此外，呼叫端的常數等會傳到主體中，使常數摺疊與無用程式碼刪除得以生效，這是很大的優點。</p><a href="/zh-hant/q/compiler/compiler-014/">關於函式行內展開（inline expansion）的優點與缺點，下列組合何者正確？</a></li><li><p>接著進行常數摺疊，就能算出 6 * 6 = 36、36 + 1 = 37，g 就變成只回傳37的程式碼。</p><a href="/zh-hant/q/compiler/compiler-042/">在上方程式碼中，將 sq 行內展開之後接著生效的最佳化，以及其結果，下列何者正確？</a></li></ul>

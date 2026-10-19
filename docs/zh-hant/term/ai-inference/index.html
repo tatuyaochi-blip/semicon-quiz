@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"AI 推論（AI inference）","item":"https://semiconroom.com/zh-hant/term/ai-inference/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AI 推論（AI inference）","description":"使用由訓練決定的權重，只從輸入進行順向傳播以得出答案的 AI 處理。所需的運算與記憶體比訓練少。","url":"https://semiconroom.com/zh-hant/term/ai-inference/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"AI 推論（AI inference）","item":"https://semiconroom.com/zh-hant/term/ai-inference/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AI 推論（AI inference）","description":"使用由訓練決定的權重，只從輸入進行順向傳播以得出答案的 AI 處理。所需的運算與記憶體比訓練少。","url":"https://semiconroom.com/zh-hant/term/ai-inference/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"AI 訓練和推論有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"訓練是在資料集上透過順向與反向傳播來調整模型的權重，需要大量運算與記憶體。推論則使用訓練好的固定權重，只以順向傳播計算新輸入的輸出。"}},{"@type":"Question","name":"為什麼 AI 推論常受記憶體頻寬限制？","acceptedAnswer":{"@type":"Answer","text":"批次小時，從記憶體讀出的每個權重只用於少數幾次計算，因此運算單元必須等待資料。批次大小為一的大型模型（例如文字生成）是受記憶體限制最嚴重的情形。"}},{"@type":"Question","name":"為什麼手機用 NPU 而不用 CPU 做推論？","acceptedAnswer":{"@type":"Answer","text":"NPU 塞入許多低精度乘積累加單元，並避免通用控制的額外負擔，因此每次運算所耗的能量少得多。這使裝置端功能能在電池與散熱的限制內實用化。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>推論與訓練的比較</h2>
+  <p>訓練會執行順向傳播、計算損失、<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>梯度並<a class="term-link" href="/zh-hant/term/refresh/">更新</a>權重，且要在資料集上重複許多次。它必須為反向傳播保留中間的激活值，並儲存最佳化器的狀態，通常也需要具有足夠範圍來表示微小梯度的浮點格式。推論只執行順向傳播，權重固定不變，一次處理一個輸入或一個批次。每個樣本所需的記憶體與運算少得多，也能容忍低得多的精度，因此常用 8 位元整數或更窄的格式。訓練在每個模型版本只進行一次，而推論則在每次使用模型時都要執行。</p>
+</section>
+<section class="term-about">
+  <h2>限制推論速度的因素</h2>
+  <p>大部分的運算是矩陣乘積與卷積中的乘積累加運算，這就是加速器要塞入數千個乘積累加單元的原因。為它們供應資料往往才是真正的瓶頸。<a class="term-link" href="/zh-hant/term/batch-size/">批次大小</a>為一時，從記憶體擷取的每個權重只用於一個輸入，因此效能受記憶體頻寬而非運算能力限制；以大型語言模型生成文字時，每個新權杖都要讀取全部權重，就是典型的例子。將多個請求合併成批次可重複使用每個擷取到的權重，提高傳輸量，但代價是延遲增加。因此延遲與傳輸量必須分開說明。</p>
+</section>
+<section class="term-about">
+  <h2>讓模型更小、更便宜</h2>
+  <p>從 FP32 量化到 <a class="term-link" href="/zh-hant/term/int8/">INT8</a>，可將權重儲存量與記憶體流量減為四分之一，並讓精簡的整數單元進行運算，代價是些許的準確度風險，可透過校準或<a class="term-link" href="/zh-hant/term/quantization-aware-training/">量化感知訓練</a>來控制。蒸餾是訓練一個小型學生模型去模仿大型教師模型。<a class="term-link" href="/zh-hant/term/pruning/">剪枝</a>則移除貢獻很小的權重或整個通道，<a class="term-link" href="/zh-hant/term/structured-sparsity/">結構化稀疏</a>模式讓硬體可以跳過零值。這些技術可以組合使用，正是它們讓模型得以在手機或嵌入式裝置的記憶體、功耗與散熱預算內執行。</p>
+</section>
+<section class="term-about">
+  <h2>雲端推論與邊緣推論</h2>
+  <p>資料中心的推論在記憶體與電力充足的 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 或專用加速器上執行大型模型。邊緣推論則在裝置上執行，通常使用<a class="term-link" href="/zh-hant/term/soc/">系統單晶片</a>中的<a class="term-link" href="/zh-hant/term/npu/">神經網路處理單元</a>（NPU），它專精於低精度矩陣運算、在晶片內重複使用資料，並省略<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>等通用機制，因此能源效率遠高於 CPU。在裝置上執行可避免網路延遲、能離線運作、讓照片與音訊留在本機，並節省伺服器成本。取捨在於，非常大型的模型若不經大幅壓縮，就無法放進裝置的限制之內。</p>
+</section>
 <section>
   <h2>練習AI 推論（AI inference）的題目</h2>
   <article class="q-mini" data-qid="cpu-015" data-cat="cpu" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. NPU（神經網路處理器）</p><p class="explanation"><a class="term-link" href="/zh-hant/term/npu/">NPU</a> 是以 8 位元以下的整數等較低的精度，大量平行處理佔神經網路計算大部分的乘加運算之專用電路。其每單位功耗的效能比通用 CPU 高出一個數量級以上，可在智慧型手機內處理照片修正、語音辨識、翻譯等。效能以 <a class="term-link" href="/zh-hant/term/tops/">TOPS（每秒兆次運算）</a>表示，個人電腦用的 <a class="term-link" href="/zh-hant/term/soc/">SoC</a> 也日益普遍地搭載。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>AI 訓練和推論有什麼不同？</h3>
+  <p>訓練是在資料集上透過順向與反向傳播來調整模型的權重，需要大量運算與記憶體。推論則使用訓練好的固定權重，只以順向傳播計算新輸入的輸出。</p>
+  <h3>為什麼 AI 推論常受記憶體頻寬限制？</h3>
+  <p>批次小時，從記憶體讀出的每個權重只用於少數幾次計算，因此運算單元必須等待資料。批次大小為一的大型模型（例如文字生成）是受記憶體限制最嚴重的情形。</p>
+  <h3>為什麼手機用 NPU 而不用 CPU 做推論？</h3>
+  <p>NPU 塞入許多低精度乘積累加單元，並避免通用控制的額外負擔，因此每次運算所耗的能量少得多。這使裝置端功能能在電池與散熱的限制內實用化。</p>
+</section>
 
 <section>
   <h2>出現「AI 推論（AI inference）」的題目（1題）</h2>
