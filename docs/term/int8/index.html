@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"INT8","item":"https://semiconroom.com/term/int8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"INT8","description":"8ビットの符号付き整数(−128〜127)。AIの推論で、重みや活性化の値をスケールを掛けてINT8に変換(量子化)すると、計算とメモリが大きく減り、整数の小さな回路で高速に処理できる。","url":"https://semiconroom.com/term/int8/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"INT8","item":"https://semiconroom.com/term/int8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"INT8","description":"8ビットの符号付き整数(−128〜127)。AIの推論で、重みや活性化の値をスケールを掛けてINT8に変換(量子化)すると、計算とメモリが大きく減り、整数の小さな回路で高速に処理できる。","url":"https://semiconroom.com/term/int8/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"INT8で表せる範囲はいくつですか?","acceptedAnswer":{"@type":"Answer","text":"符号付き8ビット整数は−128〜127を表せます。対称量子化では、正と負の範囲をそろえてゼロがちょうど0に対応するよう、−127〜127に限定することがよくあります。"}},{"@type":"Question","name":"INT8の積はなぜ32ビット整数で累算するのですか?","acceptedAnswer":{"@type":"Answer","text":"INT8同士の積は最大16ビットになり、内積では数百〜数千個を足し合わせるため、幅の狭いアキュムレータではオーバーフローします。32ビットのアキュムレータなら、INT8に再スケーリングする前の和を正確に保てます。"}},{"@type":"Question","name":"モデルをINT8に量子化すると精度はどのくらい下がりますか?","acceptedAnswer":{"@type":"Answer","text":"モデルやスケールの選び方次第です。適切なキャリブレーションと重みのチャネルごとのスケールを使えば低下は小さいことが多く、学習後量子化で足りない場合は量子化を考慮した学習でさらに取り戻せます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/computer-arithmetic/">計算機算術</a></p>
 </article>
-
+<section class="term-about">
+  <h2>実数を8ビット整数に対応させる方法</h2>
+  <p>INT8は−128〜127を表す8ビットの<a class="term-link" href="/term/two-s-complement/">2の補数</a>整数です。ニューラルネットワークで使うときは、テンソルごとにスケール係数を持たせ、実数値がおよそ「スケール×整数」になるようにします。ゼロ点を差し引くこともあります。対称量子化ではゼロ点を0に固定し、範囲が対称になるよう通常は−127〜127を使い、スケールは絶対値の最大値÷127とします。−6.35〜6.35の範囲のデータならスケールは0.05で、1.0は20に対応します。非対称量子化はゼロ点を加えるもので、ReLUの後で常に非負になる活性化に向いています。</p>
+</section>
+<section class="term-about">
+  <h2>整数ハードウェアが安価な理由</h2>
+  <p>FP32と比べると、INT8では重みの記憶容量とメモリ転送量が4分の1になり、<a class="term-link" href="/term/ai-inference/">推論</a>がメモリ帯域で律速される場合に特に効きます。演算も安くなります。乗算器の面積はオペランド幅のおよそ2乗で増え、8ビット整数の乗算器には指数の処理や正規化がないため、FP32の演算器よりはるかに小さく電力効率も高くなります。INT8同士の積は16ビットに収まり、長い内積はオーバーフローを避けるため32ビット整数で累算します。その32ビットの結果を再スケーリング(再量子化)して、次の層のためにINT8に戻します。</p>
+</section>
+<section class="term-about">
+  <h2>キャリブレーションと精度の維持</h2>
+  <p>使えるレベルは256段階しかないため、丸め誤差やクリッピング誤差は避けられません。重みは学習後に固定されるので、スケールを直接決められ、各チャネルの範囲に合わせて出力チャネルごとに設定することがよくあります。活性化は入力によって変わるため、<a class="term-link" href="/term/post-training-quantization/">学習後量子化</a>では代表的なサンプルを数百個ほどモデルに通して各層の範囲を調べます。この工程をキャリブレーションと呼びます。絶対値の最大値に合わせると、まれな外れ値のせいで分解能が無駄になるので、分布の大部分をカバーするように範囲をクリップすることがよくあります。それでも精度が下がりすぎる場合は、<a class="term-link" href="/term/quantization-aware-training/">量子化を考慮した学習</a>(QAT)で学習中に丸めを模擬し、ネットワークに丸めへの耐性を身につけさせます。</p>
+</section>
+<section class="term-about">
+  <h2>INT8と他の低精度フォーマットの比較</h2>
+  <p>INT8はレベルが等間隔に並ぶので、範囲内のどこでも精度が同じで、ダイナミックレンジがそれほど広くない重みや活性化に適しています。FP16、BF16、<a class="term-link" href="/term/fp8/">FP8</a>などの浮動小数点フォーマットは指数にビットを使うため、ダイナミックレンジが広く、値が大きくなるほど間隔も広がります。多くのアクセラレータはこれらの複数のフォーマットに対応しており、<a class="term-link" href="/term/tops/">TOPS</a>で示される性能値はたいていINT8かそれ以下の精度での値です。INT4のようにさらに狭い整数は、主にメモリ容量が最大の制約となる場合に重みに使われますが、<a class="term-link" href="/term/quantization-error/">量子化誤差</a>は大きくなります。</p>
+</section>
 <section>
   <h2>INT8の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="computer-arithmetic-030" data-cat="computer-arithmetic" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 20</p><p class="explanation">スケールは 6.35 ÷ 127 = 0.05 で、整数の1が実数の0.05に相当します。実数の値を整数にするには、スケールで割って最も近い整数に丸めるので、1.0 ÷ 0.05 = 20 になります。元に戻すときは 20 × 0.05 = 1.0 です。1は実数の値をそのまま整数にした誤りで、127は最大値の6.35に対応する整数です。範囲の外れ値が大きいとスケールが粗くなり精度が落ちるため、最大値の決め方(較正)が重要です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>INT8で表せる範囲はいくつですか?</h3>
+  <p>符号付き8ビット整数は−128〜127を表せます。対称量子化では、正と負の範囲をそろえてゼロがちょうど0に対応するよう、−127〜127に限定することがよくあります。</p>
+  <h3>INT8の積はなぜ32ビット整数で累算するのですか?</h3>
+  <p>INT8同士の積は最大16ビットになり、内積では数百〜数千個を足し合わせるため、幅の狭いアキュムレータではオーバーフローします。32ビットのアキュムレータなら、INT8に再スケーリングする前の和を正確に保てます。</p>
+  <h3>モデルをINT8に量子化すると精度はどのくらい下がりますか?</h3>
+  <p>モデルやスケールの選び方次第です。適切なキャリブレーションと重みのチャネルごとのスケールを使えば低下は小さいことが多く、学習後量子化で足りない場合は量子化を考慮した学習でさらに取り戻せます。</p>
+</section>
 <section>
   <h2>解説の中の「INT8」</h2>
   <ul class="term-quotes"><li><p>そこで、実際の使い方に近い入力を数百件ほど流して、各層の活性化がとる値の範囲や分布を調べ、どの範囲をINT8の-127〜127に対応させるか(スケール)を決めます。</p><a href="/q/ai-stack/ai-stack-027/">活性化をINT8に量子化する学習後量子化で行う「キャリブレーション」の目的として正しいものはどれか。</a></li><li><p>FP16やBF16、FP8、INT8などの低い精度で使うことが多く、ニューラルネットワークの学習と推論の大部分を占める行列の積を大きく速くします。</p><a href="/q/gpu-programming/gpu-programming-039/">最近のGPUに搭載されているテンソルコア(行列演算ユニット)の特徴として正しいものはどれか。</a></li><li><p>TOPS(1秒あたりの兆回の演算)は、全部の演算器が休みなく動いたときの理論上の値で、多くはINT8やそれより低い精度で数えられ、スパースを使った場合の値のこともあります。</p><a href="/q/ai-stack/ai-stack-043/">AIのアクセラレータの性能として示される「○○ TOPS」という値について注意すべき点として正しいものはどれか。</a></li></ul>

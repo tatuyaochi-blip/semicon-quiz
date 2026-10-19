@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"AXI","item":"https://semiconroom.com/term/axi/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AXI","description":"ArmのAMBA規格の1つで、SoCの中のブロックどうしをつなぐバス。5つの独立したチャネルとVALID・READYの受け渡しを持ち、AXI4-LiteやAXI4-Streamの種類もある。","url":"https://semiconroom.com/term/axi/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"AXI","item":"https://semiconroom.com/term/axi/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AXI","description":"ArmのAMBA規格の1つで、SoCの中のブロックどうしをつなぐバス。5つの独立したチャネルとVALID・READYの受け渡しを持ち、AXI4-LiteやAXI4-Streamの種類もある。","url":"https://semiconroom.com/term/axi/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"AXI4、AXI4-Lite、AXI4-Streamの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"フル機能のAXI4は、バースト、ID、複数の未完了トランザクションに対応し、高スループットのメモリアクセスに使います。AXI4-Liteは1トランザクションで1ワードを扱うレジスタアクセス向けで、AXI4-Streamはアドレスを持たず連続したデータの流れを運びます。"}},{"@type":"Question","name":"AXIでVALIDをREADYに依存させてもよいですか?","acceptedAnswer":{"@type":"Answer","text":"いけません。送信側はデータがあればREADYを待たずにVALIDを出す必要があり、そうしないと双方が永遠に待ち続けるおそれがあります。受信側は、VALIDを待ってからREADYを出すことが許されています。"}},{"@type":"Question","name":"AXIとAPBの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"AXIは、独立したリードとライトのチャネルとバーストを備えた高性能なパイプライン型インターフェースです。APBは周辺回路のレジスタ向けの単純な低速バスで、通常はブリッジを介してAXIに接続されます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/io-interface/">インターフェース・バス規格</a></p>
 </article>
-
+<section class="term-about">
+  <h2>チャネルとハンドシェイク</h2>
+  <p>AXI(Advanced eXtensible Interface)は、1つの接続を5本の一方向チャネルに分けます。リードアドレス、リードデータ、ライトアドレス、ライトデータ、ライト応答の5つです。どのチャネルも同じVALID/READYハンドシェイクで情報を転送し、両方の信号がHighになったクロックエッジで転送が成立します。送信側はREADYを待ってからVALIDを出してはならず、これにより<a class="term-link" href="/term/deadlock/">デッドロック</a>を防ぎます。一方、受信側はREADYをLowに保ってバックプレッシャーをかけられます。各チャネルが単純な<a class="term-link" href="/term/handshake/">ハンドシェイク</a>なので、動作を変えずにどのチャネルにもパイプラインのレジスタスライスを挿入でき、タイミング収束が楽になります。</p>
+</section>
+<section class="term-about">
+  <h2>バーストとトランザクション</h2>
+  <p>1回のアドレスの<a class="term-link" href="/term/handshake/">ハンドシェイク</a>で、多数のデータビートからなるバーストを開始できます。アドレスチャネルは開始アドレス、バースト長、ビートのサイズ、バーストタイプを運びます。バーストタイプには、FIFOのようにアドレスが変わらないFIXED、通常のメモリブロック向けに増加していくINCR、クリティカルワードから始まるキャッシュラインフィル向けのWRAPがあります。AXI4ではINCRバーストは最大256ビートで、バーストは4 KBのアドレス境界をまたいではならないため、インターコネクトが1つのバーストを2つのターゲットに分割する必要はありません。リードの各ビートとライトの各バーストには、成功かエラーかを示す応答コードが返ります。</p>
+</section>
+<section class="term-about">
+  <h2>ID、複数の未完了要求、インターコネクト</h2>
+  <p>各トランザクションはIDを持ちます。マネージャは先の要求が完了する前に多数の要求を発行でき、長いメモリレイテンシの間もバスを遊ばせずに済みます。同じIDのトランザクションは順番どおりに完了しなければなりませんが、IDが異なれば順不同で完了してよいので、高速な周辺回路が遅いDRAMの後ろで待たされることはありません。<a class="term-link" href="/term/soc/">SoC</a>では、インターコネクトやクロスバがアドレスをデコードし、CPUや<a class="term-link" href="/term/dma/">DMA</a>エンジンなどのマネージャ間を調停し、メモリコントローラなどのサブオーディネートに要求を振り分けます。データ幅、<a class="term-link" href="/term/clock-domain/">クロックドメイン</a>、プロトコルの変換器を加えることもよくあります。</p>
+</section>
+<section class="term-about">
+  <h2>AXI4-Lite、AXI4-Stream、APB</h2>
+  <p>AXI4-Liteは5本のチャネルを残しつつバーストやトランザクションのオプションの大半を省き、1回のトランザクションで1ワードを転送します。制御・ステータスレジスタへのアクセスに向いています。AXI4-Streamにはアドレスがまったくなく、1本のTVALID/TREADYチャネルで連続データを運び、TLASTでパケットの終わりを示します。映像、信号処理、ネットワークのデータパスに適しています。同じArmのAMBA規格に属するAPB(Advanced Peripheral Bus)はさらに単純でパイプライン化されておらず、通常はブリッジの先で低速な周辺回路に使われます。AXIのコヒーレント拡張では、<a class="term-link" href="/term/cache-coherency/">キャッシュコヒーレンシ</a>のためのスヌープが加わります。</p>
+</section>
 <section>
   <h2>AXIの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="io-interface-028" data-cat="io-interface" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 送る側のVALIDと受ける側のREADYがどちらも1になっているクロックのエッジ</p><p class="explanation">送る側は有効なデータがあるときVALIDを1にし、受ける側は受け取れるときREADYを1にします。クロックのエッジで両方が1なら受け渡しが成立します。受ける側が忙しいときはREADYを0にして送る側を待たせられるので(背圧)、速さの違うブロックどうしでもデータを失わずにつなげます。送る側はREADYを待たずにVALIDを出す決まりで、待ち合いによる停止を防いでいます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>AXI4、AXI4-Lite、AXI4-Streamの違いは何ですか?</h3>
+  <p>フル機能のAXI4は、バースト、ID、複数の未完了トランザクションに対応し、高スループットのメモリアクセスに使います。AXI4-Liteは1トランザクションで1ワードを扱うレジスタアクセス向けで、AXI4-Streamはアドレスを持たず連続したデータの流れを運びます。</p>
+  <h3>AXIでVALIDをREADYに依存させてもよいですか?</h3>
+  <p>いけません。送信側はデータがあればREADYを待たずにVALIDを出す必要があり、そうしないと双方が永遠に待ち続けるおそれがあります。受信側は、VALIDを待ってからREADYを出すことが許されています。</p>
+  <h3>AXIとAPBの違いは何ですか?</h3>
+  <p>AXIは、独立したリードとライトのチャネルとバーストを備えた高性能なパイプライン型インターフェースです。APBは周辺回路のレジスタ向けの単純な低速バスで、通常はブリッジを介してAXIに接続されます。</p>
+</section>
 <section>
   <h2>解説の中の「AXI」</h2>
   <ul class="term-quotes"><li><p>AXIは、読み出しのアドレス(AR)とデータ(R)、書き込みのアドレス(AW)とデータ(W)と応答(B)の5つのチャネルを持ちます。</p><a href="/q/io-interface/io-interface-028/">AXIバスの特徴として正しいものはどれか。</a></li><li><p>キャッシュラインの読み込みのように続いた番地のデータをまとめて扱うことが多いので、AXIは先頭の番地と長さだけを送り、データを続けて受け渡すバースト転送ができます。</p><a href="/q/io-interface/io-interface-030/">AXIのバースト転送の利点として正しいものはどれか。</a></li><li><p>AXIでは要求にIDを付けて複数を同時に出しておけるので、遅延の間にも次々とデータが返ってきて、帯域を有効に使えます。</p><a href="/q/io-interface/io-interface-031/">AXIで、前の読み出しの応答を待たずに次の読み出しの要求を出せる(複数の要求を同時に未完了のまま持てる)ことの利点とし…</a></li><li><p>速さが必要な大量のデータの転送には、フルのAXIや、アドレスを持たないAXI4-Streamを使い分けます。</p><a href="/q/io-interface/io-interface-032/">AXIの種類のうち、AXI4-Liteが主に使われる用途はどれか。</a></li><li><p>AXI(Advanced eXtensible Interface)は、Armが公開しているAMBAという規格群の1つで、チップの中のブロックどうしをつなぐバスとして広く使われています。</p><a href="/q/io-interface/io-interface-027/">SoCの内部で、CPUやメモリコントローラ、周辺回路などのブロックをつなぐのに広く使われている、ArmのAMBA規格の…</a></li></ul>

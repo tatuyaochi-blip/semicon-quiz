@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ページテーブル","item":"https://semiconroom.com/term/page-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ページテーブル","description":"仮想アドレスのページ番号から物理アドレスのページ番号への対応を記録した表。OSがプロセスごとに作り、CPUのMMUが参照してアドレスを変換する。各項目には保護のためのビットも含まれる。","url":"https://semiconroom.com/term/page-table/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ページテーブル","item":"https://semiconroom.com/term/page-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ページテーブル","description":"仮想アドレスのページ番号から物理アドレスのページ番号への対応を記録した表。OSがプロセスごとに作り、CPUのMMUが参照してアドレスを変換する。各項目には保護のためのビットも含まれる。","url":"https://semiconroom.com/term/page-table/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ページテーブルを1段ではなく多段にするのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"1段のテーブルではあり得るすべての仮想ページにエントリが必要で、32ビットアドレスでもプロセスごとに数 MBになるからです。多段の木構造なら、実際に使われている領域の分だけ下位テーブルを割り当てれば済みます。"}},{"@type":"Question","name":"ページテーブルとTLBの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ページテーブルはOSがメモリ上に持つ完全な対応表です。TLBはCPU内の小さなハードウェアキャッシュで、最近使った変換結果を保持し、ほとんどのアクセスでテーブルウォークを不要にします。"}},{"@type":"Question","name":"ページテーブルエントリが存在しないとどうなりますか?","acceptedAnswer":{"@type":"Answer","text":"MMUがページフォールトを発生させ、OSが処理します。たとえばストレージからページを読み込んでエントリを更新し、フォールトを起こした命令を再実行します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -94,7 +94,22 @@
 </svg><figcaption class="fig-cap">仮想アドレスから物理アドレスへの変換（TLBとページテーブル） · <a href="/figures/#fig-page-translation">図解集で見る</a></figcaption></figure>
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ページテーブルによるアドレス変換</h2>
+  <p>仮想アドレスは仮想ページ番号(VPN)とページ内オフセットに分けられ、4 KBページなら下位12ビットがオフセットです。メモリ管理ユニット(MMU)はVPNでページテーブルを引いて物理フレーム番号を得て、そこにオフセットをそのままつなげます。各ページテーブルエントリ(PTE)には、有効(プレゼント)ビット、読み出し・書き込み・実行の権限、ユーザ/カーネルのフラグ、そしてOSが使うアクセスビットとダーティビットも入っています。現在のプロセスの最上位テーブルはレジスタで指し示され、<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>のたびに切り替えられます。</p>
+</section>
+<section class="term-about">
+  <h2>テーブルが多段になっている理由</h2>
+  <p>1段の平坦なテーブルでは、あり得るすべてのページについてエントリが必要です。32ビットアドレス、4 KBページ、4バイトのエントリなら2²⁰個、プロセスごとに4 MBになり、その大半は使われていない領域の記述です。多段テーブルは木構造で、上位のエントリがなければその領域全体が未割り当てなので、下位のテーブルは要りません。典型的な64ビットの設計では、512個の8バイトエントリからなる4段のテーブルで48ビットのアドレスを変換し、各テーブルはちょうど4 KBの1ページに収まります。探索を1段か2段早く打ち切ると、2 MBなどのラージページになります。</p>
+</section>
+<section class="term-about">
+  <h2>ページテーブルとTLB</h2>
+  <p>ページテーブルは通常のメモリ上にあるため、完全なテーブルウォークには依存関係のある複数回のメモリアクセスが必要です。4段なら最大4回で、ゲストとホストの両方のテーブルをたどる仮想化環境ではさらに多くなります。<a class="term-link" href="/term/tlb/">TLB(変換索引バッファ)</a>はCPU内にある最近の変換結果の小さなキャッシュで、ほとんどのウォークを不要にします。TLBミスが起きると、最近のプロセッサの多くではハードウェアのページウォーカがテーブルを読み、上位エントリのキャッシュがそれを助けます。ラージページを使うと、1つのTLBエントリがカバーするメモリ量が増えます。</p>
+</section>
+<section class="term-about">
+  <h2>OSによる利用</h2>
+  <p>PTEが存在しない状態でアクセスするとページフォールトが発生し、OSが対処を決めます。ストレージからページを読み込む、ゼロで埋めたページを割り当てる、不正アクセスとしてプロセスを強制終了する、などです。複数プロセスのエントリを同じフレームに向ければ<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>が実現でき、共有ページを読み出し専用にしておけばfork後の<a class="term-link" href="/term/copy-on-write/">コピーオンライト</a>が実現できます。マルチコアシステムでOSがマッピングを無効化・変更する場合は、他のコアに残っている古い<a class="term-link" href="/term/tlb/">TLB</a>の内容も無効化する必要があり、これを<a class="term-link" href="/term/tlb-shootdown/">TLBシュートダウン</a>と呼びます。</p>
+</section>
 <section>
   <h2>ページテーブルの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-010" data-cat="os-hardware" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -108,7 +123,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 使わない範囲の表を省けて、ページテーブルのメモリを節約できるから</p><p class="explanation">1段の<a class="term-link" href="/term/page-table/">ページテーブル</a>では、使うかどうかに関係なく仮想アドレス空間のすべてのページ分の項目が必要で、64ビットの環境では表が巨大になります。多段にすると、使っている範囲の下位の表だけを作り、使っていない範囲は上位の表の項目を無効にしておけるので、プログラムが使う量に応じたメモリで済みます。その代わり、<a class="term-link" href="/term/tlb/">TLB</a>ミスのときにたどる表の数は段数だけ増えて遅くなります。物理メモリの大きさとは関係ありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ページテーブルを1段ではなく多段にするのはなぜですか?</h3>
+  <p>1段のテーブルではあり得るすべての仮想ページにエントリが必要で、32ビットアドレスでもプロセスごとに数 MBになるからです。多段の木構造なら、実際に使われている領域の分だけ下位テーブルを割り当てれば済みます。</p>
+  <h3>ページテーブルとTLBの違いは何ですか?</h3>
+  <p>ページテーブルはOSがメモリ上に持つ完全な対応表です。TLBはCPU内の小さなハードウェアキャッシュで、最近使った変換結果を保持し、ほとんどのアクセスでテーブルウォークを不要にします。</p>
+  <h3>ページテーブルエントリが存在しないとどうなりますか?</h3>
+  <p>MMUがページフォールトを発生させ、OSが処理します。たとえばストレージからページを読み込んでエントリを更新し、フォールトを起こした命令を再実行します。</p>
+</section>
 <section>
   <h2>解説の中の「ページテーブル」</h2>
   <ul class="term-quotes"><li><p>ページテーブルは、仮想ページの番号ごとに、対応する物理ページの番号と、読み書きの許可などの保護の情報を記録した表で、OSがプロセスごとに作り、CPUのMMUが参照します。</p><a href="/q/os-hardware/os-hardware-010/">ページテーブルの役割として正しいものはどれか。</a></li><li><p>1段のページテーブルでは、使うかどうかに関係なく仮想アドレス空間のすべてのページ分の項目が必要で、64ビットの環境では表が巨大になります。</p><a href="/q/os-hardware/os-hardware-013/">ページテーブルを1段ではなく多段(階層型)にする主な理由はどれか。</a></li><li><p>プロセスごとに4 MBが必要になるため、多段のページテーブルで使わない部分を省くのが一般的です。</p><a href="/q/os-hardware/os-hardware-014/">仮想アドレスが32ビット、ページサイズが4 KB、ページテーブルの1項目が4バイトのとき、1段のページテーブルの大きさ…</a></li><li><p>TLBミスのときは最大4回メモリを読む必要があるため、TLBやページテーブルの項目をキャッシュする工夫が重要です。</p><a href="/q/os-hardware/os-hardware-015/">仮想アドレスのうち48ビットを使い、ページサイズ4 KB、各段の表が512項目(9ビット)の多段ページテーブルでは、何…</a></li><li><p>ページテーブルの項目には、対応する物理ページの番号のほか、そのページが物理メモリにあるかを示す有効ビット、読み書きや実行、ユーザモードからのアクセスの許可、ハードウェアが設定するアクセス済み(参照)ビットと書き換え済み(ダーティ)ビットが入ります。</p><a href="/q/os-hardware/os-hardware-016/">ページテーブルの各項目にふつう含まれる情報の組み合わせとして正しいものはどれか。</a></li></ul>

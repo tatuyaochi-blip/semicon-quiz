@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"再配置","item":"https://semiconroom.com/term/relocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"再配置","description":"コードとデータの最終的な番地が決まった後、命令やデータの中の仮の番地を正しい値に書き換える処理。リンカが行い、動的リンクでは一部を実行時に動的リンカが行う。","url":"https://semiconroom.com/term/relocation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"再配置","item":"https://semiconroom.com/term/relocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"再配置","description":"コードとデータの最終的な番地が決まった後、命令やデータの中の仮の番地を正しい値に書き換える処理。リンカが行い、動的リンクでは一部を実行時に動的リンカが行う。","url":"https://semiconroom.com/term/relocation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"シンボル解決と再配置の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"シンボル解決は、参照されている各名前がどの定義を指すかを決める処理です。再配置はその後に、それらのシンボルの最終的な番地や距離を、シンボルを使う命令やデータに書き込む処理です。"}},{"@type":"Question","name":"リンカエラー relocation truncated to fit はどういう意味ですか?","acceptedAnswer":{"@type":"Answer","text":"リンカが計算した番地やオフセットが、入れるべき命令のフィールドに対して大きすぎることを意味します。分岐先が範囲外にある場合などです。コードモデルやメモリ配置を変えるか、より長い命令列を使えば、たいてい解決します。"}},{"@type":"Question","name":"再配置は実行時にも行われますか?","acceptedAnswer":{"@type":"Answer","text":"一部は行われます。大部分は静的リンカが処理しますが、共有ライブラリや位置独立実行ファイルでは、残りの再配置を動的リンカがプログラムの読み込み時や、ライブラリ関数の最初の呼び出し時に適用します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>再配置が必要な理由</h2>
+  <p>分割コンパイルでは、各ソースファイルは自分のコードやデータが最終的にメモリのどこに置かれるか、他のファイルで定義された関数や変数がどこにあるかを知らないまま翻訳されます。そこでコンパイラは各セクションが番地0から始まるものとし、命令やデータ語にわからない番地が必要な箇所には仮の値を書いて再配置エントリを記録します。<a class="term-link" href="/term/linker/">リンカ</a>はすべての<a class="term-link" href="/term/object-file/">オブジェクトファイル</a>の全セクションを配置して最終番地を決めた後、これらのエントリをたどって正しい値を書き込みます。この処理がなければ、別々にコンパイルした部品を1つのプログラムにまとめることはできません。</p>
+</section>
+<section class="term-about">
+  <h2>再配置エントリに記録される情報</h2>
+  <p>各エントリには、書き換える位置(セクション内のオフセット)、番地が必要なシンボル、加数(アデンド)、そして種類が記録されています。種類は、<a class="term-link" href="/term/linker/">リンカ</a>が値をどう計算し、どう符号化するかを示します。たとえば32ビットや64ビットの絶対番地、分岐や呼び出し用のPC相対距離、2つの命令に分けて埋める値などです。RISC-Vでは lui と addi、auipc と jalr のような命令の組で番地を作るので、上位20ビットと下位12ビットをそれぞれ別の種類の再配置で埋めます。</p>
+</section>
+<section class="term-about">
+  <h2>静的再配置と動的再配置</h2>
+  <p>完全に静的なリンクでは、<a class="term-link" href="/term/linker/">リンカ</a>がすべての再配置を解決し、実行ファイルはそのまま動きます。<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>ではロード番地が実行時まで決まらないため、事情が変わります。<a class="term-link" href="/term/position-independent-code/">位置独立コード</a>は、<a class="term-link" href="/term/global-offset-table/">グローバルオフセットテーブル</a>(GOT)という番地の表を通してグローバルデータにアクセスし、<a class="term-link" href="/term/procedure-linkage-table/">プロシージャリンケージテーブル</a>(PLT)の小さなスタブを通してライブラリ関数を呼びます。<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>は、プログラムの読み込み時、または最初の呼び出し時に遅延してGOTを埋めます。ランダムな番地に読み込まれる<a class="term-link" href="/term/position-independent-executable/">位置独立実行ファイル</a>(PIE)も単純な相対再配置を持っており、<a class="term-link" href="/term/program-loader/">ローダ</a>が実際のベース番地を足して適用します。</p>
+</section>
+<section class="term-about">
+  <h2>シンボル解決との違い</h2>
+  <p>この2つの処理は混同されがちです。<a class="term-link" href="/term/symbol-resolution/">シンボル解決</a>は、参照されている各名前をただ1つの定義と対応づける処理で、失敗するとundefined referenceやmultiple definitionのエラーになります。再配置はその後に行われ、純粋にビットを書き換える処理です。すべてのシンボルの番地がわかった時点で、記録されたフィールドに正しい数値を書き込みます。再配置にも固有の失敗があります。分岐先が届く範囲を超えるなど、計算した値が命令のフィールドに収まらない場合、GNUの<a class="term-link" href="/term/linker/">リンカ</a>は relocation truncated to <a class="term-link" href="/term/fit-rate/">fit</a> を報告します。通常は、別のコードモデルを使うか、より長い命令列にする必要があります。</p>
+</section>
 <section>
   <h2>再配置の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-004" data-cat="linker-loader" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. コードとデータの最終的な番地が決まった後、命令やデータの中の番地を正しい値に書き換える</p><p class="explanation">コンパイラは各ファイルを番地0から始まるものとして作り、ほかのファイルの関数や自分の変数の番地を使う場所を<a class="term-link" href="/term/relocation/">再配置</a>情報として記録します。<a class="term-link" href="/term/linker/">リンカ</a>はすべてのファイルを並べて実際の番地を決めた後、記録された場所ごとに正しい番地(またはPCからの距離)を計算して命令に書き込みます。<a class="term-link" href="/term/dynamic-linking/">動的リンク</a>では、同じような書き換えの一部を実行時に<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>が行います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>シンボル解決と再配置の違いは何ですか?</h3>
+  <p>シンボル解決は、参照されている各名前がどの定義を指すかを決める処理です。再配置はその後に、それらのシンボルの最終的な番地や距離を、シンボルを使う命令やデータに書き込む処理です。</p>
+  <h3>リンカエラー relocation truncated to fit はどういう意味ですか?</h3>
+  <p>リンカが計算した番地やオフセットが、入れるべき命令のフィールドに対して大きすぎることを意味します。分岐先が範囲外にある場合などです。コードモデルやメモリ配置を変えるか、より長い命令列を使えば、たいてい解決します。</p>
+  <h3>再配置は実行時にも行われますか?</h3>
+  <p>一部は行われます。大部分は静的リンカが処理しますが、共有ライブラリや位置独立実行ファイルでは、残りの再配置を動的リンカがプログラムの読み込み時や、ライブラリ関数の最初の呼び出し時に適用します。</p>
+</section>
 <section>
   <h2>解説の中の「再配置」</h2>
   <ul class="term-quotes"><li><p>コンパイラは各ファイルを番地0から始まるものとして作り、ほかのファイルの関数や自分の変数の番地を使う場所を再配置情報として記録します。</p><a href="/q/linker-loader/linker-loader-004/">リンカが行う再配置(リロケーション)の説明として正しいものはどれか。</a></li><li><p>オブジェクトファイルには、そのファイルの関数を翻訳した機械語、変数の初期値、定義や参照している名前の一覧(シンボルテーブル)、後から番地を埋める場所の一覧(再配置情報)が入っています。</p><a href="/q/linker-loader/linker-loader-001/">コンパイラが1つのソースファイルから出力するオブジェクトファイル(.o)について正しいものはどれか。</a></li><li><p>リンカは、各オブジェクトファイルで参照されている名前(シンボル)を、どこかで定義されている実体と対応づけ(シンボル解決)、各ファイルのコードとデータを並べて最終的な番地を決め、命令の中の仮の番地を正しい値に書き換え(再配置)ます。</p><a href="/q/linker-loader/linker-loader-002/">リンカの主な役割として正しいものはどれか。</a></li><li><p>コンパイラはcountの番地を知らないまま参照する命令を作り、その場所を再配置情報に記録します。</p><a href="/q/linker-loader/linker-loader-008/">C言語で「extern int count;」と書いたときの意味として正しいものはどれか。</a></li><li><p>動的リンカは必要な共有ライブラリを探して読み込み、再配置とシンボルの結合を行ってから、プログラムの入口へ制御を移します。</p><a href="/q/linker-loader/linker-loader-027/">Linuxで動的リンクのプログラムを起動するときに働く動的リンカ(ld.soなど)の役割として正しいものはどれか。</a></li></ul>

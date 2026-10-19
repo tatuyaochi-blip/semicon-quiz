@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"IPC","item":"https://semiconroom.com/term/ipc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IPC","description":"Instructions Per Cycle の略で、1クロックあたりに実行できる命令の数。CPUの設計上の効率を表し、性能はおおよそIPCとクロック周波数の積になる。逆数はCPI。","url":"https://semiconroom.com/term/ipc/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"IPC","item":"https://semiconroom.com/term/ipc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IPC","description":"Instructions Per Cycle の略で、1クロックあたりに実行できる命令の数。CPUの設計上の効率を表し、性能はおおよそIPCとクロック周波数の積になる。逆数はCPI。","url":"https://semiconroom.com/term/ipc/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"クロック周波数とIPCはどちらが高いほうが良いですか?","acceptedAnswer":{"@type":"Answer","text":"性能は両者の積で決まるため、どちらか一方だけでは速さは決まりません。クロック周波数が低くてもIPCがはるかに高いコアは、同じプログラムでより高クロックのコアを上回ることがあります。"}},{"@type":"Question","name":"プログラムのIPCはどうやって測定しますか?","acceptedAnswer":{"@type":"Answer","text":"Linuxのperfなどでハードウェア性能カウンターを使い、リタイアした命令数とサイクル数を数えます。IPCは命令数をサイクル数で割った値で、値が低い場合はキャッシュミスや分岐予測ミスの回数が原因の手がかりになります。"}},{"@type":"Question","name":"IPCが低いとはどういうことですか?","acceptedAnswer":{"@type":"Answer","text":"コアが多くのサイクルで何もできずにいることを意味します。最も多い原因はキャッシュミス後のメモリーからのデータ待ちで、ほかに分岐予測ミスからの回復や長い依存関係の連鎖があります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>性能の式におけるIPC</h2>
+  <p>プログラムの実行時間は、命令数×<a class="term-link" href="/term/cycles-per-instruction/">CPI</a>(1命令あたりのサイクル数)÷クロック周波数で表されます。IPC(1サイクルあたりの命令数)はCPIの逆数なので、同じプログラムであれば性能はIPCと周波数の積に比例します。3 GHzのコアのサイクル時間は約0.33 nsですが、同じ3 GHzのプロセッサーでもIPCが違えば速度は大きく異なります。命令セットが違えば同じ処理に必要な命令数も変わるため、IPCの比較が意味を持つのは、同じプログラム、同じ命令セットの場合に限られます。</p>
+</section>
+<section class="term-about">
+  <h2>IPCを高める技術</h2>
+  <p>単純なパイプラインは1サイクルに1命令の実行を目指します。スーパースカラーコアは独立した複数の命令を1サイクルで発行し、最近の高性能設計では発行幅が6〜10程度あります。<a class="term-link" href="/term/out-of-order-execution/">アウトオブオーダー実行</a>は、先行命令が待たされている間に後続の独立した命令を実行して演算器を遊ばせず、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>はパイプラインのフラッシュを避け、<a class="term-link" href="/term/prefetching/">プリフェッチ</a>付きの大容量キャッシュはメモリーのレイテンシーを隠します。ただし発行幅は自由には広げられません。依存関係をチェックする回路は発行幅のほぼ2乗で増え、実際のプログラムが持つ命令レベル並列性にも限りがあるため、実際のIPCはピークの発行幅を大きく下回ります。</p>
+</section>
+<section class="term-about">
+  <h2>IPCを下げる要因</h2>
+  <p>最大の損失はストールです。最終レベルキャッシュでミスしてDRAMにアクセスすると数百サイクルを失い、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>ミスは深いパイプラインですでに進めた処理を捨てさせ、依存関係が連鎖した命令は実行を直列化します。発行幅の広いコアでIPCが0.3など1を大きく下回る場合、通常はコアが時間の大半をメモリー待ちに費やしています。局所性を高めるデータ構造の見直し、ループの順序変更、キャッシュ再利用のためのブロッキングなどは、どのコンパイラーオプションよりも効果があることが多いです。クロック周波数を上げてもナノ秒単位のメモリーレイテンシーは短くならないため、メモリー律速のコードでは周波数を上げるほどIPCが下がります。</p>
+</section>
+<section class="term-about">
+  <h2>IPCの測定方法</h2>
+  <p>プロセッサーには、サイクル数、リタイアした命令数、各レベルのキャッシュミス、<a class="term-link" href="/term/tlb/">TLB</a>ミス、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>ミスを数えるハードウェアカウンターを備えたPMU(性能監視ユニット)が搭載されています。リタイアした命令数をサイクル数で割れば、IPCが直接求まります。Linuxのperfなどのツールはプログラム実行中にこれらのカウンターを読み取り、IPCをキャッシュミス率や分岐予測ミス率と比べることで、時間がメモリー、分岐、演算のどこに費やされているかがわかります。最近のCPUは負荷や温度に応じて常に周波数を変えるため、実時間ではなくサイクル数で数えるほうが、マイクロアーキテクチャーの効率をより正確に把握できます。</p>
+</section>
 <section>
   <h2>IPCの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="performance-031" data-cat="performance" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. メモリの待ちでCPUが止まっている時間が長い。データの並べ方を変えたりブロッキングを行ったりして、キャッシュを有効に使う</p><p class="explanation">現在のCPUは1サイクルに数命令を実行できるので、<a class="term-link" href="/term/ipc/">IPC</a>が0.3というのは、ほとんどの時間何かを待っていることを示します。最後の段のキャッシュのミスが多ければ、主記憶からのデータを待っている時間が長いと考えられます。データを続いた番地に並べる、ループの順番を変える、ブロッキングで同じデータを何度も使う、などでキャッシュのミスを減らすのが効果的です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>クロック周波数とIPCはどちらが高いほうが良いですか?</h3>
+  <p>性能は両者の積で決まるため、どちらか一方だけでは速さは決まりません。クロック周波数が低くてもIPCがはるかに高いコアは、同じプログラムでより高クロックのコアを上回ることがあります。</p>
+  <h3>プログラムのIPCはどうやって測定しますか?</h3>
+  <p>Linuxのperfなどでハードウェア性能カウンターを使い、リタイアした命令数とサイクル数を数えます。IPCは命令数をサイクル数で割った値で、値が低い場合はキャッシュミスや分岐予測ミスの回数が原因の手がかりになります。</p>
+  <h3>IPCが低いとはどういうことですか?</h3>
+  <p>コアが多くのサイクルで何もできずにいることを意味します。最も多い原因はキャッシュミス後のメモリーからのデータ待ちで、ほかに分岐予測ミスからの回復や長い依存関係の連鎖があります。</p>
+</section>
 <section>
   <h2>解説の中の「IPC」</h2>
   <ul class="term-quotes"><li><p>現在のCPUは1サイクルに数命令を実行できるので、IPCが0.3というのは、ほとんどの時間何かを待っていることを示します。</p><a href="/q/performance/performance-031/">性能カウンタで測ったところ、あるプログラムのIPC(1サイクルあたりの命令数)が0.3と非常に低く、最後の段のキャッシ…</a></li><li><p>スーパースカラは、複数の演算器を備え、互いに依存しない命令を1クロックに複数発行して、IPCを1より大きくする方式です。</p><a href="/q/cpu/cpu-013/">1クロックサイクルに複数の命令を同時に発行・実行するプロセッサの方式を何と呼ぶか。</a></li><li><p>IPC(Instructions Per Clock)は1クロックあたりの平均実行命令数で、CPIの逆数です。</p><a href="/q/cpu/cpu-029/">1クロックあたりに実行できる命令数を表す指標はどれか。</a></li><li><p>ただし1クロックで実行できる命令数(IPC)は設計で大きく異なるため、周波数だけでは性能は比べられません。</p><a href="/q/cpu/cpu-032/">クロック周波数3 GHzのCPUの説明として正しいものはどれか。</a></li><li><p>サイクル数と命令数からIPCが求められ、各段のキャッシュのミス、TLBのミス、分岐の予測ミスなどの回数も分かります。</p><a href="/q/performance/performance-030/">CPUに内蔵された性能カウンタ(PMU)で数えられるものの例として正しいものはどれか。</a></li></ul>

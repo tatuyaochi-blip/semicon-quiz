@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"非同期FIFO","item":"https://semiconroom.com/term/asynchronous-fifo/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"非同期FIFO","description":"書き込みと読み出しを別々のクロックで行うFIFOで、クロックドメインの間でマルチビットのデータを渡すのに使う。ポインタをグレイコードに変換して相手のドメインに同期化し、満杯(full)と空(empty)を判定する。ポインタはアドレスより1ビット多くして周回を区別する。","url":"https://semiconroom.com/term/asynchronous-fifo/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"非同期FIFO","item":"https://semiconroom.com/term/asynchronous-fifo/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"非同期FIFO","description":"書き込みと読み出しを別々のクロックで行うFIFOで、クロックドメインの間でマルチビットのデータを渡すのに使う。ポインタをグレイコードに変換して相手のドメインに同期化し、満杯(full)と空(empty)を判定する。ポインタはアドレスより1ビット多くして周回を区別する。","url":"https://semiconroom.com/term/asynchronous-fifo/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"非同期FIFOのポインタにグレイコードを使うのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"1回の増加で1ビットしか変化しないため、相手のクロックが変化の途中でポインタを取り込んでも、増加の直前か直後の正しい値に確定するからです。2進のポインタでは全く誤った値が取り込まれ、fullやemptyの判定が壊れるおそれがあります。"}},{"@type":"Question","name":"FIFOのポインタをアドレスより1ビット多くするのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"追加のビットで周回数を数えるためです。アドレスが一致したとき、周回ビットも等しければ空、異なれば書き込み側がちょうど1周先行しているので満杯と判定します。"}},{"@type":"Question","name":"クロックドメイン間の受け渡しは非同期FIFOとハンドシェイクのどちらを使うべきですか?","acceptedAnswer":{"@type":"Answer","text":"設定レジスタのようにたまにしか転送せず、1件あたり8サイクル以上かかってもよい場合はハンドシェイクを使います。1サイクルに最大1ワードの速さでデータを連続して流す必要がある場合は非同期FIFOを使います。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -105,7 +105,22 @@
 </svg><figcaption class="fig-cap">非同期FIFOの構成 · <a href="/figures/#fig-async-fifo">図解集で見る</a></figcaption></figure>
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>非同期FIFOの構成</h2>
+  <p>非同期FIFOは、送り側のクロックで書き込み、受け側のクロックで読み出すデュアルポートメモリです。ライトポインタは書き込みドメインに、リードポインタは読み出しドメインにあり、それぞれ<a class="term-link" href="/term/synchronizer/">同期化回路</a>を通して相手側のドメインへ渡されます。書き込み側は自分のポインタと同期化されたリードポインタを比べて満杯(full)を、読み出し側は自分のポインタと同期化されたライトポインタを比べて空(empty)を生成します。データそのものは同期化せず、ポインタが読み出してよいと示すまでメモリ内で安定して保持されます。</p>
+</section>
+<section class="term-about">
+  <h2>ポインタをグレイコードにする理由</h2>
+  <p>2進カウンタは0111から1000のように一度に多くのビットが変化することがあり、ビットごとに同期化すると確定するサイクルがずれて、変化前とも変化後とも無関係な値が生じます。<a class="term-link" href="/term/gray-code/">グレイコード</a>なら1回の増加で変わるのは1ビットだけなので、そのビットが変化の途中で取り込まれても、受け側に見えるのは古いポインタか新しいポインタのどちらかで、せいぜい1つ遅れるだけです。系列がきれいに一周するよう、深さは通常2のべき乗にします。ポインタのビットを単純にフォルスパスに指定するのは避け、最大遅延制約でビット間のスキューを送り側の1周期以内に抑えます。</p>
+</section>
+<section class="term-about">
+  <h2>満杯と空の見分け方</h2>
+  <p>16エントリのFIFOでは、4ビットのアドレスだけでは空の状態と、一周して満杯になった状態を区別できません。どちらもアドレスが等しくなるからです。そこで周回を表す5ビット目を追加します。2進では5ビットすべてが等しければ空、MSBだけが異なれば満杯です。<a class="term-link" href="/term/gray-code/">グレイコード</a>では、満杯の条件は上位2ビットが反転して下位3ビットが等しい状態になり、リードポインタが00000なら満杯は11000です。各側は相手のポインタの少し古い値を見ているため、fullやemptyが少し長く保持されることはあっても早く解除されることはなく、常に安全側に倒れます。</p>
+</section>
+<section class="term-about">
+  <h2>深さの決め方</h2>
+  <p>FIFOの深さは、バースト中の速度差を吸収できる大きさが必要です。書き込み側が100 MHzで100ワードを送り、読み出し側が80 MHzで1サイクルに1ワードずつ取り出す場合、バーストは1000 nsで、その間に80ワードが読み出されるので20ワードが残ります。これはバースト長 × (1 − 読み出しレート / 書き込みレート)から求まります。実際の設計では、2〜3サイクルかかるポインタ同期化の遅延を見込んで数エントリを追加します。1件あたり8サイクル以上かかるreq/ackの<a class="term-link" href="/term/handshake/">ハンドシェイク</a>と比べ、非同期FIFOは1サイクルに1ワードを維持できるので、ストリーミングデータの標準的な手段になっています。</p>
+</section>
 <section>
   <h2>非同期FIFOの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sta-cdc-039" data-cat="sta-cdc" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -119,7 +134,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. ポインタが一致したとき、同じ周回なら空、1周の差なら満杯と区別できるようにするため</p><p class="explanation">16語のアドレスは4ビットで表せますが、4ビットのポインタだけでは、読み出しと書き込みのアドレスが一致したときに、全部読み終えた空の状態なのか、1周分書いて追いついた満杯の状態なのかを区別できません。5ビット目を周回を表すビットとして加えると、バイナリで比べた場合、5ビットすべてが一致すれば空、最上位ビットだけが違えば満杯と判定できます。<a class="term-link" href="/term/gray-code/">グレイコード</a>のポインタでは、満杯の判定の比べ方が少し変わります。パリティとして使うわけではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>非同期FIFOのポインタにグレイコードを使うのはなぜですか?</h3>
+  <p>1回の増加で1ビットしか変化しないため、相手のクロックが変化の途中でポインタを取り込んでも、増加の直前か直後の正しい値に確定するからです。2進のポインタでは全く誤った値が取り込まれ、fullやemptyの判定が壊れるおそれがあります。</p>
+  <h3>FIFOのポインタをアドレスより1ビット多くするのはなぜですか?</h3>
+  <p>追加のビットで周回数を数えるためです。アドレスが一致したとき、周回ビットも等しければ空、異なれば書き込み側がちょうど1周先行しているので満杯と判定します。</p>
+  <h3>クロックドメイン間の受け渡しは非同期FIFOとハンドシェイクのどちらを使うべきですか?</h3>
+  <p>設定レジスタのようにたまにしか転送せず、1件あたり8サイクル以上かかってもよい場合はハンドシェイクを使います。1サイクルに最大1ワードの速さでデータを連続して流す必要がある場合は非同期FIFOを使います。</p>
+</section>
 <section>
   <h2>解説の中の「非同期FIFO」</h2>
   <ul class="term-quotes"><li><p>CDC検証では、こうした受け渡しの箇所を設計から自動で見つけ、2段のフリップフロップや非同期FIFOなどの同期化回路が正しく入っているかを確認します。</p><a href="/q/eda/eda-041/">異なるクロックで動く回路どうしの間で信号を受け渡す部分に、同期化の回路が正しく入っているかを専用のツールで確認する検証…</a></li><li><p>カウンタの値ならグレイコードに変換して1ビットだけが変わるようにし、任意のデータならハンドシェイクや非同期FIFOを使います。</p><a href="/q/sta-cdc/sta-cdc-031/">4ビットのデータの各ビットに、それぞれ2段の同期化回路を付けて別のクロックドメインに渡した。データが 0111 から …</a></li><li><p>連続して大量に送るなら非同期FIFOを使います。</p><a href="/q/sta-cdc/sta-cdc-032/">マルチビットのデータを、別のクロックドメインに安全に渡す方法として正しいものはどれか。</a></li><li><p>間隔を保証できないときは、ハンドシェイクで受け側の応答を待つか、非同期FIFOを使います。</p><a href="/q/sta-cdc/sta-cdc-036/">トグル同期でパルスを速いクロックドメインから遅いクロックドメインへ渡すときの制約として正しいものはどれか。</a></li><li><p>毎サイクルのようにデータを流すときは、非同期FIFOを使います。</p><a href="/q/sta-cdc/sta-cdc-038/">ハンドシェイクによるクロックドメイン間のデータ転送の欠点として正しいものはどれか。</a></li></ul>

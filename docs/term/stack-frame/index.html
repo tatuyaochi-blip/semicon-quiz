@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スタックフレーム","item":"https://semiconroom.com/term/stack-frame/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スタックフレーム","description":"関数が呼ばれるたびにスタック上に確保する領域。戻り先、保存したレジスタ、局所変数などを置き、関数から戻るときに解放する。","url":"https://semiconroom.com/term/stack-frame/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スタックフレーム","item":"https://semiconroom.com/term/stack-frame/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スタックフレーム","description":"関数が呼ばれるたびにスタック上に確保する領域。戻り先、保存したレジスタ、局所変数などを置き、関数から戻るときに解放する。","url":"https://semiconroom.com/term/stack-frame/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"スタックポインタとフレームポインタの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"スタックポインタはスタックの現在の先頭を示し、関数の実行中に動くことがあります。フレームポインタを使う場合は現在のフレーム内の固定番地を保持するので、局所変数や保存したレジスタを一定のオフセットで参照でき、デバッガが呼び出しの連鎖をたどるのにも役立ちます。"}},{"@type":"Question","name":"深い再帰でスタックオーバーフローが起きるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"再帰呼び出しのたびに新しいスタックフレームが確保され、スタックの最大サイズは固定だからです。再帰が十分に深くなるとフレームがその領域を超えてしまいます。末尾呼び出し最適化や、再帰をループに書き換えることで伸びを防げます。"}},{"@type":"Question","name":"関数が局所変数へのポインタを返してはいけないのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"局所変数は関数のスタックフレームにあり、フレームは関数から戻ると解放され、後の呼び出しで再利用されるからです。そのポインタは、中身がいつ変わってもおかしくないメモリを指すことになります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>スタックフレームに置かれるもの</h2>
+  <p>フレームは、1回の関数呼び出しが専有するスタックの一区画です。関数によって中身は異なりますが、戻りアドレス、その関数が使う予定のcallee-savedレジスタ(呼び出された側が保存するレジスタ)の元の値、レジスタに収まらない局所変数やアドレスを取られる局所変数、一時値の退避(<a class="term-link" href="/term/register-spilling/">スピル</a>)領域、レジスタで渡しきれない引数などが置かれます。フレーム内の固定の基準点を示すために、<a class="term-link" href="/term/frame-pointer/">フレームポインタ</a>用のレジスタ(RISC-Vではs0)を使うこともできます。呼び出しごとに新しいフレームが用意されるので、再帰呼び出しの各回はそれぞれ独立した局所変数を持ちます。</p>
+</section>
+<section class="term-about">
+  <h2>プロローグとエピローグ</h2>
+  <p>一般的な規約ではスタックは低いアドレスに向かって伸びるので、関数は<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>から値を引いてフレームを確保します。RISC-Vの典型的なプロローグは、addi sp, sp, -16 の後に sw ra, 12(sp) と sw s0, 8(sp) を実行するものです。対応するエピローグは、s0とraを読み戻し、addi sp, sp, 16 を実行してretで戻ります。RISC-Vの標準<a class="term-link" href="/term/calling-convention/">呼び出し規約</a>ではspを16バイト境界にそろえるため、小さなフレームも16バイトに切り上げられます。確保も解放も加算1回で済むので、スタック領域は<a class="term-link" href="/term/heap-memory/">ヒープ</a>割り当てよりはるかに安価です。</p>
+</section>
+<section class="term-about">
+  <h2>リーフ関数とISAによる違い</h2>
+  <p>RISC-Vではjalで呼び出すと戻りアドレスがraレジスタに書かれるため、ほかの関数を呼ぶ関数は最初の呼び出しの前にraをフレームに保存しなければなりません。何も呼ばないリーフ関数はraを上書きしないので、保存せずに戻れます。さらにcaller-savedレジスタだけを使い、局所変数をレジスタに置けるなら、フレーム自体が不要です。x86では事情が異なり、call命令が戻りアドレスを必ずスタックにプッシュするので、呼び出しのたびにメモリにアクセスします。末尾呼び出し最適化は最後の呼び出しを現在のフレームを再利用するジャンプに変えるので、深い末尾再帰でもスタックが伸びません。</p>
+</section>
+<section class="term-about">
+  <h2>ヒープとの違いとよくあるバグ</h2>
+  <p>フレームの中身は関数から戻るまでしか存在しませんが、<a class="term-link" href="/term/heap-memory/">ヒープ</a>のオブジェクトは解放されるまで残ります。そのため局所変数へのポインタを返すのはバグです。そのメモリは次に積まれるフレームのものになってしまいます。上限のない再帰や非常に深い再帰は、スレッドごとに固定で一般に数MB以下のスタックを使い切り、スタックオーバーフローを起こします。局所配列の終端を越えて書き込むと保存された戻りアドレスを上書きでき、これは古典的なセキュリティ脆弱性です。コンパイラはスタックカナリアという、戻る前にエピローグで確認する番兵値でこれに対抗します。</p>
+</section>
 <section>
   <h2>スタックフレームの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-032" data-cat="isa-assembly" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. スタックを番地の小さい方へ伸ばして、16バイトの作業領域を確保する</p><p class="explanation">RISC-Vを含む多くの<a class="term-link" href="/term/instruction-set-architecture/">ISA</a>の慣習では、スタックは番地の大きい方から小さい方へ伸びます。spを16減らすと、新しいspから元のspまでの16バイトが、この関数の<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>になり、戻り先や保存したレジスタ、局所変数を置けます。関数の終わりに「addi sp, sp, 16」でspを戻すと領域が解放され、呼ぶ前と同じ状態になります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>スタックポインタとフレームポインタの違いは何ですか?</h3>
+  <p>スタックポインタはスタックの現在の先頭を示し、関数の実行中に動くことがあります。フレームポインタを使う場合は現在のフレーム内の固定番地を保持するので、局所変数や保存したレジスタを一定のオフセットで参照でき、デバッガが呼び出しの連鎖をたどるのにも役立ちます。</p>
+  <h3>深い再帰でスタックオーバーフローが起きるのはなぜですか?</h3>
+  <p>再帰呼び出しのたびに新しいスタックフレームが確保され、スタックの最大サイズは固定だからです。再帰が十分に深くなるとフレームがその領域を超えてしまいます。末尾呼び出し最適化や、再帰をループに書き換えることで伸びを防げます。</p>
+  <h3>関数が局所変数へのポインタを返してはいけないのはなぜですか?</h3>
+  <p>局所変数は関数のスタックフレームにあり、フレームは関数から戻ると解放され、後の呼び出しで再利用されるからです。そのポインタは、中身がいつ変わってもおかしくないメモリを指すことになります。</p>
+</section>
 <section>
   <h2>解説の中の「スタックフレーム」</h2>
   <ul class="term-quotes"><li><p>さらに呼び出し先保存のレジスタも使わなければ、スタックフレームを作る必要すらありません。</p><a href="/q/isa-assembly/isa-assembly-032/">ほかの関数を呼ばない関数(葉関数、リーフ関数)では、raをスタックに保存しなくてよい場合が多い。その理由として正しいも…</a></li><li><p>spを16減らすと、新しいspから元のspまでの16バイトが、この関数のスタックフレームになり、戻り先や保存したレジスタ、局所変数を置けます。</p><a href="/q/isa-assembly/isa-assembly-033/">RISC-Vの関数の先頭で「addi sp, sp, -16」を実行する目的として正しいものはどれか。</a></li><li><p>1行目でspを16減らしてスタックフレームを確保し、2行目で戻り先のraを、3行目で呼び出し先保存のs0をフレームに書き込んでいます。</p><a href="/q/isa-assembly/isa-assembly-035/">上のコードは、ある関数の先頭(プロローグ)である。この部分が行っていることとして正しいものはどれか。</a></li><li><p>呼び出しのあとに残る処理がないので、今の関数のスタックフレームを使い回し、引数を書き換えて関数の先頭へジャンプする形に変換できます。</p><a href="/q/compiler/compiler-023/">上の関数の最後の再帰呼び出しに末尾呼び出しの最適化を行うと、どのような効果があるか。</a></li><li><p>局所変数は、関数が呼ばれたときにスタックフレームの中に作られ(最適化でレジスタだけに置かれることもあります)、関数から戻ると消えます。</p><a href="/q/linker-loader/linker-loader-015/">C言語の関数の中で宣言した、staticの付かない局所変数(自動変数)は、実行中どこに置かれるか。</a></li></ul>

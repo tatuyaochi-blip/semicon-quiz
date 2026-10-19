@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"定数畳み込み","item":"https://semiconroom.com/term/constant-folding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"定数畳み込み","description":"コンパイルの時点で値が決まる式を、あらかじめ計算して結果の定数に置き換える最適化。例えば 3 * 4 を 12 にする。実行時の計算を減らせる。","url":"https://semiconroom.com/term/constant-folding/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"定数畳み込み","item":"https://semiconroom.com/term/constant-folding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"定数畳み込み","description":"コンパイルの時点で値が決まる式を、あらかじめ計算して結果の定数に置き換える最適化。例えば 3 * 4 を 12 にする。実行時の計算を減らせる。","url":"https://semiconroom.com/term/constant-folding/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"定数畳み込みと定数伝播の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"定数畳み込みは、3 * 4 を 12 にするように、オペランドがすべて定数の式を評価します。定数伝播は、変数の既知の定数値を使用箇所に代入するもので、その結果新たに畳み込める式が生まれることがよくあります。"}},{"@type":"Question","name":"最適化を無効にしても定数畳み込みは行われますか?","acceptedAnswer":{"@type":"Answer","text":"単純なリテラルの式は、フロントエンドが構文解析の際に評価するため、最適化なしでも畳み込まれることがよくあります。変数を通した畳み込みや、関数のインライン展開、分岐の削除には、一般に最適化を有効にする必要があります。"}},{"@type":"Question","name":"定数畳み込みで浮動小数点の計算結果が変わることはありますか?","acceptedAnswer":{"@type":"Answer","text":"規格に準拠したコンパイラは、ハードウェアと同じIEEE 754の丸めで浮動小数点演算を畳み込むので、結果は変わりません。fast-mathのように浮動小数点の規則を緩めるオプションでは、結合順序の変更が許され、結果の下位ビットが変わることがあります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>コンパイラが実際に行うこと</h2>
+  <p>最適化の段階で、コンパイラは<a class="term-link" href="/term/intermediate-representation/">中間表現</a>を調べて、オペランドがすべて定数である演算を探し、それを評価して結果のリテラルに置き換えます。算術演算、ビット演算、シフト、型変換、比較はどれも畳み込みの対象です。特に比較の畳み込みは効果が大きく、10 &gt; 100 のような条件が偽と確定すれば、その条件で守られた分岐は決して実行されないことがわかります。コンパイラは通常、x * 1 や x + 0 を x に書き換える代数的簡約もあわせて行いますが、x 自体は定数ではないので、厳密には別の変換です。</p>
+</section>
+<section class="term-about">
+  <h2>定数伝播・インライン展開・デッドコード削除との連携</h2>
+  <p>定数畳み込みが単独で働くことはまれです。定数伝播は、定数を持つとわかっている変数の使用箇所をその定数に置き換え、新たな畳み込みの機会を生みます。畳み込んだ結果はさらに伝播できます。たとえば n = 8; m = n * 2; return m + 1 は return 17 にまとまり、その後デッドコード削除で使われない代入が消えます。<a class="term-link" href="/term/function-inlining/">インライン展開</a>もこの連鎖を後押しし、sq(6) の呼び出しを本体に置き換えれば 6 * 6 + 1 が 37 に畳み込まれます。<a class="term-link" href="/term/ssa-form/">SSA形式</a>のコンパイラでは、伝播、畳み込み、到達不能な分岐の削除を、疎条件付き定数伝播(SCCP)という1つのアルゴリズムでまとめて行うことがよくあります。</p>
+</section>
+<section class="term-about">
+  <h2>プログラムの意味を保つ</h2>
+  <p>畳み込んだ結果は、ターゲットマシンが実行時に計算したはずの値と完全に一致しなければなりません。そのためコンパイラはターゲットの整数幅やラップアラウンドを再現する必要があり、64ビットのホストから32ビットのターゲット向けにクロスコンパイルするときに問題になります。浮動小数点の畳み込みでは、ソースの順序どおりに各演算の<a class="term-link" href="/term/ieee-754/">IEEE 754</a>の丸めを再現する必要があります。fast-mathのようなオプションで許可されない限り、コンパイラが浮動小数点式の結合順序を変えないのはこのためです。整数のゼロ除算のように例外を起こす演算は、そのコードが確実に実行される場合を除き、コンパイルエラーにしてはいけません。</p>
+</section>
+<section class="term-about">
+  <h2>言語仕様で求められる定数式との違い</h2>
+  <p>コンパイル時の評価には、オプティマイザが選ぶものではなく、言語仕様で必須とされるものもあります。C言語では配列のサイズ、caseラベル、static変数の初期化子は定数式でなければならず、C++のconstexpr関数は要求すればコンパイル時に評価できます。最適化としての定数畳み込みはより広く、かつ任意です。伝播や<a class="term-link" href="/term/function-inlining/">インライン展開</a>の後に初めて定数になった値も含めてプログラムのどこにでも適用でき、フロントエンドから<a class="term-link" href="/term/intermediate-representation/">中間表現</a>、さらに命令選択まで、複数の段階で行われます。命令選択では、アドレスオフセットと定数を1つの<a class="term-link" href="/term/immediate-operand/">即値</a>にまとめることもあります。</p>
+</section>
 <section>
   <h2>定数畳み込みの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-010" data-cat="compiler" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. x = 3 * 4 を、コンパイル時に計算して x = 12 にする</p><p class="explanation"><a class="term-link" href="/term/constant-folding/">定数畳み込み</a>は、コンパイルの時点で値が決まる式を前もって計算し、結果の定数に置き換える最適化です。3 * 4 は実行するたびに同じ12になるので、実行時に掛け算をする必要はありません。定数伝播と組み合わせると、変数を通した計算もまとめて畳み込めます。浮動小数点では丸めの方法をそろえる必要があるなど注意点もあります。ループの本体を並べるのは<a class="term-link" href="/term/loop-unrolling/">ループ展開</a>で、関数呼び出しをまとめるのは別の最適化です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>定数畳み込みと定数伝播の違いは何ですか?</h3>
+  <p>定数畳み込みは、3 * 4 を 12 にするように、オペランドがすべて定数の式を評価します。定数伝播は、変数の既知の定数値を使用箇所に代入するもので、その結果新たに畳み込める式が生まれることがよくあります。</p>
+  <h3>最適化を無効にしても定数畳み込みは行われますか?</h3>
+  <p>単純なリテラルの式は、フロントエンドが構文解析の際に評価するため、最適化なしでも畳み込まれることがよくあります。変数を通した畳み込みや、関数のインライン展開、分岐の削除には、一般に最適化を有効にする必要があります。</p>
+  <h3>定数畳み込みで浮動小数点の計算結果が変わることはありますか?</h3>
+  <p>規格に準拠したコンパイラは、ハードウェアと同じIEEE 754の丸めで浮動小数点演算を畳み込むので、結果は変わりません。fast-mathのように浮動小数点の規則を緩めるオプションでは、結合順序の変更が許され、結果の下位ビットが変わることがあります。</p>
+</section>
 <section>
   <h2>解説の中の「定数畳み込み」</h2>
   <ul class="term-quotes"><li><p>定数畳み込みは、コンパイルの時点で値が決まる式を前もって計算し、結果の定数に置き換える最適化です。</p><a href="/q/compiler/compiler-010/">コンパイラの定数畳み込みの例として正しいものはどれか。</a></li><li><p>定数畳み込みで 8 * 2 を16に計算すると m = 16 になり、さらに伝播と畳み込みで m + 1 は 16 + 1 = 17 になります。</p><a href="/q/compiler/compiler-011/">上のコードに定数伝播と定数畳み込みを繰り返し行うと、最終的にどのようなコードになるか。</a></li><li><p>定数伝播や定数畳み込みのあとには、使われなくなった代入がたくさん生まれるので、組み合わせて使われます。</p><a href="/q/compiler/compiler-013/">不要コードの削除(デッドコード除去)で取り除かれるものとして正しいものはどれか。</a></li><li><p>さらに、呼び出し元の定数などが本体に伝わり、定数畳み込みや不要コードの削除が効くようになるのが大きな利点です。</p><a href="/q/compiler/compiler-014/">関数のインライン展開の利点と欠点の組み合わせとして正しいものはどれか。</a></li><li><p>続けて定数畳み込みを行うと 6 * 6 = 36、36 + 1 = 37 と計算でき、gは37を返すだけのコードになります。</p><a href="/q/compiler/compiler-042/">上のコードで、sqをインライン展開したあとに続けて効く最適化と、その結果として正しいものはどれか。</a></li></ul>

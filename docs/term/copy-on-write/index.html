@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"コピーオンライト","item":"https://semiconroom.com/term/copy-on-write/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"コピーオンライト","description":"複製したメモリを最初は元と共有しておき、どちらかが書き込もうとしたときに初めてそのページだけを複製する方式。プロセスの生成を速くし、メモリを節約できる。","url":"https://semiconroom.com/term/copy-on-write/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"コピーオンライト","item":"https://semiconroom.com/term/copy-on-write/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"コピーオンライト","description":"複製したメモリを最初は元と共有しておき、どちらかが書き込もうとしたときに初めてそのページだけを複製する方式。プロセスの生成を速くし、メモリを節約できる。","url":"https://semiconroom.com/term/copy-on-write/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"forkは親プロセスのメモリをすべてコピーしますか?","acceptedAnswer":{"@type":"Answer","text":"現在のシステムではしません。forkはページテーブルを複製し、物理ページは読み出し専用にして共有します。ページがコピーされるのは、どちらかのプロセスがそのページに初めて書き込んだときだけです。"}},{"@type":"Question","name":"fork後に子プロセスがメモリに書き込むと何が起きますか?","acceptedAnswer":{"@type":"Answer","text":"書き込みでページフォールトが起き、カーネルがそのページ1枚だけを新しいフレームにコピーして、子プロセスに書き込み可能としてマップします。親は元のページを持ち続けるので、互いの変更は見えません。"}},{"@type":"Question","name":"コピーオンライトと共有メモリは同じものですか?","acceptedAnswer":{"@type":"Answer","text":"違います。共有メモリは書き込んだ後も両方のプロセスから見えるように意図されたものです。コピーオンライトは誰かが書き込むまでだけページを共有し、書き込んだ時点でその側に専用のコピーを作ります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>コピーオンライトのしくみ</h2>
+  <p>プロセスを複製するとき、カーネルは<a class="term-link" href="/term/page-table/">ページテーブル</a>だけをコピーします。親と子のエントリは同じ物理フレームを指し、書き込み可能なプライベートページはすべて一時的に読み出し専用にされ、カーネルはフレームごとに参照カウントを持ちます。読み出しは通常どおりの速度で行えます。どちらかのプロセスが最初に書き込むと保護違反のフォールトが起き、カーネルはそれがコピーオンライトのページだと判断して新しいフレームを確保し、ページをコピーして書き込んだ側に書き込み可能としてマップし、フォールトした命令を再実行させます。参照カウントからもう共有されていないとわかれば、コピーせずに書き込み可能へ戻すだけで済みます。</p>
+</section>
+<section class="term-about">
+  <h2>プロセス生成で効果が大きい理由</h2>
+  <p>Unix系のシステムでは、シェルがコマンドを起動するときのように、forkの直後にexecを呼ぶのがよくあるパターンです。execはアドレス空間をすべて捨てて新しいプログラムを読み込むので、親のメモリを最初から全部コピーするのはまったくの無駄になります。コピーオンライトなら、forkのコストはおおむね<a class="term-link" href="/term/page-table/">ページテーブル</a>の複製時間で済み、実際にコピーされるのはexecまでに書き換えられたページ(通常はスタックやデータの数ページ)だけです。どちらも書き込まないコードや読み出し専用データのページは、両プロセスが存在する間ずっと共有されたままなので、メモリも節約できます。</p>
+</section>
+<section class="term-about">
+  <h2>ほかに使われている場面</h2>
+  <p>データを論理的には複製するものの、たいていは変更しない場面では、同じ考え方が使われます。プライベートなファイルマッピングもその一例で、<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>の書き込み可能なデータセクションは最初はファイルキャッシュと共有され、プロセスが書き込んだページだけがそのプロセス専用にコピーされます。多くのカーネルは、新しく確保した匿名メモリを、書き込まれるまで共有のゼロページ1枚にマップします。コピーオンライト型のファイルシステムやストレージのスナップショットは、変更したブロックを上書きせず別の場所に書きます。仮想マシンのスナップショットや一部の言語ランタイムも、ディスクイメージや文字列にこの原理を使っています。</p>
+</section>
+<section class="term-about">
+  <h2>コストと落とし穴</h2>
+  <p>コピーオンライトはコストをなくすのではなく、後に回すだけです。共有ページへの最初の書き込みでは、フォールト、カーネルへのトラップ、ページのコピーが発生し、通常のストアよりはるかに遅くなります。大きなプロセスがforkした後に親がメモリの大半に書き込み続けると、ほぼすべてのページが結局コピーされ、メモリ使用量が2倍近くになることもあります。またfork時にページを読み出し専用にするには、他のコアの古い<a class="term-link" href="/term/tlb/">TLB</a>エントリを無効化する必要があります。共有メモリと混同しないことも大切です。共有メモリでは互いの書き込みが見えますが、コピーオンライトでは書き込んだ側が自分専用のコピーを持ちます。</p>
+</section>
 <section>
   <h2>コピーオンライトの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-017" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 書き込まれたページだけを後で複製するので、速く省メモリになる</p><p class="explanation">プロセスを複製するとき、全メモリをすぐにコピーすると時間もメモリもかかり、直後に別のプログラムを読み込むならそのコピーは無駄になります。<a class="term-link" href="/term/copy-on-write/">コピーオンライト</a>では両方の<a class="term-link" href="/term/page-table/">ページテーブル</a>が同じ物理ページを読み出し専用で指すようにしておき、どちらかが書き込むと<a class="term-link" href="/term/page-fault/">ページフォルト</a>が起き、OSがそのページだけを複製します。書き込んだ内容は共有されず、それぞれのプロセスに別に保たれます。全ページを複製するわけでもありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>forkは親プロセスのメモリをすべてコピーしますか?</h3>
+  <p>現在のシステムではしません。forkはページテーブルを複製し、物理ページは読み出し専用にして共有します。ページがコピーされるのは、どちらかのプロセスがそのページに初めて書き込んだときだけです。</p>
+  <h3>fork後に子プロセスがメモリに書き込むと何が起きますか?</h3>
+  <p>書き込みでページフォールトが起き、カーネルがそのページ1枚だけを新しいフレームにコピーして、子プロセスに書き込み可能としてマップします。親は元のページを持ち続けるので、互いの変更は見えません。</p>
+  <h3>コピーオンライトと共有メモリは同じものですか?</h3>
+  <p>違います。共有メモリは書き込んだ後も両方のプロセスから見えるように意図されたものです。コピーオンライトは誰かが書き込むまでだけページを共有し、書き込んだ時点でその側に専用のコピーを作ります。</p>
+</section>
 <section>
   <h2>解説の中の「コピーオンライト」</h2>
   <ul class="term-quotes"><li><p>コピーオンライトでは両方のページテーブルが同じ物理ページを読み出し専用で指すようにしておき、どちらかが書き込むとページフォルトが起き、OSがそのページだけを複製します。</p><a href="/q/os-hardware/os-hardware-017/">プロセスを複製するときにコピーオンライトを使う利点として正しいものはどれか。</a></li><li><p>変数などの書き込むデータのページは、書き込まれた時点でコピーを作る(コピーオンライト)などして、プロセスごとに別にします。</p><a href="/q/linker-loader/linker-loader-037/">100個のプロセスが同じ共有ライブラリを使っているとき、物理メモリの使い方として正しいものはどれか。</a></li><li><p>スラッシングはメモリ不足で置き換えが続く状態、コピーオンライトは書き込み時に複製する方式です。</p><a href="/q/os-hardware/os-hardware-020/">ページ置き換えでFIFO方式を使うと、物理メモリのページ数を増やしたのにページフォルトが増える場合がある。この現象を何…</a></li><li><p>キャッシュミスやコピーオンライトは、CPUを取り戻すしくみではありません。</p><a href="/q/os-hardware/os-hardware-026/">OSが、自分からCPUを手放さないプログラムからでも一定時間ごとにCPUを取り戻して、ほかのプロセスに切り替えられるの…</a></li><li><p>コピーオンライトとデマンドページングはメモリ管理の方式です。</p><a href="/q/os-hardware/os-hardware-037/">仮想マシンのOSが特権の必要な命令を実行したとき、ハイパーバイザに処理が移り、ハイパーバイザがその命令の効果を代わりに…</a></li></ul>

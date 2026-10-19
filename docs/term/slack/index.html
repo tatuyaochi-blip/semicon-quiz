@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スラック","item":"https://semiconroom.com/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スラック","description":"タイミングの余裕を表す値。セットアップでは要求時刻から到着時刻を、ホールドでは到着時刻から要求時刻を引いて求め、負なら違反している。","url":"https://semiconroom.com/term/slack/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"スラック","item":"https://semiconroom.com/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"スラック","description":"タイミングの余裕を表す値。セットアップでは要求時刻から到着時刻を、ホールドでは到着時刻から要求時刻を引いて求め、負なら違反している。","url":"https://semiconroom.com/term/slack/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"タイミング解析で負のスラックは何を意味しますか?","acceptedAnswer":{"@type":"Answer","text":"パスが制約に違反していることを意味します。セットアップではデータが取り込みエッジに間に合わず、ホールドではデータが早く着きすぎて取り込み中の値を上書きするおそれがあります。その大きさが、削るべき遅延または追加すべき遅延の量を示します。"}},{"@type":"Question","name":"WNSとTNSの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"WNSは最も悪い1本のパスのスラック、TNSは違反している全エンドポイントの負のスラックの合計です。多くのパスがわずかずつ違反していると、WNSは小さくてもTNSが大きくなることがあります。"}},{"@type":"Question","name":"ホールド違反はどうやって直しますか?","acceptedAnswer":{"@type":"Answer","text":"短いデータパスにバッファや遅延セルを入れて遅延を追加するか、取り込み側クロックを遅らせているスキューを減らします。ホールドチェックには周期が関係しないため、クロック周波数を下げても解決しません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>セットアップスラックの計算</h2>
+  <p><a class="term-link" href="/term/sta/">静的タイミング解析</a>(STA)では、データの到着時刻と要求時刻を比較します。セットアップでは、あるクロックエッジで送り出したデータが、次の取り込みエッジから<a class="term-link" href="/term/setup-time/">セットアップ時間</a>を引いた時刻までに届く必要があり、スラック = 要求時刻 − 到着時刻です。周期2.0 ns、クロック・出力間遅延0.2 ns、論理遅延1.4 ns、セットアップ時間0.1 nsなら、到着時刻は1.6 ns、要求時刻は1.9 nsで、スラックは+0.3 nsです。<a class="term-link" href="/term/jitter/">ジッタ</a>や未構築のクロックツリーを見込んだクロック不確かさも要求時刻から差し引きます。また、<a class="term-link" href="/term/multicycle-path/">マルチサイクルパス</a>を2に設定すると、取り込みエッジが1周期後ろにずれます。</p>
+</section>
+<section class="term-about">
+  <h2>ホールドスラックと周波数の関係</h2>
+  <p>ホールドは逆の確認です。あるエッジで送り出された新しいデータが早く着きすぎて、同じエッジで取り込み中の値を壊さないかを調べます。この場合はスラック = 到着時刻 − 要求時刻で、最小遅延を使い、要求時刻は取り込み側クロックの到着時刻に<a class="term-link" href="/term/hold-time/">ホールド時間</a>を足した値です。どちらも同じエッジを基準にするため、クロック周期は式に現れません。したがってクロックを遅くしてもホールド違反は直らず、シリコンで起きれば通常は致命的です。ホールドの問題は<a class="term-link" href="/term/shift-register/">シフトレジスタ</a>のような短いパスで起きやすく、一般にデータパスへ遅延セルを挿入して修正します。</p>
+</section>
+<section class="term-about">
+  <h2>スキュー、OCV、CRPR</h2>
+  <p><a class="term-link" href="/term/clock-skew/">クロックスキュー</a>は2つのチェックを逆方向に動かします。取り込み側クロックが送り出し側より遅れて届く正のスキューでは、セットアップスラックがその分増え、ホールドスラックが同じだけ減ります。負のスキューではその逆です。<a class="term-link" href="/term/ocv/">オンチップばらつき</a>(OCV)の<a class="term-link" href="/term/derating/">ディレーティング</a>は解析を悲観側にし、セットアップでは送り出し側のクロックとデータパスを遅く、取り込み側クロックを速く見積もります。両方のクロックパスがルートからバッファを共有している区間は、同時に速くも遅くもなれないため、共通パス悲観性除去(<a class="term-link" href="/term/crpr/">CRPR</a>)でその差を戻します。</p>
+</section>
+<section class="term-about">
+  <h2>タイミングレポートの読み方</h2>
+  <p>レポートはエンドポイントごとのスラックをまとめたものです。<a class="term-link" href="/term/wns/">WNS(ワーストネガティブスラック)</a>は最悪の1つの値で、目標クロックまでどれだけ足りないかを示します。TNS(トータルネガティブスラック)は違反しているすべてのエンドポイントの負のスラックの合計で、残りの作業量の目安になります。−0.1 nsのエンドポイントが3つあれば、WNSは−0.1 ns、TNSは−0.3 nsです。どちらもセットアップとホールド、クロックグループごとに分けて報告されます。セットアップ違反は論理の短縮、セルのサイズアップ、回路の再構成で対処します。マルチサイクル例外は、論理が本当に1サイクルおきに取り込む場合にだけ正当です。</p>
+</section>
 <section>
   <h2>スラックの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sta-cdc-001" data-cat="sta-cdc" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. +0.02 ns</p><p class="explanation">受け側のクロックが遅れて届く(正のスキュー)と、データを取り込むエッジが後ろにずれるので、セットアップに使える時間が増えます。要求時刻は 1.0 + 0.05 − 0.08 = 0.97 ns、到着時刻は 0.1 + 0.85 = 0.95 ns なので、<a class="term-link" href="/term/slack/">スラック</a>は +0.02 ns です。−0.03 ns はスキューを無視した値、−0.08 ns はスキューの向きを逆に(受け側が早く届くとして)扱った値です。同じスキューはホールドには不利に働く点に注意が必要です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>タイミング解析で負のスラックは何を意味しますか?</h3>
+  <p>パスが制約に違反していることを意味します。セットアップではデータが取り込みエッジに間に合わず、ホールドではデータが早く着きすぎて取り込み中の値を上書きするおそれがあります。その大きさが、削るべき遅延または追加すべき遅延の量を示します。</p>
+  <h3>WNSとTNSの違いは何ですか?</h3>
+  <p>WNSは最も悪い1本のパスのスラック、TNSは違反している全エンドポイントの負のスラックの合計です。多くのパスがわずかずつ違反していると、WNSは小さくてもTNSが大きくなることがあります。</p>
+  <h3>ホールド違反はどうやって直しますか?</h3>
+  <p>短いデータパスにバッファや遅延セルを入れて遅延を追加するか、取り込み側クロックを遅らせているスキューを減らします。ホールドチェックには周期が関係しないため、クロック周波数を下げても解決しません。</p>
+</section>
 <section>
   <h2>解説の中の「スラック」</h2>
   <ul class="term-quotes"><li><p>セットアップのスラックは「要求時刻 − 到着時刻」で求めます。</p><a href="/q/sta-cdc/sta-cdc-001/">クロック周期 2.0 ns の同期回路で、送り側フリップフロップのクロック→出力遅延が 0.2 ns、組み合わせ回路の…</a></li><li><p>要求時刻は 1.0 + 0.05 − 0.08 = 0.97 ns、到着時刻は 0.1 + 0.85 = 0.95 ns なので、スラックは +0.02 ns です。</p><a href="/q/sta-cdc/sta-cdc-004/">クロック周期 1.0 ns、クロック→出力遅延 0.1 ns、組み合わせ回路の遅延 0.85 ns、セットアップ時間 …</a></li><li><p>ホールドのスラックは「到着時刻 − 要求時刻」で、データが早く着きすぎないかを見ます。</p><a href="/q/sta-cdc/sta-cdc-006/">送り側のクロック→出力遅延が最小 0.08 ns、組み合わせ回路の最小遅延が 0.02 ns、受け側のホールド時間が …</a></li><li><p>そのため周波数を下げても −0.03 ns のスラックは変わらず、悪化もしません。</p><a href="/q/sta-cdc/sta-cdc-007/">同じクロックの立ち上がりエッジで送り出しと取り込みを行う通常の経路で、ホールド違反(スラック −0.03 ns)が見つ…</a></li><li><p>要求時刻は 1.25 − 0.05(不確かさ)− 0.05(セットアップ時間)= 1.15 ns、到着時刻は 1.05 ns なので、スラックは 0.10 ns です。</p><a href="/q/sta-cdc/sta-cdc-009/">クロック周期 1.25 ns(800 MHz)の経路で、クロック→出力遅延と組み合わせ回路の遅延の合計が 1.05 n…</a></li></ul>

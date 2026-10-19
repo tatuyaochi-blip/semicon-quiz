@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"同期化回路","item":"https://semiconroom.com/term/synchronizer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"同期化回路","description":"非同期の信号を受け側のクロックにそろえる回路で、シンクロナイザとも呼ぶ。2段のフリップフロップを直列につなぐ構成が基本で、1段目がメタステーブルになっても次のエッジまでに収まる確率を高める。","url":"https://semiconroom.com/term/synchronizer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"同期化回路","item":"https://semiconroom.com/term/synchronizer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"同期化回路","description":"非同期の信号を受け側のクロックにそろえる回路で、シンクロナイザとも呼ぶ。2段のフリップフロップを直列につなぐ構成が基本で、1段目がメタステーブルになっても次のエッジまでに収まる確率を高める。","url":"https://semiconroom.com/term/synchronizer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"同期化回路はフリップフロップ2段で十分ですか?","acceptedAnswer":{"@type":"Answer","text":"クロック周波数が中程度であれば、ほとんどの設計で十分です。2段の同期化回路でMTBFは一般に数千年以上になります。受け側の周波数が非常に高い場合やτの大きいフリップフロップを使う場合は、3段目を追加して解決時間をもう1クロック周期分稼ぎます。"}},{"@type":"Question","name":"複数ビットのバスは、ビットごとに同期化回路を付ければよいですか?","acceptedAnswer":{"@type":"Answer","text":"任意のデータに対してはいけません。ビットごとに取り込まれるサイクルがずれ、実際には存在しなかった値が現れることがあるためです。カウンタにはグレイコードを使うか、データを安定に保持してハンドシェイクで1本の制御ビットだけを同期化するか、非同期FIFOを使います。"}},{"@type":"Question","name":"速いクロックから遅いクロックへ渡すとパルスが消えるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"パルスが受け側のクロック周期より短いと、受け側の2つのエッジの間で始まって終わり、一度もサンプリングされないことがあるためです。パルスを受け側の1周期より十分長く引き伸ばすか、トグル信号に変換して同期化した後にエッジ検出します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -106,7 +106,22 @@
 </svg><figcaption class="fig-cap">2段フリップフロップの同期化回路 · <a href="/figures/#fig-sync-2ff">図解集で見る</a></figcaption></figure>
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>フリップフロップを2段にする理由</h2>
+  <p>非同期の入力が<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>のセットアップ・ホールドの時間窓の中で変化すると、<a class="term-link" href="/term/metastability/">メタステーブル</a>状態になり、出力が0と1の中間に予測できない時間とどまることがあります。これ自体は防げませんが、未確定のまま残る確率は待ち時間とともに指数関数的に下がります。2段の同期化回路はこの性質を利用したもので、1段目がメタステーブルになっても、2段目はその1クロック周期後にサンプリングするため、その時点ではほぼ確実に値が確定しています。受け側ドメインの他の回路は、2段目のきれいな出力だけを見ることになります。</p>
+</section>
+<section class="term-about">
+  <h2>MTBFと解決時間</h2>
+  <p>同期化回路の信頼性は<a class="term-link" href="/term/mtbf/">平均故障間隔</a>(MTBF)で表し、おおよそMTBF = e^(t_r/τ) / (T_0 × f_clk × f_data)となります。t_rは<a class="term-link" href="/term/metastability/">メタステーブル</a>が収まるまでに使える時間、τとT_0は<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>固有の定数です。t_rが<a class="term-link" href="/term/exponent-field/">指数部</a>にあるため、わずかな差が非常に大きく効き、τ = 20 psなら1 ns増えるだけでMTBFはe^50倍になります。3段目を加えると、解決時間がおよそ1クロック周期分増えます。受け側のクロック周波数を上げると、サンプリング回数が増えるうえに周期も短くなるという二重の悪影響があるため、非常に高速なドメインでは3段構成がよく使われます。</p>
+</section>
+<section class="term-about">
+  <h2>MTBFを守る設計ルール</h2>
+  <p>1段目と2段目の<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>は、間に<a class="term-link" href="/term/combinational-circuit/">組み合わせ回路</a>やバッファを入れずに直結し、近くに配置します。その間の遅延はすべてt_rから差し引かれるからです。1段目の出力を他の論理へ分岐させてはいけません。負荷ごとに<a class="term-link" href="/term/metastability/">メタステーブル</a>なレベルを違う値と解釈するおそれがあります。同期化回路へ入る信号は、組み合わせ回路からではなく、送信側ドメインのフリップフロップから直接出す必要があります。非同期のエッジが一瞬の<a class="term-link" href="/term/glitch/">グリッチ</a>を有効なパルスとして取り込んでしまうことがあるためです。これらのルールは、CDC(クロックドメインクロッシング)検証ツールで自動的にチェックできます。</p>
+</section>
+<section class="term-about">
+  <h2>同期化回路では防げない問題</h2>
+  <p>同期化回路が扱えるのは1ビットずつです。バスの各ビットに個別の同期化回路を付けると、ビットごとに確定するサイクルがずれ、0111から1000への変化が一瞬1111や0000として読まれることがあります。別々に同期化した信号を後で組み合わせるリコンバージェンスでも同じ問題が起きます。短いパルスも落とし穴で、2 nsのパルスは100 MHzクロックのエッジの間にすっぽり収まって消えることがあります。対策には、<a class="term-link" href="/term/gray-code/">グレイコード</a>のカウンタ、データを保持したまま1本の有効ビットだけを同期化する方法、<a class="term-link" href="/term/handshake/">ハンドシェイク</a>、<a class="term-link" href="/term/asynchronous-fifo/">非同期FIFO</a>、レベル信号を受け側周期の約1.5倍以上に引き伸ばす方法などがあります。</p>
+</section>
 <section>
   <h2>同期化回路の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sta-cdc-026" data-cat="sta-cdc" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -120,7 +135,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. メタステーブルが収まるのに使える時間が約1周期増え、MTBFは指数関数的に長くなる</p><p class="explanation"><a class="term-link" href="/term/synchronizer/">同期化回路</a>の<a class="term-link" href="/term/mtbf/">MTBF</a>は、おおよそ MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data) で表されます。t_r は<a class="term-link" href="/term/metastability/">メタステーブル</a>が収まるのに使える時間、τ と T_0 は<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>の特性で決まる定数です。段を1つ増やすと t_r が約1周期延びます。例えば τ = 20 ps で t_r が 1 ns 増えれば、MTBFは e^50 倍、つまり10の21乗倍以上に延びます。1段目がメタステーブルになる確率は変わりませんが、その先へ伝わる前に収まる確率が大きく上がるのです。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>同期化回路はフリップフロップ2段で十分ですか?</h3>
+  <p>クロック周波数が中程度であれば、ほとんどの設計で十分です。2段の同期化回路でMTBFは一般に数千年以上になります。受け側の周波数が非常に高い場合やτの大きいフリップフロップを使う場合は、3段目を追加して解決時間をもう1クロック周期分稼ぎます。</p>
+  <h3>複数ビットのバスは、ビットごとに同期化回路を付ければよいですか?</h3>
+  <p>任意のデータに対してはいけません。ビットごとに取り込まれるサイクルがずれ、実際には存在しなかった値が現れることがあるためです。カウンタにはグレイコードを使うか、データを安定に保持してハンドシェイクで1本の制御ビットだけを同期化するか、非同期FIFOを使います。</p>
+  <h3>速いクロックから遅いクロックへ渡すとパルスが消えるのはなぜですか?</h3>
+  <p>パルスが受け側のクロック周期より短いと、受け側の2つのエッジの間で始まって終わり、一度もサンプリングされないことがあるためです。パルスを受け側の1周期より十分長く引き伸ばすか、トグル信号に変換して同期化した後にエッジ検出します。</p>
+</section>
 <section>
   <h2>解説の中の「同期化回路」</h2>
   <ul class="term-quotes"><li><p>このような非同期のクロックの間はSTAでは保証できないので、同期化回路が必要です。</p><a href="/q/sta-cdc/sta-cdc-026/">2つのクロックドメインの間の経路で、同期化回路が必要になるのはどれか。</a></li><li><p>同期化回路のMTBFは、おおよそ MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data) で表されます。</p><a href="/q/sta-cdc/sta-cdc-027/">2段フリップフロップの同期化回路を3段に増やしたときの、メタステーブルによる故障の平均間隔(MTBF)の変化として正し…</a></li><li><p>高速なクロックで3段の同期化回路が使われるのはこのためです。</p><a href="/q/sta-cdc/sta-cdc-028/">同期化回路の受け側のクロック周波数を上げると、MTBFが短くなる。その理由として正しいものはどれか。</a></li><li><p>1段目のフリップフロップはメタステーブルになることがあり、その出力が収まるまでの時間を、2段目のセットアップまでの時間で確保するのが同期化回路の考え方です。</p><a href="/q/sta-cdc/sta-cdc-029/">2段フリップフロップの同期化回路で、1段目と2段目の間についての注意として正しいものはどれか。</a></li><li><p>メタステーブルは毎回起きるわけではなく、CDC検証ツールも同期化回路の手前の組み合わせ回路を警告します。</p><a href="/q/sta-cdc/sta-cdc-030/">送り側のクロックドメインで、組み合わせ回路の出力を直接、受け側の同期化回路に入れてはいけない理由として正しいものはどれ…</a></li></ul>

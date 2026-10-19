@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ガベージコレクション","item":"https://semiconroom.com/term/garbage-collection/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ガベージコレクション","description":"SSDで、無効になったデータを含むブロックから有効なデータだけを別の場所に移し、ブロックを消去して空き領域をつくる処理。","url":"https://semiconroom.com/term/garbage-collection/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ガベージコレクション","item":"https://semiconroom.com/term/garbage-collection/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ガベージコレクション","description":"SSDで、無効になったデータを含むブロックから有効なデータだけを別の場所に移し、ブロックを消去して空き領域をつくる処理。","url":"https://semiconroom.com/term/garbage-collection/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TRIMとガベージコレクションの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"TRIMは、どの論理ブロックがもう使われていないかをOSがSSDに伝えるコマンドです。ガベージコレクションは有効データをコピーしてブロックを消去するドライブ内部の処理で、TRIMで削除済みデータが無効と扱われればコピーが不要になり、負担が軽くなります。"}},{"@type":"Question","name":"SSDの空き容量が少なくなると遅くなるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"空きが少ないと回収対象のブロックにも有効ページが多く残っているため、ガベージコレクションで1ブロックを消去するたびにより多くのデータをコピーする必要があり、フォアグラウンドで実行されることも増えるからです。その結果、書き込み増幅が大きくなり、ホストの書き込みが止まります。"}},{"@type":"Question","name":"SSDのガベージコレクションはプログラミング言語のガベージコレクションと同じものですか?","acceptedAnswer":{"@type":"Answer","text":"似ているのは考え方だけです。言語のランタイムは到達できなくなったメモリ上のオブジェクトを回収しますが、SSDは有効ページを移動して残りを消去することでフラッシュのブロックを回収します。これはNANDがブロック単位でしか消去できないために必要な処理です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/sram-flash/">SRAM・フラッシュメモリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SSDに必要な理由</h2>
+  <p>NANDフラッシュは約16 KBのページ単位で読み出しと書き込み(プログラム)を行いますが、消去は数百ページからなるブロック単位、つまり数 MB〜数十 MB単位でしかできません。消去ではウェル全体に高電圧をかけるためです。ページをその場で上書きすることもできません。ホストがデータを更新すると、SSDコントローラは新しいデータを空きページに書き込み、フラッシュ変換層(FTL)の論理・物理アドレスの対応表を更新して、古いページを無効にします。時間がたつとブロックは有効ページと無効ページが混ざった状態になり、領域を回収しなければ空きブロックが尽きてしまいます。</p>
+</section>
+<section class="term-about">
+  <h2>回収処理の流れ</h2>
+  <p>コントローラはまず回収対象のブロックを選びます。通常はコピーが最も少なく済む、無効ページの多いブロックです。残っている有効ページを別のブロックにコピーし、対応表を更新してから対象ブロックを消去し、空きブロックとして戻します。理想的にはアイドル時間にバックグラウンドで実行しますが、空きブロックが尽きるとフォアグラウンドで実行せざるを得ず、ホストの書き込みが止まります。ドライブが埋まっているほど対象ブロック内の無効ページは少なくなるため、1ブロックを回収するのに必要なコピー量が増え、書き込み性能が落ちます。</p>
+</section>
+<section class="term-about">
+  <h2>書き込み増幅</h2>
+  <p>回収時に移動する有効ページは、ホストが要求していない余分な書き込みです。<a class="term-link" href="/term/write-amplification/">書き込み増幅</a>係数(WAF)は、フラッシュに書き込まれたデータ量とホストが書き込んだデータ量の比で、小さなランダム書き込みでは数倍に達することがあります。NANDの各ブロックが耐えられるプログラム・消去サイクルの回数には限りがあるため、WAFが高いと帯域を消費するだけでなく、ドライブの寿命も縮みます。ガベージコレクションは、消去回数をブロック間で均等にする<a class="term-link" href="/term/wear-leveling/">ウェアレベリング</a>とは別の処理ですが、コントローラは両者を連携させています。</p>
+</section>
+<section class="term-about">
+  <h2>回収の負担を減らす方法</h2>
+  <p>負担を減らす手段は3つあります。<a class="term-link" href="/term/trim/">TRIM</a>(<a class="term-link" href="/term/nvme/">NVMe</a>ではDeallocate)は、OSが削除した範囲をドライブに通知する仕組みで、ドライブはそのページをコピーせずに無効として扱えます。オーバープロビジョニングは、ユーザーに見える容量より多くのフラッシュを搭載する方法で、512 GiBのNANDを480 GBのドライブとして販売すれば約14%の予備領域が残り、回収処理に余裕ができます。エンタープライズ向けドライブはさらに多く確保します。一部のコントローラはデータ圧縮で書き込み量を減らします。これらを組み合わせることでWAFが下がり、書き込み速度が安定し、耐久性が伸びます。</p>
+</section>
 <section>
   <h2>ガベージコレクションの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sram-flash-015" data-cat="sram-flash" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. TRIM</p><p class="explanation">ファイルを削除しても、OSは管理情報を書き換えるだけなので、SSDはそのデータが不要になったことを知らず、<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>で無駄にコピーし続けます。<a class="term-link" href="/term/trim/">TRIM</a>コマンドで不要な領域を通知すると、SSDはそのページを無効として扱い、コピーせずに消去できるため、<a class="term-link" href="/term/write-amplification/">書き込み増幅</a>が減って性能と寿命が改善します。<a class="term-link" href="/term/nvme/">NVMe</a>では同じ働きをDeallocateコマンドが担います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>TRIMとガベージコレクションの違いは何ですか?</h3>
+  <p>TRIMは、どの論理ブロックがもう使われていないかをOSがSSDに伝えるコマンドです。ガベージコレクションは有効データをコピーしてブロックを消去するドライブ内部の処理で、TRIMで削除済みデータが無効と扱われればコピーが不要になり、負担が軽くなります。</p>
+  <h3>SSDの空き容量が少なくなると遅くなるのはなぜですか?</h3>
+  <p>空きが少ないと回収対象のブロックにも有効ページが多く残っているため、ガベージコレクションで1ブロックを消去するたびにより多くのデータをコピーする必要があり、フォアグラウンドで実行されることも増えるからです。その結果、書き込み増幅が大きくなり、ホストの書き込みが止まります。</p>
+  <h3>SSDのガベージコレクションはプログラミング言語のガベージコレクションと同じものですか?</h3>
+  <p>似ているのは考え方だけです。言語のランタイムは到達できなくなったメモリ上のオブジェクトを回収しますが、SSDは有効ページを移動して残りを消去することでフラッシュのブロックを回収します。これはNANDがブロック単位でしか消去できないために必要な処理です。</p>
+</section>
 <section>
   <h2>解説の中の「ガベージコレクション」</h2>
   <ul class="term-quotes"><li><p>ファイルを削除しても、OSは管理情報を書き換えるだけなので、SSDはそのデータが不要になったことを知らず、ガベージコレクションで無駄にコピーし続けます。</p><a href="/q/sram-flash/sram-flash-028/">OSが削除したファイルの領域をSSDに通知し、ガベージコレクションを効率化するためのコマンドはどれか。</a></li><li><p>一部だけを書き換えるときも上書きはできず、新しいデータを空きページに書いて古いページを無効にし、後でガベージコレクションでまとめて消去します。</p><a href="/q/sram-flash/sram-flash-008/">NAND型フラッシュメモリでデータを消去する単位として正しいものはどれか。</a></li><li><p>オーバープロビジョニングは、ユーザーが使える容量より多くのフラッシュを搭載し、余剰領域を空きブロックの確保、ガベージコレクション、不良ブロックの代替に使うことです。</p><a href="/q/sram-flash/sram-flash-041/">SSDの「オーバープロビジョニング」の説明として正しいものはどれか。</a></li><li><p>フラッシュは上書きができず消去がブロック単位のため、ガベージコレクションで有効なデータを別のブロックへコピーするなどの追加の書き込みが発生し、実際の書き込み量がホストの書き込み量より多くなります。</p><a href="/q/sram-flash/sram-flash-042/">SSDの「書き込み増幅(ライトアンプリフィケーション)」の説明として正しいものはどれか。</a></li><li><p>書き込みと消去の単位が異なることが、ガベージコレクションなどの管理が必要になる根本的な理由です。</p><a href="/q/sram-flash/sram-flash-043/">NAND型フラッシュメモリで、データの読み出しと書き込み(プログラム)を行う基本的な単位はどれか。</a></li></ul>

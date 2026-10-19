@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"動的リンク","item":"https://semiconroom.com/term/dynamic-linking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"動的リンク","description":"実行時に共有ライブラリを読み込んで結びつける方式。ライブラリをプロセス間で共有でき、差し替えで修正が反映されるが、実行環境に合うライブラリが必要。","url":"https://semiconroom.com/term/dynamic-linking/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"動的リンク","item":"https://semiconroom.com/term/dynamic-linking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"動的リンク","description":"実行時に共有ライブラリを読み込んで結びつける方式。ライブラリをプロセス間で共有でき、差し替えで修正が反映されるが、実行環境に合うライブラリが必要。","url":"https://semiconroom.com/term/dynamic-linking/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"静的リンクと動的リンクの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"静的リンクはビルド時にライブラリのコードを実行ファイルにコピーするため、外部のライブラリなしで動作します。動的リンクは参照だけを残して実行時に動的リンカが解決するため、プロセス間で1つのライブラリを共有でき、差し替えで修正を反映できます。"}},{"@type":"Question","name":"PLTとGOTとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"グローバルオフセットテーブル(GOT)は、外部の関数や変数の実行時アドレスを保持する書き込み可能なデータの表です。プロシージャリンケージテーブル(PLT)はコードから呼ばれる小さなスタブの集まりで、GOTを経由して実際のライブラリ関数にジャンプします。"}},{"@type":"Question","name":"「error while loading shared libraries: cannot open shared object file」というエラーの意味は?","acceptedAnswer":{"@type":"Answer","text":"プログラムが依存するライブラリを、動的リンカが検索パスの中で見つけられなかったという意味です。ライブラリをインストールするか、システムのリンカ設定やrpathなどでその場所を検索パスに加えれば解決します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>プログラム起動時に起きること</h2>
+  <p>動的リンクされた実行ファイルにはライブラリのコードが含まれていません。必要な<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>と、そこから使うシンボルが記録されているだけで、Linuxではプログラムインタプリタとして<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>も指定されています。プログラムが起動すると、カーネルが実行ファイルと動的リンカをメモリにマップします。動的リンカは検索パスに沿って各ライブラリを探してマップし、シンボル参照を解決し、残りの<a class="term-link" href="/term/relocation/">再配置</a>を適用し、ライブラリの初期化処理を実行してから、プログラムの<a class="term-link" href="/term/entry-point/">エントリポイント</a>にジャンプします。WindowsのDLLでも、各実行ファイルのインポートテーブルを使って同じ処理が行われます。</p>
+</section>
+<section class="term-about">
+  <h2>位置独立コードとGOT・PLT</h2>
+  <p>物理的に1つしかないライブラリのコードを多数のプロセスで共有するには、プロセスごとにロードされるアドレスが違っても、コードのページを書き換えないようにする必要があります。そこで<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>は<a class="term-link" href="/term/position-independent-code/">位置独立コード</a>(PIC)としてコンパイルされ、変化するアドレスは<a class="term-link" href="/term/global-offset-table/">グローバルオフセットテーブル</a>(GOT)というデータの表に置かれます。外部関数の呼び出しは、<a class="term-link" href="/term/procedure-linkage-table/">プロシージャリンケージテーブル</a>(PLT)の小さなスタブを経由し、GOTを通してジャンプします。遅延バインディングではGOTのエントリは初回呼び出し時に埋められます。起動時にすべてを解決してからGOTを読み出し専用にするのは、よく使われるセキュリティ強化策です。</p>
+</section>
+<section class="term-about">
+  <h2>動的リンクと静的リンクの比較</h2>
+  <p><a class="term-link" href="/term/static-linking/">静的リンク</a>は、ビルド時に必要なオブジェクトコードを実行ファイルにコピーします。できあがったファイルは単体で完結し、実行時のシンボル探索も不要ですが、サイズが大きく、ライブラリの修正を取り込むには再ビルドが必要です。動的リンクでは、ライブラリのページをプロセス間で共有でき、ディスク容量を節約でき、ファイル1つを差し替えるだけでセキュリティ修正をすべてのプログラムに行き渡らせられます。代償は起動時の処理と実行環境への依存です。ライブラリがない、または互換性がないとプログラムは起動できません。ライブラリにバージョン付きの名前やシンボルがあるのはこのためです。</p>
+</section>
+<section class="term-about">
+  <h2>必要に応じたライブラリの読み込み</h2>
+  <p>起動時に決まるライブラリのほかに、実行中のプログラムはPOSIXシステムならdlopen、WindowsならLoadLibraryでライブラリを明示的に読み込み、dlsymやGetProcAddressで関数を名前から探すことができます。プラグイン機構やオプション機能はこのしくみで実現されています。シンボルの結びつけが実行時に行われるため、事前に読み込ませたライブラリ(プリロード)が関数を独自の実装に差し替えることもでき、<a class="term-link" href="/term/profiler/">プロファイラ</a>やメモリデバッガがこの機構を利用しています。lddなどのツールを使うと、実行ファイルが読み込む<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>とその場所を一覧できます。</p>
+</section>
 <section>
   <h2>動的リンクの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-020" data-cat="linker-loader" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 必要な共有ライブラリが入っていないか、互換性のないバージョンしかない</p><p class="explanation"><a class="term-link" href="/term/dynamic-linking/">動的リンク</a>のプログラムは、実行するコンピュータにある<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>を使います。必要なライブラリがない、または関数が足りない古いバージョンしかないと、<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>が結合できず起動に失敗します。Linuxではlddコマンドで、プログラムが必要とする共有ライブラリと、それが見つかるかどうかを確かめられます。配布しやすさを重視して、あえて<a class="term-link" href="/term/static-linking/">静的リンク</a>にすることもあります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>静的リンクと動的リンクの違いは何ですか?</h3>
+  <p>静的リンクはビルド時にライブラリのコードを実行ファイルにコピーするため、外部のライブラリなしで動作します。動的リンクは参照だけを残して実行時に動的リンカが解決するため、プロセス間で1つのライブラリを共有でき、差し替えで修正を反映できます。</p>
+  <h3>PLTとGOTとは何ですか?</h3>
+  <p>グローバルオフセットテーブル(GOT)は、外部の関数や変数の実行時アドレスを保持する書き込み可能なデータの表です。プロシージャリンケージテーブル(PLT)はコードから呼ばれる小さなスタブの集まりで、GOTを経由して実際のライブラリ関数にジャンプします。</p>
+  <h3>「error while loading shared libraries: cannot open shared object file」というエラーの意味は?</h3>
+  <p>プログラムが依存するライブラリを、動的リンカが検索パスの中で見つけられなかったという意味です。ライブラリをインストールするか、システムのリンカ設定やrpathなどでその場所を検索パスに加えれば解決します。</p>
+</section>
 <section>
   <h2>解説の中の「動的リンク」</h2>
   <ul class="term-quotes"><li><p>動的リンクでは、実行ファイルには「どの共有ライブラリのどの関数を使うか」だけを記録し、実行時に動的リンカがライブラリを読み込んで結びつけます。</p><a href="/q/linker-loader/linker-loader-020/">動的リンク(共有ライブラリ)の利点として正しいものはどれか。</a></li><li><p>動的リンクのプログラムは、実行するコンピュータにある共有ライブラリを使います。</p><a href="/q/linker-loader/linker-loader-021/">動的リンクを使ったプログラムを別のコンピュータにコピーして実行したら、起動しなかった。最も考えられる原因はどれか。</a></li><li><p>動的リンクの実行ファイルには、使う動的リンカの場所が書かれており、OSはプログラムを読み込むと、まず動的リンカに処理を渡します。</p><a href="/q/linker-loader/linker-loader-027/">Linuxで動的リンクのプログラムを起動するときに働く動的リンカ(ld.soなど)の役割として正しいものはどれか。</a></li><li><p>動的リンクでは、同じような書き換えの一部を実行時に動的リンカが行います。</p><a href="/q/linker-loader/linker-loader-004/">リンカが行う再配置(リロケーション)の説明として正しいものはどれか。</a></li><li><p>動的リンクなら動的リンカを、そうでなければ実行ファイルの入口の番地から実行を始めます。</p><a href="/q/linker-loader/linker-loader-030/">プログラムを起動するとき(Linuxのexecveなど)に、OSのローダが行うこととして正しいものはどれか。</a></li></ul>

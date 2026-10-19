@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"推論","item":"https://semiconroom.com/term/ai-inference/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"推論","description":"学習で決まった重みを使い、入力から順伝播だけを行って答えを出すAIの処理。学習より計算とメモリが少なくて済む。","url":"https://semiconroom.com/term/ai-inference/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"推論","item":"https://semiconroom.com/term/ai-inference/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"推論","description":"学習で決まった重みを使い、入力から順伝播だけを行って答えを出すAIの処理。学習より計算とメモリが少なくて済む。","url":"https://semiconroom.com/term/ai-inference/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"AIの学習と推論の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"学習は、データセットに対して順伝播と逆伝播を行ってモデルの重みを調整するもので、計算量もメモリ使用量も非常に大きくなります。推論は、学習済みの固定した重みを使い、順伝播だけで新しい入力に対する出力を計算します。"}},{"@type":"Question","name":"AIの推論がメモリ帯域で律速されやすいのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"バッチが小さいと、メモリから読んだ各重みが数回の計算にしか使われず、演算器がデータ待ちになるからです。テキスト生成のようにバッチサイズ1で大きなモデルを動かす場合が、最もメモリ律速になります。"}},{"@type":"Question","name":"スマートフォンが推論にCPUではなくNPUを使うのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"NPUは低精度の積和演算器を多数備え、汎用的な制御のオーバーヘッドを省いているため、演算あたりのエネルギーがはるかに小さいからです。これにより、バッテリーと発熱の制約内で機器上のAI機能を実用化できます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>推論と学習の違い</h2>
+  <p>学習では、順伝播で損失を計算し、勾配を<a class="term-link" href="/term/backpropagation/">逆伝播</a>して重みを更新する処理を、データセット全体で何度も繰り返します。逆伝播のために途中の活性化を保持し、オプティマイザの状態も記憶する必要があり、小さな勾配を扱えるだけの範囲を持つ浮動小数点形式が通常必要です。推論は、固定した重みで順伝播だけを、入力1つまたは1バッチずつ行います。サンプルあたりのメモリと計算量ははるかに少なく、ずっと低い精度にも耐えるので、8ビット整数やそれより狭い形式がよく使われます。学習はモデルのバージョンごとに1回ですが、推論はモデルを使うたびに実行されます。</p>
+</section>
+<section class="term-about">
+  <h2>推論の速度を制限するもの</h2>
+  <p>演算の大半は行列積や畳み込みの中の積和演算なので、アクセラレータは数千個の積和演算器を詰め込んでいます。実際のボトルネックは、多くの場合そこへデータを供給することです。<a class="term-link" href="/term/batch-size/">バッチサイズ</a>が1だと、メモリから読んだ各重みは1つの入力にしか使われないため、性能は演算ではなくメモリ帯域で制限されます。新しいトークンを生成するたびに全重みを読む大規模言語モデルのテキスト生成が典型例です。複数のリクエストをまとめてバッチ処理すれば、読み込んだ重みを再利用でき、レイテンシと引き換えに<a class="term-link" href="/term/throughput/">スループット</a>が上がります。そのため、レイテンシとスループットは分けて示す必要があります。</p>
+</section>
+<section class="term-about">
+  <h2>モデルを小さく安くする手法</h2>
+  <p>FP32から<a class="term-link" href="/term/int8/">INT8</a>への量子化は、重みの記憶容量とメモリ転送量を4分の1にし、小型の整数演算器で計算できるようにします。精度が少し落ちるリスクはありますが、キャリブレーションや<a class="term-link" href="/term/quantization-aware-training/">量子化を考慮した学習</a>で抑えられます。蒸留は、小さな生徒モデルに大きな教師モデルを模倣させて学習させる手法です。枝刈り(<a class="term-link" href="/term/pruning/">プルーニング</a>)は寄与の小さい重みやチャネル全体を取り除き、<a class="term-link" href="/term/structured-sparsity/">構造化スパース</a>性のパターンを使えばハードウェアがゼロを飛ばせます。これらの手法は組み合わせて使え、スマートフォンや組み込み機器のメモリ、電力、発熱の制約内でモデルを動かすことを可能にしています。</p>
+</section>
+<section class="term-about">
+  <h2>クラウド推論とエッジ推論</h2>
+  <p>データセンターでの推論は、メモリや電力に余裕のある<a class="term-link" href="/term/gpu/">GPU</a>や専用アクセラレータで大きなモデルを動かします。エッジ推論は機器上で行い、一般に<a class="term-link" href="/term/soc/">SoC</a>に内蔵された<a class="term-link" href="/term/npu/">NPU(ニューラルプロセッシングユニット)</a>を使います。NPUは低精度の行列演算に特化し、データをチップ上で再利用し、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>のような汎用の仕組みを省いているので、CPUよりはるかに高いエネルギー効率が得られます。機器上で実行すれば、ネットワークの遅延がなく、オフラインでも動き、写真や音声を手元に置いたままにでき、サーバのコストも節約できます。その代わり、非常に大きなモデルは強い圧縮なしには機器の制約に収まりません。</p>
+</section>
 <section>
   <h2>推論の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-008" data-cat="cpu" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. NPU(ニューラルプロセッシングユニット)</p><p class="explanation"><a class="term-link" href="/term/npu/">NPU</a>は、ニューラルネットワークの計算の大部分を占める積和演算を、8ビット以下の整数など低い精度で大量に並列処理する専用回路です。汎用CPUより電力あたりの性能が1桁以上高く、写真の補正、音声認識、翻訳などをスマートフォンの中で処理できます。性能は<a class="term-link" href="/term/tops/">TOPS</a>(1秒あたりの兆回の演算)で表され、パソコン向けの<a class="term-link" href="/term/soc/">SoC</a>にも搭載が広がっています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>AIの学習と推論の違いは何ですか?</h3>
+  <p>学習は、データセットに対して順伝播と逆伝播を行ってモデルの重みを調整するもので、計算量もメモリ使用量も非常に大きくなります。推論は、学習済みの固定した重みを使い、順伝播だけで新しい入力に対する出力を計算します。</p>
+  <h3>AIの推論がメモリ帯域で律速されやすいのはなぜですか?</h3>
+  <p>バッチが小さいと、メモリから読んだ各重みが数回の計算にしか使われず、演算器がデータ待ちになるからです。テキスト生成のようにバッチサイズ1で大きなモデルを動かす場合が、最もメモリ律速になります。</p>
+  <h3>スマートフォンが推論にCPUではなくNPUを使うのはなぜですか?</h3>
+  <p>NPUは低精度の積和演算器を多数備え、汎用的な制御のオーバーヘッドを省いているため、演算あたりのエネルギーがはるかに小さいからです。これにより、バッテリーと発熱の制約内で機器上のAI機能を実用化できます。</p>
+</section>
 <section>
   <h2>解説の中の「推論」</h2>
   <ul class="term-quotes"><li><p>32ビットの重みを8ビットにすると、メモリの使用量と読み出す量が4分の1になり、メモリ帯域が限られた推論で大きな効果があります。</p><a href="/q/computer-arithmetic/computer-arithmetic-030/">AIの推論で、重みをFP32からINT8に変換(量子化)する主な利点はどれか。</a></li><li><p>推論では、学習で決まった重みを使って順伝播だけを行います。</p><a href="/q/ai-stack/ai-stack-001/">ニューラルネットワークの「学習」と「推論」の違いとして正しいものはどれか。</a></li><li><p>モデルの重みの数は学習でも推論でも同じです。</p><a href="/q/ai-stack/ai-stack-002/">学習に必要なメモリが、同じモデルの推論よりずっと大きくなる理由として当てはまらないものはどれか。</a></li><li><p>サーバでの推論では、多くの利用者の要求をまとめて処理することで、GPUを効率よく使っています。</p><a href="/q/ai-stack/ai-stack-010/">推論でバッチサイズ(まとめて処理する入力の数)を大きくすると、処理全体の効率が上がりやすい理由はどれか。</a></li><li><p>学習用のフレームワークは、柔軟に書けることや逆伝播のための記録を重視しているので、推論だけに使うと無駄があります。</p><a href="/q/ai-stack/ai-stack-023/">TensorRTやONNX Runtimeのような推論ランタイムが、学習用のフレームワークでそのまま推論するより速くで…</a></li></ul>

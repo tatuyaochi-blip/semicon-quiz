@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ハンドシェイク","item":"https://semiconroom.com/term/handshake/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ハンドシェイク","description":"送り側の要求(req)と受け側の応答(ack)をやり取りして、データを確実に受け渡す方式。クロックドメインの間ではreqとackだけを同期化し、その間データを止めておくので安全だが、1回の転送に数サイクル以上かかる。","url":"https://semiconroom.com/term/handshake/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ハンドシェイク","item":"https://semiconroom.com/term/handshake/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ハンドシェイク","description":"送り側の要求(req)と受け側の応答(ack)をやり取りして、データを確実に受け渡す方式。クロックドメインの間ではreqとackだけを同期化し、その間データを止めておくので安全だが、1回の転送に数サイクル以上かかる。","url":"https://semiconroom.com/term/handshake/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"2相ハンドシェイクと4相ハンドシェイクの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"4相方式ではreqとackがそれぞれ立ち上がった後に0へ戻るため、1回の転送で4回の遷移を使います。2相方式ではトグルのたびにイベントとみなすので、1回の転送は2回の遷移で済み、レイテンシはおよそ半分になりますが、エッジ検出が必要です。"}},{"@type":"Question","name":"AXIのVALID/READYハンドシェイクに同期化回路は必要ですか?","acceptedAnswer":{"@type":"Answer","text":"不要です。VALID/READYは単一のクロックドメイン内で動作し、両方がHighのエッジで転送します。AXIのトラフィックがクロックドメインをまたぐ場合は、通常は非同期FIFOで構成した非同期ブリッジを挿入します。"}},{"@type":"Question","name":"クロックドメイン間のreq/ackハンドシェイクが遅いのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"reqとackの遷移がそれぞれ数サイクルかかる同期化回路を通り、送り側が応答を待つ必要があるため、1回の転送全体で8サイクル以上かかるからです。たまに送るデータなら問題ありませんが、連続したストリームには向きません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>4相ハンドシェイクの手順</h2>
+  <p>4相(リターン・トゥ・ゼロ)ハンドシェイクでは、まず送り側がデータをバスに出して保持し、reqを立ち上げます。受け側は同期化されたreqを見てデータを取り込み、ackを立ち上げます。送り側は同期化されたackを見てreqを下げ、受け側はreqが下がったのを見てackを下げます。各信号が1回ずつ立ち上がって立ち下がるので、1回の転送で遷移は4回です。最も重要なのは順序のルールで、データはreqが立ち上がる前に安定していなければならず、ackが取り込みを確認するまで変えてはいけません。守らないと、受け側が変化途中の値を取り込むおそれがあります。</p>
+</section>
+<section class="term-about">
+  <h2>クロックドメイン間で安全な理由</h2>
+  <p>ドメイン間をまたぐのはreqとackだけで、どちらも1ビットの信号として通常の2段<a class="term-link" href="/term/synchronizer/">同期化回路</a>を通ります。マルチビットのデータは同期化しません。受け側がreqを見る時点では、データはすでに数サイクル安定しているので、そのまま取り込めます。これにより、バスをビットごとに同期化したときに起きるビット間スキューの問題がなくなり、どんな周波数比でも動作し、送り側が確認を待つのでイベントを取りこぼすこともありません。この確認を待つ点が、イベント間の最小間隔を保証する必要がある<a class="term-link" href="/term/toggle-synchronizer/">トグル同期</a>化との違いです。</p>
+</section>
+<section class="term-about">
+  <h2>代償はレイテンシ</h2>
+  <p>すべての遷移が<a class="term-link" href="/term/synchronizer/">同期化回路</a>を通るため、片道に通常2サイクルかかり、4相方式では往復が2回必要なので、1回の転送には両ドメイン合わせて8サイクル以上かかります。2相方式ではreqやackのトグル1回を1つのイベントとして扱い、遷移の数を半分にできますが、エッジ検出の論理が必要です。いずれにしても<a class="term-link" href="/term/throughput/">スループット</a>は1サイクル1ワードには遠く及ばないため、ハンドシェイクは制御レジスタへの書き込みのようなたまの転送に向いており、ストリーミングデータには<a class="term-link" href="/term/asynchronous-fifo/">非同期FIFO</a>を使います。</p>
+</section>
+<section class="term-about">
+  <h2>同一クロック内のハンドシェイク(VALID/READY)</h2>
+  <p>同じ要求・応答の考え方は、<a class="term-link" href="/term/synchronizer/">同期化回路</a>を使わない同期バスにも登場します。<a class="term-link" href="/term/axi/">AXI</a>では、どのチャネルも送り側のVALIDと受け側のREADYを使い、両方が1になっているクロックエッジで転送が成立します。READYをLowに保てばバックプレッシャーがかかるので、速度の違うブロック同士をデータを失わずに接続できます。<a class="term-link" href="/term/deadlock/">デッドロック</a>を避けるため、送り側はREADYを待ってからVALIDを出してはいけません。AXIにはリードアドレス、リードデータ、ライトアドレス、ライトデータ、ライト応答の5つの独立したチャネルがあり、AXI4-Streamはアドレスを省いて一方向のデータの流れに使います。</p>
+</section>
 <section>
   <h2>ハンドシェイクの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sta-cdc-037" data-cat="sta-cdc" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. reqとackの同期化を往復させるので1回の転送に何サイクルもかかり、連続した大量の転送には向かない</p><p class="explanation">4相<a class="term-link" href="/term/handshake/">ハンドシェイク</a>では、reqが受け側に伝わるまでに同期化の2サイクル、ackが送り側に戻るまでに2サイクルかかり、それぞれが0に戻る分も同じだけかかるので、1回の転送に両方のドメインで合わせて8サイクル以上かかります。そのため、制御レジスタの設定値のように、ときどき渡すデータに向いています。データは転送の間ずっと安定しているので、ビットのずれによる誤りは起きず、周波数の比も問いません。毎サイクルのようにデータを流すときは、<a class="term-link" href="/term/asynchronous-fifo/">非同期FIFO</a>を使います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>2相ハンドシェイクと4相ハンドシェイクの違いは何ですか?</h3>
+  <p>4相方式ではreqとackがそれぞれ立ち上がった後に0へ戻るため、1回の転送で4回の遷移を使います。2相方式ではトグルのたびにイベントとみなすので、1回の転送は2回の遷移で済み、レイテンシはおよそ半分になりますが、エッジ検出が必要です。</p>
+  <h3>AXIのVALID/READYハンドシェイクに同期化回路は必要ですか?</h3>
+  <p>不要です。VALID/READYは単一のクロックドメイン内で動作し、両方がHighのエッジで転送します。AXIのトラフィックがクロックドメインをまたぐ場合は、通常は非同期FIFOで構成した非同期ブリッジを挿入します。</p>
+  <h3>クロックドメイン間のreq/ackハンドシェイクが遅いのはなぜですか?</h3>
+  <p>reqとackの遷移がそれぞれ数サイクルかかる同期化回路を通り、送り側が応答を待つ必要があるため、1回の転送全体で8サイクル以上かかるからです。たまに送るデータなら問題ありませんが、連続したストリームには向きません。</p>
+</section>
 <section>
   <h2>解説の中の「ハンドシェイク」</h2>
   <ul class="term-quotes"><li><p>4相ハンドシェイクでは、reqとackがそれぞれ1回ずつ上がって下がり、合計4回の変化で1回の受け渡しが終わります。</p><a href="/q/sta-cdc/sta-cdc-037/">reqとackを使う4相ハンドシェイクで、データを1つ渡すときの信号の順序として正しいものはどれか。</a></li><li><p>4相ハンドシェイクでは、reqが受け側に伝わるまでに同期化の2サイクル、ackが送り側に戻るまでに2サイクルかかり、それぞれが0に戻る分も同じだけかかるので、1回の転送に両方のドメインで合わせて8サイクル以上かかります。</p><a href="/q/sta-cdc/sta-cdc-038/">ハンドシェイクによるクロックドメイン間のデータ転送の欠点として正しいものはどれか。</a></li><li><p>多ビットのデータはFIFOやハンドシェイクで受け渡します。</p><a href="/q/logic/logic-017/">非同期の信号をフリップフロップで受けたときに、セットアップ時間やホールド時間を満たせず、出力が一時的に0とも1とも定ま…</a></li><li><p>カウンタの値ならグレイコードに変換して1ビットだけが変わるようにし、任意のデータならハンドシェイクや非同期FIFOを使います。</p><a href="/q/sta-cdc/sta-cdc-031/">4ビットのデータの各ビットに、それぞれ2段の同期化回路を付けて別のクロックドメインに渡した。データが 0111 から …</a></li><li><p>速いドメインから遅いドメインへパルスを渡すときは、パルスを受け側の周期より十分長く引き伸ばすか、トグル同期やハンドシェイクを使います。</p><a href="/q/sta-cdc/sta-cdc-033/">500 MHz のクロックドメインで1サイクル(2 ns)だけ1になるパルスを、100 MHz のドメインに2段同期化…</a></li></ul>
