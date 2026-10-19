@@ -804,6 +804,75 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <dl class="dy-stats">${stat('lsb', x.lsb)}${stat('snr-q', x.snr_q)}${stat('snr-j', x.snr_j)}${stat('snr', x.snr)}${stat('enob', x.enob)}${stat('enob-in', x.enob_in)}</dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    amdahl: x => `<form id="am-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('p', x.p, 95, 'min="0" max="100" step="1"')}
+    ${field('n', x.n, 16, 'min="1" step="1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('amdahl', x.amdahl)}${stat('eff', x.eff)}${stat('limit', x.limit)}${stat('gustafson', x.gustafson)}</dl>
+    <svg id="am-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
+    'cache-calc': x => `<form id="cc-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('abits', x.abits, 32, 'min="8" max="64" step="1"')}
+    ${field('size', x.size, 32, 'min="1" step="1"')}
+    ${field('line', x.line, 64, 'min="1" step="1"')}
+    ${field('ways', x.ways, 8, 'min="1" step="1"')}
+    ${field('hit', x.hit, 4, 'min="0" step="1"')}
+    ${field('miss', x.miss, 5, 'min="0" max="100" step="0.5"')}
+    ${field('penalty', x.penalty, 100, 'min="0" step="10"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p class="muted">${esc(x.bar_heading)}</p>
+    <div id="cc-bar" class="cc-bar" data-tag="${esc(x.tag)}" data-index="${esc(x.index)}" data-offset="${esc(x.offset)}" data-cycles="${esc(x.cycles)}"></div>
+    <p id="cc-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('lines', x.lines)}${stat('sets', x.sets)}${stat('tag', x.tag)}${stat('index', x.index)}${stat('offset', x.offset)}${stat('amat', x.amat)}</dl>
+  </section>`,
+    'cmos-power': x => `<form id="cp-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('alpha', x.alpha, 0.1, 'min="0" max="1" step="0.01"')}
+    ${field('c', x.c, 1, 'min="0" step="0.1"')}
+    ${field('v', x.v, 1.0, 'min="0" step="0.05"')}
+    ${field('f', x.f, 2, 'min="0" step="0.1"')}
+    ${field('ileak', x.ileak, 100, 'min="0" step="10"')}
+    ${field('scale', x.scale, 80, 'min="10" max="100" step="5"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('dyn', x.dyn)}${stat('stat', x.stat)}${stat('total', x.total)}${stat('share', x.share)}${stat('dvfs', x.dvfs)}${stat('dvfs-ratio', x.dvfs_ratio)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'pn-junction': x => `<form id="pn-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('mat', x.mat, [['si', x.mat_si], ['ge', x.mat_ge], ['gaas', x.mat_gaas]], 'si')}
+    ${field('na', x.na, '1e17', 'step="any"')}
+    ${field('nd', x.nd, '1e16', 'step="any"')}
+    ${field('vr', x.vr, 0, 'step="0.1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p id="pn-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('vbi', x.vbi)}${stat('w', x.w)}${stat('xn', x.xn)}${stat('xp', x.xp)}${stat('emax', x.emax)}${stat('cj', x.cj)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    oxidation: x => `<form id="ox-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('kind', x.kind, [['dry', x.dry], ['wet', x.wet]], 'dry')}
+    ${select('orient', x.orient, [['100', '(100)'], ['111', '(111)']], '100')}
+    ${field('temp', x.temp, 1000, 'min="700" max="1300" step="10"')}
+    ${field('time', x.time, 1, 'min="0" step="0.1"')}
+    ${field('xi', x.xi, 0, 'min="0" step="1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('x', x.x)}${stat('grown', x.grown)}${stat('si', x.si)}${stat('b', x.b)}${stat('ba', x.ba)}</dl>
+    <svg id="ox-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
     <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>
