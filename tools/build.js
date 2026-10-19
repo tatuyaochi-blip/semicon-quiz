@@ -424,6 +424,11 @@ function buildLang(L) {
     // トップ下部の「ほかの練習方法」(ランダム10問は上の入口にあるので除く)
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
     startPanel,
+    // トップ下部の計算ツールの一覧(訳のあるツールだけ)
+    toolList: toolsIn(code).length ? `<section>
+  <h2><a href="${home}tools/">${esc(S.tools_title)}</a></h2>
+  <div class="mode-grid compact">${toolsIn(code).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+</section>` : '',
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: live.length,
     // プライバシーポリシーの「広告・アクセス解析」: 使っているサービスの説明だけを出す
