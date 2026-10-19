@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr" data-lang="fr" data-base="/" data-home="/fr/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset synchrone vs asynchrone : timing, horloge et relâchement | Salle des semi-conducteurs</title>
+<meta name="description" content="Resets synchrone et asynchrone comparés : moment d&#39;action, besoin d&#39;horloge, glitches, analyse temporelle, relâchement synchronisé, surface et Verilog.">
+<link rel="canonical" href="https://semiconroom.com/fr/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/synchronous-vs-asynchronous-reset/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/synchronous-vs-asynchronous-reset/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Reset synchrone vs asynchrone : timing, horloge et relâchement | Salle des semi-conducteurs">
+<meta property="og:description" content="Resets synchrone et asynchrone comparés : moment d&#39;action, besoin d&#39;horloge, glitches, analyse temporelle, relâchement synchronisé, surface et Verilog.">
+<meta property="og:url" content="https://semiconroom.com/fr/compare/synchronous-vs-asynchronous-reset/">
+<meta property="og:site_name" content="Salle des semi-conducteurs">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/fr/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Comparatifs","item":"https://semiconroom.com/fr/compare/"},{"@type":"ListItem","position":3,"name":"Reset synchrone vs asynchrone : timing, horloge et relâchement","item":"https://semiconroom.com/fr/compare/synchronous-vs-asynchronous-reset/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Reset synchrone vs asynchrone : timing, horloge et relâchement","description":"Resets synchrone et asynchrone comparés : moment d'action, besoin d'horloge, glitches, analyse temporelle, relâchement synchronisé, surface et Verilog.","inLanguage":"fr","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/fr/compare/synchronous-vs-asynchronous-reset/","author":{"@type":"Organization","name":"Salle des semi-conducteurs"},"publisher":{"@type":"Organization","name":"Salle des semi-conducteurs"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Pourquoi synchroniser sur l'horloge le relâchement d'un reset asynchrone ?","acceptedAnswer":{"@type":"Answer","text":"Parce que si le relâchement survient près d'un front d'horloge, les temps de recovery et de removal ne sont pas respectés : certaines bascules démarrent au cycle courant et d'autres au cycle suivant, ou une métastabilité survient. Comme cela peut faire démarrer une machine à états dans un état illégal, on aligne le relâchement sur l'horloge avec deux bascules avant de le distribuer."}},{"@type":"Question","name":"Que se passe-t-il avec un reset synchrone si l'horloge est arrêtée ?","acceptedAnswer":{"@type":"Answer","text":"Même si le signal de reset est activé, les bascules ne sont pas initialisées. Pour les circuits qui doivent être dans un état sûr avant la stabilisation de l'horloge, par exemple juste après la mise sous tension, on utilise un reset asynchrone."}},{"@type":"Question","name":"Toutes les bascules ont-elles besoin d'un reset ?","acceptedAnswer":{"@type":"Answer","text":"Non. Pour les registres toujours écrits avant d'être utilisés, comme ceux du chemin de données, on omet parfois le reset pour réduire la surface et le routage. On réinitialise ceux dont la valeur initiale influe sur le fonctionnement, comme les machines à états ou les signaux de contrôle."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/synchronous-vs-asynchronous-reset/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/fr/"><span class="logo-mark" aria-hidden="true"></span><span>Salle des semi-conducteurs<small></small></span></a>
+    <nav class="header-nav"><a href="/fr/">Accueil</a><a href="/fr/#topics">Thèmes</a><details class="menu"><summary>Ressources</summary><div class="menu-panel"><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/figures/">Schémas</a><a href="/fr/tools/">Calculateurs</a></div></details><a href="/fr/stats/">Progression</a></nav>
+    <form class="site-search" role="search" action="/fr/search/" method="get"><input type="search" name="q" placeholder="Rechercher (p. ex. MOSFET)" aria-label="Rechercher sur le site" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/fr/search/" aria-label="Rechercher sur le site"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Langue: Français"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Français</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Langue"><a href="/compare/synchronous-vs-asynchronous-reset/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/synchronous-vs-asynchronous-reset/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/synchronous-vs-asynchronous-reset/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/synchronous-vs-asynchronous-reset/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/synchronous-vs-asynchronous-reset/" hreflang="de" lang="de">Deutsch</a><a href="/nl/compare/synchronous-vs-asynchronous-reset/" hreflang="nl" lang="nl">Nederlands</a><span aria-current="true">Français</span></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/fr/">Accueil</a><a href="/fr/#topics">Thèmes</a><a href="/fr/stats/">Progression</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/figures/">Schémas</a><a href="/fr/tools/">Calculateurs</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/fr/">Accueil</a> <span>›</span> <a href="/fr/compare/">Comparatifs</a></nav>
+<article class="compare-page">
+  <h1>Reset synchrone vs asynchrone : timing, horloge et relâchement</h1>
+  <p class="lead">Ce sont deux mécanismes qui mettent une bascule à une valeur initiale déterminée, mais le moment où le reset agit diffère. Le reset synchrone capture le signal de reset au front d&#39;horloge, comme n&#39;importe quelle autre donnée. Le reset asynchrone utilise directement la broche de reset de la bascule et agit immédiatement, indépendamment de l&#39;horloge. En pratique, on utilise souvent une méthode où l&#39;activation est asynchrone et immédiate, et seul le relâchement est synchronisé sur l&#39;horloge.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copié !">Copier le tableau</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Lien copié">Partager</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Critère</th><th scope="col">Reset synchrone</th><th scope="col">Reset asynchrone</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Moment d&#39;action</th><td>Au front d&#39;horloge, lorsque le reset est actif</td><td>Dès que le reset devient actif, sans attendre l&#39;horloge</td></tr>
+        <tr><th scope="row">Horloge nécessaire ?</th><td>Oui. Si l&#39;horloge est arrêtée, le reset est impossible</td><td>Non. Agit aussi avant le démarrage de l&#39;horloge ou lorsqu&#39;elle est arrêtée</td></tr>
+        <tr><th scope="row">Écriture en Verilog</th><td>always @(posedge clk) if (!rst_n) q &lt;= 0; else q &lt;= d;</td><td>always @(posedge clk or negedge rst_n) if (!rst_n) q &lt;= 0; else q &lt;= d;</td></tr>
+        <tr><th scope="row">Réalisation du circuit</th><td>Une logique de reset est placée devant l&#39;entrée de données</td><td>Utilise une bascule dotée d&#39;une broche de reset</td></tr>
+        <tr><th scope="row">Surface et chemin de données</th><td>Des portes s&#39;ajoutent au chemin de données, ce qui peut augmenter d&#39;autant le délai et la surface</td><td>La cellule est plus grande à cause de la broche de reset, mais aucune logique ne s&#39;ajoute au chemin de données</td></tr>
+        <tr><th scope="row">Tenue aux glitches</th><td>Bonne. Les glitches survenant hors de l&#39;instant du front ne sont pas capturés</td><td>Faible. Un glitch sur la ligne de reset peut provoquer un reset intempestif</td></tr>
+        <tr><th scope="row">Largeur d&#39;impulsion du reset</th><td>Doit rester actif au moins une période d&#39;horloge</td><td>Agit même avec une impulsion courte</td></tr>
+        <tr><th scope="row">Analyse temporelle</th><td>Analysable comme une entrée de données ordinaire, en setup et en hold</td><td>Le timing du relâchement (temps de recovery et de removal) se vérifie séparément</td></tr>
+        <tr><th scope="row">Précautions au relâchement</th><td>Synchronisé sur l&#39;horloge : peu de problèmes au sein d&#39;un même domaine d&#39;horloge</td><td>Si le relâchement est proche d&#39;un front d&#39;horloge, le cycle de relâchement peut différer d&#39;une bascule à l&#39;autre, ou une métastabilité peut survenir. Un circuit de synchronisation du reset aligne le relâchement sur l&#39;horloge</td></tr>
+        <tr><th scope="row">Circuits adaptés</th><td>Circuits dont l&#39;horloge tourne en permanence, circuits dont le signal de reset est sujet au bruit</td><td>Circuits à initialiser dès la mise sous tension, circuits dont l&#39;horloge peut s&#39;arrêter</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Les valeurs indiquées sont des ordres de grandeur typiques et varient selon la génération de procédé et le produit.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Quand choisir l&#39;un ou l&#39;autre ?</h2>
+  <dl class="compare-when">
+    <dt>Reset synchrone</dt><dd>Lorsque l&#39;horloge tourne en permanence et que le signal de reset risque de porter des glitches. Lorsque l&#39;on veut analyser le timing du reset comme celui d&#39;un chemin de données ordinaire.</dd>
+    <dt>Reset asynchrone</dt><dd>Pour initialiser immédiatement, même avant le démarrage de l&#39;horloge ou lorsqu&#39;elle est arrêtée, par exemple dans les circuits dont les sorties doivent passer rapidement dans un état sûr.</dd>
+    <dt>Ensemble</dt><dd>La méthode à activation asynchrone et relâchement synchrone (circuit de synchronisation du reset) est largement utilisée. L&#39;activation agit immédiatement, et le relâchement est aligné sur le front d&#39;horloge par deux bascules.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Pourquoi synchroniser sur l&#39;horloge le relâchement d&#39;un reset asynchrone ?</h3>
+  <p>Parce que si le relâchement survient près d&#39;un front d&#39;horloge, les temps de recovery et de removal ne sont pas respectés : certaines bascules démarrent au cycle courant et d&#39;autres au cycle suivant, ou une métastabilité survient. Comme cela peut faire démarrer une machine à états dans un état illégal, on aligne le relâchement sur l&#39;horloge avec deux bascules avant de le distribuer.</p>
+  <h3>Que se passe-t-il avec un reset synchrone si l&#39;horloge est arrêtée ?</h3>
+  <p>Même si le signal de reset est activé, les bascules ne sont pas initialisées. Pour les circuits qui doivent être dans un état sûr avant la stabilisation de l&#39;horloge, par exemple juste après la mise sous tension, on utilise un reset asynchrone.</p>
+  <h3>Toutes les bascules ont-elles besoin d&#39;un reset ?</h3>
+  <p>Non. Pour les registres toujours écrits avant d&#39;être utilisés, comme ceux du chemin de données, on omet parfois le reset pour réduire la surface et le routage. On réinitialise ceux dont la valeur initiale influe sur le fonctionnement, comme les machines à états ou les signaux de contrôle.</p>
+</section>
+<section>
+  <h2>Vérifier vos connaissances</h2>
+  <article class="q-mini" data-qid="hdl-verification-018" data-cat="hdl-verification" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
+    <h3><a href="/fr/q/hdl-verification/hdl-verification-018/">Quelle est la différence entre réinitialisation synchrone et asynchrone ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">La réinitialisation synchrone agit indépendamment de l&#39;horloge, l&#39;asynchrone seulement sur front d&#39;horloge</span></li><li><span class="choice-mark">B</span><span class="choice-text">La réinitialisation synchrone n&#39;agit que sur front d&#39;horloge, l&#39;asynchrone agit immédiatement indépendamment de l&#39;horloge</span></li><li><span class="choice-mark">C</span><span class="choice-text">Les deux ont exactement le même comportement, seul le nom diffère</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. La réinitialisation synchrone n&#39;agit que sur front d&#39;horloge, l&#39;asynchrone agit immédiatement indépendamment de l&#39;horloge</p><p class="explanation">La <a class="term-link" href="/fr/term/synchronous-reset/">réinitialisation synchrone</a> capture le signal de réinitialisation sur front d&#39;horloge comme les autres entrées ; l&#39;analyse temporelle est simple, mais la réinitialisation est impossible si l&#39;horloge ne fonctionne pas. La <a class="term-link" href="/fr/term/asynchronous-reset/">réinitialisation asynchrone</a> utilise directement la broche de réinitialisation de la <a class="term-link" href="/fr/term/flip-flop/">bascule</a> et agit immédiatement même sans horloge ; mais si sa levée survient près d&#39;un front d&#39;horloge, l&#39;instant de levée risque de varier d&#39;une bascule à l&#39;autre.</p></details>
+  </article>
+  <article class="q-mini" data-qid="hdl-verification-019" data-cat="hdl-verification" data-answer="2" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est C.">
+    <h3><a href="/fr/q/hdl-verification/hdl-verification-019/">Dans un circuit à réinitialisation asynchrone, pourquoi synchronise-t-on la levée de la réinitialisation (passage de 0 à 1) sur l&#39;horloge par deux bascules avant de la distribuer ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Pour retarder de deux cycles l&#39;application de la réinitialisation par sécurité</span></li><li><span class="choice-mark">B</span><span class="choice-text">Pour doubler la vitesse du signal de réinitialisation</span></li><li><span class="choice-mark">C</span><span class="choice-text">Parce qu&#39;une levée proche d&#39;un front d&#39;horloge peut décaler le cycle de levée d&#39;une bascule à l&#39;autre ou la rendre instable ; on aligne donc la levée sur l&#39;horloge</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Parce qu&#39;une levée proche d&#39;un front d&#39;horloge peut décaler le cycle de levée d&#39;une bascule à l&#39;autre ou la rendre instable ; on aligne donc la levée sur l&#39;horloge</p><p class="explanation">Si la levée d&#39;une <a class="term-link" href="/fr/term/asynchronous-reset/">réinitialisation asynchrone</a> survient juste avant ou après un front d&#39;horloge, les contraintes temporelles de levée ne sont pas respectées, et une <a class="term-link" href="/fr/term/flip-flop/">bascule</a> peut démarrer au cycle courant et une autre au cycle suivant. Une machine d&#39;états peut alors démarrer dans un état illégal. Le circuit de synchronisation de réinitialisation applique celle-ci immédiatement, et n&#39;aligne sur l&#39;horloge par deux bascules que sa levée avant de la distribuer.</p></details>
+  </article>
+  <article class="q-mini" data-qid="hdl-verification-029" data-cat="hdl-verification" data-answer="0" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est A.">
+    <h3><a href="/fr/q/hdl-verification/hdl-verification-029/">En simulation, un registre sans réinitialisation vaut initialement X. Que se passe-t-il vraisemblablement dans la puce réelle ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Il prend 0 ou 1 à la mise sous tension, sans que l&#39;on sache lequel</span></li><li><span class="choice-mark">B</span><span class="choice-text">Il reste bloqué à une tension intermédiaire entre 0 et 1, même dans la puce réelle</span></li><li><span class="choice-mark">C</span><span class="choice-text">Il vaut toujours 0 dans la puce réelle</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. Il prend 0 ou 1 à la mise sous tension, sans que l&#39;on sache lequel</p><p class="explanation">Une <a class="term-link" href="/fr/term/flip-flop/">bascule</a> réelle se stabilise à la mise sous tension dans l&#39;état 0 ou 1, mais lequel dépend de la puce, de l&#39;emplacement, de la température, etc., et n&#39;est pas déterminé. Le X de la simulation exprime ce « on ne sait pas lequel ». Si cette valeur influe sur le fonctionnement du circuit, il faut la fixer par réinitialisation. Pour les registres toujours écrits avant usage, comme ceux du chemin de données, la réinitialisation est parfois omise.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/fr/q/hdl-verification/hdl-verification-017/">Quel est le type et le comportement de la réinitialisation dans la description ci-dessus ?</a></li>
+  <li><a href="/fr/q/logic/logic-017/">Comment appelle-t-on l&#39;état dans lequel, lorsqu&#39;une bascule reçoit un signal asynchrone sans que les temps de setup ou de hold soient respectés, la sortie n&#39;est temporairement ni 0 ni 1 ?</a></li></ol>
+  <p><a class="btn btn-primary" href="/fr/c/hdl-verification/">Questions d&#39;entraînement sur HDL et vérification</a></p>
+</section>
+<section>
+  <h2>Termes clés expliqués</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/fr/term/synchronous-reset/">Réinitialisation synchrone</a></dt><dd>Réinitialisation qui initialise les bascules en capturant le signal de reset sur un front d&#39;horloge. L&#39;analyse temporelle est facilitée, mais elle n&#39;agit pas si l&#39;horloge est arrêtée.</dd></div>
+    <div class="term"><dt><a href="/fr/term/asynchronous-reset/">Réinitialisation asynchrone</a></dt><dd>Réinitialisation qui initialise immédiatement les bascules dès que le signal de reset devient actif, indépendamment de l&#39;horloge. Le relâchement est en principe synchronisé sur l&#39;horloge.</dd></div>
+    <div class="term"><dt><a href="/fr/term/reset-synchronizer/">Synchroniseur de reset</a></dt><dd>Circuit qui applique immédiatement un reset asynchrone mais ne distribue sa libération à tout le circuit qu&#39;après l&#39;avoir synchronisée sur l&#39;horloge par deux bascules.</dd></div>
+    <div class="term"><dt><a href="/fr/term/metastability/">Métastabilité</a></dt><dd>État où, en cas de violation des temps de setup ou de hold d&#39;une bascule, la sortie reste un moment indéterminée entre 0 et 1. On y remédie en synchronisant les signaux asynchrones par deux bascules en série.</dd></div>
+    <div class="term"><dt><a href="/fr/term/glitch/">Glitch (impulsion parasite)</a></dt><dd>Impulsion indésirable et brève apparaissant en sortie, due par exemple aux différences de délai entre chemins. En logique combinatoire, on parle aussi d&#39;aléa ; dans un CNA, elle survient lors des changements de code.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Comparatifs associés</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/fr/compare/verilog-vs-vhdl/"><strong>Verilog vs VHDL : les différences entre les deux HDL</strong><span>Verilog et VHDL comparés dans un tableau : origine, syntaxe, typage, sensibilité à la casse, fonctions de vér…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/blocking-vs-nonblocking-assignment/"><strong>Affectation bloquante (=) vs non bloquante (&lt;=) en Verilog</strong><span>Affectations bloquante (=) et non bloquante (&lt;=) comparées : mise à jour, dépendance à l&#39;ordre, logique combi…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/setup-vs-hold-time/"><strong>Temps de setup vs temps de hold : définition, délais et correction</strong><span>Temps de setup et de hold comparés : définition, délai vérifié (max ou min), lien avec la fréquence, effet du…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/cpu-vs-gpu/"><strong>CPU vs GPU : différences d&#39;architecture et d&#39;usage</strong><span>CPU et GPU comparés dans un tableau : objectif de conception, nombre de cœurs, modèle d&#39;exécution, caches, ba…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs SPI vs UART : différences et cas d&#39;utilisation</strong><span>I2C, SPI et UART comparés dans un tableau : nombre de fils, horloge, vitesse, topologie, adressage, contrôle …</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/nvme-vs-sata-ssd/"><strong>SSD NVMe vs SATA : vitesse, interface et lequel acheter</strong><span>SSD NVMe et SATA comparés dans un tableau : interface, vitesse, latence, files de commandes, format, consomma…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Ce site d'apprentissage sur les semi-conducteurs est géré par un particulier.</p>
+    <p class="footer-request"><a href="/fr/contact/">Vos demandes et commentaires sont les bienvenus. Envoyez-les via le formulaire de contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/fr/about/">À propos</a>
+      <a href="/fr/figures/">Schémas</a>
+      <a href="/fr/privacy/">Politique de confidentialité</a>
+      <a href="/fr/disclaimer/">Avertissement</a>
+      <a href="/fr/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Salle des semi-conducteurs</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

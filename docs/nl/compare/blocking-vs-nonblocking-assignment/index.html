@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="nl" data-lang="nl" data-base="/" data-home="/nl/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blocking versus non-blocking assignment: timing, volgorde en gebruik vergeleken | Halfgeleiderkamer</title>
+<meta name="description" content="Blocking (=) en non-blocking assignment (&lt;=) in Verilog vergeleken: moment van bijwerken, volgordeafhankelijkheid, combinatorisch versus sequentieel en simulatie-synthesemismatch.">
+<link rel="canonical" href="https://semiconroom.com/nl/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/blocking-vs-nonblocking-assignment/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/blocking-vs-nonblocking-assignment/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Blocking versus non-blocking assignment: timing, volgorde en gebruik vergeleken | Halfgeleiderkamer">
+<meta property="og:description" content="Blocking (=) en non-blocking assignment (&lt;=) in Verilog vergeleken: moment van bijwerken, volgordeafhankelijkheid, combinatorisch versus sequentieel en simulatie-synthesemismatch.">
+<meta property="og:url" content="https://semiconroom.com/nl/compare/blocking-vs-nonblocking-assignment/">
+<meta property="og:site_name" content="Halfgeleiderkamer">
+<meta property="og:locale" content="nl_NL">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/nl/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Vergelijkingen","item":"https://semiconroom.com/nl/compare/"},{"@type":"ListItem","position":3,"name":"Blocking versus non-blocking assignment: timing, volgorde en gebruik vergeleken","item":"https://semiconroom.com/nl/compare/blocking-vs-nonblocking-assignment/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Blocking versus non-blocking assignment: timing, volgorde en gebruik vergeleken","description":"Blocking (=) en non-blocking assignment (\u003c=) in Verilog vergeleken: moment van bijwerken, volgordeafhankelijkheid, combinatorisch versus sequentieel en simulatie-synthesemismatch.","inLanguage":"nl","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/nl/compare/blocking-vs-nonblocking-assignment/","author":{"@type":"Organization","name":"Halfgeleiderkamer"},"publisher":{"@type":"Organization","name":"Halfgeleiderkamer"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat gebeurt er als je blocking assignment in een sequentiële schakeling gebruikt?","acceptedAnswer":{"@type":"Answer","text":"Afhankelijk van de volgorde van de regels wordt een waarde die op dezelfde flank is bijgewerkt direct doorgegeven aan de volgende regel, en ontstaat een schakeling met minder trappen dan bedoeld. Ook kunnen races ontstaan met andere always-blokken op dezelfde klok, waarbij het resultaat afhangt van de uitvoeringsvolgorde; dat is een oorzaak van verschillen tussen de simulatie en de gesynthetiseerde schakeling."}},{"@type":"Question","name":"Waarom worden de waarden omgewisseld als je met non-blocking assignment a \u003c= b; b \u003c= a; schrijft?","acceptedAnswer":{"@type":"Answer","text":"Omdat beide rechterkanten eerst met hun oude waarden worden geëvalueerd en daarna de linkerkanten tegelijk worden bijgewerkt. Het gedrag is hetzelfde als dat van een schakeling waarin de uitgangen van twee flip-flops met elkaars ingang zijn verbonden."}},{"@type":"Question","name":"Welke moet je in een testbench gebruiken?","acceptedAnswer":{"@type":"Answer","text":"Voor delen die procedures stap voor stap beschrijven is blocking assignment prima. Maar als de ingangen van de schakeling op hetzelfde tijdstip als de klokflank veranderen, hangt het van de uitvoeringsvolgorde af of de oude of de nieuwe waarde wordt ingeklokt; verander ze daarom iets na de flank of met non-blocking assignment."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/blocking-vs-nonblocking-assignment/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/nl/"><span class="logo-mark" aria-hidden="true"></span><span>Halfgeleiderkamer<small></small></span></a>
+    <nav class="header-nav"><a href="/nl/">Home</a><a href="/nl/#topics">Onderwerpen</a><details class="menu"><summary>Bronnen</summary><div class="menu-panel"><a href="/nl/glossary/">Woordenlijst</a><a href="/nl/compare/">Vergelijkingen</a><a href="/nl/figures/">Figuren</a><a href="/nl/tools/">Rekentools</a></div></details><a href="/nl/stats/">Voortgang</a></nav>
+    <form class="site-search" role="search" action="/nl/search/" method="get"><input type="search" name="q" placeholder="Zoeken (bijv. MOSFET)" aria-label="Site doorzoeken" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/nl/search/" aria-label="Site doorzoeken"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Taal: Nederlands"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Nederlands</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Taal"><a href="/compare/blocking-vs-nonblocking-assignment/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/blocking-vs-nonblocking-assignment/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/blocking-vs-nonblocking-assignment/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/blocking-vs-nonblocking-assignment/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/blocking-vs-nonblocking-assignment/" hreflang="de" lang="de">Deutsch</a><span aria-current="true">Nederlands</span><a href="/fr/compare/blocking-vs-nonblocking-assignment/" hreflang="fr" lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/nl/">Home</a><a href="/nl/#topics">Onderwerpen</a><a href="/nl/stats/">Voortgang</a><a href="/nl/glossary/">Woordenlijst</a><a href="/nl/compare/">Vergelijkingen</a><a href="/nl/figures/">Figuren</a><a href="/nl/tools/">Rekentools</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/nl/">Home</a> <span>›</span> <a href="/nl/compare/">Vergelijkingen</a></nav>
+<article class="compare-page">
+  <h1>Blocking versus non-blocking assignment: timing, volgorde en gebruik vergeleken</h1>
+  <p class="lead">Beide zijn toekenningen die in een always-blok van Verilog worden gebruikt, maar ze verschillen in het moment waarop de linkerkant verandert. Een blocking assignment (=) werkt de linkerkant bij op het moment dat die regel wordt uitgevoerd, en de volgende regel gebruikt de nieuwe waarde. Een non-blocking assignment (&lt;=) evalueert eerst alle rechterkanten van hetzelfde tijdstip en werkt daarna alle linkerkanten tegelijk bij. De basisrichtlijn is &lt;= voor sequentiële schakelingen die op de klok werken en = voor always-blokken met combinatorische logica.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Gekopieerd!">Tabel kopiëren</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link gekopieerd">Delen</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Kenmerk</th><th scope="col">Blocking assignment (=)</th><th scope="col">Non-blocking assignment (&lt;=)</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Notatie</th><td>a = b;</td><td>a &lt;= b;</td></tr>
+        <tr><th scope="row">Moment waarop de linkerkant wordt bijgewerkt</th><td>Direct wanneer die regel wordt uitgevoerd</td><td>Nadat alle rechterkanten van hetzelfde tijdstip zijn geëvalueerd, allemaal tegelijk</td></tr>
+        <tr><th scope="row">Waarde zichtbaar vanaf de volgende regel</th><td>De nieuwe, bijgewerkte waarde</td><td>De oude waarde van vóór de update</td></tr>
+        <tr><th scope="row">Afhankelijkheid van de volgorde</th><td>Ja. Regels omwisselen verandert het resultaat</td><td>Vrijwel niet. Maar bij twee toekenningen aan dezelfde variabele blijft de laatste over</td></tr>
+        <tr><th scope="row">Bijbehorend schakelingsgedrag</th><td>Combinatorische logica die tussenwaarden van boven naar beneden berekent</td><td>Flip-flops die op de klokflank allemaal tegelijk een waarde inklokken</td></tr>
+        <tr><th scope="row">Belangrijkste gebruik</th><td>always @(*) voor combinatorische logica, procedures in testbenches</td><td>always @(posedge clk) voor sequentiële schakelingen die op de klok werken</td></tr>
+        <tr><th scope="row">Tweetraps schuifregister (klokgestuurd blok)</th><td>Bij q1 = d; q2 = q1; krijgt q2 op dezelfde flank ook d, en is er slechts één trap vertraging</td><td>Bij q1 &lt;= d; q2 &lt;= q1; krijgt q2 de waarde van q1 van vóór de flank, en zijn er twee trappen</td></tr>
+        <tr><th scope="row">Waarden omwisselen (klokgestuurd blok)</th><td>Bij a = b; b = a; krijgen a en b dezelfde waarde</td><td>Bij a &lt;= b; b &lt;= a; worden a en b omgewisseld</td></tr>
+        <tr><th scope="row">Tussen meerdere always-blokken</th><td>Tussen blokken die op dezelfde flank werken ontstaan gemakkelijk races, waarbij het resultaat afhangt van de uitvoeringsvolgorde</td><td>De rechterkanten worden eerst allemaal geëvalueerd, dus races ontstaan minder snel</td></tr>
+        <tr><th scope="row">Bij verkeerd gebruik</th><td>In sequentiële schakelingen hangt het resultaat af van de uitvoeringsvolgorde van de blokken en kan het gedrag afwijken van de gesynthetiseerde schakeling</td><td>In combinatorische logica worden tussenwaarden nog oud gelezen, waardoor de simulatie kan afwijken van de gesynthetiseerde schakeling of onnodig opnieuw wordt uitgevoerd</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">De getalswaarden zijn typische ordegroottes en variëren per procesgeneratie en product.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Wanneer welke variant?</h2>
+  <dl class="compare-when">
+    <dt>Blocking assignment (=)</dt><dd>Bij het achtereenvolgens berekenen van tussenwaarden in always @(*) voor combinatorische logica. Bij het stap voor stap beschrijven van procedures in een testbench.</dd>
+    <dt>Non-blocking assignment (&lt;=)</dt><dd>Bij het beschrijven van klokgestuurde flip-flops, zoals in always @(posedge clk). Bijwerken van registers, tellers en de toestand van toestandsmachines.</dd>
+    <dt>Niet mengen</dt><dd>Meng = en &lt;= niet binnen één always-blok, en ken dezelfde variabele niet toe vanuit meerdere always-blokken. In SystemVerilog kan de bedoeling met always_ff en always_comb aan de tools worden doorgegeven.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat gebeurt er als je blocking assignment in een sequentiële schakeling gebruikt?</h3>
+  <p>Afhankelijk van de volgorde van de regels wordt een waarde die op dezelfde flank is bijgewerkt direct doorgegeven aan de volgende regel, en ontstaat een schakeling met minder trappen dan bedoeld. Ook kunnen races ontstaan met andere always-blokken op dezelfde klok, waarbij het resultaat afhangt van de uitvoeringsvolgorde; dat is een oorzaak van verschillen tussen de simulatie en de gesynthetiseerde schakeling.</p>
+  <h3>Waarom worden de waarden omgewisseld als je met non-blocking assignment a &lt;= b; b &lt;= a; schrijft?</h3>
+  <p>Omdat beide rechterkanten eerst met hun oude waarden worden geëvalueerd en daarna de linkerkanten tegelijk worden bijgewerkt. Het gedrag is hetzelfde als dat van een schakeling waarin de uitgangen van twee flip-flops met elkaars ingang zijn verbonden.</p>
+  <h3>Welke moet je in een testbench gebruiken?</h3>
+  <p>Voor delen die procedures stap voor stap beschrijven is blocking assignment prima. Maar als de ingangen van de schakeling op hetzelfde tijdstip als de klokflank veranderen, hangt het van de uitvoeringsvolgorde af of de oude of de nieuwe waarde wordt ingeklokt; verander ze daarom iets na de flank of met non-blocking assignment.</p>
+</section>
+<section>
+  <h2>Test uw begrip</h2>
+  <article class="q-mini" data-qid="hdl-verification-006" data-cat="hdl-verification" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
+    <h3><a href="/nl/q/hdl-verification/hdl-verification-006/">Welke uitspraak over de werking van de niet-blokkerende toekenning (&lt;=) in Verilog is juist?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Het linkerlid wordt direct bijgewerkt en de nieuwe waarde wordt in de volgende regel gebruikt</span></li><li><span class="choice-mark">B</span><span class="choice-text">Eerst worden alle rechterleden van hetzelfde tijdstip geëvalueerd en daarna worden de linkerleden gezamenlijk bijgewerkt</span></li><li><span class="choice-mark">C</span><span class="choice-text">Het resultaat van de toekenning wordt weggegooid en er verandert niets</span></li></ol>
+    <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Eerst worden alle rechterleden van hetzelfde tijdstip geëvalueerd en daarna worden de linkerleden gezamenlijk bijgewerkt</p><p class="explanation">Bij niet-blokkerende toekenning worden op de klokflank eerst alle rechterleden van &lt;= met de oude waarden geëvalueerd, en daarna worden de linkerleden tegelijk herschreven. Dit komt overeen met de werking van een echte schakeling, waarin veel flipflops die op dezelfde klok werken tegelijk de waarde vlak vóór de flank overnemen. Voor de beschrijving van sequentiële schakelingen die op de klok werken, geldt daarom als basisregel niet-blokkerende toekenning te gebruiken.</p></details>
+  </article>
+  <article class="q-mini" data-qid="hdl-verification-009" data-cat="hdl-verification" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
+    <h3><a href="/nl/q/hdl-verification/hdl-verification-009/">Welke algemene richtlijn voor het onderscheiden van soorten toekenning in Verilog is juist?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Overal alleen blokkerende toekenning (=) gebruiken</span></li><li><span class="choice-mark">B</span><span class="choice-text">Voor sequentiële schakelingen op de klok niet-blokkerende toekenning (&lt;=) gebruiken en voor always van combinatorische schakelingen blokkerende toekenning (=)</span></li><li><span class="choice-mark">C</span><span class="choice-text">In één always-blok beide soorten willekeurig door elkaar gebruiken</span></li></ol>
+    <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Voor sequentiële schakelingen op de klok niet-blokkerende toekenning (&lt;=) gebruiken en voor always van combinatorische schakelingen blokkerende toekenning (=)</p><p class="explanation">Als een <a class="term-link" href="/nl/term/sequential-circuit/">sequentiële schakeling</a> met niet-blokkerende toekenning wordt geschreven, komt dat overeen met de werking van een schakeling waarin alle flipflops tegelijk de waarde overnemen, en hangt het resultaat niet af van de volgorde van beschrijving of van de uitvoeringsvolgorde met andere always-blokken. Bij combinatorische schakelingen is het natuurlijk om van boven naar beneden tussenwaarden te berekenen, dus blokkerende toekenning wordt gebruikt. Ook is het belangrijk beide niet in één always-blok te mengen.</p></details>
+  </article>
+  <article class="q-mini" data-qid="hdl-verification-034" data-cat="hdl-verification" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
+    <h3><a href="/nl/q/hdl-verification/hdl-verification-034/">Als in een testbench de ingangen van de schakeling met blokkerende toekenning op hetzelfde tijdstip als de stijgende klokflank worden gewijzigd, kan een probleem ontstaan. Welke combinatie van de belangrijkste reden en de tegenmaatregel is juist?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Omdat het afhangt van de uitvoeringsvolgorde of de schakeling de waarde van vóór of na de verandering overneemt (race). De ingangen iets verschoven van de klokflank of met niet-blokkerende toekenning wijzigen</span></li><li><span class="choice-mark">B</span><span class="choice-text">Omdat de klokfrequentie automatisch daalt. De klok sneller maken</span></li><li><span class="choice-mark">C</span><span class="choice-text">Omdat blokkerende toekenning in een testbench niet kan worden gebruikt. Alles met assign-statements doen</span></li></ol>
+    <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Omdat het afhangt van de uitvoeringsvolgorde of de schakeling de waarde van vóór of na de verandering overneemt (race). De ingangen iets verschoven van de klokflank of met niet-blokkerende toekenning wijzigen</p><p class="explanation">Als op hetzelfde tijdstip de bewerking waarmee de <a class="term-link" href="/nl/term/testbench/">testbench</a> de ingangen herschrijft en de bewerking waarmee de flipflops van de schakeling de ingangen overnemen plaatsvinden, kan de overgenomen waarde de oude of de nieuwe waarde zijn, afhankelijk van welke de simulator als eerste uitvoert. Dit is een race in de simulatie, en het resultaat kan per simulator verschillen. Men voorkomt het door de ingangen bij de dalende flank te wijzigen, ze iets te vertragen of niet-blokkerende toekenning of de clocking blocks van <a class="term-link" href="/nl/term/systemverilog/">SystemVerilog</a> te gebruiken.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/nl/q/hdl-verification/hdl-verification-007/">In de bovenstaande beschrijving waren vlak vóór de stijgende klokflank a=0 en b=1. Wat zijn de waarden van a en b na de stijgende flank?</a></li>
+  <li data-level="3"><a href="/nl/q/hdl-verification/hdl-verification-008/">Bedoeld als een tweetraps schuifregister is het zoals hierboven geschreven met blokkerende toekenning (=). Welk probleem treedt op?</a></li>
+  <li data-level="3"><a href="/nl/q/hdl-verification/hdl-verification-011/">Dit is zoals hierboven geschreven als een combinatorische schakeling bedoeld. Welk mogelijk probleem is juist?</a></li></ol>
+  <p><a class="btn btn-primary" href="/nl/c/hdl-verification/">Oefenvragen over Hardwarebeschrijvingstalen en verificatie</a></p>
+</section>
+<section>
+  <h2>Belangrijke termen uitgelegd</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/nl/term/blocking-assignment/">Blocking assignment</a></dt><dd>De toewijzing met &#39;=&#39; in Verilog. De linkerzijde wordt direct bijgewerkt en de volgende regel gebruikt de nieuwe waarde. Gebruikt in always-blokken voor combinatorische logica en in testbenches.</dd></div>
+    <div class="term"><dt><a href="/nl/term/nonblocking-assignment/">Non-blocking assignment</a></dt><dd>Toewijzing met &quot;&lt;=&quot; in Verilog. Alle rechterzijden van hetzelfde tijdstip worden eerst geëvalueerd, waarna de linkerzijden samen worden bijgewerkt. Komt overeen met het gedrag van flipflops en wordt dus voor sequentiële schakelingen gebruikt.</dd></div>
+    <div class="term"><dt><a href="/nl/term/sensitivity-list/">Sensitivity list</a></dt><dd>Reeks signalen achter always in @( ) in Verilog die bepaalt wanneer het blok wordt uitgevoerd. Bij een combinatorische schakeling leidt een vergeten signaal tot een verschil tussen simulatie en schakeling.</dd></div>
+    <div class="term"><dt><a href="/nl/term/verilog/">Verilog</a></dt><dd>Hardwarebeschrijvingstaal die veel wordt gebruikt voor ontwerp en verificatie van digitale circuits. Circuits worden per module geschreven en het gedrag wordt met assign en always beschreven.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Verwante vergelijkingen</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/nl/compare/verilog-vs-vhdl/"><strong>Verilog versus VHDL: twee hardwarebeschrijvingstalen vergeleken</strong><span>Verilog en VHDL vergeleken in een tabel: herkomst, syntaxis, typen, hoofdlettergevoeligheid, verificatiemogel…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/synchronous-vs-asynchronous-reset/"><strong>Synchrone versus asynchrone reset: timing, klok en aandachtspunten bij vrijgave</strong><span>Synchrone en asynchrone reset vergeleken: werkingsmoment, klokvereiste, glitchgevoeligheid, timinganalyse, sy…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/cpu-vs-gpu/"><strong>CPU versus GPU: architectuur, sterke punten en toepassingen vergeleken</strong><span>CPU en GPU vergeleken in een tabel: ontwerpdoel, aantal cores, uitvoeringsmodel, cache, geheugenbandbreedte, …</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/i2c-vs-spi-vs-uart/"><strong>I2C, SPI en UART: bedrading, snelheid en keuzecriteria vergeleken</strong><span>I2C, SPI en UART vergeleken in een tabel: aantal draden, klok, snelheid, topologie, adressering, foutdetectie…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/nvme-vs-sata-ssd/"><strong>NVMe- versus SATA-SSD: snelheid, interface en keuzehulp</strong><span>NVMe- en SATA-SSD&#39;s vergeleken in een tabel: interface, snelheid, latency, commandowachtrijen, vormfactor, ve…</span></a></li>
+  <li><a class="cmp-card" href="/nl/compare/mcu-vs-mpu/"><strong>MCU versus MPU: microcontroller en microprocessor vergeleken</strong><span>MCU en MPU vergeleken in een tabel: integratiedichtheid, klok, geheugen, besturingssysteem, realtimegedrag, v…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Dit is een leersite over halfgeleiders, beheerd door een particulier.</p>
+    <p class="footer-request"><a href="/nl/contact/">Wensen en feedback zijn welkom. Stuur ze via het contactformulier →</a></p>
+    <nav class="footer-nav">
+      <a href="/nl/about/">Over deze site</a>
+      <a href="/nl/figures/">Figuren</a>
+      <a href="/nl/privacy/">Privacyverklaring</a>
+      <a href="/nl/disclaimer/">Disclaimer</a>
+      <a href="/nl/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Halfgeleiderkamer</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
