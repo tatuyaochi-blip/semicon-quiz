@@ -495,14 +495,21 @@ function buildLang(L) {
         keyPoints: esc(t('key_points', { name: c.name })),
         otherInGroup: esc(t('other_in_group', { group: g.name })),
         intro: c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
-        modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id) : `<p class="muted">${esc(t('preparing'))}</p>`,
+        // 主ボタンは「10問練習」。全問・苦手問題はその横に並べる
+        modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id)
+          .replace('<a class="mode-card primary"', '<a class="mode-card"')
+          .replace('<div class="mode-grid">', `<div class="mode-grid">
+  <a class="mode-card primary" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow">
+    <strong>${esc(t('practice_10'))}</strong><span>${esc(t('practice_10_desc'))}</span>
+  </a>`) : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
         compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id)),
         books: bookSection(c),
-        questionList: pqs.length ? `<section>
-  <h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2>
+        // 問題一覧は折りたたむ(リンクは HTML に残るので、各問題ページへの内部リンクは保たれる)
+        questionList: pqs.length ? `<details class="q-list-box">
+  <summary><h2>${esc(t('question_list', { name: c.name, n: pqs.length }))}</h2></summary>
   ${qLinks(pqs)}
-</section>` : '',
+</details>` : '',
       }),
     });
 

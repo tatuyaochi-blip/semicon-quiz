@@ -11,6 +11,10 @@ for (const el of document.querySelectorAll('[data-rate]')) {
 for (const el of document.querySelectorAll('[data-answered]')) {
   el.textContent = store.stats(el.dataset.answered).answered;
 }
+// 分野ページの成績欄は、その分野を解いたことがあるときだけ出す
+for (const el of document.querySelectorAll('[data-stat-tiles]')) {
+  if (store.stats(el.dataset.statTiles).answered) el.hidden = false;
+}
 // 分野カードの進み具合(解いた問題数 / 問題数)
 for (const bar of document.querySelectorAll('[data-progress]')) {
   const [cat, n] = bar.dataset.progress.split(':');
