@@ -201,7 +201,8 @@ function buildLang(L) {
   const quizUrl = (m, cat) => `${home}quiz/?mode=${m.id}${cat ? `&amp;c=${cat}` : ''}`;
   const catCards = list => '<ul class="cat-grid">' + list.map(c => `
   <li><a class="cat-card" href="${home}c/${c.id}/">
-    <span class="cat-name">${esc(c.name)}</span>
+    <span class="cat-name">${esc(c.name)}</span>${c.blurb ? `
+    <span class="cat-blurb">${esc(c.blurb)}</span>` : ''}
     <span class="cat-meta"><span>${t('n_questions', { n: qs[c.id].length })}</span><span class="cat-rate" hidden>${t('rate_label')} <b data-rate="${c.id}"></b></span></span>
     <span class="meter" hidden><span class="meter-bar" data-progress="${c.id}:${qs[c.id].length}" style="width:0%"></span></span>
   </a></li>`).join('') + '</ul>';
