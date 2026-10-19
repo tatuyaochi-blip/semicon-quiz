@@ -1,0 +1,452 @@
+{
+ "os-hardware-001": {
+  "question": "Wat is het belangrijkste doel van het onderscheid tussen bevoorrechte modus (kernelmodus) en gebruikersmodus in de CPU?",
+  "choices": [
+   "Instructies van toepassingen met voorrang sneller dan kernelinstructies kunnen uitvoeren",
+   "Toepassingen beschermen tegen willekeurige bewerking van paginatabellen en apparaten",
+   "Twee instructies tegelijk door één CPU kunnen laten uitvoeren"
+  ],
+  "explanation": "Als toepassingen vrij paginatabellen konden wijzigen, I/O-apparaten konden bedienen en interrupts konden uitschakelen, zouden ze het geheugen van andere programma's kunnen beschadigen of het hele systeem kunnen stilleggen. Daarom laat de CPU deze instructies alleen in de bevoorrechte modus toe, zodat alleen de kernel van het besturingssysteem ze kan gebruiken. Een poging ze in de gebruikersmodus uit te voeren geeft een exception. Het is geen mechanisme voor snelheid of gelijktijdige uitvoering."
+ },
+ "os-hardware-002": {
+  "question": "Hoe heet het mechanisme waarmee een toepassing het besturingssysteem verzoekt bijvoorbeeld een bestand te lezen of te schrijven?",
+  "choices": [
+   "Systeemaanroep (system call)",
+   "Contextwisseling (context switch)",
+   "Demand paging"
+  ],
+  "explanation": "Omdat toepassingen in de gebruikersmodus draaien, kunnen ze schijven en apparaten niet rechtstreeks bedienen. Daarom gebruiken ze een systeemaanroep: met een speciale instructie wordt naar de bevoorrechte modus overgeschakeld, wordt kernelcode aangeroepen en worden onder meer het lezen en schrijven van bestanden, geheugentoewijzing en het aanmaken van processen aangevraagd. Na afloop keert de uitvoering terug naar de gebruikersmodus. Een contextwisseling is het omschakelen naar een ander proces en demand paging is een methode waarbij pagina's pas worden ingelezen als ze nodig zijn."
+ },
+ "os-hardware-003": {
+  "question": "Wat gebeurt er juist wanneer de laatste ecall-instructie van de bovenstaande RISC-V-code wordt uitgevoerd?",
+  "choices": [
+   "Er wordt als gewone functie-aanroep, nog steeds in bevoorrechte modus, vertakt naar het adres met het opgegeven nummer",
+   "Interrupts worden uitgeschakeld en de CPU stopt tot de volgende interrupt",
+   "Door een exception wordt naar de bevoorrechte modus overgeschakeld en wordt kernelcode uitgevoerd"
+  ],
+  "explanation": "ecall is een instructie die opzettelijk een exception veroorzaakt. De CPU slaat het adres van de huidige instructie op, schakelt over naar een modus met hogere privileges en gaat naar het door het besturingssysteem ingestelde beginpunt voor exception-afhandeling. De kernel bepaalt aan de hand van het nummer in a7 welke systeemaanroep het is, verwerkt de argumenten in a0 tot en met a2 en keert na het teruggeven van het resultaat terug naar de gebruikersmodus. Vanuit de gebruikersmodus kan niet rechtstreeks naar een kernelfunctie worden vertakt, en de CPU stoppen doet een andere instructie zoals wfi."
+ },
+ "os-hardware-004": {
+  "question": "Welke uitleg van het verschil tussen een interrupt en een exception is gangbaar?",
+  "choices": [
+   "Een interrupt wordt alleen door software veroorzaakt en een exception alleen door hardwareschakelingen",
+   "Een interrupt ontstaat door een externe oorzaak zoals een apparaat, en een exception als gevolg van het uitvoeren van een instructie",
+   "Na een interrupt kan niet naar het oorspronkelijke proces worden teruggekeerd, na een exception altijd wel"
+  ],
+  "explanation": "Een interrupt is (asynchroon) en ontstaat op een niet vooraf bekend moment door een externe oorzaak die los staat van de uitgevoerde instructie, zoals een voltooiingsmelding van een I/O-apparaat of een timer. Een exception is (synchroon) en ontstaat als gevolg van het uitvoeren van een bepaalde instructie, zoals deling door nul, een ongeldige instructie, een paginafout of een systeemaanroepinstructie. Na verwerking door de handler kan in beide gevallen vaak worden teruggekeerd naar het oorspronkelijke proces, dus het onderscheid wordt niet gemaakt op terugkeerbaarheid."
+ },
+ "os-hardware-005": {
+  "question": "Welke van de volgende is asynchroon, los van de uitvoering van instructies en op een niet vooraf bekend moment?",
+  "choices": [
+   "Interrupt van een timer",
+   "Paginafout door toegang tot een niet-bestaande pagina",
+   "Exception door deling door 0"
+  ],
+  "explanation": "Een interrupt van een timer is asynchroon: hij komt van een externe schakeling zodra de ingestelde tijd is verstreken, ongeacht welke instructie wordt uitgevoerd. Paginafouten en deling door nul worden veroorzaakt door het uitvoeren van een bepaalde instructie en treden altijd op dezelfde plaats op als dezelfde instructie in dezelfde situatie wordt uitgevoerd; het zijn dus synchrone exceptions. Bij synchrone exceptions moet ook worden besloten of de veroorzakende instructie opnieuw wordt uitgevoerd of overgeslagen, wat een verschil met interrupts is."
+ },
+ "os-hardware-006": {
+  "question": "Welk verloop van de verwerking is juist wanneer de CPU een interrupt accepteert?",
+  "choices": [
+   "Het lopende programma wordt weggegooid en opnieuw vanaf het begin uitgevoerd",
+   "Na uitvoering van de interrupthandler wordt niet naar het oorspronkelijke programma teruggekeerd, maar wordt het volgende programma gestart",
+   "De huidige positie en toestand worden opgeslagen, de interrupthandler wordt uitgevoerd en daarna wordt naar de opgeslagen positie teruggekeerd"
+  ],
+  "explanation": "Na het accepteren van een interrupt slaat de CPU het adres van de volgende uit te voeren instructie en toestand zoals de werkingsmodus op en gaat naar de interrupthandler die bijvoorbeeld door de interruptvectortabel wordt aangewezen. De handler slaat de benodigde registers op, voert de verwerking uit, herstelt de toestand en hervat het onderbroken programma op de plaats van onderbreking. Het programma wordt niet weggegooid of opnieuw gestart. Na de handler kan wel naar een ander proces worden overgeschakeld, maar dat is een beslissing van het besturingssysteem."
+ },
+ "os-hardware-007": {
+  "question": "Wat is de juiste rol van de interruptvectortabel?",
+  "choices": [
+   "Per type bijhouden hoe vaak een interrupt is opgetreden",
+   "Per type interrupt of exception het adres vastleggen waar de verwerking begint",
+   "Bijhouden in welke volgorde het volgende proces wordt uitgevoerd"
+  ],
+  "explanation": "Wanneer een interrupt of exception optreedt, krijgt de CPU het nummer (vectornummer) dat bij de oorzaak hoort, leest het beginadres van de handler uit de interruptvectortabel en draagt de verwerking daarheen over. De inhoud van de tabel wordt bij het opstarten door het besturingssysteem ingesteld zodat voor timer, apparaten, paginafouten en systeemaanroepen verschillende handlers kunnen worden aangeroepen. Het tellen van aantallen gebeurt met een ander mechanisme voor statistiek, en de volgorde van processen wordt door de scheduler van het besturingssysteem beheerd."
+ },
+ "os-hardware-008": {
+  "question": "Waarop moet worden gelet bij het tijdelijk uitschakelen (maskeren) van interrupts tijdens een kritieke bewerking?",
+  "choices": [
+   "Als de uitschakeling lang duurt, wordt de reactie op andere interrupts vertraagd, dus moet ze zo kort mogelijk zijn",
+   "Bij uitschakelen van interrupts gaan alle binnenkomende interrupts verloren en worden ze nooit meer verwerkt",
+   "Bij uitschakelen van interrupts neemt het vermogensverbruik van de CPU sterk toe, dus mag het niet worden gebruikt"
+  ],
+  "explanation": "Door interrupts uit te schakelen kan het bijwerken van gedeelde gegevens niet halverwege worden onderbroken, maar interrupts die ondertussen binnenkomen moeten wachten. Als de uitschakeling lang duurt, worden de ontvangst van communicatie en timerverwerking vertraagd, wat leidt tot gemiste gegevens en trage reactie, dus wordt het uitgeschakelde interval zo kort mogelijk gehouden. Binnengekomen interrupts worden meestal in behandeling gehouden en verwerkt nadat de uitschakeling is opgeheven, dus ze gaan niet allemaal verloren. Het vermogensverbruik neemt ook niet sterk toe."
+ },
+ "os-hardware-009": {
+  "question": "Wat is de juiste reden dat de verwerking van een interrupthandler wordt gesplitst in een kort deel dat direct wordt uitgevoerd en een rest die later in een gewone context wordt uitgevoerd?",
+  "choices": [
+   "Omdat de totale hoeveelheid werk halveert als de handler in twee keer wordt uitgevoerd",
+   "Omdat het tweede deel automatisch door hardware wordt uitgevoerd en software overbodig wordt",
+   "Om de tijd dat interrupts worden tegengehouden kort te houden en zware verwerking later uit te voeren"
+  ],
+  "explanation": "Tijdens de uitvoering van een interrupthandler moeten interrupts van hetzelfde type of met lagere prioriteit vaak wachten, dus lange verwerking verslechtert de reactie van het hele systeem. Daarom wordt eerst alleen het urgente werk gedaan, zoals de status van het apparaat lezen en de ontvangst bevestigen, en wordt tijdrovende verwerking zoals het bewerken van gegevens en het melden aan hogere lagen later in een gewone context uitgevoerd waarin interrupts zijn toegestaan. De totale hoeveelheid werk neemt niet af en ook het tweede deel wordt door software uitgevoerd."
+ },
+ "os-hardware-010": {
+  "question": "Wat is de juiste rol van de paginatabel?",
+  "choices": [
+   "Paginanummers van virtuele adressen koppelen aan paginanummers van fysieke adressen",
+   "De inhoud van gegevens in het fysieke geheugen per pagina kopiëren en bewaren",
+   "De prioriteit van lopende processen in paginavolgorde beheren"
+  ],
+  "explanation": "Bij virtueel geheugen worden virtuele adressen die een programma gebruikt omgezet in adressen van het feitelijke fysieke geheugen. De paginatabel legt per virtueel paginanummer het bijbehorende fysieke paginanummer vast, samen met beveiligingsinformatie zoals lees- en schrijfrechten; het besturingssysteem maakt hem per proces aan en de MMU van de CPU raadpleegt hem. Veelgebruikte vertalingen worden in de TLB bewaard. Het is geen tabel die de inhoud van gegevens kopieert of de prioriteit van processen beheert."
+ },
+ "os-hardware-011": {
+  "question": "In welk geval treedt een paginafout op?",
+  "choices": [
+   "Wanneer gegevens niet in de cache stonden en uit het hoofdgeheugen zijn ingelezen",
+   "Wanneer de benaderde pagina niet aan het fysieke geheugen is toegewezen",
+   "Wanneer de TLB de vertaling bevat en het fysieke adres direct bekend is"
+  ],
+  "explanation": "Een paginafout is een exception die optreedt wanneer de paginatabelingang van de benaderde pagina ongeldig is, dat wil zeggen niet aan het fysieke geheugen is toegewezen (naar schijf verdrongen, nog niet ingelezen enz.), of bij een niet toegestane toegang zoals schrijven naar een alleen-lezen pagina. Het besturingssysteem maakt de pagina gereed en voert de instructie opnieuw uit. Een cachemiss wordt volledig door hardware afgehandeld en is geen exception. Als de vertaling in de TLB staat, kan direct worden vertaald en treedt geen fout op."
+ },
+ "os-hardware-012": {
+  "question": "Welk verloop van de verwerking door het besturingssysteem is juist wanneer toegang tot een naar schijf verdrongen pagina een paginafout veroorzaakt?",
+  "choices": [
+   "Het programma wordt direct afgebroken en de pagina wordt niet ingelezen",
+   "Na het inlezen van de pagina wordt de instructie die de fout veroorzaakte overgeslagen en wordt vanaf de volgende instructie hervat",
+   "De pagina wordt gereed gemaakt en van schijf ingelezen, de tabel wordt bijgewerkt en de instructie wordt opnieuw uitgevoerd"
+  ],
+  "explanation": "Bij een paginafout door een legitieme toegang zoekt het besturingssysteem een vrije fysieke pagina (of verdringt een andere pagina als er geen is), leest de inhoud van schijf en maakt de paginatabelingang geldig. Daarna voert het de instructie die de fout veroorzaakte vanaf het begin opnieuw uit, zodat het programma doorgaat alsof er niets is gebeurd. Als de instructie wordt overgeslagen, wordt die toegang niet uitgevoerd en is het resultaat onjuist. Afbreken gebeurt bij een ongeldige toegang tot een adres zonder toewijzing."
+ },
+ "os-hardware-013": {
+  "question": "Wat is de belangrijkste reden om de paginatabel meertrapsgewijs (hiërarchisch) in plaats van eentrapsgewijs te maken?",
+  "choices": [
+   "Omdat tabellen voor ongebruikte bereiken kunnen worden weggelaten en geheugen voor de paginatabel wordt bespaard",
+   "Omdat bij elke adresvertaling minder tabellen worden gelezen, zodat TLB-misses sneller worden afgehandeld",
+   "Omdat de capaciteit van het fysieke geheugen groter kan zijn dan de virtuele adresruimte"
+  ],
+  "explanation": "Een eentraps paginatabel heeft ingangen nodig voor alle pagina's van de virtuele adresruimte, ongeacht of ze worden gebruikt, en wordt in een 64-bits omgeving enorm. Bij een meertrapsstructuur worden alleen de lagere tabellen voor gebruikte bereiken aangemaakt en worden ingangen van hogere tabellen voor ongebruikte bereiken ongeldig gelaten, zodat het geheugen overeenkomt met wat het programma gebruikt. Daar staat tegenover dat bij een TLB-miss evenveel tabellen als er trappen zijn worden doorlopen, wat trager is. Met de grootte van het fysieke geheugen heeft het niets te maken."
+ },
+ "os-hardware-014": {
+  "question": "Hoe groot is een eentraps paginatabel bij 32-bits virtuele adressen, een paginagrootte van 4 KB en 4 byte per paginatabelingang?",
+  "choices": [
+   "4 KB",
+   "4 MB",
+   "16 MB"
+  ],
+  "explanation": "Een paginagrootte van 4 KB = 2¹² betekent een offset binnen de pagina van 12 bits en een paginanummer van 32 − 12 = 20 bits, dus 2²⁰ = ongeveer 1 miljoen pagina's. Bij 4 byte per ingang is de tabel 2²⁰ × 4 B = 4 MB. Omdat per proces 4 MB nodig is, worden gewoonlijk meertraps paginatabellen gebruikt om ongebruikte delen weg te laten. 4 KB is de grootte van één pagina en 16 MB is de waarde bij 16 byte per ingang."
+ },
+ "os-hardware-015": {
+  "question": "Hoeveel trappen moeten worden doorlopen bij een meertraps paginatabel met 48 bits van het virtuele adres, een paginagrootte van 4 KB en 512 ingangen (9 bits) per tabel?",
+  "choices": [
+   "2 trappen",
+   "3 trappen",
+   "4 trappen"
+  ],
+  "explanation": "Een paginagrootte van 4 KB = 2¹² betekent dat de onderste 12 bits de offset binnen de pagina zijn. De overige 48 − 12 = 36 bits vormen het paginanummer, en omdat elke trap 9 bits gebruikt, zijn het 36 ÷ 9 = 4 trappen. De tabel van elke trap is 512 ingangen × 8 byte = 4 KB, zo gemaakt dat hij precies in één pagina past. Bij een TLB-miss moet het geheugen maximaal 4 keer worden gelezen, dus voorzieningen om de TLB en paginatabelingangen te cachen zijn belangrijk. 3 trappen is het aantal bij 39 bits."
+ },
+ "os-hardware-016": {
+  "question": "Welke combinatie van informatie bevat een paginatabelingang gewoonlijk?",
+  "choices": [
+   "Het fysieke paginanummer en bits voor geldigheid, beveiliging, referentie en wijziging",
+   "De inhoud van de gegevens van de pagina zelf en het tijdstip van de laatste schrijfactie",
+   "De naam van het proces dat de pagina gebruikt en de totale gebruikstijd"
+  ],
+  "explanation": "Een paginatabelingang bevat naast het bijbehorende fysieke paginanummer een geldigheidsbit dat aangeeft of de pagina in het fysieke geheugen staat, rechten voor lezen, schrijven, uitvoeren en toegang vanuit de gebruikersmodus, en de door hardware gezette toegangsbit (referentiebit) en de wijzigingsbit (dirty bit). Het besturingssysteem gebruikt de referentiebit voor beslissingen over paginavervanging en de dirty bit om te bepalen of bij verdringing terugschrijven nodig is. De inhoud van gegevens of de naam van een proces staan er niet in."
+ },
+ "os-hardware-017": {
+  "question": "Welk voordeel van copy-on-write bij het kopiëren van een proces is juist?",
+  "choices": [
+   "Het gekopieerde en het oorspronkelijke proces kunnen de geschreven inhoud altijd delen",
+   "Alleen beschreven pagina's worden later gekopieerd, dus het is snel en bespaart geheugen",
+   "Bij elke schrijfactie worden alle pagina's gekopieerd, waardoor de veiligheid van de gegevens toeneemt"
+  ],
+  "explanation": "Als bij het kopiëren van een proces onmiddellijk het hele geheugen wordt gekopieerd, kost dat tijd en geheugen, en als direct daarna een ander programma wordt geladen, is die kopie verspild. Bij copy-on-write verwijzen beide paginatabellen alleen-lezen naar dezelfde fysieke pagina's; zodra een van beide schrijft, treedt een paginafout op en kopieert het besturingssysteem alleen die pagina. Wat is geschreven wordt niet gedeeld en blijft voor elk proces apart. Er worden ook niet alle pagina's gekopieerd."
+ },
+ "os-hardware-018": {
+  "question": "Welke uitleg over demand paging is juist?",
+  "choices": [
+   "Bij het starten van het programma worden eerst alle pagina's in het fysieke geheugen geladen",
+   "Veelgebruikte pagina's worden altijd in de cache vastgezet in plaats van op schijf",
+   "Bij het eerste gebruik van een pagina treedt een paginafout op en wordt de pagina op dat moment in het fysieke geheugen geladen"
+  ],
+  "explanation": "Bij demand paging wordt bij het starten van het programma alleen de paginatabel klaargemaakt en worden de feitelijke pagina's niet ingelezen. Bij de eerste toegang treedt een paginafout op en leest het besturingssysteem alleen die pagina van schijf. Starten gaat sneller en voor code en gegevens die nooit worden gebruikt hoeft geen geheugen te worden gebruikt. Dit is het omgekeerde van de methode waarbij eerst alles wordt geladen, en heeft niets te maken met vastzetten in de cache."
+ },
+ "os-hardware-019": {
+  "question": "Wat is het doel van de referentiebit van elke pagina in het klokalgoritme (second-chance-algoritme) voor paginavervanging?",
+  "choices": [
+   "Onlangs gebruikte pagina's herkennen en met weinig moeite verdringen op een manier die dicht bij LRU ligt",
+   "Nagaan of een pagina is beschreven om te bepalen of terugschrijven nodig is",
+   "Het aantal processen dat een pagina gebruikt tellen en die met de meeste verdringen"
+  ],
+  "explanation": "Exacte LRU moet bij elke toegang de volgorde bijwerken, wat bij veel pagina's veel moeite kost. Bij het klokalgoritme zet de hardware de referentiebit op 1 bij toegang, doorloopt het besturingssysteem de pagina's als de wijzer van een klok, zet een 1 terug op 0 en slaat die over (een tweede kans) en verdringt pagina's met 0. Zo wordt goedkoop een vervanging gerealiseerd die dicht bij LRU ligt en onlangs gebruikte pagina's behoudt. Of terugschrijven nodig is, wordt door de dirty bit bepaald."
+ },
+ "os-hardware-020": {
+  "question": "Bij paginavervanging met FIFO kan het aantal paginafouten toenemen terwijl het aantal fysieke pagina's is vergroot. Hoe heet dit verschijnsel?",
+  "choices": [
+   "Thrashing",
+   "Beladyanomalie",
+   "Copy-on-write"
+  ],
+  "explanation": "Intuïtief zouden meer fysieke pagina's het aantal paginafouten moeten verlagen, maar bij FIFO is bekend dat bij bepaalde toegangsreeksen het aantal fouten juist toeneemt als het aantal pagina's van 3 naar 4 wordt vergroot. Dit is de beladyanomalie. Het treedt niet op bij algoritmen zoals LRU (stack-algoritmen), waarbij de verzameling bewaarde pagina's bij meer pagina's altijd de vorige verzameling bevat. Thrashing is de toestand waarin door geheugentekort voortdurend wordt vervangen, en copy-on-write is een methode waarbij bij schrijven wordt gekopieerd."
+ },
+ "os-hardware-021": {
+  "question": "Hoe heet de toestand waarin door te weinig fysiek geheugen alleen nog pagina's worden verdrongen en ingelezen en het werk nauwelijks vordert?",
+  "choices": [
+   "Deadlock",
+   "Cachecoherentie",
+   "Thrashing"
+  ],
+  "explanation": "Wanneer de totale hoeveelheid pagina's die gelijktijdig draaiende processen gebruiken (de working sets) groter is dan het fysieke geheugen, wordt telkens bij het inlezen van een benodigde pagina een pagina van een ander proces verdrongen die direct weer nodig is, en dat herhaalt zich. Er wordt vooral gewacht op schijftoegang en ook de CPU-benutting daalt. Dit is thrashing; het wordt opgelost door minder processen uit te voeren of meer geheugen toe te voegen. Deadlock is een toestand waarin processen op elkaars resources wachten en stilstaan."
+ },
+ "os-hardware-022": {
+  "question": "De geheugentoegangstijd is 100 ns en de afhandeling van een paginafout kost 8 ms. Hoeveel bedraagt ongeveer de gemiddelde toegangstijd als eens per miljoen toegangen een paginafout optreedt?",
+  "choices": [
+   "Ongeveer 108 ns",
+   "Ongeveer 100 ns",
+   "Ongeveer 8 ms"
+  ],
+  "explanation": "De gemiddelde toegangstijd is (1 − p) × 100 ns + p × 8 ms; met p = 10⁻⁶ is dat ongeveer 100 ns + 10⁻⁶ × 8.000.000 ns = 100 + 8 = 108 ns. Zelfs bij een lage frequentie van eens per miljoen is de afhandeling van een paginafout zo zwaar dat het gemiddelde 8% langer wordt. Ongeveer 100 ns is de waarde zonder de invloed van paginafouten, en ongeveer 8 ms is de waarde als elke toegang een paginafout geeft."
+ },
+ "os-hardware-023": {
+  "question": "Wat moet bij een contextwisseling worden opgeslagen voor het proces waarvan wordt overgeschakeld?",
+  "choices": [
+   "De inhoud van de schijfbestanden die het proces gebruikt",
+   "De uitvoeringstoestand van de CPU, zoals registerwaarden en programmateller",
+   "De volledige inhoud van het fysieke geheugen van het proces"
+  ],
+  "explanation": "Bij een contextwisseling worden de CPU-toestand zoals algemene registers, programmateller, stackpointer en werkingsmodus opgeslagen, zodat later vanuit dezelfde toestand kan worden hervat, en wordt de toestand van het volgende proces geladen. Bij het wisselen van proces wordt ook het register omgeschakeld dat de plaats van de paginatabel aangeeft. De inhoud van geheugen en bestanden blijft gewoon staan, dus die hoeft niet bij elke wisseling te worden opgeslagen."
+ },
+ "os-hardware-024": {
+  "question": "Wat is de belangrijkste reden dat een contextwisseling in de praktijk soms een grotere prestatiedaling veroorzaakt dan de tijd die het opslaan en herstellen van registers kost?",
+  "choices": [
+   "Omdat bij elke wisseling de kloksnelheid van de CPU daalt",
+   "Omdat het programma bij elke wisseling opnieuw van schijf wordt ingelezen",
+   "Omdat na de wisseling het aantal cache- en TLB-misses toeneemt"
+  ],
+  "explanation": "Het opslaan en herstellen van registers zelf kost weinig tijd, maar voor het proces waarnaar is overgeschakeld bevatten cache en TLB gegevens van het vorige proces, zodat misses doorgaan tot benodigde gegevens en vertalingen opnieuw zijn ingelezen. Bij CPU's zonder ASID moet bij het omschakelen van adresruimte ook de TLB worden geleegd. Deze indirecte kosten kunnen groter zijn dan de directe wisseltijd. De klok daalt niet en het programma wordt niet opnieuw van schijf gelezen."
+ },
+ "os-hardware-025": {
+  "question": "Welk voordeel is juist van het toevoegen van een ASID (address space identifier) aan elke TLB-ingang?",
+  "choices": [
+   "Vertalingen kunnen worden onderscheiden zonder bij het wisselen de hele TLB te legen",
+   "Het bereik van virtuele adressen dat een proces kan gebruiken kan worden verdubbeld",
+   "De paginatabel is niet meer nodig en alle vertalingen kunnen alleen met de TLB worden gedaan"
+  ],
+  "explanation": "Zonder ASID wijst hetzelfde virtuele adres per proces naar een ander fysiek adres, dus bij elke proceswisseling moet de TLB worden geleegd en volgen na de wisseling TLB-misses. Als elke ingang een ASID heeft, kan worden onderscheiden bij welk proces een vertaling hoort, zodat de TLB niet geleegd hoeft te worden en de ingangen bij terugkeer naar het oorspronkelijke proces opnieuw kunnen worden gebruikt. Het bereik van virtuele adressen verandert niet en de paginatabel blijft nodig voor vertalingen die niet in de TLB passen."
+ },
+ "os-hardware-026": {
+  "question": "Door welk mechanisme kan het besturingssysteem op vaste tijden de CPU terugnemen van een programma dat de CPU niet uit zichzelf afstaat, om naar een ander proces over te schakelen?",
+  "choices": [
+   "Cachemiss",
+   "Timerinterrupt",
+   "Copy-on-write"
+  ],
+  "explanation": "Het besturingssysteem stelt een timer in die na elk vast tijdsinterval (time slice) een timerinterrupt veroorzaakt. Bij een interrupt gaat de CPU altijd naar de interrupthandler van de kernel, zodat het besturingssysteem ook bij een oneindige lus van het programma de besturing terugkrijgt en een contextwisseling naar een ander proces kan uitvoeren. Dit heet preëmptieve (pre-emptive) scheduling. Cachemiss en copy-on-write zijn geen mechanismen om de CPU terug te nemen."
+ },
+ "os-hardware-027": {
+  "question": "Waarom wordt, wanneer zoals hierboven het statusregister van een apparaat via memory-mapped I/O wordt gelezen, volatile gebruikt en wordt dat gebied ingesteld om niet te worden gecachet?",
+  "choices": [
+   "Omdat met volatile de leesinstructies tot één worden samengevoegd, wat sneller is",
+   "Omdat bij cachen de waarde van het apparaatregister automatisch naar 0 terugkeert",
+   "Omdat de waarde door het apparaat verandert en een wijziging gemist wordt als niet telkens daadwerkelijk opnieuw wordt gelezen"
+  ],
+  "explanation": "De waarde van een apparaatregister wordt door het apparaat gewijzigd, los van het programma. Zonder volatile kan de compiler concluderen dat de waarde in de lus niet verandert, hem slechts één keer lezen en code genereren die eindeloos wacht. Als het gebied gecachet wordt, blijft de CPU bovendien de oude waarde uit de cache lezen en is de verandering van het apparaat niet zichtbaar. Volatile voorkomt dat leesacties worden weggelaten en werkt dus tegengesteld aan samenvoegen tot één. De waarde wordt door cachen ook niet 0."
+ },
+ "os-hardware-028": {
+  "question": "In welk geval is polling, waarbij de CPU de status van een apparaat herhaaldelijk controleert zonder interrupts, voordeliger?",
+  "choices": [
+   "Wanneer de verwerking zeer vaak optreedt en de last van omschakelen bij elke interrupt groot is",
+   "Wanneer de verwerking zeer zelden optreedt en de CPU voor ander werk wordt gebruikt",
+   "Wanneer de CPU lang rust om het vermogensverbruik zo laag mogelijk te houden"
+  ],
+  "explanation": "Interrupts verspillen bij zeldzame verwerking geen CPU-tijd, maar elke keer zijn er lasten voor het opslaan van de toestand en het overschakelen naar de handler. Bij zeer frequente verwerking, zoals bij een snel netwerk, stapelt de interruptlast zich op en kan het niet meer bijhouden, dus gebundeld pollen is efficiënter. Bij zeldzame verwerking of wanneer de CPU moet rusten om vermogen te besparen, is voortdurend leeg controleren met polling verspillend en zijn interrupts geschikter."
+ },
+ "os-hardware-029": {
+  "question": "Welke bewerking moet de software uitvoeren voordat de CPU gegevens leest die een apparaat via DMA naar het hoofdgeheugen heeft geschreven, in een systeem waarin hardware de cache niet coherent houdt (niet-coherent)?",
+  "choices": [
+   "De kloksnelheid van de CPU tijdelijk verlagen",
+   "De inhoud van de cache voor het betreffende bereik ongeldig maken, zodat opnieuw uit het hoofdgeheugen wordt gelezen",
+   "De hele inhoud van de cache terugschrijven naar het hoofdgeheugen en daarna het via DMA aangekomen resultaat weggooien"
+  ],
+  "explanation": "DMA draagt gegevens tussen apparaat en hoofdgeheugen over zonder de CPU, dus in systemen waarin hardware de coherentie niet bewaakt, kunnen in de cache van de CPU nog verouderde gegevens van dat bereik staan. Als die gelezen worden, leest men de oude waarde in plaats van de nieuwe gegevens die via DMA zijn aangekomen. Daarom maakt de driver vóór het lezen de cache voor dat bereik ongeldig, zodat de nieuwe waarde uit het hoofdgeheugen wordt gelezen. Omgekeerd worden gegevens die naar een apparaat gaan vóór de start van DMA uit de cache teruggeschreven."
+ },
+ "os-hardware-030": {
+  "question": "Wat is de juiste hoofdrol van de IOMMU?",
+  "choices": [
+   "CPU-instructies vertalen naar instructies van I/O-apparaten en uitvoeren",
+   "De voeding van I/O-apparaten tijdens niet-gebruik automatisch uitschakelen om vermogen te besparen",
+   "De DMA-adressen van apparaten vertalen en ongeldige toegang voorkomen"
+  ],
+  "explanation": "Omdat apparaten met DMA het hoofdgeheugen rechtstreeks kunnen lezen en schrijven, bestaat het gevaar dat een defect of kwaadaardig apparaat het geheugen van het besturingssysteem overschrijft. Een IOMMU vertaalt, zoals de MMU voor de CPU, de adressen die een apparaat gebruikt naar fysieke adressen en blokkeert toegang buiten het toegestane bereik. Het kan ook niet-aaneengesloten fysiek geheugen voor het apparaat aaneengesloten laten lijken en wordt gebruikt om apparaten rechtstreeks aan virtuele machines toe te wijzen. Het is geen apparaat dat instructies vertaalt of voeding beheert."
+ },
+ "os-hardware-031": {
+  "question": "Wat is de juiste rol van een apparaatdriver?",
+  "choices": [
+   "De bediening per apparaat overnemen en het via een gemeenschappelijke procedure bruikbaar maken",
+   "De schakelingen van apparaten ontwerpen en gegevens voor de productie maken",
+   "Het uiterlijk van het scherm van een toepassing aanpassen aan de voorkeur van de gebruiker"
+  ],
+  "explanation": "De indeling van registers en de bedieningsprocedure verschillen per apparaat. Een apparaatdriver is het onderdeel van het besturingssysteem dat die verschillen opvangt: hij initialiseert het apparaat, leest en schrijft registers, stelt DMA in en verwerkt interrupts, en biedt naar boven een gemeenschappelijke procedure zoals het lezen en schrijven van bestanden. Toepassingen kunnen zo apparaten gebruiken zonder de details te kennen. Het ontwerpen van apparaatschakelingen of het wijzigen van het uiterlijk van het scherm is geen taak van de driver."
+ },
+ "os-hardware-032": {
+  "question": "Wat is de belangrijkste reden dat gangbare besturingssystemen verhinderen dat toepassingen rechtstreeks registers van apparaten lezen en schrijven?",
+  "choices": [
+   "Omdat in toepassingsprogramma's geen instructies kunnen worden geschreven om registers te lezen en te schrijven",
+   "Omdat als meerdere programma's willekeurig een apparaat bedienen, de toestand van het apparaat kan worden verstoord en de beveiliging kan worden doorbroken",
+   "Omdat apparaatregisters alleen direct na het inschakelen van de voeding gelezen en geschreven kunnen worden"
+  ],
+  "explanation": "De adressen waar apparaatregisters staan, worden via de paginatabel ingesteld als niet toegankelijk vanuit de gebruikersmodus, zodat alleen de driver van het besturingssysteem ze kan bedienen. Als meerdere programma's willekeurig hetzelfde apparaat bedienen, raken tussentoestanden vermengd en werkt het apparaat verkeerd, en wordt de beveiliging doorbroken, bijvoorbeeld doordat via DMA willekeurig geheugen wordt overschreven. Toepassingen vragen het besturingssysteem via systeemaanroepen om de bediening. Het is niet zo dat de instructies niet geschreven kunnen worden, maar dat ze door de beveiliging verboden zijn."
+ },
+ "os-hardware-033": {
+  "question": "Hoe heet de software waarmee op één computer meerdere besturingssystemen elk als onafhankelijke virtuele machine tegelijk kunnen draaien?",
+  "choices": [
+   "Compiler",
+   "Apparaatdriver",
+   "Hypervisor"
+  ],
+  "explanation": "Een hypervisor (virtual machine monitor) verdeelt CPU, geheugen en apparaten over meerdere virtuele machines, zodat elk besturingssysteem lijkt te beschikken over een eigen computer. Virtuele machines zijn van elkaar geïsoleerd, dus een defect in één heeft weinig invloed op andere, en ze worden veel gebruikt op servers in de cloud. CPU-virtualisatieondersteuning en geneste paginering ondersteunen de prestaties. Een compiler vertaalt programma's en een apparaatdriver bedient apparaten."
+ },
+ "os-hardware-034": {
+  "question": "Welke uitleg over de typen hypervisor is juist?",
+  "choices": [
+   "Er is een type dat rechtstreeks op de hardware draait en een type dat als toepassing op een gewoon besturingssysteem draait",
+   "Hij draait altijd als toepassing op een gewoon besturingssysteem en nooit rechtstreeks op de hardware",
+   "Er is geen verschil tussen typen en alle werken uitsluitend met software zonder hardware te gebruiken"
+  ],
+  "explanation": "Hypervisors zijn er in een type dat rechtstreeks op de hardware draait en besturingssystemen beheert (type 1, bare metal) en een type dat als toepassing op een gewoon besturingssysteem zoals Windows of Linux draait (type 2, hosted). Type 1 heeft geen extra laag en is uitstekend in prestaties en isolatie, dus wordt gebruikt voor servers en cloud; type 2 is gemakkelijk te gebruiken en wordt vaak gebruikt voor ontwikkeling en tests op pc's. Beide gebruiken hardware zoals CPU-virtualisatieondersteuning."
+ },
+ "os-hardware-035": {
+  "question": "Welke uitleg over de adresvertaling door hardware is juist bij virtualisatie met geneste paginering (tweetraps adresvertaling)?",
+  "choices": [
+   "Alleen de paginatabel van het besturingssysteem van de virtuele machine wordt doorlopen en de tabel van de hypervisor wordt niet gebruikt",
+   "Er wordt in twee trappen vertaald: gast-virtueel naar gast-fysiek naar host-fysiek",
+   "De hypervisor onderschept alle geheugentoegangen en vertaalt ze telkens in software"
+  ],
+  "explanation": "Het besturingssysteem van een virtuele machine denkt dat de fysieke adressen die het beheert (gast-fysieke adressen) het echte geheugen zijn, maar in werkelijkheid liggen ze op een andere, door de hypervisor toegewezen plaats. Bij geneste paginering vertaalt de hardware met de paginatabel van de gast tot het gast-fysieke adres en vervolgens met de tabel van de hypervisor tot het fysieke adres van de host. De hypervisor hoeft dan niet meer in te grijpen telkens wanneer de gast zijn paginatabel wijzigt. Alle toegangen in software vertalen zou veel te traag zijn."
+ },
+ "os-hardware-036": {
+  "question": "Hoeveel geheugentoegangen zijn in het slechtste geval nodig bij een TLB-miss in geneste paginering waarbij zowel gast als host paginatabellen met 4 trappen gebruiken?",
+  "choices": [
+   "8",
+   "16",
+   "24"
+  ],
+  "explanation": "De plaats van elke tabel van de 4 trappen van de gastpaginatabel staat in gast-fysieke adressen, dus vóór het lezen ervan moet met de 4-traps tabel van de host worden vertaald. Per gasttrap zijn dat 5 toegangen (4 van de host + 1 van de gasttabel), bij 4 trappen 20, en daar komen de 4 bij voor het vertalen van het uiteindelijk verkregen gast-fysieke adres van de gegevens zelf met de 4 trappen van de host, samen 24. Als formule: (4 + 1) × (4 + 1) − 1 = 24. 8 is de waarde als men denkt dat 4 trappen twee keer worden doorlopen, waarbij de vertaling van de plaats van de tabellen is vergeten."
+ },
+ "os-hardware-037": {
+  "question": "Hoe heet de methode waarbij, wanneer het besturingssysteem van een virtuele machine een instructie met privileges uitvoert, de verwerking naar de hypervisor gaat en die het effect van de instructie namens de machine nabootst?",
+  "choices": [
+   "Trap-and-emulate",
+   "Copy-on-write",
+   "Demand paging"
+  ],
+  "explanation": "Het besturingssysteem van een virtuele machine voert een bevoorrechte instructie uit alsof het de hardware rechtstreeks bedient, maar omdat het in werkelijkheid in een modus met lagere privileges draait, treedt een exception (trap) op. De hypervisor vangt die op, bootst het effect van de instructie na (emuleert) zodat het resultaat voor die virtuele machine juist is, en keert terug naar de virtuele machine. CPU-virtualisatieondersteuning zorgt dat dit omschakelen snel en betrouwbaar gebeurt. Copy-on-write en demand paging zijn geheugenbeheermethoden."
+ },
+ "os-hardware-038": {
+  "question": "Welke uitleg over paravirtualisatie is juist?",
+  "choices": [
+   "Het besturingssysteem van de virtuele machine wordt helemaal niet gewijzigd en alle apparaten van echte hardware worden ongewijzigd nagebootst",
+   "Het besturingssysteem van de virtuele machine gaat ervan uit dat het gevirtualiseerd is en gebruikt efficiënte procedures voor de hypervisor",
+   "Meerdere toepassingen draaien binnen één besturingssysteem zonder hypervisor"
+  ],
+  "explanation": "Als echte apparaten tot in detail worden nagebootst, vindt bij elke toegang tot apparaatregisters een omschakeling naar de hypervisor plaats, wat traag is. Bij paravirtualisatie worden in het gastbesturingssysteem drivers voor virtualisatie geïnstalleerd en worden efficiënte procedures gebruikt die ervan uitgaan dat het gevirtualiseerd is, bijvoorbeeld door verzoeken gebundeld uit te wisselen via wachtrijen in gedeeld geheugen. Het wordt veel gebruikt voor virtuele schijven en virtuele netwerkapparaten. Apparaten volledig nabootsen zonder het besturingssysteem te wijzigen is het idee van volledige virtualisatie."
+ },
+ "os-hardware-039": {
+  "question": "Welk verschil tussen containers en virtuele machines is juist?",
+  "choices": [
+   "Containers hebben elk een eigen besturingssysteemkernel, virtuele machines delen de kernel",
+   "Containers draaien op een hypervisor en virtuele machines alleen met functies van het besturingssysteem",
+   "Containers delen de kernel en virtuele machines draaien een eigen besturingssysteem"
+  ],
+  "explanation": "Containers delen de kernel van één besturingssysteem en isoleren per groep onder meer de weergave van bestanden, processen, netwerk en bruikbare resources. Omdat niet een heel besturingssysteem wordt opgestart, zijn ze licht en starten ze snel. Virtuele machines draaien op een hypervisor elk een besturingssysteem met een eigen kernel; ze zijn zwaarder, maar de isolatie is sterker en ook andere soorten besturingssystemen kunnen draaien. Het delen van de kernel geldt voor containers; let op de keuzemogelijkheid waarin de uitleg omgekeerd is."
+ },
+ "os-hardware-040": {
+  "question": "In veel besturingssystemen wordt het kernelgebied toegewezen aan een deel (bijvoorbeeld het hoge bereik) van de adresruimte van elk proces, en wordt toegang vanuit de gebruikersmodus met de beveiligingsbit van de paginatabel verboden. Wat is het belangrijkste voordeel van deze indeling?",
+  "choices": [
+   "Bij het betreden van de kernel hoeft de adresruimte niet te worden omgeschakeld",
+   "Toepassingen kunnen kernelfuncties rechtstreeks aanroepen zonder systeemaanroep",
+   "Elk proces kan het kernelgeheugen vrij wijzigen en delen"
+  ],
+  "explanation": "Als de kernel op dezelfde manier aan de adresruimte van elk proces is toegewezen, kan bij het betreden van de kernel via een systeemaanroep of interrupt zonder omschakelen van paginatabel rechtstreeks toegang worden verkregen tot kernelcode en -gegevens, en hoeft ook de TLB niet te worden geleegd. Toegang vanuit de gebruikersmodus is met de beveiligingsbit van de paginatabel verboden, zodat toepassingen kernelfuncties niet rechtstreeks kunnen aanroepen of het kernelgeheugen kunnen wijzigen. Als deze beveiliging wordt doorbroken, is dat een ernstige kwetsbaarheid."
+ },
+ "os-hardware-041": {
+  "question": "Hoeveel bits van het virtuele adres geven de positie binnen de pagina (offset) aan bij een paginagrootte van 4 KB?",
+  "choices": [
+   "4 bits",
+   "12 bits",
+   "22 bits"
+  ],
+  "explanation": "4 KB = 4096 byte = 2¹² byte, dus om elke byte binnen de pagina te onderscheiden zijn 12 bits nodig. De onderste 12 bits van het virtuele adres worden ongewijzigd als positie binnen de pagina in het fysieke adres gebruikt, en de resterende hogere bits worden als paginanummer met de paginatabel of TLB vertaald. 4 bits is een fout door het cijfer 4 van '4 KB', en 22 bits is de waarde bij pagina's van 4 MB. Dat de onderste 12 bits niet worden vertaald, wordt ook benut bij het ontwerp van caches."
+ },
+ "os-hardware-042": {
+  "question": "Welke combinatie van paginanummer en offset binnen de pagina is juist voor het 32-bits virtuele adres 0x00403ABC bij een paginagrootte van 4 KB?",
+  "choices": [
+   "Paginanummer 0x00403, offset 0xABC0",
+   "Paginanummer 0x004, offset 0x03ABC",
+   "Paginanummer 0x00403, offset 0xABC"
+  ],
+  "explanation": "Een paginagrootte van 4 KB = 2¹² betekent dat de onderste 12 bits (de laatste 3 hexadecimale cijfers) de offset zijn en de overige 20 bits (de eerste 5 cijfers) het paginanummer. Bij 0x00403ABC is het paginanummer 0x00403 en de offset 0xABC. Het paginanummer 0x00403 wordt met de paginatabel naar een fysiek paginanummer vertaald, en daaraan wordt 0xABC vastgemaakt tot het fysieke adres. De laatste 4 of 5 cijfers als offset nemen komt van het verwarren van de paginagrootte met 64 KB of 1 MB."
+ },
+ "os-hardware-043": {
+  "question": "Welke combinatie van de belangrijkste werkingsmodi die in de privileged architecture van RISC-V zijn vastgelegd is juist?",
+  "choices": [
+   "Machinemodus, supervisormodus, gebruikersmodus",
+   "Real mode, protected mode, long mode",
+   "Adresmodus, datamodus, instructiemodus"
+  ],
+  "explanation": "In de privileged architecture van RISC-V zijn de machinemodus (M) met de hoogste privileges, de supervisormodus (S) waarin de kernel van het besturingssysteem draait en de gebruikersmodus (U) waarin toepassingen draaien vastgelegd. De machinemodus is altijd aanwezig, en direct na het inschakelen en voor firmware draait alles hierin. Kleine microcontrollers hebben alleen M en U, en wie een besturingssysteem draait heeft gewoonlijk M, S en U; bij de virtualisatie-uitbreiding komen modi voor de hypervisor erbij. Real, protected en long mode zijn termen van x86."
+ },
+ "os-hardware-044": {
+  "question": "Waarom wordt bij terugkeer naar het oorspronkelijke programma na afhandeling van een interrupt of exception een speciale terugkeerinstructie (zoals sret en mret van RISC-V) gebruikt in plaats van een gewone terugkeerinstructie van een functie?",
+  "choices": [
+   "Omdat een speciale instructie een kortere instructielengte heeft",
+   "Omdat naast het terugkeeradres ook de modus en de interrupttoestand worden hersteld",
+   "Omdat de handler met een gewone terugkeerinstructie het terugkeeradres niet kent"
+  ],
+  "explanation": "Wanneer een exception of interrupt optreedt, slaat de CPU naast het terugkeeradres ook de tot dan toe geldende werkingsmodus en of interrupts waren toegestaan op in speciale registers en gaat naar de bevoorrechte modus. Bij terugkeer moeten die tegelijk worden hersteld en moet naar de gebruikersmodus worden teruggegaan voordat naar de oorspronkelijke instructie wordt gegaan; anders blijft de uitvoering met privileges doorgaan. Een speciale terugkeerinstructie voert dit ondeelbaar in één instructie uit. Het gaat niet om de instructielengte, en het terugkeeradres is bekend uit het opgeslagen register."
+ },
+ "os-hardware-045": {
+  "question": "Welke factor is in een systeem waarin realtime gedrag vereist is het meest geschikt als oorzaak van een grotere interruptlatentie (de tijd van het optreden van een interrupt tot het begin van de handler)?",
+  "choices": [
+   "Dat de verwerking in de interrupthandler zo kort mogelijk wordt gehouden",
+   "Dat interrupts met hoge prioriteit interrupts met lage prioriteit kunnen onderbreken",
+   "Dat er in de kernel intervallen zijn waarin interrupts uitgeschakeld blijven terwijl lange verwerking plaatsvindt"
+  ],
+  "explanation": "Zolang interrupts zijn uitgeschakeld, kan geen enkele interrupt worden geaccepteerd, hoe urgent ook, dus de slechtste interruptlatentie wordt bepaald door de lengte van het langste interval met uitgeschakelde interrupts. Voor realtime gedrag worden de intervallen met uitgeschakelde interrupts kort gehouden en wordt tijdrovende verwerking uitgevoerd met interrupts toegestaan. Korte handlers en het toestaan dat interrupts met hoge prioriteit die met lage onderbreken (geneste interrupts) zijn manieren om de latentie te verkleinen en geen oorzaak van een grotere latentie."
+ },
+ "os-hardware-046": {
+  "question": "Welke uitleg over NMI (non-maskable interrupt) is juist?",
+  "choices": [
+   "Wordt ook bij uitschakeling altijd geaccepteerd en wordt gebruikt voor het melden van ernstige afwijkingen",
+   "Heeft de laagste prioriteit en wordt verwerkt nadat alle andere interrupts klaar zijn",
+   "Een interrupt uitsluitend voor de timer die niet door software kan worden veroorzaakt"
+  ],
+  "explanation": "Een NMI is een interrupt die niet door de gewone instelling voor het uitschakelen van interrupts kan worden tegengehouden. Hij wordt gebruikt voor gebeurtenissen die zelfs bij een vastgelopen systeem altijd gemeld moeten worden, zoals niet te corrigeren geheugenfouten, voedingsafwijkingen en watchdog-timeouts. Hij wordt ook gebruikt om de toestand te onderzoeken als het besturingssysteem is vastgelopen terwijl interrupts uitgeschakeld zijn. De prioriteit behoort tot de hoogste, hij wordt niet uitgesteld en is niet uitsluitend voor de timer."
+ },
+ "os-hardware-047": {
+  "question": "Welke verwerking is juist nodig in een systeem met meerdere cores wanneer het besturingssysteem de paginatabelingang van een pagina wijzigt en de koppeling ongedaan maakt?",
+  "choices": [
+   "Het is voldoende alleen de TLB van de eigen core te legen, want andere cores gebruiken automatisch de juiste vertaling",
+   "Ook uit de TLB's van andere cores moet de oude vertaling zeker worden verwijderd",
+   "Zonder iets te doen worden bij het wijzigen van de paginatabel alle TLB's tegelijk bijgewerkt"
+  ],
+  "explanation": "Bij veel CPU's wordt de TLB, anders dan caches, niet door hardware coherent gehouden, dus in de TLB's van andere cores kunnen nog oude vertalingen van vóór het wijzigen van de paginatabel staan. Dan zouden andere cores toegang kunnen hebben tot een pagina die was ingetrokken. Daarom stuurt het besturingssysteem inter-processor-interrupts naar de andere cores of gebruikt een instructie die ongeldigverklaring aan alle cores doorgeeft om de oude ingangen te laten verwijderen, en wacht op voltooiing. Dit heet TLB-shootdown en kost meer tijd naarmate er meer cores zijn."
+ },
+ "os-hardware-048": {
+  "question": "Wat gebeurt er in het algemeen wanneer een programma een adres benadert dat het besturingssysteem niet heeft toegewezen?",
+  "choices": [
+   "De CPU voegt automatisch nieuw fysiek geheugen toe voor dat adres",
+   "De toegang wordt genegeerd en het programma gaat zonder problemen met de volgende instructie verder",
+   "Er treedt een paginafout op en het besturingssysteem beoordeelt dit als ongeldige toegang en stopt het programma"
+  ],
+  "explanation": "Bij toegang tot een niet-toegewezen adres treedt een paginafout op omdat de paginatabel geen geldige ingang heeft. Het besturingssysteem onderzoekt of het adres tot het voor het proces toegestane bereik behoort, en als het een ongeldige toegang tot een nergens toegewezen adres is, meldt het een fout aan het programma en stopt het (de zogeheten segmentation fault). Zo wordt voorkomen dat een onjuiste pointer het geheugen van andere processen of van het besturingssysteem beschadigt. Fysiek geheugen groeit niet automatisch en de toegang wordt ook niet stilzwijgend genegeerd."
+ },
+ "os-hardware-049": {
+  "question": "Welke uitleg is juist over wat er gebeurt bij het lezen van de inhoud van een bestand met een mechanisme dat een bestand aan geheugen koppelt (zoals mmap)?",
+  "choices": [
+   "Bij de eerste toegang treedt een paginafout op en wordt dat deel ingelezen",
+   "Op het moment van koppelen wordt het hele bestand in het fysieke geheugen gelezen en daarna wordt de schijf niet meer gebruikt",
+   "Bij elke toegang wordt een systeemaanroep gedaan en wordt het bestand byte voor byte gelezen"
+  ],
+  "explanation": "Als een bestand aan de adresruimte wordt gekoppeld, registreert het besturingssysteem alleen dat bereik in de paginatabel en leest het niet direct in. Bij de eerste toegang van het programma treedt een paginafout op, leest het besturingssysteem het betreffende deel van het bestand in een fysieke pagina, en daarna kan als gewoon geheugen worden gelezen en geschreven. Het is hetzelfde mechanisme als demand paging, hoeft niet bij elke leesactie een systeemaanroep te doen en vermindert ook onnodig kopiëren van gegevens. Het geheel wordt niet vooraf ingelezen."
+ },
+ "os-hardware-050": {
+  "question": "Wat is de belangrijkste reden dat het sneller is om kleine gegevens eerst in een buffer in de gebruikersruimte te verzamelen en gebundeld weg te schrijven dan bij het byte voor byte wegschrijven telkens een systeemaanroep te doen?",
+  "choices": [
+   "Omdat bij gebundeld schrijven de totale hoeveelheid weg te schrijven gegevens zelf afneemt",
+   "Omdat de vaste last per systeemaanroep wordt beperkt door het aantal aanroepen te verminderen",
+   "Omdat gegevens in de buffer kunnen worden bewaard zonder schijf te gebruiken"
+  ],
+  "explanation": "Bij een systeemaanroep zijn telkens nodig: omschakelen van gebruikersmodus naar bevoorrechte modus, registers opslaan, argumenten controleren en terugkeren, en deze vaste last is er zelfs als maar 1 byte wordt verwerkt. Bovendien raken door het betreden van de kernel de inhoud van cache en TLB verstoord. Als gegevens in een buffer worden verzameld en per enkele KB gebundeld worden geschreven, neemt het aantal systeemaanroepen sterk af en wordt het geheel sneller. De totale hoeveelheid weg te schrijven gegevens verandert niet en wordt uiteindelijk naar schijf geschreven."
+ }
+}
