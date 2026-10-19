@@ -16,7 +16,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"共享函式庫（Shared library）","item":"https://semiconroom.com/zh-hant/term/shared-library/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"共享函式庫（Shared library）","description":"在動態連結時於執行期載入的函式庫。在 Linux 為 .so，在 Windows 為 .dll。以位置無關程式碼建置，程式碼的分頁可由多個行程共用。","url":"https://semiconroom.com/zh-hant/term/shared-library/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"共享函式庫（Shared library）","item":"https://semiconroom.com/zh-hant/term/shared-library/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"共享函式庫（Shared library）","description":"在動態連結時於執行期載入的函式庫。在 Linux 為 .so，在 Windows 為 .dll。以位置無關程式碼建置，程式碼的分頁可由多個行程共用。","url":"https://semiconroom.com/zh-hant/term/shared-library/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"靜態函式庫和共享函式庫有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"靜態函式庫（.a 或 .lib）在連結時被複製到執行檔中。共享函式庫（.so 或 .dll）則維持為獨立檔案，在執行期載入，並可在記憶體中由多個行程共用。"}},{"@type":"Question","name":"為什麼共享函式庫需要 -fPIC？","acceptedAnswer":{"@type":"Answer","text":"函式庫可能被載入到任意位址，因此其程式碼必須避免使用絕對位址。PIC 使用 PC 相對定址與 GOT，讓程式碼分頁不需修改即可共用。"}},{"@type":"Question","name":"ldd 輸出中的「not found」是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"動態連結器在其搜尋路徑中找不到該共享函式庫，因此在安裝該函式庫或修正路徑之前，程式都無法啟動。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/linker-loader/">連結器與載入器與執行檔格式</a></p>
 </article>
+<section class="term-about">
+  <h2>動態連結如何運作</h2>
+  <p>當程式與共享函式庫連結時，執行檔只記錄它需要哪些函式庫（以 soname 識別）以及要匯入哪些符號。啟動時，<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>（Linux 上為 ld.so）會找到每個函式庫，將其對應到行程的位址空間，解析符號參照並套用<a class="term-link" href="/zh-hant/term/relocation/">重定位</a>。呼叫函式庫函式通常會經過<a class="term-link" href="/zh-hant/term/procedure-linkage-table/">程序連結表</a>（PLT），它可以在每個函式第一次被呼叫時才延遲解析。ldd 指令會顯示每個所需函式庫解析到哪個檔案，並將找不到的標示為「not found」；不應對不受信任的二進位檔執行 ldd，因為這可能會執行其程式碼。</p>
+</section>
+<section class="term-about">
+  <h2>位置無關程式碼與分頁共用</h2>
+  <p>共享函式庫在每個行程中都可能被載入到不同的位址，因此會編譯成<a class="term-link" href="/zh-hant/term/position-independent-code/">位置無關程式碼</a>（PIC）。程式碼以 PC 相對定址存取自己的函式與資料，並透過<a class="term-link" href="/zh-hant/term/global-offset-table/">全域偏移表</a>（GOT）存取外部符號；GOT 是每個行程各自擁有的資料區，由<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>填入。因此程式碼分頁永遠不需要修補，可以對應為唯讀且可執行。作業系統讓每個行程的對應都指向相同的實體分頁，所以 100 個使用同一函式庫的行程只需保存一份程式碼，而可寫入的資料分頁則由各行程分別保有，通常採用<a class="term-link" href="/zh-hant/term/copy-on-write/">寫入時複製</a>。</p>
+</section>
+<section class="term-about">
+  <h2>以 soname 進行版本管理</h2>
+  <p>在 Linux 上，像 libfoo.so.1.2.3 這樣的函式庫檔案帶有 libfoo.so.1 這樣的 soname，程式記錄的是 soname。維持 <a class="term-link" href="/zh-hant/term/application-binary-interface/">ABI</a>（應用程式二進位介面）相容的錯誤修正或安全性修補會保留 soname，因此只要替換一個檔案，就能<a class="term-link" href="/zh-hant/term/refresh/">更新</a>所有使用它的程式。若改變引數型別、結構配置或移除函式，舊的二進位檔就會失效，因此要提高 soname 的編號，並將新函式庫與舊函式庫並存安裝。</p>
+</section>
+<section class="term-about">
+  <h2>共享函式庫與靜態函式庫</h2>
+  <p><a class="term-link" href="/zh-hant/term/static-library/">靜態函式庫</a>是<a class="term-link" href="/zh-hant/term/object-file/">目的檔</a>的封存檔，連結時會將需要的部分複製到執行檔中，產生不需要啟動時綁定的獨立二進位檔，但每個程式都帶有自己的副本，修正時也必須重新連結。共享函式庫可節省記憶體與磁碟空間，並允許就地<a class="term-link" href="/zh-hant/term/refresh/">更新</a>，代價是啟動時的綁定工作、跨模組呼叫的間接層，以及缺少相依函式庫時的失敗。將內部函式設為隱藏可見性、只匯出公開 API，可以減少<a class="term-link" href="/zh-hant/term/dynamic-linker/">動態連結器</a>需要處理的符號，讓內部呼叫略過 <a class="term-link" href="/zh-hant/term/procedure-linkage-table/">PLT</a>，避免名稱衝突，並讓 <a class="term-link" href="/zh-hant/term/application-binary-interface/">ABI</a> 保持精簡。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>靜態函式庫和共享函式庫有什麼差別？</h3>
+  <p>靜態函式庫（.a 或 .lib）在連結時被複製到執行檔中。共享函式庫（.so 或 .dll）則維持為獨立檔案，在執行期載入，並可在記憶體中由多個行程共用。</p>
+  <h3>為什麼共享函式庫需要 -fPIC？</h3>
+  <p>函式庫可能被載入到任意位址，因此其程式碼必須避免使用絕對位址。PIC 使用 PC 相對定址與 GOT，讓程式碼分頁不需修改即可共用。</p>
+  <h3>ldd 輸出中的「not found」是什麼意思？</h3>
+  <p>動態連結器在其搜尋路徑中找不到該共享函式庫，因此在安裝該函式庫或修正路徑之前，程式都無法啟動。</p>
+</section>
 
 
 

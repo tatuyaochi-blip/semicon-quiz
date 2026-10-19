@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"CUDA","item":"https://semiconroom.com/zh-hant/term/cuda/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CUDA","description":"在 NVIDIA 的 GPU 上進行通用運算的程式設計機制。以擴充 C++ 的語言撰寫核心函式，並以網格、區塊、執行緒的階層表示平行性。","url":"https://semiconroom.com/zh-hant/term/cuda/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"CUDA","item":"https://semiconroom.com/zh-hant/term/cuda/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CUDA","description":"在 NVIDIA 的 GPU 上進行通用運算的程式設計機制。以擴充 C++ 的語言撰寫核心函式，並以網格、區塊、執行緒的階層表示平行性。","url":"https://semiconroom.com/zh-hant/term/cuda/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"CUDA 的 block 和 warp 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"block 是由程式設計師決定的一組執行緒，在一個 SM 上執行，可以共享記憶體並同步。warp 則是硬體在 block 內劃分的 32 個執行緒群組，以鎖步方式一起執行指令。"}},{"@type":"Question","name":"CUDA 的全域執行緒索引怎麼算？","acceptedAnswer":{"@type":"Answer","text":"一維啟動時使用 i = blockIdx.x * blockDim.x + threadIdx.x。存取陣列前要先檢查 i \u003c n，因為最後一個 block 的執行緒數常常多於剩餘的元素數。"}},{"@type":"Question","name":"CUDA 的共享記憶體有什麼用途？","acceptedAnswer":{"@type":"Answer","text":"它是由同一個 block 的執行緒共用的高速晶片內記憶體，用來暫存從全域記憶體讀入、要重複使用的資料，以及交換中間結果。與快取不同，放什麼進去由程式決定，並以 __syncthreads() 安排存取順序。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -158,7 +158,22 @@
 </svg><figcaption class="fig-cap">GPU執行緒階層與SM的分配 · <a href="/zh-hant/figures/#fig-gpu-hierarchy">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/gpu-programming/">GPU程式設計</a></p>
 </article>
-
+<section class="term-about">
+  <h2>kernel 與執行緒階層</h2>
+  <p>在 CUDA 中，由 CPU（主機端）啟動 kernel，也就是讓許多 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 執行緒同時執行的函式。一次啟動會建立由多個 block 組成的 grid，每個 block 包含許多執行緒。每個執行緒會計算一個唯一的全域索引，通常為 i = blockIdx.x × blockDim.x + threadIdx.x，以選擇自己的資料元素：在每個 block 有 256 個執行緒時，block 2 的第 5 號執行緒負責第 517 個元素。由於執行緒是以整個 block 為單位啟動，最後一個 block 通常會有多餘的執行緒，因此 kernel 會以 if (i &lt; n) 保護記憶體存取，避免寫到陣列範圍之外。</p>
+</section>
+<section class="term-about">
+  <h2>block 如何對應到 GPU</h2>
+  <p>每個 block 會被分配到一個<a class="term-link" href="/zh-hant/term/streaming-multiprocessor/">串流多處理器</a>（SM），並在該處執行到結束，而一個 SM 可同時容納多個 block。在 SM 內部，執行緒以 32 個為一組的 warp 來執行。<a class="term-link" href="/zh-hant/term/gpu-occupancy/">佔用率</a>（occupancy）是常駐 warp 數與 SM 最大 warp 數的比值，受每個執行緒的暫存器數、每個 block 的<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>與 block 大小所限制；佔用率過低時，可用來隱藏記憶體延遲的 warp 就太少。各 block 獨立執行且順序不定，因此在 kernel 內等待其他所有 block 可能造成<a class="term-link" href="/zh-hant/term/deadlock/">死結</a>；全域同步通常是把工作拆成兩次 kernel 啟動來達成。</p>
+</section>
+<section class="term-about">
+  <h2>記憶體空間</h2>
+  <p>全域記憶體就是 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 的 DRAM：頻寬高、延遲也高，在相鄰執行緒存取相鄰位址時速度最快。<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>是每個 block 專用的小型晶片內記憶體，由程式明確管理。它分成 32 個記憶庫（<a class="term-link" href="/zh-hant/term/bank/">bank</a>），同一個 warp 中的執行緒若存取同一個記憶庫的不同位址，就會被序列化。__syncthreads() 會讓 block 中的每個執行緒等待，直到所有執行緒都到達；若把它放在部分執行緒會跳過的分支內，會導致停滯或未定義的結果。<a class="term-link" href="/zh-hant/term/unified-memory/">統一記憶體（unified memory）</a>讓主機端與裝置端共用同一個指標，分頁會依需要遷移。</p>
+</section>
+<section class="term-about">
+  <h2>讓 GPU 保持忙碌</h2>
+  <p>從主機端到裝置端的複製要經過 <a class="term-link" href="/zh-hant/term/pci-express/">PCI Express</a>，常常是瓶頸所在。串流（stream）是由傳輸與 kernel 組成的有序佇列，不同串流中的工作可以重疊進行，因此可在運算目前這一塊資料的同時複製下一塊。每次 kernel 啟動也要花費數微秒，因此啟動數千個微小 kernel 的程式，可以藉由將其融合（這也能避免把中間結果寫入記憶體），或以 CUDA Graphs 一次提交預先錄製的啟動序列而受益。CUDA 本身只能在 NVIDIA <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 上執行；<a class="term-link" href="/zh-hant/term/opencl/">OpenCL</a> 等跨廠商的替代方案則採用類似的 kernel 與工作群組模型。</p>
+</section>
 <section>
   <h2>練習CUDA的題目</h2>
   <article class="q-mini" data-qid="gpu-programming-004" data-cat="gpu-programming" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -172,7 +187,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 網格 → 區塊 → 執行緒</p><p class="explanation">啟動一次核心函式後，整體成為網格（grid），網格分為許多區塊（block），區塊再分為許多執行緒。同一個區塊的執行緒會在同一個SM（運算單元的集合）上執行，可透過<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>合作並進行同步。不同的區塊則獨立執行，因此同時運作的區塊數量會隨<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>的規模而變，同一個程式可在大小不同的GPU上執行。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>CUDA 的 block 和 warp 有什麼差別？</h3>
+  <p>block 是由程式設計師決定的一組執行緒，在一個 SM 上執行，可以共享記憶體並同步。warp 則是硬體在 block 內劃分的 32 個執行緒群組，以鎖步方式一起執行指令。</p>
+  <h3>CUDA 的全域執行緒索引怎麼算？</h3>
+  <p>一維啟動時使用 i = blockIdx.x * blockDim.x + threadIdx.x。存取陣列前要先檢查 i &lt; n，因為最後一個 block 的執行緒數常常多於剩餘的元素數。</p>
+  <h3>CUDA 的共享記憶體有什麼用途？</h3>
+  <p>它是由同一個 block 的執行緒共用的高速晶片內記憶體，用來暫存從全域記憶體讀入、要重複使用的資料，以及交換中間結果。與快取不同，放什麼進去由程式決定，並以 __syncthreads() 安排存取順序。</p>
+</section>
 <section>
   <h2>解析中的「CUDA」</h2>
   <ul class="term-quotes"><li><p>CUDA也提供了計算佔用率的工具。</p><a href="/zh-hant/q/gpu-programming/gpu-programming-023/">關於GPU的佔用率（occupancy），下列說明何者正確？</a></li><li><p>另外也會使用將一連串的啟動先記錄下來再一次送出的機制（如CUDA Graphs）。</p><a href="/zh-hant/q/gpu-programming/gpu-programming-035/">當程式持續啟動數千次非常小的核心函式而變慢時，下列何者是最適當的改善方法？</a></li><li><p>CUDA是NVIDIA的GPU專用機制，而OpenCL是由業界團體訂定的標準規格，可用於多家公司的GPU、CPU、FPGA等。</p><a href="/zh-hant/q/gpu-programming/gpu-programming-046/">下列何者是NVIDIA以外的GPU也能使用、用於GPU等平行計算之程式設計機制的正確例子？</a></li></ul>

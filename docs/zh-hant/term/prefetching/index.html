@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"預取","item":"https://semiconroom.com/zh-hant/term/prefetching/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"預取","description":"在被要求之前，先將近期可能需要的資料載入快取。有由硬體找出存取規律性來進行的方式，以及由指令指示的軟體方式。","url":"https://semiconroom.com/zh-hant/term/prefetching/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"預取","item":"https://semiconroom.com/zh-hant/term/prefetching/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"預取","description":"在被要求之前，先將近期可能需要的資料載入快取。有由硬體找出存取規律性來進行的方式，以及由指令指示的軟體方式。","url":"https://semiconroom.com/zh-hant/term/prefetching/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"硬體預取和軟體預取有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"硬體預取器會在執行時自動偵測循序或固定跨距等存取模式。軟體預取則仰賴程式設計師或編譯器放置的明確指令，對不規則但可計算的位址有幫助。"}},{"@type":"Question","name":"為什麼預取對鏈結串列幫助不大？","acceptedAnswer":{"@type":"Answer","text":"每個節點的位址必須等前一個節點載入後才能得知，因此沒有可預測的模式，失誤也無法重疊。通常需要將資料連續存放，或加入跳躍指標。"}},{"@type":"Question","name":"預取會讓效能變差嗎？","acceptedAnswer":{"@type":"Answer","text":"會。不準確或過早的預取會浪費頻寬，並逐出仍然需要的資料，因此過度積極的預取可能拖慢受記憶體限制的程式。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/memory-hierarchy/">記憶體階層與效能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼需要預取</h2>
+  <p>L1 快取命中只需要幾個週期，約 1 ns，而 DRAM 存取需要數十到約 100 ns，因此數 GHz 的核心在一次失誤時可能要等待數百個週期；這個差距稱為<a class="term-link" href="/zh-hant/term/memory-wall/">記憶體牆</a>。<a class="term-link" href="/zh-hant/term/compulsory-miss/">強制性失誤</a>發生在第一次存取資料時，由於資料從未被快取過，增加容量或關聯度都無法減少這類失誤。預取的做法是在程式需要之前就先請求<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>，讓記憶體延遲與有用的工作重疊。較大的快取行也有類似的效果，每次失誤時會一併載入鄰近資料。</p>
+</section>
+<section class="term-about">
+  <h2>硬體預取器如何運作</h2>
+  <p>硬體預取器會觀察失誤或存取位址的序列，尋找規律性。最簡單的做法是擷取下一個連續的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>；跨距預取器則追蹤連續存取之間的位址差，通常以每個載入指令為單位，一旦相同的跨距重複出現，就提前數個跨距發出請求。以 64 位元組的快取行依序讀取 int 陣列時，原本每 16 個元素會失誤一次，失誤率為 6.25%，而優秀的預取器能隱藏大部分這類失誤。指標追逐則會讓它失效：在鏈結串列中，必須等目前的節點到達才能知道下一個位址，因此失誤只能依序發生。</p>
+</section>
+<section class="term-about">
+  <h2>軟體預取與預取距離</h2>
+  <p>軟體預取由程式設計師手動或由編譯器插入明確的預取指令，用於硬體無法預測的模式，例如透過索引陣列進行的間接存取。這些指令只是提示，通常不會引發錯誤，也不會改變程式結果。關鍵參數是預取距離：預取時間離使用太近，延遲仍會暴露出來；太早預取則可能在使用前就被逐出。常見的經驗法則是提前約「失誤延遲除以每次迴圈迭代時間」的距離預取，再透過量測調整。</p>
+</section>
+<section class="term-about">
+  <h2>準確度、涵蓋率與及時性</h2>
+  <p>預取不是沒有代價的。無用的預取會消耗記憶體頻寬，並可能逐出有用的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>，這個問題稱為快取污染，可能讓程式變得更慢。因此預取器以三項指標評估：準確度，即預取的快取行實際被使用的比例；涵蓋率，即原本失誤中被消除的比例；以及及時性，即資料是否在需要前到達。預取也不同於<a class="term-link" href="/zh-hant/term/out-of-order-execution/">亂序執行</a>，後者只能在有限的指令視窗內讓失誤重疊。當資料結構難以預測時，將其重組為連續陣列往往比任何預取器更有效。</p>
+</section>
 <section>
   <h2>練習預取的題目</h2>
   <article class="q-mini" data-qid="memory-hierarchy-015" data-cat="memory-hierarchy" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 太短或太長都不好，要依未命中的時間與迴圈一次的時間決定</p><p class="explanation"><a class="term-link" href="/zh-hant/term/prefetching/">預取</a>必須在資料被需要之前就從記憶體讀取完畢才有意義。距離太短，資料來不及到達；太長，則已進入快取的資料會在使用前被逐出，或污染快取。基準是向前預取「未命中代價除以迴圈一次執行時間」所得的次數。只在即將使用前才插入，無法隱藏等待時間；一次把所有資料讀入，則快取放不下。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>硬體預取和軟體預取有什麼差別？</h3>
+  <p>硬體預取器會在執行時自動偵測循序或固定跨距等存取模式。軟體預取則仰賴程式設計師或編譯器放置的明確指令，對不規則但可計算的位址有幫助。</p>
+  <h3>為什麼預取對鏈結串列幫助不大？</h3>
+  <p>每個節點的位址必須等前一個節點載入後才能得知，因此沒有可預測的模式，失誤也無法重疊。通常需要將資料連續存放，或加入跳躍指標。</p>
+  <h3>預取會讓效能變差嗎？</h3>
+  <p>會。不準確或過早的預取會浪費頻寬，並逐出仍然需要的資料，因此過度積極的預取可能拖慢受記憶體限制的程式。</p>
+</section>
 <section>
   <h2>解析中的「預取」</h2>
   <ul class="term-quotes"><li><p>硬體預取器會找出先前存取位址的規律（連續或固定間隔），預測接下來的位址並事先載入。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-015/">硬體預取特別容易發揮效果的存取為下列何者？</a></li><li><p>預取必須在資料被需要之前就從記憶體讀取完畢才有意義。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-016/">插入軟體預取指令時，關於要預先讀取多遠之後的資料（預取距離）的說明，下列何者正確？</a></li><li><p>作為對策，正持續推進多層快取、記憶體的平行存取、預取、HBM這類高頻寬記憶體，以及在記憶體附近進行運算的記憶體內處理（processing-in-memory）等。</p><a href="/zh-hant/q/dram/dram-030/">相較於處理器效能的提升，記憶體的頻寬與延遲的改善跟不上，因而產生的效能限制稱為什麼？</a></li><li><p>對策依原因而異：強制未命中可加大快取列或以預取（prefetch）事先讀取，容量未命中可加大快取，衝突未命中則可提高關聯度。</p><a href="/zh-hant/q/cpu/cpu-046/">快取未命中分類「3C」所包含項目的組合，下列何者正確？</a></li><li><p>在需要之前以預取先行載入，或加大快取行以一併帶入附近的資料，則可以減少。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-008/">作為減少程式第一次存取某資料時所發生的快取未命中的方法，下列何者有效？</a></li></ul>

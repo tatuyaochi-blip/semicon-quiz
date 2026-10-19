@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"캐시 라인(Cache Line)","item":"https://semiconroom.com/ko/term/cache-line/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"캐시 라인(Cache Line)","description":"캐시와 하위 계층 사이에서 데이터를 읽고 쓰는 단위. 캐시 블록이라고도 한다. 대부분의 CPU에서는 64바이트이며, 주소의 하위 비트가 라인 내 위치(오프셋)를 나타낸다.","url":"https://semiconroom.com/ko/term/cache-line/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"캐시 라인(Cache Line)","item":"https://semiconroom.com/ko/term/cache-line/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"캐시 라인(Cache Line)","description":"캐시와 하위 계층 사이에서 데이터를 읽고 쓰는 단위. 캐시 블록이라고도 한다. 대부분의 CPU에서는 64바이트이며, 주소의 하위 비트가 라인 내 위치(오프셋)를 나타낸다.","url":"https://semiconroom.com/ko/term/cache-line/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"캐시 라인 크기는 얼마인가요?","acceptedAnswer":{"@type":"Answer","text":"현재 대부분의 CPU에서 64바이트이지만, 32바이트나 128바이트를 쓰는 프로세서도 있습니다. 크기는 하드웨어 속성이며 소프트웨어에서 조회할 수 있습니다."}},{"@type":"Question","name":"캐시 라인과 페이지 차이","acceptedAnswer":{"@type":"Answer","text":"캐시 라인은 보통 64바이트로 캐시 계층과 메모리 사이에서 옮겨지는 단위이고, 페이지는 흔히 4 KB로 OS와 MMU가 관리하는 가상 메모리 매핑 단위입니다."}},{"@type":"Question","name":"거짓 공유(false sharing) 피하는 방법","acceptedAnswer":{"@type":"Answer","text":"서로 다른 스레드가 쓰는 데이터를 별도의 캐시 라인에 두면 되며, 보통 스레드별 구조체를 64바이트로 패딩하거나 정렬합니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>분야: <a href="/ko/c/memory-hierarchy/">메모리 계층 구조</a></p>
 </article>
-
+<section class="term-about">
+  <h2>캐시가 라인 전체를 옮기는 이유</h2>
+  <p>어떤 주소에 접근하는 프로그램은 대개 곧이어 그 근처 주소에도 접근하는데, 이 성질을 <a class="term-link" href="/ko/term/spatial-locality/">공간적 지역성</a>이라고 합니다. 캐시는 단일 워드가 아니라 보통 64바이트의 고정 블록 단위로 데이터를 옮겨 이를 활용하며, 이 크기는 공교롭게도 DRAM 버스트 1회, 즉 64비트 DDR4 채널에서 8바이트 전송 8회와 일치합니다. 캐시된 각 라인에는 주소를 식별하는 태그, 실제 데이터임을 표시하는 유효 비트, 라이트백 캐시의 더티 비트, 그리고 교체 및 코히런시 상태가 붙어 있습니다. 따라서 주소는 태그, 인덱스, 오프셋 필드로 나뉘며, 64바이트 라인이라면 최하위 6비트가 오프셋입니다.</p>
+</section>
+<section class="term-about">
+  <h2>라인 크기와 접근 패턴</h2>
+  <p>라인 크기는 접근 패턴을 미스율로 바꿉니다. 4바이트 정수 배열을 순서대로 읽으면 미스 1회마다 다음 15개 요소가 함께 들어오므로 16개 요소당 1회 미스, 즉 미스율 6.25%가 됩니다. 16번째 요소마다 하나씩만 읽으면 매번 미스가 납니다. C는 2차원 배열을 행 우선 순서로 저장하므로, 안쪽 루프에서 열 인덱스를 돌리면 연속된 주소를 따라가지만, 루프를 바꾸면 접근할 때마다 한 행 전체를 건너뛰어 라인이 재사용되기 전에 축출될 수 있습니다. 큰 라인은 순차 코드에 도움이 되지만, 각 라인 중 일부만 쓰일 때는 대역폭과 용량을 낭비합니다.</p>
+</section>
+<section class="term-about">
+  <h2>코히런시는 라인 단위로 동작한다</h2>
+  <p>멀티코어 프로세서에서 코히런시 프로토콜은 라인 단위로 소유권을 추적합니다. MESI에서 각 라인은 Modified(변경되었고 여기에만 있어 메모리 내용이 오래됨), Exclusive(깨끗하고 여기에만 있음), Shared(다른 곳에도 깨끗한 복사본이 있을 수 있음), Invalid 중 하나입니다. 쓰기를 하려는 코어는 먼저 다른 캐시의 복사본을 무효화해야 하며, 이미 M 상태인 라인은 누구에게도 알리지 않고 반복해서 쓸 수 있습니다. 소규모 시스템은 이런 요청을 브로드캐스트하고, 대규모 시스템은 각 라인을 어느 캐시가 가지고 있는지 기록하는 디렉터리를 사용하여 트래픽이 코어 수에 맞게 확장되도록 합니다.</p>
+</section>
+<section class="term-about">
+  <h2>거짓 공유(False Sharing)</h2>
+  <p>코히런시가 라인 단위이므로, 두 스레드가 서로 다른 변수에 쓰더라도 그 변수들이 우연히 같은 64바이트 라인에 있으면 쓸 때마다 서로의 복사본을 무효화합니다. 라인이 코어 사이를 오가며, 결과는 올바르게 유지되지만 성능이 크게 떨어질 수 있습니다. 스레드별 카운터나 플래그 배열이 전형적인 예입니다. 해결책은 C와 C++의 정렬 속성 등을 사용해 각 스레드의 데이터를 패딩하거나 정렬하여 고유한 라인에 두는 것입니다. 이와 대조되는 것이 진짜 공유(true sharing)로, 스레드가 실제로 같은 변수에 접근하므로 데이터 배치로는 통신을 피할 수 없습니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 캐시 라인(Cache Line) 관련 문제</h2>
   <article class="q-mini" data-qid="cpu-039" data-cat="cpu" data-answer="1" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 B예요.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 이 코어만 해당 라인을 가지고 있고, 내용이 주기억 장치와 다르다(라이트백이 필요하다)</p><p class="explanation">M 상태는 이 코어가 쓰기를 수행하여 최신 값을 자신만 가지고 있는 상태입니다. 주기억 장치의 값은 오래되었으므로, 이 라인을 축출할 때나 다른 코어가 읽으려 할 때 최신 값을 라이트백하거나 직접 전달해야 합니다. M 상태의 라인에는 다른 코어에 알리지 않고 그대로 몇 번이고 쓸 수 있으므로, 같은 코어가 연속해서 쓸 때 빠르게 처리할 수 있습니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>캐시 라인 크기는 얼마인가요?</h3>
+  <p>현재 대부분의 CPU에서 64바이트이지만, 32바이트나 128바이트를 쓰는 프로세서도 있습니다. 크기는 하드웨어 속성이며 소프트웨어에서 조회할 수 있습니다.</p>
+  <h3>캐시 라인과 페이지 차이</h3>
+  <p>캐시 라인은 보통 64바이트로 캐시 계층과 메모리 사이에서 옮겨지는 단위이고, 페이지는 흔히 4 KB로 OS와 MMU가 관리하는 가상 메모리 매핑 단위입니다.</p>
+  <h3>거짓 공유(false sharing) 피하는 방법</h3>
+  <p>서로 다른 스레드가 쓰는 데이터를 별도의 캐시 라인에 두면 되며, 보통 스레드별 구조체를 64바이트로 패딩하거나 정렬합니다.</p>
+</section>
 <section>
   <h2>해설 속 캐시 라인(Cache Line)</h2>
   <ul class="term-quotes"><li><p>DDR4의 버스트 길이는 8, DDR5는 16이며, 64비트 폭의 DDR4라면 8 × 8바이트 = 64바이트로 CPU 캐시 라인(64바이트) 1개 분량에 딱 맞습니다.</p><a href="/ko/q/dram/dram-038/">DRAM의 버스트 전송에 대한 설명으로 올바른 것은?</a></li><li><p>코히런시 제어는 각 캐시 라인에 「수정됨·공유·무효」 등의 상태를 두고(MESI 프로토콜 등), 쓰기 시 다른 코어의 사본을 무효화하여 일관성을 유지합니다.</p><a href="/ko/q/cpu/cpu-025/">멀티코어 CPU에서 각 코어의 캐시에 같은 주소의 데이터가 있을 때, 그 내용의 일관성을 유지하는 구조는?</a></li><li><p>안쪽을 j로 하면 연속된 주소를 차례로 읽으므로, 한 번의 미스로 읽어 온 64바이트 캐시 라인의 나머지 부분도 곧바로 사용됩니다.</p><a href="/ko/q/memory-hierarchy/memory-hierarchy-002/">C 언어의 2차원 배열 a[i][j]를 위와 같이 안쪽 루프를 j로 하여 순회하면, 안쪽을 i로 하는 것보…</a></li><li><p>코히런시는 캐시 라인(일반적으로 64바이트) 단위로 관리됩니다.</p><a href="/ko/q/multicore-sync/multicore-sync-010/">멀티스레드 프로그램에서 일어나는 거짓 공유(false sharing)에 대한 설명으로 올바른 것은 무엇입니…</a></li><li><p>각 카운터를 64바이트마다 배치되도록 패딩을 넣거나 구조체를 캐시 라인 크기에 정렬하면 스레드마다 다른 라인을 사용할 수 있습니다.</p><a href="/ko/q/multicore-sync/multicore-sync-011/">스레드별 카운터를 &#39;long cnt[8];&#39;처럼 늘어놓은 배열에서 거짓 공유가 일어나고 있다. 대책으로 가…</a></li></ul>

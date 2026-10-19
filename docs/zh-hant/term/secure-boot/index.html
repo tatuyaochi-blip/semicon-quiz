@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"安全開機（Secure boot）","item":"https://semiconroom.com/zh-hant/term/secure-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"安全開機（Secure boot）","description":"在開機的每個階段確認下一個要執行之軟體的數位簽章，只啟動正確者的機制。藉此串連信任鏈。","url":"https://semiconroom.com/zh-hant/term/secure-boot/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"安全開機（Secure boot）","item":"https://semiconroom.com/zh-hant/term/secure-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"安全開機（Secure boot）","description":"在開機的每個階段確認下一個要執行之軟體的數位簽章，只啟動正確者的機制。藉此串連信任鏈。","url":"https://semiconroom.com/zh-hant/term/secure-boot/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"安全開機的信任根是什麼？","acceptedAnswer":{"@type":"Answer","text":"晶片光罩 ROM 中不可變更的程式碼，以及用來驗證第一個開機載入程式的公開金鑰（或存放在 eFuse 中的其雜湊值）。信任鏈中之後的一切，都仰賴它無法被變更。"}},{"@type":"Question","name":"安全開機和量測開機有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"安全開機會拒絕執行簽章驗證失敗的軟體。量測開機則讓所有程式都執行，但將雜湊值記錄在 TPM 中，讓開機狀態之後可以被檢查或證明。"}},{"@type":"Question","name":"為什麼安全開機需要防回滾保護？","acceptedAnswer":{"@type":"Answer","text":"舊版韌體同樣帶有有效的簽章，因此若沒有最低版本計數器，攻擊者就能重新安裝有已知漏洞的版本。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hw-security/">硬體安全</a></p>
 </article>
-
+<section class="term-about">
+  <h2>信任鏈如何運作</h2>
+  <p>通電時，晶片 ROM 中的開機程式碼會載入第一個開機載入程式，並檢查其數位簽章：先計算映像檔的雜湊值，再驗證廠商對該雜湊值所做的簽章。只有在檢查通過時才會執行該開機載入程式，而它又會在交出控制權之前驗證下一個階段或作業系統核心。每個環節都為下一個環節擔保，形成信任鏈。只要任何一個簽章驗證失敗，開機就會停止，因此改寫開機載入程式或作業系統開機程式碼的惡意軟體無法執行。智慧型手機、PC 與許多嵌入式裝置都採用這種機制。</p>
+</section>
+<section class="term-about">
+  <h2>晶片中的信任根</h2>
+  <p>信任鏈的強度取決於第一道檢查，因此<a class="term-link" href="/zh-hant/term/root-of-trust/">信任根</a>必須是不可變更的：在製造時就固定的<a class="term-link" href="/zh-hant/term/photomask/">光罩</a> ROM 開機程式碼，加上用來驗證簽章的公開金鑰，為了節省空間，公開金鑰常以雜湊值的形式存放在 <a class="term-link" href="/zh-hant/term/efuse/">eFuse</a>（一次性可程式化熔絲）中。公開金鑰密碼學在這裡很重要。若採用對稱式方案，用來驗證的金鑰同樣可以用來簽章，因此只要從一台裝置中取出金鑰，就能為所有裝置製作假韌體。採用公開金鑰簽章時，裝置只持有驗證金鑰，用來簽章的私密金鑰則從不離開廠商的安全設施。</p>
+</section>
+<section class="term-about">
+  <h2>防回滾與鎖定除錯埠</h2>
+  <p>僅靠簽章檢查仍會接受舊版韌體，因為廠商曾經正當地為其簽章。漏洞修補之後，攻擊者可能會重新安裝有漏洞的版本，因此映像檔會帶有版本號碼，晶片則在 <a class="term-link" href="/zh-hant/term/efuse/">eFuse</a> 等只能寫入一次的儲存區中記錄最低允許版本，並在每次<a class="term-link" href="/zh-hant/term/refresh/">更新</a>時調高。<a class="term-link" href="/zh-hant/term/jtag/">JTAG</a> 與 SWD 等除錯埠可以讀寫記憶體並暫停處理器，等於完全繞過安全開機，因此出貨產品會以熔絲停用除錯埠，或只在通過密碼學認證後才開放。</p>
+</section>
+<section class="term-about">
+  <h2>安全開機與量測開機</h2>
+  <p>安全開機負責強制執行：未經驗證的程式碼不會啟動。<a class="term-link" href="/zh-hant/term/measured-boot/">量測開機</a>負責記錄：每個階段都計算下一個階段的雜湊值，並將結果延伸（extend）到 <a class="term-link" href="/zh-hant/term/trusted-platform-module/">TPM</a>（信賴平台模組）的平台組態暫存器中，新值只能由舊值與新雜湊值結合而成。無論如何開機都會繼續，但這份記錄讓軟體或遠端伺服器之後能確切驗證執行了什麼。另外要注意，簽章證明的是真實性而非機密性；要讓韌體保密需要加密。安全開機只保護啟動路徑，因此它是縱深防禦中的一層，與記憶體保護、<a class="term-link" href="/zh-hant/term/trusted-execution-environment/">可信執行環境</a>及防竄改措施並列。</p>
+</section>
 <section>
   <h2>練習安全開機（Secure boot）的題目</h2>
   <article class="q-mini" data-qid="hw-security-019" data-cat="hw-security" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 在啟動的每個階段，驗證接下來要執行之軟體的數位簽章，只啟動正確的軟體</p><p class="explanation">在安全啟動中，無法改寫的ROM程式碼驗證第一個開機載入程式（<a class="term-link" href="/zh-hant/term/bootloader/">bootloader</a>）的簽章，該載入程式再驗證下一階段或作業系統核心的簽章，如此串接起信任鏈。只要任何一個階段的簽章不符就停止啟動，因此即使惡意軟體竄改了開機載入程式或作業系統的啟動部分，也無法讓它們運作。廣泛用於智慧型手機、電腦與嵌入式設備。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>安全開機的信任根是什麼？</h3>
+  <p>晶片光罩 ROM 中不可變更的程式碼，以及用來驗證第一個開機載入程式的公開金鑰（或存放在 eFuse 中的其雜湊值）。信任鏈中之後的一切，都仰賴它無法被變更。</p>
+  <h3>安全開機和量測開機有什麼差別？</h3>
+  <p>安全開機會拒絕執行簽章驗證失敗的軟體。量測開機則讓所有程式都執行，但將雜湊值記錄在 TPM 中，讓開機狀態之後可以被檢查或證明。</p>
+  <h3>為什麼安全開機需要防回滾保護？</h3>
+  <p>舊版韌體同樣帶有有效的簽章，因此若沒有最低版本計數器，攻擊者就能重新安裝有已知漏洞的版本。</p>
+</section>
 
 <section>
   <h2>出現「安全開機（Secure boot）」的題目（1題）</h2>

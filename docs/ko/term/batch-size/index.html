@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"배치 크기(Batch Size)","item":"https://semiconroom.com/ko/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"배치 크기(Batch Size)","description":"한꺼번에 처리하는 입력의 수. 크게 하면 가중치를 재사용할 수 있어 효율이 오르지만 응답 지연과 메모리가 늘어난다.","url":"https://semiconroom.com/ko/term/batch-size/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"배치 크기(Batch Size)","item":"https://semiconroom.com/ko/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"배치 크기(Batch Size)","description":"한꺼번에 처리하는 입력의 수. 크게 하면 가중치를 재사용할 수 있어 효율이 오르지만 응답 지연과 메모리가 늘어난다.","url":"https://semiconroom.com/ko/term/batch-size/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"배치 크기를 키우면 추론이 빨라지나요?","acceptedAnswer":{"@type":"Answer","text":"가중치를 한 번 읽어 더 많은 입력을 처리하므로 전체 처리량은 늘지만, 개별 요청은 보통 더 오래 기다리게 되어 지연은 나빠집니다."}},{"@type":"Question","name":"배치 크기를 늘리면 GPU 메모리 사용량이 늘어나는 이유","acceptedAnswer":{"@type":"Answer","text":"활성값과 LLM의 KV 캐시는 입력마다 저장되므로, 가중치는 그대로인 반면 이들은 배치 크기에 선형으로 비례하여 늘어납니다."}},{"@type":"Question","name":"배치 크기와 에폭 차이","acceptedAnswer":{"@type":"Answer","text":"배치 크기는 한 스텝, 즉 한 번의 가중치 갱신에서 처리하는 샘플 수이고, 에폭은 학습 데이터셋 전체를 한 번 도는 것으로 데이터셋 크기를 배치 크기로 나눈 수만큼의 스텝이 걸립니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>분야: <a href="/ko/c/ai-stack/">AI 하드웨어·소프트웨어 스택</a></p>
 </article>
-
+<section class="term-about">
+  <h2>배칭이 효율을 높이는 이유</h2>
+  <p>신경망의 층에서 가중치는 모든 입력에 대해 동일합니다. 배치 크기 1에서 완전 연결층은 행렬-벡터 곱이 되어 각 가중치를 곱셈-덧셈 한 번을 위해 메모리에서 가져오므로, <a class="term-link" href="/ko/term/arithmetic-intensity/">연산 강도</a>가 FP16에서 약 1 FLOP/byte가 되고 연산 유닛은 대부분 메모리를 기다립니다. 배치 크기 B에서는 층이 행렬-행렬 곱이 되어, 가중치 트래픽은 그대로인데 연산량은 B배가 되므로 연산 강도가 대략 B배로 올라가고, 워크로드가 메모리 바운드에서 연산 바운드 쪽으로 이동합니다. 서버는 많은 사용자의 요청을 묶어 이를 활용합니다.</p>
+</section>
+<section class="term-about">
+  <h2>지연과 메모리의 비용</h2>
+  <p>배치를 키우면 전체 <a class="term-link" href="/ko/term/throughput/">처리량</a>은 늘지만 개별 속도는 빨라지지 않습니다. 요청이 다른 요청이 도착하기를 기다릴 수 있고 배치마다 계산 시간도 길어지므로, 요청당 지연이 늘어납니다. 대화형 서비스는 응답 시간 목표가 허락하는 만큼만 배치를 키웁니다. 메모리도 늘어납니다. LLM(대규모 언어 모델) <a class="term-link" href="/ko/term/ai-inference/">추론</a>에서는 이전 토큰의 <a class="term-link" href="/ko/term/attention-mechanism/">어텐션</a> 키와 값을 재계산하지 않도록 저장하는 <a class="term-link" href="/ko/term/kv-cache/">KV 캐시</a>가 층 수, 키와 값의 차원, 토큰 수, 배치 크기, 요소당 바이트 수에 비례합니다. 긴 컨텍스트나 많은 요청에서는 수십 GB에 이르러 가중치보다 커질 수 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>LLM 디코딩의 대표적인 수치</h2>
+  <p>배치 크기 1로 디코딩할 때는 토큰 하나를 생성할 때마다 모든 가중치를 읽어야 합니다. 따라서 FP16 가중치가 약 14 GB인 모델을 대역폭 2 TB/s인 <a class="term-link" href="/ko/term/gpu/">GPU</a>에서 돌리면 토큰당 최소 14 GB ÷ 2 TB/s = 7 ms가 필요하며, 최대 초당 약 140토큰입니다. 가중치를 4비트로 양자화하여 약 3.5 GB로 만들면 이 한계가 약 1.75 ms로 낮아집니다. 배치를 키우면 가중치를 한 번 읽을 때 여러 토큰을 생성하므로, 연산이나 <a class="term-link" href="/ko/term/kv-cache/">KV 캐시</a> 메모리가 한계가 될 때까지 전체 <a class="term-link" href="/ko/term/throughput/">처리량</a>이 배로 늘어납니다. KV 캐시 부담은 저정밀도 캐시, 헤드 간 키와 값의 공유, 블록 기반 메모리 관리로 완화합니다.</p>
+</section>
+<section class="term-about">
+  <h2>학습에서의 배치 크기</h2>
+  <p>학습에서 배치(미니배치)는 한 번의 가중치 갱신을 위해 기울기를 평균하는 샘플 집합입니다. 배치가 클수록 하드웨어를 효율적으로 쓰고, 데이터 전체를 한 번 도는 것(에폭)당 필요한 갱신 스텝 수가 줄지만, <a class="term-link" href="/ko/term/backpropagation/">역전파</a>를 위한 활성값 메모리가 배치 크기와 모델 깊이에 따라 늘어납니다. <a class="term-link" href="/ko/term/gradient-checkpointing/">그래디언트 체크포인팅</a>은 일부 활성값만 저장하고 나머지는 재계산하여, 대략 순전파 1회분의 추가 비용으로 이를 상쇄합니다. 배치 크기는 기울기 잡음을 바꾸므로, 배치 크기를 크게 바꾸면 보통 학습률을 다시 조정해야 합니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 배치 크기(Batch Size) 관련 문제</h2>
   <article class="q-mini" data-qid="ai-stack-009" data-cat="ai-stack" data-answer="2" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 C예요.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 한 번 읽은 가중치를 여러 입력의 계산에 사용할 수 있어 연산 강도가 올라가고 연산기를 효과적으로 쓸 수 있기 때문</p><p class="explanation"><a class="term-link" href="/ko/term/batch-size/">배치 크기</a>가 B이면 가중치 행렬과 B개 벡터의 곱은 가중치 행렬과 폭 B인 행렬의 곱이 됩니다. 가중치 읽기는 같은데 연산은 B배가 되므로 <a class="term-link" href="/ko/term/arithmetic-intensity/">연산 강도</a>도 대략 B배가 되어, 메모리 율속에서 연산 율속에 가까워집니다. 서버에서의 <a class="term-link" href="/ko/term/ai-inference/">추론</a>은 많은 이용자의 요청을 모아 처리함으로써 <a class="term-link" href="/ko/term/gpu/">GPU</a>를 효율적으로 사용합니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>배치 크기를 키우면 추론이 빨라지나요?</h3>
+  <p>가중치를 한 번 읽어 더 많은 입력을 처리하므로 전체 처리량은 늘지만, 개별 요청은 보통 더 오래 기다리게 되어 지연은 나빠집니다.</p>
+  <h3>배치 크기를 늘리면 GPU 메모리 사용량이 늘어나는 이유</h3>
+  <p>활성값과 LLM의 KV 캐시는 입력마다 저장되므로, 가중치는 그대로인 반면 이들은 배치 크기에 선형으로 비례하여 늘어납니다.</p>
+  <h3>배치 크기와 에폭 차이</h3>
+  <p>배치 크기는 한 스텝, 즉 한 번의 가중치 갱신에서 처리하는 샘플 수이고, 에폭은 학습 데이터셋 전체를 한 번 도는 것으로 데이터셋 크기를 배치 크기로 나눈 수만큼의 스텝이 걸립니다.</p>
+</section>
 <section>
   <h2>해설 속 배치 크기(Batch Size)</h2>
   <ul class="term-quotes"><li><p>배치 크기가 B이면 가중치 행렬과 B개 벡터의 곱은 가중치 행렬과 폭 B인 행렬의 곱이 됩니다.</p><a href="/ko/q/ai-stack/ai-stack-010/">추론에서 배치 크기(한꺼번에 처리하는 입력의 수)를 키우면 전체 처리 효율이 올라가기 쉬운 이유는 무엇인가?</a></li><li><p>계산은 크게 줄지만, 저장하는 Key와 Value의 양은 문장 길이와 배치 크기에 비례하여 늘어납니다.</p><a href="/ko/q/ai-stack/ai-stack-013/">대규모 언어 모델의 추론에서 사용되는 KV 캐시의 역할로 올바른 것은 무엇인가?</a></li><li><p>KV 캐시의 크기는 층 수 × Key와 Value의 차원 × 토큰 수 × 배치 크기 × 요소 하나당 바이트 수로 결정됩니다.</p><a href="/ko/q/ai-stack/ai-stack-014/">대규모 언어 모델의 추론에서 긴 문장이나 큰 배치를 다룰 때 문제가 되기 쉬운 것은 무엇인가?</a></li><li><p>역전파에서는 각 층의 순전파 중간 결과가 필요하지만, 전부 저장하면 층 수와 배치 크기에 비례하여 메모리가 늘어납니다.</p><a href="/ko/q/ai-stack/ai-stack-037/">학습에서 사용되는 기울기 체크포인팅(활성화 재계산)의 설명으로 올바른 것은 무엇인가?</a></li></ul>

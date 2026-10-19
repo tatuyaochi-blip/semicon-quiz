@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Retouradres","item":"https://semiconroom.com/nl/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Retouradres","description":"Adres waarnaar wordt teruggekeerd wanneer een functie klaar is. In RISC-V zet de jal-instructie het adres van de volgende instructie in ra (x1); in x86 zet de call-instructie het op de stack.","url":"https://semiconroom.com/nl/term/return-address/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Retouradres","item":"https://semiconroom.com/nl/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Retouradres","description":"Adres waarnaar wordt teruggekeerd wanneer een functie klaar is. In RISC-V zet de jal-instructie het adres van de volgende instructie in ra (x1); in x86 zet de call-instructie het op de stack.","url":"https://semiconroom.com/nl/term/return-address/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waar wordt het retouradres opgeslagen in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"In register ra (x1), dat bij de call door jal of jalr wordt geschreven. Een non-leaf-functie kopieert het naar haar stackframe voordat ze zelf calls doet en herstelt het vóór ret."}},{"@type":"Question","name":"Wat is het verschil tussen call/ret in x86 en jal/ret in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"In x86 zet call het retouradres altijd op de stack en haalt ret het eraf, terwijl jal in RISC-V het in een register plaatst en alleen het geheugen gebruikt als de functie ervoor kiest het op te slaan."}},{"@type":"Question","name":"Waarom is het overschrijven van het retouradres gevaarlijk?","acceptedAnswer":{"@type":"Answer","text":"Wanneer de functie terugkeert, springt de CPU naar het adres dat daar staat, dus een aanvaller die het via een buffer overflow overschrijft, kan de controle over het programma overnemen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Vakgebied: <a href="/nl/c/isa-assembly/">Instructieset en assembly</a></p>
 </article>
+<section class="term-about">
+  <h2>Hoe een call het opslaat</h2>
+  <p>Bij een call moet worden vastgelegd waar de uitvoering moet worden hervat, namelijk het adres van de instructie <a class="term-link" href="/nl/term/numerical-aperture/">na</a> de call. In RISC-V schrijft jal (jump and link) PC + 4 naar een register, volgens conventie ra (x1), en springt; de terugkeer gebeurt met ret, een <a class="term-link" href="/nl/term/pseudo-instruction/">pseudo-instructie</a> voor jalr x0, 0(ra). Calls <a class="term-link" href="/nl/term/interconnect-via/">via</a> functiepointers, virtuele functies en stubs van gedeelde bibliotheken gebruiken jalr met een register als doel. In x86 zet call het retouradres op de stack en haalt ret het terug in de instructiepointer, dus de stack bevat het altijd.</p>
+</section>
+<section class="term-about">
+  <h2>Leaf- en non-leaf-functies</h2>
+  <p>Omdat elke jal ra overschrijft, moet een RISC-V-functie die andere functies aanroept eerst haar eigen retouradres opslaan. Een typische proloog is addi sp, sp, -16 om een frame te reserveren op de naar beneden groeiende stack, gevolgd door sw ra, 12(sp) en sw s0, 8(sp) om ra en een <a class="term-link" href="/nl/term/callee-saved-register/">callee-saved register</a> op te slaan. De epiloog laadt ze opnieuw, herstelt sp en voert ret uit. Een leaf-functie, die niets aanroept, kan ra in het register laten staan en heeft mogelijk helemaal geen <a class="term-link" href="/nl/term/stack-frame/">stackframe</a> nodig, wat kleine functies goedkoop maakt.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom aanvallers het als doelwit kiezen</h2>
+  <p>Een retouradres dat op de stack staat, ligt naast lokale buffers, dus een buffer overflow kan het overschrijven en de uitvoering omleiden wanneer de functie terugkeert. Klassieke aanvallen schreven machinecode op de stack en sprongen daarnaartoe; W^X-beleid met de no-execute-bit in de <a class="term-link" href="/nl/term/page-table/">paginatabel</a> blokkeert dat. Aanvallers stapten vervolgens over op return-oriented programming, waarbij bestaande codefragmenten aan elkaar worden geregen. Verdere verdedigingen zijn stack canaries die vóór de terugkeer worden gecontroleerd, address-space layout randomization en hardwarematige shadow stacks die een beschermde tweede kopie van elk retouradres bijhouden.</p>
+</section>
+<section class="term-about">
+  <h2>Retouradressen in hardware</h2>
+  <p>Out-of-order-CPU&#39;s voorspellen waar een terugkeer naartoe gaat, lang voordat ra of de stack wordt gelezen. Een return address stack (RAS) in de branch predictor pusht bij elke call het fall-through-adres en popt het bij elke return, wat zeer nauwkeurige voorspellingen geeft voor goed geneste code. Excepties en interrupts werken anders: de CPU slaat de onderbroken PC op in een speciaal register, zoals mepc of sepc in RISC-V, samen met de vorige privilegemodus, en mret of sret herstelt die allemaal in één keer, in plaats van een gewone ret.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waar wordt het retouradres opgeslagen in RISC-V?</h3>
+  <p>In register ra (x1), dat bij de call door jal of jalr wordt geschreven. Een non-leaf-functie kopieert het naar haar stackframe voordat ze zelf calls doet en herstelt het vóór ret.</p>
+  <h3>Wat is het verschil tussen call/ret in x86 en jal/ret in RISC-V?</h3>
+  <p>In x86 zet call het retouradres altijd op de stack en haalt ret het eraf, terwijl jal in RISC-V het in een register plaatst en alleen het geheugen gebruikt als de functie ervoor kiest het op te slaan.</p>
+  <h3>Waarom is het overschrijven van het retouradres gevaarlijk?</h3>
+  <p>Wanneer de functie terugkeert, springt de CPU naar het adres dat daar staat, dus een aanvaller die het via een buffer overflow overschrijft, kan de controle over het programma overnemen.</p>
+</section>
 
 
 

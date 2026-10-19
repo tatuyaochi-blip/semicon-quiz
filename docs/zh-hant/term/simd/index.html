@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"SIMD","item":"https://semiconroom.com/zh-hant/term/simd/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMD","description":"為 Single Instruction, Multiple Data 的縮寫。以 1 個指令對多筆資料同時進行相同運算的方式。可加速影像處理與 AI 的計算。","url":"https://semiconroom.com/zh-hant/term/simd/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"SIMD","item":"https://semiconroom.com/zh-hant/term/simd/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMD","description":"為 Single Instruction, Multiple Data 的縮寫。以 1 個指令對多筆資料同時進行相同運算的方式。可加速影像處理與 AI 的計算。","url":"https://semiconroom.com/zh-hant/term/simd/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"SIMD 是什麼的縮寫？有什麼功能？","acceptedAnswer":{"@type":"Answer","text":"Single instruction, multiple data（單指令多資料）：一個指令對裝在寬暫存器中的多個資料元素進行運算，例如 128 位元暫存器中的四個 32 位元數值。"}},{"@type":"Question","name":"為什麼我的迴圈沒有被自動向量化？","acceptedAnswer":{"@type":"Answer","text":"常見原因包括某次迭代需要前一次結果的跨迭代相依、非連續的記憶體存取，或編譯器無法排除的指標別名可能性。"}},{"@type":"Question","name":"SIMD 和 SIMT 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"SIMD 是在 CPU 上使用明確的固定寬度向量指令。GPU 使用的 SIMT 則以執行緒群組同步執行每個執行緒的純量程式碼，並由硬體處理分支分歧。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/cpu/">CPU與架構</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SIMD 如何運作</h2>
+  <p>SIMD（單指令多資料）單元將寬暫存器視為一組彼此獨立的通道（lane）。128 位元暫存器可存放四個 32 位元值，512 位元暫存器可存放十六個；一個加法指令就能平行地將所有通道相加。x86 的 SSE 與 AVX、Arm 的 NEON 與 SVE 等指令集擴充，提供整數與浮點的通道運算，以及載入、重排與比較等指令。在 Flynn 分類法中，SIMD 與 SISD（一般的循序處理器）及 MIMD（執行獨立指令流的多個核心）並列。影像濾波器、視訊編<a class="term-link" href="/zh-hant/term/decoder/">解碼器</a>與矩陣運算通常可加速數倍以上。</p>
+</section>
+<section class="term-about">
+  <h2>什麼樣的迴圈可以向量化</h2>
+  <p>編譯器會自動<a class="term-link" href="/zh-hant/term/vectorization/">向量化</a>對陣列每個元素執行相同運算的迴圈。關鍵條件是沒有跨迭代相依：在 a[i] = a[i-1] + b[i] 中，每個元素都需要前一個結果，因此各通道無法同時執行。資料應該是連續的，而可能的指標重疊（別名）會使編譯器放棄向量化。編譯時不知道迭代次數並不構成障礙；向量迴圈處理完整的區塊，剩餘部分則由短的餘數迴圈處理。多媒體程式碼也使用<a class="term-link" href="/zh-hant/term/saturating-arithmetic/">飽和運算</a>，例如 8 位元有號數 127 + 1 會被限制在 127，而不會繞回 −128。</p>
+</section>
+<section class="term-about">
+  <h2>資料配置：AoS 與 SoA</h2>
+  <p>結構陣列（AoS）將每筆記錄的欄位（例如 x、y、z 與質量）存放在一起。只讀取 x 的迴圈會浪費每個<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>的大部分內容，還需要 gather 或重排操作才能填滿向量通道。陣列結構（SoA）則將所有 x 值連續存放，使每個擷取的快取行都被完全利用，記憶體流量可大幅下降，一次向量載入就能直接填滿各通道。同樣的配置也能讓相鄰的 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 執行緒讀取相鄰的位址，使其記憶體存取得以合併。</p>
+</section>
+<section class="term-about">
+  <h2>SIMD 與 SIMT</h2>
+  <p>使用 CPU 的 SIMD 時，由程式設計師或編譯器明確使用固定寬度的向量指令，因此撰寫程式碼時要考慮向量寬度。<a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 的 <a class="term-link" href="/zh-hant/term/single-instruction-multiple-threads/">SIMT（單指令多執行緒）</a>則讓程式設計師為單一執行緒撰寫一般的程式碼；硬體會將執行緒分組（通常為 32 個），在共用的指令發派下同步執行。當同一組內的執行緒走向不同分支時，硬體會依序執行每條路徑，並遮蔽未啟用的執行緒，因此程式仍能正確運作，但效率會下降。兩者底層依賴的是相同的原理：將一個指令的成本分攤到大量資料元素上。</p>
+</section>
 <section>
   <h2>練習SIMD的題目</h2>
   <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. SIMT可將各執行緒寫成獨立的程式，分支也由硬體處理，而SIMD則需由程式設計師或編譯器明確使用寬度固定的向量指令</p><p class="explanation">CPU的<a class="term-link" href="/zh-hant/term/simd/">SIMD</a>是對集結了4個或8個資料的向量暫存器施加一個指令，因此撰寫程式時必須留意向量的寬度。<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>的<a class="term-link" href="/zh-hant/term/single-instruction-multiple-threads/">SIMT</a>則是程式設計師照一般方式撰寫一個執行緒的處理，再由硬體每32個一組，以相同指令運作。各執行緒也可以分支，硬體會依序執行分歧出的路徑，但此時效率會下降。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>SIMD 是什麼的縮寫？有什麼功能？</h3>
+  <p>Single instruction, multiple data（單指令多資料）：一個指令對裝在寬暫存器中的多個資料元素進行運算，例如 128 位元暫存器中的四個 32 位元數值。</p>
+  <h3>為什麼我的迴圈沒有被自動向量化？</h3>
+  <p>常見原因包括某次迭代需要前一次結果的跨迭代相依、非連續的記憶體存取，或編譯器無法排除的指標別名可能性。</p>
+  <h3>SIMD 和 SIMT 有什麼差別？</h3>
+  <p>SIMD 是在 CPU 上使用明確的固定寬度向量指令。GPU 使用的 SIMT 則以執行緒群組同步執行每個執行緒的純量程式碼，並由硬體處理分支分歧。</p>
+</section>
 <section>
   <h2>解析中的「SIMD」</h2>
   <ul class="term-quotes"><li><p>向量化是以一條SIMD指令同時進行例如4個元素的計算。</p><a href="/zh-hant/q/compiler/compiler-018/">上方迴圈難以使用SIMD指令向量化，其主要原因為何？</a></li><li><p>CPU的SIMD是對集結了4個或8個資料的向量暫存器施加一個指令，因此撰寫程式時必須留意向量的寬度。</p><a href="/zh-hant/q/gpu-programming/gpu-programming-010/">關於GPU的SIMT（單一指令、多執行緒）方式與CPU的SIMD指令之差異，下列何者正確？</a></li><li><p>SIMD 是以一道指令對多筆資料平行進行相同運算的方式，例如 512 位元的暫存器可一次計算 16 個 32 位元的數值。</p><a href="/zh-hant/q/cpu/cpu-019/">以一道指令同時對多筆資料進行相同運算的方式是下列何者？</a></li><li><p>DSP或SIMD的指令中都有提供。</p><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-035/">關於訊號處理中使用的飽和運算，下列說明何者正確？</a></li><li><p>自動向量化是一種最佳化，會找出對陣列的每個元素進行相同計算的迴圈，並替換為一次處理多個元素的SIMD指令。</p><a href="/zh-hant/q/compiler/compiler-045/">編譯器的自動向量化所使用的指令種類，下列何者正確？</a></li></ul>

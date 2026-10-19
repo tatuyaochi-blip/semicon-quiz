@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"反向傳播（Backpropagation）","item":"https://semiconroom.com/zh-hant/term/backpropagation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"反向傳播（Backpropagation）","description":"在神經網路的訓練中，將輸出與正確答案的誤差從輸出側往輸入側回溯傳遞，求出各權重梯度的運算。","url":"https://semiconroom.com/zh-hant/term/backpropagation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"反向傳播（Backpropagation）","item":"https://semiconroom.com/zh-hant/term/backpropagation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"反向傳播（Backpropagation）","description":"在神經網路的訓練中，將輸出與正確答案的誤差從輸出側往輸入側回溯傳遞，求出各權重梯度的運算。","url":"https://semiconroom.com/zh-hant/term/backpropagation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"反向傳播和梯度下降有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"反向傳播計算損失相對於每個權重的梯度。梯度下降或 Adam 等其他最佳化器則利用這些梯度來更新權重。"}},{"@type":"Question","name":"為什麼訓練比推論需要更多記憶體？","acceptedAnswer":{"@type":"Answer","text":"訓練必須為反向傳遞保留前向激活值，還要保存每個權重的梯度與最佳化器狀態；推論則只需要權重與暫時性的激活值。"}},{"@type":"Question","name":"反向傳遞的成本是前向傳遞的幾倍？","acceptedAnswer":{"@type":"Answer","text":"大約兩倍，因此一個訓練步驟的成本約等於三次前向傳遞，這就是每個 token 6N 次運算這條經驗法則的由來。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>反向傳播如何運作</h2>
+  <p>訓練從前向傳遞開始，計算輸出以及衡量其與目標之間誤差的損失。反向傳播接著反向套用連鎖律：從損失開始，每一層接收相對於其輸出的梯度，並計算兩樣東西：相對於其權重的梯度，以及相對於其輸入的梯度，後者再傳給前一層。對全連接層而言，權重梯度是將傳入的梯度與前向傳遞時保存的輸入激活值結合而得。接著由最佳化器將每個權重朝與其梯度相反的方向微調。</p>
+</section>
+<section class="term-about">
+  <h2>計算圖與自動微分</h2>
+  <p>框架將模型表示為<a class="term-link" href="/zh-hant/term/computational-graph/">計算圖</a>，以矩陣乘積、加法與激活函數等運算為節點，以張量為邊。由於每個節點都知道自己的局部導數，框架可以反向走訪計算圖，自動計算所有梯度，這種技術稱為反向模式自動微分。計算圖也能顯示哪些運算彼此獨立。TensorRT 或 <a class="term-link" href="/zh-hant/term/onnx/">ONNX</a> Runtime 等<a class="term-link" href="/zh-hant/term/inference-runtime/">推論執行環境</a>會捨棄反向傳播所需的紀錄資料，再融合運算、降低精度並選擇針對特定硬體的核心，這就是它們比直接用訓練框架做推論更快的原因。</p>
+</section>
+<section class="term-about">
+  <h2>運算與記憶體成本</h2>
+  <p>反向傳遞的成本約為前向傳遞的兩倍，因為每一層都要同時計算其輸入與權重的梯度。對 N 個參數而言，前向傳遞每個 token 約需 2N 次運算，因此訓練每個 token 約需 6N 次，D 個 token 則約需 6ND 次；以 1 兆個 token 訓練 70 億參數的模型，約需 4.2 × 10^22 次運算。記憶體的增加更為顯著：訓練時要儲存中間激活值、數量與權重相同的梯度，以及最佳化器狀態，例如 Adam 的兩個移動平均。<a class="term-link" href="/zh-hant/term/gradient-checkpointing/">梯度檢查點</a>只保存部分激活值，其餘重新計算，代價約為多一次前向傳遞。</p>
+</section>
+<section class="term-about">
+  <h2>數值精度與損失縮放</h2>
+  <p>梯度往往非常小。FP16（1 個符號位元、5 個指數位元、10 個<a class="term-link" href="/zh-hant/term/significand/">有效數</a>位元）可表示的正值範圍包含次正規數在內，最小只有約 6 × 10^-8，最大為 65504，因此許多梯度會下溢為零，使學習停滯。損失縮放在反向傳播之前將損失乘上一個係數（例如 1024），把梯度提升到可表示的範圍內，並在<a class="term-link" href="/zh-hant/term/refresh/">更新</a>權重之前再除回來。<a class="term-link" href="/zh-hant/term/mixed-precision/">混合精度</a>訓練通常也會保留一份較高精度的權重主副本。BF16 與 FP32 一樣有 8 個指數位元，範圍寬得多，很少需要損失縮放。</p>
+</section>
 <section>
   <h2>練習反向傳播（Backpropagation）的題目</h2>
   <article class="q-mini" data-qid="computer-arithmetic-027" data-cat="computer-arithmetic" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 訓練是反覆進行順向傳播、反向傳播與權重更新來決定權重，推論則以固定的權重只做順向傳播來得出答案</p><p class="explanation">訓練時，會用大量資料反覆進行以下步驟：依序計算輸入以求得輸出（順向傳播）、從輸出端往輸入端回溯正確答案的誤差以求出各權重的梯度（<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>），再依梯度一點一點地修正權重。推論則是使用訓練所決定的權重，只做順向傳播。反向傳播所需的計算量約為順向傳播的2倍，而且還要保存中間結果，因此訓練是比推論沉重許多的處理。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>反向傳播和梯度下降有什麼差別？</h3>
+  <p>反向傳播計算損失相對於每個權重的梯度。梯度下降或 Adam 等其他最佳化器則利用這些梯度來更新權重。</p>
+  <h3>為什麼訓練比推論需要更多記憶體？</h3>
+  <p>訓練必須為反向傳遞保留前向激活值，還要保存每個權重的梯度與最佳化器狀態；推論則只需要權重與暫時性的激活值。</p>
+  <h3>反向傳遞的成本是前向傳遞的幾倍？</h3>
+  <p>大約兩倍，因此一個訓練步驟的成本約等於三次前向傳遞，這就是每個 token 6N 次運算這條經驗法則的由來。</p>
+</section>
 <section>
   <h2>解析中的「反向傳播（Backpropagation）」</h2>
   <ul class="term-quotes"><li><p>損失縮放是先將損失乘以例如1024倍之後再進行反向傳播，把梯度提升到可表示的範圍內，並在更新權重之前還原。</p><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-027/">以FP16（半精度：符號1・指數部分5・尾數10位元）訓練類神經網路時容易發生問題，而以將損失值放大數倍後再計算的方法…</a></li><li><p>訓練時，會用大量資料反覆進行以下步驟：依序計算輸入以求得輸出（順向傳播）、從輸出端往輸入端回溯正確答案的誤差以求出各權重的梯度（反向傳播），再依梯度一點一點地修正權重。</p><a href="/zh-hant/q/ai-stack/ai-stack-001/">關於神經網路的「訓練」與「推論」之差異，下列何者正確？</a></li><li><p>然而訓練時，為了在反向傳播中計算梯度，必須在各層保存順向傳播的中間結果，也需要與權重同樣數量的梯度，以及Adam等優化器為每個權重所持有的值（兩個移動平均等）。</p><a href="/zh-hant/q/ai-stack/ai-stack-002/">下列何者「不是」訓練所需記憶體遠大於同一模型推論的原因？</a></li><li><p>框架逆向走訪這張圖，自動計算反向傳播的梯度，編譯器則檢視整張圖來進行融合與重新排序的最佳化。</p><a href="/zh-hant/q/ai-stack/ai-stack-021/">AI框架或編譯器中使用的「計算圖」，下列說明何者正確？</a></li><li><p>訓練用框架重視寫法的靈活性以及為反向傳播所做的記錄，因此只用於推論時會有浪費。</p><a href="/zh-hant/q/ai-stack/ai-stack-023/">TensorRT或ONNX Runtime這類推論執行環境，比直接用訓練用框架進行推論更快，其主要原因為下列何者？</a></li></ul>

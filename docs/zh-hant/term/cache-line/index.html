@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"快取行","item":"https://semiconroom.com/zh-hant/term/cache-line/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"快取行","description":"快取與下層之間讀寫資料的單位。也稱為快取區塊。多數CPU為64位元組，位址的低位元表示行內的位置(位移)。","url":"https://semiconroom.com/zh-hant/term/cache-line/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"快取行","item":"https://semiconroom.com/zh-hant/term/cache-line/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"快取行","description":"快取與下層之間讀寫資料的單位。也稱為快取區塊。多數CPU為64位元組，位址的低位元表示行內的位置(位移)。","url":"https://semiconroom.com/zh-hant/term/cache-line/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"快取行有多大？","acceptedAnswer":{"@type":"Answer","text":"目前大多數 CPU 為 64 位元組，但也有處理器使用 32 或 128 位元組；這是硬體特性，軟體可以查詢。"}},{"@type":"Question","name":"快取行和分頁有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"快取行通常為 64 位元組，是在各級快取與記憶體之間搬移的單位；分頁通常為 4 KB，是由作業系統與 MMU 管理的虛擬記憶體對應單位。"}},{"@type":"Question","name":"如何避免偽共享？","acceptedAnswer":{"@type":"Answer","text":"把不同執行緒寫入的資料放在不同的快取行，通常的做法是將各執行緒的結構填充或對齊到 64 位元組。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -122,7 +122,22 @@
 </svg><figcaption class="fig-cap">集合關聯式快取的查找 · <a href="/zh-hant/figures/#fig-cache-address">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/memory-hierarchy/">記憶體階層與效能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼快取以整行為單位搬移</h2>
+  <p>程式存取某個位址後，通常很快也會存取其鄰近位址，這種特性稱為<a class="term-link" href="/zh-hant/term/spatial-locality/">空間局部性</a>。快取利用這一點，以固定大小的區塊（通常為 64 位元組）而非單一字組來搬移資料，而這個大小恰好符合一次 DRAM 突發傳輸：在 64 位元的 DDR4 通道上進行八次、每次 8 位元組的傳輸。每個快取行都帶有識別其位址的標籤、表示資料有效的有效位元、寫回式快取中的髒位元，以及替換與一致性狀態。因此位址會被拆成標籤、索引與位移欄位；以 64 位元組的快取行來說，最低 6 位元就是位移。</p>
+</section>
+<section class="term-about">
+  <h2>快取行大小與存取模式</h2>
+  <p>快取行大小會把存取模式轉化為失誤率。依序讀取 4 位元組整數的陣列時，每 16 個元素才失誤一次，失誤率為 6.25%，因為每次失誤都會一併載入接下來的 15 個元素。若每隔 16 個元素才讀取一個，則每次都會失誤。C 語言以列優先順序儲存二維陣列，因此在內層迴圈走訪行索引會存取連續位址；若把兩層迴圈對調，每次存取都會跳過一整列，快取行可能在被重複使用前就遭到逐出。較大的快取行有利於循序存取的程式碼，但若每行只用到一小部分，就會浪費頻寬與容量。</p>
+</section>
+<section class="term-about">
+  <h2>一致性以快取行為單位運作</h2>
+  <p>在多核心處理器中，一致性協定以快取行為粒度追蹤擁有權。在 <a class="term-link" href="/zh-hant/term/mesi-protocol/">MESI 協定</a>下，每個快取行處於以下其中一種狀態：Modified（已修改且只存在此處，因此記憶體中的資料已過時）、Exclusive（未修改且只存在此處）、Shared（其他地方可能存在未修改的副本）或 Invalid。核心要寫入前，必須先讓其他快取中的副本失效；已處於 M 狀態的快取行則可重複寫入而不必通知任何人。小型系統以廣播方式發送這些請求，大型系統則使用目錄記錄哪些快取持有各個快取行，讓流量能隨核心數擴展。</p>
+</section>
+<section class="term-about">
+  <h2>偽共享</h2>
+  <p>由於一致性以快取行為單位，兩個執行緒即使寫入的是不同變數，只要這些變數剛好位於同一個 64 位元組的快取行，每次寫入仍會使對方的副本失效。這個快取行會在核心之間來回<a class="term-link" href="/zh-hant/term/contact-bounce/">彈跳</a>，結果雖然正確，效能卻可能大幅下降。各執行緒專用的計數器或旗標陣列就是典型案例。解決方法是對每個執行緒的資料進行填充或對齊，使其各自獨占一個快取行，例如在 C 與 C++ 中使用對齊屬性。與此相對的是真共享，也就是執行緒確實存取同一個變數，這種通訊無法靠資料配置來避免。</p>
+</section>
 <section>
   <h2>練習快取行的題目</h2>
   <article class="q-mini" data-qid="memory-hierarchy-003" data-cat="memory-hierarchy" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -136,7 +151,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 128</p><p class="explanation">行數為 32 KB ÷ 64 B = 512。4路時每組可放入4條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>，所以組數為 512 ÷ 4 = 128 = 2⁷，索引為7位元，標籤為 32 − 7 − 6 = 19位元。512就是行數本身，是直接映射時的組數。提高相聯度會使組數減少，相對地標籤的位元數增加，<a class="term-link" href="/zh-hant/term/comparator/">比較器</a>也隨之增加。32是把快取行大小的64誤用路數去除所得的值。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>快取行有多大？</h3>
+  <p>目前大多數 CPU 為 64 位元組，但也有處理器使用 32 或 128 位元組；這是硬體特性，軟體可以查詢。</p>
+  <h3>快取行和分頁有什麼不同？</h3>
+  <p>快取行通常為 64 位元組，是在各級快取與記憶體之間搬移的單位；分頁通常為 4 KB，是由作業系統與 MMU 管理的虛擬記憶體對應單位。</p>
+  <h3>如何避免偽共享？</h3>
+  <p>把不同執行緒寫入的資料放在不同的快取行，通常的做法是將各執行緒的結構填充或對齊到 64 位元組。</p>
+</section>
 <section>
   <h2>解析中的「快取行」</h2>
   <ul class="term-quotes"><li><p>快取行大小64位元組 = 2⁶，所以偏移量（offset）為6位元。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-003/">位址為32位元、容量32 KB、快取行大小64位元組的直接映射（direct-mapped）快取，其標籤（tag）為幾…</a></li><li><p>4路時每組可放入4條快取行，所以組數為 512 ÷ 4 = 128 = 2⁷，索引為7位元，標籤為 32 − 7 − 6 = 19位元。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-004/">位址為32位元、容量32 KB、快取行大小64位元組的4路組相聯（set-associative）快取，其組數為多少？</a></li><li><p>加大快取行後，一次未命中就能將附近的資料一併載入，因此在具空間局部性的處理中，強制性未命中會減少。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-010/">加大快取的快取行大小時所產生的影響，下列何者正確？</a></li><li><p>寫回方式的寫入只在快取內完成，因此會出現主記憶體內容已過時的快取行。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-012/">在寫回（write-back）快取中，附加於各快取行的髒位元（dirty bit）的作用，下列何者正確？</a></li><li><p>寫入未命中時不載入快取行、直接寫入下一層階層的方式是不寫入配置，多與直寫方式搭配使用。</p><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-013/">寫入時發生快取未命中，不載入該快取行而直接寫入下一層階層的方式為下列何者？</a></li></ul>

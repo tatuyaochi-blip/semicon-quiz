@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"分支預測","item":"https://semiconroom.com/zh-hant/term/branch-prediction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"分支預測","description":"在執行前預測條件分支的結果，不使管線停頓而處理後續指令的技術。預測錯誤時會重新處理。","url":"https://semiconroom.com/zh-hant/term/branch-prediction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"分支預測","item":"https://semiconroom.com/zh-hant/term/branch-prediction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"分支預測","description":"在執行前預測條件分支的結果，不使管線停頓而處理後續指令的技術。預測錯誤時會重新處理。","url":"https://semiconroom.com/zh-hant/term/branch-prediction/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"分支預測失誤時會發生什麼事？","acceptedAnswer":{"@type":"Answer","text":"CPU 會捨棄沿錯誤路徑推測擷取與執行的指令，並從正確的目標重新開始，在典型的深管線中約損失 10 到 20 個週期。"}},{"@type":"Question","name":"現代 CPU 的分支預測準確率有多高？","acceptedAnswer":{"@type":"Answer","text":"高效能預測器在一般程式碼上的準確率通常超過 95%，不過取決於隨機資料的分支可能難預測得多。"}},{"@type":"Question","name":"分支預測和推測執行有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"分支預測是猜測分支會往哪個方向走；推測執行則是在猜測被確認之前，實際沿著所猜測的路徑執行指令。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/cpu/">CPU與架構</a></p>
 </article>
-
+<section class="term-about">
+  <h2>管線為什麼需要分支預測</h2>
+  <p>管線化 CPU 每個週期都會擷取新指令，但條件分支是否成立、要跳到哪裡，要到幾個階段之後執行時才會知道。若等待結果，管線就會閒置，而大約每五道指令就有一道是分支。分支預測則在擷取時就猜測結果，並沿著預測的路徑繼續<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a>。猜對時不會損失任何時間；猜錯時，推測執行的指令會被清除而不影響架構狀態，並從正確路徑重新擷取，在深管線中要付出十幾到約二十個週期的代價。</p>
+</section>
+<section class="term-about">
+  <h2>預測器如何猜測</h2>
+  <p>靜態方案使用固定規則，例如預測往回跳的分支（迴圈）會成立、往前跳的分支不成立。動態預測器則從歷史中學習：以分支位址為索引的 2 位元飽和計數器表，需要連續兩次猜錯才會翻轉預測，因此迴圈結束時只會造成一次預測失誤。更好的預測器會把位址與最近結果的全域歷史結合，以捕捉分支之間的相關性。預測方向只是工作的一半；分支目標緩衝區（BTB）提供目標位址，<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>堆疊則用來預測函式返回。</p>
+</section>
+<section class="term-about">
+  <h2>預測失誤的代價</h2>
+  <p>其影響可以用增加的<a class="term-link" href="/zh-hant/term/cycles-per-instruction/">每指令週期數</a>（CPI）來估算：分支頻率 × 預測失誤率 × 懲罰週期。在分支佔 20%、準確率 95%、懲罰 20 個週期時，就是 0.2 × 0.05 × 20 = 0.2 的額外 CPI，佔了現代核心預算的一大部分。這就是為什麼一、兩個百分點的準確率提升也很重要。對於取決於隨機資料而無法預測的分支，編譯器與程式設計師有時會使用條件搬移等無分支程式碼，以多一點工作換取保證不會發生清除。</p>
+</section>
+<section class="term-about">
+  <h2>推測執行與安全性</h2>
+  <p>預測錯誤的指令在架構層面上會被捨棄，但仍可能在快取等微架構狀態中留下痕跡。<a class="term-link" href="/zh-hant/term/spectre/">Spectre</a> 類攻擊會訓練預測器，使受害程式推測性地讀取機密資料，並透過快取時序洩漏出去。防禦方法包括在敏感的邊界檢查後加入推測屏障（例如 x86 的 lfence）、遮罩陣列索引、針對間接分支的 retpoline 序列，以及透過微碼控制預測器。每一項限制都會犧牲效能，因此會選擇性地套用。MIPS 等較舊的<a class="term-link" href="/zh-hant/term/instruction-set-architecture/">指令集架構</a>使用<a class="term-link" href="/zh-hant/term/branch-delay-slot/">分支延遲槽</a>而非預測，這條規則後來成為後續設計的負擔。</p>
+</section>
 <section>
   <h2>練習分支預測的題目</h2>
   <article class="q-mini" data-qid="cpu-007" data-cat="cpu" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 將資料排序，使分支的結果更容易預測，或是以條件選擇或運算來消除分支本身</p><p class="explanation">一旦<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>錯誤，CPU就必須丟棄推測性執行的指令並重新來過，每次會損失十幾個週期以上。若資料是隨機的，像「值在128以上的話」這類分支的結果就無法預測。若事先將資料排序，結果會趨於一致而使預測容易命中；若改用條件選擇指令或位元運算來撰寫，分支本身就會消失。也可以促使編譯器進行這類轉換。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>分支預測失誤時會發生什麼事？</h3>
+  <p>CPU 會捨棄沿錯誤路徑推測擷取與執行的指令，並從正確的目標重新開始，在典型的深管線中約損失 10 到 20 個週期。</p>
+  <h3>現代 CPU 的分支預測準確率有多高？</h3>
+  <p>高效能預測器在一般程式碼上的準確率通常超過 95%，不過取決於隨機資料的分支可能難預測得多。</p>
+  <h3>分支預測和推測執行有什麼差別？</h3>
+  <p>分支預測是猜測分支會往哪個方向走；推測執行則是在猜測被確認之前，實際沿著所猜測的路徑執行指令。</p>
+</section>
 <section>
   <h2>解析中的「分支預測」</h2>
   <ul class="term-quotes"><li><p>分支預測會根據過去的歷史等資訊預測分支目的地並繼續向前執行，只有在預測錯誤時才重做。</p><a href="/zh-hant/q/cpu/cpu-007/">關於 CPU 分支預測的目的，下列何者正確？</a></li><li><p>一旦分支預測錯誤，CPU就必須丟棄推測性執行的指令並重新來過，每次會損失十幾個週期以上。</p><a href="/zh-hant/q/performance/performance-032/">以效能計數器發現分支預測錯誤非常多。下列何者是適用的改善方法？</a></li><li><p>資料相依、分支、資源競爭會擾亂流程（危障，hazard），可用前饋（forwarding）與分支預測來因應。</p><a href="/zh-hant/q/cpu/cpu-001/">CPU 管線化（pipeline）處理的主要目的，下列何者正確？</a></li><li><p>超純量、亂序執行、分支預測、大型快取，全都是提高 IPC 的技術。</p><a href="/zh-hant/q/cpu/cpu-029/">表示每個時脈可執行之指令數的指標是下列何者？</a></li><li><p>當發生分支預測失誤或例外時，可捨棄其後指令的結果並恢復到正確的狀態，因此從外部看來，就像是依照程式原本順序執行一樣（精確例外，precise exception）。</p><a href="/zh-hant/q/cpu/cpu-047/">在亂序執行的 CPU 中，用來將調換順序執行之指令的結果，依程式原本的順序確定（引退，retire）的機制是下列何者？</a></li></ul>

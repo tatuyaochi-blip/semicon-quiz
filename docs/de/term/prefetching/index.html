@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Prefetching","item":"https://semiconroom.com/de/term/prefetching/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Prefetching","description":"Vorabladen von Daten in den Cache, die voraussichtlich bald benötigt werden, bevor sie angefordert werden. Es gibt Hardwareverfahren, die Zugriffsmuster erkennen, und Softwareverfahren per Befehl.","url":"https://semiconroom.com/de/term/prefetching/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Prefetching","item":"https://semiconroom.com/de/term/prefetching/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Prefetching","description":"Vorabladen von Daten in den Cache, die voraussichtlich bald benötigt werden, bevor sie angefordert werden. Es gibt Hardwareverfahren, die Zugriffsmuster erkennen, und Softwareverfahren per Befehl.","url":"https://semiconroom.com/de/term/prefetching/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Hardware- und Software-Prefetching","acceptedAnswer":{"@type":"Answer","text":"Hardware-Prefetcher erkennen Muster wie sequenziellen Zugriff oder Zugriff mit konstantem Stride automatisch zur Laufzeit. Software-Prefetching beruht auf expliziten Befehlen, die der Programmierer oder Compiler einfügt, was bei unregelmäßigen, aber berechenbaren Adressen hilft."}},{"@type":"Question","name":"Warum hilft Prefetching bei verketteten Listen kaum?","acceptedAnswer":{"@type":"Answer","text":"Die Adresse jedes Knotens ist erst bekannt, nachdem der vorherige Knoten geladen wurde; es gibt also kein vorhersagbares Muster, und Fehlzugriffe können sich nicht überlappen. Meist muss man die Daten zusammenhängend speichern oder Sprungzeiger (Jump Pointers) hinzufügen."}},{"@type":"Question","name":"Kann Prefetching die Leistung verschlechtern?","acceptedAnswer":{"@type":"Answer","text":"Ja. Ungenaue oder zu frühe Prefetches verschwenden Bandbreite und verdrängen Daten, die noch gebraucht wurden; aggressives Prefetching kann speichergebundene Programme daher verlangsamen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum Prefetching nötig ist</h2>
+  <p>Ein L1-Cache-Treffer dauert wenige Zyklen, etwa 1 ns, während ein DRAM-Zugriff einige zehn bis etwa 100 ns dauert; ein Kern mit mehreren GHz kann bei einem Fehlzugriff also Hunderte Zyklen warten – diese Lücke wird als <a class="term-link" href="/de/term/memory-wall/">Memory Wall</a> bezeichnet. Pflichtfehlzugriffe (Compulsory Misses), die beim ersten Zugriff auf Daten auftreten, lassen sich durch mehr Kapazität oder Assoziativität nicht verringern, weil die Daten nie im Cache waren. Prefetching setzt hier an, indem es Zeilen anfordert, bevor das Programm sie benötigt, und so die Speicherlatenz mit nützlicher Arbeit überlappt. Größere Cache-Zeilen helfen auf ähnliche Weise, indem sie bei jedem Fehlzugriff benachbarte Daten mitladen.</p>
+</section>
+<section class="term-about">
+  <h2>Wie Hardware-Prefetcher arbeiten</h2>
+  <p>Ein Hardware-Prefetcher beobachtet den Strom der Fehlzugriffs- oder Zugriffsadressen und sucht nach Regelmäßigkeiten. Der einfachste lädt die nächste sequenzielle Zeile; Stride-Prefetcher verfolgen die Adressdifferenz zwischen aufeinanderfolgenden Zugriffen, oft pro Ladebefehl, und sobald sich ein konstanter Abstand (Stride) wiederholt, stellen sie Anfragen mehrere Strides im Voraus. Das sequenzielle Lesen eines int-Arrays mit 64-Byte-Zeilen würde sonst einen Fehlzugriff pro 16 Elemente verursachen, also eine Fehlzugriffsrate von 6,25 %, und ein guter Prefetcher verbirgt die meisten dieser Fehlzugriffe. Pointer Chasing hebelt das aus: In einer verketteten Liste ist die nächste Adresse erst bekannt, wenn der aktuelle Knoten eingetroffen ist, sodass die Fehlzugriffe nacheinander erfolgen.</p>
+</section>
+<section class="term-about">
+  <h2>Software-Prefetching und Prefetch-Distanz</h2>
+  <p>Beim Software-Prefetching werden explizite Prefetch-Befehle eingefügt, entweder von Hand oder durch den Compiler, für Muster, die die Hardware nicht vorhersagen kann, etwa indirekte Zugriffe ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> ein Indexarray. Diese Befehle sind Hinweise, die typischerweise keine Ausnahmen auslösen und die Programmergebnisse nicht verändern. Der entscheidende Parameter ist die Prefetch-Distanz: Wird zu kurz vor der Verwendung geladen, bleibt Latenz sichtbar, wird zu weit im Voraus geladen, droht eine Verdrängung vor der Verwendung. Eine gängige Faustregel ist, etwa um die Fehlzugriffslatenz geteilt durch die Zeit pro Schleifendurchlauf vorauszuladen und dann anhand von Messungen nachzujustieren.</p>
+</section>
+<section class="term-about">
+  <h2>Genauigkeit, Abdeckung und Rechtzeitigkeit</h2>
+  <p>Prefetching ist nicht kostenlos. Nutzlose Prefetches verbrauchen Speicherbandbreite und können nützliche Zeilen verdrängen – ein Problem namens Cache-Verschmutzung (Cache Pollution), das ein Programm verlangsamen kann. Prefetcher werden daher nach Genauigkeit (Accuracy) beurteilt, dem Anteil der vorab geladenen Zeilen, die tatsächlich genutzt werden; nach Abdeckung (Coverage), dem Anteil der ursprünglichen Fehlzugriffe, die beseitigt werden; und nach Rechtzeitigkeit (Timeliness), also ob die Daten eintreffen, bevor sie gebraucht werden. Prefetching unterscheidet sich zudem von <a class="term-link" href="/de/term/out-of-order-execution/">Out-of-Order-Ausführung</a>, die Fehlzugriffe nur innerhalb ihres begrenzten Befehlsfensters überlappt. Ist eine Datenstruktur schlecht vorhersagbar, hilft es oft mehr als jeder Prefetcher, sie in zusammenhängende Arrays umzuorganisieren.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Prefetching</h2>
   <article class="q-mini" data-qid="dram-030" data-cat="dram" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Memory Wall</p><p class="explanation">Die Rechenleistung von Prozessoren wuchs zeitweise um ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> 50 % pro Jahr, die Zugriffslatenz von DRAM verbesserte sich dagegen von einigen zehn ns kaum, sodass die CPU Hunderte von Zyklen auf Daten warten muss. Das ist die <a class="term-link" href="/de/term/memory-wall/">Memory Wall</a>. Als Gegenmaßnahmen werden mehrstufige Caches, paralleler Speicherzugriff, <a class="term-link" href="/de/term/prefetching/">Prefetching</a>, Speicher mit hoher Bandbreite wie <a class="term-link" href="/de/term/hbm/">HBM</a> und Processing-in-Memory vorangetrieben, bei dem Berechnungen nahe am Speicher stattfinden.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Hardware- und Software-Prefetching</h3>
+  <p>Hardware-Prefetcher erkennen Muster wie sequenziellen Zugriff oder Zugriff mit konstantem Stride automatisch zur Laufzeit. Software-Prefetching beruht auf expliziten Befehlen, die der Programmierer oder Compiler einfügt, was bei unregelmäßigen, aber berechenbaren Adressen hilft.</p>
+  <h3>Warum hilft Prefetching bei verketteten Listen kaum?</h3>
+  <p>Die Adresse jedes Knotens ist erst bekannt, nachdem der vorherige Knoten geladen wurde; es gibt also kein vorhersagbares Muster, und Fehlzugriffe können sich nicht überlappen. Meist muss man die Daten zusammenhängend speichern oder Sprungzeiger (Jump Pointers) hinzufügen.</p>
+  <h3>Kann Prefetching die Leistung verschlechtern?</h3>
+  <p>Ja. Ungenaue oder zu frühe Prefetches verschwenden Bandbreite und verdrängen Daten, die noch gebraucht wurden; aggressives Prefetching kann speichergebundene Programme daher verlangsamen.</p>
+</section>
 <section>
   <h2>„Prefetching“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Als Gegenmaßnahmen werden mehrstufige Caches, paralleler Speicherzugriff, Prefetching, Speicher mit hoher Bandbreite wie HBM und Processing-in-Memory vorangetrieben, bei dem Berechnungen nahe am Speicher stattfinden.</p><a href="/de/q/dram/dram-030/">Wie heißt die Leistungsbegrenzung, die dadurch entsteht, da…</a></li></ul>

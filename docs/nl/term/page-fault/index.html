@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Page fault","item":"https://semiconroom.com/nl/term/page-fault/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Page fault","description":"Exception die de CPU veroorzaakt wanneer de benaderde pagina niet aan fysiek geheugen is toegewezen of er een niet toegestane soort toegang plaatsvindt. Het besturingssysteem maakt de pagina beschikbaar en voert de instructie opnieuw uit, of behandelt het als een ongeldige toegang.","url":"https://semiconroom.com/nl/term/page-fault/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Page fault","item":"https://semiconroom.com/nl/term/page-fault/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Page fault","description":"Exception die de CPU veroorzaakt wanneer de benaderde pagina niet aan fysiek geheugen is toegewezen of er een niet toegestane soort toegang plaatsvindt. Het besturingssysteem maakt de pagina beschikbaar en voert de instructie opnieuw uit, of behandelt het als een ongeldige toegang.","url":"https://semiconroom.com/nl/term/page-fault/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is een page fault een fout?","acceptedAnswer":{"@type":"Answer","text":"Niet per se. De meeste page faults zijn normale gebeurtenissen die worden gebruikt voor demand paging, copy-on-write en memory-mapped files; alleen een fault op een adres dat het proces niet mag benaderen, wordt een fout zoals een segmentation fault."}},{"@type":"Question","name":"Wat is het verschil tussen een minor en een major page fault?","acceptedAnswer":{"@type":"Answer","text":"Een minor fault wordt opgelost zonder schijf-I/O, bijvoorbeeld door een pagina af te beelden die al in het geheugen staat, terwijl een major fault de pagina uit de opslag moet lezen en duizenden keren trager is."}},{"@type":"Question","name":"Waarom start een page fault de instructie opnieuw in plaats van die over te slaan?","acceptedAnswer":{"@type":"Answer","text":"De veroorzakende toegang is nooit voltooid, dus het besturingssysteem herstelt de afbeelding en voert de instructie opnieuw vanaf het begin uit, zodat het programma verdergaat alsof er niets is gebeurd."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat er gebeurt bij een page fault</h2>
+  <p>Wanneer de memory management unit (MMU) een virtueel adres vertaalt, controleert ze de paginatabelentry. Als de entry niet geldig is of het type toegang niet is toegestaan, genereert de MMU een page fault, een synchrone exceptie die aan de veroorzakende instructie is gekoppeld. De handler van het besturingssysteem controleert of het adres behoort tot een gebied dat het proces mag gebruiken. Zo ja, dan zoekt hij een vrij fysiek frame, waarbij zo nodig een andere pagina wordt verdrongen, vult het vanaf schijf of met nullen, markeert de entry als geldig en start de veroorzakende instructie opnieuw. Zo nee, dan krijgt het proces een segmentation fault.</p>
+</section>
+<section class="term-about">
+  <h2>Minor versus major faults</h2>
+  <p>Niet elke page fault raakt de schijf. Een minor (soft) fault wordt zonder I/O opgelost, bijvoorbeeld wanneer een pagina al in het geheugen staat in de bestandscache, alleen een nieuw met nullen gevuld frame nodig heeft, of voor <a class="term-link" href="/nl/term/copy-on-write/">copy-on-write</a> moet worden gekopieerd. Een major (hard) fault moet de pagina uit de opslag lezen en kost milliseconden. Het verschil is enorm: met een geheugentoegang van 100 ns en een afhandeltijd van 8 ms per fault verhoogt een major-faultfrequentie van slechts één per miljoen toegangen de gemiddelde toegangstijd van 100 ns tot ongeveer 108 ns.</p>
+</section>
+<section class="term-about">
+  <h2>Page faults die bewust worden gebruikt</h2>
+  <p>Besturingssystemen gebruiken faults als middel voor lazy evaluation. <a class="term-link" href="/nl/term/demand-paging/">Demand paging</a> beeldt een programma af zonder het te laden en laadt dan elke pagina bij de eerste aanraking. Memory-mapped files (mmap) lezen de inhoud van bestanden op dezelfde manier in. <a class="term-link" href="/nl/term/copy-on-write/">Copy-on-write</a> laat fork pagina&#39;s alleen-lezen delen en kopieert alleen de pagina&#39;s waarnaar later wordt geschreven. Guard pages zonder toegangsrechten liggen voorbij de stack, zodat op hol geslagen recursie een fault oplevert in plaats van data te beschadigen. Op <a class="term-link" href="/nl/term/non-uniform-memory-access/">NUMA</a>-systemen plaatst Linux een pagina op de node van de thread die er als eerste naar schrijft, dus de volgorde van initialisatie beïnvloedt de prestaties.</p>
+</section>
+<section class="term-about">
+  <h2>Page fault versus TLB-miss versus cache-miss</h2>
+  <p>Deze drie worden vaak verward. Een cache-miss wordt volledig door hardware afgehandeld, die de cachelijn uit een lager geheugenniveau ophaalt. Een <a class="term-link" href="/nl/term/tlb/">TLB</a>-miss betekent dat de vertaling niet in de translation lookaside buffer staat; op de meeste moderne CPU&#39;s haalt een hardwarematige page-table walker die op, en als de entry geldig is, treedt er geen exceptie op. Alleen wanneer de paginatabelentry zelf ongeldig is of de toegang verbiedt, bereikt een page fault het besturingssysteem. Wanneer faults zo vaak voorkomen dat het systeem het grootste deel van de tijd met pagen bezig is, heet die toestand <a class="term-link" href="/nl/term/thrashing/">thrashing</a>.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Page fault</h2>
   <article class="q-mini" data-qid="linker-loader-046" data-cat="linker-loader" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Er wordt een guard page aangeraakt waarvan de toegang is verboden en die voorbij de stack ligt, en het programma eindigt abnormaal</p><p class="explanation">De stack heeft een bovengrens en daarachter ligt een guard page waarvan de toegang is verboden. Als de stack door te diepe recursie deze bereikt, treedt een <a class="term-link" href="/nl/term/page-fault/">page fault</a> op en stopt het OS het programma (segmentation fault). Het voordeel van de guard page is dat kan worden gestopt voordat andere data worden beschadigd. Hetzelfde gebeurt als een grote array als lokale variabele wordt gebruikt, dus grote data worden veiliger op de <a class="term-link" href="/nl/term/heap-memory/">heap</a> geplaatst.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Is een page fault een fout?</h3>
+  <p>Niet per se. De meeste page faults zijn normale gebeurtenissen die worden gebruikt voor demand paging, copy-on-write en memory-mapped files; alleen een fault op een adres dat het proces niet mag benaderen, wordt een fout zoals een segmentation fault.</p>
+  <h3>Wat is het verschil tussen een minor en een major page fault?</h3>
+  <p>Een minor fault wordt opgelost zonder schijf-I/O, bijvoorbeeld door een pagina af te beelden die al in het geheugen staat, terwijl een major fault de pagina uit de opslag moet lezen en duizenden keren trager is.</p>
+  <h3>Waarom start een page fault de instructie opnieuw in plaats van die over te slaan?</h3>
+  <p>De veroorzakende toegang is nooit voltooid, dus het besturingssysteem herstelt de afbeelding en voert de instructie opnieuw vanaf het begin uit, zodat het programma verdergaat alsof er niets is gebeurd.</p>
+</section>
 <section>
   <h2>“Page fault” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Als de stack door te diepe recursie deze bereikt, treedt een page fault op en stopt het OS het programma (segmentation fault).</p><a href="/nl/q/linker-loader/linker-loader-046/">Wat gebeurt er in het algemeen op Linux en dergelijke als r…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Rücksprungadresse","item":"https://semiconroom.com/de/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Rücksprungadresse","description":"Adresse, zu der nach Abschluss einer Funktion zurückgekehrt wird. Bei RISC-V legt der Befehl jal die Adresse des nächsten Befehls in ra (x1) ab, bei x86 legt der Befehl call sie auf den Stack.","url":"https://semiconroom.com/de/term/return-address/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Rücksprungadresse","item":"https://semiconroom.com/de/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Rücksprungadresse","description":"Adresse, zu der nach Abschluss einer Funktion zurückgekehrt wird. Bei RISC-V legt der Befehl jal die Adresse des nächsten Befehls in ra (x1) ab, bei x86 legt der Befehl call sie auf den Stack.","url":"https://semiconroom.com/de/term/return-address/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wo wird die Rücksprungadresse bei RISC-V gespeichert?","acceptedAnswer":{"@type":"Answer","text":"Im Register ra (x1), das beim Aufruf von jal oder jalr beschrieben wird. Eine Non-Leaf-Funktion kopiert es in ihren Stack-Frame, bevor sie eigene Aufrufe tätigt, und stellt es vor ret wieder her."}},{"@type":"Question","name":"Was ist der Unterschied zwischen call/ret bei x86 und jal/ret bei RISC-V?","acceptedAnswer":{"@type":"Answer","text":"Bei x86 legt call die Rücksprungadresse immer auf den Stack und ret holt sie wieder, während jal bei RISC-V sie in ein Register schreibt und nur dann auf den Speicher zugreift, wenn die Funktion sie sichern will."}},{"@type":"Question","name":"Warum ist das Überschreiben der Rücksprungadresse gefährlich?","acceptedAnswer":{"@type":"Answer","text":"Wenn die Funktion zurückkehrt, springt die CPU zu der Adresse, die dort steht; ein Angreifer, der sie über einen Pufferüberlauf überschreibt, kann so die Kontrolle über das Programm übernehmen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/isa-assembly/">Befehlssatz und Assembler</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie ein Aufruf sie sichert</h2>
+  <p>Ein Aufruf muss festhalten, wo die Ausführung fortgesetzt werden soll, nämlich an der Adresse des Befehls nach dem Aufruf. Bei RISC-V schreibt jal (Jump and Link) PC + 4 in ein Register, per Konvention ra (x1), und springt; der Rücksprung erfolgt mit ret, einem <a class="term-link" href="/de/term/pseudo-instruction/">Pseudobefehl</a> für jalr x0, 0(ra). Aufrufe ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Funktionszeiger, virtuelle Funktionen und Stubs für Shared Libraries verwenden jalr mit einem Registerziel. Bei x86 legt call die Rücksprungadresse auf den Stack, und ret holt sie zurück in den Befehlszeiger, sodass der Stack sie immer enthält.</p>
+</section>
+<section class="term-about">
+  <h2>Leaf- und Non-Leaf-Funktionen</h2>
+  <p>Da jedes jal ra überschreibt, muss eine RISC-V-Funktion, die andere Funktionen aufruft, zuerst ihre eigene Rücksprungadresse sichern. Ein typischer Prolog ist addi sp, sp, -16, um auf dem nach unten wachsenden Stack einen Frame anzulegen, gefolgt von sw ra, 12(sp) und sw s0, 8(sp), um ra und ein vom Aufgerufenen zu sicherndes Register (Callee-saved) zu speichern. Der Epilog lädt sie wieder, stellt sp wieder her und führt ret aus. Eine Leaf-Funktion, die nichts aufruft, kann ra in seinem Register belassen und benötigt womöglich gar keinen <a class="term-link" href="/de/term/stack-frame/">Stack-Frame</a>, was kleine Funktionen günstig macht.</p>
+</section>
+<section class="term-about">
+  <h2>Warum Angreifer sie ins Visier nehmen</h2>
+  <p>Eine auf dem Stack gespeicherte Rücksprungadresse liegt neben lokalen Puffern, daher kann ein Pufferüberlauf sie überschreiben und die Ausführung bei der Rückkehr der Funktion umlenken. Klassische Angriffe schrieben Maschinencode auf den Stack und sprangen dorthin; W^X-Richtlinien mit dem No-Execute-Bit der <a class="term-link" href="/de/term/page-table/">Seitentabelle</a> blockieren das. Angreifer wichen daraufhin auf Return-Oriented Programming aus, bei dem vorhandene Codefragmente verkettet werden. Weitere Abwehrmaßnahmen sind Stack Canaries, die vor dem Rücksprung geprüft werden, Address Space Layout Randomization und Hardware-Shadow-Stacks, die eine geschützte zweite Kopie jeder Rücksprungadresse vorhalten.</p>
+</section>
+<section class="term-about">
+  <h2>Rücksprungadressen in der Hardware</h2>
+  <p>Out-of-Order-CPUs sagen voraus, wohin ein Rücksprung geht, lange bevor ra oder der Stack gelesen wird. Ein Return Address Stack (RAS) in der <a class="term-link" href="/de/term/branch-prediction/">Sprungvorhersage</a> legt bei jedem Aufruf die Folgeadresse ab und holt sie bei jedem Rücksprung wieder, was bei sauber verschachteltem Code sehr genaue Vorhersagen liefert. Ausnahmen und Interrupts sind anders: Die CPU sichert den unterbrochenen PC in einem eigenen Register wie mepc oder sepc bei RISC-V, zusammen mit dem vorherigen Privilegmodus, und mret oder sret stellt all dies auf einmal wieder her, statt eines einfachen ret.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Rücksprungadresse</h2>
   <article class="q-mini" data-qid="cpu-045" data-cat="cpu" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Stack</p><p class="explanation">Beim Aufruf einer Subroutine werden <a class="term-link" href="/de/term/return-address/">Rücksprungadresse</a>, zu sichernde Registerwerte und lokale Variablen auf den Stack gelegt. Der Stack arbeitet nach dem LIFO-Prinzip (zuletzt Eingelegtes wird zuerst entnommen), sodass auch bei verschachtelten oder rekursiven Aufrufen in der richtigen Reihenfolge zurückgekehrt wird. Die oberste Position zeigt der <a class="term-link" href="/de/term/stack-pointer/">Stackpointer</a> an. Wird bei zu tiefer Rekursion der Bereich aufgebraucht, kommt es zum Stack-Überlauf; es gibt auch Angriffe, die durch das Überschreiten von Arraygrenzen die Rücksprungadresse überschreiben.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wo wird die Rücksprungadresse bei RISC-V gespeichert?</h3>
+  <p>Im Register ra (x1), das beim Aufruf von jal oder jalr beschrieben wird. Eine Non-Leaf-Funktion kopiert es in ihren Stack-Frame, bevor sie eigene Aufrufe tätigt, und stellt es vor ret wieder her.</p>
+  <h3>Was ist der Unterschied zwischen call/ret bei x86 und jal/ret bei RISC-V?</h3>
+  <p>Bei x86 legt call die Rücksprungadresse immer auf den Stack und ret holt sie wieder, während jal bei RISC-V sie in ein Register schreibt und nur dann auf den Speicher zugreift, wenn die Funktion sie sichern will.</p>
+  <h3>Warum ist das Überschreiben der Rücksprungadresse gefährlich?</h3>
+  <p>Wenn die Funktion zurückkehrt, springt die CPU zu der Adresse, die dort steht; ein Angreifer, der sie über einen Pufferüberlauf überschreibt, kann so die Kontrolle über das Programm übernehmen.</p>
+</section>
 <section>
   <h2>„Rücksprungadresse“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Beim Aufruf einer Subroutine werden Rücksprungadresse, zu sichernde Registerwerte und lokale Variablen auf den Stack gelegt.</p><a href="/de/q/cpu/cpu-045/">Welcher Bereich wird beim Aufruf einer Subroutine (Funktion…</a></li><li><p>Bei Funktionsaufrufen wird der aktuelle Wert als Rücksprungadresse auf dem Stack oder im Link-Register gesichert.</p><a href="/de/q/cpu/cpu-036/">Was enthält der Programmzähler (PC) einer CPU?</a></li><li><p>Die Rücksprungadresse steht in x1 (ra).</p><a href="/de/q/isa-assembly/isa-assembly-003/">Welche Eigenschaft des RISC-V-Registers x0 (zero) ist richt…</a></li><li><p>In der Aufrufkonvention wird die Rücksprungadresse in ra (x1) abgelegt; ein Funktionsaufruf lautet „jal ra, func“, als Pseudobefehl „call func“.</p><a href="/de/q/isa-assembly/isa-assembly-025/">Welche Wirkung hat der RISC-V-Befehl „jal ra, func“?</a></li><li><p>ra wird bei jedem funktionsaufrufenden jal überschrieben, daher muss eine Funktion, die andere Funktionen aufruft, ihre Rücksprungadresse zu Beginn auf dem Stack sichern.</p><a href="/de/q/isa-assembly/isa-assembly-032/">Bei Funktionen, die keine anderen Funktionen aufrufen (Blat…</a></li></ul>

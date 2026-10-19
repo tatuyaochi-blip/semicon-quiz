@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"GPU","item":"https://semiconroom.com/zh-hant/term/gpu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"GPU","description":"為 Graphics Processing Unit 的縮寫。擁有大量簡單運算單元，平行處理大量資料的處理器。除影像處理外，也廣泛用於 AI 的訓練與推論。","url":"https://semiconroom.com/zh-hant/term/gpu/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"GPU","item":"https://semiconroom.com/zh-hant/term/gpu/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"GPU","description":"為 Graphics Processing Unit 的縮寫。擁有大量簡單運算單元，平行處理大量資料的處理器。除影像處理外，也廣泛用於 AI 的訓練與推論。","url":"https://semiconroom.com/zh-hant/term/gpu/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"CPU 和 GPU 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"CPU 擁有少數幾個複雜核心，針對以低延遲完成個別工作而最佳化；GPU 則擁有大量簡單核心，針對高度平行工作的總吞吐量而最佳化。GPU 透過在數千個執行緒之間切換來隱藏記憶體延遲，而不是依賴大型快取。"}},{"@type":"Question","name":"AI 為什麼要用 GPU？","acceptedAnswer":{"@type":"Answer","text":"神經網路的訓練與推論主要由大型矩陣乘法構成，也就是對龐大陣列套用相同運算，這很自然地對應到數千個平行執行緒。HBM 等高頻寬記憶體則讓這些單元持續獲得資料供應。"}},{"@type":"Question","name":"什麼是 warp divergence（warp 分歧）？","acceptedAnswer":{"@type":"Answer","text":"指同一個 warp 中的執行緒走了不同分支；硬體會輪流執行每條路徑，其餘執行緒則閒置等待，使效率降低。讓同一 warp 內的分支條件一致即可避免。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -158,7 +158,22 @@
 </svg><figcaption class="fig-cap">GPU執行緒階層與SM的分配 · <a href="/zh-hant/figures/#fig-gpu-hierarchy">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/cpu/">CPU與架構</a></p>
 </article>
-
+<section class="term-about">
+  <h2>GPU 的組成架構</h2>
+  <p>GPU 內含許多<a class="term-link" href="/zh-hant/term/streaming-multiprocessor/">串流多處理器</a>（SM），每個 SM 是由簡單執行單元組成的叢集，擁有自己的暫存器與晶片內<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>。GPU 不像 CPU 核心那樣以大型快取與精密的<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>讓單一執行緒跑得快，而是讓數千個執行緒同時處於執行中，每當某一組在等待記憶體時就切換到另一組。這種做法以龐大的平行度來隱藏延遲，並將<a class="term-link" href="/zh-hant/term/throughput/">吞吐量</a>最大化。執行緒以固定大小的群組排程，同一群組以鎖步方式一起發出相同指令；在 NVIDIA GPU 上，32 個執行緒組成一個 warp，這種模型稱為 <a class="term-link" href="/zh-hant/term/single-instruction-multiple-threads/">SIMT（單指令多執行緒）</a>。</p>
+</section>
+<section class="term-about">
+  <h2>SIMT 與 CPU 的 SIMD</h2>
+  <p>CPU 的 <a class="term-link" href="/zh-hant/term/simd/">SIMD</a> 指令是對存放固定數量元素的向量暫存器套用同一個運算，程式設計師或編譯器必須針對該寬度撰寫程式。在 <a class="term-link" href="/zh-hant/term/single-instruction-multiple-threads/">SIMT</a> 中，程式設計師撰寫的是單一執行緒的一般程式碼，由硬體把執行緒分組成 warp。執行緒可以走不同的分支，但此時硬體會依序執行各條路徑，造成通道閒置浪費。因此，GPU 擅長以相同運算獨立處理每個元素的工作，而不擅長循序且依賴資料的工作，例如走訪鏈結串列。</p>
+</section>
+<section class="term-about">
+  <h2>記憶體頻寬是瓶頸</h2>
+  <p>要供應數千個執行單元，需要極大的頻寬。繪圖卡使用 GDDR 記憶體，近幾代的每腳位速率超過 20 Gb/s，並以短走線配置在 GPU 周圍。AI 加速器則把堆疊式 <a class="term-link" href="/zh-hant/term/hbm/">HBM</a> 透過<a class="term-link" href="/zh-hant/term/silicon-interposer/">矽中介層</a>（2.5D 封裝）放在 GPU 旁邊；每個堆疊有 1,024 條資料線，因此數個堆疊可提供數 TB/s 的頻寬。軟體也必須配合：當相鄰執行緒讀取相鄰位址時，存取會合併為少數幾筆寬交易，這也是為什麼陣列結構（structure of arrays）通常勝過結構陣列（array of structures）。</p>
+</section>
+<section class="term-about">
+  <h2>GPU 程式如何撰寫</h2>
+  <p>在 <a class="term-link" href="/zh-hant/term/cuda/">CUDA</a> 及類似框架中，由 CPU 啟動 kernel，也就是讓許多 GPU 執行緒同時執行的函式。一次啟動會形成由多個 block 組成的 grid，每個 block 包含許多在同一個 SM 上執行、並可透過<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>協作的執行緒。每個執行緒會計算自己的索引來選取一個資料元素，而防護條件 if (i &lt; n) 可防止最後一個 block 中多出來的執行緒存取超出陣列範圍的記憶體。由於各 block 獨立執行，同一個程式可以在小型與大型 GPU 之間擴展。</p>
+</section>
 <section>
   <h2>練習GPU的題目</h2>
   <article class="q-mini" data-qid="dram-019" data-cat="dram" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -172,7 +187,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 因為具有大量單純的運算單元，能平行處理大量資料</p><p class="explanation"><a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 原本是為了同時處理螢幕上的大量像素，因此其結構是並排數千〜上萬個以上的單純運算單元。像矩陣運算這種對大量資料重複相同計算的處理，可藉由這種平行性發揮高效能。近年來 GPU 配備了矩陣運算專用單元（<a class="term-link" href="/zh-hant/term/tensor-core/">Tensor Core</a> 等）與高頻寬的 <a class="term-link" href="/zh-hant/term/hbm/">HBM</a>，已成為 AI 訓練的主角。分支多的循序處理則是 CPU 較為擅長。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>CPU 和 GPU 有什麼差別？</h3>
+  <p>CPU 擁有少數幾個複雜核心，針對以低延遲完成個別工作而最佳化；GPU 則擁有大量簡單核心，針對高度平行工作的總吞吐量而最佳化。GPU 透過在數千個執行緒之間切換來隱藏記憶體延遲，而不是依賴大型快取。</p>
+  <h3>AI 為什麼要用 GPU？</h3>
+  <p>神經網路的訓練與推論主要由大型矩陣乘法構成，也就是對龐大陣列套用相同運算，這很自然地對應到數千個平行執行緒。HBM 等高頻寬記憶體則讓這些單元持續獲得資料供應。</p>
+  <h3>什麼是 warp divergence（warp 分歧）？</h3>
+  <p>指同一個 warp 中的執行緒走了不同分支；硬體會輪流執行每條路徑，其餘執行緒則閒置等待，使效率降低。讓同一 warp 內的分支條件一致即可避免。</p>
+</section>
 <section>
   <h2>解析中的「GPU」</h2>
   <ul class="term-quotes"><li><p>GDDR是為了讓GPU能高速處理大量影像資料而重視每支接腳傳輸速率的DRAM，GDDR6X達到20 Gb/s以上，GDDR7達到30 Gb/s左右（為DDR5的數倍）。</p><a href="/zh-hant/q/dram/dram-019/">關於作為GPU圖形記憶體的GDDR，下列何者是其正確特徵？</a></li><li><p>GPU 原本是為了同時處理螢幕上的大量像素，因此其結構是並排數千〜上萬個以上的單純運算單元。</p><a href="/zh-hant/q/cpu/cpu-008/">GPU 適合矩陣運算以及 AI 訓練與推論的主要原因為何？</a></li><li><p>在可製作微細配線的矽中介層上並排GPU與HBM，就能以大量配線在數mm的短距離內連接，實現AI運算所需的數TB/s記憶體頻寬。</p><a href="/zh-hant/q/advanced-packaging/advanced-packaging-017/">在AI用GPU中，將GPU晶片與HBM並排安裝在同一個矽中介層上的主要理由是下列何者？</a></li><li><p>中介層已可做到曝光範圍數倍的大小，廣泛用於連接AI用GPU與多個HBM。</p><a href="/zh-hant/q/advanced-packaging/advanced-packaging-036/">在台積電（TSMC）的2.5D封裝技術中，廣泛用於將AI用GPU與HBM並排在矽中介層上連接的是下列何者？</a></li><li><p>GPU則簡化這些電路，並排上更多運算單元，同時執行數千個執行緒，以提高整體處理量。</p><a href="/zh-hant/q/gpu-programming/gpu-programming-001/">關於CPU與GPU設計理念的差異，下列何者正確？</a></li></ul>

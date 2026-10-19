@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Backpropagation","item":"https://semiconroom.com/de/term/backpropagation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Backpropagation","description":"Berechnung beim Training neuronaler Netze, bei der der Fehler zwischen Ausgabe und Sollwert von der Ausgabe- zur Eingabeseite zurückpropagiert wird, um den Gradienten jedes Gewichts zu bestimmen.","url":"https://semiconroom.com/de/term/backpropagation/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Backpropagation","item":"https://semiconroom.com/de/term/backpropagation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Backpropagation","description":"Berechnung beim Training neuronaler Netze, bei der der Fehler zwischen Ausgabe und Sollwert von der Ausgabe- zur Eingabeseite zurückpropagiert wird, um den Gradienten jedes Gewichts zu bestimmen.","url":"https://semiconroom.com/de/term/backpropagation/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Backpropagation und Gradientenabstieg","acceptedAnswer":{"@type":"Answer","text":"Backpropagation berechnet den Gradienten des Verlusts bezüglich jedes Gewichts. Der Gradientenabstieg oder ein anderer Optimierer wie Adam nutzt diese Gradienten, um die Gewichte zu aktualisieren."}},{"@type":"Question","name":"Warum braucht Training mehr Speicher als Inferenz?","acceptedAnswer":{"@type":"Answer","text":"Das Training muss die Vorwärtsaktivierungen für den Rückwärtsdurchlauf aufbewahren, dazu einen Gradienten für jedes Gewicht und den Optimiererzustand, während die Inferenz nur die Gewichte und vorübergehende Aktivierungen benötigt."}},{"@type":"Question","name":"Wie aufwendig ist der Rückwärtsdurchlauf im Vergleich zum Vorwärtsdurchlauf?","acceptedAnswer":{"@type":"Answer","text":"Etwa doppelt so aufwendig, sodass ein Trainingsschritt etwa drei Vorwärtsdurchläufe kostet; daher stammt die Faustregel von 6N Operationen pro Token."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Fachgebiet: <a href="/de/c/ai-stack/">KI-Hardware und Software-Stack</a></p>
 </article>
+<section class="term-about">
+  <h2>Wie Backpropagation funktioniert</h2>
+  <p>Das Training beginnt mit einem Vorwärtsdurchlauf, der die Ausgabe und einen Verlust (Loss) berechnet, der ihren Fehler gegenü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> dem Sollwert misst. Backpropagation wendet dann die Kettenregel rückwärts an: Ausgehend vom Verlust erhält jede Schicht den Gradienten bezüglich ihrer Ausgabe und berechnet zweierlei, den Gradienten bezüglich ihrer Gewichte und den Gradienten bezüglich ihrer Eingabe, den sie an die vorherige Schicht weitergibt. Bei einer vollständig verbundenen Schicht kombiniert der Gewichtsgradient den eingehenden Gradienten mit den im Vorwärtsdurchlauf gespeicherten Eingangsaktivierungen. Ein Optimierer verschiebt dann jedes Gewicht ein Stück entgegen seinem Gradienten.</p>
+</section>
+<section class="term-about">
+  <h2>Berechnungsgraphen und automatische Differentiation</h2>
+  <p>Frameworks stellen ein Modell als Berechnungsgraphen dar, mit Operationen wie Matrixprodukten, Additionen und Aktivierungen als Knoten und Tensoren als Kanten. Da jeder Knoten seine eigene lokale Ableitung kennt, kann das Framework den Graphen rückwärts durchlaufen und alle Gradienten automatisch berechnen – ein Verfahren namens automatische Differentiation im Rückwärtsmodus (Reverse Mode). Der Graph zeigt auch, welche Operationen unabhängig sind. <a class="term-link" href="/de/term/ai-inference/">Inferenz</a>-Laufzeitumgebungen wie TensorRT oder <a class="term-link" href="/de/term/onnx/">ONNX</a> Runtime verzichten auf die für Backpropagation nötige Buchführung, fusionieren dann Operationen, senken die Genauigkeit und wählen hardwarespezifische Kernels, weshalb sie schneller laufen als das für die Inferenz genutzte Trainingsframework.</p>
+</section>
+<section class="term-about">
+  <h2>Rechen- und Speicheraufwand</h2>
+  <p>Der Rückwärtsdurchlauf kostet etwa doppelt so viel wie der Vorwärtsdurchlauf, weil jede Schicht Gradienten sowohl für ihre Eingaben als auch für ihre Gewichte berechnet. Ein Vorwärtsdurchlauf erfordert bei N Parametern etwa 2N Operationen pro Token, Training also etwa 6N pro Token bzw. 6ND für D Tokens; ein Modell mit 7 Milliarden Parametern benötigt bei 1 Billion Tokens etwa 4,2 × 10^22 Operationen. Der Speicherbedarf wächst noch stärker: Das Training speichert Zwischenaktivierungen, Gradienten in gleicher Anzahl wie die Gewichte und Optimiererzustände wie die zwei gleitenden Mittelwerte von Adam. <a class="term-link" href="/de/term/gradient-checkpointing/">Gradient Checkpointing</a> speichert nur einen Teil der Aktivierungen und berechnet den Rest neu, was etwa einen zusätzlichen Vorwärtsdurchlauf kostet.</p>
+</section>
+<section class="term-about">
+  <h2>Numerische Genauigkeit und Loss Scaling</h2>
+  <p>Gradienten sind oft winzig. FP16 (1 Vorzeichen-, 5 Exponenten- und 10 Mantissenbit) deckt positive Werte von nur etwa 6 × 10^-8, einschließlich subnormaler Zahlen, bis 65.504 ab, sodass viele Gradienten auf null unterlaufen und das Lernen stockt. Loss Scaling multipliziert den Verlust vor der Backpropagation mit einem Faktor wie 1.024, hebt die Gradienten so in den darstellbaren Bereich und teilt den Faktor vor der Gewichtsaktualisierung wieder heraus. Training mit gemischter Genauigkeit (<a class="term-link" href="/de/term/mixed-precision/">Mixed Precision</a>) behält meist zusätzlich eine Masterkopie der Gewichte in höherer Genauigkeit. BF16 hat wie FP32 8 Exponentenbit, einen deutlich größeren Wertebereich und benötigt selten Loss Scaling.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Backpropagation und Gradientenabstieg</h3>
+  <p>Backpropagation berechnet den Gradienten des Verlusts bezüglich jedes Gewichts. Der Gradientenabstieg oder ein anderer Optimierer wie Adam nutzt diese Gradienten, um die Gewichte zu aktualisieren.</p>
+  <h3>Warum braucht Training mehr Speicher als Inferenz?</h3>
+  <p>Das Training muss die Vorwärtsaktivierungen für den Rückwärtsdurchlauf aufbewahren, dazu einen Gradienten für jedes Gewicht und den Optimiererzustand, während die Inferenz nur die Gewichte und vorübergehende Aktivierungen benötigt.</p>
+  <h3>Wie aufwendig ist der Rückwärtsdurchlauf im Vergleich zum Vorwärtsdurchlauf?</h3>
+  <p>Etwa doppelt so aufwendig, sodass ein Trainingsschritt etwa drei Vorwärtsdurchläufe kostet; daher stammt die Faustregel von 6N Operationen pro Token.</p>
+</section>
 
 
 

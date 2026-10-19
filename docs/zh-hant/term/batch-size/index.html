@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"批次大小（Batch size）","item":"https://semiconroom.com/zh-hant/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"批次大小（Batch size）","description":"一併處理的輸入數量。增大後可重複使用權重而提高效率，但回應的延遲與記憶體也會增加。","url":"https://semiconroom.com/zh-hant/term/batch-size/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"批次大小（Batch size）","item":"https://semiconroom.com/zh-hant/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"批次大小（Batch size）","description":"一併處理的輸入數量。增大後可重複使用權重而提高效率，但回應的延遲與記憶體也會增加。","url":"https://semiconroom.com/zh-hant/term/batch-size/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"批次大小越大，推論就越快嗎？","acceptedAnswer":{"@type":"Answer","text":"它會提高總產出量，因為每次讀取權重能服務更多輸入，但每個個別請求通常要等更久，因此延遲會變差。"}},{"@type":"Question","name":"為什麼加大批次大小會增加 GPU 記憶體用量？","acceptedAnswer":{"@type":"Answer","text":"激活值（在 LLM 中還有 KV 快取）是依每個輸入分別儲存的，因此會隨批次大小線性增加，而權重則維持不變。"}},{"@type":"Question","name":"批次大小和 epoch 有什麼差別？","acceptedAnswer":{"@type":"Answer","text":"批次大小是每個步驟或每次權重更新處理的樣本數；epoch 則是完整走過訓練資料集一次，所需步數為資料集大小除以批次大小。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>為什麼批次處理能提高效率</h2>
+  <p>在神經網路的一層中，所有輸入使用的權重都相同。批次大小為 1 時，全連接層是矩陣向量乘積：每個權重從記憶體擷取後只用於一次乘加運算，在 FP16 下<a class="term-link" href="/zh-hant/term/arithmetic-intensity/">運算強度</a>約為 1 FLOP/byte，因此運算單元大多在等待記憶體。批次大小為 B 時，該層變成矩陣矩陣乘積：權重流量不變，運算量卻增加 B 倍，因此運算強度大約提高 B 倍，工作負載便從受記憶體限制轉向受運算限制。伺服器會將來自眾多使用者的請求分組，以善用這一點。</p>
+</section>
+<section class="term-about">
+  <h2>延遲與記憶體的代價</h2>
+  <p>較大的批次能提高總產出量，但不會提高個別請求的速度。請求可能需要等待其他請求到達，每個批次的運算時間也較長，因此每個請求的延遲會增加；互動式服務只會在回應時間目標允許的範圍內加大批次。記憶體也會增加。在 LLM（大型語言模型）推論中，<a class="term-link" href="/zh-hant/term/kv-cache/">KV 快取</a>用來儲存先前 token 的注意力鍵與值，避免重新計算，其大小與層數、鍵與值的維度、token 數、批次大小以及每個元素的位元組數成正比。在長上下文或大量請求下，它可能達到數十 GB，超過權重本身。</p>
+</section>
+<section class="term-about">
+  <h2>LLM 解碼時的典型數值</h2>
+  <p>在批次大小為 1 的解碼過程中，每產生一個 token 都需要讀取所有權重。因此，在頻寬 2 TB/s 的 <a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 上執行 FP16 權重約 14 GB 的模型，每個 token 至少需要 14 GB ÷ 2 TB/s = 7 ms，也就是每秒最多約 140 個 token。將權重量化為 4 位元（約 3.5 GB）可將這個下限降到約 1.75 ms。較大的批次每讀取一次權重就能產生多個 token，使總產出量成倍增加，直到運算能力或 <a class="term-link" href="/zh-hant/term/kv-cache/">KV 快取</a>記憶體成為限制。KV 快取的壓力可透過較低精度的快取、在多個注意力頭之間共用鍵與值，以及以區塊為單位的記憶體管理來緩解。</p>
+</section>
+<section class="term-about">
+  <h2>訓練中的批次大小</h2>
+  <p>在訓練中，批次（mini-batch）是指為了進行一次權重<a class="term-link" href="/zh-hant/term/refresh/">更新</a>而將其梯度平均的一組樣本。較大的批次能更有效率地使用硬體，每走過一次資料（一個 epoch）所需的更新步數也較少，但<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>所需的激活值記憶體會隨批次大小與模型深度增加。<a class="term-link" href="/zh-hant/term/gradient-checkpointing/">梯度檢查點</a>可以因應這一點，只儲存部分激活值，其餘重新計算，代價約為多一次前向傳遞。大幅改變批次大小通常需要重新調整學習率，因為它會改變梯度雜訊。</p>
+</section>
 <section>
   <h2>練習批次大小（Batch size）的題目</h2>
   <article class="q-mini" data-qid="ai-stack-009" data-cat="ai-stack" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 因為讀取一次的權重可以用於多筆輸入的計算，運算強度提高，能有效運用運算單元</p><p class="explanation">若<a class="term-link" href="/zh-hant/term/batch-size/">批次大小</a>為B，權重矩陣與B個向量的乘積，就變成權重矩陣與寬度為B的矩陣的乘積。權重的讀取不變，運算卻變為B倍，因此<a class="term-link" href="/zh-hant/term/arithmetic-intensity/">運算強度</a>也約變為B倍，從受記憶體限制趨近於受運算限制。在伺服器上的推論，是藉由將許多使用者的請求集中處理，來有效率地運用<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>批次大小越大，推論就越快嗎？</h3>
+  <p>它會提高總產出量，因為每次讀取權重能服務更多輸入，但每個個別請求通常要等更久，因此延遲會變差。</p>
+  <h3>為什麼加大批次大小會增加 GPU 記憶體用量？</h3>
+  <p>激活值（在 LLM 中還有 KV 快取）是依每個輸入分別儲存的，因此會隨批次大小線性增加，而權重則維持不變。</p>
+  <h3>批次大小和 epoch 有什麼差別？</h3>
+  <p>批次大小是每個步驟或每次權重更新處理的樣本數；epoch 則是完整走過訓練資料集一次，所需步數為資料集大小除以批次大小。</p>
+</section>
 <section>
   <h2>解析中的「批次大小（Batch size）」</h2>
   <ul class="term-quotes"><li><p>若批次大小為B，權重矩陣與B個向量的乘積，就變成權重矩陣與寬度為B的矩陣的乘積。</p><a href="/zh-hant/q/ai-stack/ai-stack-010/">在推論中加大批次大小（一次處理的輸入數量），整體效率容易提升，其原因為下列何者？</a></li><li><p>雖然能大幅減少計算，但所保存的Key與Value的量會隨文章長度與批次大小成正比增加。</p><a href="/zh-hant/q/ai-stack/ai-stack-013/">大型語言模型推論中使用的KV快取，其作用下列何者正確？</a></li><li><p>KV快取的大小，由層數×Key與Value的維度×token數×批次大小×每個元素的位元組數決定。</p><a href="/zh-hant/q/ai-stack/ai-stack-014/">在大型語言模型的推論中處理長文章或大批次時，容易成為問題的是下列何者？</a></li><li><p>反向傳播需要各層順向傳播的中間結果，但全部保存的話，記憶體會隨層數與批次大小成正比增加。</p><a href="/zh-hant/q/ai-stack/ai-stack-037/">關於訓練中使用的梯度檢查點（重新計算啟動值），下列說明何者正確？</a></li></ul>

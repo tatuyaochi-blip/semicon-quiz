@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"運算強度（Arithmetic intensity）","item":"https://semiconroom.com/zh-hant/term/arithmetic-intensity/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"運算強度（Arithmetic intensity）","description":"以處理的運算次數除以從記憶體讀寫的位元組數所得的值。越大越容易受運算限制，越小越容易受記憶體限制。","url":"https://semiconroom.com/zh-hant/term/arithmetic-intensity/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"運算強度（Arithmetic intensity）","item":"https://semiconroom.com/zh-hant/term/arithmetic-intensity/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"運算強度（Arithmetic intensity）","description":"以處理的運算次數除以從記憶體讀寫的位元組數所得的值。越大越容易受運算限制，越小越容易受記憶體限制。","url":"https://semiconroom.com/zh-hant/term/arithmetic-intensity/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"運算強度怎麼計算？","acceptedAnswer":{"@type":"Answer","text":"將運算次數（通常是 FLOP）除以與記憶體之間傳輸的位元組數。以 N × N FP16 矩陣乘法來說，結果為 2N^3 / 6N^2 = N/3。"}},{"@type":"Question","name":"Roofline 模型中的脊點是什麼？","acceptedAnswer":{"@type":"Answer","text":"它是峰值運算能力除以記憶體頻寬，也就是工作負載從受記憶體限制轉為受運算限制的運算強度。以 100 TFLOPS 與 2 TB/s 為例，脊點為 50 FLOP/byte。"}},{"@type":"Question","name":"為什麼批次大小為 1 的推論會受記憶體限制？","acceptedAnswer":{"@type":"Answer","text":"每個權重從記憶體讀出後只用於一次乘加運算，因此在 FP16 下運算強度約為 1 FLOP/byte，遠低於一般加速器的脊點。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -93,7 +93,22 @@
 </svg><figcaption class="fig-cap">屋頂線模型 · <a href="/zh-hant/figures/#fig-roofline">在圖解集中查看</a></figcaption></figure>
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>如何計算</h2>
+  <p>運算強度是執行的運算次數除以在記憶體與處理器之間搬移的位元組數，通常以每位元組 DRAM 流量的 FLOP 數計算。兩個 N × N FP16 矩陣相乘時，若各讀取一次、寫入一次，工作量為 2N^3 次運算，流量為 3N^2 個元素，即 6N^2 位元組，因此運算強度為 N/3，N = 1024 時約為 340。矩陣向量乘積的每個權重只使用一次，在 FP16 下約為 1 FLOP/byte，而 ReLU 等逐元素運算則低於 1。運算強度取決於演算法、資料型別，以及實作重複利用資料的程度。</p>
+</section>
+<section class="term-about">
+  <h2>Roofline 模型</h2>
+  <p><a class="term-link" href="/zh-hant/term/roofline-model/">Roofline 模型</a>（有時使用 operational intensity 一詞）將可達到的效能對運算強度作圖。效能取峰值運算能力與「記憶體頻寬 × 運算強度」兩者中的較小者，因此圖上有一條傾斜的頻寬上限與一條水平的運算上限。兩者交會於脊點，其值為峰值除以頻寬。以 100 TFLOPS 與 2 TB/s 為例，脊點在 50 FLOP/byte，因此運算強度為 10 FLOP/byte 的工作負載受記憶體限制，效能為 2 TB/s × 10 = 20 TFLOPS。在脊點以下，增加運算單元沒有幫助；在脊點以上，記憶體頻寬就不再是限制。</p>
+</section>
+<section class="term-about">
+  <h2>如何提高運算強度</h2>
+  <p>當工作負載位於傾斜的屋頂下方時，解決方法是讓每個位元組做更多的工作，或是搬移更少的位元組。分塊（tiling）將子矩陣保留在快取或晶片內記憶體中，使從 DRAM 擷取的每個值都能被使用多次。運算子融合則在資料仍位於晶片內時，就套用激活或正規化等逐元素步驟，而不是先寫出再讀回。批次處理讓一次讀取的權重能服務多個輸入。較低精度的資料型別可減少每個值的位元組數，在相同計算下提高每位元組的運算次數。</p>
+</section>
+<section class="term-about">
+  <h2>會在哪裡遇到運算強度</h2>
+  <p>運算強度能解釋 AI 加速器的許多行為。大型矩陣乘法受運算限制，可以接近峰值產出量，而逐元素層雖然運算量少，卻可能占用相當比例的執行時間。<a class="term-link" href="/zh-hant/term/batch-size/">批次大小</a>為 1 的推論是運算強度接近 1 的矩陣向量工作負載，因此受限於權重從記憶體串流讀出的速度，這就是批次處理與權重量化有幫助的原因。請將它與硬體的脊點比較：運算強度屬於工作負載，脊點屬於機器，兩者的比值告訴你該最佳化哪一項資源。</p>
+</section>
 <section>
   <h2>練習運算強度（Arithmetic intensity）的題目</h2>
   <article class="q-mini" data-qid="cpu-050" data-cat="cpu" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -107,7 +122,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. N/3</p><p class="explanation">運算數為2N³，記憶體的讀寫是3個矩陣共3N²個元素，FP16下為6N²位元組。<a class="term-link" href="/zh-hant/term/arithmetic-intensity/">運算強度</a>為2N³÷6N²＝N/3，N＝1024時約為340。矩陣相乘越大，每位元組所對應的計算就越多，因此是容易發揮運算單元效能的處理。另一方面，逐元素相加這類處理的運算強度小於1，速度由記憶體頻寬決定。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>運算強度怎麼計算？</h3>
+  <p>將運算次數（通常是 FLOP）除以與記憶體之間傳輸的位元組數。以 N × N FP16 矩陣乘法來說，結果為 2N^3 / 6N^2 = N/3。</p>
+  <h3>Roofline 模型中的脊點是什麼？</h3>
+  <p>它是峰值運算能力除以記憶體頻寬，也就是工作負載從受記憶體限制轉為受運算限制的運算強度。以 100 TFLOPS 與 2 TB/s 為例，脊點為 50 FLOP/byte。</p>
+  <h3>為什麼批次大小為 1 的推論會受記憶體限制？</h3>
+  <p>每個權重從記憶體讀出後只用於一次乘加運算，因此在 FP16 下運算強度約為 1 FLOP/byte，遠低於一般加速器的脊點。</p>
+</section>
 <section>
   <h2>解析中的「運算強度（Arithmetic intensity）」</h2>
   <ul class="term-quotes"><li><p>在屋頂線模型中，橫軸取運算強度（從記憶體每讀取 1 位元組所做的運算數），縱軸取效能。</p><a href="/zh-hant/q/cpu/cpu-050/">以運算強度（每位元組的運算數）為橫軸，圖示程式效能是受運算效能還是記憶體頻寬所限制的模型是下列何者？</a></li><li><p>運算強度為2N³÷6N²＝N/3，N＝1024時約為340。</p><a href="/zh-hant/q/ai-stack/ai-stack-007/">計算N×N的FP16（2位元組）矩陣相乘，兩個輸入各讀取1次，結果寫入1次。運算強度（每位元組的運算數）大約是多少？</a></li><li><p>在Roofline模型中，可達成的效能是「尖峰效能」與「頻寬×運算強度」兩者中較小的一方。</p><a href="/zh-hant/q/ai-stack/ai-stack-008/">以尖峰效能100 TFLOPS、記憶體頻寬2 TB/s的加速器執行運算強度為10 FLOP/位元組的處理。以Roofl…</a></li><li><p>以FP16來說，每2位元組只做2次運算，運算強度約為1。</p><a href="/zh-hant/q/ai-stack/ai-stack-009/">輸入只有1筆（批次大小為1）時，全連接層的計算（權重矩陣與向量的乘積）容易受記憶體限制，其原因下列何者正確？</a></li><li><p>權重的讀取不變，運算卻變為B倍，因此運算強度也約變為B倍，從受記憶體限制趨近於受運算限制。</p><a href="/zh-hant/q/ai-stack/ai-stack-010/">在推論中加大批次大小（一次處理的輸入數量），整體效率容易提升，其原因為下列何者？</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Dynamischer Linker","item":"https://semiconroom.com/de/term/dynamic-linker/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Dynamischer Linker","description":"Software, die beim Start eines dynamisch gelinkten Programms Shared Libraries sucht und lädt, Relokation und Symbolbindung durchführt und dann das Programm startet. Z. B. ld.so unter Linux.","url":"https://semiconroom.com/de/term/dynamic-linker/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Dynamischer Linker","item":"https://semiconroom.com/de/term/dynamic-linker/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Dynamischer Linker","description":"Software, die beim Start eines dynamisch gelinkten Programms Shared Libraries sucht und lädt, Relokation und Symbolbindung durchführt und dann das Programm startet. Z. B. ld.so unter Linux.","url":"https://semiconroom.com/de/term/dynamic-linker/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist ld.so unter Linux?","acceptedAnswer":{"@type":"Answer","text":"Es ist der dynamische Linker/Loader: das Programm, das der Kernel bei einer dynamisch gelinkten ausführbaren Datei zuerst startet und das Shared Libraries lädt, Symbole auflöst und dann das Programm startet."}},{"@type":"Question","name":"Warum meldet mein Programm, dass eine Shared Library nicht gefunden wird?","acceptedAnswer":{"@type":"Answer","text":"Der dynamische Linker konnte eine benötigte Bibliothek in seinen Suchpfaden nicht finden oder fand nur eine inkompatible Version. Ein Aufruf von ldd für das Programm zeigt, welche Abhängigkeit fehlt."}},{"@type":"Question","name":"Was ist der Unterschied zwischen GOT und PLT?","acceptedAnswer":{"@type":"Answer","text":"Die GOT ist eine Datentabelle mit aufgelösten Adressen, die der dynamische Linker füllt, während die PLT aus kleinen Code-Stubs besteht, über die externe Funktionsaufrufe springen und dabei ihre Ziele aus der GOT lesen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/linker-loader/">Linker, Loader und ausführbare Formate</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was beim Programmstart passiert</h2>
+  <p>Eine dynamisch gelinkte <a class="term-link" href="/de/term/executable-and-linkable-format/">ELF</a>-Programmdatei nennt in ihren Program Headers einen Interpreter, etwa ld-linux unter Linux. Nachdem execve das Programm eingeblendet hat, blendet der Kernel auch diesen dynamischen <a class="term-link" href="/de/term/linker/">Linker</a> ein und übergibt ihm statt dem Programm die Kontrolle. Der dynamische Linker liest die Liste der benötigten Bibliotheken, sucht sie in konfigurierten Pfaden und seinem Cache, blendet sie in den Adressraum ein, wendet Relokationen an, bindet Symbole, führt die Initialisierungsfunktionen der Bibliotheken aus (in Abschnitten wie .init_array aufgeführt) und springt schließlich zum Einstiegspunkt des Programms. Später mit dlopen geöffnete Bibliotheken durchlaufen denselben Mechanismus.</p>
+</section>
+<section class="term-about">
+  <h2>GOT, PLT und Lazy Binding</h2>
+  <p>Shared Libraries werden als <a class="term-link" href="/de/term/position-independent-code/">positionsunabhängiger Code</a> erstellt, daher enthalten ihre Codeseiten keine absoluten Adressen anderer Module. Stattdessen liest der Code Adressen aus der <a class="term-link" href="/de/term/global-offset-table/">Global Offset Table</a> (GOT), einer beschreibbaren Datentabelle, die der dynamische <a class="term-link" href="/de/term/linker/">Linker</a> ausfüllt. Funktionsaufrufe laufen ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Stubs der <a class="term-link" href="/de/term/procedure-linkage-table/">Procedure Linkage Table</a> (PLT). Beim Lazy Binding gelangt der erste Aufruf über einen Stub in den Resolver des Linkers, der die tatsächliche Adresse in die GOT schreibt, und spätere Aufrufe springen direkt dorthin. Viele Systeme binden stattdessen alles beim Start und machen die GOT anschließend schreibgeschützt (Full RELRO), um Angriffe durch Überschreiben der GOT zu verhindern.</p>
+</section>
+<section class="term-about">
+  <h2>Dynamischer und statischer Linker im Vergleich</h2>
+  <p>Der statische <a class="term-link" href="/de/term/linker/">Linker</a> (ld) läuft zur Build-Zeit: Er kombiniert Objektdateien, löst Symbole auf und wendet die meisten Relokationen an, wodurch eine ausführbare Datei entsteht. Der dynamische Linker läuft bei jedem Programmstart und vollendet die Arbeit für die Shared Libraries. Diese Aufteilung ermöglicht es, dass sich viele Prozesse eine einzige physische Kopie des Bibliothekscodes teilen und dass eine Sicherheitskorrektur durch Austausch einer einzigen Datei jedes Programm erreicht. Der Preis sind zusätzlicher Aufwand beim Start und die Abhängigkeit davon, dass die richtigen Bibliotheksversionen auf dem Zielrechner vorhanden sind.</p>
+</section>
+<section class="term-about">
+  <h2>Steuerung und Fehlersuche</h2>
+  <p>Die meisten Startfehler dynamisch gelinkter Programme sind fehlende oder inkompatible Bibliotheken; der Befehl ldd listet die Abhängigkeiten auf und zeigt, welche nicht gefunden werden. Unter Linux fügen Umgebungsvariablen wie LD_LIBRARY_PATH Suchverzeichnisse hinzu, und LD_PRELOAD lädt eine Bibliothek vor allen anderen, was für Debugging und Instrumentierung nützlich ist. Bibliotheksautoren können das Laden beschleunigen, indem sie nur öffentliche Funktionen exportieren und interne Symbole als hidden markieren; das verringert die Zahl der Symbole, die der dynamische <a class="term-link" href="/de/term/linker/">Linker</a> verarbeiten muss, und lässt interne Aufrufe die <a class="term-link" href="/de/term/procedure-linkage-table/">PLT</a> umgehen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Dynamischer Linker</h2>
   <article class="q-mini" data-qid="linker-loader-050" data-cat="linker-loader" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Die Adressen der Funktionen, die die Konstruktoren aufrufen, werden in Tabellen wie .init_array gesammelt, und der Startcode ruft sie vor main der Reihe nach auf</p><p class="explanation">Der Compiler erzeugt für jede Datei eine Funktion, die die globalen Objekte initialisiert, und legt deren Adresse in der speziellen Section .init_array ab. Der <a class="term-link" href="/de/term/linker/">Linker</a> fasst die .init_array aller Dateien zu einer Tabelle zusammen, und Startcode oder <a class="term-link" href="/de/term/dynamic-linker/">dynamischer Linker</a> rufen die Funktionen dieser Tabelle vor main der Reihe nach auf. Verarbeitungen bei der Beendigung werden entsprechend in .fini_array gesammelt. Die Reihenfolge der Initialisierung ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Dateigrenzen hinweg ist nicht festgelegt; daher ist darauf zu achten, keine Abhängigkeiten zu erzeugen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist ld.so unter Linux?</h3>
+  <p>Es ist der dynamische Linker/Loader: das Programm, das der Kernel bei einer dynamisch gelinkten ausführbaren Datei zuerst startet und das Shared Libraries lädt, Symbole auflöst und dann das Programm startet.</p>
+  <h3>Warum meldet mein Programm, dass eine Shared Library nicht gefunden wird?</h3>
+  <p>Der dynamische Linker konnte eine benötigte Bibliothek in seinen Suchpfaden nicht finden oder fand nur eine inkompatible Version. Ein Aufruf von ldd für das Programm zeigt, welche Abhängigkeit fehlt.</p>
+  <h3>Was ist der Unterschied zwischen GOT und PLT?</h3>
+  <p>Die GOT ist eine Datentabelle mit aufgelösten Adressen, die der dynamische Linker füllt, während die PLT aus kleinen Code-Stubs besteht, über die externe Funktionsaufrufe springen und dabei ihre Ziele aus der GOT lesen.</p>
+</section>
 <section>
   <h2>„Dynamischer Linker“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Der Linker fasst die .init_array aller Dateien zu einer Tabelle zusammen, und Startcode oder dynamischer Linker rufen die Funktionen dieser Tabelle vor main der Reihe nach auf.</p><a href="/de/q/linker-loader/linker-loader-050/">Welcher Mechanismus lässt in C++ die Konstruktoren globaler…</a></li></ul>
