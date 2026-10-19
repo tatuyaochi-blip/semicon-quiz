@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr" data-lang="fr" data-base="/" data-home="/fr/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interruption vs polling : différences et cas d&#39;utilisation | Salle des semi-conducteurs</title>
+<meta name="description" content="Interruption et polling comparés dans un tableau : fonctionnement, utilisation du CPU, latence, surcoût, complexité, consommation et usages typiques dans les systèmes embarqués et les systèmes d&#39;exploitation.">
+<link rel="canonical" href="https://semiconroom.com/fr/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/interrupt-vs-polling/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/interrupt-vs-polling/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Interruption vs polling : différences et cas d&#39;utilisation | Salle des semi-conducteurs">
+<meta property="og:description" content="Interruption et polling comparés dans un tableau : fonctionnement, utilisation du CPU, latence, surcoût, complexité, consommation et usages typiques dans les systèmes embarqués et les systèmes d&#39;exploitation.">
+<meta property="og:url" content="https://semiconroom.com/fr/compare/interrupt-vs-polling/">
+<meta property="og:site_name" content="Salle des semi-conducteurs">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/fr/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Comparatifs","item":"https://semiconroom.com/fr/compare/"},{"@type":"ListItem","position":3,"name":"Interruption vs polling : différences et cas d'utilisation","item":"https://semiconroom.com/fr/compare/interrupt-vs-polling/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Interruption vs polling : différences et cas d'utilisation","description":"Interruption et polling comparés dans un tableau : fonctionnement, utilisation du CPU, latence, surcoût, complexité, consommation et usages typiques dans les systèmes embarqués et les systèmes d'exploitation.","inLanguage":"fr","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/fr/compare/interrupt-vs-polling/","author":{"@type":"Organization","name":"Salle des semi-conducteurs"},"publisher":{"@type":"Organization","name":"Salle des semi-conducteurs"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Lequel est le meilleur, les interruptions ou le polling ?","acceptedAnswer":{"@type":"Answer","text":"Aucun ne l'est toujours. Les interruptions offrent une réponse rapide et permettent au CPU de se mettre en veille, tandis que le polling est simple et prévisible. Utilisez les interruptions pour les événements rares et le polling pour les événements très fréquents."}},{"@type":"Question","name":"Que doit faire un gestionnaire d'interruption ?","acceptedAnswer":{"@type":"Answer","text":"Être court : faire le minimum, positionner un indicateur ou mettre le travail en file d'attente, puis rendre la main. Un travail long ou des appels bloquants dans un gestionnaire nuisent à la réactivité."}},{"@type":"Question","name":"Qu'est-ce qu'une tempête d'interruptions ?","acceptedAnswer":{"@type":"Answer","text":"Une situation où les événements arrivent si vite que le CPU passe tout son temps à entrer dans les gestionnaires et à en sortir. Les pilotes réseau haut débit passent alors en polling."}},{"@type":"Question","name":"Pourquoi les interruptions économisent-elles l'énergie ?","acceptedAnswer":{"@type":"Answer","text":"Le CPU peut rester en veille jusqu'à ce qu'un événement le réveille, au lieu de se réveiller constamment pour vérifier."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/interrupt-vs-polling/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/fr/"><span class="logo-mark" aria-hidden="true"></span><span>Salle des semi-conducteurs<small></small></span></a>
+    <nav class="header-nav"><a href="/fr/">Accueil</a><a href="/fr/stats/">Progression</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/contact/">Contact</a></nav>
+    <form class="site-search" role="search" action="/fr/search/" method="get"><input type="search" name="q" placeholder="Rechercher (p. ex. MOSFET)" aria-label="Rechercher sur le site" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/compare/interrupt-vs-polling/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/interrupt-vs-polling/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/interrupt-vs-polling/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/interrupt-vs-polling/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/interrupt-vs-polling/" hreflang="de" lang="de">Deutsch</a><a href="/nl/compare/interrupt-vs-polling/" hreflang="nl" lang="nl">Nederlands</a><span aria-current="true">Français</span></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/fr/">Accueil</a> <span>›</span> <a href="/fr/compare/">Comparatifs</a></nav>
+<article class="compare-page">
+  <h1>Interruption vs polling : différences et cas d&#39;utilisation</h1>
+  <p class="lead">Un processeur dispose de deux moyens pour savoir qu&#39;un périphérique a besoin d&#39;attention. Avec le polling, le CPU vérifie en boucle l&#39;état du périphérique. Avec les interruptions, le périphérique envoie un signal au CPU, qui suspend ce qu&#39;il fait, exécute un petit gestionnaire puis reprend. Le polling est simple et prévisible mais fait perdre du temps ; les interruptions sont efficaces et réactives mais ajoutent un surcoût et rendent le programme plus difficile à analyser.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copié !">Copier le tableau</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Lien copié">Partager</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Critère</th><th scope="col">Polling</th><th scope="col">Interruption</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Fonctionnement</th><td>Le CPU lit de façon répétée un registre d&#39;état pour savoir si le périphérique est prêt</td><td>Le périphérique émet un signal ; le CPU suspend son travail et exécute un gestionnaire d&#39;interruption (ISR)</td></tr>
+        <tr><th scope="row">Utilisation du CPU pendant l&#39;attente</th><td>Occupé : le CPU consacre des cycles à la vérification</td><td>Libre : le CPU peut effectuer d&#39;autres tâches ou se mettre en veille</td></tr>
+        <tr><th scope="row">Temps de réponse</th><td>Fixé par la fréquence de vérification de la boucle ; prévisible</td><td>Rapide (quelques microsecondes), mais variable selon le masquage, la priorité et la sauvegarde du contexte</td></tr>
+        <tr><th scope="row">Surcoût</th><td>Constant, même lorsqu&#39;il ne se passe rien</td><td>Un coût par événement ; une fréquence d&#39;événements très élevée peut submerger le CPU (tempête d&#39;interruptions)</td></tr>
+        <tr><th scope="row">Complexité</th><td>Simple à écrire et à déboguer</td><td>Plus complexe : les gestionnaires doivent être courts, et les données partagées avec le code principal demandent des précautions (volatile, accès atomique)</td></tr>
+        <tr><th scope="row">Consommation</th><td>Maintient le CPU éveillé</td><td>Permet une veille basse consommation jusqu&#39;à ce qu&#39;un événement réveille le CPU</td></tr>
+        <tr><th scope="row">Comportement temporel</th><td>Facile à analyser</td><td>Des bugs de concurrence sont possibles entre le gestionnaire et le code principal</td></tr>
+        <tr><th scope="row">Usages typiques</th><td>Événements très rapides ou continus, programmes simples, pilotes réseau haut débit</td><td>Timers, boutons, événements de communication, alertes de capteurs, sortie de veille</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Les valeurs indiquées sont des ordres de grandeur typiques et varient selon la génération de procédé et le produit.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Quand choisir l&#39;un ou l&#39;autre ?</h2>
+  <dl class="compare-when">
+    <dt>Polling</dt><dd>Lorsque les événements sont fréquents ou la boucle simple, et qu&#39;on veut une temporisation prévisible sans la complexité des gestionnaires.</dd>
+    <dt>Interruption</dt><dd>Lorsque les événements sont rares ou imprévisibles, qu&#39;on veut une réponse rapide et une faible consommation, et que le CPU a d&#39;autres tâches à effectuer.</dd>
+    <dt>Hybride</dt><dd>Certains systèmes les combinent : une interruption signale le premier événement, puis le pilote passe en polling tant que le trafic est intense, comme dans les pilotes réseau haut débit.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Lequel est le meilleur, les interruptions ou le polling ?</h3>
+  <p>Aucun ne l&#39;est toujours. Les interruptions offrent une réponse rapide et permettent au CPU de se mettre en veille, tandis que le polling est simple et prévisible. Utilisez les interruptions pour les événements rares et le polling pour les événements très fréquents.</p>
+  <h3>Que doit faire un gestionnaire d&#39;interruption ?</h3>
+  <p>Être court : faire le minimum, positionner un indicateur ou mettre le travail en file d&#39;attente, puis rendre la main. Un travail long ou des appels bloquants dans un gestionnaire nuisent à la réactivité.</p>
+  <h3>Qu&#39;est-ce qu&#39;une tempête d&#39;interruptions ?</h3>
+  <p>Une situation où les événements arrivent si vite que le CPU passe tout son temps à entrer dans les gestionnaires et à en sortir. Les pilotes réseau haut débit passent alors en polling.</p>
+  <h3>Pourquoi les interruptions économisent-elles l&#39;énergie ?</h3>
+  <p>Le CPU peut rester en veille jusqu&#39;à ce qu&#39;un événement le réveille, au lieu de se réveiller constamment pour vérifier.</p>
+</section>
+<section>
+  <h2>Vérifier vos connaissances</h2>
+  <article class="q-mini">
+    <h3><a href="/fr/q/embedded/embedded-028/">Parmi les méthodes de connaissance de l&#39;état d&#39;un périphérique, quelle différence entre scrutation (polling) et interruption est correcte ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">En scrutation, le processeur vérifie l&#39;état de façon répétée ; en interruption, le périphérique avertit le processeur lorsque l&#39;état change</span></li><li><span class="choice-mark">B</span><span class="choice-text">La scrutation et l&#39;interruption sont identiques</span></li><li><span class="choice-mark">C</span><span class="choice-text">L&#39;interruption est la méthode où le processeur vérifie l&#39;état de façon répétée</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. En scrutation, le processeur vérifie l&#39;état de façon répétée ; en interruption, le périphérique avertit le processeur lorsque l&#39;état change</p><p class="explanation">La <a class="term-link" href="/fr/term/polling/">scrutation</a> est simple et son intervalle de vérification fixe rend le comportement prévisible, mais le processeur vérifie en permanence même lorsque rien ne se passe, gaspillant temps et énergie. Avec les interruptions, le processeur ne réagit qu&#39;en cas de changement et peut effectuer d&#39;autres traitements ou se mettre en veille entre-temps. Toutefois, des interruptions très fréquentes alourdissent au contraire le traitement ; il faut donc choisir judicieusement.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/fr/q/embedded/embedded-015/">Que convient-il le plus d&#39;éviter dans un gestionnaire d&#39;interruption ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Écrire 1 dans une variable drapeau pour avertir le traitement principal</span></li><li><span class="choice-mark">B</span><span class="choice-text">Effacer le bit indiquant la cause de l&#39;interruption</span></li><li><span class="choice-mark">C</span><span class="choice-text">Des traitements longs, comme l&#39;affichage d&#39;une longue chaîne par printf ou une boucle d&#39;attente jusqu&#39;à un événement</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Des traitements longs, comme l&#39;affichage d&#39;une longue chaîne par printf ou une boucle d&#39;attente jusqu&#39;à un événement</p><p class="explanation">Pendant qu&#39;un <a class="term-link" href="/fr/term/interrupt-handler/">gestionnaire d&#39;interruption</a> s&#39;exécute longuement, les autres interruptions ne sont pas servies et le traitement principal est également arrêté. printf met du temps à terminer l&#39;affichage et peut lui-même utiliser des interruptions ; il est donc particulièrement dangereux. Le gestionnaire se limite au strict minimum, comme recevoir une donnée dans un tampon ou lever un drapeau, et confie les traitements lourds au traitement principal ou à une tâche. Il ne faut pas non plus oublier d&#39;effacer le bit de cause.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/fr/q/embedded/embedded-050/">Sur un microcontrôleur à interruptions hiérarchisées, une interruption de haute priorité survient pendant l&#39;exécution du gestionnaire d&#39;une interruption de faible priorité. Que se passe-t-il généralement (imbrication des interruptions autorisée) ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Le gestionnaire de faible priorité est interrompu, celui de haute priorité s&#39;exécute, puis l&#39;exécution reprend dans le gestionnaire de faible priorité</span></li><li><span class="choice-mark">B</span><span class="choice-text">L&#39;interruption de haute priorité est ignorée jusqu&#39;à la fin du gestionnaire de faible priorité</span></li><li><span class="choice-mark">C</span><span class="choice-text">Les deux gestionnaires s&#39;exécutent simultanément, en parallèle, sur le même processeur</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. Le gestionnaire de faible priorité est interrompu, celui de haute priorité s&#39;exécute, puis l&#39;exécution reprend dans le gestionnaire de faible priorité</p><p class="explanation">Avec des priorités d&#39;<a class="term-link" href="/fr/term/interrupt/">interruption</a>, une interruption urgente est traitée même pendant l&#39;exécution d&#39;un autre gestionnaire. Par exemple, en donnant une priorité élevée à la détection de surintensité d&#39;un moteur et une priorité faible à la réception de communications, la surintensité est traitée immédiatement même pendant une réception. Le NVIC des Cortex-M d&#39;Arm, entre autres, dispose de ce mécanisme. Les interruptions de priorité égale ou inférieure attendent la fin du gestionnaire en cours.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="3"><a href="/fr/q/os-hardware/os-hardware-009/">Pourquoi divise-t-on le traitement d’un gestionnaire d’interruption en une partie courte exécutée immédiatement et une partie restante exécutée plus tard dans un contexte normal ?</a></li>
+  <li data-level="3"><a href="/fr/q/embedded/embedded-006/">Pendant que le traitement principal manipule un bit de registre par « reg |= mask; » (lecture-modification-écriture), si un gestionnaire d&#39;interruption modifie un autre bit du même registre, quelle combinaison de problème possible et de remède est correcte ?</a></li>
+  <li data-level="2"><a href="/fr/q/embedded/embedded-011/">Un temporisateur compte une horloge de 16 MHz divisée par 16 par le prédiviseur et déclenche une interruption tous les 1000 comptes. Quel est l&#39;intervalle entre interruptions ?</a></li></ol>
+  <p><a class="btn btn-primary" href="/fr/c/embedded/">Questions d&#39;entraînement sur Systèmes embarqués et firmware</a></p>
+</section>
+<section>
+  <h2>Termes clés expliqués</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/fr/term/interrupt/">Interruption</a></dt><dd>Mécanisme du CPU qui suspend temporairement le traitement en cours, en réponse par exemple à une requête d&#39;un périphérique, pour exécuter en priorité le traitement correspondant, puis reprend le traitement initial.</dd></div>
+    <div class="term"><dt><a href="/fr/term/polling/">Scrutation (polling)</a></dt><dd>Méthode où le CPU interroge de façon répétée l&#39;état d&#39;un périphérique pour en détecter les changements. Simple, mais elle consomme du temps et de l&#39;énergie même lorsque rien ne se passe.</dd></div>
+    <div class="term"><dt><a href="/fr/term/interrupt-handler/">Gestionnaire d&#39;interruption</a></dt><dd>Routine exécutée par le CPU lorsqu&#39;une interruption ou une exception survient. Elle sauvegarde l&#39;état du traitement interrompu, effectue le traitement selon la cause, puis reprend le traitement initial. En principe, elle doit être aussi courte que possible.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Comparatifs associés</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/fr/compare/mcu-vs-mpu/"><strong>MCU vs MPU : microcontrôleur et microprocesseur comparés</strong><span>MCU et MPU comparés dans un tableau : intégration, fréquence d&#39;horloge, mémoire, système d&#39;exploitation, comp…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs SPI vs UART : différences et cas d&#39;utilisation</strong><span>I2C, SPI et UART comparés dans un tableau : nombre de fils, horloge, vitesse, topologie, adressage, contrôle …</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/dma-vs-programmed-io/"><strong>DMA vs entrées/sorties programmées : les différences expliquées</strong><span>DMA et entrées/sorties programmées (PIO) comparés dans un tableau : qui déplace les données, charge du CPU, d…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/cpu-vs-gpu/"><strong>CPU vs GPU : différences d&#39;architecture et d&#39;usage</strong><span>CPU et GPU comparés dans un tableau : objectif de conception, nombre de cœurs, modèle d&#39;exécution, caches, ba…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/verilog-vs-vhdl/"><strong>Verilog vs VHDL : les différences entre les deux HDL</strong><span>Verilog et VHDL comparés dans un tableau : origine, syntaxe, typage, sensibilité à la casse, fonctions de vér…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/nvme-vs-sata-ssd/"><strong>SSD NVMe vs SATA : vitesse, interface et lequel acheter</strong><span>SSD NVMe et SATA comparés dans un tableau : interface, vitesse, latence, files de commandes, format, consomma…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Ce site d'apprentissage sur les semi-conducteurs est géré par un particulier.</p>
+    <p class="footer-request"><a href="/fr/contact/">Vos demandes et commentaires sont les bienvenus. Envoyez-les via le formulaire de contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/fr/about/">À propos</a>
+      <a href="/fr/figures/">Schémas</a>
+      <a href="/fr/privacy/">Politique de confidentialité</a>
+      <a href="/fr/disclaimer/">Avertissement</a>
+      <a href="/fr/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Salle des semi-conducteurs</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

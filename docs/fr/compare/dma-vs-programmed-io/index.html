@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr" data-lang="fr" data-base="/" data-home="/fr/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DMA vs entrées/sorties programmées : les différences expliquées | Salle des semi-conducteurs</title>
+<meta name="description" content="DMA et entrées/sorties programmées (PIO) comparés dans un tableau : qui déplace les données, charge du CPU, débit, coût de configuration, complexité, utilisation du bus et usages typiques.">
+<link rel="canonical" href="https://semiconroom.com/fr/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/dma-vs-programmed-io/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/dma-vs-programmed-io/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DMA vs entrées/sorties programmées : les différences expliquées | Salle des semi-conducteurs">
+<meta property="og:description" content="DMA et entrées/sorties programmées (PIO) comparés dans un tableau : qui déplace les données, charge du CPU, débit, coût de configuration, complexité, utilisation du bus et usages typiques.">
+<meta property="og:url" content="https://semiconroom.com/fr/compare/dma-vs-programmed-io/">
+<meta property="og:site_name" content="Salle des semi-conducteurs">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/fr/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Comparatifs","item":"https://semiconroom.com/fr/compare/"},{"@type":"ListItem","position":3,"name":"DMA vs entrées/sorties programmées : les différences expliquées","item":"https://semiconroom.com/fr/compare/dma-vs-programmed-io/"}]},{"@context":"https://schema.org","@type":"Article","headline":"DMA vs entrées/sorties programmées : les différences expliquées","description":"DMA et entrées/sorties programmées (PIO) comparés dans un tableau : qui déplace les données, charge du CPU, débit, coût de configuration, complexité, utilisation du bus et usages typiques.","inLanguage":"fr","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/fr/compare/dma-vs-programmed-io/","author":{"@type":"Organization","name":"Salle des semi-conducteurs"},"publisher":{"@type":"Organization","name":"Salle des semi-conducteurs"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Pourquoi le DMA réduit-il la charge du CPU ?","acceptedAnswer":{"@type":"Answer","text":"Un contrôleur DMA déplace lui-même les données, si bien que le CPU se contente de configurer le transfert et d'être averti de sa fin."}},{"@type":"Question","name":"Le DMA est-il toujours plus rapide ?","acceptedAnswer":{"@type":"Answer","text":"Non. Pour les transferts minuscules, le coût de configuration peut dépasser le gain, et les entrées/sorties programmées peuvent être plus rapides."}},{"@type":"Question","name":"Qu'est-ce qu'un anneau de descripteurs DMA ?","acceptedAnswer":{"@type":"Answer","text":"Un anneau de descripteurs en mémoire, chacun décrivant un tampon. Le périphérique et le pilote s'échangent les tampons par son intermédiaire, comme dans les cartes réseau et les disques NVMe."}},{"@type":"Question","name":"Pourquoi la cohérence des caches compte-t-elle avec le DMA ?","acceptedAnswer":{"@type":"Answer","text":"Le périphérique lit et écrit directement la mémoire, si bien que le cache du CPU peut contenir des données périmées. Le logiciel doit vider ou invalider le cache, ou utiliser une mémoire cohérente."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/dma-vs-programmed-io/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/fr/"><span class="logo-mark" aria-hidden="true"></span><span>Salle des semi-conducteurs<small></small></span></a>
+    <nav class="header-nav"><a href="/fr/">Accueil</a><a href="/fr/stats/">Progression</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/contact/">Contact</a></nav>
+    <form class="site-search" role="search" action="/fr/search/" method="get"><input type="search" name="q" placeholder="Rechercher (p. ex. MOSFET)" aria-label="Rechercher sur le site" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/compare/dma-vs-programmed-io/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/dma-vs-programmed-io/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/dma-vs-programmed-io/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/dma-vs-programmed-io/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/dma-vs-programmed-io/" hreflang="de" lang="de">Deutsch</a><a href="/nl/compare/dma-vs-programmed-io/" hreflang="nl" lang="nl">Nederlands</a><span aria-current="true">Français</span></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/fr/">Accueil</a> <span>›</span> <a href="/fr/compare/">Comparatifs</a></nav>
+<article class="compare-page">
+  <h1>DMA vs entrées/sorties programmées : les différences expliquées</h1>
+  <p class="lead">Il existe deux manières de déplacer des données entre un périphérique et la mémoire. En entrées/sorties programmées (PIO), le CPU lit ou écrit lui-même chaque mot via des registres. En accès direct à la mémoire (DMA), un contrôleur DMA déplace les données de façon autonome, et le CPU se contente de configurer le transfert et d&#39;être averti de sa fin. Le DMA libère le CPU et traite les gros transferts beaucoup plus vite, mais il demande davantage de configuration et de précautions.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copié !">Copier le tableau</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Lien copié">Partager</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Critère</th><th scope="col">entrées/sorties programmées (PIO)</th><th scope="col">DMA</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Qui déplace les données</th><td>Le CPU, mot par mot, avec des instructions de chargement et de rangement</td><td>Un contrôleur DMA ou le périphérique lui-même, directement depuis ou vers la mémoire</td></tr>
+        <tr><th scope="row">Charge du CPU</th><td>Élevée : le CPU est occupé pendant tout le transfert</td><td>Faible : le CPU configure le transfert et effectue d&#39;autres tâches</td></tr>
+        <tr><th scope="row">Débit pour les gros transferts</th><td>Limité par la vitesse du CPU</td><td>Élevé</td></tr>
+        <tr><th scope="row">Surcoût de configuration</th><td>Aucun</td><td>Nécessite une adresse, une longueur ou des descripteurs, et la gestion de la fin du transfert</td></tr>
+        <tr><th scope="row">Petits transferts</th><td>Souvent plus rapide, car il n&#39;y a pas de configuration</td><td>Le coût de configuration peut dépasser le gain</td></tr>
+        <tr><th scope="row">Complexité</th><td>Simple</td><td>Plus complexe : anneaux de descripteurs, alignement des tampons, cohérence des caches et paramètres de l&#39;IOMMU</td></tr>
+        <tr><th scope="row">Utilisation du bus mémoire</th><td>Via le CPU</td><td>Le moteur DMA est en concurrence avec le CPU pour la bande passante mémoire</td></tr>
+        <tr><th scope="row">Usages typiques</th><td>Petits registres de contrôle, capteurs simples, anciens modes PIO</td><td>SSD et NVMe, cartes réseau, tampons audio, flux d&#39;échantillons d&#39;ADC, transferts GPU</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Les valeurs indiquées sont des ordres de grandeur typiques et varient selon la génération de procédé et le produit.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Quand choisir l&#39;un ou l&#39;autre ?</h2>
+  <dl class="compare-when">
+    <dt>PIO</dt><dd>Lorsque les transferts sont minuscules ou rares, et que la simplicité compte plus que le temps CPU.</dd>
+    <dt>DMA</dt><dd>Lorsque les transferts sont volumineux ou continus et qu&#39;on ne veut pas immobiliser le CPU : stockage, réseau, flux de données.</dd>
+    <dt>Attention</dt><dd>Avec le DMA, assurez-vous que le cache du CPU et la mémoire concordent avant que le périphérique ne lise ou après qu&#39;il a écrit (vider ou invalider le cache, ou utiliser une mémoire cohérente).</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Pourquoi le DMA réduit-il la charge du CPU ?</h3>
+  <p>Un contrôleur DMA déplace lui-même les données, si bien que le CPU se contente de configurer le transfert et d&#39;être averti de sa fin.</p>
+  <h3>Le DMA est-il toujours plus rapide ?</h3>
+  <p>Non. Pour les transferts minuscules, le coût de configuration peut dépasser le gain, et les entrées/sorties programmées peuvent être plus rapides.</p>
+  <h3>Qu&#39;est-ce qu&#39;un anneau de descripteurs DMA ?</h3>
+  <p>Un anneau de descripteurs en mémoire, chacun décrivant un tampon. Le périphérique et le pilote s&#39;échangent les tampons par son intermédiaire, comme dans les cartes réseau et les disques NVMe.</p>
+  <h3>Pourquoi la cohérence des caches compte-t-elle avec le DMA ?</h3>
+  <p>Le périphérique lit et écrit directement la mémoire, si bien que le cache du CPU peut contenir des données périmées. Le logiciel doit vider ou invalider le cache, ou utiliser une mémoire cohérente.</p>
+</section>
+<section>
+  <h2>Vérifier vos connaissances</h2>
+  <article class="q-mini">
+    <h3><a href="/fr/q/io-interface/io-interface-049/">Quelle description du mécanisme de DMA utilisant un anneau de descripteurs en mémoire, largement employé par les cartes réseau et les SSD NVMe, est correcte ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Le CPU transfère les données en les écrivant octet par octet dans les registres du périphérique</span></li><li><span class="choice-mark">B</span><span class="choice-text">Le CPU se contente d&#39;écrire l&#39;adresse et la longueur du transfert dans un descripteur et d&#39;en informer le périphérique, qui lit le descripteur et effectue lui-même le transfert</span></li><li><span class="choice-mark">C</span><span class="choice-text">Les descripteurs se trouvent uniquement dans le périphérique et sont invisibles pour le CPU</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Le CPU se contente d&#39;écrire l&#39;adresse et la longueur du transfert dans un descripteur et d&#39;en informer le périphérique, qui lit le descripteur et effectue lui-même le transfert</p><p class="explanation">L&#39;anneau de descripteurs est une table placée en mémoire principale, décrivant « à partir de quelle adresse et combien d&#39;octets transférer », utilisée de façon circulaire. Le CPU écrit le contenu du transfert dans un descripteur libre, puis signale une fois au périphérique, <a class="term-link" href="/fr/term/interconnect-via/">via</a> un registre, « écrit jusqu&#39;ici ». Le périphérique lit le descripteur par <a class="term-link" href="/fr/term/dma/">DMA</a>, transfère les données et marque comme terminés les descripteurs traités. CPU et périphérique peuvent ainsi mener de nombreux transferts sans s&#39;attendre mutuellement.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/fr/q/embedded/embedded-044/">Lorsqu&#39;un microcontrôleur acquiert à intervalle régulier un grand nombre de résultats de conversion analogique-numérique, quel est l&#39;avantage d&#39;utiliser le DMA ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">La résolution du CAN augmente automatiquement</span></li><li><span class="choice-mark">B</span><span class="choice-text">La tension d&#39;entrée augmente automatiquement</span></li><li><span class="choice-mark">C</span><span class="choice-text">Le processeur n&#39;a plus à lire chaque résultat par interruption ; le DMA les range en mémoire, ce qui allège la charge du processeur</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Le processeur n&#39;a plus à lire chaque résultat par interruption ; le DMA les range en mémoire, ce qui allège la charge du processeur</p><p class="explanation">Si le processeur lit chaque résultat par <a class="term-link" href="/fr/term/interrupt/">interruption</a>, à plusieurs dizaines de milliers d&#39;acquisitions par seconde, le seul coût des interruptions consomme une grande partie de son temps. Avec le <a class="term-link" href="/fr/term/dma/">DMA</a>, chaque fin de conversion fait écrire le résultat dans un tableau en mémoire, et le processeur n&#39;est averti que lorsque le tableau est plein. Combiné au déclenchement des conversions par temporisateur, il permet une acquisition à intervalles précis sans intervention du processeur.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/fr/q/os-hardware/os-hardware-029/">Dans un système où le matériel ne maintient pas la cohérence des caches (non cohérent), quel traitement le logiciel doit-il effectuer avant que le CPU lise des données écrites en mémoire principale par un périphérique via DMA ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Abaisser temporairement la fréquence d’horloge du CPU</span></li><li><span class="choice-mark">B</span><span class="choice-text">Invalider le contenu du cache pour la zone concernée afin de forcer une relecture depuis la mémoire principale</span></li><li><span class="choice-mark">C</span><span class="choice-text">Réécrire tout le contenu du cache en mémoire principale, puis abandonner les résultats reçus par DMA</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Invalider le contenu du cache pour la zone concernée afin de forcer une relecture depuis la mémoire principale</p><p class="explanation">Le <a class="term-link" href="/fr/term/dma/">DMA</a> transférant les données entre périphérique et mémoire principale sans passer par le CPU, dans un système où le matériel ne maintient pas la cohérence, le cache du CPU peut contenir d’anciennes données de cette zone. Une lecture directe renverrait l’ancienne valeur plutôt que les nouvelles données reçues par DMA. Le pilote invalide donc le cache de cette zone avant la lecture pour faire lire les nouvelles valeurs en mémoire principale. À l’inverse, les données à envoyer au périphérique sont réécrites depuis le cache avant le lancement du DMA.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/fr/q/os-hardware/os-hardware-030/">Quel est le rôle principal d’une IOMMU ?</a></li></ol>
+  <p><a class="btn btn-primary" href="/fr/c/io-interface/">Questions d&#39;entraînement sur Interfaces d&#39;E/S et bus</a></p>
+</section>
+<section>
+  <h2>Termes clés expliqués</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/fr/term/dma/">DMA (accès direct à la mémoire)</a></dt><dd>Mécanisme de transfert direct des données entre un périphérique et la mémoire sans passer par le CPU. Le CPU peut poursuivre d&#39;autres traitements pendant les transferts volumineux.</dd></div>
+    <div class="term"><dt><a href="/fr/term/interrupt/">Interruption</a></dt><dd>Mécanisme du CPU qui suspend temporairement le traitement en cours, en réponse par exemple à une requête d&#39;un périphérique, pour exécuter en priorité le traitement correspondant, puis reprend le traitement initial.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Comparatifs associés</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/fr/compare/nvme-vs-sata-ssd/"><strong>SSD NVMe vs SATA : vitesse, interface et lequel acheter</strong><span>SSD NVMe et SATA comparés dans un tableau : interface, vitesse, latence, files de commandes, format, consomma…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/pcie-3-vs-4-vs-5-vs-6/"><strong>PCIe 3.0 vs 4.0 vs 5.0 vs 6.0 : vitesse et différences</strong><span>PCIe 3.0, 4.0, 5.0 et 6.0 comparés dans un tableau : débit de transfert, bande passante par ligne et par lien…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/mcu-vs-mpu/"><strong>MCU vs MPU : microcontrôleur et microprocesseur comparés</strong><span>MCU et MPU comparés dans un tableau : intégration, fréquence d&#39;horloge, mémoire, système d&#39;exploitation, comp…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/interrupt-vs-polling/"><strong>Interruption vs polling : différences et cas d&#39;utilisation</strong><span>Interruption et polling comparés dans un tableau : fonctionnement, utilisation du CPU, latence, surcoût, comp…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/cpu-vs-gpu/"><strong>CPU vs GPU : différences d&#39;architecture et d&#39;usage</strong><span>CPU et GPU comparés dans un tableau : objectif de conception, nombre de cœurs, modèle d&#39;exécution, caches, ba…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs SPI vs UART : différences et cas d&#39;utilisation</strong><span>I2C, SPI et UART comparés dans un tableau : nombre de fils, horloge, vitesse, topologie, adressage, contrôle …</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Ce site d'apprentissage sur les semi-conducteurs est géré par un particulier.</p>
+    <p class="footer-request"><a href="/fr/contact/">Vos demandes et commentaires sont les bienvenus. Envoyez-les via le formulaire de contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/fr/about/">À propos</a>
+      <a href="/fr/figures/">Schémas</a>
+      <a href="/fr/privacy/">Politique de confidentialité</a>
+      <a href="/fr/disclaimer/">Avertissement</a>
+      <a href="/fr/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Salle des semi-conducteurs</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

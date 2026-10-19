@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr" data-lang="fr" data-base="/" data-home="/fr/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutex vs sémaphore : les différences expliquées | Salle des semi-conducteurs</title>
+<meta name="description" content="Mutex et sémaphore comparés dans un tableau : objectif, valeur, propriété, opérations, signalisation, inversion de priorité, usages typiques et pièges courants.">
+<link rel="canonical" href="https://semiconroom.com/fr/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/mutex-vs-semaphore/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/mutex-vs-semaphore/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mutex vs sémaphore : les différences expliquées | Salle des semi-conducteurs">
+<meta property="og:description" content="Mutex et sémaphore comparés dans un tableau : objectif, valeur, propriété, opérations, signalisation, inversion de priorité, usages typiques et pièges courants.">
+<meta property="og:url" content="https://semiconroom.com/fr/compare/mutex-vs-semaphore/">
+<meta property="og:site_name" content="Salle des semi-conducteurs">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/fr/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Comparatifs","item":"https://semiconroom.com/fr/compare/"},{"@type":"ListItem","position":3,"name":"Mutex vs sémaphore : les différences expliquées","item":"https://semiconroom.com/fr/compare/mutex-vs-semaphore/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Mutex vs sémaphore : les différences expliquées","description":"Mutex et sémaphore comparés dans un tableau : objectif, valeur, propriété, opérations, signalisation, inversion de priorité, usages typiques et pièges courants.","inLanguage":"fr","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/fr/compare/mutex-vs-semaphore/","author":{"@type":"Organization","name":"Salle des semi-conducteurs"},"publisher":{"@type":"Organization","name":"Salle des semi-conducteurs"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Un mutex est-il la même chose qu'un sémaphore binaire ?","acceptedAnswer":{"@type":"Answer","text":"Pas tout à fait. Les deux ont deux états, mais un mutex a un propriétaire qui doit le déverrouiller et prend souvent en charge l'héritage de priorité, tandis qu'un sémaphore n'a pas de propriétaire et peut être signalé par n'importe quel thread."}},{"@type":"Question","name":"Quand a-t-on besoin d'un sémaphore à compteur ?","acceptedAnswer":{"@type":"Answer","text":"Lorsqu'il faut limiter le nombre de threads utilisant une ressource, comme un pool de N connexions, ou compter les éléments disponibles dans un tampon producteur-consommateur."}},{"@type":"Question","name":"Qu'est-ce qu'un interblocage ?","acceptedAnswer":{"@type":"Answer","text":"Une situation où des threads s'attendent mutuellement indéfiniment, par exemple le thread A détient le verrou 1 et attend le verrou 2 tandis que le thread B détient le verrou 2 et attend le verrou 1. Prendre les verrous dans un ordre cohérent l'évite."}},{"@type":"Question","name":"Quelle est la différence entre un spinlock et un mutex ?","acceptedAnswer":{"@type":"Answer","text":"Un spinlock effectue une attente active et convient aux attentes très courtes sur les systèmes multicœurs. Un mutex endort le thread en attente, ce qui est préférable pour les attentes plus longues."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/mutex-vs-semaphore/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/fr/"><span class="logo-mark" aria-hidden="true"></span><span>Salle des semi-conducteurs<small></small></span></a>
+    <nav class="header-nav"><a href="/fr/">Accueil</a><a href="/fr/stats/">Progression</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/contact/">Contact</a></nav>
+    <form class="site-search" role="search" action="/fr/search/" method="get"><input type="search" name="q" placeholder="Rechercher (p. ex. MOSFET)" aria-label="Rechercher sur le site" autocomplete="off"></form>
+    <nav class="lang-switch" aria-label="Language"><a href="/compare/mutex-vs-semaphore/" hreflang="ja" lang="ja">日本語</a><a href="/en/compare/mutex-vs-semaphore/" hreflang="en" lang="en">English</a><a href="/zh-hant/compare/mutex-vs-semaphore/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="/ko/compare/mutex-vs-semaphore/" hreflang="ko" lang="ko">한국어</a><a href="/de/compare/mutex-vs-semaphore/" hreflang="de" lang="de">Deutsch</a><a href="/nl/compare/mutex-vs-semaphore/" hreflang="nl" lang="nl">Nederlands</a><span aria-current="true">Français</span></nav>
+  </div>
+</header>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/fr/">Accueil</a> <span>›</span> <a href="/fr/compare/">Comparatifs</a></nav>
+<article class="compare-page">
+  <h1>Mutex vs sémaphore : les différences expliquées</h1>
+  <p class="lead">Un mutex protège une section critique pour qu&#39;un seul thread à la fois puisse utiliser une ressource partagée, et le thread qui l&#39;a verrouillé doit être celui qui le déverrouille. Un sémaphore est un compteur : il contrôle combien de threads peuvent utiliser une ressource limitée, et il peut aussi servir à signaler des événements d&#39;un thread à un autre. Le mutex relève de la propriété et de l&#39;exclusion ; le sémaphore du comptage et de la signalisation.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copié !">Copier le tableau</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Lien copié">Partager</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Critère</th><th scope="col">Mutex</th><th scope="col">Sémaphore</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Objectif</th><td>Exclusion mutuelle : un seul thread à la fois dans une section critique</td><td>Comptage : limiter l&#39;accès à un pool de N ressources, ou signaler des événements entre threads</td></tr>
+        <tr><th scope="row">Valeur</th><td>Verrouillé ou déverrouillé (binaire)</td><td>Un compteur entier non négatif (un sémaphore binaire est le cas particulier 0 ou 1)</td></tr>
+        <tr><th scope="row">Propriété</th><td>Appartient au thread qui l&#39;a verrouillé, et ce thread doit le déverrouiller</td><td>Pas de propriétaire : n&#39;importe quel thread peut faire un post ou signaler</td></tr>
+        <tr><th scope="row">Opérations</th><td>Lock et unlock</td><td>Wait (P, décrémentation) et post (V, incrémentation)</td></tr>
+        <tr><th scope="row">Signalisation entre threads</th><td>Non prévu pour cela</td><td>Oui : par exemple un producteur qui signale un consommateur</td></tr>
+        <tr><th scope="row">Inversion de priorité</th><td>Souvent évitée grâce à l&#39;héritage de priorité</td><td>Généralement non prise en charge</td></tr>
+        <tr><th scope="row">Usages typiques</th><td>Protection d&#39;une structure de données partagée comme une liste ou un compteur</td><td>Limitation d&#39;un pool de connexions, tampons producteur-consommateur bornés, signalisation d&#39;un gestionnaire d&#39;interruption vers une tâche</td></tr>
+        <tr><th scope="row">Pièges courants</th><td>Interblocage dû à un ordre de verrouillage incohérent, ou oubli du déverrouillage</td><td>Signaux perdus et interblocage lorsque les compteurs ne correspondent pas</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Les valeurs indiquées sont des ordres de grandeur typiques et varient selon la génération de procédé et le produit.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Quand choisir l&#39;un ou l&#39;autre ?</h2>
+  <dl class="compare-when">
+    <dt>Mutex</dt><dd>Lorsque plusieurs threads accèdent aux mêmes données et qu&#39;un seul peut le faire à la fois.</dd>
+    <dt>Sémaphore</dt><dd>Lorsqu&#39;il faut limiter le nombre de threads utilisant une ressource, ou réveiller un thread lorsqu&#39;un événement se produit.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Un mutex est-il la même chose qu&#39;un sémaphore binaire ?</h3>
+  <p>Pas tout à fait. Les deux ont deux états, mais un mutex a un propriétaire qui doit le déverrouiller et prend souvent en charge l&#39;héritage de priorité, tandis qu&#39;un sémaphore n&#39;a pas de propriétaire et peut être signalé par n&#39;importe quel thread.</p>
+  <h3>Quand a-t-on besoin d&#39;un sémaphore à compteur ?</h3>
+  <p>Lorsqu&#39;il faut limiter le nombre de threads utilisant une ressource, comme un pool de N connexions, ou compter les éléments disponibles dans un tampon producteur-consommateur.</p>
+  <h3>Qu&#39;est-ce qu&#39;un interblocage ?</h3>
+  <p>Une situation où des threads s&#39;attendent mutuellement indéfiniment, par exemple le thread A détient le verrou 1 et attend le verrou 2 tandis que le thread B détient le verrou 2 et attend le verrou 1. Prendre les verrous dans un ordre cohérent l&#39;évite.</p>
+  <h3>Quelle est la différence entre un spinlock et un mutex ?</h3>
+  <p>Un spinlock effectue une attente active et convient aux attentes très courtes sur les systèmes multicœurs. Un mutex endort le thread en attente, ce qui est préférable pour les attentes plus longues.</p>
+</section>
+<section>
+  <h2>Vérifier vos connaissances</h2>
+  <article class="q-mini">
+    <h3><a href="/fr/q/multicore-sync/multicore-sync-023/">Quelle comparaison entre mutex (verrou à attente en sommeil) et spinlock est correcte ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Le mutex libère le CPU pendant l’attente et convient aux attentes longues, mais l’endormissement et le réveil imposent un coût à l’OS</span></li><li><span class="choice-mark">B</span><span class="choice-text">Le mutex continue d’utiliser le CPU pendant l’attente et ne convient qu’aux attentes courtes</span></li><li><span class="choice-mark">C</span><span class="choice-text">Le mutex et le spinlock sont la même chose sous des noms différents</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : A. Le mutex libère le CPU pendant l’attente et convient aux attentes longues, mais l’endormissement et le réveil imposent un coût à l’OS</p><p class="explanation">Lorsque le verrou n’est pas disponible, le <a class="term-link" href="/fr/term/mutex/">mutex</a> met le thread en attente et cède le CPU à d’autres threads ; l’OS le réveille à la libération du verrou. Ne gaspillant pas le CPU pendant l’attente, il convient aux attentes longues, mais l’endormissement, le réveil et le <a class="term-link" href="/fr/term/context-switch/">changement de contexte</a> prennent quelques microsecondes. Les mutex des bibliothèques réelles combinent les avantages des deux, par exemple en tournant brièvement avant de s’endormir.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/fr/q/multicore-sync/multicore-sync-047/">Quelle est l’utilisation la plus appropriée d’un sémaphore à compteur ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Toujours doubler la valeur d’une variable</span></li><li><span class="choice-mark">B</span><span class="choice-text">Regrouper toute l’exécution du programme sur un seul thread</span></li><li><span class="choice-mark">C</span><span class="choice-text">Permettre à 4 threads au plus d’utiliser simultanément une ressource dont le nombre d’utilisations simultanées est limité (par exemple 4 connexions au plus)</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Permettre à 4 threads au plus d’utiliser simultanément une ressource dont le nombre d’utilisations simultanées est limité (par exemple 4 connexions au plus)</p><p class="explanation">Un <a class="term-link" href="/fr/term/semaphore/">sémaphore</a> possède un compteur représentant le nombre restant ; on le décrémente avant utilisation (en attendant qu’il augmente s’il vaut 0) et on l’incrémente après utilisation. Avec une valeur initiale de 4, jusqu’à 4 threads peuvent utiliser la ressource simultanément. Avec une valeur initiale de 1, il sert à l’exclusion mutuelle comme un verrou. Les threads en attente sont généralement endormis et réveillés par l’OS.</p></details>
+  </article>
+  <article class="q-mini">
+    <h3><a href="/fr/q/multicore-sync/multicore-sync-020/">Quelle description du verrou à attente active (spinlock) est correcte ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Verrou qui endort le thread jusqu’à la libération et le fait réveiller par l’OS</span></li><li><span class="choice-mark">B</span><span class="choice-text">Verrou qui attend la libération en examinant en boucle la variable de verrou</span></li><li><span class="choice-mark">C</span><span class="choice-text">Mécanisme qui protège les données en faisant tourner un disque</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Verrou qui attend la libération en examinant en boucle la variable de verrou</p><p class="explanation">Le <a class="term-link" href="/fr/term/spinlock/">spinlock</a> tente de prendre le verrou avec une <a class="term-link" href="/fr/term/atomic-instruction/">instruction atomique</a> et, en cas d’échec, réessaie immédiatement, de façon répétée. Sans le coût d’appeler l’OS pour s’endormir puis se réveiller, il est rapide lorsque le verrou n’est détenu que très brièvement. Il est très utilisé dans le noyau de l’OS et pour l’exclusion mutuelle avec les gestionnaires d’<a class="term-link" href="/fr/term/interrupt/">interruption</a>. En revanche, il a l’inconvénient de continuer à consommer du CPU pendant l’attente.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="1"><a href="/fr/q/multicore-sync/multicore-sync-024/">Quel est un exemple d’interblocage (deadlock) ?</a></li>
+  <li data-level="2"><a href="/fr/q/multicore-sync/multicore-sync-046/">Quelle est la caractéristique d’un verrou lecteurs-rédacteurs (reader-writer lock) ?</a></li>
+  <li data-level="3"><a href="/fr/q/multicore-sync/multicore-sync-050/">Lors d’une attente « jusqu’à ce que la file ne soit plus vide » avec une variable de condition, pourquoi revérifier la condition après le réveil avec une instruction while plutôt qu’avec une instruction if ?</a></li></ol>
+  <p><a class="btn btn-primary" href="/fr/c/multicore-sync/">Questions d&#39;entraînement sur Multicœur et synchronisation</a></p>
+</section>
+<section>
+  <h2>Termes clés expliqués</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/fr/term/mutex/">Mutex</a></dt><dd>Verrou qui ne peut être détenu que par un seul thread à la fois. En général, un thread qui ne peut l&#39;obtenir est endormi et cède le CPU, puis réveillé par le système d&#39;exploitation à la libération.</dd></div>
+    <div class="term"><dt><a href="/fr/term/semaphore/">Sémaphore</a></dt><dd>Mécanisme de synchronisation doté d&#39;un compteur représentant le nombre restant. On le décrémente de 1 avant usage (en attendant s&#39;il vaut 0) et on l&#39;incrémente de 1 après. Sert à gérer les ressources dont le nombre d&#39;utilisations simultanées est limité.</dd></div>
+    <div class="term"><dt><a href="/fr/term/spinlock/">Verrou tournant (spinlock)</a></dt><dd>Verrou dont l&#39;attente consiste à tester en boucle la variable de verrou jusqu&#39;à ce qu&#39;il se libère. Rapide pour les attentes courtes, mais le CPU reste occupé pendant l&#39;attente.</dd></div>
+    <div class="term"><dt><a href="/fr/term/deadlock/">Interblocage (deadlock)</a></dt><dd>État où plusieurs threads détiennent chacun une ressource tout en attendant celle d&#39;un autre, si bien qu&#39;aucun ne peut avancer. On l&#39;évite en fixant globalement l&#39;ordre d&#39;acquisition des verrous.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Comparatifs associés</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/fr/compare/process-vs-thread/"><strong>Processus vs thread : les différences expliquées</strong><span>Processus et thread comparés dans un tableau : mémoire, coût de création, changement de contexte, communicati…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/cpu-vs-gpu/"><strong>CPU vs GPU : différences d&#39;architecture et d&#39;usage</strong><span>CPU et GPU comparés dans un tableau : objectif de conception, nombre de cœurs, modèle d&#39;exécution, caches, ba…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/i2c-vs-spi-vs-uart/"><strong>I2C vs SPI vs UART : différences et cas d&#39;utilisation</strong><span>I2C, SPI et UART comparés dans un tableau : nombre de fils, horloge, vitesse, topologie, adressage, contrôle …</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/verilog-vs-vhdl/"><strong>Verilog vs VHDL : les différences entre les deux HDL</strong><span>Verilog et VHDL comparés dans un tableau : origine, syntaxe, typage, sensibilité à la casse, fonctions de vér…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/nvme-vs-sata-ssd/"><strong>SSD NVMe vs SATA : vitesse, interface et lequel acheter</strong><span>SSD NVMe et SATA comparés dans un tableau : interface, vitesse, latence, files de commandes, format, consomma…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/mcu-vs-mpu/"><strong>MCU vs MPU : microcontrôleur et microprocesseur comparés</strong><span>MCU et MPU comparés dans un tableau : intégration, fréquence d&#39;horloge, mémoire, système d&#39;exploitation, comp…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Ce site d'apprentissage sur les semi-conducteurs est géré par un particulier.</p>
+    <p class="footer-request"><a href="/fr/contact/">Vos demandes et commentaires sont les bienvenus. Envoyez-les via le formulaire de contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/fr/about/">À propos</a>
+      <a href="/fr/figures/">Schémas</a>
+      <a href="/fr/privacy/">Politique de confidentialité</a>
+      <a href="/fr/disclaimer/">Avertissement</a>
+      <a href="/fr/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Salle des semi-conducteurs</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
