@@ -6,4 +6,5 @@ import m4 from './exam.js';
 import m5 from './review.js';
 import m6 from './diagnosis.js';
 import m7 from './numbers.js';
-export default [m0, m1, m2, m3, m4, m5, m6, m7];
+import m8 from './set.js';
+export default [m0, m1, m2, m3, m4, m5, m6, m7, m8];

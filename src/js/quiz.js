@@ -14,7 +14,8 @@ const catName = id => index.categories.find(c => c.id === id)?.name ?? '';
 const label = index.modes[mode.id].label;
 // ?c= が存在しない分野(古いリンクなど)のときは、分野の指定がないものとして扱う
 const cat = index.categories.find(c => c.id === params.c);
-const title = label + (cat ? ` : ${cat.name}` : '');
+// &t= で題名を指定できる(問題セットのURL)。長すぎるものは切る
+const title = params.t ? params.t.slice(0, 80) : label + (cat ? ` : ${cat.name}` : '');
 const homeUrl = cat ? `${home}c/${cat.id}/` : home;
 const matcher = termMatcher(index.glossary);
 const slugOf = new Map(index.glossary.map(g => [g.id, g.slug]));

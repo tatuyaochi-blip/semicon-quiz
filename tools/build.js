@@ -727,6 +727,22 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <p class="dy-legend"><span class="dy-key ok"></span>${esc(x.legend_ok)} <span class="dy-key ng"></span>${esc(x.legend_ng)}</p>
     <p class="muted">${esc(x.chart_note)}</p>
   </section>`,
+    'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
+    <h2>${esc(x.in_heading)}</h2>
+    <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>
+    ${select('n', x.count_label, [5, 10, 20, 30, 50].map(v => [v, String(v)]), 10)}
+    <fieldset class="qs-topics qs-wide">
+      <legend>${esc(x.topics_label)} <button type="button" class="btn btn-ghost btn-small" data-all>${esc(x.all)}</button> <button type="button" class="btn btn-ghost btn-small" data-none>${esc(x.none)}</button></legend>
+      ${exams.flatMap(e => e.groups.map(gr => live.filter(c => c.exam === e.id && c.group === gr.id))).filter(l => l.length).map(l => `<div class="qs-group">${l.map(c => `<label><input type="checkbox" name="c" value="${c.id}"> ${esc(c.name)}</label>`).join('')}</div>`).join('')}
+    </fieldset>
+    <p class="qs-wide"><button type="submit" class="btn btn-primary">${esc(x.make)}</button></p>
+  </form>
+  <section class="dy-out" id="qs-out" hidden aria-live="polite">
+    <h2>${esc(x.result_heading)}</h2>
+    <p><input type="text" id="qs-url" class="qs-url" readonly></p>
+    <p><button type="button" class="btn btn-primary btn-small" id="qs-copy" data-done="${esc(x.copied)}">${esc(x.copy)}</button> <a class="btn btn-ghost btn-small" id="qs-open" href="#" target="_blank" rel="noopener">${esc(x.open)}</a></p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
   };
   const toolPath = (tool, x) => `${x.path}tools/${tool.slug}/`;
   for (const tool of toolsIn(code)) {
