@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"クロック・データ・リカバリ","item":"https://semiconroom.com/term/clock-and-data-recovery/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"クロック・データ・リカバリ","description":"受け取ったデータの信号の変化からクロックのタイミングを取り出し、ビットを判定する受信回路。CDR。クロック専用の線が不要になる。","url":"https://semiconroom.com/term/clock-and-data-recovery/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"クロック・データ・リカバリ","item":"https://semiconroom.com/term/clock-and-data-recovery/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"クロック・データ・リカバリ","description":"受け取ったデータの信号の変化からクロックのタイミングを取り出し、ビットを判定する受信回路。CDR。クロック専用の線が不要になる。","url":"https://semiconroom.com/term/clock-and-data-recovery/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"SerDesの受信器でCDRは何をしているのですか?","acceptedAnswer":{"@type":"Answer","text":"データの遷移から、受信ビット列に同期したクロックを取り出し、それを使ってアイの中央付近で各ビットをサンプリングします。そのため別のクロック配線が不要になります。"}},{"@type":"Question","name":"シリアルリンクに8b/10bや128b/130bの符号化が必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"遷移の頻度とDCバランスを保証し、受信器のCDRがロックを保てるようにし、ACカップリングの信号が中心からずれないようにするためです。128b/130bはスクランブルを使い、8b/10bよりはるかに小さいオーバーヘッドでこれを実現します。"}},{"@type":"Question","name":"CDRとPLLの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"PLLは発振器をきれいな周期的基準クロックにロックさせますが、CDRは遷移が不規則に起こるランダムなデータにロックします。多くのCDRは、データ用に設計した位相検出器をもつPLLを中心に構成されています。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/io-interface/">インターフェース・バス規格</a></p>
 </article>
-
+<section class="term-about">
+  <h2>データからクロックを取り出す理由</h2>
+  <p>数十Gb/sの速度では1ビットの長さは数十psしかなく、別配線でクロックを送ると、データレーンとの間のスキューがそのビット時間の大部分を食いつぶしてしまいます。そのため高速シリアルリンクでは、クロックをまったく送りません。受信側の各レーンにはクロック・データ・リカバリ(CDR)回路があり、データの遷移そのものからタイミングを取り出すので、レーンごとに独立してタイミングが合わせられます。一方、DDRメモリのようなソース同期インターフェースは別の方法をとり、データと並んでストローブ信号を送ります。</p>
+</section>
+<section class="term-about">
+  <h2>CDRループの仕組み</h2>
+  <p>CDRはフィードバックループです。位相検出器はデータの遷移が起こる位置と受信側のサンプリングクロックを比べ、クロックが早いか遅いかを判定します。この種のバンバン型位相検出器は、ビットの中央とエッジで取ったサンプルを使います。ループフィルタがこれらの判定を平滑化し、電圧制御発振器(VCO、<a class="term-link" href="/term/pll/">PLL</a>型CDRの場合)か、基準クロックの位相を回転させる位相補間器を制御します。目標は、マージンが最も大きいデータアイの中央付近で各ビットをサンプリングすることです。</p>
+</section>
+<section class="term-about">
+  <h2>遷移と符号化</h2>
+  <p>位相検出器が情報を得られるのはデータが変化したときだけです。そのため同じビットが長く続くとクロックがずれていき、ACカップリングのリンクでは平均電圧も偏ります。符号化(ラインコーディング)は十分な遷移を保証します。8b/10b符号は8ビットのデータを、1と0の数が釣り合い、同じ値の連続が短い10ビットのシンボルに変換します。ビットが25 %増えるため効率は80 %で、<a class="term-link" href="/term/pci-express/">PCI Express</a>の第1・第2世代やUSB 3.0で使われました。その後のリンクでは、128b/130bのような軽いフレーミングとスクランブルを組み合わせ、はるかに小さいオーバーヘッドで統計的に遷移を確保しています。</p>
+</section>
+<section class="term-about">
+  <h2>周波数オフセット・SSC・ジッタへの追従</h2>
+  <p>送信側と受信側の基準クロックが完全に一致することはないため、CDRは位相だけでなく小さな周波数オフセットにも追従しなければなりません。<a class="term-link" href="/term/spread-spectrum-clocking/">スペクトラム拡散クロック</a>(SSC)では、電磁放射のピークを下げるために送信クロックを約0.5 %ゆっくり変動させるので、CDRはその変動にも追従する必要があります。ループ帯域はトレードオフになります。ループ帯域より遅い<a class="term-link" href="/term/jitter/">ジッタ</a>は追従して取り除けますが、それより速いジッタはアイのマージン内に収める必要があります。規格では、受信器が周波数全体にわたって満たすべきジッタ耐性マスクが定められています。</p>
+</section>
 <section>
   <h2>クロック・データ・リカバリの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="io-interface-004" data-cat="io-interface" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 受け取ったデータの信号の変化からクロックのタイミングを取り出し、そのタイミングでビットを判定する</p><p class="explanation">クロックを別の線で送ると、データの線との間にずれが生じてしまいます。そこで高速なシリアル伝送では、データの0と1が切り替わるタイミングをCDR回路が見て、<a class="term-link" href="/term/pll/">PLL</a>などで同じ周波数・位相のクロックを作り、ビットの真ん中でデータを判定します。そのため、データにはある程度の頻度で切り替わりが含まれている必要があり、符号化でそれを保証します。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>SerDesの受信器でCDRは何をしているのですか?</h3>
+  <p>データの遷移から、受信ビット列に同期したクロックを取り出し、それを使ってアイの中央付近で各ビットをサンプリングします。そのため別のクロック配線が不要になります。</p>
+  <h3>シリアルリンクに8b/10bや128b/130bの符号化が必要なのはなぜですか?</h3>
+  <p>遷移の頻度とDCバランスを保証し、受信器のCDRがロックを保てるようにし、ACカップリングの信号が中心からずれないようにするためです。128b/130bはスクランブルを使い、8b/10bよりはるかに小さいオーバーヘッドでこれを実現します。</p>
+  <h3>CDRとPLLの違いは何ですか?</h3>
+  <p>PLLは発振器をきれいな周期的基準クロックにロックさせますが、CDRは遷移が不規則に起こるランダムなデータにロックします。多くのCDRは、データ用に設計した位相検出器をもつPLLを中心に構成されています。</p>
+</section>
 
 <section>
   <h2>「クロック・データ・リカバリ」が出てくる問題(1問)</h2>

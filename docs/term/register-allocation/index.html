@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"レジスタ割り当て","item":"https://semiconroom.com/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"レジスタ割り当て","description":"プログラムの変数や途中の値を、限られた数のCPUのレジスタに割り振るコンパイラの処理。同時に使われる値どうしを同じレジスタにしないよう、干渉グラフの塗り分けなどで決める。","url":"https://semiconroom.com/term/register-allocation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"レジスタ割り当て","item":"https://semiconroom.com/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"レジスタ割り当て","description":"プログラムの変数や途中の値を、限られた数のCPUのレジスタに割り振るコンパイラの処理。同時に使われる値どうしを同じレジスタにしないよう、干渉グラフの塗り分けなどで決める。","url":"https://semiconroom.com/term/register-allocation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"レジスタのスピルとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"その時点で生存しているすべての値に足りるだけのレジスタがないため、値をメモリ(通常はスタック上の領域)に置くことです。コンパイラが使用箇所の前後にストアとロードを挿入するので、コードは遅くなります。"}},{"@type":"Question","name":"レジスタ割り当てがグラフ彩色問題になるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"同時に生存する値どうしは干渉し、別々のレジスタが必要です。値を節、干渉を辺とすると、隣り合う節が同じ色にならないようにk色のいずれかを割り振ることは、k本のレジスタを割り当てることとまったく同じになります。"}},{"@type":"Question","name":"グラフ彩色と線形スキャンのレジスタ割り当ての違いは?","acceptedAnswer":{"@type":"Answer","text":"グラフ彩色は干渉グラフ全体をつくるため、通常はより良いコードを生成しますが時間がかかります。線形スキャンはソートした生存区間を1回走査して割り当てる方法で、コードの品質を多少犠牲にする代わりにコンパイルが大幅に速くなります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>仮想レジスタから物理レジスタへ</h2>
+  <p>コンパイラは、仮想レジスタ(一時変数)がいくらでもあるものとして中間コードを生成します。しかし実際のCPUには、汎用レジスタが一般に16〜32本と、少ない固定数しかありません。レジスタ割り当ては、各時点でどの値をどの物理レジスタに置き、どの値をメモリに置くべきかを決める処理です。レジスタはL1キャッシュへのアクセスよりもはるかに速いため、割り当ての良し悪しは、特にループ内で速度に大きく影響します。絶対的な規則は、同時に必要な2つの値は同じレジスタを共有できないということです。</p>
+</section>
+<section class="term-about">
+  <h2>生存区間と干渉グラフ</h2>
+  <p>割り当て器は、まず<a class="term-link" href="/term/control-flow-graph/">制御フローグラフ</a>上で生存変数解析を行い、各地点でどの値が後で読まれる可能性があるかを求めます。次に干渉グラフをつくります。各値を節とし、同時に生存している2つの値を辺で結びます。するとレジスタの割り当ては、利用できるレジスタ数をkとして、隣り合う節が同じ色にならないようにグラフをk色で塗り分ける問題になります。最適な彩色は一般にNP完全なので、コンパイラは隣接する節がk個未満の節を繰り返し取り除くChaitin流の単純化などのヒューリスティックを使います。</p>
+</section>
+<section class="term-about">
+  <h2>スピルとそのコスト</h2>
+  <p>グラフをk色で塗り分けられないときは、一部の値を<a class="term-link" href="/term/register-spilling/">スピル</a>します。スピルした値はスタック上の領域に置かれ、定義のたびにストア、使用の前にはロードが入ります。スピルは命令とメモリアクセスを増やすため、割り当て器は候補ごとにループの入れ子の深さで使用回数に重みをつけてスピルコストを見積もり、使用頻度が低いのに多くの値と干渉する値を優先してスピルします。長い生存区間を短く分割(ライブレンジ分割)すれば、最も重要な部分では値をレジスタに残せることもあります。</p>
+</section>
+<section class="term-about">
+  <h2>呼び出し規約・コアレッシング・線形スキャン</h2>
+  <p>実際の割り当て器は<a class="term-link" href="/term/calling-convention/">呼び出し規約</a>を守る必要があります。引数と戻り値には決まったレジスタを使い、呼び出し元退避レジスタは関数呼び出しで壊され、呼び出し先退避レジスタはリターン前に元に戻さなければなりません。コアレッシング(合併)は、コピー命令のコピー元とコピー先が干渉しなければ同じレジスタを割り当て、そのmove命令を削除します。JIT(実行時)コンパイラは、グラフ彩色の代わりに線形スキャン割り当てをよく使います。これはソートした生存区間を1回の走査でたどる方法で、コードの品質はやや下がりますが、はるかに高速に動作します。</p>
+</section>
 <section>
   <h2>レジスタ割り当ての練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-020" data-cat="compiler" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 値をスタックに退避・読み戻す命令が増え、遅くなりやすい</p><p class="explanation"><a class="term-link" href="/term/register-spilling/">スピル</a>は、同時に生きている値がレジスタの数より多いときに、一部の値をメモリ(スタック)に置くことです。その値を使うたびに読み込み命令、書き換えるたびに書き込み命令が必要になり、命令が増えてメモリアクセスの分だけ遅くなりやすくなります。そのためコンパイラは、ループの中などよく使われる値をレジスタに残し、あまり使わない値を選んでスピルさせます。レジスタの数はCPUで決まっていて増えず、不要な値の削除とも別の話です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>レジスタのスピルとは何ですか?</h3>
+  <p>その時点で生存しているすべての値に足りるだけのレジスタがないため、値をメモリ(通常はスタック上の領域)に置くことです。コンパイラが使用箇所の前後にストアとロードを挿入するので、コードは遅くなります。</p>
+  <h3>レジスタ割り当てがグラフ彩色問題になるのはなぜですか?</h3>
+  <p>同時に生存する値どうしは干渉し、別々のレジスタが必要です。値を節、干渉を辺とすると、隣り合う節が同じ色にならないようにk色のいずれかを割り振ることは、k本のレジスタを割り当てることとまったく同じになります。</p>
+  <h3>グラフ彩色と線形スキャンのレジスタ割り当ての違いは?</h3>
+  <p>グラフ彩色は干渉グラフ全体をつくるため、通常はより良いコードを生成しますが時間がかかります。線形スキャンはソートした生存区間を1回走査して割り当てる方法で、コードの品質を多少犠牲にする代わりにコンパイルが大幅に速くなります。</p>
+</section>
 
 <section>
   <h2>「レジスタ割り当て」が出てくる問題(3問)</h2>

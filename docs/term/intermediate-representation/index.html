@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"中間表現","item":"https://semiconroom.com/term/intermediate-representation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"中間表現","description":"コンパイラの内部で、ソース言語にもCPUにも依存しない形でプログラムを表したもの。最適化の多くはこの上で行い、言語ごとの前半とCPUごとの後半を分けられる。","url":"https://semiconroom.com/term/intermediate-representation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"中間表現","item":"https://semiconroom.com/term/intermediate-representation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"中間表現","description":"コンパイラの内部で、ソース言語にもCPUにも依存しない形でプログラムを表したもの。最適化の多くはこの上で行い、言語ごとの前半とCPUごとの後半を分けられる。","url":"https://semiconroom.com/term/intermediate-representation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"コンパイラの中間表現とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"コンパイラが機械語を生成する前にソースコードを変換する形式で、ソース言語にもターゲットのCPUにも依存しません。そのため最適化を共通化できます。"}},{"@type":"Question","name":"SSA形式とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"静的単一代入(SSA)形式は、すべての変数への代入がちょうど1回になるIRの形式です。制御フローが合流する場所ではφ関数が値を選択します。多くの最適化が簡単になります。"}},{"@type":"Question","name":"LLVM IRは機械語ですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。LLVM IRはターゲットに依存しない中間表現で、特定のプロセッサ向けの機械語にするにはバックエンドで変換する必要があります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/compiler/">コンパイラ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>コンパイラが中間表現を使う理由</h2>
+  <p>M種類のソース言語をN種類のプロセッサに対応させるのに個別のコンパイラを作ると、M × N個が必要になります。共通の中間表現(IR)があれば、言語ごとにIRへ変換するフロントエンドを、プロセッサごとにIRから変換するバックエンドを用意するだけでよく、合計M + N個で済みます。IR上に一度書いた最適化は、すべての言語とターゲットで役立ちます。最もよく知られた例が<a class="term-link" href="/term/llvm/">LLVM</a>で、ClangなどのフロントエンドがLLVM IRを出力し、バックエンドがx86、Arm、RISC-Vなどのコードを生成します。</p>
+</section>
+<section class="term-about">
+  <h2>代表的な形式</h2>
+  <p>コンパイラは複数のレベルのIRを使うことがよくあります。ソースに近い段階には<a class="term-link" href="/term/abstract-syntax-tree/">抽象構文木</a>があります。より低いレベルでは、3番地コードが式を t1 = a + b; x = t1 * c のような単純な手順に分解し、中間値には一時変数を使います。これらの命令は<a class="term-link" href="/term/basic-block/">基本ブロック</a>にまとめられ、<a class="term-link" href="/term/control-flow-graph/">制御フローグラフ</a>でつながれます。<a class="term-link" href="/term/llvm/">LLVM</a> IRを含む現代の多くのIRは静的単一代入(SSA)形式を採用しています。各変数への代入はちょうど1回で、制御の経路が合流する場所ではφ(ファイ)関数と呼ばれる特別なノードが値を合流させます。</p>
+</section>
+<section class="term-about">
+  <h2>IR上で行われる処理</h2>
+  <p>最適化パスの大部分はIR上で実行されます。定数伝播、不要コード除去、<a class="term-link" href="/term/common-subexpression-elimination/">共通部分式の削除</a>、ループ不変な計算のループ外への移動、関数の<a class="term-link" href="/term/function-inlining/">インライン展開</a>などです。<a class="term-link" href="/term/ssa-form/">SSA形式</a>では、変数のすべての使用箇所がちょうど1つの定義を指すため、これらの多くが簡単になります。リンク時最適化(LTO)では、<a class="term-link" href="/term/object-file/">オブジェクトファイル</a>に機械語ではなくIRを格納しておき、プログラム全体をまとめて最適化することで、ソースファイルをまたいだインライン展開や未使用関数の削除を可能にします。</p>
+</section>
+<section class="term-about">
+  <h2>IRとバイトコード、機械語の違い</h2>
+  <p>コンパイラ内部のIRは解析と変換のための作業用の形式で、CPUはそれを実行できません。バックエンドはさらに命令選択、<a class="term-link" href="/term/register-allocation/">レジスタ割り当て</a>、<a class="term-link" href="/term/instruction-scheduling/">命令スケジューリング</a>を行う必要があります。JavaバイトコードやWebAssemblyのような移植可能なバイトコードも関連はありますが、目的が異なります。これらは仮想マシンがインタプリタで実行したり<a class="term-link" href="/term/jit-compilation/">JITコンパイル</a>したりする安定した配布形式であるのに対し、内部のIRはコンパイラのバージョン間で変わることがあります。</p>
+</section>
 <section>
   <h2>中間表現の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="compiler-005" data-cat="compiler" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 各変数への代入がプログラム中でちょうど1回になる</p><p class="explanation"><a class="term-link" href="/term/ssa-form/">SSA形式</a>では、変数への代入が1回になるよう名前を付け替え、合流点ではφ関数で値を選びます。例えば x を2回代入するなら x1 と x2 に分け、どちらが使われているかを明確にします。定義と使用の関係がはっきりするため、定数伝播や不要コードの削除などの最適化がしやすくなります。分岐はφ関数で扱うので、分岐命令がなくなるわけではありません。変数がメモリに置かれる形でもなく、多くはレジスタの候補として扱われます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>コンパイラの中間表現とは何ですか?</h3>
+  <p>コンパイラが機械語を生成する前にソースコードを変換する形式で、ソース言語にもターゲットのCPUにも依存しません。そのため最適化を共通化できます。</p>
+  <h3>SSA形式とは何ですか?</h3>
+  <p>静的単一代入(SSA)形式は、すべての変数への代入がちょうど1回になるIRの形式です。制御フローが合流する場所ではφ関数が値を選択します。多くの最適化が簡単になります。</p>
+  <h3>LLVM IRは機械語ですか?</h3>
+  <p>いいえ。LLVM IRはターゲットに依存しない中間表現で、特定のプロセッサ向けの機械語にするにはバックエンドで変換する必要があります。</p>
+</section>
 <section>
   <h2>解説の中の「中間表現」</h2>
   <ul class="term-quotes"><li><p>M種類の言語とN種類のCPUに対応するとき、組み合わせごとにコンパイラを作るとM×N個必要ですが、共通の中間表現を介せば、言語から中間表現への前半(フロントエンド)M個と、中間表現からCPUへの後半(バックエンド)N個で済みます。</p><a href="/q/compiler/compiler-005/">コンパイラの内部で、ソース言語にもCPUにも依存しない中間表現(IR)を使う主な利点はどれか。</a></li><li><p>LLVMは、LLVM IRという共通の中間表現を中心にしたコンパイラの基盤です。</p><a href="/q/compiler/compiler-026/">LLVMの基本的な構成として正しいものはどれか。</a></li><li><p>LTOでは、各ファイルを中間表現のまま残しておき、リンクのときにプログラム全体をまとめて最適化します。</p><a href="/q/compiler/compiler-029/">リンク時最適化(LTO)によって可能になる最適化として最も適切なものはどれか。</a></li><li><p>命令選択は、中間表現の演算の並びを、対象のCPUの具体的な命令に対応づける処理です。</p><a href="/q/compiler/compiler-047/">コード生成の段階の一つである命令選択(インストラクションセレクション)の説明として正しいものはどれか。</a></li></ul>

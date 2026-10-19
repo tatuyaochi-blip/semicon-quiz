@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"デマンドページング","item":"https://semiconroom.com/term/demand-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"デマンドページング","description":"プログラムのページを最初から全部読み込まず、初めてアクセスされてページフォルトが起きたときに物理メモリへ読み込む方式。起動が速く、使わない部分のメモリを節約できる。","url":"https://semiconroom.com/term/demand-paging/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"デマンドページング","item":"https://semiconroom.com/term/demand-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"デマンドページング","description":"プログラムのページを最初から全部読み込まず、初めてアクセスされてページフォルトが起きたときに物理メモリへ読み込む方式。起動が速く、使わない部分のメモリを節約できる。","url":"https://semiconroom.com/term/demand-paging/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"デマンドページングとスワッピングの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"デマンドページングは、個々のページを最初に使われたときにメモリへ読み込む方式です。スワッピングは本来プロセス全体をメモリとディスクの間で移動させることを指しますが、現代のシステムでは代わりにページ単位で出し入れしています。"}},{"@type":"Question","name":"ページフォルトはエラーですか?","acceptedAnswer":{"@type":"Answer","text":"通常はエラーではありません。デマンドページングではページフォルトはページを読み込むための正常なしくみであり、どの有効な領域にも属さないアドレスへのアクセスだけが、セグメンテーション違反などのエラーになります。"}},{"@type":"Question","name":"デマンドページングでプログラムの起動が速くなるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"起動時にはOSがページテーブルを作るだけで、ページはアクセスされたときに読み込まれるからです。プログラムのうち使われない部分は、ストレージから読み込まれることがありません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ページフォルト時の処理</h2>
+  <p>プログラムの起動時、OSはそのアドレス空間を表す<a class="term-link" href="/term/page-table/">ページテーブル</a>を用意しますが、ほとんどのページを「存在しない」としておきます。そのようなページに初めてアクセスすると、メモリ管理ユニット(MMU)が<a class="term-link" href="/term/page-fault/">ページフォルト</a>を発生させます。カーネルはアドレスが有効な領域に属するかを確認し(属さなければプログラムはセグメンテーション違反になります)、空いている物理フレームを探して、実行ファイルやファイルの内容、またはゼロで埋めます。そしてページテーブルのエントリを更新し、フォルトした命令を再実行すると、今度は成功します。</p>
+</section>
+<section class="term-about">
+  <h2>マイナーフォルトとメジャーフォルト</h2>
+  <p>必要なデータがOSのファイルキャッシュや、別のプロセスが読み込んだ<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>のページなど、すでにメモリ上にある場合、カーネルはそれをマップするだけで済みます。これがマイナーフォルトで、コストはおよそ1 µsです。メジャーフォルトはストレージから読み込む必要があり、高速なフラッシュで数十 µs、ハードディスクでは数 msとはるかに高くつきます。カーネルは、ファイルへの連続アクセスを検出すると隣接するページを先読みして、メジャーフォルトを減らします。</p>
+</section>
+<section class="term-about">
+  <h2>デマンドページングと一括読み込みの比較</h2>
+  <p>起動時にプログラム全体を読み込むと、エラー処理やオプション機能など、使われないコードやデータのために時間とメモリを無駄にします。デマンドページングはアクセスされた部分だけを読み込むため、プログラムの起動が速く、より多くのプロセスをメモリに収められます。欠点は最初のアクセス時の遅延が予測しにくいことで、リアルタイムシステムではページをロックしたり事前にアクセスしておいたりすることがよくあります。動作中のワーキングセットが物理メモリを超えると、処理時間の大半をページングに費やす<a class="term-link" href="/term/thrashing/">スラッシング</a>が起こります。</p>
+</section>
+<section class="term-about">
+  <h2>関連する技術</h2>
+  <p>メモリマップトファイルも同じしくみを使います。mmapはマッピングを記録するだけで、各ページへの最初の読み出しでフォルトが起きてファイルのデータが読み込まれます。<a class="term-link" href="/term/copy-on-write/">コピーオンライト</a>では、新しく作られたプロセスが親プロセスのページを共有し、どちらかが書き込んだ時点でフォルトが起きて専用のコピーが作られます。大きなメモリ割り当てでは、物理ページが最初にアクセスしたときに初めて割り当てられることが多く、メモリの確保と実際の使用は別の出来事です。</p>
+</section>
 <section>
   <h2>デマンドページングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-018" data-cat="os-hardware" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. ページを初めて使うときにページフォルトを起こし、そのとき物理メモリへ読み込む</p><p class="explanation"><a class="term-link" href="/term/demand-paging/">デマンドページング</a>では、プログラムの起動時には<a class="term-link" href="/term/page-table/">ページテーブル</a>を用意するだけで、実際のページは読み込みません。初めてアクセスしたときに<a class="term-link" href="/term/page-fault/">ページフォルト</a>が起き、OSがそのページだけをディスクから読み込みます。起動が速くなり、一度も使わないコードやデータのためにメモリを使わずに済みます。最初に全部読み込む方式とは逆の考え方で、キャッシュへの固定とも関係ありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>デマンドページングとスワッピングの違いは何ですか?</h3>
+  <p>デマンドページングは、個々のページを最初に使われたときにメモリへ読み込む方式です。スワッピングは本来プロセス全体をメモリとディスクの間で移動させることを指しますが、現代のシステムでは代わりにページ単位で出し入れしています。</p>
+  <h3>ページフォルトはエラーですか?</h3>
+  <p>通常はエラーではありません。デマンドページングではページフォルトはページを読み込むための正常なしくみであり、どの有効な領域にも属さないアドレスへのアクセスだけが、セグメンテーション違反などのエラーになります。</p>
+  <h3>デマンドページングでプログラムの起動が速くなるのはなぜですか?</h3>
+  <p>起動時にはOSがページテーブルを作るだけで、ページはアクセスされたときに読み込まれるからです。プログラムのうち使われない部分は、ストレージから読み込まれることがありません。</p>
+</section>
 <section>
   <h2>解説の中の「デマンドページング」</h2>
   <ul class="term-quotes"><li><p>デマンドページングでは、プログラムの起動時にはページテーブルを用意するだけで、実際のページは読み込みません。</p><a href="/q/os-hardware/os-hardware-018/">デマンドページングの説明として正しいものはどれか。</a></li><li><p>コンテキストスイッチは実行するプロセスを切り替えること、デマンドページングはページを必要になったときに読み込む方式です。</p><a href="/q/os-hardware/os-hardware-002/">アプリケーションがファイルの読み書きなどをOSに依頼するしくみを何と呼ぶか。</a></li><li><p>コピーオンライトとデマンドページングはメモリ管理の方式です。</p><a href="/q/os-hardware/os-hardware-037/">仮想マシンのOSが特権の必要な命令を実行したとき、ハイパーバイザに処理が移り、ハイパーバイザがその命令の効果を代わりに…</a></li><li><p>デマンドページングと同じしくみで、読み出しのたびにシステムコールを呼ぶ必要がなく、データの余分なコピーも減らせます。</p><a href="/q/os-hardware/os-hardware-049/">ファイルをメモリに対応づける(mmapのような)しくみで、ファイルの内容を読むときに起こることの説明として正しいものは…</a></li></ul>

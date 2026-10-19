@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"PLT(プロシージャリンケージテーブル)","item":"https://semiconroom.com/term/procedure-linkage-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PLT(プロシージャリンケージテーブル)","description":"共有ライブラリの関数を呼ぶための小さな入口を並べた表。遅延束縛では、最初の呼び出しで動的リンカが番地を解決してGOTに書き込む。","url":"https://semiconroom.com/term/procedure-linkage-table/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"PLT(プロシージャリンケージテーブル)","item":"https://semiconroom.com/term/procedure-linkage-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PLT(プロシージャリンケージテーブル)","description":"共有ライブラリの関数を呼ぶための小さな入口を並べた表。遅延束縛では、最初の呼び出しで動的リンカが番地を解決してGOTに書き込む。","url":"https://semiconroom.com/term/procedure-linkage-table/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"PLTとGOTの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"PLTは外部関数の呼び出しがジャンプする先の小さな実行可能スタブを並べたもので、GOTは解決済みのアドレスを保持するデータテーブルです。各PLTスタブは、対応するGOTエントリを介して間接ジャンプします。"}},{"@type":"Question","name":"動的リンクにおける遅延束縛とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"共有ライブラリの関数のアドレス解決を、その関数が初めて呼ばれるまで遅らせる仕組みです。初回の呼び出しで動的リンカがアドレスを探してGOTに保存し、以降の呼び出しではそれを使います。"}},{"@type":"Question","name":"フルRELROは何をするものですか?","acceptedAnswer":{"@type":"Answer","text":"動的リンカに起動時にすべてのシンボルを解決させ、その後GOTを読み取り専用にマップし直すことで、攻撃者がGOTエントリを書き換えて関数呼び出しを乗っ取れないようにします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>スタブ経由で呼び出す理由</h2>
+  <p><a class="term-link" href="/term/shared-library/">共有ライブラリ</a>はプロセスごとに異なるアドレスへロードされることがあるため、printfなどの関数のアドレスはプログラムのリンク時にはわかりません。ロード時にすべての呼び出し命令を書き換えると、コードページを書き込み可能にする必要があり、プロセス間で共有できなくなります。そこで<a class="term-link" href="/term/linker/">リンカ</a>は、外部関数の呼び出しをすべてPLT(プロシージャリンケージテーブル)内の小さなスタブに向けます。スタブは、<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>が実際のアドレスを書き込む書き込み可能なデータ領域である<a class="term-link" href="/term/global-offset-table/">GOT(グローバルオフセットテーブル)</a>のスロットを介して間接ジャンプします。</p>
+</section>
+<section class="term-about">
+  <h2>遅延束縛の流れ</h2>
+  <p>遅延束縛では、各<a class="term-link" href="/term/global-offset-table/">GOT</a>スロットは最初、自分のPLTスタブの中を指しています。最初の呼び出しでは、スタブがその関数の<a class="term-link" href="/term/relocation/">再配置</a>エントリを示すインデックスをスタックに積み、共通のPLTヘッダへジャンプし、そこから<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>のリゾルバに入ります。リゾルバはロード済みのライブラリからシンボルを探し、そのアドレスをGOTスロットに書き込んでから関数へジャンプします。以降の呼び出しは、スタブ、GOT、関数の順に進み、探索は行われません。一度も呼ばれない関数は解決されないので、プログラムの起動が速くなります。</p>
+</section>
+<section class="term-about">
+  <h2>即時束縛と読み取り専用のGOT</h2>
+  <p><a class="term-link" href="/term/global-offset-table/">GOT</a>は書き込み可能でコードのアドレスを保持しているため、メモリを上書きできる攻撃者はGOTのエントリを書き換えて制御フローを乗っ取れる可能性があります。そのため多くのシステムでは、Linuxで-z nowを付けてリンクしたりLD_BIND_NOWを設定したりして起動時にすべてのシンボルを解決し、その後GOTを読み取り専用にします。この堅牢化はフルRELRO(<a class="term-link" href="/term/relocation/">再配置</a>読み取り専用)と呼ばれます。多くの関数をインポートするプログラムは起動が遅くなりますが、その代わりによく狙われる攻撃対象をなくせます。</p>
+</section>
+<section class="term-about">
+  <h2>シンボルの可視性と内部呼び出し</h2>
+  <p><a class="term-link" href="/term/shared-library/">共有ライブラリ</a>が公開する関数は、別のモジュールにある同名の定義で上書き(インターポーズ)されることがあるため、ライブラリ内部からの呼び出しであっても通常はPLTを経由しなければなりません。内部関数の可視性をhiddenにすると、動的<a class="term-link" href="/term/symbol-table/">シンボルテーブル</a>から外れるので、それらへの呼び出しはPC相対の直接呼び出しになり、<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>が処理するシンボルも減り、他のライブラリとの名前の衝突も避けられます。<a class="term-link" href="/term/global-offset-table/">GOT</a>は外部データのアドレスも保持しますが、データへのアクセスはPLTスタブを使わず、GOTを直接読みます。</p>
+</section>
 <section>
   <h2>PLT(プロシージャリンケージテーブル)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-026" data-cat="linker-loader" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 共有ライブラリの関数の番地は、その関数が初めて呼ばれたときに解決され、2回目からは解決済みの番地へ直接飛ぶ</p><p class="explanation">プログラムは外部の関数を<a class="term-link" href="/term/procedure-linkage-table/">PLT</a>の小さな入口を通して呼びます。遅延束縛では、最初の呼び出しのとき入口が<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>の解決処理へ飛び、本物の番地を探して<a class="term-link" href="/term/global-offset-table/">GOT</a>に書き込みます。2回目からはGOTの番地へそのまま飛びます。使われない関数の解決を省けるので起動が速くなります。ただし安全のため、起動時にすべて解決してGOTを読み取り専用にする設定も広く使われています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>PLTとGOTの違いは何ですか?</h3>
+  <p>PLTは外部関数の呼び出しがジャンプする先の小さな実行可能スタブを並べたもので、GOTは解決済みのアドレスを保持するデータテーブルです。各PLTスタブは、対応するGOTエントリを介して間接ジャンプします。</p>
+  <h3>動的リンクにおける遅延束縛とは何ですか?</h3>
+  <p>共有ライブラリの関数のアドレス解決を、その関数が初めて呼ばれるまで遅らせる仕組みです。初回の呼び出しで動的リンカがアドレスを探してGOTに保存し、以降の呼び出しではそれを使います。</p>
+  <h3>フルRELROは何をするものですか?</h3>
+  <p>動的リンカに起動時にすべてのシンボルを解決させ、その後GOTを読み取り専用にマップし直すことで、攻撃者がGOTエントリを書き換えて関数呼び出しを乗っ取れないようにします。</p>
+</section>
 <section>
   <h2>解説の中の「PLT(プロシージャリンケージテーブル)」</h2>
   <ul class="term-quotes"><li><p>プログラムは外部の関数をPLTの小さな入口を通して呼びます。</p><a href="/q/linker-loader/linker-loader-026/">動的リンクで、PLT(プロシージャリンケージテーブル)を使った遅延束縛(レイジーバインディング)を行う場合の説明として…</a></li><li><p>動的リンクなら、PLTの入口を指すように書き換え、実際のライブラリ関数の番地は実行時に動的リンカがGOTに入れます。</p><a href="/q/linker-loader/linker-loader-038/">オブジェクトファイルを逆アセンブルすると、外部の関数printfを呼ぶ命令の飛び先が0のように仮の値になっていた。この…</a></li><li><p>共有ライブラリの公開されたシンボルは、ほかのモジュールの同じ名前の定義に差し替えられる可能性があるので、内部からの呼び出しもPLTやGOTを通す必要があります。</p><a href="/q/linker-loader/linker-loader-049/">共有ライブラリを作るとき、外から使う関数だけを公開し、内部の関数はシンボルの可視性(visibility)を「hidd…</a></li></ul>

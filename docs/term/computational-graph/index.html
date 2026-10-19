@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"計算グラフ","item":"https://semiconroom.com/term/computational-graph/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"計算グラフ","description":"演算を節、テンソルの受け渡しを矢印として、モデルの計算を表した図。自動微分やAIコンパイラの最適化の土台になる。","url":"https://semiconroom.com/term/computational-graph/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"計算グラフ","item":"https://semiconroom.com/term/computational-graph/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"計算グラフ","description":"演算を節、テンソルの受け渡しを矢印として、モデルの計算を表した図。自動微分やAIコンパイラの最適化の土台になる。","url":"https://semiconroom.com/term/computational-graph/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ディープラーニングの計算グラフとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"モデルを、演算(ノード)と、演算間で受け渡されるテンソル(エッジ)のつながりとして表したものです。フレームワークはこれを使って勾配を自動計算し、コンパイラは実行の最適化に使います。"}},{"@type":"Question","name":"演算子融合でニューラルネットワークが速くなるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"活性化や正規化など多くの演算はメモリ律速で、出力をDRAMに書き出して読み戻す時間が支配的になるためです。1つのカーネルに融合すれば中間結果をチップ上に保持でき、メモリトラフィックが減ります。"}},{"@type":"Question","name":"イーガー実行とグラフモードの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"イーガー実行はPythonが各演算に到達した時点ですぐに実行し、グラフモードはまずグラフ全体を構築またはキャプチャしてから最適化して実行します。イーガー実行はデバッグしやすく、グラフモードでは演算子融合などモデル全体にわたる最適化が可能になります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ノード、エッジとそれが運ぶもの</h2>
+  <p>計算グラフは通常、有向非巡回グラフ(DAG)です。ノードは行列乗算、畳み込み、加算、活性化関数などの演算で、エッジはテンソルです。各テンソルは形状とデータ型が決まっており、それを生成する演算から消費する演算へと流れます。入力と学習対象の重みは、始点のノードとして現れます。依存関係が明示されているので、どの演算を並列に実行でき、どれが待つ必要があるかがひと目でわかります。また、モデルを生成したPythonコードから独立した、完全で解析可能なモデルの記述をソフトウェアに提供します。</p>
+</section>
+<section class="term-about">
+  <h2>計算グラフと自動微分</h2>
+  <p>学習には、すべての重みについての損失の勾配が必要です。フレームワークは順伝播の間にグラフを記録し、リバースモード自動微分が損失からそのグラフを逆向きにたどります。各演算の局所的な微分規則と連鎖律を適用して勾配を累積していく処理が、誤差<a class="term-link" href="/term/backpropagation/">逆伝播</a>法です。このためには順伝播で保存した中間出力(活性化)が必要で、これが<a class="term-link" href="/term/ai-inference/">推論</a>よりも学習のほうがはるかに多くのメモリを使う理由です。アクティベーションチェックポインティングは、一部の活性化を捨てて逆伝播中に再計算することで、計算量と引き換えにメモリを節約します。</p>
+</section>
+<section class="term-about">
+  <h2>静的グラフと動的グラフ</h2>
+  <p>静的なdefine-and-run方式では、まずグラフ全体を構築してから実行します。全体最適化はしやすい反面、データに依存する制御フローやデバッグが難しくなります。動的なdefine-by-run方式、いわゆるイーガー実行では、プログラムの進行に合わせて演算がすぐに実行され、グラフはその場で記録されます。柔軟ですが、演算をまたいだ最適化の余地はほとんどありません。現代のフレームワークでは両者を組み合わせることが一般的で、コードはイーガー形式で書き、コンパイルの段階でグラフをトレースまたはキャプチャして、実行前にコンパイラが最適化できるようにします。</p>
+</section>
+<section class="term-about">
+  <h2>コンパイラとランタイムでの活用</h2>
+  <p><a class="term-link" href="/term/ai-compiler/">AIコンパイラ</a>は、コードを生成する前にグラフを書き換えます。演算子融合(オペレータフュージョン)は、行列乗算、バイアス加算、活性化といった連なりを1つのカーネルにまとめ、中間テンソルをDRAMに往復させずにオンチップメモリにとどめます。ほかにも、<a class="term-link" href="/term/constant-folding/">定数畳み込み</a>、未使用ノードの削除、テンソルのメモリレイアウトの選択、キャッシュやスクラッチパッドに収まるようにするタイリング、生存期間が重ならないバッファを再利用するメモリ計画などの処理があります。<a class="term-link" href="/term/onnx/">ONNX</a>(Open Neural Network Exchange)のような交換フォーマットはグラフと重みをシリアライズし、異なるランタイムやハードウェア向けツールチェーンで同じモデルを実行できるようにします。</p>
+</section>
 <section>
   <h2>計算グラフの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-021" data-cat="ai-stack" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 演算を節、データ(テンソル)の受け渡しを矢印として、モデルの計算を表した図</p><p class="explanation"><a class="term-link" href="/term/computational-graph/">計算グラフ</a>は、行列の積、足し算、活性化関数などの演算を節に、それらの間を流れるテンソルを矢印にした、モデルの計算の設計図です。フレームワークはこのグラフを逆にたどって<a class="term-link" href="/term/backpropagation/">逆伝播</a>の勾配を自動で計算し、コンパイラはグラフ全体を見て融合や並べ替えの最適化を行います。どの演算が独立に並列で行えるかも、グラフから分かります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ディープラーニングの計算グラフとは何ですか?</h3>
+  <p>モデルを、演算(ノード)と、演算間で受け渡されるテンソル(エッジ)のつながりとして表したものです。フレームワークはこれを使って勾配を自動計算し、コンパイラは実行の最適化に使います。</p>
+  <h3>演算子融合でニューラルネットワークが速くなるのはなぜですか?</h3>
+  <p>活性化や正規化など多くの演算はメモリ律速で、出力をDRAMに書き出して読み戻す時間が支配的になるためです。1つのカーネルに融合すれば中間結果をチップ上に保持でき、メモリトラフィックが減ります。</p>
+  <h3>イーガー実行とグラフモードの違いは何ですか?</h3>
+  <p>イーガー実行はPythonが各演算に到達した時点ですぐに実行し、グラフモードはまずグラフ全体を構築またはキャプチャしてから最適化して実行します。イーガー実行はデバッグしやすく、グラフモードでは演算子融合などモデル全体にわたる最適化が可能になります。</p>
+</section>
 <section>
   <h2>解説の中の「計算グラフ」</h2>
   <ul class="term-quotes"><li><p>計算グラフは、行列の積、足し算、活性化関数などの演算を節に、それらの間を流れるテンソルを矢印にした、モデルの計算の設計図です。</p><a href="/q/ai-stack/ai-stack-021/">AIのフレームワークやコンパイラで使われる「計算グラフ」の説明として正しいものはどれか。</a></li><li><p>AIコンパイラは、モデルを演算とデータの流れの計算グラフとして受け取り、まとめられる演算の融合、不要な計算の削除、メモリの並べ方の選択、タイルの大きさの調整などを行い、GPUやNPUなどの対象に合ったカーネルを作ります。</p><a href="/q/ai-stack/ai-stack-020/">XLAやTVM、PyTorchのコンパイル機能のようなAIコンパイラが行う主な処理として正しいものはどれか。</a></li><li><p>ONNX(Open Neural Network Exchange)は、モデルの計算グラフと重みを共通の形式で表すための規格です。</p><a href="/q/ai-stack/ai-stack-022/">ONNXの説明として正しいものはどれか。</a></li><li><p>フレームワークやAIコンパイラ・ランタイムが計算グラフを最適化し、行列の積や畳み込みなどは高度に最適化された演算のライブラリのカーネルを呼びます。</p><a href="/q/ai-stack/ai-stack-050/">AIのソフトウェアスタックを、利用者に近い上の層からハードウェアに近い下の層へ並べたものとして正しいものはどれか。</a></li></ul>

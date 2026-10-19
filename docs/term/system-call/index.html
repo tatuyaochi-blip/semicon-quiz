@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"システムコール","item":"https://semiconroom.com/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"システムコール","description":"アプリケーションがファイルの読み書きやメモリの確保などをOSに依頼するしくみ。専用の命令で例外を起こして特権モードに切り替え、カーネルの処理を呼び出す。","url":"https://semiconroom.com/term/system-call/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"システムコール","item":"https://semiconroom.com/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"システムコール","description":"アプリケーションがファイルの読み書きやメモリの確保などをOSに依頼するしくみ。専用の命令で例外を起こして特権モードに切り替え、カーネルの処理を呼び出す。","url":"https://semiconroom.com/term/system-call/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"システムコールと割り込みの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"システムコールは、プログラムが専用の命令で意図的に起こす同期的なトラップです。割り込みは、タイマやデバイスなどのハードウェアからの非同期の信号で、プログラムが何をしているかに関係なく到着します。"}},{"@type":"Question","name":"printfはシステムコールですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。printfはユーザ空間で出力を整形するC言語のライブラリ関数で、最終的にwriteシステムコールを呼んでバッファのデータをカーネルに渡します。"}},{"@type":"Question","name":"システムコールが遅いのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"呼び出しのたびに特権モードへの切り替え、状態の保存、引数の検証、復帰が必要で、キャッシュやTLBも乱されるからです。このコストは1回ごとに固定でかかるため、小さな呼び出しを何度も行うと積み重なります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>システムコールの流れ</h2>
+  <p>RISC-VのLinuxでは、プログラムはレジスタa7にシステムコール番号を、a0以降に引数を置いてecall命令を実行します。この命令は意図的に例外を発生させ、CPUはecallのアドレスを記録してスーパーバイザモードに切り替え、カーネルのトラップ入口へジャンプします。カーネルはユーザのレジスタを保存し、番号からハンドラを探し、引数を検査して処理を行い、結果をa0に入れます。その後、保存したアドレスをecallの次に進め、sretでユーザモードに戻ります。他のアーキテクチャでは、x86-64のsyscallやArmのsvcなどの命令が使われます。</p>
+</section>
+<section class="term-about">
+  <h2>システムコールとライブラリ関数の違い</h2>
+  <p>プログラムは通常ライブラリのラッパー関数を介してシステムコールを呼ぶため、その境界は見落としがちです。printfのような関数はすべてユーザ空間で動作してテキストを整形してバッファに書き込み、ときどきwriteシステムコールを呼んでそのバッファをカーネルに渡すだけです。文字列処理や数学関数など、多くのライブラリ関数はカーネルにまったく入りません。システムコールかどうかは、関数の名前ではなく、<a class="term-link" href="/term/privileged-mode/">特権モード</a>への切り替えがあるかどうかで決まります。</p>
+</section>
+<section class="term-about">
+  <h2>システムコールに時間がかかる理由</h2>
+  <p>システムコールには毎回、モードの切り替え、レジスタの保存と復元、引数の検証、復帰という固定のオーバーヘッドがかかります。カーネルに入るとキャッシュや<a class="term-link" href="/term/tlb/">TLB</a>も乱され、さらに投機実行攻撃への対策であるカーネルページテーブル分離(<a class="term-link" href="/term/kernel-page-table-isolation/">KPTI</a>)などでは、入るたびに<a class="term-link" href="/term/page-table/">ページテーブル</a>の切り替えが加わります。そのため、1回の呼び出しで1バイトずつ書くと、ユーザ空間で数 KBをバッファリングして1回で書き込むよりはるかに遅くなります。</p>
+</section>
+<section class="term-about">
+  <h2>システムコールを減らす方法</h2>
+  <p>バッファリングのほかに、mmapでファイルをメモリにマップする方法があります。マップした後の読み出しは通常のロード命令になり、読み出しのたびに呼び出すのではなく、最初に触れたときの<a class="term-link" href="/term/page-fault/">ページフォルト</a>で処理されます。複数の操作を1回の呼び出しでまとめて発行できるインタフェースを使えば、モードの行き来をさらに減らせます。OSによっては、現在時刻のような読み出し専用のカーネルデータをユーザ空間にマップし、頻繁な問い合わせでもトラップが一切不要になるようにしています。</p>
+</section>
 <section>
   <h2>システムコールの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-050" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. システムコール1回ごとの固定の負担を、回数を減らして抑えられるから</p><p class="explanation"><a class="term-link" href="/term/system-call/">システムコール</a>では、ユーザモードから<a class="term-link" href="/term/privileged-mode/">特権モード</a>への切り替え、レジスタの保存、引数の確認、元に戻る処理などが毎回必要で、処理する量が1バイトでもこの固定の負担がかかります。さらにカーネルに入ることでキャッシュや<a class="term-link" href="/term/tlb/">TLB</a>の中身も乱れます。バッファにためて数KBずつまとめて書けば、システムコールの回数が大きく減り、全体が速くなります。書き出すデータの総量は変わらず、最終的にはディスクに書かれます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>システムコールと割り込みの違いは何ですか?</h3>
+  <p>システムコールは、プログラムが専用の命令で意図的に起こす同期的なトラップです。割り込みは、タイマやデバイスなどのハードウェアからの非同期の信号で、プログラムが何をしているかに関係なく到着します。</p>
+  <h3>printfはシステムコールですか?</h3>
+  <p>いいえ。printfはユーザ空間で出力を整形するC言語のライブラリ関数で、最終的にwriteシステムコールを呼んでバッファのデータをカーネルに渡します。</p>
+  <h3>システムコールが遅いのはなぜですか?</h3>
+  <p>呼び出しのたびに特権モードへの切り替え、状態の保存、引数の検証、復帰が必要で、キャッシュやTLBも乱されるからです。このコストは1回ごとに固定でかかるため、小さな呼び出しを何度も行うと積み重なります。</p>
+</section>
 <section>
   <h2>解説の中の「システムコール」</h2>
   <ul class="term-quotes"><li><p>システムコールでは、ユーザモードから特権モードへの切り替え、レジスタの保存、引数の確認、元に戻る処理などが毎回必要で、処理する量が1バイトでもこの固定の負担がかかります。</p><a href="/q/os-hardware/os-hardware-050/">小さなデータを1バイトずつ書き出すときに、毎回システムコールを呼ぶより、ユーザ空間のバッファにためてからまとめて書き出…</a></li><li><p>ABIは、コンパイル済みのプログラムやライブラリが一緒に動くための機械語レベルの約束で、呼び出し規約、intやlongやポインタの大きさ、構造体の整列、システムコールの呼び方などを含みます。</p><a href="/q/isa-assembly/isa-assembly-049/">ABI(アプリケーションバイナリインターフェース)の説明として正しいものはどれか。</a></li><li><p>mallocは自分で空き領域を管理し、足りなくなるとOSに頼んで領域を広げます(Linuxではbrkやmmapのシステムコール)。</p><a href="/q/linker-loader/linker-loader-016/">C言語のmallocで確保したメモリは、一般にプロセスのどの領域から取られるか。</a></li><li><p>そこでシステムコールを使い、専用の命令で特権モードに切り替えてカーネルの処理を呼び出し、ファイルの読み書きやメモリの確保、プロセスの生成などを依頼します。</p><a href="/q/os-hardware/os-hardware-002/">アプリケーションがファイルの読み書きなどをOSに依頼するしくみを何と呼ぶか。</a></li><li><p>カーネルはa7の番号でどのシステムコールかを判断し、a0〜a2を引数として処理して、結果を返したあとユーザモードに戻ります。</p><a href="/q/os-hardware/os-hardware-003/">上のRISC-Vのコードの最後のecall命令が実行されたときに起こることとして正しいものはどれか。</a></li></ul>

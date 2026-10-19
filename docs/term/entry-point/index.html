@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"エントリポイント","item":"https://semiconroom.com/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"エントリポイント","description":"プログラムの実行を始める番地。ELFヘッダに記録される。C言語では通常mainではなく_startなどの起動コードで、初期化をしてからmainを呼ぶ。","url":"https://semiconroom.com/term/entry-point/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"エントリポイント","item":"https://semiconroom.com/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"エントリポイント","description":"プログラムの実行を始める番地。ELFヘッダに記録される。C言語では通常mainではなく_startなどの起動コードで、初期化をしてからmainを呼ぶ。","url":"https://semiconroom.com/term/entry-point/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"C言語のプログラムのエントリポイントはmainですか?","acceptedAnswer":{"@type":"Answer","text":"通常は違います。実行ファイルのエントリポイントは_startなどのスタートアップコードで、引数とランタイムを準備してmainを呼び、mainの戻り値をexitに渡します。"}},{"@type":"Question","name":"ELFファイルのどこにエントリポイントが記録されていますか?","acceptedAnswer":{"@type":"Answer","text":"ELFヘッダのe_entryフィールドです。プログラムのロード後に実行を開始する仮想アドレスが格納されています。"}},{"@type":"Question","name":"C言語のプログラムでmainより前に何が実行されますか?","acceptedAnswer":{"@type":"Answer","text":"Cランタイムのスタートアップコード、ライブラリの初期化、グローバルオブジェクトのコンストラクタです。動的リンクされたプログラムでは、それより前に動的リンカが共有ライブラリをロードして再配置します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>エントリポイントとmainの違い</h2>
+  <p>エントリポイントは、<a class="term-link" href="/term/program-loader/">ローダ</a>が最初に制御を移す命令のアドレスで、<a class="term-link" href="/term/executable-and-linkable-format/">ELF</a>ファイルのe_entryフィールドのように実行ファイルのヘッダに記録されます。C言語のプログラムでは、通常これはmainではありません。<a class="term-link" href="/term/linker/">リンカ</a>はcrt1.oなどのCランタイムのスタートアップオブジェクトを追加し、その中の_startシンボルをエントリポイントにします。Cのコードからはmainが始まりに見えますが、実際にはこのスタートアップコードから呼ばれる普通の関数にすぎません。必要なら、リンカの設定で別のエントリシンボルを指定することもできます。</p>
+</section>
+<section class="term-about">
+  <h2>スタートアップコードの仕事</h2>
+  <p>Linuxでは、カーネルが新しいプロセスを開始するとき、argc、argvのポインタ、環境変数のポインタ、補助ベクタをスタック上に並べます。_startルーチンはこれらをまとめ、スタックをアライメントしてから、Cライブラリの初期化処理を呼びます。初期化処理は標準ライブラリを準備し、グローバルオブジェクトのコンストラクタや初期化関数を実行してから、mainを呼びます。mainが戻ると、その戻り値はexitに渡されます。exitは登録されたatexitハンドラを実行し、バッファに残った出力を書き出してから、最後にカーネルにプロセスの終了を要求します。</p>
+</section>
+<section class="term-about">
+  <h2>動的リンクされたプログラムの場合</h2>
+  <p><a class="term-link" href="/term/dynamic-linking/">動的リンク</a>された実行ファイルは、プログラムヘッダで自分の<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>(Linuxならld.soなど)を指定しています。カーネルはプログラムと動的リンカの両方をマップし、プログラムではなく動的リンカ自身のエントリポイントから実行を始めます。動的リンカは必要な<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>をロードし、<a class="term-link" href="/term/relocation/">再配置</a>を適用し、シンボルを束縛し、ライブラリの初期化関数を実行してから、プログラムのエントリポイントである_startへジャンプします。つまり動的リンクされたプロセスでは、プログラム自身の最初の命令より前に、かなりの量のコードが実行されます。</p>
+</section>
+<section class="term-about">
+  <h2>カーネルやマイコンのエントリポイント</h2>
+  <p>この用語は、実行が始まる他の場所にも使われます。OSは例外や<a class="term-link" href="/term/interrupt/">割り込み</a>のエントリポイントをCPUに登録します。たとえばRISC-Vでは、ecall命令で例外が発生すると、より高い<a class="term-link" href="/term/privileged-mode/">特権モード</a>に切り替わり、OSが設定したトラップベクタへジャンプします。OSのないベアメタルの<a class="term-link" href="/term/microcontroller/">マイコン</a>では、リセットベクタがスタートアップコードを指しています。スタートアップコードはスタックを準備し、初期値付きのデータをフラッシュからRAMへコピーし、初期値のない.<a class="term-link" href="/term/bss-section/">bssセクション</a>をゼロクリアしてから、ようやくmainを呼びます。</p>
+</section>
 <section>
   <h2>エントリポイントの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-031" data-cat="linker-loader" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 通常はmainではなく_startなどの起動用のコードで、初期化をしてからmainを呼ぶ</p><p class="explanation"><a class="term-link" href="/term/linker/">リンカ</a>は、Cのランタイムが用意する起動用のオブジェクト(crt1.oなど)をプログラムに組み込み、その中の_startを入口にします。_startは、スタックからコマンドライン引数を取り出し、標準ライブラリやグローバルなオブジェクトの初期化を行ってからmainを呼びます。mainが戻ると、その戻り値を使ってexitを呼び、終了の処理をします。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>C言語のプログラムのエントリポイントはmainですか?</h3>
+  <p>通常は違います。実行ファイルのエントリポイントは_startなどのスタートアップコードで、引数とランタイムを準備してmainを呼び、mainの戻り値をexitに渡します。</p>
+  <h3>ELFファイルのどこにエントリポイントが記録されていますか?</h3>
+  <p>ELFヘッダのe_entryフィールドです。プログラムのロード後に実行を開始する仮想アドレスが格納されています。</p>
+  <h3>C言語のプログラムでmainより前に何が実行されますか?</h3>
+  <p>Cランタイムのスタートアップコード、ライブラリの初期化、グローバルオブジェクトのコンストラクタです。動的リンクされたプログラムでは、それより前に動的リンカが共有ライブラリをロードして再配置します。</p>
+</section>
 
 <section>
   <h2>「エントリポイント」が出てくる問題(1問)</h2>

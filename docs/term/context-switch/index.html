@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"コンテキストスイッチ","item":"https://semiconroom.com/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"コンテキストスイッチ","description":"CPUで実行するプロセスやスレッドを切り替えること。レジスタやプログラムカウンタなどの状態を保存・復元し、プロセスの切り替えではアドレス空間も切り替える。","url":"https://semiconroom.com/term/context-switch/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"コンテキストスイッチ","item":"https://semiconroom.com/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"コンテキストスイッチ","description":"CPUで実行するプロセスやスレッドを切り替えること。レジスタやプログラムカウンタなどの状態を保存・復元し、プロセスの切り替えではアドレス空間も切り替える。","url":"https://semiconroom.com/term/context-switch/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"コンテキストスイッチでは何が保存されますか?","acceptedAnswer":{"@type":"Answer","text":"切り替え前のスレッドのCPU状態、つまりレジスタ、プログラムカウンタ、スタックポインタ、ステータス情報が保存され、プロセスを切り替える場合はページテーブルへのポインタも保存されます。メモリの内容はその場に残るため保存しません。"}},{"@type":"Question","name":"コンテキストスイッチのコストが高いのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"カーネル内の処理そのものに加えて、切り替わったプロセスは別のプロセスの内容が入ったキャッシュやTLBから始めることになり、それらが入れ替わるまで多数のミスが発生するためです。"}},{"@type":"Question","name":"システムコールはコンテキストスイッチですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。システムコールは同じプロセス内でのモード切り替えです。コンテキストスイッチが起こるのは、カーネルが戻る前に別のスレッドやプロセスを実行すると決めた場合だけです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>保存・復元される状態</h2>
+  <p>カーネルは、切り替え前のスレッドのCPU状態、つまり汎用レジスタ、プログラムカウンタ、<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>、直前のモードなどのステータスビットを保存し、後でそれを読み戻して、スレッドが中断したところから正確に再開できるようにします。浮動小数点レジスタやベクトルレジスタも状態の一部で、カーネルによっては次のスレッドが実際に使うときまで保存を遅らせます(遅延保存)。プロセス間の切り替えでは、<a class="term-link" href="/term/page-table/">ページテーブル</a>を指すレジスタも変更し、新しいプロセスに専用のアドレス空間を与えます。メモリの内容や開いているファイルはそのまま残り、コピーはされません。</p>
+</section>
+<section class="term-about">
+  <h2>切り替えが起こるタイミング</h2>
+  <p>切り替えは、実行中のスレッドがディスクの入出力やロックを待ってブロックしたとき、自ら実行権を譲ったとき、あるいはタイマ<a class="term-link" href="/term/interrupt/">割り込み</a>によってスケジューラがタイムスライスの終了を知り、別のスレッドを実行すべきと判断したときに起こります。いずれの場合もCPUはすでに<a class="term-link" href="/term/system-call/">システムコール</a>や割り込みの処理でカーネル内にいて、スケジューラが次に実行するスレッドを選びます。同じプロセス内のスレッド間の切り替えは、アドレス空間が変わらないため、より低コストです。</p>
+</section>
+<section class="term-about">
+  <h2>直接的なコストと間接的なコスト</h2>
+  <p>レジスタの保存と読み込みにかかる時間はわずかで、スケジューリングを含むカーネル内の処理全体でも通常は数 µs程度です。より大きいのは間接的なコストであることが多く、新しいプロセスから見るとキャッシュや<a class="term-link" href="/term/tlb/">TLB</a>が前のプロセスのデータやアドレス変換で埋まっているため、再び温まるまでミスを繰り返します。TLBのエントリに<a class="term-link" href="/term/asid/">アドレス空間識別子</a>(ASID)のタグを付けるCPUでは切り替えのたびにTLBをフラッシュせずに済みますが、キャッシュの温め直しは残ります。そのため頻繁な切り替えは、切り替え時間そのものから想像する以上に<a class="term-link" href="/term/throughput/">スループット</a>を下げます。</p>
+</section>
+<section class="term-about">
+  <h2>コンテキストスイッチとモード切り替えの違い</h2>
+  <p><a class="term-link" href="/term/system-call/">システムコール</a>や<a class="term-link" href="/term/interrupt/">割り込み</a>ではCPUがユーザモードから<a class="term-link" href="/term/privileged-mode/">特権モード</a>に移って戻りますが、その後も同じプロセスが実行を続けます。これはモード切り替えであり、コンテキストスイッチではありません。コンテキストスイッチは、どのスレッドやプロセスがCPUを使うかを変えることです。切り替えは必ずカーネル内で行われるため両者は同時に起こることが多いですが、呼び出し元にそのまま戻るシステムコールでは、コンテキストスイッチはまったく発生しません。</p>
+</section>
 <section>
   <h2>コンテキストスイッチの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-023" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 切り替え後、キャッシュやTLBのミスが増えるから</p><p class="explanation">レジスタの保存と復元そのものは短時間で済みますが、切り替えたあとのプロセスにとって、キャッシュや<a class="term-link" href="/term/tlb/">TLB</a>の中身は前のプロセスのもので、必要なデータや変換結果を読み込み直すまでミスが続きます。<a class="term-link" href="/term/asid/">ASID</a>のないCPUでは、アドレス空間を切り替えるときにTLBを空にする必要もあります。この間接的なコストが、直接の切り替え時間より大きくなることがあります。クロックが下がったり、プログラムをディスクから読み直したりはしません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>コンテキストスイッチでは何が保存されますか?</h3>
+  <p>切り替え前のスレッドのCPU状態、つまりレジスタ、プログラムカウンタ、スタックポインタ、ステータス情報が保存され、プロセスを切り替える場合はページテーブルへのポインタも保存されます。メモリの内容はその場に残るため保存しません。</p>
+  <h3>コンテキストスイッチのコストが高いのはなぜですか?</h3>
+  <p>カーネル内の処理そのものに加えて、切り替わったプロセスは別のプロセスの内容が入ったキャッシュやTLBから始めることになり、それらが入れ替わるまで多数のミスが発生するためです。</p>
+  <h3>システムコールはコンテキストスイッチですか?</h3>
+  <p>いいえ。システムコールは同じプロセス内でのモード切り替えです。コンテキストスイッチが起こるのは、カーネルが戻る前に別のスレッドやプロセスを実行すると決めた場合だけです。</p>
+</section>
 <section>
   <h2>解説の中の「コンテキストスイッチ」</h2>
   <ul class="term-quotes"><li><p>コンテキストスイッチでは、あとで同じ状態から再開できるように、汎用レジスタ、プログラムカウンタ、スタックポインタ、動作モードなどのCPUの状態を保存し、次に動かすプロセスの状態を読み込みます。</p><a href="/q/os-hardware/os-hardware-023/">コンテキストスイッチで、切り替える前のプロセスについて保存しておく必要があるものはどれか。</a></li><li><p>コンテキストスイッチは実行するプロセスを切り替えること、デマンドページングはページを必要になったときに読み込む方式です。</p><a href="/q/os-hardware/os-hardware-002/">アプリケーションがファイルの読み書きなどをOSに依頼するしくみを何と呼ぶか。</a></li><li><p>割り込みが起きるとCPUは必ずカーネルの割り込みハンドラに移るので、プログラムが無限ループしていても、OSは制御を取り戻して別のプロセスにコンテキストスイッチできます。</p><a href="/q/os-hardware/os-hardware-026/">OSが、自分からCPUを手放さないプログラムからでも一定時間ごとにCPUを取り戻して、ほかのプロセスに切り替えられるの…</a></li><li><p>待つ間にCPUをむだにしないので長い待ちに向きますが、眠る・起きる処理とコンテキストスイッチに数マイクロ秒ほどかかります。</p><a href="/q/multicore-sync/multicore-sync-023/">ミューテックス(眠って待つロック)とスピンロックを比べた説明として正しいものはどれか。</a></li></ul>

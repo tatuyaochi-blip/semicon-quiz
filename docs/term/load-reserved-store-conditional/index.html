@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"LR/SC","item":"https://semiconroom.com/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"LR/SC","description":"ロード予約(LR)と条件付きストア(SC)の命令の組。LLとSCとも呼ぶ。LRの後にほかのコアがその番地に書き込むとSCが失敗するので、不可分な更新を作れる。","url":"https://semiconroom.com/term/load-reserved-store-conditional/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"LR/SC","item":"https://semiconroom.com/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"LR/SC","description":"ロード予約(LR)と条件付きストア(SC)の命令の組。LLとSCとも呼ぶ。LRの後にほかのコアがその番地に書き込むとSCが失敗するので、不可分な更新を作れる。","url":"https://semiconroom.com/term/load-reserved-store-conditional/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"条件付きストア(SC)が失敗するのはどんなときですか?","acceptedAnswer":{"@type":"Answer","text":"ロード予約で設定した予約が失われたときです。最も多いのは他のコアがそのアドレスに書き込んだ場合ですが、割り込み、コンテキストスイッチ、キャッシュからの追い出しでも失敗することがあります。"}},{"@type":"Question","name":"LR/SCはABA問題を解決できますか?","acceptedAnswer":{"@type":"Answer","text":"はい。LR/SCは予約した番地への途中の書き込みをすべて検出するので、値が変わって元に戻った場合でもSCは失敗します。この点がコンペア・アンド・スワップと異なります。"}},{"@type":"Question","name":"LL/SCとLR/SCの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"同じ考え方を別の名前で呼んでいるだけです。ロードリンク/条件付きストア(LL/SC)が従来からの呼び方で、ロード予約/条件付きストア(LR/SC)はRISC-Vでの名称です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>2つの命令の動き</h2>
+  <p>ロード予約(LR)はメモリのワードを読むと同時に、そのアドレス(通常はその<a class="term-link" href="/term/cache-line/">キャッシュライン</a>全体)に予約を登録します。プログラムはレジスタ上で新しい値を計算し、条件付きストア(SC)でその書き込みを試みます。SCは予約が保たれているときだけ書き込み、成功か失敗かを示すステータスを返します。RISC-Vでは0が成功です。ソフトウェアはこの一連の命令を再試行ループで囲みます。RISC-Vではこの組をlrとscと呼び、Armには同等の排他ロード・排他ストア命令があり、一般的な名称はLL/SCです。</p>
+</section>
+<section class="term-about">
+  <h2>予約が失われる条件</h2>
+  <p>失敗の主な原因は、LRとSCの間に他のコアが予約したアドレスに書き込むことです。コアはこれをキャッシュコヒーレンスによって検出します。その書き込みで自分のラインのコピーが無効化され、予約が解除されるのです。予約は<a class="term-link" href="/term/interrupt/">割り込み</a>や<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>、別のSC、ラインの追い出しによっても解除されることがあるため、実際の競合がなくてもSCは失敗しえます。正しいコードは常に再試行に備えておく必要があり、RISC-Vが最終的な成功を保証するのは、定められた制約に従う短いループに限られます。</p>
+</section>
+<section class="term-about">
+  <h2>CASとの比較とABA問題</h2>
+  <p><a class="term-link" href="/term/compare-and-swap/">コンペア・アンド・スワップ</a>(CAS)は、メモリが期待した値のままかどうかを確認します。別のスレッドが値をAからBに変え、再びAに戻した場合、CASはそれを見分けられずに成功してしまい、連結リストなどの<a class="term-link" href="/term/lock-free-algorithm/">ロックフリー</a>構造を壊すことがあります。これが<a class="term-link" href="/term/aba-problem/">ABA問題</a>です。LR/SCは値が何かではなく、書き込みがあったかどうかを確認するため、A→B→Aと変化しても予約は解除されます。LR/SCを使えば、CASそのものやフェッチ・アンド・アッドを含め、1ワードの任意の<a class="term-link" href="/term/read-modify-write/">読み出し・変更・書き込み</a>をソフトウェアで構成できます。弱点は、見かけ上の失敗と、激しい競合下でのライブロックの可能性です。</p>
+</section>
+<section class="term-about">
+  <h2>ロード・ストア型アーキテクチャに向く理由</h2>
+  <p>CASを1命令で実現するには、メモリの読み出し、比較、書き込みを一度に行う必要があり、各命令がメモリアクセスを最大1回しか行わないパイプラインにはうまく収まりません。LR/SCはこのロード・ストアの原則を保ちます。LRはロードに予約レジスタを加えたもの、SCはその予約レジスタで条件づけられたストアとして振る舞います。他のプロセッサがラインに書き込んだことはコヒーレンスプロトコルがすでに知らせてくれるので、バスのロックも不要です。このため、この命令の組は昔からRISCの命令セットで使われており、1命令の<a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>と併用されることもよくあります。</p>
+</section>
 <section>
   <h2>LR/SCの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-017" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. LRで読んでからSCまでの間に、ほかのコアがその番地に書き込むなどして予約が失われたとき</p><p class="explanation">LRは値を読むと同時に、その番地を「予約」します。その後SCで書き込むとき、予約が保たれていれば書き込んで成功、ほかのコアの書き込みなどで予約が失われていれば書き込まずに失敗を返します。CASが値の一致を見るのに対し、<a class="term-link" href="/term/load-reserved-store-conditional/">LR/SC</a>は書き込みがあったかどうかを見るので、値が一度変わって元に戻った場合も検出できます。ARMにも同じような命令の組があります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>条件付きストア(SC)が失敗するのはどんなときですか?</h3>
+  <p>ロード予約で設定した予約が失われたときです。最も多いのは他のコアがそのアドレスに書き込んだ場合ですが、割り込み、コンテキストスイッチ、キャッシュからの追い出しでも失敗することがあります。</p>
+  <h3>LR/SCはABA問題を解決できますか?</h3>
+  <p>はい。LR/SCは予約した番地への途中の書き込みをすべて検出するので、値が変わって元に戻った場合でもSCは失敗します。この点がコンペア・アンド・スワップと異なります。</p>
+  <h3>LL/SCとLR/SCの違いは何ですか?</h3>
+  <p>同じ考え方を別の名前で呼んでいるだけです。ロードリンク/条件付きストア(LL/SC)が従来からの呼び方で、ロード予約/条件付きストア(LR/SC)はRISC-Vでの名称です。</p>
+</section>
 <section>
   <h2>解説の中の「LR/SC」</h2>
   <ul class="term-quotes"><li><p>CASが値の一致を見るのに対し、LR/SCは書き込みがあったかどうかを見るので、値が一度変わって元に戻った場合も検出できます。</p><a href="/q/multicore-sync/multicore-sync-017/">RISC-VのLR/SC(ロード予約/条件付きストア)のような命令の組で、SC(条件付きストア)が失敗するのはどのよう…</a></li><li><p>CAS(コンペア・アンド・スワップ)やフェッチ・アンド・アッド、RISC-VのLR/SCやAMO命令などがあり、ロックやロックフリーのデータ構造を作る土台になります。</p><a href="/q/multicore-sync/multicore-sync-014/">アトミック命令(不可分命令)の説明として正しいものはどれか。</a></li><li><p>ポインタに更新回数を添えて一緒に比べる方法や、LR/SCを使う方法で防ぎます。</p><a href="/q/multicore-sync/multicore-sync-018/">CASを使ったロックフリーのデータ構造で問題になるABA問題の説明として正しいものはどれか。</a></li></ul>

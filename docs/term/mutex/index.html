@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ミューテックス","item":"https://semiconroom.com/term/mutex/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ミューテックス","description":"同時に1つのスレッドだけが持てるロック。取れないときはスレッドを眠らせてCPUを譲り、解放されるとOSが起こす実装が一般的。","url":"https://semiconroom.com/term/mutex/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ミューテックス","item":"https://semiconroom.com/term/mutex/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ミューテックス","description":"同時に1つのスレッドだけが持てるロック。取れないときはスレッドを眠らせてCPUを譲り、解放されるとOSが起こす実装が一般的。","url":"https://semiconroom.com/term/mutex/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ミューテックスとバイナリセマフォの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"どちらも同時に1スレッドだけを通しますが、ミューテックスには解放の責任を持つ所有者があり、セマフォはどのスレッドからでもシグナルを送れます。この所有権があるからこそ、ミューテックスでは優先度継承やエラーチェックが可能になります。"}},{"@type":"Question","name":"スピンロックとミューテックスはどう使い分けますか?","acceptedAnswer":{"@type":"Answer","text":"スピンロックを使うのは、クリティカルセクションが数命令程度で、保持側が別のコアで実行中であり、眠ることができないか眠ると遅すぎる場合に限ります。数マイクロ秒以上待つ可能性があるなら、眠るミューテックスのほうが適しています。"}},{"@type":"Question","name":"競合が多いとミューテックスが遅くなるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"競合した取得のたびに、システムコール、コンテキストスイッチ、起床処理が発生しうるうえ、ロックのキャッシュラインがコア間を行き来するためです。ロックの種類を変えるよりも、クリティカルセクションを短くしたり、1つのロックをより細かい複数のロックに分けたりするほうが効果的なことが多いです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ミューテックスのしくみ</h2>
+  <p>ミューテックス(相互排他ロック)は通常、ロックが保持されているか、待っているスレッドがいるかを記録する1ワードのメモリです。競合がない場合の取得は、<a class="term-link" href="/term/compare-and-swap/">コンペア・アンド・スワップ</a>のようなアトミック命令1つでユーザー空間内で完了し、コストは数十ナノ秒程度です。ロックがすでに保持されているときだけ、スレッドはOSに待ち行列で眠るよう依頼します。Linuxではこれがfutexシステムコールの上に作られています。解放時には待ちスレッドの有無を確認し、いればカーネルに1つ起こすよう依頼します。ミューテックスには所有者があり、ロックしたスレッドだけが解放すべきです。</p>
+</section>
+<section class="term-about">
+  <h2>ミューテックスとスピンロックの違い</h2>
+  <p><a class="term-link" href="/term/spinlock/">スピンロック</a>で待つスレッドは、ロック取得を再試行するループを実行し続けるため、解放から数ナノ秒以内に反応できますが、その間ずっとCPUを消費します。ミューテックスで待つスレッドはCPUを手放すので長い待ちには効率的ですが、<a class="term-link" href="/term/system-call/">システムコール</a>、<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>、後の起床が必要で、合計で一般に数マイクロ秒かかります。そのためスピンロックは、マルチコアでのごく短い<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>や、カーネルの<a class="term-link" href="/term/interrupt-handler/">割り込みハンドラ</a>のように眠ることが許されない場面に向きます。シングルコアでは、待つ側がCPUを占有している間は保持側がロックを解放できないため、スピンは無意味です。多くのライブラリのミューテックスは適応型で、少しスピンしてから眠ります。</p>
+</section>
+<section class="term-about">
+  <h2>ミューテックスとセマフォの違い</h2>
+  <p>計数<a class="term-link" href="/term/semaphore/">セマフォ</a>は整数を保持し、最大N個のスレッドを通過させます。そのため、資源プールへのアクセス数の制限や、スレッド間のシグナル通知に使われます。セマフォはどのスレッドからでもポスト(V操作)できるので、所有者という概念がありません。ミューテックスは保持者が1つに限られ、ロックしたスレッドに結びついています。この所有権があるため、エラーチェックや、リアルタイムシステムでの<a class="term-link" href="/term/priority-inheritance/">優先度継承</a>が可能になります。単純なセマフォでは、どのスレッドの優先度を上げればよいかシステムが判断できないため、優先度継承は実現できません。</p>
+</section>
+<section class="term-about">
+  <h2>落とし穴:優先度逆転とデッドロック</h2>
+  <p><a class="term-link" href="/term/real-time-operating-system/">リアルタイムOS</a>(RTOS)では、高優先度タスクが低優先度タスクの保持するミューテックスを待っている間に、中優先度タスクが低優先度タスクを横取りすると、高優先度タスクが際限なく待たされる<a class="term-link" href="/term/priority-inversion/">優先度逆転</a>が起きます。1997年には、これが原因で火星探査機マーズ・パスファインダーのリセットが繰り返されました。<a class="term-link" href="/term/priority-inheritance/">優先度継承</a>は、保持側の優先度を一時的に待っている側の優先度まで引き上げることでこれを解決します。もう1つの典型的な危険は<a class="term-link" href="/term/deadlock/">デッドロック</a>で、2つのスレッドがそれぞれ1つのミューテックスを保持したまま、相手のミューテックスを待つ状態です。標準的な防止策は、複数のミューテックスを常に決まった全体共通の順序で取得することです。</p>
+</section>
 <section>
   <h2>ミューテックスの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-023" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ミューテックスは待つ間CPUを手放すので長い待ちに向くが、眠ったり起きたりにOSの手間がかかる</p><p class="explanation"><a class="term-link" href="/term/mutex/">ミューテックス</a>は、ロックが取れないとスレッドを待ち状態にしてCPUをほかのスレッドに譲り、ロックが解放されるとOSが起こします。待つ間にCPUをむだにしないので長い待ちに向きますが、眠る・起きる処理と<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>に数マイクロ秒ほどかかります。実際のライブラリのミューテックスは、少しだけスピンしてから眠るなど、両方の長所を組み合わせています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ミューテックスとバイナリセマフォの違いは何ですか?</h3>
+  <p>どちらも同時に1スレッドだけを通しますが、ミューテックスには解放の責任を持つ所有者があり、セマフォはどのスレッドからでもシグナルを送れます。この所有権があるからこそ、ミューテックスでは優先度継承やエラーチェックが可能になります。</p>
+  <h3>スピンロックとミューテックスはどう使い分けますか?</h3>
+  <p>スピンロックを使うのは、クリティカルセクションが数命令程度で、保持側が別のコアで実行中であり、眠ることができないか眠ると遅すぎる場合に限ります。数マイクロ秒以上待つ可能性があるなら、眠るミューテックスのほうが適しています。</p>
+  <h3>競合が多いとミューテックスが遅くなるのはなぜですか?</h3>
+  <p>競合した取得のたびに、システムコール、コンテキストスイッチ、起床処理が発生しうるうえ、ロックのキャッシュラインがコア間を行き来するためです。ロックの種類を変えるよりも、クリティカルセクションを短くしたり、1つのロックをより細かい複数のロックに分けたりするほうが効果的なことが多いです。</p>
+</section>
 <section>
   <h2>解説の中の「ミューテックス」</h2>
   <ul class="term-quotes"><li><p>ミューテックスは、ロックが取れないとスレッドを待ち状態にしてCPUをほかのスレッドに譲り、ロックが解放されるとOSが起こします。</p><a href="/q/multicore-sync/multicore-sync-023/">ミューテックス(眠って待つロック)とスピンロックを比べた説明として正しいものはどれか。</a></li><li><p>長い待ちには、眠って待つミューテックスを使い、短い間だけ回ってから眠る方式もあります。</p><a href="/q/multicore-sync/multicore-sync-021/">スピンロックが向かない場面として最も適切なものはどれか。</a></li><li><p>タスク間でデータを渡すキューや、資源を守るミューテックス、時間を待つ機能なども用意されています。</p><a href="/q/embedded/embedded-030/">組込み機器でRTOS(リアルタイムOS)を使う主な目的はどれか。</a></li><li><p>低いタスクがミューテックスを持っている間に高いタスクがそれを待つと、高いタスクは低いタスクが手放すまで待ちます。</p><a href="/q/embedded/embedded-032/">RTOSで起こる優先度逆転の説明として正しいものはどれか。</a></li><li><p>優先度継承では、高いタスクが低いタスクの持つミューテックスを待ち始めたとき、低いタスクの優先度を一時的に高いタスクと同じにします。</p><a href="/q/embedded/embedded-033/">優先度逆転を防ぐために使われる「優先度継承」の考え方として正しいものはどれか。</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ウェアレベリング","item":"https://semiconroom.com/term/wear-leveling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ウェアレベリング","description":"フラッシュメモリの書き換えが特定のブロックに集中しないよう、書き込み先を分散させて寿命を延ばす技術。","url":"https://semiconroom.com/term/wear-leveling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ウェアレベリング","item":"https://semiconroom.com/term/wear-leveling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ウェアレベリング","description":"フラッシュメモリの書き換えが特定のブロックに集中しないよう、書き込み先を分散させて寿命を延ばす技術。","url":"https://semiconroom.com/term/wear-leveling/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"静的ウェアレベリングと動的ウェアレベリングの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"動的ウェアレベリングは新しい書き込み先に消耗の少ない空きブロックを選びます。静的ウェアレベリングはそれに加えて、めったに変わらないデータを消耗の少ないブロックから移動させ、それらのブロックにも書き込みを分担させます。"}},{"@type":"Question","name":"ウェアレベリングで書き込み増幅は増えますか?","acceptedAnswer":{"@type":"Answer","text":"静的ウェアレベリングはホストが変更していないデータを移動させるため、内部の書き込みが多少増えます。しかし消耗を均一に分散できる効果のほうが、そのコストをはるかに上回ります。"}},{"@type":"Question","name":"NANDフラッシュは何回まで書き換えられますか?","acceptedAnswer":{"@type":"Answer","text":"プロセスや条件によりますが、SLCで約5万〜10万回、MLCで数千〜1万回、TLCで数千回、QLCで約1000回です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/sram-flash/">SRAM・フラッシュメモリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>フラッシュメモリに必要な理由</h2>
+  <p>NANDフラッシュはデータをその場で上書きできません。書き込み(プログラム)はページ単位でできますが、消去は多数のページを含むブロック単位でしか行えず、書き込み/消去(P/E)サイクルのたびにトンネル酸化膜がわずかに損傷します。そのため書き換え耐性はセルの種類で異なり、<a class="term-link" href="/term/slc/">SLC(シングルレベルセル)</a>で約5万〜10万回、MLC(マルチレベルセル)で数千〜1万回、<a class="term-link" href="/term/tlc/">TLC(トリプルレベルセル)</a>で数千回、QLC(クアッドレベルセル)で約1000回です。ログやファイルシステムのメタデータのように頻繁に更新される論理アドレスが常に同じブロックに書き込まれれば、そのブロックだけが他よりずっと早く寿命を迎えてしまいます。</p>
+</section>
+<section class="term-about">
+  <h2>FTLによる実現方法</h2>
+  <p>コントローラはFTL(フラッシュ変換層)を動かし、ホストからの論理ブロックアドレスを物理ページに対応づけます。論理アドレスを更新するたびに、データは別の場所の消去済みページに書き込まれ、古いページは無効とマークされるだけです。後で<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>が、ブロック内に残った有効ページを外へコピーしてからブロックを消去します。動的ウェアレベリングは、新しい書き込みを消去回数の少ない空きブロックに向けます。静的ウェアレベリングは、めったに変わらないコールドデータも移動させます。これにより、そのデータが占めていたほとんど消耗していないブロックが書き込みのローテーションに戻り、すべてのブロックが同じような速度で劣化するようになります。</p>
+</section>
+<section class="term-about">
+  <h2>書き込み増幅と予備領域</h2>
+  <p><a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>と静的ウェアレベリングは、ホストが要求していないデータを書き込みます。ホストの書き込み量に対するNANDへの書き込み量の比を<a class="term-link" href="/term/write-amplification/">書き込み増幅</a>率(WAF)といい、これは使用可能な耐久性を直接減らします。オーバープロビジョニングと呼ばれる予備容量の確保や、削除されたデータをドライブに伝えるホストの<a class="term-link" href="/term/trim/">TRIM</a>コマンドは、コントローラに作業の余裕を与え、書き込み増幅率を下げます。ドライブの耐久性は総書き込みバイト数(TBW)や1日あたりのドライブ書き込み回数(DWPD)で表し、おおよそ容量×定格P/Eサイクル数÷書き込み増幅率になります。</p>
+</section>
+<section class="term-about">
+  <h2>関連する機能と実装場所</h2>
+  <p>ウェアレベリングは消耗を均一にするだけで、コントローラの他の機能と組み合わせて働きます。BCH符号から現在のSSDで使われるLDPC(低密度パリティ検査)符号までの<a class="term-link" href="/term/ecc/">誤り訂正符号</a>(ECC)は、セルの劣化とともに増える生のビットエラーを訂正し、不良ブロック管理は故障したブロックを使用停止にします。SSD、USBメモリ、SDカード、組込み用のeMMCは、これらをすべてコントローラ内で行いますが、安価なカードでは簡易な実装の場合もあります。生のNANDをプロセッサに直接接続する場合は、フラッシュ対応のファイルシステムやホストのソフトウェアがウェアレベリングを担う必要があります。</p>
+</section>
 <section>
   <h2>ウェアレベリングの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sram-flash-007" data-cat="sram-flash" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 書き込みを特定のブロックに集中させず、全体に分散させて寿命を延ばす</p><p class="explanation">ブロックには書き換え回数の上限があるため、同じ論理アドレスばかりに書くとそこだけが早く寿命を迎えます。<a class="term-link" href="/term/wear-leveling/">ウェアレベリング</a>では、コントローラが論理アドレスと物理ブロックの対応表(FTL)を管理し、書き込みを消去回数の少ないブロックへ振り分けます。書き換えの少ない静的データも時々移動させて、全ブロックの消耗をそろえることで、製品全体の寿命を延ばします。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>静的ウェアレベリングと動的ウェアレベリングの違いは何ですか?</h3>
+  <p>動的ウェアレベリングは新しい書き込み先に消耗の少ない空きブロックを選びます。静的ウェアレベリングはそれに加えて、めったに変わらないデータを消耗の少ないブロックから移動させ、それらのブロックにも書き込みを分担させます。</p>
+  <h3>ウェアレベリングで書き込み増幅は増えますか?</h3>
+  <p>静的ウェアレベリングはホストが変更していないデータを移動させるため、内部の書き込みが多少増えます。しかし消耗を均一に分散できる効果のほうが、そのコストをはるかに上回ります。</p>
+  <h3>NANDフラッシュは何回まで書き換えられますか?</h3>
+  <p>プロセスや条件によりますが、SLCで約5万〜10万回、MLCで数千〜1万回、TLCで数千回、QLCで約1000回です。</p>
+</section>
 <section>
   <h2>解説の中の「ウェアレベリング」</h2>
   <ul class="term-quotes"><li><p>ウェアレベリングでは、コントローラが論理アドレスと物理ブロックの対応表(FTL)を管理し、書き込みを消去回数の少ないブロックへ振り分けます。</p><a href="/q/sram-flash/sram-flash-007/">SSDなどで使われるウェアレベリングの目的として正しいものはどれか。</a></li><li><p>USBメモリやSDカード、SSDには、大容量で安価な不揮発性メモリであるNANDフラッシュが使われ、内部にはNANDチップと、誤り訂正やウェアレベリングを担うコントローラが入っています。</p><a href="/q/sram-flash/sram-flash-032/">USBメモリやSDカードに主に使われているメモリはどれか。</a></li><li><p>SSDの寿命はTBW(総書き込み量)やDWPD(1日に全容量を何回書けるか)で表され、ウェアレベリングや余剰領域で延ばしています。</p><a href="/q/sram-flash/sram-flash-039/">SLC型のNANDフラッシュメモリの書き換え可能回数の目安として最も近いものはどれか。</a></li></ul>

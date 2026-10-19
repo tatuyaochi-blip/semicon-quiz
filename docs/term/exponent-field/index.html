@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"指数部","item":"https://semiconroom.com/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"指数部","description":"浮動小数点数で、2の何乗を掛けるかを表すビット列。負の指数も表せるように、実際の指数にバイアス(単精度では127)を足した値で記録する。","url":"https://semiconroom.com/term/exponent-field/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"指数部","item":"https://semiconroom.com/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"指数部","description":"浮動小数点数で、2の何乗を掛けるかを表すビット列。負の指数も表せるように、実際の指数にバイアス(単精度では127)を足した値で記録する。","url":"https://semiconroom.com/term/exponent-field/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"IEEE 754で指数部にバイアスを付けるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"バイアスを使うと、負の指数を表しながら指数部を符号なしの数として格納できるためです。また、正の浮動小数点数の大小関係が、ビットパターンを整数として読んだときの大小関係と一致します。"}},{"@type":"Question","name":"倍精度の指数部のバイアスはいくつですか?","acceptedAnswer":{"@type":"Answer","text":"1023で、指数部は11ビットです。単精度は8ビットでバイアス127、半精度は5ビットでバイアス15です。"}},{"@type":"Question","name":"指数部がすべて0のときは何を表しますか?","acceptedAnswer":{"@type":"Answer","text":"仮数部が0ならゼロを、それ以外なら非正規化数を表します。非正規化数では暗黙の先頭の1がなく、指数は正規化数の最小値に固定されます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -110,7 +110,22 @@
 </svg><figcaption class="fig-cap">IEEE 754 単精度浮動小数点数のビット配置 · <a href="/figures/#fig-ieee754">図解集で見る</a></figcaption></figure>
   <p>この用語の分野: <a href="/c/computer-arithmetic/">計算機算術</a></p>
 </article>
-
+<section class="term-about">
+  <h2>バイアスのしくみ</h2>
+  <p>指数部は符号なし整数で、実際の指数に一定のバイアスを足した値を格納するため、負の指数にも符号が要りません。単精度(FP32)は8ビットでバイアス127、倍精度(FP64)は11ビットでバイアス1023、半精度(FP16)は5ビットでバイアス15です。FP32では格納値1〜254が実際の指数−126〜+127に対応し、格納値130は2³を意味します。バイアスを引き忘れることが、デコードで最もよくある間違いです。</p>
+</section>
+<section class="term-about">
+  <h2>予約された値</h2>
+  <p>指数部の2つのビットパターンは特別な意味を持ちます。すべて0の場合はゼロまたは<a class="term-link" href="/term/subnormal-number/">非正規化数</a>を表します。暗黙の先頭の1がなくなり、指数は正規化数の最小値(FP32では−126)に固定されるため、値がゼロに向かって緩やかに小さくなれます。すべて1の場合は、<a class="term-link" href="/term/significand/">仮数</a>部が0なら無限大、それ以外なら<a class="term-link" href="/term/nan/">NaN</a>(非数)を表します。このため、FP32の正規化数の指数部の最大値は254で、FP16は指数部が30までなので最大値は65504になります。</p>
+</section>
+<section class="term-about">
+  <h2>指数部のビット数と仮数部のビット数</h2>
+  <p>指数部の幅は表現できる範囲を、<a class="term-link" href="/term/significand/">仮数</a>部の幅は精度を決めます。FP32の8ビットの指数部は約3.4 × 10³⁸まで表せ、正規化数は約1.2 × 10⁻³⁸まで小さくなります。一方、FP16の5ビットでは65504が上限なので、FP16での学習ではオーバーフローに注意が必要です。<a class="term-link" href="/term/bfloat16/">bfloat16</a>形式はFP32と同じ8ビットの指数部を持ちながら仮数部は7ビットしかなく、FP32と同じ範囲をはるかに低い精度で実現します。このトレードオフは、多くのニューラルネットワークの処理に適しています。</p>
+</section>
+<section class="term-about">
+  <h2>2の補数ではなくバイアス表現を使う理由</h2>
+  <p>バイアス付きの指数部を符号ビットのすぐ下、<a class="term-link" href="/term/significand/">仮数</a>部の上に置くと、正の数では値が大きいほど、ビットパターンを整数として読んだ値も必ず大きくなります。そのため比較や並べ替えに、符号の処理を加えるだけで整数用のハードウェアが使えます。具体例を挙げると、10.0は1.25 × 2³なので、符号は0、指数部は130(2進数で10000010)、小数部は.01となり、FP32のビットパターンは0x41200000になります。</p>
+</section>
 <section>
   <h2>指数部の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="computer-arithmetic-003" data-cat="computer-arithmetic" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -124,7 +139,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 指数部11ビット、仮数52ビット</p><p class="explanation">倍精度(FP64)は、符号1ビット、指数部11ビット、仮数52ビットで合計64ビットです。指数のバイアスは1023で、およそ10⁻³⁰⁸〜10³⁰⁸の範囲を表せ、先頭の1を含めた53ビットの精度は10進数でおよそ15〜16桁にあたります。単精度より<a class="term-link" href="/term/exponent-field/">指数部</a>も<a class="term-link" href="/term/significand/">仮数</a>も広げてあり、科学技術計算で標準的に使われます。指数部8ビットは単精度の幅のまま仮数だけを広げた組み合わせで、規格の形式ではありません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>IEEE 754で指数部にバイアスを付けるのはなぜですか?</h3>
+  <p>バイアスを使うと、負の指数を表しながら指数部を符号なしの数として格納できるためです。また、正の浮動小数点数の大小関係が、ビットパターンを整数として読んだときの大小関係と一致します。</p>
+  <h3>倍精度の指数部のバイアスはいくつですか?</h3>
+  <p>1023で、指数部は11ビットです。単精度は8ビットでバイアス127、半精度は5ビットでバイアス15です。</p>
+  <h3>指数部がすべて0のときは何を表しますか?</h3>
+  <p>仮数部が0ならゼロを、それ以外なら非正規化数を表します。非正規化数では暗黙の先頭の1がなく、指数は正規化数の最小値に固定されます。</p>
+</section>
 <section>
   <h2>解説の中の「指数部」</h2>
   <ul class="term-quotes"><li><p>倍精度(FP64)は符号1・指数部11・仮数52ビットで、指数部が広く精度も高くなります。</p><a href="/q/computer-arithmetic/computer-arithmetic-003/">IEEE 754の単精度(32ビット)の浮動小数点数で、符号・指数部・仮数に割り当てられるビット数の組み合わせはどれか。</a></li><li><p>単精度より指数部も仮数も広げてあり、科学技術計算で標準的に使われます。</p><a href="/q/computer-arithmetic/computer-arithmetic-004/">IEEE 754の倍精度(64ビット)の浮動小数点数で、指数部と仮数のビット数の組み合わせとして正しいものはどれか。</a></li><li><p>負の指数も表せるように、指数部には実際の指数にバイアスを足した値を記録します。</p><a href="/q/computer-arithmetic/computer-arithmetic-005/">IEEE 754の単精度で、指数部に記録される値が130のとき、実際の指数(2の何乗か)はいくつか。</a></li><li><p>符号は負なので1、指数部は 2 + 127 = 129 = 1000 0001、仮数は小数部の1001に0を続けたものです。</p><a href="/q/computer-arithmetic/computer-arithmetic-008/">−6.25 を単精度に変換するとき、符号・指数部・仮数を並べたビット列を16進数で表すとどれか。</a></li><li><p>指数部の最大値(すべて1)は特殊値のために予約されています。</p><a href="/q/computer-arithmetic/computer-arithmetic-017/">IEEE 754の単精度で、指数部がすべて1(255)のビット列が表すものの説明として正しいものはどれか。</a></li></ul>

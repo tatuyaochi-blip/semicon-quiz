@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"空間的局所性","item":"https://semiconroom.com/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"空間的局所性","description":"あるアドレスにアクセスすると、その近くのアドレスにもまもなくアクセスしやすい性質。配列を順に読む処理が例で、キャッシュラインの単位でまとめて読み込む理由になる。","url":"https://semiconroom.com/term/spatial-locality/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"空間的局所性","item":"https://semiconroom.com/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"空間的局所性","description":"あるアドレスにアクセスすると、その近くのアドレスにもまもなくアクセスしやすい性質。配列を順に読む処理が例で、キャッシュラインの単位でまとめて読み込む理由になる。","url":"https://semiconroom.com/term/spatial-locality/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"空間的局所性の例にはどのようなものがありますか?","acceptedAnswer":{"@type":"Answer","text":"配列を先頭から末尾まで順に読む処理です。i番目の要素の次には隣のアドレスにあるi+1番目の要素が使われ、それは同じキャッシュラインの読み込みですでにキャッシュに入っている可能性が高いです。"}},{"@type":"Question","name":"キャッシュは空間的局所性をどのように活用していますか?","acceptedAnswer":{"@type":"Answer","text":"ミスのたびにキャッシュライン全体(一般に64バイト)を転送し、さらに後続のラインを先読みすることも多いため、プログラムが要求したときには近くのデータがすでにキャッシュにあります。"}},{"@type":"Question","name":"C言語の配列を列方向に走査すると遅いのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"C言語は配列を行ごとに格納するため、列方向に進むとアクセスのたびに1行分飛び、読み込んだ各キャッシュラインのごく一部しか使わないからです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/memory-hierarchy/">メモリ階層と性能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>プログラムが空間的局所性を持つ理由</h2>
+  <p>命令は分岐に達するまで連続したアドレスから順に読み出され、配列は要素を1つずつたどって処理されることが多く、構造体のフィールドや<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>内のローカル変数は隣り合って配置されています。そのため、あるアドレスにアクセスすると、まもなく近くのアドレスにもアクセスすることがよくあります。この傾向が空間的局所性であり、ハードウェアではなくプログラムのアクセスパターンが持つ性質です。</p>
+</section>
+<section class="term-about">
+  <h2>ハードウェアによる活用</h2>
+  <p>キャッシュはライン単位でデータを転送し、現在のCPUでは64バイトが一般的です。1回のミスで、次に使われそうな隣接データもまとめて取り込まれます。これはDRAMのバースト転送とも相性がよく、DDR4では8バイトの転送8回でちょうど64バイトになります。ハードウェアプリフェッチャは連続アクセスや一定ストライドのアクセスを検出して次のラインを先読みし、開いたままのDRAMの行は近くのアクセスに速く応答します。1つのアドレス変換で多数の近接アドレスをカバーできるため、ページや<a class="term-link" href="/term/tlb/">TLB</a>(アドレス変換バッファ)も恩恵を受けます。</p>
+</section>
+<section class="term-about">
+  <h2>空間的局所性と時間的局所性</h2>
+  <p><a class="term-link" href="/term/temporal-locality/">時間的局所性</a>は、ループカウンタや累積和のように同じデータをすぐに再利用することです。空間的局所性は、配列の次の要素のように近くのデータをすぐに使うことです。大きな配列を1回だけ走査する処理は空間的局所性が強い一方で時間的局所性はなく、1つの変数を繰り返し更新する処理は時間的局所性はあっても空間的局所性はほとんどありません。一部のハッシュテーブルやグラフ探索のように大きなデータへランダムにアクセスする処理は、どちらの局所性もほとんどなく、ミスが頻発します。</p>
+</section>
+<section class="term-about">
+  <h2>空間的局所性を持つコードの書き方</h2>
+  <p>C言語では2次元配列が行優先で格納されるため、内側のループで列方向に進めば連続したアドレスにアクセスしますが、ループを入れ替えると1回ごとに1行分飛ぶことになります。1つのフィールドだけを処理する場合は、配列の構造体(SoA)レイアウトを選ぶと、使わないフィールドの読み込みを避けられます。<a class="term-link" href="/term/cache-line/">キャッシュライン</a>を大きくすると空間的局所性をより活かせますが、<a class="term-link" href="/term/miss-penalty/">ミスペナルティ</a>が増え、不要なデータまで読み込むことがあります。マルチスレッドのコードでは、無関係な変数が同じラインを共有すると<a class="term-link" href="/term/false-sharing/">偽共有</a>(フォールスシェアリング)が起こります。</p>
+</section>
 <section>
   <h2>空間的局所性の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-002" data-cat="cpu" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 64バイト</p><p class="explanation">多くのCPUは、キャッシュと主記憶の間のデータを64バイトのライン単位でやりとりします。近くのアドレスのデータは続けて使われることが多い(<a class="term-link" href="/term/spatial-locality/">空間的局所性</a>)ため、まとめて取り込むと効率がよく、DRAMのバースト転送(DDR4で8回 × 8バイト = 64バイト)とも合っています。マルチスレッドのプログラムでは、別々の変数が同じラインにあると取り合いが起きる「<a class="term-link" href="/term/false-sharing/">偽共有</a>」に注意が必要です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>空間的局所性の例にはどのようなものがありますか?</h3>
+  <p>配列を先頭から末尾まで順に読む処理です。i番目の要素の次には隣のアドレスにあるi+1番目の要素が使われ、それは同じキャッシュラインの読み込みですでにキャッシュに入っている可能性が高いです。</p>
+  <h3>キャッシュは空間的局所性をどのように活用していますか?</h3>
+  <p>ミスのたびにキャッシュライン全体(一般に64バイト)を転送し、さらに後続のラインを先読みすることも多いため、プログラムが要求したときには近くのデータがすでにキャッシュにあります。</p>
+  <h3>C言語の配列を列方向に走査すると遅いのはなぜですか?</h3>
+  <p>C言語は配列を行ごとに格納するため、列方向に進むとアクセスのたびに1行分飛び、読み込んだ各キャッシュラインのごく一部しか使わないからです。</p>
+</section>
 <section>
   <h2>解説の中の「空間的局所性」</h2>
   <ul class="term-quotes"><li><p>同じデータを近いうちにまた使う時間的局所性と、近くのアドレスを続けて使う空間的局所性を利用しており、L1で数クロック、L3でも数十クロックでアクセスできます。</p><a href="/q/cpu/cpu-002/">キャッシュメモリを設ける主な目的として正しいものはどれか。</a></li><li><p>近くのアドレスのデータは続けて使われることが多い(空間的局所性)ため、まとめて取り込むと効率がよく、DRAMのバースト転送(DDR4で8回 × 8バイト = 64バイト)とも合っています。</p><a href="/q/cpu/cpu-039/">現在の多くのCPUで使われているキャッシュライン(キャッシュブロック)の大きさとして一般的なものはどれか。</a></li><li><p>配列を先頭から順に読むのは、近くのアドレスを続けて使う空間的局所性の例で、時間的局所性とは別の性質です。</p><a href="/q/memory-hierarchy/memory-hierarchy-001/">時間的局所性の例として最も適切なものはどれか。</a></li><li><p>ラインを大きくすると、1回のミスで近くのデータをまとめて読み込めるので、空間的局所性のある処理では初期参照ミスが減ります。</p><a href="/q/memory-hierarchy/memory-hierarchy-010/">キャッシュのラインサイズを大きくしたときの影響として正しいものはどれか。</a></li></ul>

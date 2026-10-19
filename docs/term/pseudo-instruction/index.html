@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"疑似命令","item":"https://semiconroom.com/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"疑似命令","description":"アセンブリでは命令のように書けるが、アセンブラが1つ以上の本物の命令に置き換えるもの。RISC-Vのnop・mv・li・j・retなど。","url":"https://semiconroom.com/term/pseudo-instruction/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"疑似命令","item":"https://semiconroom.com/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"疑似命令","description":"アセンブリでは命令のように書けるが、アセンブラが1つ以上の本物の命令に置き換えるもの。RISC-Vのnop・mv・li・j・retなど。","url":"https://semiconroom.com/term/pseudo-instruction/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"疑似命令と本物の命令の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"本物の命令は、CPUが実行する独自の機械語エンコーディングを持っています。疑似命令はアセンブラの構文にすぎず、実行前に1つ以上の本物の命令に変換されます。"}},{"@type":"Question","name":"RISC-Vのliは何に展開されますか?","acceptedAnswer":{"@type":"Answer","text":"符号付き12ビットに収まる小さな定数ならx0を使ったaddi 1命令に、それより大きな32ビットの値ならluiとaddiの組に展開され、64ビットの定数ではさらに長い命令列になります。"}},{"@type":"Question","name":"RISC-Vのnopは本物の命令ですか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。nopはaddi x0, x0, 0としてエンコードされる疑似命令です。x0への書き込みは捨てられるため、何も変化しません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>アセンブラによる展開</h2>
+  <p>疑似命令は独自の機械語エンコーディングを持たないアセンブリ構文で、<a class="term-link" href="/term/assembler/">アセンブラ</a>が1つ以上の本物の命令に置き換えます。RISC-Vでは、nopはaddi x0, x0, 0に、mv rd, rsはaddi rd, rs, 0に、j labelはjal x0, labelに、retはjalr x0, 0(ra)に、bnez rs, labelはbne rs, x0, labelになります。多くは、読むと常に0で書き込みが捨てられるレジスタx0を利用しています。逆アセンブラは通常、疑似命令の形で表示し直すため、リストが読みやすくなります。</p>
+</section>
+<section class="term-about">
+  <h2>1行が複数の命令になる場合</h2>
+  <p>疑似命令の中には、展開後の命令数が変わるものがあります。li(<a class="term-link" href="/term/immediate-operand/">即値</a>ロード)は、定数が12ビットの符号付き即値に収まる場合はaddi 1命令になりますが、それより大きな32ビットの値ではluiとaddiの組になり、64ビットの定数ではさらに長い命令列になります。la(アドレスロード)や遠くの関数へのcallは、auipcと2つ目の命令を使ってPC相対アドレスを作ります。コードサイズやオフセットを手計算する場合は、この点を考慮する必要があります。</p>
+</section>
+<section class="term-about">
+  <h2>ISAが疑似命令に頼る理由</h2>
+  <p>nop、mv、単純なジャンプを個別のハードウェア命令として定義すると、オペコードと<a class="term-link" href="/term/decoder/">デコーダ</a>の論理が増えるだけで、機能は何も増えません。x0を使った既存の命令ですでに同じことができるからです。疑似命令を使えば、RISC-Vの中心的な設計目標であるハードウェア命令セットの小ささを保ちながら、関数からの復帰やゼロとの比較といったよく使う定型処理に、プログラマが読みやすい名前を付けられます。</p>
+</section>
+<section class="term-about">
+  <h2>疑似命令とディレクティブ、マクロの違い</h2>
+  <p>.text、.globl、.wordのようなアセンブラディレクティブは、<a class="term-link" href="/term/assembler/">アセンブラ</a>自体への指示です。セクションを選んだり、シンボルを公開したり、データを出力したりするもので、機械語命令には対応しません。疑似命令は、ツールチェーンが定めた固定の意味で必ず本物の命令に変換されます。マクロも同様の展開ですが、プログラマが定義します。ツールチェーンが後で展開を短くすることもあり、たとえば呼び出し先が十分に近ければ、auipcとjalrによるcallをリンク時に1つのjalに置き換えます。</p>
+</section>
 <section>
   <h2>疑似命令の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-006" data-cat="isa-assembly" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. jalr x0, 0(ra)</p><p class="explanation">jalr(jump and link register)は、レジスタの値にオフセットを足した番地へジャンプし、次の命令の番地を書き込み先に入れます。retは「jalr x0, 0(ra)」で、raの番地へ飛び、リンクはx0に捨てます。jalrは関数ポインタや仮想関数の呼び出しのように、行き先が実行時に決まるジャンプにも使われます。raを復元する「lw ra, …」はretの前に行う準備です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>疑似命令と本物の命令の違いは何ですか?</h3>
+  <p>本物の命令は、CPUが実行する独自の機械語エンコーディングを持っています。疑似命令はアセンブラの構文にすぎず、実行前に1つ以上の本物の命令に変換されます。</p>
+  <h3>RISC-Vのliは何に展開されますか?</h3>
+  <p>符号付き12ビットに収まる小さな定数ならx0を使ったaddi 1命令に、それより大きな32ビットの値ならluiとaddiの組に展開され、64ビットの定数ではさらに長い命令列になります。</p>
+  <h3>RISC-Vのnopは本物の命令ですか?</h3>
+  <p>いいえ。nopはaddi x0, x0, 0としてエンコードされる疑似命令です。x0への書き込みは捨てられるため、何も変化しません。</p>
+</section>
 <section>
   <h2>解説の中の「疑似命令」</h2>
   <ul class="term-quotes"><li><p>ただし「li」や「mv」のような疑似命令は、アセンブラが1つ以上の本物の命令に置き換えます。</p><a href="/q/isa-assembly/isa-assembly-005/">アセンブリ言語と機械語の関係として正しいものはどれか。</a></li><li><p>bnezは「bne t1, zero, loop」の疑似命令です。</p><a href="/q/isa-assembly/isa-assembly-023/">上のRISC-Vのコードを実行し終えたとき、t0の値はいくらか。</a></li><li><p>呼び出し規約では戻り先をra(x1)に入れるので、関数の呼び出しは「jal ra, func」、疑似命令では「call func」と書きます。</p><a href="/q/isa-assembly/isa-assembly-025/">RISC-Vの命令「jal ra, func」の動作として正しいものはどれか。</a></li></ul>

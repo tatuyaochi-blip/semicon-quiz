@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"クロックの不確かさ","item":"https://semiconroom.com/term/clock-uncertainty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"クロックの不確かさ","description":"ジッタや、まだ確定していないクロックスキューの見込みとして、タイミング解析で使える時間から差し引く余裕。SDCではset_clock_uncertaintyで指定し、クロックツリーができる前の段階ではスキューの分も含めて大きめに設定する。","url":"https://semiconroom.com/term/clock-uncertainty/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"クロックの不確かさ","item":"https://semiconroom.com/term/clock-uncertainty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"クロックの不確かさ","description":"ジッタや、まだ確定していないクロックスキューの見込みとして、タイミング解析で使える時間から差し引く余裕。SDCではset_clock_uncertaintyで指定し、クロックツリーができる前の段階ではスキューの分も含めて大きめに設定する。","url":"https://semiconroom.com/term/clock-uncertainty/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"クロックの不確かさはホールドチェックにも適用されますか?","acceptedAnswer":{"@type":"Answer","text":"はい。ただしset_clock_uncertainty -holdで別に設定し、通常はより小さな値にします。送り出しと取り込みが同じエッジを使うため、周期ジッタがほぼ相殺されるからです。CTS前は、ホールドでも想定スキューを含めます。"}},{"@type":"Question","name":"クロックツリー合成の後にクロックの不確かさを小さくするのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"クロックツリーができると、ツールがツリーの遅延から実際のクロックスキューを計算するため、スキューを見積もっていた分のマージンが不要になるからです。残るのはジッタと設計マージンだけです。"}},{"@type":"Question","name":"クロックの不確かさを含めたセットアップスラックはどう計算しますか?","acceptedAnswer":{"@type":"Answer","text":"要求時刻は、クロック周期からセットアップ時間と不確かさを引いた値(クロックレイテンシで補正)で、スラックは要求時刻からデータ到着時刻を引いた値です。たとえば1.25 − 0.05 − 0.05 = 1.15 nsの要求時刻に対し、到着が1.05 nsならスラックは0.10 nsです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/sta-cdc/">タイミング解析とCDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>タイミングチェックへの入り方</h2>
+  <p><a class="term-link" href="/term/sta/">静的タイミング解析</a>(STA)において、クロックの不確かさはユーザーが指定するマージンで、セットアップチェックとホールドチェックを厳しくします。セットアップでは、取り込み側エッジまでに使える時間から差し引かれます。周期1.25 ns、セットアップ時間0.05 ns、不確かさ0.05 nsなら、データは1.15 nsまでに到着しなければなりません。ホールドでは要求値に加算されるため、データはエッジの後により長く安定している必要があります。指定は<a class="term-link" href="/term/sdc/">SDC</a>(Synopsys Design Constraints)で行い、set_clock_uncertainty -setup 0.05 [get_clocks clk] のようなコマンドを使い、-holdには別の値を設定します。</p>
+</section>
+<section class="term-about">
+  <h2>マージンに含めるもの</h2>
+  <p>通常は3つの要素を含めます。1つ目は、<a class="term-link" href="/term/pll/">PLL(位相同期回路)</a>やクロック分配による<a class="term-link" href="/term/jitter/">ジッタ</a>で、エッジの到着がサイクルごとに早まったり遅れたりします。2つ目は、クロックツリー合成(CTS)前のスキューの見積もりです。この段階ではクロックが理想的に扱われ、<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>間のスキューが不明なため、その推定値を加えます。3つ目に、電源ノイズなどその段階では正確にモデル化されない効果に対する設計マージンを加えるチームも多くあります。周期ジッタは2つの異なるエッジにまたがるセットアップでは効きますが、送り出しと取り込みが同じエッジを使うホールドではほぼ相殺されます。スキューの見積もりは両方に適用されます。</p>
+</section>
+<section class="term-about">
+  <h2>設計フローでの値の変化</h2>
+  <p>クロックを理想として扱う<a class="term-link" href="/term/logic-synthesis/">論理合成</a>や配置の段階では、<a class="term-link" href="/term/jitter/">ジッタ</a>と想定スキューをカバーするため、不確かさを比較的大きく設定します。CTSの後はクロックがプロパゲートモードになり、ツールが各<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>の実際のクロックレイテンシを計算するので、スキューは明示的に解析されます。そのためスキュー分は不確かさから外し、ジッタとマージンだけを残します。-fromと-toオプションを使えば、特定のクロックの組の間にも不確かさを設定できます。たとえば、異なる<a class="term-link" href="/term/pll/">PLL</a>出力から生成された関連クロック間のパスなどです。値が大きすぎると設計を過剰に制約して面積や電力が増え、小さすぎるとシリコンで不良になるおそれがあります。</p>
+</section>
+<section class="term-about">
+  <h2>スキューやディレーティングとの違い</h2>
+  <p>スキューは2つの<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>でのクロック到着時刻の差を計算したもので、クロックツリーができて初めてわかります。クロックの不確かさは計算されるものではなく、そのクロックのすべてのパスに一律に適用される想定上のマージンです。<a class="term-link" href="/term/ocv/">OCV(オンチップばらつき)</a>の<a class="term-link" href="/term/derating/">ディレーティング</a>はさらに別物で、固定の時間を差し引くのではなく、セルや配線の遅延に係数を掛け、送り出し側のパスを遅く、取り込み側のパスを速く(あるいはその逆に)見積もります。完全なサインオフの設定では、一般にプロパゲートされたスキュー、ディレーティング、そして小さく残した不確かさを組み合わせます。</p>
+</section>
 <section>
   <h2>クロックの不確かさの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sta-cdc-002" data-cat="sta-cdc" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 0.10 ns</p><p class="explanation"><a class="term-link" href="/term/clock-uncertainty/">クロックの不確かさ</a>は、<a class="term-link" href="/term/jitter/">ジッタ</a>やまだ確定していないスキューの見込みとして、使える時間から差し引く余裕です。要求時刻は 1.25 − 0.05(不確かさ)− 0.05(<a class="term-link" href="/term/setup-time/">セットアップ時間</a>)= 1.15 ns、到着時刻は 1.05 ns なので、<a class="term-link" href="/term/slack/">スラック</a>は 0.10 ns です。0.15 ns は不確かさを引き忘れた値、0.20 ns はセットアップ時間も不確かさも引かなかった値です。<a class="term-link" href="/term/place-and-route/">配置配線</a>の前はクロックツリーがないので、スキューの分も不確かさに含めて大きめに設定するのが一般的です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>クロックの不確かさはホールドチェックにも適用されますか?</h3>
+  <p>はい。ただしset_clock_uncertainty -holdで別に設定し、通常はより小さな値にします。送り出しと取り込みが同じエッジを使うため、周期ジッタがほぼ相殺されるからです。CTS前は、ホールドでも想定スキューを含めます。</p>
+  <h3>クロックツリー合成の後にクロックの不確かさを小さくするのはなぜですか?</h3>
+  <p>クロックツリーができると、ツールがツリーの遅延から実際のクロックスキューを計算するため、スキューを見積もっていた分のマージンが不要になるからです。残るのはジッタと設計マージンだけです。</p>
+  <h3>クロックの不確かさを含めたセットアップスラックはどう計算しますか?</h3>
+  <p>要求時刻は、クロック周期からセットアップ時間と不確かさを引いた値(クロックレイテンシで補正)で、スラックは要求時刻からデータ到着時刻を引いた値です。たとえば1.25 − 0.05 − 0.05 = 1.15 nsの要求時刻に対し、到着が1.05 nsならスラックは0.10 nsです。</p>
+</section>
 <section>
   <h2>解説の中の「クロックの不確かさ」</h2>
   <ul class="term-quotes"><li><p>クロックの不確かさは、ジッタやまだ確定していないスキューの見込みとして、使える時間から差し引く余裕です。</p><a href="/q/sta-cdc/sta-cdc-009/">クロック周期 1.25 ns(800 MHz)の経路で、クロック→出力遅延と組み合わせ回路の遅延の合計が 1.05 n…</a></li><li><p>クロックの不確かさは、クロックのジッタや、配置配線前に見込むスキューなどの影響を、タイミング解析で余裕として差し引くための設定です。</p><a href="/q/eda/eda-047/">タイミングの制約(SDC)で、クロックのジッタやスキューの見込みなどとしてクロックの周期から差し引いておく余裕を指定す…</a></li></ul>

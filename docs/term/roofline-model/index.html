@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"Rooflineモデル","item":"https://semiconroom.com/term/roofline-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Rooflineモデル","description":"達成できる性能を「ピーク性能」と「メモリ帯域×演算強度」の小さい方として表すモデル。処理が演算律速かメモリ律速かを見分けるのに使う。","url":"https://semiconroom.com/term/roofline-model/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"Rooflineモデル","item":"https://semiconroom.com/term/roofline-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Rooflineモデル","description":"達成できる性能を「ピーク性能」と「メモリ帯域×演算強度」の小さい方として表すモデル。処理が演算律速かメモリ律速かを見分けるのに使う。","url":"https://semiconroom.com/term/roofline-model/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Rooflineモデルのリッジポイントとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"帯域の斜線と演算性能の上限が交わる演算強度のことで、ピークFLOP/sをメモリ帯域(バイト/秒)で割った値に等しくなります。これより低い演算強度のワークロードはメモリ律速、高いものは演算律速になりえます。"}},{"@type":"Question","name":"カーネルの演算強度はどうやって測定しますか?","acceptedAnswer":{"@type":"Answer","text":"演算数を、実際にDRAMから転送されたバイト数で割ります。転送量は手計算で見積もるか、ハードウェアカウンタやプロファイラで測定します。キャッシュによって移動するデータ量が変わる場合は、測定したトラフィックを使います。"}},{"@type":"Question","name":"高速なGPUでもメモリ律速になるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"高速なアクセラレータはリッジポイントが非常に高く、数十〜数百 FLOP/バイトに達することも多いため、要素ごとの演算や小バッチの行列ベクトル演算ではピークに届きません。演算の融合や、データ再利用・バッチサイズの拡大で演算強度を上げると改善します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -107,7 +107,22 @@
 </svg><figcaption class="fig-cap">ルーフラインモデル · <a href="/figures/#fig-roofline">図解集で見る</a></figcaption></figure>
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>グラフの描き方</h2>
+  <p>Rooflineモデルは、到達可能な性能(1秒あたりの演算数、通常はFLOP/s)を、<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>(メモリとの間で移動する1バイトあたりの演算数)に対してプロットしたもので、通常は両対数軸で描きます。どのワークロードも2つの上限で抑えられます。メモリ帯域×演算強度に等しい斜めの線と、ピーク演算性能の水平な線です。到達可能な性能は両者の小さい方になります。両者が交わる角をリッジポイントと呼び、その位置はピーク演算性能÷帯域です。100 TFLOPS、2 TB/sならリッジは50 FLOP/バイトなので、10 FLOP/バイトのカーネルはメモリ律速で、性能は20 TFLOPSにとどまります。</p>
+</section>
+<section class="term-about">
+  <h2>演算強度の求め方</h2>
+  <p>有効な演算数を数え、実際にメモリインタフェースを通過するバイト数で割ります。8 バイトのdouble型配列2つを足して3つ目に書き込む処理では、1 FLOPに対して24 バイトを移動するので、<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>は約0.04 FLOP/バイトとなり、現代のどのチップでも完全にメモリ律速です。n×n行列同士の乗算は約3n²個の要素に対して約2n³ FLOPを行うため、キャッシュやタイリングによってそのデータ再利用が実際に実現される限り、演算強度はnとともに大きくなります。演算強度は実際のトラフィックで決まるので、同じアルゴリズムでもブロッキングやキャッシュサイズ、データ型によってグラフ上の位置が変わります。</p>
+</section>
+<section class="term-about">
+  <h2>グラフの読み方と改善策</h2>
+  <p>斜めの屋根の下にあるカーネルは、演算器を増やしても速くならず、1演算あたりのバイト数を減らす必要があります。キャッシュ内でデータを再利用するブロッキングやタイリング、中間結果をDRAMに書き出さないよう連続する演算を融合すること、低精度のデータ型を使うことは、いずれも点を右または上に動かします。水平な屋根の近くにあるカーネルは、逆に演算資源をうまく使う必要があり、<a class="term-link" href="/term/vectorization/">ベクトル化</a>、積和演算(<a class="term-link" href="/term/fused-multiply-add/">FMA</a>)、行列演算ユニット、十分な並列性が効きます。<a class="term-link" href="/term/simd/">SIMD</a>なしのピークのように、最適化が欠けた場合の低い上限線を追加で描いたり、キャッシュの階層ごとに別のルーフラインを描いたりすることもよくあります。</p>
+</section>
+<section class="term-about">
+  <h2>数値の出どころとモデルの限界</h2>
+  <p>水平な屋根には通常、対象データ型でのベンダー公表ピーク性能を使います。傾きは理論値よりも、<a class="term-link" href="/term/stream-benchmark/">STREAMベンチマーク</a>などで測定した帯域を使うほうが適切です。このモデルは上限を示すもので、予測ではありません。実際のカーネルは、レイテンシ、メモリアクセスと演算の重なりの不完全さ、同期、負荷の偏りのために屋根より下に位置します。よく知られた適用例が、バッチサイズ1での大規模言語モデルの<a class="term-link" href="/term/ai-inference/">推論</a>です。各重みは約2演算のために読み出されるだけなので、16 ビット精度では<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>が1 FLOP/バイト前後となり、明確にメモリ律速になります。</p>
+</section>
 <section>
   <h2>Rooflineモデルの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-008" data-cat="ai-stack" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -121,7 +136,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. データの再利用を増やすなどして演算強度を上げるか、メモリの読み書きの量を減らす</p><p class="explanation">Rooflineの図で、斜めの線の下にある処理は、メモリ帯域が性能の上限を決めています。演算器を増やしても上限は変わりません。ブロッキングや<a class="term-link" href="/term/operator-fusion/">演算の融合</a>でデータを何度も使い、1バイトあたりの演算の数(<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>)を増やせば、処理は図の右へ移り、上限が上がります。データを低い精度にして読み書きの量を減らすことも、同じ効果があります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>Rooflineモデルのリッジポイントとは何ですか?</h3>
+  <p>帯域の斜線と演算性能の上限が交わる演算強度のことで、ピークFLOP/sをメモリ帯域(バイト/秒)で割った値に等しくなります。これより低い演算強度のワークロードはメモリ律速、高いものは演算律速になりえます。</p>
+  <h3>カーネルの演算強度はどうやって測定しますか?</h3>
+  <p>演算数を、実際にDRAMから転送されたバイト数で割ります。転送量は手計算で見積もるか、ハードウェアカウンタやプロファイラで測定します。キャッシュによって移動するデータ量が変わる場合は、測定したトラフィックを使います。</p>
+  <h3>高速なGPUでもメモリ律速になるのはなぜですか?</h3>
+  <p>高速なアクセラレータはリッジポイントが非常に高く、数十〜数百 FLOP/バイトに達することも多いため、要素ごとの演算や小バッチの行列ベクトル演算ではピークに届きません。演算の融合や、データ再利用・バッチサイズの拡大で演算強度を上げると改善します。</p>
+</section>
 <section>
   <h2>解説の中の「Rooflineモデル」</h2>
   <ul class="term-quotes"><li><p>Rooflineモデルでは、達成できる性能は「ピーク性能」と「帯域×演算強度」の小さい方です。</p><a href="/q/ai-stack/ai-stack-008/">ピーク性能100 TFLOPS、メモリ帯域2 TB/sのアクセラレータで、演算強度が10 FLOP/バイトの処理を実行…</a></li><li><p>カタログの理論値と比べて、実際にどれだけの帯域が使えるかを知る目安になり、Rooflineモデルの斜めの線の傾きにも使われます。</p><a href="/q/performance/performance-037/">STREAMベンチマークで主に測るものはどれか。</a></li></ul>

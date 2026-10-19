@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"OSが削除したファイルの領域をSSDに知らせるコマンド。不要になったデータをSSDが把握できるため、ガベージコレクションの効率が上がる。","url":"https://semiconroom.com/term/trim/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"OSが削除したファイルの領域をSSDに知らせるコマンド。不要になったデータをSSDが把握できるため、ガベージコレクションの効率が上がる。","url":"https://semiconroom.com/term/trim/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TRIM するとデータはすぐに消去されますか?","acceptedAnswer":{"@type":"Answer","text":"必ずしもそうではありません。TRIM はデータを無効としてマークし、アドレスの対応づけを削除するだけで、物理的な消去は後でガベージコレクションがブロックを回収するときに行われます。ただし、TRIM 済みのアドレスを読むと、その時点ですでにゼロが返ることもあります。"}},{"@type":"Question","name":"NVMe SSD は TRIM に対応していますか?","acceptedAnswer":{"@type":"Answer","text":"はい。NVMe の Dataset Management コマンドの Deallocate オプションが同じ役割を果たします。OS 上では通常、これも TRIM や discard と呼ばれます。"}},{"@type":"Question","name":"ハードディスクにも TRIM は必要ですか?","acceptedAnswer":{"@type":"Answer","text":"従来のハードディスクはセクタをその場で上書きできるため、TRIM の恩恵はありません。TRIM が重要なのは、ブロックを再利用する前に消去が必要なフラッシュストレージです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/sram-flash/">SRAM・フラッシュメモリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SSD に知らせる必要がある理由</h2>
+  <p>SSD のコントローラは FTL(フラッシュ変換層)を動かしており、OS が使う論理ブロックアドレスを物理的なフラッシュのページに対応づけています。ファイルを削除しても更新されるのはファイルシステム自身の管理情報だけで、SSD には書き込みが届かないため、SSD は古いデータをまだ有効だとみなします。その結果、<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>の際に、二度と読まれないデータまでコピーし続け、時間とフラッシュの書き換え寿命を無駄にします。TRIM はこの情報の食い違いを解消します。OS がもう有用なデータを持たないアドレス範囲を送ることで、ドライブはそれらを保持し続ける必要がなくなります。</p>
+</section>
+<section class="term-about">
+  <h2>TRIM を受け取った後の処理</h2>
+  <p>TRIM を受け取ると、FTL はその論理アドレスの対応づけを削除し、対応する物理ページを無効としてマークします。データがすぐに消去されるとは限らず、消去は後で<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>が領域を回収するときに、ブロック単位で行われます。無効なページがほとんどを占めるブロックは、ほとんどあるいはまったくコピーせずに消去できるため、<a class="term-link" href="/term/write-amplification/">書き込み増幅</a>が減り、ドライブの使用量が増えても書き込み性能が安定します。ドライブによっては、TRIM 済みのアドレスを読むとゼロや不定のデータが返るため、SSD で削除したファイルはハードディスクに比べて一般にずっと復元しにくくなります。</p>
+</section>
+<section class="term-about">
+  <h2>インタフェースと発行のしかた</h2>
+  <p>TRIM は ATA(SATA)コマンドのオプション名です。SCSI や SAS のシステムでは UNMAP を使い、<a class="term-link" href="/term/nvme/">NVMe</a> では Dataset Management コマンドの Deallocate オプションで同じ機能を提供します。OS は、ファイルを削除するたびに破棄を送る連続方式か、削除処理を遅くしないように定期的にまとめて送るバッチ方式で発行します。一部の RAID やディスク暗号化の構成、仮想ディスクなど、ファイルシステムとドライブの間にある層がこのコマンドを通過させないと、フラッシュまで届きません。そのため、通過させるよう設定が必要な場合があります。</p>
+</section>
+<section class="term-about">
+  <h2>混同しやすいもの</h2>
+  <p>TRIM はホストからのヒントにすぎません。<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>は、有効なデータを実際に移動してブロックを消去するドライブ内部の処理で、TRIM の有無にかかわらず動作します。半導体製造でのレジストトリミングは無関係な<a class="term-link" href="/term/plasma/">プラズマ</a>処理で、レジストのラインを露光の限界より細くします。また、レーザートリミングはアナログチップの抵抗値を調整する技術です。従来のハードディスクはデータをその場で上書きするため TRIM を必要としませんが、シンプロビジョニングのストレージでは、領域を回収するために同等の UNMAP コマンドを使います。</p>
+</section>
 <section>
   <h2>TRIMの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="sram-flash-028" data-cat="sram-flash" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. ホストが書いたデータ量より、フラッシュメモリに実際に書き込まれるデータ量が多くなること</p><p class="explanation">フラッシュは上書きができず消去がブロック単位のため、<a class="term-link" href="/term/garbage-collection/">ガベージコレクション</a>で有効なデータを別のブロックへコピーするなどの追加の書き込みが発生し、実際の書き込み量がホストの書き込み量より多くなります。この比が<a class="term-link" href="/term/write-amplification/">書き込み増幅</a>係数(WAF)で、ランダムな小さい書き込みが多いと数倍になることもあります。<a class="term-link" href="/term/trim/">TRIM</a>、余剰領域、データ圧縮などで小さくして寿命と性能を守ります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>TRIM するとデータはすぐに消去されますか?</h3>
+  <p>必ずしもそうではありません。TRIM はデータを無効としてマークし、アドレスの対応づけを削除するだけで、物理的な消去は後でガベージコレクションがブロックを回収するときに行われます。ただし、TRIM 済みのアドレスを読むと、その時点ですでにゼロが返ることもあります。</p>
+  <h3>NVMe SSD は TRIM に対応していますか?</h3>
+  <p>はい。NVMe の Dataset Management コマンドの Deallocate オプションが同じ役割を果たします。OS 上では通常、これも TRIM や discard と呼ばれます。</p>
+  <h3>ハードディスクにも TRIM は必要ですか?</h3>
+  <p>従来のハードディスクはセクタをその場で上書きできるため、TRIM の恩恵はありません。TRIM が重要なのは、ブロックを再利用する前に消去が必要なフラッシュストレージです。</p>
+</section>
 <section>
   <h2>解説の中の「TRIM」</h2>
   <ul class="term-quotes"><li><p>TRIMコマンドで不要な領域を通知すると、SSDはそのページを無効として扱い、コピーせずに消去できるため、書き込み増幅が減って性能と寿命が改善します。</p><a href="/q/sram-flash/sram-flash-028/">OSが削除したファイルの領域をSSDに通知し、ガベージコレクションを効率化するためのコマンドはどれか。</a></li><li><p>TRIM、余剰領域、データ圧縮などで小さくして寿命と性能を守ります。</p><a href="/q/sram-flash/sram-flash-042/">SSDの「書き込み増幅(ライトアンプリフィケーション)」の説明として正しいものはどれか。</a></li></ul>

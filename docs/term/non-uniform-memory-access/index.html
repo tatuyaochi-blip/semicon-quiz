@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA","item":"https://semiconroom.com/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA","description":"Non-Uniform Memory Accessの略。コアから近いメモリと遠いメモリがあり、遠いメモリへのアクセスは時間がかかる構成。データとスレッドを同じ側に置くと速い。","url":"https://semiconroom.com/term/non-uniform-memory-access/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"NUMA","item":"https://semiconroom.com/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NUMA","description":"Non-Uniform Memory Accessの略。コアから近いメモリと遠いメモリがあり、遠いメモリへのアクセスは時間がかかる構成。データとスレッドを同じ側に置くと速い。","url":"https://semiconroom.com/term/non-uniform-memory-access/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"自分のマシンがNUMAかどうかはどう確認できますか?","acceptedAnswer":{"@type":"Answer","text":"Linuxではlscpuまたはnumactl --hardwareを実行します。NUMAノードが2つ以上表示されれば、メモリアクセスのコストが場所によって異なります。ほとんどのデュアルソケットサーバでは少なくとも2つのノードが表示されます。"}},{"@type":"Question","name":"NUMA向けにプログラムを書き直す必要はありますか?","acceptedAnswer":{"@type":"Answer","text":"いいえ。ccNUMAマシンは一貫した単一のアドレス空間を提供するので、プログラムはそのままで正しく動きます。書き直しが意味を持つのは性能面だけで、主に各スレッドのデータを自分のノードに置くことが目的です。"}},{"@type":"Question","name":"ファーストタッチポリシーとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"物理ページを、そのページに最初に書き込んだスレッドのNUMAノードに確保するという一般的な規則です。NUMAシステムで配列を並列に初期化することが重要なのは、このためです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/multicore-sync/">マルチコアと同期</a></p>
 </article>
-
+<section class="term-about">
+  <h2>メモリアクセスが不均一になる理由</h2>
+  <p>現代のプロセッサはメモリコントローラを内蔵しているため、マルチソケットサーバでは各ソケットが直接接続されたDRAMを持ちます。自ソケットのメモリにはローカルのコントローラを通じて直接アクセスできますが、別ソケットのメモリにはソケット間リンクを渡り、リモート側のコントローラを経由する必要があります。コア群とそのローカルメモリをまとめてNUMAノードと呼びます。リモートアクセスは一般にレイテンシが目立って大きく、ローカルの約1.3〜2倍程度になることが多いうえ、帯域も低くなります。正確な比率はプラットフォームやリンクの負荷によって変わります。</p>
+</section>
+<section class="term-about">
+  <h2>UMAやクラスタとの違い</h2>
+  <p>UMA(均一メモリアクセス)システムは、多くの場合1組のメモリコントローラを持つシングルソケットのマシンで、どのコアからどのアドレスにもほぼ同じコストでアクセスできます。ccNUMA(キャッシュコヒーレントNUMA)システムは単一の共有アドレス空間とハードウェアによるキャッシュコヒーレンスを維持するので、プログラムを修正しなくても正しく動作し、データの置き場所によって速度が変わるだけです。この点で、各ノードが独自のアドレス空間を持ち、メッセージパッシングで明示的にデータをやり取りする別々のコンピュータのクラスタとは異なります。大規模な<a class="term-link" href="/term/chiplet/">チップレット</a>構成のプロセッサでは、1ソケット内に複数のNUMAノードが見えることもあります。</p>
+</section>
+<section class="term-about">
+  <h2>ファーストタッチ配置とその落とし穴</h2>
+  <p>mallocは仮想アドレスを予約するだけなので、Linuxは通常、ページを確保したスレッドではなく、最初にそのページへ書き込んだスレッドのノードに配置します。1つのスレッドで大きな配列をゼロ初期化すると、全ページがそのスレッドのノードに置かれます。その後、他ノードで実行される並列ループはほぼすべてリモートメモリから読むことになり、1つのメモリコントローラが飽和する一方で、他のコントローラは遊んでしまいます。対策は、計算と同じ作業分割でデータを並列に初期化し、各スレッドの担当部分がそのスレッドのローカルに置かれるようにすることです。</p>
+</section>
+<section class="term-about">
+  <h2>ツールと実践のポイント</h2>
+  <p>Linuxではnumactl --hardwareで、ノードとそのメモリ量、および距離テーブルを表示できます。距離テーブルでは慣例としてローカルアクセスを10とし、リモートはそれより大きな値になります。同じツールで、プロセスを特定ノードのCPUとメモリに束縛したり、全スレッドが均等に読むデータ向けにページをノード間でインターリーブしたりできます。スレッドを固定(CPUアフィニティを設定)すると、スケジューラがスレッドをデータから離れたコアへ移すのを防げ、<a class="term-link" href="/term/benchmark/">ベンチマーク</a>の再現性も高まります。カーネルにはページを使用中のスレッドの近くへ自動移動する機能もありますが、性能が重要なコードでは明示的に配置するほうが予測しやすくなります。</p>
+</section>
 <section>
   <h2>NUMAの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-041" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 大きな配列を1つのスレッドだけで0に初期化すると、全部が1つのノードに置かれ、ほかのノードのスレッドが遠いメモリを使うことになる</p><p class="explanation">mallocで確保しただけでは物理ページは割り当てられず、初めて書き込んだときの<a class="term-link" href="/term/page-fault/">ページフォルト</a>で、そのスレッドがいるノードのメモリに置かれます。そのため、初期化を1つのスレッドで行うと配列全体がそのノードに集まり、並列の計算で各スレッドが担当する部分の多くが遠いメモリになります。初期化も計算と同じ分担で並列に行えば、各部分が担当のスレッドの近くに置かれます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>自分のマシンがNUMAかどうかはどう確認できますか?</h3>
+  <p>Linuxではlscpuまたはnumactl --hardwareを実行します。NUMAノードが2つ以上表示されれば、メモリアクセスのコストが場所によって異なります。ほとんどのデュアルソケットサーバでは少なくとも2つのノードが表示されます。</p>
+  <h3>NUMA向けにプログラムを書き直す必要はありますか?</h3>
+  <p>いいえ。ccNUMAマシンは一貫した単一のアドレス空間を提供するので、プログラムはそのままで正しく動きます。書き直しが意味を持つのは性能面だけで、主に各スレッドのデータを自分のノードに置くことが目的です。</p>
+  <h3>ファーストタッチポリシーとは何ですか?</h3>
+  <p>物理ページを、そのページに最初に書き込んだスレッドのNUMAノードに確保するという一般的な規則です。NUMAシステムで配列を並列に初期化することが重要なのは、このためです。</p>
+</section>
 <section>
   <h2>解説の中の「NUMA」</h2>
   <ul class="term-quotes"><li><p>移った先のコアのキャッシュには必要なデータがなく、NUMAのシステムでは、データが置かれたメモリから遠いソケットに移ってしまうこともあります。</p><a href="/q/performance/performance-045/">マルチコアやNUMAのシステムで性能を測るとき、スレッドを特定のコアに固定する(アフィニティを設定する)ことがある理由…</a></li><li><p>複数のCPUを持つサーバーでは、各CPUに直結されたメモリのほうが速いNUMA構成になります。</p><a href="/q/dram/dram-043/">現在の多くのパソコン用プロセッサで、DRAMを制御するメモリコントローラが置かれている場所はどれか。</a></li></ul>

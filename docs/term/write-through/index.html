@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ライトスルー方式","item":"https://semiconroom.com/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ライトスルー方式","description":"キャッシュへの書き込みと同時に、下の階層(主記憶など)にも書き込む方式。下の階層が常に最新に保たれるが書き込みの通信量が多く、書き込みバッファと組み合わせて使う。","url":"https://semiconroom.com/term/write-through/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ライトスルー方式","item":"https://semiconroom.com/term/write-through/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ライトスルー方式","description":"キャッシュへの書き込みと同時に、下の階層(主記憶など)にも書き込む方式。下の階層が常に最新に保たれるが書き込みの通信量が多く、書き込みバッファと組み合わせて使う。","url":"https://semiconroom.com/term/write-through/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ライトスルー方式とライトバック方式のキャッシュの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"ライトスルー方式はストアのたびに下位の階層にも書き込み、常に最新の状態に保ちます。ライトバック方式はキャッシュだけに書き込み、変更されたラインが追い出されるときに一度だけ下位の階層を更新するため、通信量を減らせます。"}},{"@type":"Question","name":"ライトスルー方式のキャッシュに書き込みバッファが必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"バッファがないと、CPUはすべてのストアが低速なメモリで完了するまで待たなければならないからです。バッファが書き込みを待ち行列に入れ、バックグラウンドで送り出す間もCPUは処理を続けられます。"}},{"@type":"Question","name":"ライトスルー方式のキャッシュにダーティビットは必要ですか?","acceptedAnswer":{"@type":"Answer","text":"必要ありません。すべての書き込みが直ちに下位へ伝えられるため、ラインの内容が下位の階層と食い違うことはなく、何も書き戻さずに追い出せます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/memory-hierarchy/">メモリ階層と性能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ストア命令の処理の流れ</h2>
+  <p>ストアがヒットすると、ライトスルー方式のキャッシュは自分のコピーを更新すると同時に、L2キャッシュや主記憶などの下位の階層にも書き込みを送ります。そのためラインがダーティになることはなく、ダーティビットは不要です。下位の階層が同じデータを持っているので、追い出すラインは単に破棄できます。ストアがミスした場合、ライトスルー方式のキャッシュでは通常ノーライトアロケートを使い、ラインを読み込まずに書き込みをそのまま下位へ送ります。どのみち後で書き戻す必要がないためです。</p>
+</section>
+<section class="term-about">
+  <h2>書き込みバッファの役割</h2>
+  <p>すべてのストアが主記憶に届くまで待っていると、CPUは絶えずストールしてしまいます。そこで書き込みはいったん書き込みバッファに入り、CPUが処理を続ける間にバックグラウンドで下位の階層へ送り出されます。CPUがストールするのはバッファが満杯になったときだけで、これはストアがメモリの処理能力を超える速さで発生した場合に起こります。ミスしたロードは、主記憶から古いデータを読まないよう、バッファを確認するか、バッファが空になるのを待つ必要があります。バッファは同じラインへの複数の書き込みを1回の転送にまとめることもよくあります。</p>
+</section>
+<section class="term-about">
+  <h2>ライトスルー方式とライトバック方式の比較</h2>
+  <p>ライトバック方式はキャッシュだけを更新し、ダーティラインは追い出されるときに一度だけ主記憶に書き込みます。同じラインへの繰り返しの書き込みが1回の転送にまとまるので、帯域と電力を節約でき、CPUのL1〜L3キャッシュの多くがライトバック方式なのはこのためです。ライトスルー方式はストアのたびに通信が発生しますが、下位の階層が常に最新に保たれます。そのため他のコアや<a class="term-link" href="/term/dma/">DMA</a>とのコヒーレンスが簡単になり、復旧も容易です。ライトスルー方式のL1なら、単純なパリティでデータを保護し、エラー時には正しいコピーを読み直せます。</p>
+</section>
+<section class="term-about">
+  <h2>使われる場面</h2>
+  <p>ライトスルー方式は、ライトバック方式のL2を背後に持つ小さな1次キャッシュ、単純な組込みプロセッサ、そして下位の階層がすべての書き込みを即座に見る必要があるメモリ領域で使われます。多くのアーキテクチャでは、OSがメモリタイプ属性によってページごとにこの方式を選べます。一方、DRAM直前の最終レベルのキャッシュには向きません。そこではストアの通信がメモリ帯域を消費してしまい、ライトバック方式ならそれを節約できるからです。</p>
+</section>
 <section>
   <h2>ライトスルー方式の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 書き込みがキャッシュの中で済み、主記憶へは追い出すときに1回書けばよいから</p><p class="explanation">ライトバック方式では、同じラインへの何度もの書き込みをキャッシュの中だけで済ませ、追い出すときにダーティなラインを1回書き戻すだけです。そのため主記憶への通信量と電力を大きく減らせます。書き込みのたびに主記憶も最新にするのは<a class="term-link" href="/term/write-through/">ライトスルー方式</a>の性質で、同じラインに何度も書くとその都度通信が発生します。キャッシュと主記憶が常に一致するのもライトスルーの性質で、ライトバックでは一致しない期間があります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ライトスルー方式とライトバック方式のキャッシュの違いは何ですか?</h3>
+  <p>ライトスルー方式はストアのたびに下位の階層にも書き込み、常に最新の状態に保ちます。ライトバック方式はキャッシュだけに書き込み、変更されたラインが追い出されるときに一度だけ下位の階層を更新するため、通信量を減らせます。</p>
+  <h3>ライトスルー方式のキャッシュに書き込みバッファが必要なのはなぜですか?</h3>
+  <p>バッファがないと、CPUはすべてのストアが低速なメモリで完了するまで待たなければならないからです。バッファが書き込みを待ち行列に入れ、バックグラウンドで送り出す間もCPUは処理を続けられます。</p>
+  <h3>ライトスルー方式のキャッシュにダーティビットは必要ですか?</h3>
+  <p>必要ありません。すべての書き込みが直ちに下位へ伝えられるため、ラインの内容が下位の階層と食い違うことはなく、何も書き戻さずに追い出せます。</p>
+</section>
 <section>
   <h2>解説の中の「ライトスルー方式」</h2>
   <ul class="term-quotes"><li><p>ライトスルー方式では書き込みのたびに主記憶にも書くため、そのまま完了を待つとCPUが頻繁に止まります。</p><a href="/q/memory-hierarchy/memory-hierarchy-011/">ライトスルー方式のキャッシュで、書き込みバッファを設ける主な目的はどれか。</a></li><li><p>書き込みのたびに主記憶も最新にするのはライトスルー方式の性質で、同じラインに何度も書くとその都度通信が発生します。</p><a href="/q/memory-hierarchy/memory-hierarchy-038/">同じラインに何度も書き込む処理で、ライトスルー方式よりライトバック方式の方が有利になる主な理由はどれか。</a></li><li><p>書き込みミスのときにラインを読み込まずに下の階層へ直接書く方式はノーライトアロケートで、ライトスルー方式と組み合わせることが多い方式です。</p><a href="/q/memory-hierarchy/memory-hierarchy-013/">書き込みでキャッシュミスしたときに、そのラインを読み込まず、下の階層へ直接書き込む方式はどれか。</a></li></ul>
