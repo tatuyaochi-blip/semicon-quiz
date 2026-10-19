@@ -24,11 +24,11 @@ for (const bar of document.querySelectorAll('[data-progress]')) {
   bar.parentElement.hidden = false;
 }
 
-// トップの「どこから始めるか」: 解いた記録があれば、初回向けの3つの入口を
-// 「前回の続き・今日の復習・間違えた問題」に差し替える。出せるものが1つもなければ初回向けのまま
+// トップの「前回の続きから」: 解いた記録があれば、開始ボタンの下に
+// 「前回の続き・今日の復習・間違えた問題」を出す。出せるものが1つもなければ出さない
 const back = document.querySelector('[data-start="back"]');
 if (back && store.hasRecords()) {
-  const names = JSON.parse(back.dataset.cats);
+  const names = JSON.parse(back.querySelector('[data-cats]').dataset.cats);
   const fill = (el, n) => {
     const span = el.querySelector('span');
     span.textContent = span.textContent.replace('{n}', n);
@@ -44,11 +44,7 @@ if (back && store.hasRecords()) {
   if (store.dueCount()) fill(back.querySelector('[data-due]'), store.dueCount());
   if (store.weakCount()) fill(back.querySelector('[data-weak]'), store.weakCount());
   const cards = [...back.querySelectorAll('.start-card')].filter(a => !a.hidden);
-  if (cards.length) {
-    cards[0].classList.add('primary');
-    back.hidden = false;
-    document.querySelector('[data-start="new"]').hidden = true;
-  }
+  if (cards.length) back.hidden = false;
 }
 
 // トップページの連続学習日数と、今日の1問を解いたかどうか

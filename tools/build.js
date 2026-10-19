@@ -211,28 +211,46 @@ function buildLang(L) {
   <a class="mode-card${i === 0 ? ' primary' : ''}" href="${quizUrl(m, cat)}" rel="nofollow">
     <strong>${esc(modeText(m, 'label'))}</strong><span>${esc(modeText(m, 'desc'))}</span>
   </a>`).join('') + '</div>';
-  // トップの「どこから始めるか」。初回は3つの入口(基礎から・10問・分野を選ぶ)、
-  // 学習履歴があれば progress.js が「続き・今日の復習・苦手問題」に差し替える(保存できない環境では初回の表示のまま)
+  // トップの開始ボタン。「クイズを始める」は初心者向けコースの最初の分野の10問(コースがなければ全分野から10問)。
+  // 学習履歴があれば progress.js が下に「続き・今日の復習・苦手問題」を出す(保存できない環境では出さない)
   const introCourse = courses.find(co => co.id === 'intro');
+  const firstCat = introCourse?.steps.find(id => qs[id]?.length);
+  const startHref = firstCat ? `${home}quiz/?mode=category&amp;c=${firstCat}&amp;n=10` : `${home}quiz/?mode=random`;
   const startCard = (href, title, desc, extra = '') => `<a class="start-card" href="${href}"${extra}><strong>${title}</strong><span>${desc}</span></a>`;
-  const startPanel = `<section class="start">
-  <div class="start-grid" data-start="new">
-    ${introCourse ? startCard(`${home}course/intro/`, esc(t('start_basics')), esc(t('start_basics_desc', { course: loc(introCourse.name, code), n: introCourse.steps.length }))) : ''}
-    ${startCard(`${home}quiz/?mode=random`, esc(t('start_try')), esc(t('start_try_desc')), ' rel="nofollow"')}
-    ${startCard('#topics', esc(t('start_pick')), esc(t('start_pick_desc', { n: live.length })))}
+  const startPanel = `<div class="hero-cta">
+    <a class="btn btn-primary btn-lg" href="${startHref}" rel="nofollow" data-track="home_start_quiz">${esc(t('home_cta_start'))}</a>
+    <a class="btn btn-ghost btn-lg" href="#topics" data-track="home_pick_topic">${esc(t('home_cta_pick'))}</a>
   </div>
-  <div class="start-grid" data-start="back" hidden data-cats="${esc(JSON.stringify(Object.fromEntries(live.map(c => [c.id, c.name]))))}">
-    ${startCard(`${home}quiz/?mode=category&amp;n=10`, esc(t('start_continue')), esc(t('start_continue_desc')), ' rel="nofollow" data-continue')}
-    ${startCard(`${home}quiz/?mode=review`, esc(t('start_review')), esc(t('start_review_desc')), ' rel="nofollow" data-due hidden')}
-    ${startCard(`${home}quiz/?mode=weak`, esc(t('start_weak')), esc(t('start_weak_desc')), ' rel="nofollow" data-weak hidden')}
+  <p class="hero-note">${esc(t('home_cta_note'))}</p>`;
+  const startBack = `<section class="start" data-start="back" hidden>
+  <h2>${esc(t('home_back_heading'))}</h2>
+  <div class="start-grid" data-cats="${esc(JSON.stringify(Object.fromEntries(live.map(c => [c.id, c.name]))))}">
+    ${startCard(`${home}quiz/?mode=category&amp;n=10`, esc(t('start_continue')), esc(t('start_continue_desc')), ' rel="nofollow" data-continue data-track="home_continue"')}
+    ${startCard(`${home}quiz/?mode=review`, esc(t('start_review')), esc(t('start_review_desc')), ' rel="nofollow" data-due hidden data-track="home_review"')}
+    ${startCard(`${home}quiz/?mode=weak`, esc(t('start_weak')), esc(t('start_weak_desc')), ' rel="nofollow" data-weak hidden data-track="home_weak"')}
   </div>
 </section>`;
-  // 先頭の #topics はヘッダーの Topics からのジャンプ先
-  const categoryList = '<div id="topics"></div>' + exams.map(e => `
+  // トップの「できること」: メニューを開かなくても主な機能が分かるカード(実在するページだけ)
+  const feature = (href, key, track, vars) => `<a class="feature-card" href="${href}" data-track="${track}"><strong>${esc(t(key))}</strong><span>${esc(t(`${key}_desc`, vars))}</span></a>`;
+  const homeFeatures = `<section class="features" aria-labelledby="features-h">
+  <h2 id="features-h" class="visually-hidden">${esc(t('home_feat_heading'))}</h2>
+  <div class="feature-grid">
+    ${feature('#topics', 'home_feat_topics', 'home_feat_topics', { n: live.length })}
+    ${courses.length ? feature('#courses', 'home_feat_courses', 'home_feat_courses') : ''}
+    ${feature(`${home}glossary/`, 'home_feat_glossary', 'home_feat_glossary')}
+    ${toolsIn(code).length ? feature(`${home}tools/`, 'home_feat_tools', 'home_feat_tools') : ''}
+  </div>
+</section>`;
+  // 先頭の #topics はヘッダーの Topics と「分野から選ぶ」からのジャンプ先。大分類(試験の区分)ごとの目次を置く
+  const examGroups = e => e.groups.map(g => ({ g, list: live.filter(c => c.exam === e.id && c.group === g.id) })).filter(x => x.list.length);
+  const categoryList = `<div id="topics"></div>
+<nav class="topic-index" aria-label="${esc(t('topics_index'))}">
+  <h2>${esc(t('topics_index'))}</h2>
+  ${exams.map(e => `<p><b>${esc(exName(e))}</b>${examGroups(e).map(({ g, list }) => ` <a class="chip" href="#g-${e.id}-${g.id}">${esc(grName(e, g))} <small>${list.length}</small></a>`).join('')}</p>`).join('\n  ')}
+</nav>` + exams.map(e => `
 <section class="exam">
   <h2>${esc(t('exam_heading', { exam: exName(e) }))}</h2>
-  ${e.groups.map(g => ({ g, list: live.filter(c => c.exam === e.id && c.group === g.id) })).filter(x => x.list.length)
-    .map(({ g, list }) => `<h3 class="group-title">${esc(grName(e, g))}</h3>
+  ${examGroups(e).map(({ g, list }) => `<h3 class="group-title" id="g-${e.id}-${g.id}">${esc(grName(e, g))}</h3>
   ${catCards(list)}`).join('\n')}
 </section>`).join('\n');
 
@@ -423,7 +441,7 @@ function buildLang(L) {
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     // トップ下部の「ほかの練習方法」(ランダム10問は上の入口にあるので除く)
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
-    startPanel,
+    startPanel, startBack, homeFeatures,
     // トップ下部の計算ツールの一覧(訳のあるツールだけ)
     toolList: toolsIn(code).length ? `<section>
   <h2><a href="${home}tools/">${esc(S.tools_title)}</a></h2>
@@ -463,10 +481,10 @@ function buildLang(L) {
       ga4Tag,
     ].filter(Boolean).join('\n');
     const langLinks = langs.map(x => x.code === code
-      ? `<span aria-current="true">${esc(x.label)}</span>`
+      ? `<span aria-current="true" lang="${x.htmlLang}">${esc(x.label)}</span>`
       : alt[x.code] != null
-        ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}">${esc(x.label)}</a>`
-        : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}">${esc(x.label)}</a>`).join('');
+        ? `<a href="${base}${alt[x.code]}" hreflang="${x.htmlLang}" lang="${x.htmlLang}" data-lang="${x.code}">${esc(x.label)}</a>`
+        : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}" data-lang="${x.code}">${esc(x.label)}</a>`).join('');
     // ヘッダーのナビ(いまいるページには aria-current を付ける)。
     // PC: Home / Topics / Resources(用語集・比較・図解をまとめたメニュー) / Progress。スマートフォン: 同じリンクを Menu に縦に並べる
     const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
@@ -481,7 +499,7 @@ function buildLang(L) {
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
-<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>` : '';
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>` : '';
     if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
       ...common,
