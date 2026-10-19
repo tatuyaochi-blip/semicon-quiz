@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Setup time","item":"https://semiconroom.com/en/term/setup-time/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Setup time","description":"The minimum time before the active clock edge during which a flip-flop's data input must be stable. Paths that cannot meet it limit the maximum operating frequency.","url":"https://semiconroom.com/en/term/setup-time/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Setup time","item":"https://semiconroom.com/en/term/setup-time/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Setup time","description":"The minimum time before the active clock edge during which a flip-flop's data input must be stable. Paths that cannot meet it limit the maximum operating frequency.","url":"https://semiconroom.com/en/term/setup-time/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between setup time and hold time?","acceptedAnswer":{"@type":"Answer","text":"Setup time is how long data must be stable before the clock edge, and hold time is how long it must stay stable after the edge. Setup limits maximum frequency, while hold violations are independent of clock frequency."}},{"@type":"Question","name":"How do you calculate setup slack?","acceptedAnswer":{"@type":"Answer","text":"Slack = required time − arrival time, where arrival time is clock-to-output plus logic delay and required time is the clock period (adjusted for skew) minus setup time and clock uncertainty. Positive slack means the path meets timing."}},{"@type":"Question","name":"Can a setup violation be fixed by lowering the clock frequency?","acceptedAnswer":{"@type":"Answer","text":"Yes, a longer period gives the data more time to arrive, so setup violations disappear at a low enough frequency. Hold violations do not, which makes them more dangerous once silicon is built."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/logic/">Logic circuits</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why flip-flops need setup time</h2>
+  <p>An edge-triggered <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> is typically built from two latches. Before the clock edge, the input must pass through the first latch and its internal nodes must settle so the value is firmly held when that latch closes. If data changes too close to the edge, the flip-flop may capture the old value, the new one, or go metastable, taking unpredictable time to resolve. Setup time is the required stable interval before the edge and <a class="term-link" href="/en/term/hold-time/">hold time</a> the interval after it. Both are characterized per cell and vary with slew and operating conditions.</p>
+</section>
+<section class="term-about">
+  <h2>The setup check and slack</h2>
+  <p>Data launched at one edge must arrive at least the setup time before the next capture edge. Arrival time is clock-to-output plus logic delay; required time is the period, adjusted for <a class="term-link" href="/en/term/clock-skew/">clock skew</a>, minus setup time and clock uncertainty. Slack is required minus arrival, and negative slack is a violation. With a 2.0 ns period, 0.2 ns clock-to-output, 1.4 ns of logic and 0.1 ns setup, slack is 0.3 ns. The slowest path, the critical path, sets the maximum frequency: a 2.5 ns total allows 400 MHz.</p>
+</section>
+<section class="term-about">
+  <h2>Setup time vs. hold time</h2>
+  <p>Setup is a maximum-delay check against the next edge, so a violation disappears if the clock is slowed, or the path is shortened by <a class="term-link" href="/en/term/pipelining/">pipelining</a>, reducing logic depth, upsizing cells or using low-threshold-voltage cells. Hold is a minimum-delay check against the same edge and does not depend on frequency, so it is repaired by adding delay. The two pull in opposite directions: capture-<a class="term-link" href="/en/term/clock-skew/">clock skew</a> that helps setup hurts hold. Under on-chip variation (OCV) derating, setup assumes a slow launch side and an early capture clock; hold reverses this.</p>
+</section>
+<section class="term-about">
+  <h2>Constraints that reshape the check</h2>
+  <p>A multicycle path of 2 moves the capture edge two periods away, valid only if logic such as an enable really captures every other cycle. A half-cycle path, launched on the rising edge and captured on the falling edge, gets only half a period. Latches allow time borrowing: data arriving after the latch opens still passes if it arrives before closing, taking time from the next stage. At chip boundaries, set_input_delay and set_output_delay describe time spent outside the chip. Useful skew deliberately delays a capture clock to rebalance adjacent stages.</p>
+</section>
 <section>
   <h2>Try it: questions about Setup time</h2>
   <article class="q-mini" data-qid="logic-013" data-cat="logic" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. 0.3 ns</p><p class="explanation">Setup slack is calculated as &quot;required time − arrival time.&quot; The data arrival time is 0.2 + 1.4 = 1.6 ns and the required time is the next clock edge minus the <a class="term-link" href="/en/term/setup-time/">setup time</a>, 2.0 − 0.1 = 1.9 ns, so the slack is 1.9 − 1.6 = 0.3 ns. Being positive, it meets the constraint. 0.4 ns is the value obtained by forgetting to subtract the setup time, and 0.5 ns by adding the setup time instead. A negative slack means a violation.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between setup time and hold time?</h3>
+  <p>Setup time is how long data must be stable before the clock edge, and hold time is how long it must stay stable after the edge. Setup limits maximum frequency, while hold violations are independent of clock frequency.</p>
+  <h3>How do you calculate setup slack?</h3>
+  <p>Slack = required time − arrival time, where arrival time is clock-to-output plus logic delay and required time is the clock period (adjusted for skew) minus setup time and clock uncertainty. Positive slack means the path meets timing.</p>
+  <h3>Can a setup violation be fixed by lowering the clock frequency?</h3>
+  <p>Yes, a longer period gives the data more time to arrive, so setup violations disappear at a low enough frequency. Hold violations do not, which makes them more dangerous once silicon is built.</p>
+</section>
 <section>
   <h2>Setup time in the explanations</h2>
   <ul class="term-quotes"><li><p>For a flip-flop to capture correctly, data must be stable for a certain time before the clock edge—the setup time.</p><a href="/en/q/logic/logic-013/">Which correctly describes the setup time of a flip-flop?</a></li><li><p>Setup slack is calculated as &quot;required time − arrival time.&quot; The data arrival time is 0.2 + 1.4 = 1.6 ns and the required time is the next clock edge minus the setup time, 2.0 − 0.1 = 1.9 ns, so the slack is 1.9 − 1.6 = 0.3 ns.</p><a href="/en/q/sta-cdc/sta-cdc-001/">In a synchronous circuit with a clock period of 2.0 ns, the…</a></li><li><p>The minimum clock period is the sum of the clock-to-output delay, the combinational logic delay and the setup time.</p><a href="/en/q/sta-cdc/sta-cdc-002/">On a flip-flop-to-flip-flop path, the clock-to-output delay…</a></li><li><p>The required time is 1.25 − 0.05 (uncertainty) − 0.05 (setup time) = 1.15 ns and the arrival time is 1.05 ns, so the slack is 0.10 ns.</p><a href="/en/q/sta-cdc/sta-cdc-009/">On a path with a clock period of 1.25 ns (800 MHz), the clo…</a></li><li><p>1.9 ns assumes a full period is available, and 1.0 ns forgets to subtract the setup time.</p><a href="/en/q/sta-cdc/sta-cdc-017/">With a 2.0 ns clock at 50% duty cycle, a path launches on t…</a></li></ul>

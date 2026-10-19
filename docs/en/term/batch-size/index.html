@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Batch size","item":"https://semiconroom.com/en/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Batch size","description":"The number of inputs processed together. Larger batches reuse weights for efficiency but increase latency and memory.","url":"https://semiconroom.com/en/term/batch-size/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Batch size","item":"https://semiconroom.com/en/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Batch size","description":"The number of inputs processed together. Larger batches reuse weights for efficiency but increase latency and memory.","url":"https://semiconroom.com/en/term/batch-size/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does a larger batch size make inference faster?","acceptedAnswer":{"@type":"Answer","text":"It increases total throughput because each weight read serves more inputs, but each individual request usually waits longer, so latency gets worse."}},{"@type":"Question","name":"Why does increasing batch size increase GPU memory use?","acceptedAnswer":{"@type":"Answer","text":"Activations, and in LLMs the KV cache, are stored per input, so they scale linearly with batch size while the weights stay the same."}},{"@type":"Question","name":"What is the difference between batch size and epoch?","acceptedAnswer":{"@type":"Answer","text":"Batch size is how many samples are processed per step or weight update; an epoch is one full pass over the training dataset, which takes dataset size divided by batch size steps."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why batching raises efficiency</h2>
+  <p>In a neural-network layer, the weights are the same for every input. With batch size 1, a fully connected layer is a matrix-vector product: each weight is fetched from memory for a single multiply-add, giving an <a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a> of about 1 FLOP/byte in FP16, so compute units mostly wait for memory. With batch size B, the layer becomes a matrix-matrix product: weight traffic stays the same while operations grow B-fold, so intensity rises roughly B-fold and the workload moves from memory-bound toward compute-bound. Servers exploit this by grouping requests from many users.</p>
+</section>
+<section class="term-about">
+  <h2>The latency and memory cost</h2>
+  <p>A bigger batch raises total <a class="term-link" href="/en/term/throughput/">throughput</a> but not individual speed. Requests may wait for others to arrive, and each batch takes longer to compute, so per-request latency grows; interactive services raise the batch only as far as their response-time targets allow. Memory grows too. In LLM (large language model) inference the <a class="term-link" href="/en/term/kv-cache/">KV cache</a>, which stores attention keys and values of earlier tokens so they are not recomputed, scales with layers, key and value dimensions, tokens, batch size and bytes per element. With long contexts or many requests it can reach tens of gigabytes, more than the weights.</p>
+</section>
+<section class="term-about">
+  <h2>Typical numbers in LLM decoding</h2>
+  <p>During decoding at batch size 1, every generated token requires reading all the weights. A model with about 14 GB of FP16 weights on a <a class="term-link" href="/en/term/gpu/">GPU</a> with 2 TB/s of bandwidth therefore needs at least 14 GB ÷ 2 TB/s = 7 ms per token, at most about 140 tokens per second. Quantizing weights to 4 bits, about 3.5 GB, lowers that bound to about 1.75 ms. A larger batch generates several tokens per weight read, multiplying aggregate <a class="term-link" href="/en/term/throughput/">throughput</a> until compute or KV-<a class="term-link" href="/en/term/cache-memory/">cache memory</a> becomes the limit. KV-cache pressure is eased by lower-precision caches, sharing keys and values across heads and block-based memory management.</p>
+</section>
+<section class="term-about">
+  <h2>Batch size in training</h2>
+  <p>In training, the batch (mini-batch) is the set of samples whose gradients are averaged for one weight update. Larger batches use hardware more efficiently and need fewer update steps per pass over the data (an epoch), but activation memory for <a class="term-link" href="/en/term/backpropagation/">backpropagation</a> grows with batch size and model depth. <a class="term-link" href="/en/term/gradient-checkpointing/">Gradient checkpointing</a> counters this by storing only some activations and recomputing the rest for roughly one extra forward pass. Changing the batch size substantially usually means retuning the learning rate, since it changes gradient noise.</p>
+</section>
 <section>
   <h2>Try it: questions about Batch size</h2>
   <article class="q-mini" data-qid="ai-stack-009" data-cat="ai-stack" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Weights read once serve several inputs, raising arithmetic intensity and keeping the arithmetic units busy</p><p class="explanation">With <a class="term-link" href="/en/term/batch-size/">batch size</a> B, multiplying the weight matrix by B vectors becomes a product of the weight matrix and a B-wide matrix. Weight reads stay the same while operations grow B-fold, so <a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a> rises roughly B-fold and the workload moves from memory-bound toward compute-bound. Server inference uses GPUs efficiently by batching requests from many users together.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Does a larger batch size make inference faster?</h3>
+  <p>It increases total throughput because each weight read serves more inputs, but each individual request usually waits longer, so latency gets worse.</p>
+  <h3>Why does increasing batch size increase GPU memory use?</h3>
+  <p>Activations, and in LLMs the KV cache, are stored per input, so they scale linearly with batch size while the weights stay the same.</p>
+  <h3>What is the difference between batch size and epoch?</h3>
+  <p>Batch size is how many samples are processed per step or weight update; an epoch is one full pass over the training dataset, which takes dataset size divided by batch size steps.</p>
+</section>
 <section>
   <h2>Batch size in the explanations</h2>
   <ul class="term-quotes"><li><p>With batch size B, multiplying the weight matrix by B vectors becomes a product of the weight matrix and a B-wide matrix.</p><a href="/en/q/ai-stack/ai-stack-010/">Why does increasing the batch size (the number of inputs pr…</a></li><li><p>Memory for intermediate results and the KV cache also grows with batch size.</p><a href="/en/q/ai-stack/ai-stack-011/">What is a drawback of making the inference batch size too l…</a></li><li><p>It cuts computation dramatically, but the amount of stored keys and values grows in proportion to sequence length and batch size.</p><a href="/en/q/ai-stack/ai-stack-013/">What is the role of the KV cache in LLM inference?</a></li><li><p>KV cache size is the number of layers × key and value dimensions × number of tokens × batch size × bytes per element.</p><a href="/en/q/ai-stack/ai-stack-014/">When LLM inference handles long contexts or large batches, …</a></li><li><p>Backpropagation needs each layer&#39;s intermediate forward results, but storing them all makes memory grow with layer count and batch size.</p><a href="/en/q/ai-stack/ai-stack-037/">Which describes gradient checkpointing (activation recomput…</a></li></ul>

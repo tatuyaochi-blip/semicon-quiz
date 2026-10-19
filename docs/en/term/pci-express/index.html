@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"PCI Express","item":"https://semiconroom.com/en/term/pci-express/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PCI Express","description":"A high-speed serial expansion interface connecting the CPU with GPUs, SSDs, network cards and more, also written PCIe. Lanes are bundled for bandwidth, and speed roughly doubles each generation.","url":"https://semiconroom.com/en/term/pci-express/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"PCI Express","item":"https://semiconroom.com/en/term/pci-express/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PCI Express","description":"A high-speed serial expansion interface connecting the CPU with GPUs, SSDs, network cards and more, also written PCIe. Lanes are bundled for bandwidth, and speed roughly doubles each generation.","url":"https://semiconroom.com/en/term/pci-express/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can an x4 PCIe card work in an x16 slot?","acceptedAnswer":{"@type":"Answer","text":"Yes. Link training negotiates the largest lane count and speed both sides support, so an x4 card in an x16 slot simply runs with four lanes. The same negotiation lets newer and older generations interoperate at the lower common speed."}},{"@type":"Question","name":"What is the difference between GT/s and GB/s in PCIe?","acceptedAnswer":{"@type":"Answer","text":"GT/s is the raw signaling rate per lane, counting encoding overhead, while GB/s is usable data bandwidth. Convert by multiplying by the coding efficiency (0.8 for 8b/10b, about 0.985 for 128b/130b) and the lane count, then dividing by 8."}},{"@type":"Question","name":"Why did PCIe 6.0 switch to PAM4?","acceptedAnswer":{"@type":"Answer","text":"Doubling the bit rate with NRZ would require doubling the symbol rate, and channel loss grows sharply with frequency. PAM4 sends two bits per symbol at the same symbol rate as Gen 5, at the cost of smaller noise margin, which FEC compensates for."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/io-interface/">I/O Interfaces &amp; Buses</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Lanes, links and topology</h2>
+  <p>A PCI Express lane is one differential pair for transmitting plus one for receiving, four wires that carry data in both directions at once. Lanes are bundled into links of x1, x4, x8 or x16, with data striped across them so bandwidth scales with lane count. Unlike the old parallel PCI bus, where devices shared one bus and contended for it, PCIe is a tree of point-to-point links: the <a class="term-link" href="/en/term/root-complex/">root complex</a> beside the CPU and memory connects through switches to endpoints, and each link has its bandwidth to itself.</p>
+</section>
+<section class="term-about">
+  <h2>How to calculate PCIe bandwidth</h2>
+  <p>Bandwidth is the per-lane signaling rate times the coding efficiency times the lane count. Generations 1 and 2 used <a class="term-link" href="/en/term/8b-10b-encoding/">8b/10b encoding</a>, so a 5 GT/s Gen 2 lane carries 4 Gb/s, or 500 MB/s per direction. From Gen 3 on, <a class="term-link" href="/en/term/128b-130b-encoding/">128b/130b encoding</a> with scrambling raised efficiency to about 98.5 percent, so an 8 GT/s Gen 3 x16 link gives about 15.8 GB/s per direction. Signaling rates have roughly doubled each generation, from 8 to 16, 32 and 64 GT/s for Gen 3 through Gen 6. Packet headers make real <a class="term-link" href="/en/term/throughput/">throughput</a> somewhat lower.</p>
+</section>
+<section class="term-about">
+  <h2>The physical layer</h2>
+  <p>Each lane is driven by a <a class="term-link" href="/en/term/serdes/">SerDes</a> (serializer/deserializer) that turns wide on-chip buses into a single fast bit stream, while the receiver recovers the clock from the data itself, so transitions must occur often enough. To reach 64 GT/s without raising the symbol rate, Gen 6 switched from two-level <a class="term-link" href="/en/term/nrz/">NRZ</a> to four-level <a class="term-link" href="/en/term/pam4/">PAM4</a>, sending two bits per symbol. Squeezing four levels into the same swing leaves about one third of the spacing, roughly 9.5 dB less noise margin, so Gen 6 adds lightweight forward error correction (FEC). At start-up, link training settles on the widest lane count and fastest generation both ends support.</p>
+</section>
+<section class="term-about">
+  <h2>Where you will meet it</h2>
+  <p>Graphics cards typically use x16 slots, <a class="term-link" href="/en/term/nvme/">NVMe</a> SSDs x4 and network cards x1 to x8. NVMe, designed for flash over PCIe with many parallel command queues, reaches about 7 GB/s on Gen 4 x4, far beyond SATA&#39;s roughly 600 MB/s. For discrete GPUs, data must be copied across PCIe into <a class="term-link" href="/en/term/gpu/">GPU</a> memory before computing, and PCIe bandwidth is more than ten times lower than the GPU&#39;s own memory bandwidth, so offloading pays only when much computation is done per transferred byte or data stays on the GPU.</p>
+</section>
 <section>
   <h2>Try it: questions about PCI Express</h2>
   <article class="q-mini" data-qid="sram-flash-044" data-cat="sram-flash" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. About 98.5%</p><p class="explanation"><a class="term-link" href="/en/term/128b-130b-encoding/">128b/130b encoding</a> sends 128 data bits with a 2-bit header as 130 bits, so efficiency is 128/130 ≈ 98.5%, a big reduction in waste compared with 8b/10b&#39;s 80%. Transitions are ensured by scrambling the data (XOR with a fixed pseudo-random sequence) to mix 0s and 1s. This is why <a class="term-link" href="/en/term/pci-express/">PCI Express</a> 3.0 nearly doubled effective <a class="term-link" href="/en/term/throughput/">throughput</a> while raising the signaling rate only from 5 to 8 GT/s.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Can an x4 PCIe card work in an x16 slot?</h3>
+  <p>Yes. Link training negotiates the largest lane count and speed both sides support, so an x4 card in an x16 slot simply runs with four lanes. The same negotiation lets newer and older generations interoperate at the lower common speed.</p>
+  <h3>What is the difference between GT/s and GB/s in PCIe?</h3>
+  <p>GT/s is the raw signaling rate per lane, counting encoding overhead, while GB/s is usable data bandwidth. Convert by multiplying by the coding efficiency (0.8 for 8b/10b, about 0.985 for 128b/130b) and the lane count, then dividing by 8.</p>
+  <h3>Why did PCIe 6.0 switch to PAM4?</h3>
+  <p>Doubling the bit rate with NRZ would require doubling the symbol rate, and channel loss grows sharply with frequency. PAM4 sends two bits per symbol at the same symbol rate as Gen 5, at the cost of smaller noise margin, which FEC compensates for.</p>
+</section>
 <section>
   <h2>PCI Express in the explanations</h2>
   <ul class="term-quotes"><li><p>NVMe (NVM Express) is designed to drive flash efficiently over PCI Express and supports up to 64K command queues in parallel.</p><a href="/en/q/sram-flash/sram-flash-044/">Which interface standard, built on PCI Express, is widely u…</a></li><li><p>This is why PCI Express 3.0 nearly doubled effective throughput while raising the signaling rate only from 5 to 8 GT/s.</p><a href="/en/q/io-interface/io-interface-007/">Which is closest to the efficiency of the 128b/130b encodin…</a></li><li><p>One PCI Express lane consists of a transmit differential pair and a receive differential pair, four wires in all, and carries data in both directions simultaneously.</p><a href="/en/q/io-interface/io-interface-008/">Which describes a &quot;lane&quot; in PCI Express?</a></li><li><p>PCI Express bandwidth is the product of the generation&#39;s per-lane rate, the coding efficiency and the lane count.</p><a href="/en/q/io-interface/io-interface-009/">What is closest to the effective one-direction bandwidth of…</a></li><li><p>PCI Express signaling rates have roughly doubled each generation: 8 GT/s for Gen 3, 16 GT/s for Gen 4, 32 GT/s for Gen 5 and 64 GT/s for Gen 6.</p><a href="/en/q/io-interface/io-interface-010/">For PCI Express generations 3 through 6, how does the per-l…</a></li></ul>

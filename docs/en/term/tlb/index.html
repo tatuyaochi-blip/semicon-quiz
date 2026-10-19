@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"TLB (translation lookaside buffer)","item":"https://semiconroom.com/en/term/tlb/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLB (translation lookaside buffer)","description":"A small cache that holds recent virtual-to-physical address translations. It avoids walking the page tables in memory on every access, speeding up address translation.","url":"https://semiconroom.com/en/term/tlb/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"TLB (translation lookaside buffer)","item":"https://semiconroom.com/en/term/tlb/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLB (translation lookaside buffer)","description":"A small cache that holds recent virtual-to-physical address translations. It avoids walking the page tables in memory on every access, speeding up address translation.","url":"https://semiconroom.com/en/term/tlb/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What happens on a TLB miss?","acceptedAnswer":{"@type":"Answer","text":"The MMU (or an OS handler on some architectures) walks the page tables in memory to find the translation, installs it in the TLB and retries the access. If the page-table entry is invalid or the access is not allowed, a page fault is raised instead and the OS takes over."}},{"@type":"Question","name":"How do you calculate TLB reach?","acceptedAnswer":{"@type":"Answer","text":"Multiply the number of TLB entries by the page size. For example, 64 entries × 4 KB = 256 KB, while 64 entries × 2 MB = 128 MB, which is why huge pages reduce TLB misses."}},{"@type":"Question","name":"Is the TLB part of the CPU cache?","acceptedAnswer":{"@type":"Answer","text":"It is a cache, but of address translations rather than data. It sits beside the L1 caches and is usually looked up in parallel with them, but it never holds the memory contents themselves."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/cpu/">CPUs and architecture</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a TLB lookup works</h2>
+  <p>On every fetch, load and store, the memory management unit (MMU) splits the virtual address into a virtual page number and a page offset; with 4 KB pages the low 12 bits are the offset and pass through untranslated. On a TLB hit, the stored physical page number is joined to the offset and permissions are checked in the same step. On a miss, a page-table walk reads the tables in memory, up to four levels for 48-bit addresses with 4 KB pages, and refills the entry. A <a class="term-link" href="/en/term/page-fault/">page fault</a> occurs only if the page-table entry is invalid or forbids the access.</p>
+</section>
+<section class="term-about">
+  <h2>TLB reach and huge pages</h2>
+  <p>TLB reach is entries times page size: 64 entries of 4 KB cover only 256 KB, while the same 64 entries holding 2 MB huge pages cover 128 MB. Because TLBs hold only tens to thousands of entries, programs with large or scattered working sets, such as databases and virtual machines, can spend a noticeable share of time walking page tables. Remedies include huge pages, a larger second-level TLB behind small first-level ones, keeping page-table entries in the data caches, and better locality.</p>
+</section>
+<section class="term-about">
+  <h2>TLB vs. page table vs. data cache</h2>
+  <p>The <a class="term-link" href="/en/term/page-table/">page table</a> is the authoritative mapping, built by the operating system per process and stored in memory; the TLB caches recently used entries from it, so it holds translations, not data. Data caches are separate but cooperate closely: many L1 caches are virtually indexed and physically tagged (VIPT), selecting the set with untranslated offset bits so the set read and TLB lookup run in parallel, then comparing the physical tag. A cache miss is handled in hardware, whereas a <a class="term-link" href="/en/term/page-fault/">page fault</a> is an exception serviced by the OS.</p>
+</section>
+<section class="term-about">
+  <h2>Context switches, ASIDs and virtualization</h2>
+  <p>Processes reuse the same virtual addresses, so stale translations must not survive an address-space change. Without tags the TLB is flushed on every switch, causing a burst of misses; tagging entries with an address space identifier (<a class="term-link" href="/en/term/asid/">ASID</a>) lets them be reused when a process returns. Mapping the kernel into every address space means system calls need no switch. When the OS changes a mapping, it must invalidate matching entries on every core that may hold them. With <a class="term-link" href="/en/term/nested-paging/">nested paging</a> and four-level tables in both guest and host, one miss can cost up to 24 memory accesses.</p>
+</section>
 <section>
   <h2>Try it: questions about TLB (translation lookaside buffer)</h2>
   <article class="q-mini" data-qid="os-hardware-025" data-cat="os-hardware" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. 24</p><p class="explanation">Each of the guest&#39;s four table locations is a guest physical address, so it must be translated through the host&#39;s four levels before it can be read. Each guest level costs four host reads plus one guest-table read, five in all, giving 20 for four levels; translating the final guest physical address of the data itself through the host&#39;s four levels adds four more, for 24. As a formula, (4 + 1) × (4 + 1) − 1 = 24. Eight assumes simply walking four levels twice, overlooking translation of the table locations.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What happens on a TLB miss?</h3>
+  <p>The MMU (or an OS handler on some architectures) walks the page tables in memory to find the translation, installs it in the TLB and retries the access. If the page-table entry is invalid or the access is not allowed, a page fault is raised instead and the OS takes over.</p>
+  <h3>How do you calculate TLB reach?</h3>
+  <p>Multiply the number of TLB entries by the page size. For example, 64 entries × 4 KB = 256 KB, while 64 entries × 2 MB = 128 MB, which is why huge pages reduce TLB misses.</p>
+  <h3>Is the TLB part of the CPU cache?</h3>
+  <p>It is a cache, but of address translations rather than data. It sits beside the L1 caches and is usually looked up in parallel with them, but it never holds the memory contents themselves.</p>
+</section>
 <section>
   <h2>TLB (translation lookaside buffer) in the explanations</h2>
   <ul class="term-quotes"><li><p>Without ASIDs, the same virtual address maps to different physical addresses in different processes, so the TLB must be flushed on every process switch, leading to a run of TLB misses afterward.</p><a href="/en/q/os-hardware/os-hardware-025/">What is the advantage of tagging each TLB entry with an ASI…</a></li><li><p>Each TLB entry holds the translation for one page, so TLB reach = entries × page size = 64 × 4 KB = 256 KB.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-027/">With 64 TLB entries and a 4 KB page size, how much memory c…</a></li><li><p>The TLB caches recent translations.</p><a href="/en/q/cpu/cpu-014/">Which cache holds the results of translating virtual addres…</a></li><li><p>Frequently used translations are cached in the TLB.</p><a href="/en/q/os-hardware/os-hardware-010/">What is the role of a page table?</a></li><li><p>If the TLB has the translation, it completes at once and no fault occurs.</p><a href="/en/q/os-hardware/os-hardware-011/">When does a page fault occur?</a></li></ul>

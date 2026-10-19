@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Return address","item":"https://semiconroom.com/en/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Return address","description":"The address to go back to when a function finishes. In RISC-V, jal puts the next instruction's address in ra (x1); in x86, call pushes it on the stack.","url":"https://semiconroom.com/en/term/return-address/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Return address","item":"https://semiconroom.com/en/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Return address","description":"The address to go back to when a function finishes. In RISC-V, jal puts the next instruction's address in ra (x1); in x86, call pushes it on the stack.","url":"https://semiconroom.com/en/term/return-address/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Where is the return address stored in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"In register ra (x1), written by jal or jalr at the call. A non-leaf function copies it to its stack frame before making its own calls and restores it before ret."}},{"@type":"Question","name":"What is the difference between call/ret in x86 and jal/ret in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"x86 call always pushes the return address onto the stack and ret pops it, while RISC-V jal places it in a register and only touches memory if the function chooses to save it."}},{"@type":"Question","name":"Why is overwriting the return address dangerous?","acceptedAnswer":{"@type":"Answer","text":"When the function returns, the CPU jumps to whatever address is there, so an attacker who overwrites it through a buffer overflow can take control of the program."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/isa-assembly/">ISA &amp; Assembly</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a call saves it</h2>
+  <p>A call must record where execution should resume, which is the address of the instruction after the call. In RISC-V, jal (jump and link) writes PC + 4 into a register, by convention ra (x1), and jumps; the return is ret, a <a class="term-link" href="/en/term/pseudo-instruction/">pseudo-instruction</a> for jalr x0, 0(ra). Calls through function pointers, virtual functions and shared-library stubs use jalr with a register target. In x86, call pushes the return address onto the stack and ret pops it back into the instruction pointer, so the stack always holds it.</p>
+</section>
+<section class="term-about">
+  <h2>Leaf and non-leaf functions</h2>
+  <p>Because every jal overwrites ra, a RISC-V function that calls other functions must save its own return address first. A typical prologue is addi sp, sp, -16 to allocate a frame on the downward-growing stack, then sw ra, 12(sp) and sw s0, 8(sp) to save ra and a <a class="term-link" href="/en/term/callee-saved-register/">callee-saved register</a>. The epilogue reloads them, restores sp and executes ret. A <a class="term-link" href="/en/term/leaf-function/">leaf function</a>, which calls nothing, can leave ra in its register and may need no <a class="term-link" href="/en/term/stack-frame/">stack frame</a> at all, which makes small functions cheap.</p>
+</section>
+<section class="term-about">
+  <h2>Why attackers target it</h2>
+  <p>A return address stored on the stack sits next to local buffers, so a buffer overflow can overwrite it and redirect execution when the function returns. Classic attacks wrote machine code onto the stack and jumped to it; W^X policies with the page-table no-execute bit block that. Attackers then shifted to return-oriented programming, chaining existing code fragments. Further defenses include stack canaries checked before return, address-space layout randomization and hardware shadow stacks that keep a protected second copy of each return address.</p>
+</section>
+<section class="term-about">
+  <h2>Return addresses in hardware</h2>
+  <p>Out-of-order CPUs predict where a return will go long before ra or the stack is read. A return address stack (RAS) in the branch predictor pushes the fall-through address on each call and pops it on each return, giving very accurate predictions for well-nested code. Exceptions and interrupts are different: the CPU saves the interrupted PC in a dedicated register such as RISC-V mepc or sepc, together with the previous privilege mode, and mret or sret restores all of them at once rather than a plain ret.</p>
+</section>
 <section>
   <h2>Try it: questions about Return address</h2>
   <article class="q-mini" data-qid="cpu-045" data-cat="cpu" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. The stack</p><p class="explanation">Calling a subroutine pushes the <a class="term-link" href="/en/term/return-address/">return address</a>, registers to be preserved and local variables onto the stack. Its last-in, first-out (LIFO) structure ensures correct returns even with nested or recursive calls, and the <a class="term-link" href="/en/term/stack-pointer/">stack pointer</a> marks its top. Excessive recursion exhausts it (stack overflow), and buffer overruns that overwrite return addresses are a classic attack.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Where is the return address stored in RISC-V?</h3>
+  <p>In register ra (x1), written by jal or jalr at the call. A non-leaf function copies it to its stack frame before making its own calls and restores it before ret.</p>
+  <h3>What is the difference between call/ret in x86 and jal/ret in RISC-V?</h3>
+  <p>x86 call always pushes the return address onto the stack and ret pops it, while RISC-V jal places it in a register and only touches memory if the function chooses to save it.</p>
+  <h3>Why is overwriting the return address dangerous?</h3>
+  <p>When the function returns, the CPU jumps to whatever address is there, so an attacker who overwrites it through a buffer overflow can take control of the program.</p>
+</section>
 <section>
   <h2>Return address in the explanations</h2>
   <ul class="term-quotes"><li><p>Calling a subroutine pushes the return address, registers to be preserved and local variables onto the stack.</p><a href="/en/q/cpu/cpu-045/">When a program calls a subroutine (function), which area is…</a></li><li><p>On a function call, its current value is saved to the stack or a link register as the return address.</p><a href="/en/q/cpu/cpu-036/">What does a CPU&#39;s program counter (PC) hold?</a></li><li><p>The return address goes in x1 (ra).</p><a href="/en/q/isa-assembly/isa-assembly-003/">What is the property of register x0 (zero) in RISC-V?</a></li><li><p>The calling convention puts the return address in ra (x1), so a call is written &quot;jal ra, func&quot;, or &quot;call func&quot; as a pseudo-instruction.</p><a href="/en/q/isa-assembly/isa-assembly-025/">What does the RISC-V instruction &quot;jal ra, func&quot; do?</a></li><li><p>Every jal overwrites ra, so a function that calls others must first save its own return address on the stack.</p><a href="/en/q/isa-assembly/isa-assembly-032/">A function that calls no other functions (a leaf function) …</a></li></ul>

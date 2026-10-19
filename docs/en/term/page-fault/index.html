@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Page fault","item":"https://semiconroom.com/en/term/page-fault/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Page fault","description":"An exception raised when an accessed page is not mapped to physical memory or the access type is not permitted. The OS either supplies the page and retries the instruction or treats it as an illegal access.","url":"https://semiconroom.com/en/term/page-fault/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Page fault","item":"https://semiconroom.com/en/term/page-fault/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Page fault","description":"An exception raised when an accessed page is not mapped to physical memory or the access type is not permitted. The OS either supplies the page and retries the instruction or treats it as an illegal access.","url":"https://semiconroom.com/en/term/page-fault/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is a page fault an error?","acceptedAnswer":{"@type":"Answer","text":"Not necessarily. Most page faults are normal events used for demand paging, copy-on-write and memory-mapped files; only a fault on an address the process is not allowed to access becomes an error such as a segmentation fault."}},{"@type":"Question","name":"What is the difference between a minor and a major page fault?","acceptedAnswer":{"@type":"Answer","text":"A minor fault is resolved without disk I/O, for example by mapping a page already in memory, while a major fault must read the page from storage and is thousands of times slower."}},{"@type":"Question","name":"Why does a page fault restart the instruction instead of skipping it?","acceptedAnswer":{"@type":"Answer","text":"The faulting access never completed, so the OS fixes the mapping and re-executes the instruction from the start, letting the program continue as if nothing had happened."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What happens during a page fault</h2>
+  <p>When the memory management unit (MMU) translates a virtual address, it checks the page-table entry. If the entry is not valid or the access type is not allowed, the MMU raises a page fault, a synchronous exception tied to the faulting instruction. The OS handler checks whether the address belongs to a region the process may use. If so, it finds a free physical frame, evicting another page if necessary, fills it from disk or with zeros, marks the entry valid and restarts the faulting instruction. If not, the process receives a segmentation fault.</p>
+</section>
+<section class="term-about">
+  <h2>Minor vs. major faults</h2>
+  <p>Not every page fault touches the disk. A minor (soft) fault is resolved without I/O, for example when a page is already in memory in the file cache, needs only a fresh zero-filled frame, or must be copied for <a class="term-link" href="/en/term/copy-on-write/">copy-on-write</a>. A major (hard) fault must read the page from storage and costs milliseconds. The difference matters enormously: with a 100 ns memory access and an 8 ms fault service time, a major fault rate of just one per million accesses raises the average access time from 100 ns to about 108 ns.</p>
+</section>
+<section class="term-about">
+  <h2>Page faults used on purpose</h2>
+  <p>Operating systems rely on faults as a lazy-evaluation tool. <a class="term-link" href="/en/term/demand-paging/">Demand paging</a> maps a program without loading it, then loads each page on first touch. Memory-mapped files (mmap) read file contents in the same way. <a class="term-link" href="/en/term/copy-on-write/">Copy-on-write</a> lets fork share pages read-only and copy only the pages that are later written. Guard pages with no access rights sit beyond the stack so runaway recursion faults instead of corrupting data. On <a class="term-link" href="/en/term/non-uniform-memory-access/">NUMA</a> systems, Linux places a page on the node of the thread that first writes it, so initialization order affects performance.</p>
+</section>
+<section class="term-about">
+  <h2>Page fault vs. TLB miss vs. cache miss</h2>
+  <p>These three are often confused. A cache miss is handled entirely by hardware, which fetches the line from a lower memory level. A <a class="term-link" href="/en/term/tlb/">TLB</a> miss means the translation is not cached in the translation lookaside buffer; on most modern CPUs a hardware page-table walker fetches it, and if the entry is valid, no exception occurs. Only when the page-table entry itself is invalid or forbids the access does a page fault reach the OS. When faults become so frequent that the system spends most of its time paging, the condition is called <a class="term-link" href="/en/term/thrashing/">thrashing</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Page fault</h2>
   <article class="q-mini" data-qid="os-hardware-011" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. It loads the page from disk, updates the table and retries the instruction</p><p class="explanation">For a <a class="term-link" href="/en/term/page-fault/">page fault</a> from a legitimate access, the OS finds a free physical page (evicting another if needed), reads the contents from disk and marks the page-table entry valid. It then re-executes the faulting instruction from the start, so the program continues as if nothing happened. Skipping the instruction would leave the access undone and produce wrong results. Abnormal termination is for illegal accesses to unmapped addresses.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is a page fault an error?</h3>
+  <p>Not necessarily. Most page faults are normal events used for demand paging, copy-on-write and memory-mapped files; only a fault on an address the process is not allowed to access becomes an error such as a segmentation fault.</p>
+  <h3>What is the difference between a minor and a major page fault?</h3>
+  <p>A minor fault is resolved without disk I/O, for example by mapping a page already in memory, while a major fault must read the page from storage and is thousands of times slower.</p>
+  <h3>Why does a page fault restart the instruction instead of skipping it?</h3>
+  <p>The faulting access never completed, so the OS fixes the mapping and re-executes the instruction from the start, letting the program continue as if nothing had happened.</p>
+</section>
 <section>
   <h2>Page fault in the explanations</h2>
   <ul class="term-quotes"><li><p>A page fault is an exception raised when the accessed page&#39;s page-table entry is invalid, meaning it is not mapped to physical memory (it was paged out or never loaded), or when the access is not permitted, such as writing a read-only page.</p><a href="/en/q/os-hardware/os-hardware-011/">When does a page fault occur?</a></li><li><p>For a page fault from a legitimate access, the OS finds a free physical page (evicting another if needed), reads the contents from disk and marks the page-table entry valid.</p><a href="/en/q/os-hardware/os-hardware-012/">When a page fault occurs on a page that was evicted to disk…</a></li><li><p>When too-deep recursion pushes the stack into that page, a page fault occurs and the OS stops the program (a segmentation fault).</p><a href="/en/q/linker-loader/linker-loader-046/">When recursion goes so deep that it exceeds the stack limit…</a></li><li><p>Exceptions result from executing a particular instruction, such as division by zero, an illegal instruction, a page fault or a system-call instruction (synchronous).</p><a href="/en/q/os-hardware/os-hardware-004/">Which is the usual distinction between interrupts and excep…</a></li><li><p>With copy-on-write, both page tables point to the same physical pages marked read-only; when either side writes, a page fault occurs and the OS copies just that page.</p><a href="/en/q/os-hardware/os-hardware-017/">What is the advantage of using copy-on-write when duplicati…</a></li></ul>

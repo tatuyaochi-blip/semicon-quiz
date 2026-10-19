@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Duty cycle","item":"https://semiconroom.com/en/term/duty-cycle/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Duty cycle","description":"The fraction of each period during which a periodic pulse signal is high. In PWM it sets the average power.","url":"https://semiconroom.com/en/term/duty-cycle/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Duty cycle","item":"https://semiconroom.com/en/term/duty-cycle/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Duty cycle","description":"The fraction of each period during which a periodic pulse signal is high. In PWM it sets the average power.","url":"https://semiconroom.com/en/term/duty-cycle/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do you calculate duty cycle?","acceptedAnswer":{"@type":"Answer","text":"Divide the time the signal is high by the full period and multiply by 100%. For example, 2 µs high in a 10 µs period is a 20% duty cycle."}},{"@type":"Question","name":"Does changing the duty cycle change the frequency?","acceptedAnswer":{"@type":"Answer","text":"Not necessarily. In standard PWM the period stays fixed and only the high time changes, so frequency is constant while duty cycle varies."}},{"@type":"Question","name":"What output voltage does a buck converter give for a given duty cycle?","acceptedAnswer":{"@type":"Answer","text":"Ideally Vout = D × Vin in continuous conduction, so a 50% duty cycle from 12 V gives 6 V. Losses make the required duty cycle slightly higher in practice."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Definition and the averaging rule</h2>
+  <p>Duty cycle D is the high time divided by the period, D = t_high / T, usually expressed in percent. A signal with a 1000-count period that is high for 250 counts has D = 25%. For a pulse switching between 0 and an amplitude V, the average value is D × V, which is why duty cycle is the knob for average power. Duty cycle and frequency are independent: two signals at the same frequency can have very different duty cycles, and changing the period while keeping the high time fixed changes the duty cycle.</p>
+</section>
+<section class="term-about">
+  <h2>Duty cycle in PWM</h2>
+  <p><a class="term-link" href="/en/term/pulse-width-modulation/">Pulse-width modulation (PWM)</a> keeps the period fixed and varies the high time. A <a class="term-link" href="/en/term/microcontroller/">microcontroller</a> timer compares its counter with a compare register and toggles the output, so PWM runs continuously without CPU involvement, and the counter range sets the resolution. Passing PWM through a low-pass filter yields roughly D times the amplitude, about 2 V for 40% of 5 V, giving a crude DAC. Placing the PWM frequency well above the filter cutoff reduces ripple at the cost of slower response. LED dimming and motor speed control often use the pulses directly, relying on the load or the eye to average.</p>
+</section>
+<section class="term-about">
+  <h2>Duty cycle in power converters</h2>
+  <p>Switching DC-DC converters regulate output through duty cycle. In an ideal buck converter operating in continuous conduction, Vout = D × Vin, so 12 V at D = 0.25 gives 3 V; an inductor and capacitor smooth the switched waveform into DC. An ideal boost converter gives Vout = Vin / (1 − D), doubling the input at D = 0.5, because the inductor&#39;s stored energy adds to the input when the switch opens. Real converters deviate because of switch and inductor losses, which is why feedback continuously adjusts duty cycle.</p>
+</section>
+<section class="term-about">
+  <h2>Clock duty cycle and timing</h2>
+  <p>For clocks, a 50% duty cycle matters whenever both edges are used. A path launched on a rising edge and captured on the falling edge gets only half a period: with a 2.0 ns clock and 0.1 ns <a class="term-link" href="/en/term/setup-time/">setup time</a>, at most 0.9 ns remains for clock-to-output and logic delay, and any duty-cycle distortion shrinks it further. Clock-gating checks likewise require an AND-gate enable to change only while the clock is low. A toggle <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> dividing by two naturally produces an exact 50% duty cycle, a common way to clean up a clock.</p>
+</section>
 <section>
   <h2>Try it: questions about Duty cycle</h2>
   <article class="q-mini" data-qid="power-020" data-cat="power" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. 0.9 ns</p><p class="explanation">A path launched on the rising edge and captured on the falling edge is called a half-cycle path. The capture edge comes half a period, 1.0 ns, after launch, so the allowed delay is 1.0 − 0.1 = 0.9 ns. 1.9 ns assumes a full period is available, and 1.0 ns forgets to subtract the <a class="term-link" href="/en/term/setup-time/">setup time</a>. A half-cycle path is tight for setup, but hold is checked against the falling edge half a period earlier, which gives a large hold margin.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do you calculate duty cycle?</h3>
+  <p>Divide the time the signal is high by the full period and multiply by 100%. For example, 2 µs high in a 10 µs period is a 20% duty cycle.</p>
+  <h3>Does changing the duty cycle change the frequency?</h3>
+  <p>Not necessarily. In standard PWM the period stays fixed and only the high time changes, so frequency is constant while duty cycle varies.</p>
+  <h3>What output voltage does a buck converter give for a given duty cycle?</h3>
+  <p>Ideally Vout = D × Vin in continuous conduction, so a 50% duty cycle from 12 V gives 6 V. Losses make the required duty cycle slightly higher in practice.</p>
+</section>
 <section>
   <h2>Duty cycle in the explanations</h2>
   <ul class="term-quotes"><li><p>An ideal buck converter outputs input voltage × duty cycle: 12 V × 0.25 = 3 V.</p><a href="/en/q/power/power-020/">In an ideal step-down chopper (buck converter) with an inpu…</a></li><li><p>The duty cycle is the fraction of each period during which the output is high: 250 ÷ 1000 = 25%.</p><a href="/en/q/embedded/embedded-012/">A PWM signal has a period of 1000 counts, with the output h…</a></li><li><p>A T flip-flop (T = 1) toggles on every clock edge, so its output completes one cycle every two clocks—half the clock frequency—with an exactly 50% duty cycle.</p><a href="/en/q/logic/logic-039/">A T flip-flop whose output toggles on every clock edge prod…</a></li><li><p>Averaging a PWM signal with a low-pass filter gives an output of amplitude × duty cycle—about 2 V for 40% of 5 V.</p><a href="/en/q/adc-dac/adc-dac-020/">When a microcontroller produces an analog voltage by passin…</a></li><li><p>Ideally the output is input ÷ (1 − duty cycle)—twice the input at a duty of 0.5.</p><a href="/en/q/power/power-021/">Which DC-DC converter outputs a DC voltage higher than its …</a></li></ul>

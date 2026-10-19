@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"CUDA","item":"https://semiconroom.com/en/term/cuda/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CUDA","description":"NVIDIA's platform for general-purpose computing on its GPUs. Kernels are written in an extended C++, with parallelism expressed as a grid, blocks and threads.","url":"https://semiconroom.com/en/term/cuda/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"CUDA","item":"https://semiconroom.com/en/term/cuda/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CUDA","description":"NVIDIA's platform for general-purpose computing on its GPUs. Kernels are written in an extended C++, with parallelism expressed as a grid, blocks and threads.","url":"https://semiconroom.com/en/term/cuda/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a CUDA block and a warp?","acceptedAnswer":{"@type":"Answer","text":"A block is a programmer-chosen group of threads that runs on one SM and can share memory and synchronize. A warp is the hardware's group of 32 threads within a block that execute instructions together in lockstep."}},{"@type":"Question","name":"How do I calculate the global thread index in CUDA?","acceptedAnswer":{"@type":"Answer","text":"For a one-dimensional launch, use i = blockIdx.x * blockDim.x + threadIdx.x. Check i \u003c n before accessing arrays, because the last block often contains more threads than remaining elements."}},{"@type":"Question","name":"What is CUDA shared memory used for?","acceptedAnswer":{"@type":"Answer","text":"It is fast on-chip memory shared by the threads of one block, used to stage data from global memory for reuse and to exchange intermediate results. Unlike a cache, the program decides what goes into it, and __syncthreads() orders accesses."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/gpu-programming/">GPU Programming</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Kernels and the thread hierarchy</h2>
+  <p>In CUDA, the CPU (host) launches a kernel, a function that many <a class="term-link" href="/en/term/gpu/">GPU</a> threads execute at once. One launch creates a grid of blocks, and each block contains many threads. Each thread computes a unique global index, typically i = blockIdx.x × blockDim.x + threadIdx.x, to choose its data element: thread 5 of block 2 with 256 threads per block handles element 517. Because threads are launched in whole blocks, the last block usually has surplus threads, so kernels guard memory accesses with if (i &lt; n) to avoid writing past the array.</p>
+</section>
+<section class="term-about">
+  <h2>How blocks map onto the GPU</h2>
+  <p>Each block is assigned to one <a class="term-link" href="/en/term/streaming-multiprocessor/">streaming multiprocessor</a> (SM) and runs there to completion, and an SM can hold several blocks at once. Inside, threads execute in warps of 32. Occupancy, the ratio of resident warps to the SM&#39;s maximum, is limited by registers per thread, shared memory per block and block size; low occupancy leaves too few warps to hide memory latency. Blocks run independently and in any order, so waiting inside a kernel for all other blocks can <a class="term-link" href="/en/term/deadlock/">deadlock</a>; global synchronization is normally obtained by splitting the work into two kernel launches.</p>
+</section>
+<section class="term-about">
+  <h2>Memory spaces</h2>
+  <p>Global memory is the <a class="term-link" href="/en/term/gpu/">GPU</a>&#39;s DRAM: high bandwidth, high latency, and fastest when adjacent threads access adjacent addresses. Shared memory is a small on-chip memory per block, managed explicitly by the program. It is divided into 32 banks, and threads of a warp hitting different addresses in the same <a class="term-link" href="/en/term/bank/">bank</a> are serialized. __syncthreads() makes every thread of a block wait until all arrive; placing it inside a branch that some threads skip causes hangs or undefined results. <a class="term-link" href="/en/term/unified-memory/">Unified memory</a> lets host and device share one pointer, with pages migrated on demand.</p>
+</section>
+<section class="term-about">
+  <h2>Keeping the GPU busy</h2>
+  <p>Host-to-device copies cross <a class="term-link" href="/en/term/pci-express/">PCI Express</a> and are often the bottleneck. Streams, ordered queues of transfers and kernels, let work in different streams overlap, so the next chunk of data can be copied while the current one is computed. Each kernel launch also costs a few microseconds, so programs that launch thousands of tiny kernels benefit from fusing them, which also avoids writing intermediate results to memory, or from submitting recorded launch sequences at once with CUDA Graphs. CUDA itself runs only on NVIDIA GPUs; cross-vendor alternatives such as <a class="term-link" href="/en/term/opencl/">OpenCL</a> follow a similar kernel-and-work-group model.</p>
+</section>
 <section>
   <h2>Try it: questions about CUDA</h2>
   <article class="q-mini" data-qid="gpu-programming-004" data-cat="gpu-programming" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Grid → block → thread</p><p class="explanation">One kernel launch forms a grid, which is divided into many blocks, each containing many threads. A block&#39;s threads run on the same SM (a cluster of execution units) and can cooperate through shared memory and synchronize. Different blocks run independently, so the number running at once adapts to the <a class="term-link" href="/en/term/gpu/">GPU</a>&#39;s size, and the same program runs on small and large GPUs.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a CUDA block and a warp?</h3>
+  <p>A block is a programmer-chosen group of threads that runs on one SM and can share memory and synchronize. A warp is the hardware&#39;s group of 32 threads within a block that execute instructions together in lockstep.</p>
+  <h3>How do I calculate the global thread index in CUDA?</h3>
+  <p>For a one-dimensional launch, use i = blockIdx.x * blockDim.x + threadIdx.x. Check i &lt; n before accessing arrays, because the last block often contains more threads than remaining elements.</p>
+  <h3>What is CUDA shared memory used for?</h3>
+  <p>It is fast on-chip memory shared by the threads of one block, used to stage data from global memory for reuse and to exchange intermediate results. Unlike a cache, the program decides what goes into it, and __syncthreads() orders accesses.</p>
+</section>
 <section>
   <h2>CUDA in the explanations</h2>
   <ul class="term-quotes"><li><p>CUDA provides tools for calculating occupancy.</p><a href="/en/q/gpu-programming/gpu-programming-023/">Which describes occupancy on a GPU?</a></li><li><p>Mechanisms that record a sequence of launches and submit them at once, such as CUDA Graphs, are also used.</p><a href="/en/q/gpu-programming/gpu-programming-035/">A program that launches a very small kernel thousands of ti…</a></li><li><p>CUDA targets NVIDIA GPUs, while OpenCL is an industry-consortium standard that runs on GPUs, CPUs and FPGAs from multiple vendors.</p><a href="/en/q/gpu-programming/gpu-programming-046/">Which is an example of a parallel-programming framework for…</a></li></ul>

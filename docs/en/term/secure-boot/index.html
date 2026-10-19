@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Secure boot","item":"https://semiconroom.com/en/term/secure-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Secure boot","description":"A mechanism that verifies the digital signature of the next software at each boot stage and starts only authentic software, forming a chain of trust.","url":"https://semiconroom.com/en/term/secure-boot/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Secure boot","item":"https://semiconroom.com/en/term/secure-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Secure boot","description":"A mechanism that verifies the digital signature of the next software at each boot stage and starts only authentic software, forming a chain of trust.","url":"https://semiconroom.com/en/term/secure-boot/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the root of trust in secure boot?","acceptedAnswer":{"@type":"Answer","text":"Immutable code in the chip's mask ROM together with the public key, or its hash in eFuses, used to verify the first bootloader. Everything later in the chain depends on it being unchangeable."}},{"@type":"Question","name":"What is the difference between secure boot and measured boot?","acceptedAnswer":{"@type":"Answer","text":"Secure boot refuses to run software whose signature fails. Measured boot lets everything run but records hashes in a TPM so the boot state can be checked or attested later."}},{"@type":"Question","name":"Why does secure boot need anti-rollback protection?","acceptedAnswer":{"@type":"Answer","text":"Older firmware versions carry valid signatures too, so without a minimum-version counter an attacker could reinstall a version with a known vulnerability."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the chain of trust works</h2>
+  <p>At power-on, boot code in the chip&#39;s ROM loads the first <a class="term-link" href="/en/term/bootloader/">bootloader</a> and checks its digital signature: it hashes the image and verifies the vendor&#39;s signature over that hash. Only if the check passes does it run the bootloader, which in turn verifies the next stage or the OS kernel before handing over control. Each link vouches for the next, forming a chain of trust. If any signature fails, boot stops, so malware that rewrites the bootloader or OS boot code cannot run. Smartphones, PCs and many embedded devices use this scheme.</p>
+</section>
+<section class="term-about">
+  <h2>The root of trust in silicon</h2>
+  <p>The chain is only as strong as its first check, so the <a class="term-link" href="/en/term/root-of-trust/">root of trust</a> must be immutable: boot code in mask ROM, fixed at manufacture, plus the public key used to verify signatures, often stored as a hash in eFuses (one-time programmable fuses) to save space. Public-key cryptography matters here. With a symmetric scheme, the key that verifies could also sign, so extracting it from one device would allow fake firmware for all devices. With public-key signatures, devices hold only a verification key and the signing private key never leaves the vendor&#39;s secure facility.</p>
+</section>
+<section class="term-about">
+  <h2>Anti-rollback and locked debug ports</h2>
+  <p>Signature checks alone still accept old firmware, because the vendor legitimately signed it. After a vulnerability is fixed, an attacker could reinstall the vulnerable version, so images carry a version number and the chip stores a minimum allowed version in write-once storage such as eFuses, advancing it with each update. Debug ports such as <a class="term-link" href="/en/term/jtag/">JTAG</a> and SWD can read and write memory and halt the processor, which would bypass secure boot entirely, so shipped products disable them with fuses or open them only after cryptographic authentication.</p>
+</section>
+<section class="term-about">
+  <h2>Secure boot vs. measured boot</h2>
+  <p>Secure boot enforces: unverified code does not start. <a class="term-link" href="/en/term/measured-boot/">Measured boot</a> records: each stage hashes the next and extends the result into <a class="term-link" href="/en/term/trusted-platform-module/">TPM</a> (trusted platform module) platform configuration registers, where a new value can only be formed by combining the old value with a new hash. Boot continues regardless, but the record lets software or a remote server later verify exactly what ran. Note also that a signature proves authenticity, not confidentiality; keeping firmware secret needs encryption. Secure boot protects only the start-up path, so it is one layer in defense in depth alongside memory protection, trusted execution environments and <a class="term-link" href="/en/term/tamper-resistance/">tamper resistance</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Secure boot</h2>
   <article class="q-mini" data-qid="hw-security-019" data-cat="hw-security" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Immutable ROM boot code and the public key (or its hash) used to verify signatures</p><p class="explanation">The chain of trust assumes the component performing the first check is correct. So the <a class="term-link" href="/en/term/root-of-trust/">root of trust</a> is boot code in mask ROM, written at manufacture and unchangeable afterward, together with the public key used to verify signatures (often stored as a hash in eFuses to save space). If this could be rewritten, every later check would be meaningless.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the root of trust in secure boot?</h3>
+  <p>Immutable code in the chip&#39;s mask ROM together with the public key, or its hash in eFuses, used to verify the first bootloader. Everything later in the chain depends on it being unchangeable.</p>
+  <h3>What is the difference between secure boot and measured boot?</h3>
+  <p>Secure boot refuses to run software whose signature fails. Measured boot lets everything run but records hashes in a TPM so the boot state can be checked or attested later.</p>
+  <h3>Why does secure boot need anti-rollback protection?</h3>
+  <p>Older firmware versions carry valid signatures too, so without a minimum-version counter an attacker could reinstall a version with a known vulnerability.</p>
+</section>
 <section>
   <h2>Secure boot in the explanations</h2>
   <ul class="term-quotes"><li><p>In secure boot, immutable ROM code verifies the first bootloader&#39;s signature, that bootloader verifies the next stage or the OS kernel, and so on, forming a chain of trust.</p><a href="/en/q/hw-security/hw-security-019/">Which describes secure boot?</a></li><li><p>Left active in a product, an attacker can connect equipment to the board&#39;s pins and read out firmware, bypass secure boot or extract keys.</p><a href="/en/q/hw-security/hw-security-040/">Why are debug ports such as JTAG disabled or placed behind …</a></li><li><p>Defense in depth layers different kinds of protection, such as secure boot, memory protection, TEEs, encryption, side-channel countermeasures and physical tamper resistance, so that when one is breached the next layer still holds.</p><a href="/en/q/hw-security/hw-security-048/">What is the idea of &quot;defense in depth,&quot; emphasized in hardw…</a></li></ul>

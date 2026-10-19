@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SerDes","item":"https://semiconroom.com/en/term/serdes/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SerDes","description":"Serializer/deserializer: a circuit that turns parallel on-chip data into a fast serial bit stream for transmission and restores the parallel data at the receiver. It is the heart of high-speed serial physical layers.","url":"https://semiconroom.com/en/term/serdes/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SerDes","item":"https://semiconroom.com/en/term/serdes/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SerDes","description":"Serializer/deserializer: a circuit that turns parallel on-chip data into a fast serial bit stream for transmission and restores the parallel data at the receiver. It is the heart of high-speed serial physical layers.","url":"https://semiconroom.com/en/term/serdes/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does a SerDes do?","acceptedAnswer":{"@type":"Answer","text":"It converts wide parallel data into a single high-speed serial stream for transmission and, at the receiver, recovers the clock and converts the stream back into parallel words."}},{"@type":"Question","name":"Why is serial faster than parallel for chip-to-chip links?","acceptedAnswer":{"@type":"Answer","text":"Wide parallel buses suffer from skew between wires and need many pins; a serial lane embeds its clock in the data and can be equalized individually, so a few fast lanes outperform many slow wires."}},{"@type":"Question","name":"What is the difference between NRZ and PAM4 in SerDes?","acceptedAnswer":{"@type":"Answer","text":"NRZ uses two voltage levels to send one bit per symbol, while PAM4 uses four levels to send two bits per symbol, doubling data rate at the same symbol rate at the cost of noise margin."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/io-interface/">I/O Interfaces &amp; Buses</a></p>
 </article>
-
+<section class="term-about">
+  <h2>The transmit side</h2>
+  <p>On chip, data moves over wide, relatively slow buses. A serializer multiplexes that parallel word into one fast bit stream, clocked by a <a class="term-link" href="/en/term/pll/">phase-locked loop</a> (PLL) that multiplies a reference clock up to the line rate. Before serializing, data is usually line-coded or scrambled, for example with 8b/10b, 64b/66b or 128b/130b codes, so the stream has frequent transitions and no long DC runs. The output driver then shapes the waveform with feed-forward equalization (pre-emphasis), boosting transitions to offset the high-frequency loss of board traces, cables and connectors.</p>
+</section>
+<section class="term-about">
+  <h2>The receive side and clock recovery</h2>
+  <p>No separate clock travels with the data, so the receiver must recover it. Equalizers such as a continuous-time linear equalizer (CTLE) and a decision-feedback equalizer (DFE) undo channel loss and reflections, and a <a class="term-link" href="/en/term/clock-and-data-recovery/">clock and data recovery (CDR)</a> circuit locks a sampling clock to the incoming transitions so each bit is sampled near the center of its eye. The deserializer then rebuilds the original wide words. In multi-lane links, the receiver also deskews and realigns lanes, since each lane recovers its own clock and arrives with a different delay.</p>
+</section>
+<section class="term-about">
+  <h2>Lanes, signaling and rates</h2>
+  <p>Per-lane speed is limited by circuits and channel loss, so high bandwidth comes from both faster lanes and more of them. 100-gigabit Ethernet can be built from four 25 Gb/s lanes, or a single 100 Gb/s lane using four-level pulse-amplitude modulation (<a class="term-link" href="/en/term/pam4/">PAM4</a>) can carry it. PAM4 sends two bits per symbol, halving the symbol rate compared with two-level <a class="term-link" href="/en/term/nrz/">NRZ</a> signaling, but its smaller eye openings demand forward error correction. <a class="term-link" href="/en/term/pci-express/">PCI Express</a>, USB, Ethernet, storage links and <a class="term-link" href="/en/term/gpu/">GPU</a>-to-GPU links all build their physical layers from SerDes lanes.</p>
+</section>
+<section class="term-about">
+  <h2>Testing and power</h2>
+  <p>Testers cannot easily probe tens of gigabits per second directly, so SerDes include built-in test features. In loopback mode, the transmitter sends a pseudo-random bit sequence that is routed back to the receiver, internally or through load-board traces, and on-chip checkers count bit errors. Power is another constant concern, since PLLs, CDRs and equalizers run even when no data flows; link power states such as <a class="term-link" href="/en/term/pci-express/">PCI Express</a> L0s and L1 shut parts down when idle at the cost of exit latency. Linear-drive optics remove the module DSP and rely on host SerDes equalization.</p>
+</section>
 <section>
   <h2>Try it: questions about SerDes</h2>
   <article class="q-mini" data-qid="io-interface-002" data-cat="io-interface" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. It converts parallel on-chip data into one fast bit stream on the transmit side and restores the parallel data on the receive side</p><p class="explanation">Inside a chip, data moves slowly over buses dozens of bits wide. The <a class="term-link" href="/en/term/serdes/">SerDes</a> transmitter reorders it into a single very fast bit stream, and the receiver recovers a clock from the stream, decides each bit and restores data of the original width. The physical layers of many high-speed interfaces, such as <a class="term-link" href="/en/term/pci-express/">PCI Express</a>, USB, Ethernet and storage links, are built from SerDes.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does a SerDes do?</h3>
+  <p>It converts wide parallel data into a single high-speed serial stream for transmission and, at the receiver, recovers the clock and converts the stream back into parallel words.</p>
+  <h3>Why is serial faster than parallel for chip-to-chip links?</h3>
+  <p>Wide parallel buses suffer from skew between wires and need many pins; a serial lane embeds its clock in the data and can be equalized individually, so a few fast lanes outperform many slow wires.</p>
+  <h3>What is the difference between NRZ and PAM4 in SerDes?</h3>
+  <p>NRZ uses two voltage levels to send one bit per symbol, while PAM4 uses four levels to send two bits per symbol, doubling data rate at the same symbol rate at the cost of noise margin.</p>
+</section>
 <section>
   <h2>SerDes in the explanations</h2>
   <ul class="term-quotes"><li><p>The SerDes transmitter reorders it into a single very fast bit stream, and the receiver recovers a clock from the stream, decides each bit and restores data of the original width.</p><a href="/en/q/io-interface/io-interface-002/">What is the role of a SerDes (serializer/deserializer) in h…</a></li><li><p>High-speed interfaces (SerDes) perform this conversion at tens of Gb/s to reduce wire count.</p><a href="/en/q/logic/logic-023/">What is a typical use of a shift register, which chains fli…</a></li><li><p>In linear drive, the DSP is omitted and only a linear driver and TIA remain, with signal compensation left to the equalizers in the SerDes on the host side, such as the switch IC.</p><a href="/en/q/photonics/photonics-037/">Which correctly describes the concept of &quot;linear drive&quot; (ca…</a></li><li><p>In linear drive, there is no part of the module that re-receives and reshapes the signal, so performance is determined by a single end-to-end channel linking the host SerDes transmit waveform, board trace loss, the driver and modulator, the fiber and the receive-side characteristics.</p><a href="/en/q/photonics/photonics-038/">Which is a correct challenge of linear-drive optical transc…</a></li><li><p>Directly measuring SerDes running at tens of Gb/s with a tester alone is difficult and expensive.</p><a href="/en/q/test/test-046/">In testing high-speed serial interfaces, which method loops…</a></li></ul>

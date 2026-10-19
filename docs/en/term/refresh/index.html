@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Refresh","item":"https://semiconroom.com/en/term/refresh/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Refresh","description":"The periodic reading and rewriting of DRAM data before the charge in its capacitors is lost through leakage.","url":"https://semiconroom.com/en/term/refresh/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Refresh","item":"https://semiconroom.com/en/term/refresh/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Refresh","description":"The periodic reading and rewriting of DRAM data before the charge in its capacitors is lost through leakage.","url":"https://semiconroom.com/en/term/refresh/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How often does DRAM need to be refreshed?","acceptedAnswer":{"@type":"Answer","text":"Standard DDR DRAM must refresh every row within about 64 ms at normal temperatures, spread across 8,192 refresh commands. Above 85 °C the interval is typically halved."}},{"@type":"Question","name":"Does SRAM need refresh?","acceptedAnswer":{"@type":"Answer","text":"No. SRAM stores each bit in a cross-coupled latch that holds its state actively as long as power is applied. DRAM needs refresh because it stores bits as charge on a leaky capacitor."}},{"@type":"Question","name":"What is DRAM self-refresh mode?","acceptedAnswer":{"@type":"Answer","text":"It is a low-power mode in which the DRAM refreshes itself using an internal timer, so the external clock and memory controller can be stopped. It preserves data while a phone or PC sleeps."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/dram/">DRAM</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why DRAM needs refresh</h2>
+  <p>A DRAM cell stores a bit as charge on a small capacitor reached through one access transistor (a <a class="term-link" href="/en/term/1t1c-cell/">1T1C cell</a>). Even when the transistor is off, charge leaks away through its subthreshold current and through junction leakage at the storage node, including <a class="term-link" href="/en/term/gidl/">gate-induced drain leakage</a> (GIDL) and defect-assisted generation. Retention time varies from cell to cell, and a small tail of the weakest cells sets the refresh period. Standards therefore require every row to be refreshed within about 64 ms in the normal temperature range. SRAM, by contrast, holds data in a cross-coupled latch and needs no refresh while powered.</p>
+</section>
+<section class="term-about">
+  <h2>How refresh is performed</h2>
+  <p>Reading a DRAM cell is destructive: the cell shares its charge with the much larger bit-line capacitance, and the <a class="term-link" href="/en/term/sense-amplifier/">sense amplifier</a> resolves a difference of tens of millivolts while writing the full level back. Simply activating a row and closing it therefore refreshes every cell in that row. In DDR4, the controller issues 8,192 refresh commands per 64 ms window, one about every 7.8 µs (tREFI), each refreshing several rows internally. Each command keeps the <a class="term-link" href="/en/term/bank/">bank</a> busy for tRFC, which grows with density to several hundred nanoseconds for 16 Gbit devices.</p>
+</section>
+<section class="term-about">
+  <h2>Temperature, capacity and power</h2>
+  <p>Leakage rises with temperature, and retention roughly halves for every 10 °C as a rule of thumb, so DDR standards halve the refresh interval above 85 °C, to 3.9 µs in DDR4. Larger chips have more rows to refresh, so refresh eats a growing share of time and power, costing several percent up to about 10 percent of performance in dense devices; per-<a class="term-link" href="/en/term/bank/">bank</a> refresh keeps other banks available meanwhile. During standby, <a class="term-link" href="/en/term/self-refresh/">self-refresh</a> lets the DRAM refresh itself from an internal timer while the controller sleeps, and low-power DRAM adds temperature-aware and partial-array refresh.</p>
+</section>
+<section class="term-about">
+  <h2>Reliability issues tied to refresh</h2>
+  <p>Some cells show variable retention time (VRT): a defect switching states makes their leakage jump between values, so a cell that passed testing can later become weak; refresh margin and <a class="term-link" href="/en/term/ecc/">ECC</a> cover this. Row hammer is another threat: activating one row tens of thousands of times within a refresh window can drain charge from neighboring rows and flip bits, which has been exploited in security attacks. DRAMs and controllers counter it by refreshing the neighbors of heavily activated rows, through mechanisms such as target row refresh and DDR5&#39;s refresh management commands.</p>
+</section>
 <section>
   <h2>Try it: questions about Refresh</h2>
   <article class="q-mini" data-qid="dram-002" data-cat="dram" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. More rows must be refreshed, so a larger share of time and power goes to refresh</p><p class="explanation">As capacity grows, more cells must be refreshed in the same 64 ms, lengthening each <a class="term-link" href="/en/term/refresh/">refresh</a> operation (tRFC). Access is blocked meanwhile, so 16 Gbit-class devices can lose several percent to about 10% of performance, and power rises too. Mitigations include per-<a class="term-link" href="/en/term/bank/">bank</a> refresh, which keeps other banks available, and research into refreshing long-retention rows less often.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How often does DRAM need to be refreshed?</h3>
+  <p>Standard DDR DRAM must refresh every row within about 64 ms at normal temperatures, spread across 8,192 refresh commands. Above 85 °C the interval is typically halved.</p>
+  <h3>Does SRAM need refresh?</h3>
+  <p>No. SRAM stores each bit in a cross-coupled latch that holds its state actively as long as power is applied. DRAM needs refresh because it stores bits as charge on a leaky capacitor.</p>
+  <h3>What is DRAM self-refresh mode?</h3>
+  <p>It is a low-power mode in which the DRAM refreshes itself using an internal timer, so the external clock and memory controller can be stopped. It preserves data while a phone or PC sleeps.</p>
+</section>
 <section>
   <h2>Refresh in the explanations</h2>
   <ul class="term-quotes"><li><p>Refresh reads and rewrites each cell before its data becomes unreadable; standards typically require every row to be refreshed within 64 ms.</p><a href="/en/q/dram/dram-002/">Why does DRAM need periodic refresh operations?</a></li><li><p>As capacity grows, more cells must be refreshed in the same 64 ms, lengthening each refresh operation (tRFC).</p><a href="/en/q/dram/dram-045/">As DRAM capacity grows, what tends to become a problem with…</a></li><li><p>To avoid losing data, refresh must occur more often, and many standards halve the refresh interval in the high-temperature range.</p><a href="/en/q/power-management/power-management-035/">DRAM operated at high temperature may require shorter refre…</a></li><li><p>Because this write-back effectively refreshes the cell, refresh is performed simply by activating and closing a row.</p><a href="/en/q/dram/dram-003/">Which correctly describes the read operation of DRAM?</a></li><li><p>Unlike SRAM, also volatile, it needs refresh even while powered.</p><a href="/en/q/dram/dram-005/">Which correctly describes a property of DRAM?</a></li></ul>

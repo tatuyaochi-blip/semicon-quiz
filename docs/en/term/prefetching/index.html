@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Prefetching","item":"https://semiconroom.com/en/term/prefetching/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Prefetching","description":"Loading data into the cache before it is requested because it is likely to be needed soon. Hardware prefetchers detect access patterns, and software prefetching uses explicit instructions.","url":"https://semiconroom.com/en/term/prefetching/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Prefetching","item":"https://semiconroom.com/en/term/prefetching/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Prefetching","description":"Loading data into the cache before it is requested because it is likely to be needed soon. Hardware prefetchers detect access patterns, and software prefetching uses explicit instructions.","url":"https://semiconroom.com/en/term/prefetching/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between hardware and software prefetching?","acceptedAnswer":{"@type":"Answer","text":"Hardware prefetchers detect patterns like sequential or constant-stride access automatically at run time. Software prefetching relies on explicit instructions placed by the programmer or compiler, which helps with irregular but computable addresses."}},{"@type":"Question","name":"Why doesn't prefetching help linked lists much?","acceptedAnswer":{"@type":"Answer","text":"Each node's address is only known after the previous node has been loaded, so there is no predictable pattern and misses cannot overlap. Storing the data contiguously or adding jump pointers is usually needed."}},{"@type":"Question","name":"Can prefetching make performance worse?","acceptedAnswer":{"@type":"Answer","text":"Yes. Inaccurate or overly early prefetches waste bandwidth and evict data that was still needed, so aggressive prefetching can slow memory-bound programs."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why prefetching is needed</h2>
+  <p>An L1 cache hit takes a few cycles, around 1 ns, while a DRAM access takes tens to about 100 ns, so a multi-GHz core can wait hundreds of cycles on a miss; this gap is called the <a class="term-link" href="/en/term/memory-wall/">memory wall</a>. Compulsory misses, which occur the first time data is touched, are not reduced by more capacity or associativity because the data was never cached. Prefetching attacks this by requesting lines before the program needs them, overlapping memory latency with useful work. Larger cache lines help in a similar way by bringing in neighboring data with each miss.</p>
+</section>
+<section class="term-about">
+  <h2>How hardware prefetchers work</h2>
+  <p>A hardware prefetcher watches the stream of miss or access addresses and looks for regularity. The simplest fetches the next sequential line; stride prefetchers track the address difference between successive accesses, often per load instruction, and once a constant stride repeats they issue requests several strides ahead. Reading an int array sequentially with 64-byte lines would otherwise miss once per 16 elements, a 6.25% miss rate, and a good prefetcher hides most of those misses. Pointer chasing defeats this: in a linked list the next address is unknown until the current node arrives, so misses serialize.</p>
+</section>
+<section class="term-about">
+  <h2>Software prefetching and prefetch distance</h2>
+  <p>Software prefetching inserts explicit prefetch instructions, either by hand or by the compiler, for patterns hardware cannot predict, such as indirect accesses through an index array. These instructions are hints that typically do not fault or change program results. The key parameter is prefetch distance: fetching too close to the use leaves latency exposed, while fetching too far ahead risks eviction before use. A common rule of thumb is to prefetch ahead by about the miss latency divided by the time per loop iteration, then tune by measurement.</p>
+</section>
+<section class="term-about">
+  <h2>Accuracy, coverage and timeliness</h2>
+  <p>Prefetching is not free. Useless prefetches consume memory bandwidth and can evict useful lines, a problem called cache pollution, which can make a program slower. Prefetchers are therefore judged on accuracy, the fraction of prefetched lines actually used; coverage, the fraction of original misses eliminated; and timeliness, whether data arrives before it is needed. Prefetching also differs from <a class="term-link" href="/en/term/out-of-order-execution/">out-of-order execution</a>, which overlaps misses only within its limited instruction window. When a data structure is hostile to prediction, reorganizing it into contiguous arrays often helps more than any prefetcher.</p>
+</section>
 <section>
   <h2>Try it: questions about Prefetching</h2>
   <article class="q-mini" data-qid="memory-hierarchy-015" data-cat="memory-hierarchy" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Reading an array in order at a fixed interval (stride)</p><p class="explanation">A hardware prefetcher detects regularity in recent addresses, such as sequential or constant-stride patterns, predicts upcoming addresses and loads them ahead of time. Reading an array at a fixed stride is easy to predict, so the benefit is large. In a linked list the next element&#39;s address is unknown until the current one is read, so there is no pattern to predict. Random-key hash lookups also lack address regularity, so <a class="term-link" href="/en/term/prefetching/">prefetching</a> helps little.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between hardware and software prefetching?</h3>
+  <p>Hardware prefetchers detect patterns like sequential or constant-stride access automatically at run time. Software prefetching relies on explicit instructions placed by the programmer or compiler, which helps with irregular but computable addresses.</p>
+  <h3>Why doesn&#39;t prefetching help linked lists much?</h3>
+  <p>Each node&#39;s address is only known after the previous node has been loaded, so there is no predictable pattern and misses cannot overlap. Storing the data contiguously or adding jump pointers is usually needed.</p>
+  <h3>Can prefetching make performance worse?</h3>
+  <p>Yes. Inaccurate or overly early prefetches waste bandwidth and evict data that was still needed, so aggressive prefetching can slow memory-bound programs.</p>
+</section>
 <section>
   <h2>Prefetching in the explanations</h2>
   <ul class="term-quotes"><li><p>Random-key hash lookups also lack address regularity, so prefetching helps little.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-015/">For which access pattern is hardware prefetching especially…</a></li><li><p>Responses include multilevel caches, parallel memory access, prefetching, high-bandwidth memory such as HBM, and processing-in-memory, which computes near the data.</p><a href="/en/q/dram/dram-030/">What is the performance limitation called that arises becau…</a></li><li><p>Remedies differ by cause: larger lines or prefetching for compulsory misses, a bigger cache for capacity misses, and higher associativity for conflict misses.</p><a href="/en/q/cpu/cpu-046/">Which correctly lists the &quot;three Cs&quot; classification of cach…</a></li><li><p>Prefetching data before it is needed, or using larger lines to bring in neighboring data, does.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-008/">Which method is effective at reducing the cache misses that…</a></li><li><p>Prefetching just before use cannot hide latency, and fetching everything up front does not fit in the cache.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-016/">When inserting software prefetch instructions, which statem…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Two's complement","item":"https://semiconroom.com/en/term/two-s-complement/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Two's complement","description":"The usual binary representation of negative integers. Inverting all bits and adding 1 negates a number. n bits cover −2ⁿ⁻¹ to 2ⁿ⁻¹ − 1, and the same adder can be used for subtraction.","url":"https://semiconroom.com/en/term/two-s-complement/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Two's complement","item":"https://semiconroom.com/en/term/two-s-complement/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Two's complement","description":"The usual binary representation of negative integers. Inverting all bits and adding 1 negates a number. n bits cover −2ⁿ⁻¹ to 2ⁿ⁻¹ − 1, and the same adder can be used for subtraction.","url":"https://semiconroom.com/en/term/two-s-complement/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do you find the two's complement of a negative number?","acceptedAnswer":{"@type":"Answer","text":"Write the positive value in binary with the chosen number of bits, invert every bit, then add 1. For example, −5 in 8 bits is 00000101 → 11111010 → 11111011."}},{"@type":"Question","name":"How can you tell if two's complement addition overflowed?","acceptedAnswer":{"@type":"Answer","text":"Overflow occurs when two positives give a negative or two negatives give a positive, which hardware detects when the carry into the MSB differs from the carry out of it. The carry-out alone indicates unsigned overflow, not signed overflow."}},{"@type":"Question","name":"Why is the range of 8-bit two's complement −128 to 127 and not symmetric?","acceptedAnswer":{"@type":"Answer","text":"Zero uses one of the 256 patterns with a 0 sign bit, leaving 127 positive values, while all 128 patterns with a 1 sign bit are negative. As a result +128 cannot be represented."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/logic/">Logic circuits</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the encoding works</h2>
+  <p>In n-bit two&#39;s complement, every bit has its usual binary weight except the most significant bit, which carries weight −2ⁿ⁻¹. In 4 bits, 1111 therefore reads as −8 + 4 + 2 + 1 = −1, and 1000 is −8. To negate a value, invert every bit and add 1: +1 (0001) becomes 1110, then 1111. Zero has a single pattern, which leaves one more negative value than positive, so the range is −2ⁿ⁻¹ to 2ⁿ⁻¹ − 1: −128 to +127 in 8 bits and −32,768 to +32,767 in 16 bits.</p>
+</section>
+<section class="term-about">
+  <h2>Why hardware uses it</h2>
+  <p>Two&#39;s complement arithmetic is simply binary arithmetic modulo 2ⁿ, so one adder handles signed and unsigned numbers identically, and only the interpretation of the result differs. Subtraction A − B becomes A + (inverted B) + 1, implemented by inverting B and setting the adder&#39;s carry-in to 1. Sign-magnitude, where 1001 means −1 in 4 bits, has two zeros and needs separate add and subtract logic, and ones&#39; complement also has two zeros and an end-around carry. Booth multipliers likewise rely on two&#39;s complement to generate negative partial products cheaply.</p>
+</section>
+<section class="term-about">
+  <h2>Overflow, carries and flags</h2>
+  <p>Signed overflow happens only when two operands of the same sign produce a result of the opposite sign, for example 0111 + 0001 = 1000 (7 + 1 giving −8) in 4 bits; adding numbers of opposite sign never overflows. Hardware detects it as the XOR of the carry into and the carry out of the most significant bit, reported as the V (overflow) flag. The C (carry) flag instead signals unsigned overflow. The asymmetric range creates corner cases: negating or taking the absolute value of the most negative number, or computing −128 × −1 in 8 bits, overflows.</p>
+</section>
+<section class="term-about">
+  <h2>Sign extension and shifts</h2>
+  <p>Widening a two&#39;s complement value copies its sign bit into the new upper bits. A RISC-V addi immediate is a 12-bit field covering −2048 to 2047; −1 is stored as 0xFFF and sign-extends to 0xFFFFFFFF, whereas zero-filling would give 4095. An arithmetic right shift also replicates the sign bit, so 1111 1000 (−8) becomes 1111 1100 (−4); for negative odd values it rounds toward negative infinity, so −7 shifted right by one gives −4, while integer division in C truncates toward zero to −3. Offset binary, common at ADC outputs, differs from two&#39;s complement only by an inverted MSB.</p>
+</section>
 <section>
   <h2>Try it: questions about Two&#39;s complement</h2>
   <article class="q-mini" data-qid="logic-009" data-cat="logic" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. −128 to +127</p><p class="explanation">n-bit <a class="term-link" href="/en/term/two-s-complement/">two&#39;s complement</a> covers −2ⁿ⁻¹ to 2ⁿ⁻¹ − 1, so 8 bits span −128 to +127. Zero has a single representation (00000000), which leaves one extra negative value. Edge values need care—for example, −128 × −1 overflows because +128 cannot be represented. 16 bits cover −32,768 to +32,767 and 32 bits about ±2.1 billion. 0–255 is the same 8 bits interpreted as unsigned.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do you find the two&#39;s complement of a negative number?</h3>
+  <p>Write the positive value in binary with the chosen number of bits, invert every bit, then add 1. For example, −5 in 8 bits is 00000101 → 11111010 → 11111011.</p>
+  <h3>How can you tell if two&#39;s complement addition overflowed?</h3>
+  <p>Overflow occurs when two positives give a negative or two negatives give a positive, which hardware detects when the carry into the MSB differs from the carry out of it. The carry-out alone indicates unsigned overflow, not signed overflow.</p>
+  <h3>Why is the range of 8-bit two&#39;s complement −128 to 127 and not symmetric?</h3>
+  <p>Zero uses one of the 256 patterns with a 0 sign bit, leaving 127 positive values, while all 128 patterns with a 1 sign bit are negative. As a result +128 cannot be represented.</p>
+</section>
 <section>
   <h2>Two&#39;s complement in the explanations</h2>
   <ul class="term-quotes"><li><p>In two&#39;s complement, a negative number is formed by inverting the bits of the positive value and adding 1: +1 (0001) → 1110 → 1111 = −1.</p><a href="/en/q/logic/logic-009/">Which bit pattern represents −1 in 4-bit two&#39;s complement?</a></li><li><p>n-bit two&#39;s complement covers −2ⁿ⁻¹ to 2ⁿ⁻¹ − 1, so 8 bits span −128 to +127.</p><a href="/en/q/logic/logic-045/">What range of integers can be represented in 8-bit two&#39;s co…</a></li><li><p>It differs from two&#39;s complement only in the inverted most significant bit, so conversion is trivial.</p><a href="/en/q/adc-dac/adc-dac-050/">Which correctly describes the &quot;offset binary&quot; code used in …</a></li><li><p>Doubling is a one-bit shift and negatives are formed with two&#39;s complement, so the circuitry is simple.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-039/">What is the main effect of using radix-4 Booth&#39;s algorithm …</a></li><li><p>An arithmetic right shift copies the sign bit into the vacated top bit, so 1111 1000 becomes 1111 1100, which is −4 in two&#39;s complement.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-043/">What is the result of arithmetic right-shifting the 8-bit s…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Hypervisor","item":"https://semiconroom.com/en/term/hypervisor/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Hypervisor","description":"Software that runs multiple virtual machines on one computer, allocating CPU, memory and devices to each guest OS and isolating them from one another. Also called a virtual machine monitor.","url":"https://semiconroom.com/en/term/hypervisor/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Hypervisor","item":"https://semiconroom.com/en/term/hypervisor/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Hypervisor","description":"Software that runs multiple virtual machines on one computer, allocating CPU, memory and devices to each guest OS and isolating them from one another. Also called a virtual machine monitor.","url":"https://semiconroom.com/en/term/hypervisor/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a hypervisor and a virtual machine?","acceptedAnswer":{"@type":"Answer","text":"The hypervisor is the software layer that creates and runs virtual machines and divides hardware among them; each virtual machine is one isolated guest environment running its own OS."}},{"@type":"Question","name":"What is the difference between type 1 and type 2 hypervisors?","acceptedAnswer":{"@type":"Answer","text":"A type 1 (bare-metal) hypervisor runs directly on hardware, while a type 2 (hosted) hypervisor runs as an application on top of an ordinary operating system."}},{"@type":"Question","name":"Are containers the same as virtual machines?","acceptedAnswer":{"@type":"Answer","text":"No. Containers share the host kernel and are lightweight, while virtual machines each run their own kernel on a hypervisor, giving stronger isolation and the ability to run different operating systems."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How it keeps control of the CPU</h2>
+  <p>A hypervisor, or virtual machine monitor, runs at a higher privilege level than the guest operating systems. Guest kernels believe they control the hardware, but when one executes a privileged instruction or touches a protected resource, the CPU traps to the hypervisor, which reproduces the effect on that virtual machine&#39;s state and resumes the guest. This is trap-and-emulate. Hardware virtualization extensions add a dedicated mode and save and restore guest state quickly on each transition; RISC-V, for example, adds hypervisor modes to its machine, supervisor and user modes.</p>
+</section>
+<section class="term-about">
+  <h2>Virtualizing memory</h2>
+  <p>Each guest manages page tables that map guest virtual addresses to what it believes are physical addresses. Those guest physical addresses must in turn map to real host memory. With <a class="term-link" href="/en/term/nested-paging/">nested paging</a>, hardware performs both stages automatically: guest virtual to guest physical through the guest&#39;s tables, then to host physical through the hypervisor&#39;s tables. Earlier systems used shadow page tables maintained in software, forcing the hypervisor to intervene whenever a guest edited its tables. The cost of two-stage translation is a longer page-table walk on <a class="term-link" href="/en/term/tlb/">TLB</a> misses, which larger pages help reduce.</p>
+</section>
+<section class="term-about">
+  <h2>Virtualizing I/O</h2>
+  <p>Emulating a real device register by register is fully transparent but slow, since every register access exits to the hypervisor. Paravirtualization instead installs virtualization-aware drivers in the guest that exchange batched requests with the hypervisor through queues in shared memory, which is the common choice for virtual disks and network cards. For the highest performance, a physical device can be assigned directly to one guest, with an I/O memory management unit (<a class="term-link" href="/en/term/iommu/">IOMMU</a>) restricting its <a class="term-link" href="/en/term/dma/">DMA</a> to that guest&#39;s memory so isolation is preserved.</p>
+</section>
+<section class="term-about">
+  <h2>Hypervisors, containers and trust</h2>
+  <p>A type 1 hypervisor runs directly on the hardware, as in cloud servers, while a type 2 hypervisor runs as an application on a host OS. Containers are different again: they share one kernel and only partition processes, file systems and resources, so they are lighter but isolate less strongly than virtual machines, each of which boots its own kernel. Hypervisors also partition mixed-criticality software on automotive SoCs. Normally the hypervisor can read all guest memory; confidential-computing features encrypt VM memory so even the host cannot.</p>
+</section>
 <section>
   <h2>Try it: questions about Hypervisor</h2>
   <article class="q-mini" data-qid="os-hardware-037" data-cat="os-hardware" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Trap-and-emulate</p><p class="explanation">A guest OS executes privileged instructions believing it controls the hardware, but it actually runs in a lower-privilege mode, so an exception (trap) occurs. The <a class="term-link" href="/en/term/hypervisor/">hypervisor</a> catches it, reproduces (emulates) the instruction&#39;s effect so the result is correct for that virtual machine, and returns to the guest. CPU virtualization support makes these transitions fast and reliable. <a class="term-link" href="/en/term/copy-on-write/">Copy-on-write</a> and <a class="term-link" href="/en/term/demand-paging/">demand paging</a> are memory-management techniques.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a hypervisor and a virtual machine?</h3>
+  <p>The hypervisor is the software layer that creates and runs virtual machines and divides hardware among them; each virtual machine is one isolated guest environment running its own OS.</p>
+  <h3>What is the difference between type 1 and type 2 hypervisors?</h3>
+  <p>A type 1 (bare-metal) hypervisor runs directly on hardware, while a type 2 (hosted) hypervisor runs as an application on top of an ordinary operating system.</p>
+  <h3>Are containers the same as virtual machines?</h3>
+  <p>No. Containers share the host kernel and are lightweight, while virtual machines each run their own kernel on a hypervisor, giving stronger isolation and the ability to run different operating systems.</p>
+</section>
 <section>
   <h2>Hypervisor in the explanations</h2>
   <ul class="term-quotes"><li><p>The hypervisor catches it, reproduces (emulates) the instruction&#39;s effect so the result is correct for that virtual machine, and returns to the guest.</p><a href="/en/q/os-hardware/os-hardware-037/">What is it called when a guest OS executes a privileged ins…</a></li><li><p>Therefore, freedom from interference is demonstrated through spatial partitioning with memory protection units or a hypervisor, and temporal partitioning by allocating and monitoring execution time.</p><a href="/en/q/automotive/automotive-034/">When the functions of multiple ECUs are integrated into a s…</a></li><li><p>A hypervisor (virtual machine monitor) divides CPU, memory and devices among multiple virtual machines, making each OS believe it has a computer to itself.</p><a href="/en/q/os-hardware/os-hardware-033/">What is the software called that runs multiple operating sy…</a></li><li><p>A guest OS believes its physical addresses (guest physical addresses) are real memory, but the memory actually lives elsewhere as assigned by the hypervisor.</p><a href="/en/q/os-hardware/os-hardware-035/">In virtualization with nested paging (two-stage address tra…</a></li><li><p>Emulating a real device in full detail triggers a switch to the hypervisor on every device register access, which is slow.</p><a href="/en/q/os-hardware/os-hardware-038/">Which describes paravirtualization?</a></li></ul>

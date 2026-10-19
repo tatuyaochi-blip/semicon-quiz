@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Dynamic linker","item":"https://semiconroom.com/en/term/dynamic-linker/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Dynamic linker","description":"Software that, when a dynamically linked program starts, finds and loads shared libraries, applies relocations and binds symbols before starting the program, such as ld.so on Linux.","url":"https://semiconroom.com/en/term/dynamic-linker/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Dynamic linker","item":"https://semiconroom.com/en/term/dynamic-linker/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Dynamic linker","description":"Software that, when a dynamically linked program starts, finds and loads shared libraries, applies relocations and binds symbols before starting the program, such as ld.so on Linux.","url":"https://semiconroom.com/en/term/dynamic-linker/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is ld.so on Linux?","acceptedAnswer":{"@type":"Answer","text":"It is the dynamic linker/loader: the program the kernel runs first for a dynamically linked executable, which loads shared libraries, resolves symbols and then starts the program."}},{"@type":"Question","name":"Why does my program say a shared library cannot be found?","acceptedAnswer":{"@type":"Answer","text":"The dynamic linker could not locate a required library, or found only an incompatible version, in its search paths. Running ldd on the program shows which dependency is missing."}},{"@type":"Question","name":"What is the difference between the GOT and the PLT?","acceptedAnswer":{"@type":"Answer","text":"The GOT is a data table of resolved addresses filled by the dynamic linker, while the PLT is a set of small code stubs that external function calls jump through, reading their targets from the GOT."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What happens at program start</h2>
+  <p>A dynamically linked <a class="term-link" href="/en/term/executable-and-linkable-format/">ELF</a> executable names an interpreter in its program headers, such as ld-linux on Linux. After execve maps the program, the kernel also maps that dynamic linker and transfers control to it rather than to the program. The dynamic linker reads the list of needed libraries, searches for them in configured paths and its cache, maps them into the address space, applies relocations, binds symbols, runs the libraries&#39; initialization functions (listed in sections such as .init_array), and finally jumps to the program&#39;s <a class="term-link" href="/en/term/entry-point/">entry point</a>. Libraries opened later with dlopen go through the same machinery.</p>
+</section>
+<section class="term-about">
+  <h2>GOT, PLT and lazy binding</h2>
+  <p>Shared libraries are built as <a class="term-link" href="/en/term/position-independent-code/">position-independent code</a>, so their code pages contain no absolute addresses of other modules. Instead, code reads addresses from the <a class="term-link" href="/en/term/global-offset-table/">global offset table</a> (GOT), a writable data table the dynamic linker fills in. Function calls go through <a class="term-link" href="/en/term/procedure-linkage-table/">procedure linkage table (PLT)</a> stubs. With lazy binding, the first call through a stub enters the <a class="term-link" href="/en/term/linker/">linker</a>&#39;s resolver, which writes the real address into the GOT, and later calls jump straight there. Many systems instead bind everything at start-up and then make the GOT read-only (full RELRO) to block GOT-overwrite attacks.</p>
+</section>
+<section class="term-about">
+  <h2>Dynamic linker vs. static linker</h2>
+  <p>The static <a class="term-link" href="/en/term/linker/">linker</a> (ld) runs at build time: it combines object files, resolves symbols and applies most relocations, producing an executable. The dynamic linker runs every time the program starts and finishes the job for shared libraries. That split is what lets one physical copy of a library&#39;s code be shared by many processes and lets a security fix reach every program by replacing one file. The price is extra start-up work and a dependency on the right library versions being present on the target machine.</p>
+</section>
+<section class="term-about">
+  <h2>Controlling and debugging it</h2>
+  <p>Most start-up failures of dynamically linked programs are missing or incompatible libraries; the ldd command lists the dependencies and shows which ones cannot be found. On Linux, environment variables such as LD_LIBRARY_PATH add search directories and LD_PRELOAD injects a library ahead of others, which is useful for debugging and instrumentation. Library authors can speed up loading by exporting only public functions and marking internal symbols hidden, which reduces the symbols the dynamic linker must process and lets internal calls skip the <a class="term-link" href="/en/term/procedure-linkage-table/">PLT</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Dynamic linker</h2>
   <article class="q-mini" data-qid="linker-loader-027" data-cat="linker-loader" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Finding and loading the required shared libraries, binding symbols, then starting the program</p><p class="explanation">A dynamically linked executable names the <a class="term-link" href="/en/term/dynamic-linker/">dynamic linker</a> it uses, and after loading the program the OS first hands control to that dynamic linker. The dynamic linker finds and loads the required shared libraries, applies relocations and binds symbols, then transfers control to the program&#39;s <a class="term-link" href="/en/term/entry-point/">entry point</a>. Loading extra libraries at run time with dlopen is also handled by the dynamic linker.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is ld.so on Linux?</h3>
+  <p>It is the dynamic linker/loader: the program the kernel runs first for a dynamically linked executable, which loads shared libraries, resolves symbols and then starts the program.</p>
+  <h3>Why does my program say a shared library cannot be found?</h3>
+  <p>The dynamic linker could not locate a required library, or found only an incompatible version, in its search paths. Running ldd on the program shows which dependency is missing.</p>
+  <h3>What is the difference between the GOT and the PLT?</h3>
+  <p>The GOT is a data table of resolved addresses filled by the dynamic linker, while the PLT is a set of small code stubs that external function calls jump through, reading their targets from the GOT.</p>
+</section>
 <section>
   <h2>Dynamic linker in the explanations</h2>
   <ul class="term-quotes"><li><p>A dynamically linked executable names the dynamic linker it uses, and after loading the program the OS first hands control to that dynamic linker.</p><a href="/en/q/linker-loader/linker-loader-027/">What is the role of the dynamic linker (such as ld.so) when…</a></li><li><p>With dynamic linking, part of this patching is done at run time by the dynamic linker.</p><a href="/en/q/linker-loader/linker-loader-004/">Which describes the relocation a linker performs?</a></li><li><p>With dynamic linking, the executable records only which functions of which shared libraries it uses, and at run time the dynamic linker loads the libraries and binds them.</p><a href="/en/q/linker-loader/linker-loader-020/">What is an advantage of dynamic linking (shared libraries)?</a></li><li><p>If a required library is absent, or only an older version lacking some functions is present, the dynamic linker cannot bind it and start-up fails.</p><a href="/en/q/linker-loader/linker-loader-021/">A dynamically linked program copied to another computer fai…</a></li><li><p>The dynamic linker writes the real addresses into the GOT when the module is loaded.</p><a href="/en/q/linker-loader/linker-loader-025/">What is the role of the GOT (global offset table) used in s…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SIMD","item":"https://semiconroom.com/en/term/simd/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMD","description":"Short for single instruction, multiple data: one instruction performs the same operation on several data elements at once. It speeds up image processing and AI calculations.","url":"https://semiconroom.com/en/term/simd/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"SIMD","item":"https://semiconroom.com/en/term/simd/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMD","description":"Short for single instruction, multiple data: one instruction performs the same operation on several data elements at once. It speeds up image processing and AI calculations.","url":"https://semiconroom.com/en/term/simd/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does SIMD stand for and what does it do?","acceptedAnswer":{"@type":"Answer","text":"Single instruction, multiple data: one instruction operates on several data elements packed into a wide register, such as four 32-bit numbers in a 128-bit register."}},{"@type":"Question","name":"Why does my loop not auto-vectorize?","acceptedAnswer":{"@type":"Answer","text":"Common reasons are a loop-carried dependence where an iteration needs the previous one's result, non-contiguous memory access, or possible pointer aliasing that the compiler cannot rule out."}},{"@type":"Question","name":"What is the difference between SIMD and SIMT?","acceptedAnswer":{"@type":"Answer","text":"SIMD uses explicit fixed-width vector instructions on a CPU. SIMT, used by GPUs, runs scalar per-thread code on groups of threads in lockstep, with hardware handling branch divergence."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/cpu/">CPUs and architecture</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How SIMD works</h2>
+  <p>A SIMD (single instruction, multiple data) unit treats a wide register as a set of independent lanes. A 128-bit register holds four 32-bit values, and a 512-bit register holds sixteen; one add instruction adds all lanes in parallel. Instruction-set extensions such as x86 SSE and AVX and Arm NEON and SVE provide integer and floating-point lane operations, along with loads, shuffles and comparisons. In Flynn&#39;s taxonomy SIMD sits beside SISD, an ordinary sequential processor, and MIMD, multiple cores running independent instruction streams. Image filters, video codecs and matrix math typically speed up several-fold or more.</p>
+</section>
+<section class="term-about">
+  <h2>What makes a loop vectorizable</h2>
+  <p>Compilers auto-vectorize loops that apply the same operation to each array element. The key condition is no loop-carried dependence: in a[i] = a[i-1] + b[i], each element needs the previous result, so lanes cannot run simultaneously. Data should be contiguous, and possible pointer overlap (<a class="term-link" href="/en/term/aliasing/">aliasing</a>) can make the compiler give up. A trip count unknown at compile time is not a barrier; the vector loop handles full chunks and a short remainder loop handles the rest. Media code also uses <a class="term-link" href="/en/term/saturating-arithmetic/">saturating arithmetic</a>, where 8-bit signed 127 + 1 clamps to 127 instead of wrapping to −128.</p>
+</section>
+<section class="term-about">
+  <h2>Data layout: AoS vs. SoA</h2>
+  <p>An array of structures (AoS) stores each record&#39;s fields together, such as x, y, z and mass. A loop that reads only x then wastes most of each <a class="term-link" href="/en/term/cache-line/">cache line</a> and needs gather or shuffle work to fill vector lanes. A structure of arrays (SoA) keeps all x values contiguous, so every fetched line is fully used, memory traffic can drop sharply, and one vector load fills the lanes directly. The same layout lets adjacent <a class="term-link" href="/en/term/gpu/">GPU</a> threads read adjacent addresses, which coalesces their memory accesses.</p>
+</section>
+<section class="term-about">
+  <h2>SIMD vs. SIMT</h2>
+  <p>With CPU SIMD, the programmer or compiler explicitly uses fixed-width vector instructions, so code is written with the vector width in mind. <a class="term-link" href="/en/term/gpu/">GPU</a> <a class="term-link" href="/en/term/single-instruction-multiple-threads/">SIMT</a> (single instruction, multiple threads) lets the programmer write ordinary code for one thread; the hardware groups threads, commonly 32, to run in lockstep on shared instruction issue. When threads in a group branch differently, the hardware executes each path in turn with inactive threads masked, so code still works but efficiency drops. Underneath, both rely on the same principle of amortizing one instruction over many data elements.</p>
+</section>
 <section>
   <h2>Try it: questions about SIMD</h2>
   <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. In SIMT each thread can be written as an independent program and the hardware handles branches; with SIMD the programmer or compiler explicitly uses fixed-width vector instructions</p><p class="explanation">CPU <a class="term-link" href="/en/term/simd/">SIMD</a> applies one instruction to a vector register holding 4 or 8 data items, so programs are written with the vector width in mind. With <a class="term-link" href="/en/term/gpu/">GPU</a> <a class="term-link" href="/en/term/single-instruction-multiple-threads/">SIMT</a> the programmer writes ordinary code for a single thread, and the hardware bundles 32 threads to execute in lockstep. Threads may branch differently; the hardware executes the divergent paths one after another, though efficiency drops when it does.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does SIMD stand for and what does it do?</h3>
+  <p>Single instruction, multiple data: one instruction operates on several data elements packed into a wide register, such as four 32-bit numbers in a 128-bit register.</p>
+  <h3>Why does my loop not auto-vectorize?</h3>
+  <p>Common reasons are a loop-carried dependence where an iteration needs the previous one&#39;s result, non-contiguous memory access, or possible pointer aliasing that the compiler cannot rule out.</p>
+  <h3>What is the difference between SIMD and SIMT?</h3>
+  <p>SIMD uses explicit fixed-width vector instructions on a CPU. SIMT, used by GPUs, runs scalar per-thread code on groups of threads in lockstep, with hardware handling branch divergence.</p>
+</section>
 <section>
   <h2>SIMD in the explanations</h2>
   <ul class="term-quotes"><li><p>Vectorization computes, say, four elements at once with one SIMD instruction.</p><a href="/en/q/compiler/compiler-018/">Why is the loop above hard to vectorize with SIMD instructi…</a></li><li><p>CPU SIMD applies one instruction to a vector register holding 4 or 8 data items, so programs are written with the vector width in mind.</p><a href="/en/q/gpu-programming/gpu-programming-010/">How does the GPU SIMT (single instruction, multiple threads…</a></li><li><p>SIMD applies one instruction to multiple data elements in parallel; a 512-bit register, for example, processes sixteen 32-bit values at once.</p><a href="/en/q/cpu/cpu-019/">Which scheme performs the same operation on multiple data i…</a></li><li><p>DSP and SIMD instruction sets provide it.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-035/">Which describes saturating arithmetic used in signal proces…</a></li><li><p>Automatic vectorization finds loops that perform the same computation on each array element and replaces them with SIMD instructions that process several elements at once.</p><a href="/en/q/compiler/compiler-045/">Which kind of instruction does a compiler&#39;s automatic vecto…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Metastability","item":"https://semiconroom.com/en/term/metastability/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Metastability","description":"A state in which a flip-flop's output stays between 0 and 1 for a while when setup or hold time is violated. Asynchronous signals are passed through two flip-flops (a synchronizer) to guard against it.","url":"https://semiconroom.com/en/term/metastability/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Metastability","item":"https://semiconroom.com/en/term/metastability/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Metastability","description":"A state in which a flip-flop's output stays between 0 and 1 for a while when setup or hold time is violated. Asynchronous signals are passed through two flip-flops (a synchronizer) to guard against it.","url":"https://semiconroom.com/en/term/metastability/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What causes metastability in a flip-flop?","acceptedAnswer":{"@type":"Answer","text":"Data changing within the setup-and-hold window around the clock edge, which leaves the internal latch near its unstable balance point. It is unavoidable when the input is asynchronous to the clock."}},{"@type":"Question","name":"Why are two flip-flops used to synchronize an asynchronous signal?","acceptedAnswer":{"@type":"Answer","text":"The first flip-flop may go metastable, and the second samples it a full clock period later, by which time it has almost certainly resolved. This raises MTBF exponentially but does not make failure impossible."}},{"@type":"Question","name":"Can a synchronizer be used for a multi-bit bus?","acceptedAnswer":{"@type":"Answer","text":"Not bit by bit, because different bits can be captured on different cycles and produce an invalid intermediate value. Use Gray code for counters, or a handshake or asynchronous FIFO for general data."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/logic/">Logic circuits</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why a flip-flop can hang between 0 and 1</h2>
+  <p>A <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> stores its state in cross-coupled inverters, which have two stable points and one unstable balance point in between. If the data input changes inside the window defined by the <a class="term-link" href="/en/term/setup-time/">setup time</a> (before the clock edge) and <a class="term-link" href="/en/term/hold-time/">hold time</a> (after it), the latch can be left near that balance point. Positive feedback then amplifies the small imbalance with a <a class="term-link" href="/en/term/time-constant/">time constant</a> τ, but the closer it starts to balance, the longer resolution takes, with no hard upper bound. The output may sit at an intermediate voltage or switch late, and the final value is unpredictable.</p>
+</section>
+<section class="term-about">
+  <h2>Synchronizers and MTBF</h2>
+  <p>With an asynchronous input, metastability can only be made rare, not prevented. A two-<a class="term-link" href="/en/term/flip-flop/">flip-flop</a> synchronizer gives the first stage almost one clock period to resolve before the second stage samples it. Mean time between failures is approximately MTBF = e^(t_r/τ) / (T_0 × f_clk × f_data), where t_r is the available resolution time and τ and T_0 depend on the flip-flop. Because t_r sits in an exponent, a third stage adds about one period and multiplies MTBF enormously: with τ = 20 ps, an extra 1 ns gives a factor of e^50, over 10^21.</p>
+</section>
+<section class="term-about">
+  <h2>What a synchronizer does not fix</h2>
+  <p>Each synchronized bit may capture a change one cycle early or late, so a multi-bit value such as 0111 to 1000 can arrive as 1111 or 0000. Counters therefore cross in <a class="term-link" href="/en/term/gray-code/">Gray code</a>, where only one bit changes per step, as with asynchronous FIFO pointers; arbitrary data uses a handshake or an asynchronous FIFO. A short pulse from a fast domain can fall between slow-clock edges and vanish, so it must be stretched or converted to a toggle. Crossing signals should come straight from a <a class="term-link" href="/en/term/flip-flop/">flip-flop</a>, because a combinational <a class="term-link" href="/en/term/glitch/">glitch</a> can be captured as a valid value.</p>
+</section>
+<section class="term-about">
+  <h2>Metastability vs. ordinary timing violations</h2>
+  <p>In a single synchronous clock domain, a setup violation means the data path is too slow, and <a class="term-link" href="/en/term/sta/">static timing analysis</a> finds it; slowing the clock or speeding the path fixes it. Across asynchronous clocks there is no fixed phase relationship, so violations happen eventually no matter how fast the logic is, and timing analysis cannot close them. That is why designs rely on CDC (clock domain crossing) verification, where tools find every crossing and check for a proper synchronizer, Gray-coded pointer or handshake. Such bugs are rare, so ordinary simulation seldom catches them.</p>
+</section>
 <section>
   <h2>Try it: questions about Metastability</h2>
   <article class="q-mini" data-qid="sta-cdc-027" data-cat="sta-cdc" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. The time available for metastability to resolve increases by about one period, and MTBF grows exponentially</p><p class="explanation">Synchronizer MTBF is approximately MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data), where t_r is the time available for <a class="term-link" href="/en/term/metastability/">metastability</a> to resolve and τ and T_0 are constants determined by the <a class="term-link" href="/en/term/flip-flop/">flip-flop</a>&#39;s characteristics. Adding a stage extends t_r by about one period. For example, with τ = 20 ps, increasing t_r by 1 ns multiplies MTBF by e^50, more than 10^21 times. The probability of the first stage going metastable is unchanged, but the probability that it resolves before propagating further rises sharply.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What causes metastability in a flip-flop?</h3>
+  <p>Data changing within the setup-and-hold window around the clock edge, which leaves the internal latch near its unstable balance point. It is unavoidable when the input is asynchronous to the clock.</p>
+  <h3>Why are two flip-flops used to synchronize an asynchronous signal?</h3>
+  <p>The first flip-flop may go metastable, and the second samples it a full clock period later, by which time it has almost certainly resolved. This raises MTBF exponentially but does not make failure impossible.</p>
+  <h3>Can a synchronizer be used for a multi-bit bus?</h3>
+  <p>Not bit by bit, because different bits can be captured on different cycles and produce an invalid intermediate value. Use Gray code for counters, or a handshake or asynchronous FIFO for general data.</p>
+</section>
 <section>
   <h2>Metastability in the explanations</h2>
   <ul class="term-quotes"><li><p>Synchronizer MTBF is approximately MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data), where t_r is the time available for metastability to resolve and τ and T_0 are constants determined by the flip-flop&#39;s characteristics.</p><a href="/en/q/sta-cdc/sta-cdc-027/">How does the mean time between failures (MTBF) due to metas…</a></li><li><p>Violating either can capture wrong values or cause metastability.</p><a href="/en/q/logic/logic-013/">Which correctly describes the setup time of a flip-flop?</a></li><li><p>Passing signals directly between asynchronous clocks causes metastability, where a flip-flop output settles neither to 0 nor 1, and lost data.</p><a href="/en/q/eda/eda-041/">What is the verification called that uses dedicated tools t…</a></li><li><p>Metastability does not occur every time, and CDC verification tools also flag combinational logic in front of synchronizers.</p><a href="/en/q/sta-cdc/sta-cdc-030/">Why must the output of combinational logic in the sending c…</a></li><li><p>Metastability resolves to 0 or 1 over time.</p><a href="/en/q/sta-cdc/sta-cdc-031/">Each bit of 4-bit data is passed to another clock domain th…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Arithmetic intensity","item":"https://semiconroom.com/en/term/arithmetic-intensity/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Arithmetic intensity","description":"Operations performed divided by bytes moved to and from memory. High values tend toward compute-bound, low values toward memory-bound.","url":"https://semiconroom.com/en/term/arithmetic-intensity/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Arithmetic intensity","item":"https://semiconroom.com/en/term/arithmetic-intensity/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Arithmetic intensity","description":"Operations performed divided by bytes moved to and from memory. High values tend toward compute-bound, low values toward memory-bound.","url":"https://semiconroom.com/en/term/arithmetic-intensity/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do you calculate arithmetic intensity?","acceptedAnswer":{"@type":"Answer","text":"Divide the number of operations (usually FLOPs) by the bytes transferred to and from memory. For an N × N FP16 matrix multiply this is 2N^3 / 6N^2 = N/3."}},{"@type":"Question","name":"What is the ridge point in a roofline model?","acceptedAnswer":{"@type":"Answer","text":"It is peak compute divided by memory bandwidth, the arithmetic intensity at which a workload switches from memory-bound to compute-bound. For 100 TFLOPS and 2 TB/s it is 50 FLOP/byte."}},{"@type":"Question","name":"Why is batch-size-1 inference memory-bound?","acceptedAnswer":{"@type":"Answer","text":"Each weight is read from memory and used for just one multiply-add, so arithmetic intensity is about 1 FLOP/byte in FP16, far below the ridge point of typical accelerators."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How to calculate it</h2>
+  <p>Arithmetic intensity is operations performed divided by bytes moved between memory and the processor, usually counted as FLOP per byte of DRAM traffic. For the product of two N × N FP16 matrices, read once and written once, the work is 2N^3 operations and the traffic is 3N^2 elements or 6N^2 bytes, giving N/3, about 340 for N = 1024. A matrix-vector product reuses each weight only once, giving about 1 FLOP/byte in FP16, and element-wise operations such as ReLU fall below 1. Intensity depends on the algorithm, the data type and how well the implementation reuses data.</p>
+</section>
+<section class="term-about">
+  <h2>The roofline model</h2>
+  <p>The <a class="term-link" href="/en/term/roofline-model/">roofline model</a>, which sometimes uses the term operational intensity, plots attainable performance against arithmetic intensity. Performance is the smaller of peak compute and memory bandwidth times intensity, so the chart has a slanted bandwidth ceiling and a flat compute ceiling. They meet at the ridge point, peak divided by bandwidth. With 100 TFLOPS and 2 TB/s the ridge is at 50 FLOP/byte, so a workload at 10 FLOP/byte is memory-bound at 2 TB/s × 10 = 20 TFLOPS. Below the ridge, extra arithmetic units do not help; above it, memory bandwidth is no longer the limit.</p>
+</section>
+<section class="term-about">
+  <h2>How to raise it</h2>
+  <p>When a workload sits under the slanted roof, the fix is to do more work per byte or move fewer bytes. Blocking (tiling) keeps sub-matrices in caches or on-chip memory so each value fetched from DRAM is used many times. <a class="term-link" href="/en/term/operator-fusion/">Operator fusion</a> applies element-wise steps such as activations or normalization while data is still on chip, instead of writing it out and reading it back. Batching lets one read of the weights serve several inputs. Lower-precision data types cut the bytes per value, which raises operations per byte for the same computation.</p>
+</section>
+<section class="term-about">
+  <h2>Where you will meet it</h2>
+  <p>Arithmetic intensity explains much of AI accelerator behavior. Large matrix multiplications are compute-bound and can approach peak <a class="term-link" href="/en/term/throughput/">throughput</a>, while element-wise layers can take a noticeable share of runtime despite few operations. Inference at <a class="term-link" href="/en/term/batch-size/">batch size</a> 1 is a matrix-vector workload with intensity near 1, so it is limited by how fast weights stream from memory, which is why batching and weight quantization help. Compare it with the hardware&#39;s ridge point: the intensity belongs to the workload, the ridge point to the machine, and their ratio tells you which resource to optimize.</p>
+</section>
 <section>
   <h2>Try it: questions about Arithmetic intensity</h2>
   <article class="q-mini" data-qid="cpu-050" data-cat="cpu" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. N/3</p><p class="explanation">The operation count is 2N³, and memory traffic is 3N² elements for the three matrices, or 6N² bytes in FP16. <a class="term-link" href="/en/term/arithmetic-intensity/">Arithmetic intensity</a> is 2N³ ÷ 6N² = N/3, about 340 for N = 1024. The larger a matrix product, the more computation per byte, so it easily exploits arithmetic performance. By contrast, element-wise addition has intensity below 1 and is limited by memory bandwidth.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do you calculate arithmetic intensity?</h3>
+  <p>Divide the number of operations (usually FLOPs) by the bytes transferred to and from memory. For an N × N FP16 matrix multiply this is 2N^3 / 6N^2 = N/3.</p>
+  <h3>What is the ridge point in a roofline model?</h3>
+  <p>It is peak compute divided by memory bandwidth, the arithmetic intensity at which a workload switches from memory-bound to compute-bound. For 100 TFLOPS and 2 TB/s it is 50 FLOP/byte.</p>
+  <h3>Why is batch-size-1 inference memory-bound?</h3>
+  <p>Each weight is read from memory and used for just one multiply-add, so arithmetic intensity is about 1 FLOP/byte in FP16, far below the ridge point of typical accelerators.</p>
+</section>
 <section>
   <h2>Arithmetic intensity in the explanations</h2>
   <ul class="term-quotes"><li><p>The roofline model plots performance against arithmetic intensity (operations per byte read from memory).</p><a href="/en/q/cpu/cpu-050/">Which model plots whether a program&#39;s performance is limite…</a></li><li><p>Arithmetic intensity is 2N³ ÷ 6N² = N/3, about 340 for N = 1024.</p><a href="/en/q/ai-stack/ai-stack-007/">For the product of two N × N FP16 (2-byte) matrices, assumi…</a></li><li><p>In the Roofline model, attainable performance is the smaller of the peak and bandwidth × arithmetic intensity.</p><a href="/en/q/ai-stack/ai-stack-008/">On an accelerator with 100 TFLOPS peak and 2 TB/s memory ba…</a></li><li><p>In FP16 that is two operations per 2 bytes, an arithmetic intensity of about 1.</p><a href="/en/q/ai-stack/ai-stack-009/">Why does a fully connected layer (a weight-matrix-by-vector…</a></li><li><p>Weight reads stay the same while operations grow B-fold, so arithmetic intensity rises roughly B-fold and the workload moves from memory-bound toward compute-bound.</p><a href="/en/q/ai-stack/ai-stack-010/">Why does increasing the batch size (the number of inputs pr…</a></li></ul>
