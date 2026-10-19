@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"Meltdown","item":"https://semiconroom.com/ko/term/meltdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Meltdown","description":"일부 CPU에서 권한 확인에 의한 예외 이전에 커널 메모리를 추측 실행으로 읽을 수 있어 캐시 흔적으로 값을 추측할 수 있었던 취약점. KPTI 등으로 대책이 마련되었다.","url":"https://semiconroom.com/ko/term/meltdown/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"Meltdown","item":"https://semiconroom.com/ko/term/meltdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Meltdown","description":"일부 CPU에서 권한 확인에 의한 예외 이전에 커널 메모리를 추측 실행으로 읽을 수 있어 캐시 흔적으로 값을 추측할 수 있었던 취약점. KPTI 등으로 대책이 마련되었다.","url":"https://semiconroom.com/ko/term/meltdown/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Meltdown과 Spectre는 같은 건가요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 둘 다 투기 실행의 캐시 흔적을 통해 데이터를 유출하지만, Meltdown은 지연된 권한 검사를 넘어 커널 메모리를 읽고, Spectre는 피해자 프로그램 자신의 투기 실행을 속여 비밀 데이터에 접근하게 만듭니다."}},{"@type":"Question","name":"Meltdown 패치를 적용하면 컴퓨터가 느려지는 이유는?","acceptedAnswer":{"@type":"Answer","text":"KPTI는 사용자 모드와 커널 모드 사이를 전환할 때마다 페이지 테이블을 바꾸므로, 시스템 콜과 인터럽트마다 오버헤드와 TLB 미스가 추가됩니다. 시스템 콜을 많이 하는 프로그램이 가장 큰 영향을 받습니다."}},{"@type":"Question","name":"최신 CPU도 여전히 Meltdown에 취약한가요?","acceptedAnswer":{"@type":"Answer","text":"공개 이후 설계된 프로세서는 일반적으로 폴트를 일으킨 데이터가 의존 명령어에 도달하지 못하게 차단하며, 운영체제는 그런 CPU를 감지해 KPTI를 생략합니다. 영향을 받는 구형 CPU는 여전히 소프트웨어 완화책에 의존합니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/hw-security/">하드웨어 보안</a></p>
 </article>
-
+<section class="term-about">
+  <h2>공격의 동작 방식</h2>
+  <p>2018년에 공개된 Meltdown은 <a class="term-link" href="/ko/term/out-of-order-execution/">비순차 실행(out-of-order execution)</a>을 악용합니다. 사용자 프로그램이 커널 주소에서 로드를 실행합니다. 아키텍처상으로는 권한 폴트가 발생하고 아무 값도 반환되지 않아야 하지만, 영향을 받는 프로세서에서는 폴트가 적용되기 전에 로드된 값이 의존 명령어로 전달되었습니다. 이 일시적(transient) 명령어들은 비밀 바이트를 사용자 소유의 프로브 배열의 인덱스로 사용하여 특정 <a class="term-link" href="/ko/term/cache-line/">캐시 라인</a> 하나를 캐시로 가져옵니다. 결국 폴트가 발생하면 레지스터 결과는 폐기되지만 캐시 상태는 되돌려지지 않습니다.</p>
+</section>
+<section class="term-about">
+  <h2>캐시를 통해 비밀 읽어 내기</h2>
+  <p>공격자는 이어서 프로브 배열의 모든 항목에 대한 접근 시간을 측정합니다. DRAM까지 가는 느린 접근이 아니라 캐시 히트로 빠르게 로드되는 하나의 항목이, 일시적으로 읽힌 값을 드러냅니다. 흔히 flush-and-reload 기법으로 구성되는 이 타이밍 사이드 채널을 바이트 단위로 반복하여 커널 메모리를 덤프합니다. 권한 폴트 자체는 시그널 핸들러로 잡거나 다른 방법으로 억제할 수 있으므로, 실용적인 속도로 정보를 유출할 수 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>Meltdown과 Spectre</h2>
+  <p>두 공격 모두 일시적 실행이 캐시에 남기는 흔적에 의존하지만, 우회하는 대상이 다릅니다. Meltdown은 너무 늦게 완료되는 권한 검사를 악용해 사용자/커널 권한 경계를 직접 무너뜨리며, 일부 프로세서 설계에서 볼 수 있는 특정 마이크로아키텍처 동작에 의존했습니다. 반면 <a class="term-link" href="/ko/term/spectre/">Spectre</a>는 <a class="term-link" href="/ko/term/branch-prediction/">분기 예측</a>기를 잘못 학습시켜, 정당한 권한을 가진 피해자 자신의 코드가 공격자가 선택한 데이터에 투기적으로 접근하게 만듭니다. Spectre는 거의 모든 고성능 투기 실행 CPU에 영향을 미치며 완전히 제거하기가 더 어렵습니다.</p>
+</section>
+<section class="term-about">
+  <h2>KPTI와 하드웨어 수정</h2>
+  <p>주요 소프트웨어 완화책인 <a class="term-link" href="/ko/term/kernel-page-table-isolation/">KPTI</a>(kernel page-table isolation)는 사용자 코드가 실행되는 동안 사용하는 <a class="term-link" href="/ko/term/page-table/">페이지 테이블</a>에 커널 메모리의 대부분을 매핑하지 않으며, 커널 진입에 필요한 작은 스텁만 매핑된 상태로 남깁니다. 주소 변환이 없으면 데이터는 일시적으로도 로드될 수 없습니다. 그 대가로 모든 <a class="term-link" href="/ko/term/system-call/">시스템 콜</a>, <a class="term-link" href="/ko/term/interrupt/">인터럽트</a>, 예외마다 페이지 테이블 전환이 일어나 시스템 콜이 많은 워크로드는 눈에 띄게 느려질 수 있으며, PCID(process-context identifier)가 <a class="term-link" href="/ko/term/tlb/">TLB</a> 플러시 페널티를 줄여 줍니다. 하드웨어로 수정된 프로세서에는 KPTI가 필요하지 않습니다.</p>
+</section>
 <section>
   <h2>도전해 보기: Meltdown 관련 문제</h2>
   <article class="q-mini" data-qid="hw-security-008" data-cat="hw-security" data-answer="1" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 B예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 사용자 프로그램이 실행되는 동안에는 커널 메모리 대부분을 페이지 테이블에서 제외하여 투기적으로도 읽을 수 없게 한다</p><p class="explanation">기존 OS는 전환을 빠르게 하기 위해 사용자 프로세스의 <a class="term-link" href="/ko/term/page-table/">페이지 테이블</a>에도 커널 메모리를 (접근 금지 표시를 붙여) 올려 두었습니다. <a class="term-link" href="/ko/term/meltdown/">Meltdown</a>에서는 그 표시를 확인하기 전에 투기적으로 읽을 수 있었으므로, <a class="term-link" href="/ko/term/kernel-page-table-isolation/">KPTI</a>에서는 사용자 프로그램이 실행되는 동안 커널 페이지를 매핑 자체에서 제외했습니다. 주소 변환이 불가능하면 투기적으로도 읽을 수 없습니다. 다만 <a class="term-link" href="/ko/term/system-call/">시스템 콜</a>마다 페이지 테이블을 전환하므로 성능이 떨어집니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>Meltdown과 Spectre는 같은 건가요?</h3>
+  <p>아닙니다. 둘 다 투기 실행의 캐시 흔적을 통해 데이터를 유출하지만, Meltdown은 지연된 권한 검사를 넘어 커널 메모리를 읽고, Spectre는 피해자 프로그램 자신의 투기 실행을 속여 비밀 데이터에 접근하게 만듭니다.</p>
+  <h3>Meltdown 패치를 적용하면 컴퓨터가 느려지는 이유는?</h3>
+  <p>KPTI는 사용자 모드와 커널 모드 사이를 전환할 때마다 페이지 테이블을 바꾸므로, 시스템 콜과 인터럽트마다 오버헤드와 TLB 미스가 추가됩니다. 시스템 콜을 많이 하는 프로그램이 가장 큰 영향을 받습니다.</p>
+  <h3>최신 CPU도 여전히 Meltdown에 취약한가요?</h3>
+  <p>공개 이후 설계된 프로세서는 일반적으로 폴트를 일으킨 데이터가 의존 명령어에 도달하지 못하게 차단하며, 운영체제는 그런 CPU를 감지해 KPTI를 생략합니다. 영향을 받는 구형 CPU는 여전히 소프트웨어 완화책에 의존합니다.</p>
+</section>
 <section>
   <h2>해설 속 Meltdown</h2>
   <ul class="term-quotes"><li><p>Meltdown에서는 그 표시를 확인하기 전에 투기적으로 읽을 수 있었으므로, KPTI에서는 사용자 프로그램이 실행되는 동안 커널 페이지를 매핑 자체에서 제외했습니다.</p><a href="/ko/q/hw-security/hw-security-009/">Meltdown에 대한 소프트웨어 대책으로 도입된 KPTI(커널 페이지 테이블 격리)의 개념으로 올바른 것…</a></li><li><p>2018년에 공표된 Spectre와 Meltdown은 투기적으로 실행한 명령어의 결과가 취소되어도 읽어 들인 데이터가 캐시에 남는 것을 악용하여, 접근 시간의 차이(사이드 채널)로 본래 읽을 수 없는 비밀 데이터를 추측하는 공격입니다.</p><a href="/ko/q/cpu/cpu-027/">투기적 실행의 흔적이 캐시에 남는 것을 악용하여, 본래 접근할 수 없는 데이터를 추측하는 공격이 밝혀진 취…</a></li></ul>

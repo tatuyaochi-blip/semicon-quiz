@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Symboltabelle","item":"https://semiconroom.com/de/term/symbol-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Symboltabelle","description":"Liste von Namen und Adressen von Funktionen und Variablen in Objekt- und ausführbaren Dateien. Sie wird beim Linken und Debuggen benötigt und lässt sich mit strip entfernen.","url":"https://semiconroom.com/de/term/symbol-table/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Symboltabelle","item":"https://semiconroom.com/de/term/symbol-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Symboltabelle","description":"Liste von Namen und Adressen von Funktionen und Variablen in Objekt- und ausführbaren Dateien. Sie wird beim Linken und Debuggen benötigt und lässt sich mit strip entfernen.","url":"https://semiconroom.com/de/term/symbol-table/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Symboltabelle einer ausführbaren Datei oder Objektdatei anzeigen","acceptedAnswer":{"@type":"Answer","text":"Unter Linux listet nm Symbole mit einem Ein-Buchstaben-Typ auf, und readelf -s zeigt die vollständigen ELF-Symboltabellen einschließlich Größe, Typ und Bindung. objdump -t ist eine weitere Möglichkeit."}},{"@type":"Question","name":"Was bedeuten T und U in der Ausgabe von nm?","acceptedAnswer":{"@type":"Answer","text":"T kennzeichnet ein in der Text-(Code-)Sektion definiertes Symbol, typischerweise eine globale Funktion, und U ein undefiniertes Symbol, das diese Datei referenziert, aber nicht definiert. Kleinbuchstaben kennzeichnen lokale Symbole."}},{"@type":"Question","name":"Kann eine gestrippte Binärdatei noch debuggt werden?","acceptedAnswer":{"@type":"Answer","text":"Ja, aber Stacktraces zeigen Adressen statt Funktionsnamen, sofern dem Debugger nicht separat gesicherte Debug-Informationen oder Symboldateien zur Verfügung stehen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/linker-loader/">Linker, Loader und ausführbare Formate</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was ein Eintrag enthält</h2>
+  <p>Jeder Eintrag einer Symboltabelle beschreibt eine benannte Entität. Im unter Linux verwendeten <a class="term-link" href="/de/term/executable-and-linkable-format/">ELF (Executable and Linkable Format)</a> erfasst ein Eintrag den Namen (als Offset in eine String-Tabelle), den Wert (eine Adresse oder in einer <a class="term-link" href="/de/term/object-file/">Objektdatei</a> einen Offset innerhalb einer Sektion), die Größe, den Typ wie Funktion oder Datenobjekt, die Bindung (lokal, global oder weak) und die Sektion, in der das Symbol definiert ist. Ein Symbol, das in dieser Datei referenziert, aber nicht definiert wird, ist als undefiniert markiert; das sind die Referenzen, die der <a class="term-link" href="/de/term/linker/">Linker</a> aus anderen Objektdateien oder Bibliotheken auflösen muss.</p>
+</section>
+<section class="term-about">
+  <h2>Wie der Linker sie nutzt</h2>
+  <p>Das Linken beginnt mit der <a class="term-link" href="/de/term/symbol-resolution/">Symbolauflösung</a>: Der <a class="term-link" href="/de/term/linker/">Linker</a> sammelt die Symboltabellen aller Eingabedateien und ordnet jeder undefinierten Referenz genau eine Definition zu. Zwei starke globale Definitionen desselben Namens führen zu einem Fehler wegen Mehrfachdefinition, eine schwache (weak) Definition weicht einer starken, und eine Referenz ohne Definition führt zu einem Fehler wegen undefinierter Referenz. Sobald jedes Symbol eine endgültige Adresse hat, verarbeitet der Linker die Relokationseinträge und passt jeden Befehl und jedes Datenwort an, das auf ein Symbol verweist. Lokale Symbole, etwa static-Funktionen in C, nehmen nie an der dateiübergreifenden Zuordnung teil.</p>
+</section>
+<section class="term-about">
+  <h2>Statische Symbole, dynamische Symbole und strip</h2>
+  <p><a class="term-link" href="/de/term/executable-and-linkable-format/">ELF</a>-Dateien enthalten zwei Symboltabellen. Die vollständige Tabelle (.symtab) dient dem statischen <a class="term-link" href="/de/term/linker/">Linker</a> und Debuggern; die dynamische Tabelle (.dynsym) listet nur die Symbole auf, die beim Laden zwischen einer ausführbaren Datei und ihren gemeinsam genutzten Bibliotheken aufgelöst werden müssen. Das Ausführen von strip entfernt .symtab und Debug-Sektionen wie DWARF-Zeileninformationen und verkleinert so die Datei, lässt aber .dynsym bestehen, weil das Programm ohne sie nicht laufen kann. Entwickler sichern die Debug-Informationen vor dem Strippen oft in einer separaten Datei, damit Abstürze in ausgelieferten Binärdateien weiterhin symbolisiert werden können. Werkzeuge wie nm und readelf -s listen die Symbole einer Datei auf.</p>
+</section>
+<section class="term-about">
+  <h2>Die Symboltabelle des Compilers</h2>
+  <p>Derselbe Begriff bezeichnet auch eine andere Struktur im Compiler. Während der semantischen Analyse führt der Compiler eine Tabelle, typischerweise nach verschachtelten Gültigkeitsbereichen organisierte Hashtabellen, die jeden Bezeichner seiner Deklaration, seinem Typ und seiner Speicherklasse zuordnet. Sie beantwortet Fragen wie, welche Variable x an dieser Stelle meint und ob eine Funktion mit passenden Argumenten deklariert wurde. Diese Tabelle existiert nur während der Kompilierung. Die Symboltabelle der <a class="term-link" href="/de/term/object-file/">Objektdatei</a> ist ihre dauerhafte Ausgabe und enthält nur die Namen, die für Linken, <a class="term-link" href="/de/term/relocation/">Relokation</a> und Debugging relevant sind.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Symboltabelle</h2>
   <article class="q-mini" data-qid="linker-loader-001" data-cat="linker-loader" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Symboltabelle und Debug-Informationen werden entfernt; die Datei wird kleiner, aber Funktionsnamen usw. sind im Debugger schlechter sichtbar</p><p class="explanation">Ausführbare Dateien können eine <a class="term-link" href="/de/term/symbol-table/">Symboltabelle</a> mit den Namen von Funktionen und Variablen sowie Debug-Informationen enthalten, die Befehle den Zeilen des Quellcodes zuordnen. Sie sind für die Ausführung nicht nötig; mit strip entfernt, wird die Datei kleiner. Bei der Fehlersuche sind dann jedoch Funktionsnamen und Zeilennummern nicht mehr sichtbar, weshalb die Informationen vor dem Entfernen teils separat aufbewahrt werden. Für <a class="term-link" href="/de/term/dynamic-linking/">dynamisches Linken</a> benötigte Symbole bleiben erhalten.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Symboltabelle einer ausführbaren Datei oder Objektdatei anzeigen</h3>
+  <p>Unter Linux listet nm Symbole mit einem Ein-Buchstaben-Typ auf, und readelf -s zeigt die vollständigen ELF-Symboltabellen einschließlich Größe, Typ und Bindung. objdump -t ist eine weitere Möglichkeit.</p>
+  <h3>Was bedeuten T und U in der Ausgabe von nm?</h3>
+  <p>T kennzeichnet ein in der Text-(Code-)Sektion definiertes Symbol, typischerweise eine globale Funktion, und U ein undefiniertes Symbol, das diese Datei referenziert, aber nicht definiert. Kleinbuchstaben kennzeichnen lokale Symbole.</p>
+  <h3>Kann eine gestrippte Binärdatei noch debuggt werden?</h3>
+  <p>Ja, aber Stacktraces zeigen Adressen statt Funktionsnamen, sofern dem Debugger nicht separat gesicherte Debug-Informationen oder Symboldateien zur Verfügung stehen.</p>
+</section>
 <section>
   <h2>„Symboltabelle“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Eine Objektdatei enthält den übersetzten Maschinencode der Funktionen der Datei, Initialwerte von Variablen, eine Liste der definierten und referenzierten Namen (Symboltabelle) sowie eine Liste der Stellen, an denen später Adressen eingetragen werden (Relokationsinformationen).</p><a href="/de/q/linker-loader/linker-loader-001/">Welche Aussage zur vom Compiler aus einer Quelldatei ausgeg…</a></li><li><p>Ausführbare Dateien können eine Symboltabelle mit den Namen von Funktionen und Variablen sowie Debug-Informationen enthalten, die Befehle den Zeilen des Quellcodes zuordnen.</p><a href="/de/q/linker-loader/linker-loader-033/">Was geschieht, wenn der Befehl strip auf eine ausführbare D…</a></li></ul>

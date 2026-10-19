@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Vorzeichenerweiterung","item":"https://semiconroom.com/de/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Vorzeichenerweiterung","description":"Kopieren des höchstwertigen Bits (Vorzeichen) in alle oberen Stellen, wenn eine vorzeichenbehaftete Ganzzahl mit wenigen Bits auf mehr Bits erweitert wird. Der Wert bleibt dabei unverändert. Das Auffüllen mit 0 heißt Nullerweiterung.","url":"https://semiconroom.com/de/term/sign-extension/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Vorzeichenerweiterung","item":"https://semiconroom.com/de/term/sign-extension/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Vorzeichenerweiterung","description":"Kopieren des höchstwertigen Bits (Vorzeichen) in alle oberen Stellen, wenn eine vorzeichenbehaftete Ganzzahl mit wenigen Bits auf mehr Bits erweitert wird. Der Wert bleibt dabei unverändert. Das Auffüllen mit 0 heißt Nullerweiterung.","url":"https://semiconroom.com/de/term/sign-extension/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Vorzeichenerweiterung und Nullerweiterung","acceptedAnswer":{"@type":"Answer","text":"Die Vorzeichenerweiterung füllt die neuen oberen Bits mit Kopien des ursprünglichen obersten Bits und erhält so den Wert einer vorzeichenbehafteten Zahl. Die Nullerweiterung füllt sie mit Nullen und erhält so den Wert einer vorzeichenlosen Zahl."}},{"@type":"Question","name":"Warum erweitert RISC-V addi seinen Immediate mit Vorzeichen?","acceptedAnswer":{"@type":"Answer","text":"Damit ein einzelner Befehl negative Konstanten addieren kann, etwa addi sp, sp, -16. Das 12-Bit-Feld deckt dann -2048 bis 2047 ab statt nur nichtnegative Werte."}},{"@type":"Question","name":"Wie erweitere ich einen Wert in C mit Vorzeichen?","acceptedAnswer":{"@type":"Answer","text":"Man speichert ihn in einem vorzeichenbehafteten Typ der ursprünglichen Breite, etwa int8_t oder int16_t, und weist ihn einem breiteren vorzeichenbehafteten Typ zu; die Konvertierung erweitert automatisch mit Vorzeichen, und Compiler erzeugen den passenden Befehl zur Vorzeichenerweiterung."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/isa-assembly/">Befehlssatz und Assembler</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum das Kopieren des Vorzeichenbits den Wert erhält</h2>
+  <p>Im n-Bit-<a class="term-link" href="/de/term/two-s-complement/">Zweierkomplement</a> hat das oberste Bit die Wertigkeit minus 2 hoch n-1, und die übrigen haben ihre üblichen positiven Wertigkeiten. Wird eine negative Zahl um ein Bit erweitert, kommt ein neues oberstes Bit mit der Wertigkeit minus 2 hoch n hinzu, und das alte oberste Bit wird zu positiven 2 hoch n-1; zusammen tragen sie weiterhin minus 2 hoch n-1 bei, sodass der Wert unverändert bleibt. Die Wiederholung für jedes hinzugefügte Bit begründet die Regel. Beispielsweise wird das 4-Bit-Muster 1010 (-6) zum 8-Bit-Muster 11111010, weiterhin -6.</p>
+</section>
+<section class="term-about">
+  <h2>Wo ISAs eine Vorzeichenerweiterung durchführen</h2>
+  <p>Immediates sind der häufigste Fall: Der 12-Bit-I-Typ-<a class="term-link" href="/de/term/immediate-operand/">Immediate</a> von RISC-V wird vorzeichenerweitert, sodass addi Werte von -2048 bis 2047 akzeptiert und negative Konstanten ohne separaten Subtraktionsbefehl funktionieren. Ladebefehle gibt es paarweise: lb und lh erweitern mit Vorzeichen, während lbu und lhu mit Nullen erweitern. Bei RV64 erweitert lw einen 32-Bit-Wert vorzeichenrichtig auf 64 Bit und lwu mit Nullen, und Wortbefehle wie addw erweitern ihre 32-Bit-Ergebnisse mit Vorzeichen. x86 bietet movsx und movzx für denselben Zweck. In Hardware kostet die Vorzeichenerweiterung nichts weiter, als das oberste Bit mit allen neuen Stellen zu verdrahten.</p>
+</section>
+<section class="term-about">
+  <h2>Ein klassischer Fallstrick: lui plus addi</h2>
+  <p>Um eine 32-Bit-Konstante zu bilden, verwendet RISC-V-Code lui für die oberen 20 Bit und addi für die unteren 12. Da addi seinen <a class="term-link" href="/de/term/immediate-operand/">Immediate</a> vorzeichenerweitert, wird ein unterer Teil von 0x800 oder mehr als negative Zahl behandelt, nämlich als sein Wert minus 4096. <a class="term-link" href="/de/term/assembler/">Assembler</a> gleichen das aus, indem sie den oberen Teil um 1 erhöhen, wann immer Bit 11 der Konstante gesetzt ist, und die Relokationsoperatoren %hi und %lo tun dies automatisch. Handgeschriebener Code, der die Konstante naiv aufteilt, erzeugt einen Wert, der um genau 4096 abweicht, ein Fehler, der beim Testen leicht übersehen wird.</p>
+</section>
+<section class="term-about">
+  <h2>Vorzeichen- und Nullerweiterung in C</h2>
+  <p>C wählt die Erweiterung anhand des Quelltyps: Die Konvertierung eines signed char oder int16_t in int erweitert mit Vorzeichen, während die Konvertierung eines vorzeichenlosen Typs mit Nullen erweitert. Einfaches char ist auf manchen Plattformen vorzeichenbehaftet und auf anderen vorzeichenlos, zum Beispiel vorzeichenbehaftet auf x86, aber vorzeichenlos auf den meisten Arm-Linux-Systemen, sodass ein Bytewert von 0xFF je nach Zielplattform zu -1 oder 255 werden kann. Dieser Unterschied verursacht Fehler, wenn Bytes mit Konstanten verglichen oder als Array-Indizes verwendet werden. Die Verwendung von unsigned char oder uint8_t für rohe Bytes vermeidet die Mehrdeutigkeit.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Vorzeichenerweiterung</h2>
   <article class="q-mini" data-qid="isa-assembly-019" data-cat="isa-assembly" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. lb ergibt 0xFFFFFF80 (-128), lbu ergibt 0x00000080 (128)</p><p class="explanation">lb (load byte) betrachtet das gelesene Byte als vorzeichenbehaftet und kopiert das höchste Bit in die oberen 24 Bit (<a class="term-link" href="/de/term/sign-extension/">Vorzeichenerweiterung</a>). 0x80 hat das höchste Bit 1, ergibt also 0xFFFFFF80, d. h. −128. lbu (load byte unsigned) füllt oben mit 0 auf (Nullerweiterung) und ergibt 128. Beim Lesen von signed char und unsigned char in C verwendet der Compiler diese beiden Befehle jeweils passend.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Vorzeichenerweiterung und Nullerweiterung</h3>
+  <p>Die Vorzeichenerweiterung füllt die neuen oberen Bits mit Kopien des ursprünglichen obersten Bits und erhält so den Wert einer vorzeichenbehafteten Zahl. Die Nullerweiterung füllt sie mit Nullen und erhält so den Wert einer vorzeichenlosen Zahl.</p>
+  <h3>Warum erweitert RISC-V addi seinen Immediate mit Vorzeichen?</h3>
+  <p>Damit ein einzelner Befehl negative Konstanten addieren kann, etwa addi sp, sp, -16. Das 12-Bit-Feld deckt dann -2048 bis 2047 ab statt nur nichtnegative Werte.</p>
+  <h3>Wie erweitere ich einen Wert in C mit Vorzeichen?</h3>
+  <p>Man speichert ihn in einem vorzeichenbehafteten Typ der ursprünglichen Breite, etwa int8_t oder int16_t, und weist ihn einem breiteren vorzeichenbehafteten Typ zu; die Konvertierung erweitert automatisch mit Vorzeichen, und Compiler erzeugen den passenden Befehl zur Vorzeichenerweiterung.</p>
+</section>
 <section>
   <h2>„Vorzeichenerweiterung“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Dank der Vorzeichenerweiterung lässt sich durch Addieren eines negativen Immediate subtrahieren.</p><a href="/de/q/isa-assembly/isa-assembly-019/">Welchen 32-Bit-Wert enthält t0 nach Ausführung von „addi t0…</a></li><li><p>lb (load byte) betrachtet das gelesene Byte als vorzeichenbehaftet und kopiert das höchste Bit in die oberen 24 Bit (Vorzeichenerweiterung).</p><a href="/de/q/isa-assembly/isa-assembly-020/">Im Speicher steht in einem Byte der Wert 0x80. Welche Kombi…</a></li></ul>

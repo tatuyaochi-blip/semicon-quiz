@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"스래싱(Thrashing)","item":"https://semiconroom.com/ko/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"스래싱(Thrashing)","description":"물리 메모리가 부족하여 페이지의 쫓아내기와 읽어 들이기가 빈번하게 반복되어 처리가 거의 진행되지 않는 상태. 실행하는 프로세스를 줄이거나 메모리를 늘리면 해소된다.","url":"https://semiconroom.com/ko/term/thrashing/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"스래싱(Thrashing)","item":"https://semiconroom.com/ko/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"스래싱(Thrashing)","description":"물리 메모리가 부족하여 페이지의 쫓아내기와 읽어 들이기가 빈번하게 반복되어 처리가 거의 진행되지 않는 상태. 실행하는 프로세스를 줄이거나 메모리를 늘리면 해소된다.","url":"https://semiconroom.com/ko/term/thrashing/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"운영체제에서 스래싱은 왜 발생하나요?","acceptedAnswer":{"@type":"Answer","text":"실행 중인 프로세스들의 워킹 세트 합이 물리 메모리를 넘어, 페이지가 쫓겨났다가 거의 곧바로 다시 필요해지기 때문입니다. 그 결과 시스템이 유용한 작업 대신 페이징 I/O에 매달리게 됩니다."}},{"@type":"Question","name":"스래싱은 어떻게 해결하나요?","acceptedAnswer":{"@type":"Answer","text":"활성 프로세스 수를 줄이거나, 물리 메모리를 늘리거나, 각 프로세스의 실제 필요에 따라 프레임을 할당하는 워킹 세트 정책이나 페이지 폴트 빈도 정책을 사용합니다."}},{"@type":"Question","name":"스래싱과 벨라디의 모순은 어떻게 다른가요?","acceptedAnswer":{"@type":"Answer","text":"스래싱은 메모리 과잉 할당으로 인한 성능 붕괴이고, 벨라디의 모순은 FIFO 교체에서 프레임이 더 많을 때 오히려 페이지 폴트가 늘어나는 직관에 반하는 사례입니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/os-hardware/">OS와 하드웨어</a></p>
 </article>
-
+<section class="term-about">
+  <h2>발생 원인</h2>
+  <p>각 프로세스에는 짧은 시간 동안 활발히 사용하는 페이지의 집합인 워킹 세트가 있습니다. 실행 중인 모든 프로세스의 워킹 세트를 합친 크기가 물리 메모리를 넘으면, 한 프로세스를 위해 페이지를 적재할 때 다른 프로세스나 같은 프로세스가 거의 곧바로 필요로 할 페이지가 쫓겨납니다. 그 페이지는 다시 폴트로 적재되면서 또 다른 필요한 페이지를 쫓아냅니다. <a class="term-link" href="/ko/term/page-fault/">페이지 폴트</a>는 디스크나 SSD로 가며, DRAM의 약 100 ns에 비해 수십 µs에서 수 ms가 걸리므로, 시스템은 거의 모든 시간을 페이징 I/O를 기다리는 데 씁니다.</p>
+</section>
+<section class="term-about">
+  <h2>악순환의 함정</h2>
+  <p>교과서의 고전적인 시나리오는 스래싱이 스스로를 악화시키는 과정을 보여 줍니다. 프로세스들이 <a class="term-link" href="/ko/term/page-fault/">페이지 폴트</a>를 기다리면 CPU 이용률이 떨어집니다. 이용률을 높이려고 더 많은 프로세스를 투입하는 단순한 스케줄러는 프로세스당 사용 가능한 메모리를 줄여, 폴트가 더 늘고 이용률은 더 낮아집니다. <a class="term-link" href="/ko/term/throughput/">처리량</a>은 완만하게 저하되는 것이 아니라 붕괴합니다. 증상은 매우 높은 페이지 폴트율, 포화된 스왑 I/O, 높은 I/O 대기 시간, 그리고 기계가 바빠 보이는데도 유용한 연산이 거의 없다는 것입니다.</p>
+</section>
+<section class="term-about">
+  <h2>해결책</h2>
+  <p>근본적인 해결책은 메모리 수요를 맞추는 것입니다. 프로세스 전체를 일시 중지하거나 스왑 아웃하여 동시에 실행하는 프로세스 수를 줄이거나, 물리 메모리를 늘립니다. 워킹 세트 기반 정책은 워킹 세트를 수용할 수 있을 때만 프로세스를 받아들입니다. <a class="term-link" href="/ko/term/page-fault/">페이지 폴트</a> 빈도(PFF) 제어는 프로세스의 폴트율이 상한을 넘으면 프레임을 더 주고, 하한 아래로 떨어지면 프레임을 회수합니다. 프로그램 스스로도 지역성을 개선하여 워킹 세트를 줄이는 방식으로 도울 수 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>스래싱과 관련 용어의 차이</h2>
+  <p>스래싱은 메모리 부족으로 인한 지속적인 <a class="term-link" href="/ko/term/throughput/">처리량</a> 붕괴입니다. FIFO 교체에서 프레임을 더 주었는데 폴트가 오히려 늘어나는 특정 사례인 벨라디의 모순(Bélády&#39;s anomaly)과는 다르며, <a class="term-link" href="/ko/term/lru-replacement/">LRU</a> 같은 스택 알고리즘에서는 이 모순이 나타날 수 없습니다. 또한 각 작업이 다른 작업이 가진 자원을 기다리며 멈추는 교착 상태(<a class="term-link" href="/ko/term/deadlock/">deadlock</a>)와도 다릅니다. 이 용어는 캐시와 <a class="term-link" href="/ko/term/tlb/">TLB</a>에도 쓰입니다. 캐시 스래싱은 흔히 같은 세트에 매핑되는 주소들 때문에 라인들이 서로를 반복적으로 내보내는 현상으로, 같은 패턴이 더 작은 규모에서 나타나는 것입니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 스래싱(Thrashing) 관련 문제</h2>
   <article class="q-mini" data-qid="os-hardware-020" data-cat="os-hardware" data-answer="1" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 B예요.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 스래싱</p><p class="explanation">동시에 동작하는 프로세스가 사용하는 페이지의 합계(워킹 셋)가 물리 메모리보다 커지면, 필요한 페이지를 읽어 들일 때마다 다른 프로세스가 사용하는 페이지를 내보내고 곧바로 그것이 다시 필요해지는 일이 반복됩니다. 디스크 읽기·쓰기를 기다리는 시간만 늘어나고 CPU 이용률도 떨어집니다. 이것이 <a class="term-link" href="/ko/term/thrashing/">스래싱</a>이며, 실행하는 프로세스를 줄이거나 메모리를 늘리면 해소됩니다. <a class="term-link" href="/ko/term/deadlock/">데드락</a>은 서로의 자원을 기다리며 멈추는 상태입니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>운영체제에서 스래싱은 왜 발생하나요?</h3>
+  <p>실행 중인 프로세스들의 워킹 세트 합이 물리 메모리를 넘어, 페이지가 쫓겨났다가 거의 곧바로 다시 필요해지기 때문입니다. 그 결과 시스템이 유용한 작업 대신 페이징 I/O에 매달리게 됩니다.</p>
+  <h3>스래싱은 어떻게 해결하나요?</h3>
+  <p>활성 프로세스 수를 줄이거나, 물리 메모리를 늘리거나, 각 프로세스의 실제 필요에 따라 프레임을 할당하는 워킹 세트 정책이나 페이지 폴트 빈도 정책을 사용합니다.</p>
+  <h3>스래싱과 벨라디의 모순은 어떻게 다른가요?</h3>
+  <p>스래싱은 메모리 과잉 할당으로 인한 성능 붕괴이고, 벨라디의 모순은 FIFO 교체에서 프레임이 더 많을 때 오히려 페이지 폴트가 늘어나는 직관에 반하는 사례입니다.</p>
+</section>
 <section>
   <h2>해설 속 스래싱(Thrashing)</h2>
   <ul class="term-quotes"><li><p>스래싱은 메모리 부족으로 교체가 계속되는 상태, 카피 온 라이트는 쓰기 시 복제하는 방식입니다.</p><a href="/ko/q/os-hardware/os-hardware-020/">페이지 교체에서 FIFO 방식을 사용하면 물리 메모리의 페이지 수를 늘렸는데도 페이지 폴트가 늘어나는 경우…</a></li><li><p>이것이 스래싱이며, 실행하는 프로세스를 줄이거나 메모리를 늘리면 해소됩니다.</p><a href="/ko/q/os-hardware/os-hardware-021/">물리 메모리가 부족하여 페이지를 내보내고 읽어 들이는 일만 계속되어 처리가 거의 진행되지 않는 상태를 무엇…</a></li></ul>

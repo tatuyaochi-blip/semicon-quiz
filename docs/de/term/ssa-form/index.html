@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"SSA-Form (Static Single Assignment)","item":"https://semiconroom.com/de/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA-Form (Static Single Assignment)","description":"Zwischendarstellung, in der Variablen so umbenannt sind, dass jeder Variablen im Programm genau einmal ein Wert zugewiesen wird. An Zusammenflüssen wählt eine φ-Funktion den Wert. Die Beziehung zwischen Definition und Verwendung wird klar, und Optimierungen werden einfacher.","url":"https://semiconroom.com/de/term/ssa-form/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"SSA-Form (Static Single Assignment)","item":"https://semiconroom.com/de/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA-Form (Static Single Assignment)","description":"Zwischendarstellung, in der Variablen so umbenannt sind, dass jeder Variablen im Programm genau einmal ein Wert zugewiesen wird. An Zusammenflüssen wählt eine φ-Funktion den Wert. Die Beziehung zwischen Definition und Verwendung wird klar, und Optimierungen werden einfacher.","url":"https://semiconroom.com/de/term/ssa-form/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wofür steht SSA im Compilerbau?","acceptedAnswer":{"@type":"Answer","text":"Static Single Assignment. Jede Variable in der IR wird an genau einer Stelle im Programmtext zugewiesen, und φ-Funktionen führen Werte dort zusammen, wo Kontrollflusspfade zusammenlaufen."}},{"@type":"Question","name":"Wie funktioniert SSA mit Schleifen, wenn eine Variable nur einmal zugewiesen werden darf?","acceptedAnswer":{"@type":"Answer","text":"Die einmalige Zuweisung ist statisch, nicht dynamisch. Eine φ-Funktion im Schleifenkopf führt den Wert, der in die Schleife eintritt, mit dem in der vorherigen Iteration berechneten Wert zusammen, und diese eine Definition wird in jeder Iteration ausgeführt."}},{"@type":"Question","name":"Wo werden φ-Funktionen platziert?","acceptedAnswer":{"@type":"Answer","text":"Am Anfang von Blöcken, an denen verschiedene Definitionen derselben ursprünglichen Variable über verschiedene eingehende Kanten ankommen können. Algorithmen auf Basis von Dominanzgrenzen finden diese Stellen, ohne unnötige φ-Funktionen einzufügen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/compiler/">Compiler</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Umbenennung: eine Definition pro Name</h2>
+  <p>Die SSA-Form (Static Single Assignment) gibt jeder Zuweisung einen eigenen Variablennamen. In geradlinigem Code ist das bloße Umbenennung: x = 1; x = x + 2 wird zu x1 = 1; x2 = x1 + 2, und jede spätere Verwendung bezieht sich auf die Version, die sie erreicht. Das Wort statisch ist wichtig: Jeder Name hat genau eine Zuweisung im Programmtext, auch wenn diese Zuweisung in einer Schleife viele Male ausgeführt wird. Da jede Verwendung genau eine Definition hat, sind die Definitions-Verwendungs-Beziehungen, die Optimierer brauchen, in den Namen selbst explizit, statt durch eine separate Analyse berechnet zu werden.</p>
+</section>
+<section class="term-about">
+  <h2>φ-Funktionen an Zusammenflusspunkten</h2>
+  <p>Bloßes Umbenennen versagt dort, wo der Kontrollfluss zusammenläuft, weil der Wert von x nach einem if-else davon abhängt, welcher Zweig ausgeführt wurde. SSA fügt am Anfang des Zusammenflussblocks eine φ-Funktion (Phi) ein, x3 = φ(x1, x2), mit einem Argument pro eingehender Kante; sie liefert das Argument der tatsächlich genommenen Kante. Schleifen brauchen dasselbe im Schleifenkopf, wo der Anfangswert mit dem Wert aus der vorherigen Iteration zusammengeführt wird. Standardalgorithmen zur Konstruktion platzieren φ-Funktionen nur dort, wo Definitionen aus verschiedenen Pfaden tatsächlich aufeinandertreffen, und nutzen dazu die Dominanzinformationen des Kontrollflussgraphen.</p>
+</section>
+<section class="term-about">
+  <h2>Warum Optimierer SSA mögen</h2>
+  <p>Mit einer einzigen Definition pro Name werden viele Optimierungen einfach und schnell. Die Konstantenpropagation folgt einfach jeder Definition zu ihren Verwendungen; die Elimination toten Codes entfernt Definitionen ohne Verwendungen; Global Value Numbering erkennt redundante Berechnungen durch Vergleich von Operationen auf denselben benannten Werten. Analysen können dünn (sparse) sein und entlang von Definitions-Verwendungs-Kanten arbeiten, statt ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> jeden Programmpunkt zu iterieren. Aus diesen Gründen sind die IRs vieler Produktionscompiler, darunter <a class="term-link" href="/de/term/llvm/">LLVM</a> <a class="term-link" href="/de/term/intermediate-representation/">IR</a>, in SSA-Form, meist für skalare Werte in virtuellen Registern, während auf den Speicher über explizite Loads und Stores zugegriffen wird.</p>
+</section>
+<section class="term-about">
+  <h2>SSA verlassen</h2>
+  <p>Prozessoren haben keinen φ-Befehl, daher wandelt der Compiler vor oder während der <a class="term-link" href="/de/term/register-allocation/">Registerzuteilung</a> aus der SSA-Form zurück. Jede φ-Funktion wird durch Kopierbefehle am Ende der Vorgängerblöcke ersetzt, sodass jeder eingehende Pfad den gewählten Wert an einen gemeinsamen Ort schreibt. Kanten, die einen Block mit mehreren Nachfolgern verlassen und in einen Block mit mehreren Vorgängern münden, müssen eventuell aufgeteilt werden, um Platz für diese Kopien zu haben. Die Registerzuteilung versucht dann, die Kopien zu verschmelzen (Coalescing), indem sie beiden Seiten dasselbe Register zuweist, sodass die meisten von ihnen verschwinden.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu SSA-Form (Static Single Assignment)</h2>
   <article class="q-mini" data-qid="compiler-008" data-cat="compiler" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Jeder Variablen wird im Programm genau einmal ein Wert zugewiesen</p><p class="explanation">In der <a class="term-link" href="/de/term/ssa-form/">SSA-Form</a> werden Variablen so umbenannt, dass jede nur einmal zugewiesen wird, und an Zusammenflussstellen wird der Wert per φ-Funktion ausgewählt. Wird x z. B. zweimal zugewiesen, entstehen x1 und x2, sodass klar ist, welches verwendet wird. Da Definition-Verwendung-Beziehungen eindeutig sind, lassen sich Optimierungen wie Konstantenpropagierung und Entfernung von totem Code leichter durchführen. Verzweigungen werden durch φ-Funktionen behandelt, die Verzweigungsbefehle verschwinden also nicht. Variablen liegen auch nicht im Speicher, sondern werden meist als Registerkandidaten behandelt.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wofür steht SSA im Compilerbau?</h3>
+  <p>Static Single Assignment. Jede Variable in der IR wird an genau einer Stelle im Programmtext zugewiesen, und φ-Funktionen führen Werte dort zusammen, wo Kontrollflusspfade zusammenlaufen.</p>
+  <h3>Wie funktioniert SSA mit Schleifen, wenn eine Variable nur einmal zugewiesen werden darf?</h3>
+  <p>Die einmalige Zuweisung ist statisch, nicht dynamisch. Eine φ-Funktion im Schleifenkopf führt den Wert, der in die Schleife eintritt, mit dem in der vorherigen Iteration berechneten Wert zusammen, und diese eine Definition wird in jeder Iteration ausgeführt.</p>
+  <h3>Wo werden φ-Funktionen platziert?</h3>
+  <p>Am Anfang von Blöcken, an denen verschiedene Definitionen derselben ursprünglichen Variable über verschiedene eingehende Kanten ankommen können. Algorithmen auf Basis von Dominanzgrenzen finden diese Stellen, ohne unnötige φ-Funktionen einzufügen.</p>
+</section>
 <section>
   <h2>„SSA-Form (Static Single Assignment)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>In der SSA-Form werden Variablen so umbenannt, dass jede nur einmal zugewiesen wird, und an Zusammenflussstellen wird der Wert per φ-Funktion ausgewählt.</p><a href="/de/q/compiler/compiler-008/">Welche Eigenschaft der Zwischendarstellung in SSA-Form ist …</a></li><li><p>In der SSA-Form erhalten die Zuweisungen im then-Zweig x1 und im else-Zweig x2 unterschiedliche Namen, sodass bei der Berechnung von y nach dem Zusammenfluss ausgedrückt werden muss, welches x zu verwenden ist.</p><a href="/de/q/compiler/compiler-009/">Wandelt man den obigen Code in SSA-Form um, so erscheint na…</a></li></ul>

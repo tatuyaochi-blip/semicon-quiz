@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Flash-ADC","item":"https://semiconroom.com/de/term/flash-adc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Flash-ADC","description":"Schnellster AD-Wandler, der den Eingang mit vielen parallel angeordneten Komparatoren auf einmal vergleicht. Für N Bit sind 2ᴺ − 1 Komparatoren nötig; bei höherer Auflösung wächst die Schaltung stark an.","url":"https://semiconroom.com/de/term/flash-adc/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Flash-ADC","item":"https://semiconroom.com/de/term/flash-adc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Flash-ADC","description":"Schnellster AD-Wandler, der den Eingang mit vielen parallel angeordneten Komparatoren auf einmal vergleicht. Für N Bit sind 2ᴺ − 1 Komparatoren nötig; bei höherer Auflösung wächst die Schaltung stark an.","url":"https://semiconroom.com/de/term/flash-adc/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wie viele Komparatoren braucht ein N-Bit-Flash-ADC?","acceptedAnswer":{"@type":"Answer","text":"Er braucht 2ᴺ − 1 Komparatoren, einen für jede Schwelle zwischen benachbarten Codes. Ein 3-Bit-Flash-ADC verwendet 7, ein 8-Bit-Flash-ADC 255."}},{"@type":"Question","name":"Warum sind Flash-ADCs auf geringe Auflösung beschränkt?","acceptedAnswer":{"@type":"Answer","text":"Komparatoranzahl, Leistungsaufnahme, Fläche und Eingangskapazität verdoppeln sich mit jedem Bit, während die Komparatoroffsets mit dem LSB schrumpfen müssen. Jenseits von etwa 8 Bit sind Pipeline- oder SAR-Architekturen praktikabler."}},{"@type":"Question","name":"Was ist ein Thermometercode beim ADC?","acceptedAnswer":{"@type":"Answer","text":"Er ist die Rohausgabe der Komparatorbank, eine Folge von Einsen bis zum Eingangspegel, gefolgt von Nullen darüber. Ein Encoder wandelt ihn in eine Binärzahl um."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Fachgebiet: <a href="/de/c/adc-dac/">A/D- und D/A-Wandlung</a></p>
 </article>
+<section class="term-about">
+  <h2>Wie ein Flash-Wandler funktioniert</h2>
+  <p>Ein Flash-Analog-Digital-Wandler (ADC) erzeugt mit einer Widerstandskette 2ᴺ − 1 Referenzspannungen im Abstand von einem niederwertigsten Bit (LSB) und gibt jedem Abgriff einen eigenen <a class="term-link" href="/de/term/comparator/">Komparator</a>. Alle Komparatoren sehen den Eingang im selben Augenblick, sodass jeder Komparator unterhalb des Eingangspegels 1 und jeder oberhalb 0 ausgibt. Dieses Muster ist ein Thermometercode, den ein Encoder in ein N-Bit-Binärwort umwandelt. Die gesamte Wandlung dauert eine Komparatorentscheidung plus Codierung, weshalb Flash-Wandler mehrere Gigasamples pro Sekunde erreichen.</p>
+</section>
+<section class="term-about">
+  <h2>Warum er mit der Auflösung schlecht skaliert</h2>
+  <p>Jedes zusätzliche Bit verdoppelt die Anzahl der Komparatoren: 7 für 3 Bit, 255 für 8 Bit und 1023 für 10 Bit. Fläche und Leistungsaufnahme wachsen proportional, und die gesamte Eingangskapazität all dieser Komparatoren macht den Wandler bei hohen Frequenzen schwer ansteuerbar. Auch die Genauigkeit wird schwieriger, weil der Offset jedes Komparators deutlich unter 1 LSB bleiben muss und sich das LSB mit jedem zusätzlichen Bit halbiert. In der Praxis sind eigenständige Flash-Wandler daher auf etwa 6–8 Bit beschränkt.</p>
+</section>
+<section class="term-about">
+  <h2>Bubbles und Metastabilität</h2>
+  <p>Komparatoroffsets und kleine Timing-Fehlanpassungen können eine vereinzelte 0 innerhalb der Folge von Einsen im Thermometercode hinterlassen, ein Fehler, der Bubble genannt wird. Ein naiver Encoder kann aus einer Bubble einen großen Ausgangsfehler machen, daher ergänzen praktische Designs eine Bubble-Korrekturlogik, etwa durch Prüfung von drei benachbarten Komparatoren, oder codieren ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> <a class="term-link" href="/de/term/gray-code/">Gray-Code</a>, um den Schaden zu begrenzen. Ein <a class="term-link" href="/de/term/comparator/">Komparator</a>, dessen Eingang fast genau auf seiner Schwelle liegt, braucht unter Umständen auch zu lange für die Entscheidung, ein Metastabilitätsproblem, das Latches und Pipelining eindämmen helfen.</p>
+</section>
+<section class="term-about">
+  <h2>Flash vs. andere Architekturen</h2>
+  <p>Ein ADC mit sukzessiver Approximation (SAR) verwendet einen <a class="term-link" href="/de/term/comparator/">Komparator</a> und N Taktzyklen für eine binäre Suche und tauscht Geschwindigkeit gegen geringe Leistungsaufnahme und Fläche. Pipeline- und Subranging-ADCs teilen die Wandlung in Stufen auf, die jeweils einen kleinen Flash-Unterwandler mit wenigen Bit enthalten, und erreichen so mit weit weniger Komparatoren eine höhere Auflösung bei hoher Geschwindigkeit. Delta-Sigma-Wandler gehen noch weiter in Richtung Auflösung bei geringerer Bandbreite. Der Flash-Wandler lebt damit sowohl als schnellste eigenständige Option bei geringer Auflösung als auch als Baustein innerhalb anderer Architekturen fort.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wie viele Komparatoren braucht ein N-Bit-Flash-ADC?</h3>
+  <p>Er braucht 2ᴺ − 1 Komparatoren, einen für jede Schwelle zwischen benachbarten Codes. Ein 3-Bit-Flash-ADC verwendet 7, ein 8-Bit-Flash-ADC 255.</p>
+  <h3>Warum sind Flash-ADCs auf geringe Auflösung beschränkt?</h3>
+  <p>Komparatoranzahl, Leistungsaufnahme, Fläche und Eingangskapazität verdoppeln sich mit jedem Bit, während die Komparatoroffsets mit dem LSB schrumpfen müssen. Jenseits von etwa 8 Bit sind Pipeline- oder SAR-Architekturen praktikabler.</p>
+  <h3>Was ist ein Thermometercode beim ADC?</h3>
+  <p>Er ist die Rohausgabe der Komparatorbank, eine Folge von Einsen bis zum Eingangspegel, gefolgt von Nullen darüber. Ein Encoder wandelt ihn in eine Binärzahl um.</p>
+</section>
 
 
 

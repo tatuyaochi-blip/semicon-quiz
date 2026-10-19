@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Strength Reduction","item":"https://semiconroom.com/de/term/strength-reduction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Strength Reduction","description":"Optimierung, bei der aufwendige Operationen wie Multiplikationen durch einfachere wie Additionen oder Shifts ersetzt werden. Statt in einer Schleife jedes Mal i * 4 zu berechnen, wird z. B. jeweils 4 addiert.","url":"https://semiconroom.com/de/term/strength-reduction/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Strength Reduction","item":"https://semiconroom.com/de/term/strength-reduction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Strength Reduction","description":"Optimierung, bei der aufwendige Operationen wie Multiplikationen durch einfachere wie Additionen oder Shifts ersetzt werden. Statt in einer Schleife jedes Mal i * 4 zu berechnen, wird z. B. jeweils 4 addiert.","url":"https://semiconroom.com/de/term/strength-reduction/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Sollte ich für mehr Geschwindigkeit x um 1 nach links schieben statt x * 2 zu schreiben?","acceptedAnswer":{"@type":"Answer","text":"Im Allgemeinen nicht. Compiler wenden diese Strength Reduction automatisch an, wenn sie sich lohnt, und das Ausschreiben der Multiplikation hält den Code klar. Handgeschriebene Shifts auf vorzeichenbehafteten Werten können im Fall der Division bei negativen Zahlen sogar die Ergebnisse verändern."}},{"@type":"Question","name":"Was ist eine Induktionsvariable?","acceptedAnswer":{"@type":"Answer","text":"Eine Variable, deren Wert sich in jeder Schleifeniteration um einen konstanten Betrag ändert, etwa ein Schleifenzähler oder ein Zeiger, der mit fester Schrittweite weitergesetzt wird. Strength Reduction zielt auf Ausdrücke, die lineare Funktionen von Induktionsvariablen sind."}},{"@type":"Question","name":"Verändert Strength Reduction die Programmergebnisse?","acceptedAnswer":{"@type":"Answer","text":"Bei Ganzzahlarithmetik mit den Überlaufregeln der Sprache liefert sie identische Ergebnisse. Bei Gleitkommazahlen wenden Compiler sie nur an, wenn sie exakt ist, etwa bei der Multiplikation mit einer Zweierpotenz, es sei denn, gelockerte Mathematikoptionen sind aktiviert."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,9 +78,32 @@
   
   <p>Fachgebiet: <a href="/de/c/compiler/">Compiler</a></p>
 </article>
+<section class="term-about">
+  <h2>Strength Reduction in Schleifen</h2>
+  <p>Der klassische Fall ist ein Ausdruck, der linear mit einem Schleifenzähler wächst, etwa der Byte-Offset i * 4 für ein Array aus 4-Byte-Elementen. Der Compiler erkennt i als Induktionsvariable, also als Variable, die sich in jeder Iteration um einen festen Betrag ändert, und führt eine neue Variable ein, die bei 0 beginnt und bei jedem Durchlauf um 4 erhöht wird. Die Multiplikation verschwindet aus dem Schleifenrumpf. Oft wird der ursprüngliche Zähler dann außer für die Abbruchprüfung überflüssig, und die Elimination von Induktionsvariablen schreibt diese Prüfung auf die neue Variable um, sodass die alte entfernt werden kann.</p>
+</section>
+<section class="term-about">
+  <h2>Lokales Ersetzen aufwendiger Operationen</h2>
+  <p>Strength Reduction lässt sich auch auf einzelne Operationen mit konstanten Operanden anwenden. Die Multiplikation mit einer Zweierpotenz wird zu einem Linksshift, und x * 2 kann zu x + x werden. Die vorzeichenlose Division durch eine Zweierpotenz wird zu einem logischen Rechtsshift, und der vorzeichenlose Rest wird zu einem bitweisen AND mit einer Maske. Die vorzeichenbehaftete Division braucht eine kleine Korrektur, weil die Division in C zur Null hin rundet, während ein <a class="term-link" href="/de/term/arithmetic-shift/">arithmetischer Shift</a> in Richtung minus unendlich rundet. Die Division durch andere Konstanten wird üblicherweise durch eine Multiplikation mit einem vorab berechneten Festkomma-Kehrwert, gefolgt von einem Shift, ersetzt.</p>
+</section>
+<section class="term-about">
+  <h2>Strength Reduction im Vergleich zu verwandten Optimierungen</h2>
+  <p>Strength Reduction behält die Anzahl der Berechnungen bei, macht aber jede einzelne günstiger. Die Elimination gemeinsamer Teilausdrücke ist etwas anderes: Sie entfernt wiederholte Auswertungen desselben Ausdrucks, indem sie ihn einmal in eine temporäre Variable berechnet. <a class="term-link" href="/de/term/loop-unrolling/">Loop Unrolling</a> ist wiederum etwas anderes: Es vervielfacht den Schleifenrumpf, um den Overhead pro Iteration zu senken und Parallelität freizulegen. In der Praxis greifen sie ineinander; nach dem Unrolling können sich beispielsweise mehrere durch Strength Reduction vereinfachte Adressberechnungen einen Basiszeiger teilen, wobei unterschiedliche konstante Offsets in die Ladebefehle eingefaltet werden.</p>
+</section>
+<section class="term-about">
+  <h2>Wann es sich lohnt</h2>
+  <p>Auf modernen Prozessoren ist die Ganzzahlmultiplikation gepipelinet und dauert typischerweise nur wenige Takte, daher bringt ihr Ersetzen innerhalb einer Schleife weniger als früher, kann aber immer noch Abhängigkeitsketten verkürzen und Multipliziereinheiten freimachen. Die Ganzzahldivision bleibt viel langsamer, oft einige zehn Takte, daher ist die Umwandlung einer Division durch eine Konstante in Multiplikation und Shift weiterhin wertvoll. Bei Gleitkommazahlen ist Vorsicht geboten: Die Multiplikation mit 0,5 statt der Division durch 2,0 liefert identische Ergebnisse, doch das Ersetzen der Division durch eine beliebige Konstante durch die Multiplikation mit ihrem gerundeten Kehrwert kann das letzte Bit verändern.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Sollte ich für mehr Geschwindigkeit x um 1 nach links schieben statt x * 2 zu schreiben?</h3>
+  <p>Im Allgemeinen nicht. Compiler wenden diese Strength Reduction automatisch an, wenn sie sich lohnt, und das Ausschreiben der Multiplikation hält den Code klar. Handgeschriebene Shifts auf vorzeichenbehafteten Werten können im Fall der Division bei negativen Zahlen sogar die Ergebnisse verändern.</p>
+  <h3>Was ist eine Induktionsvariable?</h3>
+  <p>Eine Variable, deren Wert sich in jeder Schleifeniteration um einen konstanten Betrag ändert, etwa ein Schleifenzähler oder ein Zeiger, der mit fester Schrittweite weitergesetzt wird. Strength Reduction zielt auf Ausdrücke, die lineare Funktionen von Induktionsvariablen sind.</p>
+  <h3>Verändert Strength Reduction die Programmergebnisse?</h3>
+  <p>Bei Ganzzahlarithmetik mit den Überlaufregeln der Sprache liefert sie identische Ergebnisse. Bei Gleitkommazahlen wenden Compiler sie nur an, wenn sie exakt ist, etwa bei der Multiplikation mit einer Zweierpotenz, es sei denn, gelockerte Mathematikoptionen sind aktiviert.</p>
+</section>
 <section>
   <h2>„Strength Reduction“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Strength Reduction ist eine Optimierung, die aufwendige Operationen durch leichtere ersetzt.</p><a href="/de/q/compiler/compiler-017/">Welche Transformation ist richtig, wenn in der obigen Schle…</a></li><li><p>Das Ersetzen von Multiplikationen durch leichtere Operationen ist eine andere Optimierung namens Strength Reduction.</p><a href="/de/q/compiler/compiler-012/">Welche Aussage ist richtig, wenn auf den obigen Code die El…</a></li></ul>

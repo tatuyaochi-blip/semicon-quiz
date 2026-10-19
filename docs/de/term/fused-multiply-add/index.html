@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"FMA (Fused Multiply-Add)","item":"https://semiconroom.com/de/term/fused-multiply-add/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FMA (Fused Multiply-Add)","description":"Operation, die a × b + c in einem einzigen Befehl berechnet und nur einmal am Ende rundet, ohne das Zwischenprodukt zu runden. Schneller und genauer als getrennte Multiplikation und Addition. Häufig bei Matrixberechnungen.","url":"https://semiconroom.com/de/term/fused-multiply-add/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"FMA (Fused Multiply-Add)","item":"https://semiconroom.com/de/term/fused-multiply-add/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FMA (Fused Multiply-Add)","description":"Operation, die a × b + c in einem einzigen Befehl berechnet und nur einmal am Ende rundet, ohne das Zwischenprodukt zu runden. Schneller und genauer als getrennte Multiplikation und Addition. Häufig bei Matrixberechnungen.","url":"https://semiconroom.com/de/term/fused-multiply-add/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Warum ändern sich meine Gleitkommaergebnisse, wenn FMA aktiviert ist?","acceptedAnswer":{"@type":"Answer","text":"FMA rundet a × b + c einmal statt zweimal, daher kann ihr Ergebnis in den letzten Bits von separater Multiplikation und Addition abweichen. Das FMA-Ergebnis ist meist das genauere, aber nicht bitidentisch."}},{"@type":"Question","name":"Zählt eine FMA als ein oder zwei FLOPs?","acceptedAnswer":{"@type":"Answer","text":"Konventionell als zwei, eine Multiplikation und eine Addition, weshalb die Angaben zum Spitzendurchsatz von Hardware mit FMA-Einheiten doppelt so hoch sind wie die Zahl der FMA-Befehle pro Sekunde."}},{"@type":"Question","name":"Was macht die Funktion fma in C?","acceptedAnswer":{"@type":"Answer","text":"fma(x, y, z) aus math.h liefert x × y + z, berechnet wie mit unendlicher Genauigkeit und einmal auf den Ergebnistyp gerundet. Auf Hardware ohne FMA-Befehl wird sie in Software emuliert und kann langsam sein."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/computer-arithmetic/">Computerarithmetik</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Eine Rundung statt zwei</h2>
+  <p>Die Multiplikation zweier p-Bit-Mantissen ergibt ein exaktes Produkt von bis zu 2p Bit. Ein separater Multiplikationsbefehl rundet dieses Produkt auf p Bit, und die folgende Addition rundet erneut. Eine FMA-Einheit (Fused Multiply-Add) behält das Produkt in voller Breite, richtet c daran aus, addiert und rundet nur einmal, sodass das Ergebnis der exakte Wert von a × b + c, korrekt gerundet, ist. <a class="term-link" href="/de/term/ieee-754/">IEEE 754</a>-2008 hat diese Operation standardisiert, C stellt sie als Funktion fma bereit, und die meisten aktuellen CPU- und <a class="term-link" href="/de/term/gpu/">GPU</a>-Befehlssätze enthalten sie, zum Beispiel fmadd.s und fmadd.d in den Erweiterungen F und D von RISC-V.</p>
+</section>
+<section class="term-about">
+  <h2>Wo sich FMA auszahlt</h2>
+  <p>Skalarprodukte, Matrixmultiplikation und Faltung sind lange Ketten von Multiply-Accumulate-Schritten, daher halbiert FMA die Zahl der Befehle und verbessert zugleich die Genauigkeit. Die Polynomauswertung nach dem Horner-Schema hat in jedem Schritt die Form r = r × x + c und passt perfekt. Iterative Divisions- und Quadratwurzelalgorithmen sind auf FMA angewiesen, um Residuen genau zu berechnen. Ein eleganter Trick: Ist p das gerundete Produkt von a und b, liefert fma(a, b, -p) den exakten Rundungsfehler dieses Produkts, ein Baustein für Arithmetik mit erweiterter Genauigkeit. Angaben zur Gleitkomma-Spitzenleistung zählen jede FMA konventionell als zwei Operationen.</p>
+</section>
+<section class="term-about">
+  <h2>Fallstricke bei der Reproduzierbarkeit</h2>
+  <p>Da FMA anders rundet, kann ihre Aktivierung die letzten Bits der Ergebnisse gegenü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> separater Multiplikation und Addition verändern. Compiler können a * b + c je nach Sprachregeln und Flags automatisch zu einer FMA zusammenziehen (in GCC und Clang steuert dies -ffp-contract), sodass derselbe Quelltext auf verschiedenen Zielplattformen oder Optimierungsstufen leicht unterschiedliche Ergebnisse liefern kann. FMA kann auch erwartete Symmetrien brechen: Wird a * a - b * b als fma(a, a, -(b * b)) berechnet, liefert es bei a gleich b den Rundungsfehler von b * b statt exakt null.</p>
+</section>
+<section class="term-about">
+  <h2>FMA im Vergleich zu Multiply-Accumulate bei Ganzzahlen</h2>
+  <p>Ganzzahlige Multiply-Accumulate-Befehle berechnen ebenfalls a × b + c, doch Ganzzahlarithmetik kennt keine Rundung, daher spart ihre Verschmelzung nur Zeit und Register. Das Genauigkeitsargument ist spezifisch für Gleitkommazahlen. In digitalen Signalprozessoren und KI-Beschleunigern spielen breite Akkumulatoren eine ähnliche Rolle: Produkte schmaler Werte werden in einem breiteren Register summiert, sodass nicht bei jedem Schritt Genauigkeit verloren geht, und nur die Endsumme wird gerundet oder herunterskaliert.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu FMA (Fused Multiply-Add)</h2>
   <article class="q-mini" data-qid="computer-arithmetic-025" data-cat="computer-arithmetic" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Das Zwischenprodukt wird nicht gerundet, sondern nur am Ende einmal, sodass der Fehler kleiner und die Berechnung schneller ist</p><p class="explanation">Bei getrennten Multiplikations- und Additionsbefehlen wird das Ergebnis von a × b einmal gerundet und das Ergebnis der Addition von c nochmals, also zweimal. <a class="term-link" href="/de/term/fused-multiply-add/">FMA</a> addiert c zum intern ungerundeten Produkt und rundet nur einmal am Ende, sodass der Fehler kleiner wird. Da ein Befehl genügt, ist es schnell und wird bei Matrixprodukten, Polynomberechnungen und KI-Berechnungen häufig genutzt. Das Produkt wird nicht in eine ganze Zahl umgewandelt, und die Addition entfällt nicht. Wegen der unterschiedlichen Zahl der Rundungen kann das Ergebnis jedoch geringfügig von getrennter Berechnung abweichen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Warum ändern sich meine Gleitkommaergebnisse, wenn FMA aktiviert ist?</h3>
+  <p>FMA rundet a × b + c einmal statt zweimal, daher kann ihr Ergebnis in den letzten Bits von separater Multiplikation und Addition abweichen. Das FMA-Ergebnis ist meist das genauere, aber nicht bitidentisch.</p>
+  <h3>Zählt eine FMA als ein oder zwei FLOPs?</h3>
+  <p>Konventionell als zwei, eine Multiplikation und eine Addition, weshalb die Angaben zum Spitzendurchsatz von Hardware mit FMA-Einheiten doppelt so hoch sind wie die Zahl der FMA-Befehle pro Sekunde.</p>
+  <h3>Was macht die Funktion fma in C?</h3>
+  <p>fma(x, y, z) aus math.h liefert x × y + z, berechnet wie mit unendlicher Genauigkeit und einmal auf den Ergebnistyp gerundet. Auf Hardware ohne FMA-Befehl wird sie in Software emuliert und kann langsam sein.</p>
+</section>
 <section>
   <h2>„FMA (Fused Multiply-Add)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>FMA addiert c zum intern ungerundeten Produkt und rundet nur einmal am Ende, sodass der Fehler kleiner wird.</p><a href="/de/q/computer-arithmetic/computer-arithmetic-025/">Welchen Vorteil hat die Berechnung von a × b + c mit einem …</a></li><li><p>mit einem Multiply-Accumulate-Befehl (FMA) in einem Befehl realisiert, sonst mit zwei Befehlen aus Multiplikation und Addition.</p><a href="/de/q/compiler/compiler-047/">Welche Beschreibung der Befehlsauswahl (Instruction Selecti…</a></li></ul>

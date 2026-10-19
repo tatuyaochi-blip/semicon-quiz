@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/de/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"Format für Timing-Constraints, das Taktperioden und -verläufe, Ein- und Ausgangsverzögerungen, Timing-Ausnahmen usw. beschreibt. Es besteht aus Tcl-Befehlen und wird gemeinsam von Werkzeugen für Logiksynthese, Place-and-Route und STA genutzt.","url":"https://semiconroom.com/de/term/sdc/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"SDC","item":"https://semiconroom.com/de/term/sdc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SDC","description":"Format für Timing-Constraints, das Taktperioden und -verläufe, Ein- und Ausgangsverzögerungen, Timing-Ausnahmen usw. beschreibt. Es besteht aus Tcl-Befehlen und wird gemeinsam von Werkzeugen für Logiksynthese, Place-and-Route und STA genutzt.","url":"https://semiconroom.com/de/term/sdc/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wofür steht SDC im VLSI-Design?","acceptedAnswer":{"@type":"Answer","text":"Synopsys Design Constraints, ein Tcl-basiertes Format für Timing-Constraints wie Takte, Ein- und Ausgangsverzögerungen und Timing-Ausnahmen, das von Werkzeugen für Synthese, Place-and-Route und STA gemeinsam genutzt wird."}},{"@type":"Question","name":"Unterschied zwischen SDC und SDF","acceptedAnswer":{"@type":"Answer","text":"SDC beschreibt die Timing-Anforderungen, die das Design erfüllen muss, während SDF berechnete Zell- und Verbindungsverzögerungen enthält, hauptsächlich für die rückannotierte Gate-Level-Simulation."}},{"@type":"Question","name":"Wann braucht man create_generated_clock?","acceptedAnswer":{"@type":"Answer","text":"Immer dann, wenn ein Takt innerhalb des Designs abgeleitet wird, zum Beispiel durch einen Teiler oder einen Taktmultiplexer. Ohne diesen Befehl wird das abgeleitete Netz nicht als Takt behandelt, und die von ihm getriebene Logik wird nicht korrekt zeitlich analysiert."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/sta-cdc/">Timing-Analyse und CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was eine SDC-Datei enthält</h2>
+  <p>SDC (Synopsys Design Constraints) ist ein Tcl-basiertes Format, das bei Synopsys entstand und heute von den meisten Werkzeugen für Synthese, Place-and-Route und <a class="term-link" href="/de/term/sta/">statische Timing-Analyse</a> gelesen wird. Typische Befehle definieren Takte (create_clock mit Periode und Verlauf), abgeleitete Takte (create_generated_clock), externes Timing an den Ports (set_input_delay, set_output_delay), die elektrische Umgebung (set_load, set_driving_cell), die Taktqualität (set_clock_uncertainty, set_clock_latency) und Timing-Ausnahmen (set_false_path, set_multicycle_path, set_max_delay, set_clock_groups).</p>
+</section>
+<section class="term-about">
+  <h2>Clock Uncertainty und generierte Takte</h2>
+  <p>set_clock_uncertainty zieht eine Reserve für <a class="term-link" href="/de/term/jitter/">Jitter</a> und vor der Taktbaumsynthese (CTS) für den erwarteten Skew ab: Bei 1 ns Periode und 50 ps Uncertainty müssen die Daten innerhalb von 0,95 ns ankommen. Nach der CTS berechnet das Werkzeug den tatsächlichen Skew aus dem aufgebauten Baum, sodass die Uncertainty auf Jitter plus eine etwaige bewusste Reserve reduziert wird. Ein geteilter Takt muss mit create_generated_clock relativ zu seiner Quelle deklariert werden, zum Beispiel eine Teilung durch 2, die aus 500 MHz 250 MHz macht, damit die von ihm getriebenen Flipflops mit der richtigen Periode und Phasenbeziehung analysiert werden.</p>
+</section>
+<section class="term-about">
+  <h2>Warum Constraints ein Sign-off-Risiko sind</h2>
+  <p>Werkzeuge optimieren und verifizieren nur das, was die Constraints beschreiben. Ein fehlender Takt lässt Flipflops unanalysiert, ein zu weit gefasster <a class="term-link" href="/de/term/false-path/">False Path</a> bringt echte Verletzungen zum Schweigen, und die Deklaration synchroner Takte als asynchron verwirft Pfade, die geprüft werden müssen. Ein solches Design kann jeden Werkzeugbericht bestehen und dennoch im Silizium versagen. Constraints werden daher ebenso sorgfältig geprüft wie <a class="term-link" href="/de/term/rtl/">RTL</a>, mit Constraint-Linting-Werkzeugen auf ungetaktete Register und unbeschränkte Ports kontrolliert und zwischen Synthese, Implementierung und Sign-off konsistent gehalten.</p>
+</section>
+<section class="term-about">
+  <h2>SDC vs. verwandte Formate</h2>
+  <p>SDC formuliert Anforderungen, keine Ergebnisse. Berechnete Verzögerungen werden in SDF (Standard Delay Format) für die rückannotierte <a class="term-link" href="/de/term/gate-level-simulation/">Gate-Level-Simulation</a> ausgetauscht, extrahierte Parasitics in SPEF (Standard Parasitic Exchange Format). <a class="term-link" href="/de/term/fpga/">FPGA</a>-Werkzeuge verwenden SDC oder eng verwandte Ableitungen, die physische Constraints wie Pinzuweisungen ergänzen. Da SDC Tcl ist, lassen sich Constraints mit Variablen und Schleifen kompakt erzeugen, wobei stark geskriptete Dateien allerdings schwerer zu prüfen sind.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu SDC</h2>
   <article class="q-mini" data-qid="eda-047" data-cat="eda" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Der Ausgang des Teilers wird als generierter Takt definiert, wobei die Beziehung zum Ursprungstakt (Teilung durch 2) angegeben wird</p><p class="explanation"><a class="term-link" href="/de/term/sdc/">SDC</a> ist eine Beschreibung von Timing-Constraints, die dem Tool Periode und Wellenform der Takte, Ein-/Ausgangsverzögerungen, Ausnahmepfade usw. mitteilt. Ohne Definition wird der Ausgang des Teilers nicht als Takt behandelt, und die nachfolgenden Flipflops werden nicht korrekt analysiert. Als generierter Takt definiert, wird er bei einem Ursprungstakt von 500 MHz als 250 MHz analysiert, einschließlich der Phasenbeziehung zum Ursprungstakt. Da beide synchron sind, würden bei asynchroner Behandlung Pfade, die eigentlich geprüft werden müssten, von der Analyse ausgeschlossen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wofür steht SDC im VLSI-Design?</h3>
+  <p>Synopsys Design Constraints, ein Tcl-basiertes Format für Timing-Constraints wie Takte, Ein- und Ausgangsverzögerungen und Timing-Ausnahmen, das von Werkzeugen für Synthese, Place-and-Route und STA gemeinsam genutzt wird.</p>
+  <h3>Unterschied zwischen SDC und SDF</h3>
+  <p>SDC beschreibt die Timing-Anforderungen, die das Design erfüllen muss, während SDF berechnete Zell- und Verbindungsverzögerungen enthält, hauptsächlich für die rückannotierte Gate-Level-Simulation.</p>
+  <h3>Wann braucht man create_generated_clock?</h3>
+  <p>Immer dann, wenn ein Takt innerhalb des Designs abgeleitet wird, zum Beispiel durch einen Teiler oder einen Taktmultiplexer. Ohne diesen Befehl wird das abgeleitete Netz nicht als Takt behandelt, und die von ihm getriebene Logik wird nicht korrekt zeitlich analysiert.</p>
+</section>
 <section>
   <h2>„SDC“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>SDC ist eine Beschreibung von Timing-Constraints, die dem Tool Periode und Wellenform der Takte, Ein-/Ausgangsverzögerungen, Ausnahmepfade usw.</p><a href="/de/q/sta-cdc/sta-cdc-024/">Was ist in der SDC richtig, wenn ein Takt mit einem Teiler …</a></li><li><p>im SDC-Format geschrieben.</p><a href="/de/q/eda/eda-027/">Wie wird die Beschreibung der Timing-Bedingungen wie Taktpe…</a></li></ul>

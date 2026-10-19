@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Multicycle-Pfad","item":"https://semiconroom.com/de/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Multicycle-Pfad","description":"Timing-Ausnahme, die der STA mitteilt, dass ein Pfad für die Datenübertragung mehrere Taktzyklen benötigen darf. Wird Setup auf N Zyklen gesetzt, setzt man Hold meist auf N − 1, um die Prüfflanke für Hold an ihre ursprüngliche Position zurückzuschieben.","url":"https://semiconroom.com/de/term/multicycle-path/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Multicycle-Pfad","item":"https://semiconroom.com/de/term/multicycle-path/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Multicycle-Pfad","description":"Timing-Ausnahme, die der STA mitteilt, dass ein Pfad für die Datenübertragung mehrere Taktzyklen benötigen darf. Wird Setup auf N Zyklen gesetzt, setzt man Hold meist auf N − 1, um die Prüfflanke für Hold an ihre ursprüngliche Position zurückzuschieben.","url":"https://semiconroom.com/de/term/multicycle-path/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Warum Hold-Multicycle N − 1 bei Setup-Multicycle N?","acceptedAnswer":{"@type":"Answer","text":"Das Verschieben der Setup-Capture-Flanke verschiebt auch die standardmäßige Hold-Prüfung nach hinten, sodass Hold kaum noch einzuhalten ist. Die Hold-Einstellung N − 1 bringt die Hold-Prüfung auf ihre ursprüngliche Flanke zurück."}},{"@type":"Question","name":"Unterschied zwischen Multicycle-Pfad und False Path","acceptedAnswer":{"@type":"Answer","text":"Ein Multicycle-Pfad wird weiterhin analysiert, erhält aber mehrere Taktperioden. Ein False Path wird überhaupt nicht analysiert und sollte nur für Pfade verwendet werden, die funktional nie durchlaufen werden können."}},{"@type":"Question","name":"Wann ist ein Multicycle-Pfad sicher?","acceptedAnswer":{"@type":"Answer","text":"Nur wenn das Design garantiert, dass das Ziel die Daten alle N Zyklen abtastet, zum Beispiel über ein Enable, und die Verifikation dieses Verhalten bestätigt. Andernfalls kann die gelockerte Prüfung einen echten Timing-Fehler verdecken."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/sta-cdc/">Timing-Analyse und CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wenn ein Pfad wirklich mehr Zeit hat</h2>
+  <p>Manche Pfade müssen die Daten nicht innerhalb einer Taktperiode liefern, weil das Ziel nur alle N Zyklen übernimmt, zum Beispiel ein Register, das ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> ein Enable geladen wird, das jeden zweiten Zyklus aktiv ist, oder ein langsamer Rechenblock, dessen Ergebnis zwei Zyklen nach der Änderung seiner Eingänge abgetastet wird. Standardmäßig geht die <a class="term-link" href="/de/term/sta/">STA</a> von einer Übertragung in einem Zyklus aus und meldet eine Verletzung. Eine Multicycle-Path-Ausnahme, set_multicycle_path in <a class="term-link" href="/de/term/sdc/">SDC</a>, teilt dem Werkzeug mit, dass die Capture-Flanke N Perioden statt einer nach dem Launch liegt.</p>
+</section>
+<section class="term-about">
+  <h2>Setup-Rechnung</h2>
+  <p>Bei einem 2,0-ns-Takt, einer Datenankunftszeit von 3,3 ns und einer <a class="term-link" href="/de/term/setup-time/">Setup-Zeit</a> von 0,1 ns ergibt die standardmäßige Einzyklusprüfung eine geforderte Zeit von 1,9 ns und einen <a class="term-link" href="/de/term/slack/">Slack</a> von −1,4 ns. Ein Setup-Multicycle von 2 verschiebt den Capture auf 4,0 ns, sodass die geforderte Zeit 3,9 ns und der Slack +0,6 ns beträgt. Die Ausnahme ist nur gültig, wenn die Logik die Übernahme in jedem zweiten Zyklus tatsächlich garantiert; andernfalls verdeckt sie einen echten Fehler, der im Silizium auftreten wird.</p>
+</section>
+<section class="term-about">
+  <h2>Warum Hold N − 1 braucht</h2>
+  <p>Die <a class="term-link" href="/de/term/sta/">STA</a> prüft Hold gegen die Flanke eine Periode vor der Setup-Capture-Flanke. Wird der Setup-Capture auf N Perioden verschoben, wird daher auch die Hold-Prüfung auf N − 1 Perioden nach dem Launch gezogen, was verlangen würde, dass neue Daten mindestens so spät eintreffen, eine absurd strenge Anforderung, die meist verletzt wird. Ein zusätzlicher Hold-Multicycle von N − 1 verschiebt die Hold-Prüfung zurück auf die Launch-Flanke zum Zeitpunkt null und stellt die gewöhnliche Hold-Bedingung wieder her. Er entfernt die Hold-Prüfung nicht.</p>
+</section>
+<section class="term-about">
+  <h2>Multicycle-Pfad vs. False Path</h2>
+  <p>Ein Multicycle-Pfad bleibt zeitlich analysiert, nur mit einem größeren Budget. Ein <a class="term-link" href="/de/term/false-path/">False Path</a>, gesetzt mit set_false_path, wird vollständig von der Analyse ausgeschlossen und ist für Pfade gedacht, die strukturell verbunden sind, aber nie einen sinnvollen Übergang übertragen können, zum Beispiel durch zwei <a class="term-link" href="/de/term/multiplexer/">Multiplexer</a>, deren Auswahlbedingungen sich gegenseitig ausschließen. Einen Pfad nur deshalb als False Path zu deklarieren, weil das Timing schwer zu schließen ist, verdeckt echte Fehler, und einen echten Multicycle-Pfad als False Path zu deklarieren, entfernt eine Prüfung, die er weiterhin braucht.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Multicycle-Pfad</h2>
   <article class="q-mini" data-qid="sta-cdc-014" data-cat="sta-cdc" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Weil sich die Prüfflanke für Hold zusammen mit der für Setup nach hinten verschiebt und die Prüfung zu streng wird; sie soll an die ursprüngliche Position zurückgesetzt werden</p><p class="explanation">Standardmäßig prüft die <a class="term-link" href="/de/term/sta/">STA</a> Hold an der Flanke, die eine vor der Setup-Übernahmeflanke liegt. Wird Setup auf 2 Zyklen gesetzt, wandert auch die Prüfflanke für Hold von Zeitpunkt 0 um 1 Periode nach hinten; bei einer Periode von 2,0 ns entsteht dann eine Verletzung, sofern die Daten nicht mindestens 2,0 ns verspätet ankommen. Wird für Hold ein <a class="term-link" href="/de/term/multicycle-path/">Multicycle-Pfad</a> von N − 1 = 1 angegeben, kehrt die Prüfflanke zu Zeitpunkt 0 zurück, und es gelten dieselben Bedingungen wie für normale Pfade. Die Hold-Prüfung wird dabei nicht entfernt.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Warum Hold-Multicycle N − 1 bei Setup-Multicycle N?</h3>
+  <p>Das Verschieben der Setup-Capture-Flanke verschiebt auch die standardmäßige Hold-Prüfung nach hinten, sodass Hold kaum noch einzuhalten ist. Die Hold-Einstellung N − 1 bringt die Hold-Prüfung auf ihre ursprüngliche Flanke zurück.</p>
+  <h3>Unterschied zwischen Multicycle-Pfad und False Path</h3>
+  <p>Ein Multicycle-Pfad wird weiterhin analysiert, erhält aber mehrere Taktperioden. Ein False Path wird überhaupt nicht analysiert und sollte nur für Pfade verwendet werden, die funktional nie durchlaufen werden können.</p>
+  <h3>Wann ist ein Multicycle-Pfad sicher?</h3>
+  <p>Nur wenn das Design garantiert, dass das Ziel die Daten alle N Zyklen abtastet, zum Beispiel über ein Enable, und die Verifikation dieses Verhalten bestätigt. Andernfalls kann die gelockerte Prüfung einen echten Timing-Fehler verdecken.</p>
+</section>
 <section>
   <h2>„Multicycle-Pfad“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Mit einem Multicycle-Pfad von 2 liegt die übernehmende Flanke nicht 1 Periode, sondern 2 Perioden später.</p><a href="/de/q/sta-cdc/sta-cdc-014/">In einer Schaltung mit einem Takt der Periode 2,0 ns gibt e…</a></li><li><p>Wird für Hold ein Multicycle-Pfad von N − 1 = 1 angegeben, kehrt die Prüfflanke zu Zeitpunkt 0 zurück, und es gelten dieselben Bedingungen wie für normale Pfade.</p><a href="/de/q/sta-cdc/sta-cdc-015/">Wird für Setup ein Multicycle-Pfad von N (N ≥ 2) gesetzt, w…</a></li><li><p>Ein Pfad, der alle 2 Zyklen einmal übernimmt, sollte als Multicycle-Pfad mit verlängerter Zeit weiter analysiert werden.</p><a href="/de/q/sta-cdc/sta-cdc-016/">Für welchen Pfad ist das Setzen eines False Path (set_false…</a></li></ul>

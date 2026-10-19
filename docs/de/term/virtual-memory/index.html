@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Virtueller Speicher","item":"https://semiconroom.com/de/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Virtueller Speicher","description":"Mechanismus, bei dem OS und Hardware die von Programmen genutzten (virtuellen) Adressen auf reale Speicheradressen (physische Adressen) abbilden. Jedes Programm erhält einen großen, eigenen Adressraum.","url":"https://semiconroom.com/de/term/virtual-memory/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Virtueller Speicher","item":"https://semiconroom.com/de/term/virtual-memory/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Virtueller Speicher","description":"Mechanismus, bei dem OS und Hardware die von Programmen genutzten (virtuellen) Adressen auf reale Speicheradressen (physische Adressen) abbilden. Jedes Programm erhält einen großen, eigenen Adressraum.","url":"https://semiconroom.com/de/term/virtual-memory/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Seitentabelle und TLB","acceptedAnswer":{"@type":"Answer","text":"Die Seitentabelle ist die vollständige Abbildung von virtuellen auf physische Seiten, die im Speicher liegt und vom Betriebssystem gepflegt wird. Der TLB ist ein kleiner Hardware-Cache in der CPU, der zuletzt genutzte Einträge hält, sodass die meisten Übersetzungen ohne Tabellendurchlauf auskommen."}},{"@type":"Question","name":"Was passiert bei einem Seitenfehler?","acceptedAnswer":{"@type":"Answer","text":"Die CPU hält die auslösende Instruktion an und übergibt die Kontrolle an das Betriebssystem, das entweder eine gültige Seite einblendet, zum Beispiel indem es sie von der Festplatte lädt, und die Instruktion wiederholt, oder den Prozess beendet, wenn der Zugriff unzulässig war."}},{"@type":"Question","name":"Warum Huge Pages verwenden?","acceptedAnswer":{"@type":"Answer","text":"Jeder TLB-Eintrag deckt dann viel mehr Speicher ab, sodass Programme mit großen Working Sets weniger TLB-Misses und Tabellendurchläufe haben. Datenbanken und virtuelle Maschinen nutzen sie häufig."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Fachgebiet: <a href="/de/c/cpu/">CPU und Architektur</a></p>
 </article>
+<section class="term-about">
+  <h2>Wie die Adressübersetzung funktioniert</h2>
+  <p>Der Speicher ist in Seiten fester Größe unterteilt, üblicherweise 4 KB. Eine virtuelle Adresse zerfällt in eine virtuelle Seitennummer und einen Offset innerhalb der Seite, bei 4-KB-Seiten 12 Bit. Die Speicherverwaltungseinheit (MMU) sucht die virtuelle Seitennummer in der <a class="term-link" href="/de/term/page-table/">Seitentabelle</a>, die die physische Rahmennummer sowie Berechtigungsbits wie present, beschreibbar, ausführbar und für den Benutzermodus zugänglich liefert. Der Offset wird unverändert übernommen. Damit die Tabellen kompakt bleiben, sind sie als Baum organisiert: x86-64 mit 48-Bit-virtuellen Adressen verwendet vier Ebenen, die jeweils mit 9 Adressbits indiziert werden.</p>
+</section>
+<section class="term-about">
+  <h2>Der TLB und Huge Pages</h2>
+  <p>Das Durchlaufen einer vierstufigen Tabelle könnte pro Ladezugriff vier Speicherzugriffe kosten, daher speichert der <a class="term-link" href="/de/term/tlb/">Translation Lookaside Buffer</a> (TLB) die zuletzt verwendeten Übersetzungen zwischen, und die meisten Zugriffe treffen dort. TLBs fassen nur einige zehn bis einige tausend Einträge, und ihre Reichweite ist Einträge mal Seitengröße: Etwa 1000 Einträge zu 4 KB decken nur 4 MB ab. Programme mit größeren Working Sets verfehlen ihn häufig, weshalb Betriebssysteme Huge Pages, etwa mit 2 MB, anbieten, mit denen dieselben Einträge Gigabytes abdecken. Adressraumkennungen (ASIDs) erlauben dem TLB, Einträge mehrerer Prozesse gleichzeitig zu halten.</p>
+</section>
+<section class="term-about">
+  <h2>Seitenfehler und Demand Paging</h2>
+  <p>Ist ein Eintrag als nicht vorhanden markiert, löst der Zugriff einen <a class="term-link" href="/de/term/page-fault/">Seitenfehler (Page Fault)</a> aus, und das Betriebssystem übernimmt. Es kann eine frische, mit Nullen gefüllte Seite zuweisen, die Seite aus einer Datei oder dem Swap-Bereich lesen oder einen unzulässigen Zugriff erkennen und das Programm mit einem Segmentation Fault beenden. Das ermöglicht <a class="term-link" href="/de/term/demand-paging/">Demand Paging</a>, bei dem Seiten erst bei <a class="term-link" href="/de/term/bit-error-rate/">Ber</a>ührung geladen werden, speicherabgebildete Dateien und <a class="term-link" href="/de/term/copy-on-write/">Copy-on-Write</a>, bei dem Prozesse Seiten teilen, bis einer schreibt. Übersteigt das Working Set den physischen Speicher bei Weitem, bringt ständiges Auslagern, <a class="term-link" href="/de/term/thrashing/">Thrashing</a> genannt, das System nahezu zum Stillstand.</p>
+</section>
+<section class="term-about">
+  <h2>Virtueller Speicher im Vergleich zu Caches</h2>
+  <p>Caches und virtueller Speicher werden oft verwechselt, weil beide mit der Speicherhierarchie zu tun haben, doch ihre Aufgaben unterscheiden sich. Ein Cache ist eine hardwareverwaltete Kopie kürzlich genutzter Daten, die nur der Geschwindigkeit dient und für die Software unsichtbar ist. Virtueller Speicher ist eine vom Betriebssystem verwaltete Abbildung, die jedem Prozess einen eigenen Adressraum gibt, den Schutz zwischen Prozessen und dem Kernel durchsetzt und das gemeinsame Nutzen physischer Seiten erlaubt, etwa bei gemeinsamen Bibliotheken. Im Alltag bezeichnet virtueller Speicher manchmal nur die Auslagerungsdatei, die lediglich eine der Funktionen ist, die er ermöglicht.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Seitentabelle und TLB</h3>
+  <p>Die Seitentabelle ist die vollständige Abbildung von virtuellen auf physische Seiten, die im Speicher liegt und vom Betriebssystem gepflegt wird. Der TLB ist ein kleiner Hardware-Cache in der CPU, der zuletzt genutzte Einträge hält, sodass die meisten Übersetzungen ohne Tabellendurchlauf auskommen.</p>
+  <h3>Was passiert bei einem Seitenfehler?</h3>
+  <p>Die CPU hält die auslösende Instruktion an und übergibt die Kontrolle an das Betriebssystem, das entweder eine gültige Seite einblendet, zum Beispiel indem es sie von der Festplatte lädt, und die Instruktion wiederholt, oder den Prozess beendet, wenn der Zugriff unzulässig war.</p>
+  <h3>Warum Huge Pages verwenden?</h3>
+  <p>Jeder TLB-Eintrag deckt dann viel mehr Speicher ab, sodass Programme mit großen Working Sets weniger TLB-Misses und Tabellendurchläufe haben. Datenbanken und virtuelle Maschinen nutzen sie häufig.</p>
+</section>
 
 
 

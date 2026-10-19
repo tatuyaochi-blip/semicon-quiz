@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"컴페어 앤드 스왑(Compare-and-Swap)","item":"https://semiconroom.com/ko/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"컴페어 앤드 스왑(Compare-and-Swap)","description":"메모리 값이 기대한 값과 같을 때만 새 값을 쓰는 원자적 명령. CAS라고도 쓴다. 실패하면 다시 읽고 재시도하는 루프로 락 없는 갱신을 할 수 있다.","url":"https://semiconroom.com/ko/term/compare-and-swap/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"컴페어 앤드 스왑(Compare-and-Swap)","item":"https://semiconroom.com/ko/term/compare-and-swap/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"컴페어 앤드 스왑(Compare-and-Swap)","description":"메모리 값이 기대한 값과 같을 때만 새 값을 쓰는 원자적 명령. CAS라고도 쓴다. 실패하면 다시 읽고 재시도하는 루프로 락 없는 갱신을 할 수 있다.","url":"https://semiconroom.com/ko/term/compare-and-swap/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"컴페어 앤드 스왑의 ABA 문제란 무엇인가요?","acceptedAnswer":{"@type":"Answer","text":"위치가 중간에 다른 값으로 바뀌었다가 되돌아왔는데도, 기대값을 다시 가지고 있기 때문에 CAS가 성공하는 문제입니다. 메모리를 재사용하는 락 없는 구조를 손상시킬 수 있으며, 보통 버전 카운터나 안전한 메모리 회수로 방지합니다."}},{"@type":"Question","name":"CAS 루프는 lock-free인가요, wait-free인가요?","acceptedAnswer":{"@type":"Answer","text":"lock-free입니다. weak 형태의 거짓 실패를 제외하면 CAS는 다른 스레드의 갱신이 성공했을 때만 실패하므로 시스템은 진행하지만, 개별 스레드가 몇 번 재시도해야 하는지에는 상한이 없습니다."}},{"@type":"Question","name":"compare_exchange_weak와 compare_exchange_strong의 차이는 무엇인가요?","acceptedAnswer":{"@type":"Answer","text":"weak 형태는 값이 일치해도 실패할 수 있는 대신 LL/SC 명령에 직접 대응되어 재시도 루프에 적합합니다. strong 형태는 실제로 불일치할 때만 실패하며, 그 대가로 LL/SC 기계에서는 내부 루프가 필요합니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/multicore-sync/">멀티코어와 동기화</a></p>
 </article>
-
+<section class="term-about">
+  <h2>CAS가 보장하는 것</h2>
+  <p>CAS(compare-and-swap)는 주소, 기대값, 새 값을 받습니다. 하나의 나눌 수 없는 단계에서 그 위치를 읽고 기대값과 비교하여, 일치할 때만 새 값을 저장합니다. 성공 또는 실패를 보고하며, 흔히 발견한 값을 반환하는 방식으로 알립니다. x86에서는 lock cmpxchg 명령입니다. C11은 이를 atomic_compare_exchange_strong과 _weak로, C++는 std::atomic의 compare_exchange_strong과 compare_exchange_weak로 제공합니다. 하드웨어에서는 코어가 <a class="term-link" href="/ko/term/cache-line/">캐시 라인</a>을 배타적 상태로 확보하여, 연산 중에 다른 코어가 그 라인에 쓸 수 없게 합니다.</p>
+</section>
+<section class="term-about">
+  <h2>재시도 루프</h2>
+  <p>락 없는 갱신은 현재 값을 읽고, 그로부터 새 값을 계산한 뒤, 읽은 값을 기대값으로 하여 CAS를 시도합니다. 그사이 다른 스레드가 그 위치를 바꿨다면 CAS가 실패하고 루프는 다시 읽어 재시도합니다. 언제나 어느 스레드인가는 성공하므로 시스템 전체는 락 없이 진행되며, 이런 코드는 <a class="term-link" href="/ko/term/lock-free-algorithm/">lock-free</a>이지만 wait-free는 아닙니다. 운이 나쁜 스레드 하나는 끝없이 재시도할 수 있기 때문입니다. 경합이 심하면 잦은 재시도와 코어 사이를 오가는 <a class="term-link" href="/ko/term/cache-line/">캐시 라인</a> 때문에 CAS 루프가 단순한 락보다 느려질 수 있습니다.</p>
+</section>
+<section class="term-about">
+  <h2>ABA 문제</h2>
+  <p>CAS는 값이 같은지만 확인할 뿐, 한 번도 바뀌지 않았는지는 확인하지 않습니다. 스레드가 읽은 시점과 CAS 사이에 위치가 A에서 B로, 다시 A로 바뀌면 데이터 구조가 이미 달라졌을 수 있는데도 CAS가 성공합니다. 전형적인 사례는 락 없는 스택에서 한 노드가 pop되어 해제되고, 다른 스레드의 pop이 끝나기 전에 같은 주소로 다시 할당되는 경우입니다. 일반적인 대책은 변경할 때마다 갱신되는 버전 카운터를 포인터와 짝지어 쓰는 것, 그리고 해저드 포인터나 에포크 기반 회수 같은 안전한 메모리 회수 기법입니다.</p>
+</section>
+<section class="term-about">
+  <h2>CAS와 LL/SC, fetch-and-add의 비교</h2>
+  <p>많은 RISC 아키텍처는 대신 LL/SC(load-linked/store-conditional)를 제공합니다. RISC-V에서는 lr이 주소를 예약하고, sc는 그 이후 해당 주소에 다른 쓰기가 없었을 때만 저장하며 그렇지 않으면 실패합니다. 값을 비교하는 대신 중간에 있었던 모든 쓰기를 감지하므로 원리상 ABA를 피하지만, 관련 없는 이유로 예약이 사라질 수 있으며, 이 때문에 compare_exchange_weak는 거짓 실패(spurious failure)가 허용됩니다. 카운터 같은 단순한 연산에는 재시도가 전혀 필요 없는 원자적 fetch-and-add나 amoadd 같은 RISC-V AMO 명령이 CAS 루프보다 낫습니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 컴페어 앤드 스왑(Compare-and-Swap) 관련 문제</h2>
   <article class="q-mini" data-qid="multicore-sync-015" data-cat="multicore-sync" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 메모리의 값이 기대한 값과 같을 때만 새 값을 쓰고, 성공했는지 여부를 알 수 있다</p><p class="explanation">CAS는 &#39;이 주소의 값이 아직 기대값 그대로라면 새 값으로 바꾼다&#39;를 불가분하게 수행합니다. 읽은 뒤 쓰기 전까지 다른 스레드가 값을 바꾸었다면 실패하므로, 바뀌지 않았음을 확인하면서 갱신할 수 있습니다. 실패하면 다시 읽어 계산하고 CAS를 재시도하는 루프로 만들면, 락 없이 공유 값을 안전하게 갱신할 수 있습니다. x86의 cmpxchg 명령 등이 여기에 해당합니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>컴페어 앤드 스왑의 ABA 문제란 무엇인가요?</h3>
+  <p>위치가 중간에 다른 값으로 바뀌었다가 되돌아왔는데도, 기대값을 다시 가지고 있기 때문에 CAS가 성공하는 문제입니다. 메모리를 재사용하는 락 없는 구조를 손상시킬 수 있으며, 보통 버전 카운터나 안전한 메모리 회수로 방지합니다.</p>
+  <h3>CAS 루프는 lock-free인가요, wait-free인가요?</h3>
+  <p>lock-free입니다. weak 형태의 거짓 실패를 제외하면 CAS는 다른 스레드의 갱신이 성공했을 때만 실패하므로 시스템은 진행하지만, 개별 스레드가 몇 번 재시도해야 하는지에는 상한이 없습니다.</p>
+  <h3>compare_exchange_weak와 compare_exchange_strong의 차이는 무엇인가요?</h3>
+  <p>weak 형태는 값이 일치해도 실패할 수 있는 대신 LL/SC 명령에 직접 대응되어 재시도 루프에 적합합니다. strong 형태는 실제로 불일치할 때만 실패하며, 그 대가로 LL/SC 기계에서는 내부 루프가 필요합니다.</p>
+</section>
 <section>
   <h2>해설 속 컴페어 앤드 스왑(Compare-and-Swap)</h2>
   <ul class="term-quotes"><li><p>CAS(compare-and-swap)나 fetch-and-add, RISC-V의 LR/SC 및 AMO 명령 등이 있으며, 락이나 락프리 자료 구조를 만드는 토대가 됩니다.</p><a href="/ko/q/multicore-sync/multicore-sync-014/">원자적(atomic) 명령(불가분 명령)에 대한 설명으로 올바른 것은 무엇입니까?</a></li></ul>

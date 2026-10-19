@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/de/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"16-Bit-Gleitkommaformat mit 1 Vorzeichenbit, 8 Exponentenbits und 7 Mantissenbits. Da der Exponent dem von FP32 entspricht, ist der Wertebereich groß; die Genauigkeit ist gering, aber es wird für KI-Training genutzt. FP16 hat 5 Exponenten- und 10 Mantissenbits, ist genauer, aber im Bereich enger.","url":"https://semiconroom.com/de/term/bfloat16/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"bfloat16","item":"https://semiconroom.com/de/term/bfloat16/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"bfloat16","description":"16-Bit-Gleitkommaformat mit 1 Vorzeichenbit, 8 Exponentenbits und 7 Mantissenbits. Da der Exponent dem von FP32 entspricht, ist der Wertebereich groß; die Genauigkeit ist gering, aber es wird für KI-Training genutzt. FP16 hat 5 Exponenten- und 10 Mantissenbits, ist genauer, aber im Bereich enger.","url":"https://semiconroom.com/de/term/bfloat16/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Ist bfloat16 dasselbe wie FP16?","acceptedAnswer":{"@type":"Answer","text":"Nein. Beide haben 16 Bit, doch bfloat16 hat einen 8-Bit-Exponenten und eine 7-Bit-Mantisse, während FP16 einen 5-Bit-Exponenten und eine 10-Bit-Mantisse hat. bfloat16 tauscht Genauigkeit gegen den Wertebereich von FP32."}},{"@type":"Question","name":"Wie konvertiert man FP32 in bfloat16?","acceptedAnswer":{"@type":"Answer","text":"Man behält die oberen 16 Bit des FP32-Bitmusters, idealerweise mit Rundung zur nächsten geraden Zahl anhand der verworfenen 16 Bit statt bloßem Abschneiden. Die Rückkonvertierung ist exakt: 16 Nullbits anhängen."}},{"@type":"Question","name":"Warum braucht bfloat16-Training meist kein Loss Scaling?","acceptedAnswer":{"@type":"Answer","text":"Loss Scaling dient dazu, kleine Gradienten im engen Wertebereich von FP16 vor dem Unterlauf zu bewahren. bfloat16 hat denselben Exponentenbereich wie FP32, daher bleiben solche Gradienten normalerweise darstellbar."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/computer-arithmetic/">Computerarithmetik</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was das Bitlayout bedeutet</h2>
+  <p>bfloat16 (Brain Floating Point) sind einfach die oberen 16 Bit einer FP32-Zahl: dasselbe Vorzeichenbit und derselbe 8-Bit-<a class="term-link" href="/de/term/exponent-field/">Exponent</a>, wobei die <a class="term-link" href="/de/term/significand/">Mantisse</a> von 23 auf 7 Bit gekürzt ist. Die Konvertierung von bfloat16 nach FP32 ist exakt und erfolgt durch Anhängen von 16 Nullbits, und die Konvertierung in die andere Richtung erfordert nur das Wegrunden der unteren 16 Bit. Der Wertebereich entspricht FP32, etwa 1e-38 bis 3e38 für normalisierte Zahlen, doch mit 8 signifikanten Bits einschließlich des verborgenen Bits tragen die Werte nur etwa zwei bis drei Dezimalstellen; der Abstand knapp oberhalb von 1,0 beträgt 2 hoch -7, etwa 0,0078.</p>
+</section>
+<section class="term-about">
+  <h2>bfloat16 und FP16 im Vergleich</h2>
+  <p>FP16 verteilt seine Bits umgekehrt, mit einem 5-Bit-Exponenten und einer 10-Bit-<a class="term-link" href="/de/term/significand/">Mantisse</a>. Es ist genauer, etwa drei Dezimalstellen, doch sein größter Wert ist 65.504 und sein kleinster normalisierter Wert etwa 6e-5. Beim Training können kleine Gradienten in FP16 auf null unterlaufen, daher erfordert FP16-Training meist Loss Scaling, bei dem der Loss mit einem großen Faktor multipliziert und die Gradienten später wieder dividiert werden. Der FP32-große Wertebereich von bfloat16 macht das in der Regel überflüssig und die Konvertierung bestehender FP32-Modelle einfach, weshalb es für das Training beliebt ist.</p>
+</section>
+<section class="term-about">
+  <h2>Warum die Master-Gewichte in FP32 bleiben</h2>
+  <p>Geringe Genauigkeit versagt, wenn winzige Aktualisierungen zu großen Werten addiert werden. Bei einem in bfloat16 gespeicherten Gewicht von 1,0 ist der nächste darstellbare Wert 1,0078125, sodass eine Aktualisierung von 0,001 weniger als einen halben Schritt beträgt und die Summe wieder exakt auf 1,0 gerundet wird: Die Aktualisierung wird absorbiert. Mixed-Precision-Training hält Master-Gewichte und Optimierer-Zustand daher in FP32 und verwendet bfloat16-Kopien für Vorwärts- und Rückwärtsdurchlauf. Ebenso multiplizieren Matrixeinheiten typischerweise bfloat16-Eingaben, akkumulieren die Produkte aber in FP32, damit lange Summen ihre kleinen Beiträge nicht verlieren.</p>
+</section>
+<section class="term-about">
+  <h2>Wo man ihm begegnet</h2>
+  <p>bfloat16 wird von den Matrixeinheiten vieler aktueller GPUs und KI-Beschleuniger sowie von Vektorerweiterungen mancher CPUs unterstützt, sowohl für Training als auch für <a class="term-link" href="/de/term/ai-inference/">Inferenz</a>. Die Halbierung der Größe jedes Werts gegenü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> FP32 halbiert den Bedarf an Speicherkapazität und Bandbreite und erlaubt mehr Multiplizierer pro Einheit Chipfläche. Ein gutes Allzweckformat ist es allerdings nicht: Bei so wenigen Mantissenbits müssen Summen vieler Werte, kleine Differenzen und alles, was mehr als einige Stellen Genauigkeit erfordert, in einem breiteren Typ berechnet werden.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu bfloat16</h2>
   <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Wird eine kleine Aktualisierung zu den Gewichten addiert, geht sie in einem Format mit geringer Genauigkeit durch Informationsverlust verloren</p><p class="explanation">Beim Training wird immer wieder ein sehr kleiner Wert „Lernrate × Gradient“ zu den Gewichten addiert. FP16 und <a class="term-link" href="/de/term/bfloat16/">bfloat16</a> haben kurze Mantissen; ist die Aktualisierung im Vergleich zum Gewicht zu klein, bleibt das Ergebnis der Addition nach der Rundung das ursprüngliche Gewicht, und die Aktualisierung verschwindet (Informationsverlust). Daher werden die Gewichte in FP32 gehalten, damit sich Aktualisierungen korrekt ansammeln, und für Vorwärts- und Rückwärtsrechnung werden in niedrigere Genauigkeit umgewandelte Kopien verwendet. Rechnen mit niedriger Genauigkeit ist schneller, und auch Werte niedriger Genauigkeit können gespeichert werden.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Ist bfloat16 dasselbe wie FP16?</h3>
+  <p>Nein. Beide haben 16 Bit, doch bfloat16 hat einen 8-Bit-Exponenten und eine 7-Bit-Mantisse, während FP16 einen 5-Bit-Exponenten und eine 10-Bit-Mantisse hat. bfloat16 tauscht Genauigkeit gegen den Wertebereich von FP32.</p>
+  <h3>Wie konvertiert man FP32 in bfloat16?</h3>
+  <p>Man behält die oberen 16 Bit des FP32-Bitmusters, idealerweise mit Rundung zur nächsten geraden Zahl anhand der verworfenen 16 Bit statt bloßem Abschneiden. Die Rückkonvertierung ist exakt: 16 Nullbits anhängen.</p>
+  <h3>Warum braucht bfloat16-Training meist kein Loss Scaling?</h3>
+  <p>Loss Scaling dient dazu, kleine Gradienten im engen Wertebereich von FP16 vor dem Unterlauf zu bewahren. bfloat16 hat denselben Exponentenbereich wie FP32, daher bleiben solche Gradienten normalerweise darstellbar.</p>
+</section>
 <section>
   <h2>„bfloat16“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>bfloat16 ist ein 16-Bit-Format mit 1 Vorzeichenbit, 8 Exponentenbits und 7 Mantissenbits.</p><a href="/de/q/computer-arithmetic/computer-arithmetic-026/">Was ist der Hauptgrund, warum bfloat16 beim KI-Training ver…</a></li><li><p>FP16 und bfloat16 haben kurze Mantissen; ist die Aktualisierung im Vergleich zum Gewicht zu klein, bleibt das Ergebnis der Addition nach der Rundung das ursprüngliche Gewicht, und die Aktualisierung verschwindet (Informationsverlust).</p><a href="/de/q/computer-arithmetic/computer-arithmetic-050/">Was ist der Hauptgrund, beim gemischtpräzisen KI-Training d…</a></li></ul>

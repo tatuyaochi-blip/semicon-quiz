@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Watchdog-Timer","item":"https://semiconroom.com/de/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Watchdog-Timer","description":"Timer, der den Mikrocontroller zurücksetzt, wenn er nicht innerhalb einer festgelegten Zeit von der Software zurückgesetzt (gekickt) wird. Holt das System aus Programmabsturz oder -stillstand heraus.","url":"https://semiconroom.com/de/term/watchdog-timer/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Watchdog-Timer","item":"https://semiconroom.com/de/term/watchdog-timer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Watchdog-Timer","description":"Timer, der den Mikrocontroller zurücksetzt, wenn er nicht innerhalb einer festgelegten Zeit von der Software zurückgesetzt (gekickt) wird. Holt das System aus Programmabsturz oder -stillstand heraus.","url":"https://semiconroom.com/de/term/watchdog-timer/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was bedeutet Watchdog kicken oder füttern?","acceptedAnswer":{"@type":"Answer","text":"Es bedeutet, in das Reload- oder Service-Register des Watchdogs zu schreiben, damit sein Zähler neu startet, bevor er abläuft. Fehlerfrei laufende Software tut dies periodisch; hört sie damit auf, setzt der Watchdog den Chip zurück."}},{"@type":"Question","name":"Watchdog im Timer-Interrupt kicken – sinnvoll?","acceptedAnswer":{"@type":"Answer","text":"Nicht bedingungslos. Ein Timer-Interrupt läuft weiter, auch wenn der Hauptcode hängt, und würde den Fehler daher verdecken; kicken Sie erst, nachdem bestätigt ist, dass die Hauptschleife und jede Task einen normalen Zyklus abgeschlossen haben."}},{"@type":"Question","name":"Unterschied Window-Watchdog und normaler Watchdog","acceptedAnswer":{"@type":"Answer","text":"Ein normaler Watchdog setzt nur zurück, wenn der Kick zu spät kommt. Ein Window-Watchdog behandelt auch einen zu früh eintreffenden Kick als Fehler und erkennt so Code, der ungewöhnlich schnell in einer Schleife läuft."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/embedded/">Embedded Systems und Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>So funktioniert ein Watchdog</h2>
+  <p>Ein Watchdog ist ein Abwärtszähler, der unabhängig von dem Programm läuft, das er überwacht. Die Software muss ihn regelmäßig „kicken“, „füttern“ oder „bedienen“, typischerweise indem sie einen bestimmten Schlüsselwert in ein Register schreibt, was den Zähler neu lädt. Erreicht der Zähler null, weil der Code in einer Schleife hängt, in einen Fault-Handler abgestürzt ist oder durch Störungen aus dem Tritt gebracht wurde, löst der Watchdog einen Reset aus (bei manchen Bausteinen zuerst einen Frühwarn-<a class="term-link" href="/de/term/interrupt/">Interrupt</a>), und der <a class="term-link" href="/de/term/microcontroller/">Mikrocontroller</a> startet aus einem definierten Zustand neu. Da er von einem eigenen langsamen Oszillator getaktet wird, verstummt er nicht ebenfalls, wenn der Haupttakt ausfällt.</p>
+</section>
+<section class="term-about">
+  <h2>Wo man ihn kicken sollte</h2>
+  <p>Ein Watchdog ist nur so gut wie die Stelle, an der er gekickt wird. Ihn bedingungslos in einem periodischen Timer-<a class="term-link" href="/de/term/interrupt/">Interrupt</a> zu kicken, ist ein klassischer Fehler: Der Interrupt wird weiter ausgelöst, auch wenn die Hauptschleife hängt, sodass der Zähler nie abläuft und der Hänger unbemerkt bleibt. Ein besseres Muster sieht vor, dass jede Task bzw. jede Stufe der Hauptschleife ein Check-in-Flag setzt und eine Überwachungsroutine den Watchdog nur dann kickt, wenn innerhalb der Periode alle Flags gesetzt wurden, und sie anschließend löscht. Das Timeout wird länger als die Schleifenzeit im ungünstigsten Fall gewählt, aber kurz genug, um die Wiederherstellungszeit zu begrenzen.</p>
+</section>
+<section class="term-about">
+  <h2>Window-Watchdog vs. Standard-Watchdog</h2>
+  <p>Ein Standard-Watchdog erkennt nur Kicks, die zu spät kommen. Lässt ein Fehler das Programm den größten Teil seiner Arbeit überspringen und in einer kurzen Schleife kreisen, die den Kick noch enthält, wird der Timer häufiger als erwartet bedient und nichts wird erkannt. Ein Window-Watchdog fügt eine Untergrenze hinzu: Kicks werden nur innerhalb eines definierten Zeitfensters akzeptiert, und ein zu früher Kick wird genauso als Fehler behandelt wie ein fehlender. Damit werden Kontrollflussfehler erkannt, die ein einfaches Timeout übersieht, weshalb Window-Watchdogs in Designs für funktionale Sicherheit verbreitet sind.</p>
+</section>
+<section class="term-about">
+  <h2>Externe Watchdogs in Sicherheitssystemen</h2>
+  <p>In Automobil- und Industriegeräten sitzt der Watchdog oft in einem separaten Supervisor- oder Power-Management-IC mit eigenem Takt, damit eine gemeinsame Ursache wie ein ausgefallener Oszillator nicht sowohl den Prozessor als auch seine Überwachung lahmlegen kann. Einige externe Überwachungsbausteine nutzen Frage-Antwort-Verfahren, bei denen der Prozessor innerhalb eines Zeitfensters die richtige Antwort auf eine Challenge zurückgeben muss. Nach einem Watchdog-Reset liest die Firmware meist ein Reset-Ursachen-Register aus, damit das Ereignis protokolliert und analysiert werden kann, statt sich unbemerkt zu wiederholen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Watchdog-Timer</h2>
   <article class="q-mini" data-qid="cpu-044" data-cat="cpu" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Das System zurückzusetzen, wenn das Programm außer Kontrolle gerät und den Timer nicht innerhalb einer bestimmten Zeit löscht</p><p class="explanation">Der <a class="term-link" href="/de/term/watchdog-timer/">Watchdog-Timer</a> setzt voraus, dass ein normal laufendes Programm ihn regelmäßig löscht; läuft er bei Absturz oder Stillstand ohne Löschung ab, wird der <a class="term-link" href="/de/term/microcontroller/">Mikrocontroller</a> zurückgesetzt. Auch wenn Störungen oder unvorhergesehene Zustände das Gerät anhalten, ist eine automatische Wiederherstellung ohne menschliches Eingreifen möglich, was für Fahrzeug- und Industriegeräte sowie entlegene Anlagen unverzichtbar ist. Die Zuverlässigkeit wird erhöht, indem er mit einem eigenen Takt betrieben oder als Fenster-Watchdog ausgeführt wird, der auch ein zu frühes Löschen als Fehler wertet.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was bedeutet Watchdog kicken oder füttern?</h3>
+  <p>Es bedeutet, in das Reload- oder Service-Register des Watchdogs zu schreiben, damit sein Zähler neu startet, bevor er abläuft. Fehlerfrei laufende Software tut dies periodisch; hört sie damit auf, setzt der Watchdog den Chip zurück.</p>
+  <h3>Watchdog im Timer-Interrupt kicken – sinnvoll?</h3>
+  <p>Nicht bedingungslos. Ein Timer-Interrupt läuft weiter, auch wenn der Hauptcode hängt, und würde den Fehler daher verdecken; kicken Sie erst, nachdem bestätigt ist, dass die Hauptschleife und jede Task einen normalen Zyklus abgeschlossen haben.</p>
+  <h3>Unterschied Window-Watchdog und normaler Watchdog</h3>
+  <p>Ein normaler Watchdog setzt nur zurück, wenn der Kick zu spät kommt. Ein Window-Watchdog behandelt auch einen zu früh eintreffenden Kick als Fehler und erkennt so Code, der ungewöhnlich schnell in einer Schleife läuft.</p>
+</section>
 <section>
   <h2>„Watchdog-Timer“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Der Watchdog-Timer setzt voraus, dass ein normal laufendes Programm ihn regelmäßig löscht; läuft er bei Absturz oder Stillstand ohne Löschung ab, wird der Mikrocontroller zurückgesetzt.</p><a href="/de/q/cpu/cpu-044/">Welche Aufgabe hat der in Mikrocontrollern enthaltene Watch…</a></li></ul>

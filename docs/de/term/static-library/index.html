@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Statische Bibliothek","item":"https://semiconroom.com/de/term/static-library/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Statische Bibliothek","description":"Archiv, das viele Objektdateien zusammenfasst (unter Linux .a). Beim statischen Linken entnimmt der Linker nur die benötigten Objekte und bindet sie in die ausführbare Datei ein.","url":"https://semiconroom.com/de/term/static-library/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Statische Bibliothek","item":"https://semiconroom.com/de/term/static-library/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Statische Bibliothek","description":"Archiv, das viele Objektdateien zusammenfasst (unter Linux .a). Beim statischen Linken entnimmt der Linker nur die benötigten Objekte und bindet sie in die ausführbare Datei ein.","url":"https://semiconroom.com/de/term/static-library/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Statische Bibliothek unter Linux erstellen","acceptedAnswer":{"@type":"Answer","text":"Man kompiliert die Quellen mit gcc -c zu Objektdateien und bündelt sie dann mit ar rcs libname.a file1.o file2.o. Gelinkt wird dagegen mit -L, das auf ihr Verzeichnis zeigt, und -lname."}},{"@type":"Question","name":"Unterschied zwischen .a- und .so-Datei","acceptedAnswer":{"@type":"Answer","text":"Eine .a-Datei ist ein Archiv von Objektdateien, deren benötigte Mitglieder beim Linken in die ausführbare Datei kopiert werden. Eine .so-Datei ist eine gemeinsam genutzte Bibliothek, die zur Laufzeit geladen und zwischen Prozessen geteilt wird."}},{"@type":"Question","name":"Warum bekomme ich undefined reference, obwohl ich die Bibliothek gelinkt habe?","acceptedAnswer":{"@type":"Answer","text":"Beim GNU-Linker ist die häufigste Ursache die Reihenfolge: Die Bibliothek steht in der Befehlszeile vor den Objektdateien, die sie verwenden. Man verschiebt -lname hinter die Objekte und prüft mit nm, ob die Bibliothek das Symbol tatsächlich definiert."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/linker-loader/">Linker, Loader und ausführbare Formate</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was in einer .a-Datei steckt</h2>
+  <p>Auf Unix-artigen Systemen ist eine statische Bibliothek ein mit dem Werkzeug ar erstelltes Archiv, zum Beispiel ar rcs libfoo.a a.o b.o. Sie ist kaum mehr als die mit Headern aneinandergehängten Objektdateien plus ein Index, der jedes definierte globale Symbol dem Mitglied zuordnet, das es definiert, damit der <a class="term-link" href="/de/term/linker/">Linker</a> Definitionen findet, ohne jedes Mitglied durchsuchen zu müssen. Die Befehlszeilenoption -lfoo veranlasst den Linker, im Bibliothekssuchpfad nach libfoo.so oder libfoo.a zu suchen; GNU ld bevorzugt die gemeinsam genutzte Version, wenn beide vorhanden sind, sofern kein <a class="term-link" href="/de/term/static-linking/">statisches Linken</a> angefordert wird. Windows-Toolchains verwenden für denselben Zweck .lib-Dateien.</p>
+</section>
+<section class="term-about">
+  <h2>Die Einheit der Entnahme ist die Objektdatei</h2>
+  <p>Wird ein Mitglied benötigt, bindet der <a class="term-link" href="/de/term/linker/">Linker</a> die gesamte <a class="term-link" href="/de/term/object-file/">Objektdatei</a> ein, nicht nur die eine referenzierte Funktion. Definiert eine Quelldatei einer Bibliothek zwanzig Funktionen und ruft ein Programm eine davon auf, landen alle zwanzig in der ausführbaren Datei, samt allem, was sie ihrerseits referenzieren. Bibliotheken wie die C-Standardbibliothek werden daher oft aus vielen kleinen Quelldateien erstellt, manchmal mit nur einer Funktion pro Datei. Alternativ erlaubt das Kompilieren mit -ffunction-sections und -fdata-sections und das Linken mit --gc-sections dem Linker, nicht referenzierte Funktionen innerhalb eines Mitglieds wegzulassen.</p>
+</section>
+<section class="term-about">
+  <h2>Link-Reihenfolge und zirkuläre Abhängigkeiten</h2>
+  <p>Der GNU-<a class="term-link" href="/de/term/linker/">Linker</a> durchsucht die Eingaben von links nach rechts und entnimmt beim Erreichen eines Archivs nur die Mitglieder, die zu diesem Zeitpunkt undefinierte Referenzen auflösen, und kehrt danach nie mehr dorthin zurück. Bibliotheken müssen daher nach den Objekten stehen, die sie verwenden, und eine Bibliothek, die von einer anderen abhängt, muss vor dieser stehen. Hängen zwei Bibliotheken voneinander ab, besteht die übliche Lösung darin, eine davon zweimal aufzuführen oder beide in --start-group und --end-group einzuschließen, damit der Linker sie erneut durchsucht, bis nichts Neues mehr aufgelöst wird. Manche Linker, etwa lld von <a class="term-link" href="/de/term/llvm/">LLVM</a>, merken sich alle Archivsymbole und brauchen diese Reihenfolge nicht.</p>
+</section>
+<section class="term-about">
+  <h2>Statische und gemeinsam genutzte Bibliothek im Vergleich</h2>
+  <p>Eine statische Bibliothek wird nur beim Build verwendet: Ihr Code wird in jede ausführbare Datei kopiert, und die .a-Datei wird zur Laufzeit des Programms nicht benötigt. Eine <a class="term-link" href="/de/term/shared-library/">gemeinsam genutzte Bibliothek</a> (.so unter Linux, .dll unter Windows) ist eine einzelne gelinkte Datei, als <a class="term-link" href="/de/term/position-independent-code/">positionsunabhängiger Code</a> erstellt, die zur Laufzeit geladen wird und deren Seiten von allen Prozessen, die sie verwenden, gemeinsam genutzt werden. Statische Bibliotheken eignen sich für eigenständige Auslieferung und eingebettete Firmware, während gemeinsam genutzte Bibliotheken Festplatten- und Speicherplatz sparen und eine Korrektur durch Austausch einer einzigen Datei jedes Programm erreichen lassen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Statische Bibliothek</h2>
   <article class="q-mini" data-qid="linker-loader-023" data-cat="linker-loader" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Der Linker verarbeitet von links nach rechts und entnimmt Funktionen, die zum Zeitpunkt des Lesens der Bibliothek noch nicht referenziert sind, nicht</p><p class="explanation">Der GNU-<a class="term-link" href="/de/term/linker/">Linker</a> verarbeitet die Dateien in der Reihenfolge der Kommandozeile und entnimmt beim Auftreten einer statischen Bibliothek nur Objekte, die „noch nicht aufgelöste Referenzen“ auflösen. Steht die Bibliothek zuerst, gibt es zu diesem Zeitpunkt noch keine Referenzen aus main.o, sodass nichts entnommen wird, und auch beim späteren Lesen von main.o wird nicht zurückgegangen, um zu suchen. Grundsätzlich wird die Bibliothek daher hinter die verwendende Datei geschrieben.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Statische Bibliothek unter Linux erstellen</h3>
+  <p>Man kompiliert die Quellen mit gcc -c zu Objektdateien und bündelt sie dann mit ar rcs libname.a file1.o file2.o. Gelinkt wird dagegen mit -L, das auf ihr Verzeichnis zeigt, und -lname.</p>
+  <h3>Unterschied zwischen .a- und .so-Datei</h3>
+  <p>Eine .a-Datei ist ein Archiv von Objektdateien, deren benötigte Mitglieder beim Linken in die ausführbare Datei kopiert werden. Eine .so-Datei ist eine gemeinsam genutzte Bibliothek, die zur Laufzeit geladen und zwischen Prozessen geteilt wird.</p>
+  <h3>Warum bekomme ich undefined reference, obwohl ich die Bibliothek gelinkt habe?</h3>
+  <p>Beim GNU-Linker ist die häufigste Ursache die Reihenfolge: Die Bibliothek steht in der Befehlszeile vor den Objektdateien, die sie verwenden. Man verschiebt -lname hinter die Objekte und prüft mit nm, ob die Bibliothek das Symbol tatsächlich definiert.</p>
+</section>
 <section>
   <h2>„Statische Bibliothek“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Eine statische Bibliothek ist ein Archiv, das viele Objektdateien zusammenfasst.</p><a href="/de/q/linker-loader/linker-loader-022/">Was bindet der Linker in die ausführbare Datei ein, wenn er…</a></li></ul>

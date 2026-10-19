@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"SSA 형식(Static Single Assignment)","item":"https://semiconroom.com/ko/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA 형식(Static Single Assignment)","description":"각 변수에 대한 대입이 프로그램 안에서 정확히 한 번이 되도록 이름을 바꾼 중간 표현 형식. 합류점에서는 φ 함수로 값을 선택한다. 정의와 사용의 관계가 명확해 최적화가 쉽다.","url":"https://semiconroom.com/ko/term/ssa-form/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"SSA 형식(Static Single Assignment)","item":"https://semiconroom.com/ko/term/ssa-form/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SSA 형식(Static Single Assignment)","description":"각 변수에 대한 대입이 프로그램 안에서 정확히 한 번이 되도록 이름을 바꾼 중간 표현 형식. 합류점에서는 φ 함수로 값을 선택한다. 정의와 사용의 관계가 명확해 최적화가 쉽다.","url":"https://semiconroom.com/ko/term/ssa-form/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"컴파일러에서 SSA는 무엇의 약자인가요?","acceptedAnswer":{"@type":"Answer","text":"Static single assignment(정적 단일 대입)의 약자입니다. IR의 각 변수는 프로그램 텍스트에서 정확히 한 곳에서만 대입되며, 제어 흐름 경로가 합쳐지는 곳에서는 φ 함수가 값을 합칩니다."}},{"@type":"Question","name":"변수를 한 번만 대입할 수 있다면 SSA에서 루프는 어떻게 처리하나요?","acceptedAnswer":{"@type":"Answer","text":"단일 대입은 동적이 아니라 정적인 개념입니다. 루프 헤더의 φ 함수가 루프로 들어오는 값과 이전 반복에서 계산된 값을 합치며, 그 하나의 정의가 반복마다 실행됩니다."}},{"@type":"Question","name":"φ 함수는 어디에 배치되나요?","acceptedAnswer":{"@type":"Answer","text":"같은 원래 변수의 서로 다른 정의가 서로 다른 유입 간선을 따라 도착할 수 있는 블록의 시작 부분입니다. 지배 경계(dominance frontier)에 기반한 알고리즘은 불필요한 φ를 넣지 않고 이 지점들을 찾아냅니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/compiler/">컴파일러</a></p>
 </article>
-
+<section class="term-about">
+  <h2>이름 바꾸기: 이름 하나에 정의 하나</h2>
+  <p>SSA(static single assignment) 형식은 모든 대입에 고유한 변수 이름을 붙입니다. 직선 코드에서는 단순한 이름 바꾸기로, x = 1; x = x + 2는 x1 = 1; x2 = x1 + 2가 되며, 이후의 각 사용은 그 지점에 도달하는 버전을 참조합니다. static이라는 단어가 중요합니다. 각 이름은 프로그램 텍스트에서 정확히 한 번 대입되며, 그 대입이 루프 안에서 여러 번 실행되더라도 마찬가지입니다. 모든 사용에 정의가 정확히 하나씩 있으므로, 최적화기가 필요로 하는 정의-사용 관계가 별도의 분석으로 계산하지 않아도 이름 자체에 명시적으로 드러납니다.</p>
+</section>
+<section class="term-about">
+  <h2>합류점의 φ 함수</h2>
+  <p>제어 흐름이 합쳐지는 곳에서는 이름 바꾸기만으로는 부족합니다. if-else 이후의 x 값은 어느 분기가 실행되었는지에 따라 달라지기 때문입니다. SSA는 합류 블록의 시작 부분에 x3 = φ(x1, x2) 형태의 φ(파이) 함수를 삽입하며, 들어오는 간선마다 인수가 하나씩 있고 실제로 거쳐 온 간선에 해당하는 인수를 결과로 냅니다. 루프도 루프 헤더에서 같은 처리가 필요하며, 초깃값과 이전 반복의 값을 합칩니다. 표준 구성 알고리즘은 <a class="term-link" href="/ko/term/control-flow-graph/">제어 흐름 그래프</a>의 지배(dominance) 정보를 이용하여, 서로 다른 경로의 정의가 실제로 만나는 곳에만 φ 함수를 배치합니다.</p>
+</section>
+<section class="term-about">
+  <h2>최적화기가 SSA를 선호하는 이유</h2>
+  <p>이름 하나에 정의가 하나뿐이면 많은 최적화가 단순하고 빨라집니다. 상수 전파는 각 정의에서 그 사용들을 따라가기만 하면 되고, 죽은 코드 제거는 사용되지 않는 정의를 지우며, 전역 값 번호 매기기(GVN)는 같은 이름의 값에 대한 연산을 비교하여 중복 계산을 찾아냅니다. 분석은 모든 프로그램 지점을 반복하는 대신 정의-사용 간선을 따라 희소(sparse)하게 수행할 수 있습니다. 이런 이유로 <a class="term-link" href="/ko/term/llvm/">LLVM</a> <a class="term-link" href="/ko/term/intermediate-representation/">IR</a>을 비롯한 많은 실용 컴파일러의 IR이 SSA 형식이며, 보통 가상 레지스터에 담긴 스칼라 값에 적용되고 메모리는 명시적인 load와 store로 접근합니다.</p>
+</section>
+<section class="term-about">
+  <h2>SSA에서 빠져나오기</h2>
+  <p>프로세서에는 φ 명령이 없으므로, 컴파일러는 <a class="term-link" href="/ko/term/register-allocation/">레지스터 할당</a> 전이나 할당 중에 SSA를 해제합니다. 각 φ는 선행 블록 끝의 복사 명령으로 대체되어, 들어오는 모든 경로가 선택된 값을 공통 위치에 쓰도록 합니다. 후속 블록이 여러 개인 블록에서 나와 선행 블록이 여러 개인 블록으로 들어가는 간선은 복사 명령을 둘 자리를 만들기 위해 분할해야 할 수 있습니다. 이후 레지스터 할당은 복사의 양쪽에 같은 레지스터를 배정하는 병합(coalescing)을 시도하여 대부분의 복사를 없앱니다.</p>
+</section>
 <section>
   <h2>도전해 보기: SSA 형식(Static Single Assignment) 관련 문제</h2>
   <article class="q-mini" data-qid="compiler-008" data-cat="compiler" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 각 변수에 대한 대입이 프로그램 안에서 정확히 1번이 된다</p><p class="explanation"><a class="term-link" href="/ko/term/ssa-form/">SSA 형식</a>에서는 변수에 대한 대입이 1번이 되도록 이름을 바꾸어 붙이고, 합류 지점에서는 φ 함수로 값을 선택합니다. 예를 들어 x를 2번 대입한다면 x1과 x2로 나누어 어느 쪽이 사용되는지를 명확히 합니다. 정의와 사용의 관계가 분명해지므로 상수 전파나 불필요한 코드의 삭제 같은 최적화가 쉬워집니다. 분기는 φ 함수로 다루므로 분기 명령이 없어지는 것은 아닙니다. 변수가 메모리에 놓이는 형태도 아니며, 대부분은 레지스터 후보로 취급됩니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>컴파일러에서 SSA는 무엇의 약자인가요?</h3>
+  <p>Static single assignment(정적 단일 대입)의 약자입니다. IR의 각 변수는 프로그램 텍스트에서 정확히 한 곳에서만 대입되며, 제어 흐름 경로가 합쳐지는 곳에서는 φ 함수가 값을 합칩니다.</p>
+  <h3>변수를 한 번만 대입할 수 있다면 SSA에서 루프는 어떻게 처리하나요?</h3>
+  <p>단일 대입은 동적이 아니라 정적인 개념입니다. 루프 헤더의 φ 함수가 루프로 들어오는 값과 이전 반복에서 계산된 값을 합치며, 그 하나의 정의가 반복마다 실행됩니다.</p>
+  <h3>φ 함수는 어디에 배치되나요?</h3>
+  <p>같은 원래 변수의 서로 다른 정의가 서로 다른 유입 간선을 따라 도착할 수 있는 블록의 시작 부분입니다. 지배 경계(dominance frontier)에 기반한 알고리즘은 불필요한 φ를 넣지 않고 이 지점들을 찾아냅니다.</p>
+</section>
 <section>
   <h2>해설 속 SSA 형식(Static Single Assignment)</h2>
   <ul class="term-quotes"><li><p>SSA 형식에서는 변수에 대한 대입이 1번이 되도록 이름을 바꾸어 붙이고, 합류 지점에서는 φ 함수로 값을 선택합니다.</p><a href="/ko/q/compiler/compiler-008/">SSA 형식 중간 표현의 특징으로 올바른 것은?</a></li><li><p>SSA 형식에서는 then 쪽의 대입을 x1, else 쪽의 대입을 x2라는 다른 이름으로 하므로, 합류한 뒤의 y 계산에서 어느 x를 사용해야 하는지를 나타낼 필요가 있습니다.</p><a href="/ko/q/compiler/compiler-009/">위의 코드를 SSA 형식으로 만들면 if문 뒤에 「x3 = φ(x1, x2)」와 같은 식이 들어간다. 이 …</a></li></ul>

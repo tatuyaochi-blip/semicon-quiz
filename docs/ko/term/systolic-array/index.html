@@ -24,7 +24,7 @@
 <link rel="manifest" href="/ko/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"시스톨릭 어레이(Systolic Array)","item":"https://semiconroom.com/ko/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"시스톨릭 어레이(Systolic Array)","description":"다수의 곱셈-누산 연산기를 격자 모양으로 배열하고 데이터를 이웃 연산기로 차례로 흘리며 행렬 곱을 계산하는 구성. AI용 가속기에 사용된다.","url":"https://semiconroom.com/ko/term/systolic-array/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"용어집","item":"https://semiconroom.com/ko/glossary/"},{"@type":"ListItem","position":3,"name":"시스톨릭 어레이(Systolic Array)","item":"https://semiconroom.com/ko/term/systolic-array/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"시스톨릭 어레이(Systolic Array)","description":"다수의 곱셈-누산 연산기를 격자 모양으로 배열하고 데이터를 이웃 연산기로 차례로 흘리며 행렬 곱을 계산하는 구성. AI용 가속기에 사용된다.","url":"https://semiconroom.com/ko/term/systolic-array/","inLanguage":"ko","inDefinedTermSet":{"@type":"DefinedTermSet","name":"용어집","url":"https://semiconroom.com/ko/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"시스톨릭 어레이라는 이름은 왜 붙었나요?","acceptedAnswer":{"@type":"Answer","text":"심장이 수축기(systole)마다 혈액을 내보내듯, 데이터가 클록마다 한 단계씩 규칙적인 리듬으로 격자 안을 맥동하며 흐르기 때문입니다."}},{"@type":"Question","name":"구글 TPU는 시스톨릭 어레이를 사용하나요?","acceptedAnswer":{"@type":"Answer","text":"그렇습니다. TPU의 행렬 연산 유닛은 128 × 128 같은 곱셈-누산 요소의 대형 시스톨릭 어레이로, 신경망의 행렬 곱을 계산합니다."}},{"@type":"Question","name":"weight-stationary 데이터플로란 무엇인가요?","acceptedAnswer":{"@type":"Answer","text":"각 처리 요소가 가중치 하나를 고정해 두고, 입력 활성화 값이 지나가며 부분합이 전달되는 방식입니다. 가중치를 반복해서 가져오는 일을 최소화하므로 신경망 추론에 적합합니다."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>분야: <a href="/ko/c/cpu/">CPU와 아키텍처</a></p>
 </article>
-
+<section class="term-about">
+  <h2>격자 안에서 데이터가 흐르는 방식</h2>
+  <p>시스톨릭 어레이는 처리 요소(PE)를 2차원 격자로 배열한 것으로, 각 요소는 바로 이웃한 요소와만 통신하는 곱셈-누산(MAC) 연산기입니다. weight-stationary 방식에서는 각 요소에 가중치 하나를 미리 적재해 두고, 입력 활성화 값이 왼쪽 가장자리로 들어와 클록마다 한 요소씩 오른쪽으로 전달되며, 부분합은 아래쪽으로 흐르면서 각 요소가 자신의 곱을 더합니다. 완성된 결과는 아래쪽 가장자리로 나옵니다. 입력은 행마다 1사이클씩 어긋나게 넣어, 짝이 맞는 값들이 올바른 요소에서 올바른 시점에 만나도록 합니다.</p>
+</section>
+<section class="term-about">
+  <h2>효율적인 이유</h2>
+  <p>메모리에서 가져온 각 값은 연산마다 한 번씩 읽히는 대신 한 행 또는 한 열 전체의 요소에서 재사용됩니다. 128 × 128 어레이는 가장자리로만 데이터를 공급받으면서 클록당 16,384회의 MAC을 수행하므로, 메모리 트래픽 1바이트당 처리하는 작업량이 매우 많습니다. 오프칩 메모리에서 데이터를 옮기는 데는 곱셈-덧셈보다 훨씬 많은 에너지가 들기 때문에, 이러한 재사용은 대역폭뿐 아니라 전력도 절약합니다. 모든 배선이 이웃끼리만 연결되어 긴 브로드캐스트 버스가 없으므로, 고밀도 레이아웃과 높은 클록 속도가 가능합니다.</p>
+</section>
+<section class="term-about">
+  <h2>데이터플로와 한계</h2>
+  <p>weight-stationary 설계 외에도, 두 피연산자를 흘려보내면서 각 부분합을 제자리에 유지하는 output-stationary 어레이가 있고, 입력을 고정하는 변형도 있습니다. 어느 방식이든 어레이 크기에 비례하는 채우기(fill) 및 비우기(drain) 지연이 있으며, 행렬 차원이 작거나 어레이와 맞지 않으면 요소가 유휴 상태가 되어 이용률이 떨어집니다. 합성곱은 보통 행렬 곱으로 변환하여 맞춥니다. 희소하거나 불규칙한 연산은 경직된 클록 동기 데이터플로가 작업을 쉽게 건너뛸 수 없어 잘 맞지 않습니다.</p>
+</section>
+<section class="term-about">
+  <h2>기원과 활용처</h2>
+  <p>이 아이디어는 1970년대 후반 H. T. Kung 등이 초고밀도 집적회로(VLSI)를 위해 단순한 셀의 규칙적 배열을 제안한 데서 비롯되었으며, 심장의 리드미컬한 박동에서 이름을 따왔습니다. 가장 큰 응용처는 행렬 곱이 지배적인 신경망 가속기로, 예를 들어 Google의 TPU는 128 × 128 같은 대형 어레이를 사용합니다. <a class="term-link" href="/ko/term/gpu/">GPU</a>는 다른 방식으로 비슷한 목표를 달성하는데, 각각 작은 행렬 타일을 계산하는 <a class="term-link" href="/ko/term/tensor-core/">텐서 코어</a>를 사용하고 레지스터와 공유 메모리가 데이터 재사용을 더 유연하게 처리합니다.</p>
+</section>
 <section>
   <h2>도전해 보기: 시스톨릭 어레이(Systolic Array) 관련 문제</h2>
   <article class="q-mini" data-qid="ai-stack-038" data-cat="ai-stack" data-answer="2" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 C예요.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 데이터를 이웃 연산기로 차례로 넘겨 재사용하므로 메모리에서 읽어 오는 횟수가 적고 다수의 연산기를 동시에 동작시킬 수 있기 때문</p><p class="explanation"><a class="term-link" href="/ko/term/systolic-array/">시스톨릭 어레이</a>에서는 격자 모양으로 배치한 곱셈-덧셈 연산기 사이를 데이터가 심장 박동처럼 일정한 리듬으로 흐릅니다. 한 번 읽어 온 값은 이웃 연산기로 차례차례 넘겨져 수십 번의 연산에 사용되므로, 메모리에서 읽는 양에 비해 매우 많은 계산을 할 수 있습니다. 배선도 이웃끼리의 짧은 것만으로 충분하므로 다수의 연산기를 높은 밀도로 배치할 수 있습니다.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>시스톨릭 어레이라는 이름은 왜 붙었나요?</h3>
+  <p>심장이 수축기(systole)마다 혈액을 내보내듯, 데이터가 클록마다 한 단계씩 규칙적인 리듬으로 격자 안을 맥동하며 흐르기 때문입니다.</p>
+  <h3>구글 TPU는 시스톨릭 어레이를 사용하나요?</h3>
+  <p>그렇습니다. TPU의 행렬 연산 유닛은 128 × 128 같은 곱셈-누산 요소의 대형 시스톨릭 어레이로, 신경망의 행렬 곱을 계산합니다.</p>
+  <h3>weight-stationary 데이터플로란 무엇인가요?</h3>
+  <p>각 처리 요소가 가중치 하나를 고정해 두고, 입력 활성화 값이 지나가며 부분합이 전달되는 방식입니다. 가중치를 반복해서 가져오는 일을 최소화하므로 신경망 추론에 적합합니다.</p>
+</section>
 <section>
   <h2>해설 속 시스톨릭 어레이(Systolic Array)</h2>
   <ul class="term-quotes"><li><p>시스톨릭 어레이에서는 격자 모양으로 배치한 곱셈-덧셈 연산기 사이를 데이터가 심장 박동처럼 일정한 리듬으로 흐릅니다.</p><a href="/ko/q/ai-stack/ai-stack-038/">AI용 가속기에서 사용되는 시스톨릭 어레이가 행렬 곱을 효율적으로 계산할 수 있는 주된 이유는 무엇인가?</a></li><li><p>시스톨릭 어레이는 곱셈-누산 연산기(MAC)를 2차원으로 배치하고 데이터를 이웃 연산기로 규칙적으로 보내며 계산하는 구성으로, 혈액을 내보내는 심장의 수축(시스톨)에 빗댄 이름입니다.</p><a href="/ko/q/cpu/cpu-049/">AI용 가속기 등에서 다수의 곱셈-누산 연산기를 격자 모양으로 배치하고 데이터를 이웃 연산기로 차례로 흘려…</a></li></ul>

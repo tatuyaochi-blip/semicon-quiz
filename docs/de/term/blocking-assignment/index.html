@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Blockierende Zuweisung","item":"https://semiconroom.com/de/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blockierende Zuweisung","description":"Zuweisung mit „=“ in Verilog. Die linke Seite wird sofort aktualisiert und der neue Wert in der nächsten Zeile verwendet. Sie wird in always-Blöcken kombinatorischer Schaltungen und in Testbenches verwendet.","url":"https://semiconroom.com/de/term/blocking-assignment/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Blockierende Zuweisung","item":"https://semiconroom.com/de/term/blocking-assignment/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Blockierende Zuweisung","description":"Zuweisung mit „=“ in Verilog. Die linke Seite wird sofort aktualisiert und der neue Wert in der nächsten Zeile verwendet. Sie wird in always-Blöcken kombinatorischer Schaltungen und in Testbenches verwendet.","url":"https://semiconroom.com/de/term/blocking-assignment/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Verilog: wann blockierende, wann nichtblockierende Zuweisung?","acceptedAnswer":{"@type":"Answer","text":"Verwenden Sie nichtblockierende Zuweisungen für Register in getakteten always-Blöcken und blockierende Zuweisungen in kombinatorischen Blöcken sowie für temporäre Variablen. Mischen Sie nicht beide Arten bei derselben Variable."}},{"@type":"Question","name":"Verilog-Schieberegister verzögert nur um einen Takt – warum?","acceptedAnswer":{"@type":"Answer","text":"Höchstwahrscheinlich sind die Stufen mit blockierenden Zuweisungen geschrieben, sodass jede Stufe den Wert erhält, den die vorherige Zeile gerade aktualisiert hat. Der Wechsel zu nichtblockierenden Zuweisungen sorgt dafür, dass jede Stufe den Wert von vor der Flanke übernimmt."}},{"@type":"Question","name":"Entspricht die VHDL-Variablenzuweisung der blockierenden Zuweisung in Verilog?","acceptedAnswer":{"@type":"Answer","text":"Ja, ungefähr: Eine VHDL-Variablenzuweisung wird innerhalb des Prozesses sofort wirksam, während eine VHDL-Signalzuweisung eingeplant wird und sich eher wie eine nichtblockierende Zuweisung verhält."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -70,9 +70,32 @@
   
   <p>Fachgebiet: <a href="/de/c/hdl-verification/">Hardwarebeschreibungssprachen und Verifikation</a></p>
 </article>
+<section class="term-about">
+  <h2>So funktioniert die blockierende Zuweisung</h2>
+  <p>Eine blockierende Zuweisung, geschrieben mit einem einfachen Gleichheitszeichen, wertet ihre rechte Seite aus und aktualisiert die Variable auf der linken Seite, bevor die nächste Anweisung im selben prozeduralen Block ausgeführt wird, ähnlich wie eine Zuweisung in C. Die Anweisungen wirken daher der Reihe nach, und eine spätere Zeile sieht den Wert, den eine frühere Zeile gerade geschrieben hat. Eine nichtblockierende Zuweisung dagegen wertet zuerst alle rechten Seiten aus und übernimmt alle Aktualisierungen gemeinsam später im Zeitschritt, sodass jede Anweisung die Werte von vor der Taktflanke sieht.</p>
+</section>
+<section class="term-about">
+  <h2>Warum sie getaktete Logik zerstört</h2>
+  <p>In einem getakteten always-Block lassen blockierende Zuweisungen ein Register den neuen Wert eines anderen innerhalb derselben Flanke sehen. Schreibt man „q1 = d; q2 = q1;“ für ein zweistufiges <a class="term-link" href="/de/term/shift-register/">Schieberegister</a>, erhält q2 das soeben aktualisierte q1, also d, sodass sowohl die Simulation als auch die synthetisierte Schaltung nur um eine Stufe verzögern. Ebenso lässt „a = b; b = a;“ beide gleich dem alten b, statt sie zu vertauschen. Verwendet man für jedes Register in einem getakteten Block nichtblockierende Zuweisungen, verhält sich der Code unabhängig von der Reihenfolge der Anweisungen wie parallele Flipflops.</p>
+</section>
+<section class="term-about">
+  <h2>Wo die blockierende Zuweisung richtig ist</h2>
+  <p>Die blockierende Zuweisung gehört in kombinatorische always-Blöcke, geschrieben als always @(*) oder <a class="term-link" href="/de/term/systemverilog/">SystemVerilog</a> always_comb, wo eine in einer Zeile berechnete Zwischenvariable in die nächste einfließt und das Ergebnis eine Kette von Gattern beschreibt. Sie ist auch im prozeduralen Code von Testbenches und für temporäre Variablen in Functions und Tasks naheliegend. Die weithin befolgten Regeln lauten: nichtblockierend für getaktete Logik, blockierend für kombinatorische Logik, und niemals dieselbe Variable mit beiden Arten zuweisen.</p>
+</section>
+<section class="term-about">
+  <h2>Race Conditions in Testbenches</h2>
+  <p>Treibt man einen Design-Eingang mit einer blockierenden Zuweisung genau zur selben Simulationszeit wie die aktive Taktflanke, entsteht eine Race Condition: Ob die Flipflops des Designs den alten oder den neuen Wert übernehmen, hängt davon ab, welchen Prozess der Simulator zufällig zuerst ausführt, und die Ergebnisse können sich zwischen Simulatoren unterscheiden. Übliche Abhilfen sind, die Stimuli an der entgegengesetzten Taktflanke oder mit einer kurzen Verzögerung nach der aktiven Flanke zu ändern, Eingänge mit nichtblockierenden Zuweisungen zu treiben oder <a class="term-link" href="/de/term/systemverilog/">SystemVerilog</a>-Clocking-Blocks zu verwenden.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Verilog: wann blockierende, wann nichtblockierende Zuweisung?</h3>
+  <p>Verwenden Sie nichtblockierende Zuweisungen für Register in getakteten always-Blöcken und blockierende Zuweisungen in kombinatorischen Blöcken sowie für temporäre Variablen. Mischen Sie nicht beide Arten bei derselben Variable.</p>
+  <h3>Verilog-Schieberegister verzögert nur um einen Takt – warum?</h3>
+  <p>Höchstwahrscheinlich sind die Stufen mit blockierenden Zuweisungen geschrieben, sodass jede Stufe den Wert erhält, den die vorherige Zeile gerade aktualisiert hat. Der Wechsel zu nichtblockierenden Zuweisungen sorgt dafür, dass jede Stufe den Wert von vor der Flanke übernimmt.</p>
+  <h3>Entspricht die VHDL-Variablenzuweisung der blockierenden Zuweisung in Verilog?</h3>
+  <p>Ja, ungefähr: Eine VHDL-Variablenzuweisung wird innerhalb des Prozesses sofort wirksam, während eine VHDL-Signalzuweisung eingeplant wird und sich eher wie eine nichtblockierende Zuweisung verhält.</p>
+</section>
 
 
 

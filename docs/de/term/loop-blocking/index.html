@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Loop Blocking (Loop Tiling)","item":"https://semiconroom.com/de/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop Blocking (Loop Tiling)","description":"Optimierung, bei der große Arrays in kleine, in den Cache passende Blöcke zerlegt werden, sodass geladene Daten vor der Verdrängung mehrfach genutzt werden. Besonders wirksam bei Matrixprodukten.","url":"https://semiconroom.com/de/term/loop-blocking/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Loop Blocking (Loop Tiling)","item":"https://semiconroom.com/de/term/loop-blocking/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Loop Blocking (Loop Tiling)","description":"Optimierung, bei der große Arrays in kleine, in den Cache passende Blöcke zerlegt werden, sodass geladene Daten vor der Verdrängung mehrfach genutzt werden. Besonders wirksam bei Matrixprodukten.","url":"https://semiconroom.com/de/term/loop-blocking/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wofür wird Loop Tiling verwendet?","acceptedAnswer":{"@type":"Answer","text":"Es strukturiert Schleifen so um, dass sie auf cachegroßen Datenblöcken arbeiten, damit jedes geladene Element vor der Verdrängung viele Male wiederverwendet wird, was Kapazitäts-Misses und Speicherverkehr stark verringert."}},{"@type":"Question","name":"Blockgröße für Matrixmultiplikation wählen","acceptedAnswer":{"@type":"Answer","text":"Man beginnt mit einer Größe, bei der die Arbeitskacheln in den Ziel-Cache passen, zum Beispiel ergeben drei b × b-Kacheln aus Doubles in einem 32-KB-L1 ein b um 32, und stimmt dann empirisch auf Konflikte, TLB und Prefetching ab."}},{"@type":"Question","name":"Ist Loop Blocking dasselbe wie Loop Unrolling?","acceptedAnswer":{"@type":"Answer","text":"Nein. Unrolling verringert Schleifen-Overhead und Verzweigungen, während Blocking die Iterationen umordnet, um die Cache-Wiederverwendung zu verbessern."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum die naive Matrixmultiplikation Cache-Misses erzeugt</h2>
+  <p>Man betrachte C = A × B für N × N-Matrizen aus Doubles mit der Dreifachschleife aus dem Lehrbuch. Jedes Element von C benötigt eine vollständige Zeile von A und eine vollständige Spalte von B, und das Durchlaufen einer Spalte von B bei zeilenweiser Speicherung (Row-Major) <a class="term-link" href="/de/term/bit-error-rate/">ber</a>ührt für jedes Element eine andere Cache-Line. Ist N groß, bleiben eine Spalte von B und die Zeilen von A nicht lange genug im Cache, um wiederverwendet zu werden, sodass dieselben Daten immer wieder aus dem Hauptspeicher geladen werden. Das sind Kapazitäts-Misses: Eine höhere Assoziativität des Caches hilft nicht, weil das Working Set schlicht zu groß ist.</p>
+</section>
+<section class="term-about">
+  <h2>Wie Blocking funktioniert</h2>
+  <p>Loop Blocking oder Tiling zerlegt jede Matrix in b × b-Kacheln und ordnet die Schleifen so um, dass ein Kachelprodukt, C-Kachel += A-Kachel × B-Kachel, abgeschlossen wird, während alle drei Kacheln im Cache liegen. Jedes geladene Element wird dann vor seiner Verdrängung etwa b-mal wiederverwendet, und der Speicherverkehr sinkt von einer Größenordnung von N³ Elementen auf etwa N³/b. Die Arithmetik und der gesamte Speicherbedarf bleiben unverändert; nur die Reihenfolge der Operationen ändert sich. Die <a class="term-link" href="/de/term/arithmetic-intensity/">arithmetische Intensität</a>, also Operationen pro bewegtem Byte, steigt etwa proportional zur Kachelgröße.</p>
+</section>
+<section class="term-about">
+  <h2>Wahl der Kachelgröße</h2>
+  <p>Als erste Abschätzung müssen drei Kacheln in den Ziel-Cache passen: 3 × b² × 8 Byte für Doubles. Bei einem 32-KB-L1-Cache ergibt das b von etwa 36, sodass eine Kachel von etwa 32 eine naheliegende Wahl ist, die Platz für andere Daten lässt. In der Praxis spielen auch Konflikt-Misses durch Zweierpotenz-Schrittweiten, die <a class="term-link" href="/de/term/tlb/">TLB</a>-Reichweite und Hardware-<a class="term-link" href="/de/term/prefetching/">Prefetching</a> eine Rolle, daher werden Kachelgrößen empirisch abgestimmt, und Kacheln werden mitunter in zusammenhängende Puffer kopiert. Hochleistungsbibliotheken blocken auf mehreren Ebenen zugleich: Register, L1, L2 und L3.</p>
+</section>
+<section class="term-about">
+  <h2>Blocking im Vergleich zu anderen Schleifentransformationen</h2>
+  <p><a class="term-link" href="/de/term/loop-unrolling/">Loop Unrolling</a> vervielfacht den Schleifenrumpf, um den Schleifen-Overhead zu senken und Parallelität auf Befehlsebene freizulegen; die Cache-Wiederverwendung verbessert es allein nicht. Loop Interchange vertauscht die Verschachtelungsreihenfolge, sodass die innerste Schleife den Speicher zusammenhängend durchläuft, was die <a class="term-link" href="/de/term/spatial-locality/">räumliche Lokalität</a> verbessert. Blocking zielt auf <a class="term-link" href="/de/term/temporal-locality/">zeitliche Lokalität</a> ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> große Datenmengen und wird oft mit beiden kombiniert. Dieselbe Idee findet sich auf GPUs, wo Kacheln im On-Chip-Shared-Memory bereitgestellt werden, sowie in Stencil-Codes, Faltungen und vielen Kernels der dichten linearen Algebra.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Loop Blocking (Loop Tiling)</h2>
   <article class="q-mini" data-qid="memory-hierarchy-018" data-cat="memory-hierarchy" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. In kleinen Blöcken zu rechnen, die in den Cache passen, und so die Wiederverwendung von Daten zu erhöhen</p><p class="explanation">Wird ein Produkt großer Matrizen unverändert berechnet, werden einmal geladene Elemente aus dem Cache verdrängt, bevor sie erneut verwendet werden, und müssen wiederholt aus dem Hauptspeicher nachgeladen werden. Beim <a class="term-link" href="/de/term/loop-blocking/">Loop Blocking</a> wird die Matrix in kleine Blöcke zerlegt, die in den Cache passen, und innerhalb der Blöcke gerechnet; so werden geladene Daten mehrfach wiederverwendet und Kapazitäts-Misses stark verringert. Sprunganweisungen zu verringern ist der Zweck von <a class="term-link" href="/de/term/loop-unrolling/">Loop Unrolling</a>, und die Gesamtmenge des verwendeten Speichers ändert sich nicht.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wofür wird Loop Tiling verwendet?</h3>
+  <p>Es strukturiert Schleifen so um, dass sie auf cachegroßen Datenblöcken arbeiten, damit jedes geladene Element vor der Verdrängung viele Male wiederverwendet wird, was Kapazitäts-Misses und Speicherverkehr stark verringert.</p>
+  <h3>Blockgröße für Matrixmultiplikation wählen</h3>
+  <p>Man beginnt mit einer Größe, bei der die Arbeitskacheln in den Ziel-Cache passen, zum Beispiel ergeben drei b × b-Kacheln aus Doubles in einem 32-KB-L1 ein b um 32, und stimmt dann empirisch auf Konflikte, TLB und Prefetching ab.</p>
+  <h3>Ist Loop Blocking dasselbe wie Loop Unrolling?</h3>
+  <p>Nein. Unrolling verringert Schleifen-Overhead und Verzweigungen, während Blocking die Iterationen umordnet, um die Cache-Wiederverwendung zu verbessern.</p>
+</section>
 <section>
   <h2>„Loop Blocking (Loop Tiling)“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Beim Loop Blocking wird die Matrix in kleine Blöcke zerlegt, die in den Cache passen, und innerhalb der Blöcke gerechnet; so werden geladene Daten mehrfach wiederverwendet und Kapazitäts-Misses stark verringert.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-018/">Was ist der Hauptzweck von Loop Blocking (Tiling), das z. B…</a></li><li><p>durch Loop Blocking verkleinert werden.</p><a href="/de/q/memory-hierarchy/memory-hierarchy-009/">Welcher der folgenden Misses wird auch durch einen voll ass…</a></li></ul>

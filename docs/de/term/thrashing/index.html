@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Thrashing","item":"https://semiconroom.com/de/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Thrashing","description":"Zustand, in dem wegen fehlenden physischen Speichers Seiten ständig ausgelagert und eingelesen werden und die Verarbeitung kaum noch vorankommt. Behebbar durch weniger laufende Prozesse oder mehr Speicher.","url":"https://semiconroom.com/de/term/thrashing/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Thrashing","item":"https://semiconroom.com/de/term/thrashing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Thrashing","description":"Zustand, in dem wegen fehlenden physischen Speichers Seiten ständig ausgelagert und eingelesen werden und die Verarbeitung kaum noch vorankommt. Behebbar durch weniger laufende Prozesse oder mehr Speicher.","url":"https://semiconroom.com/de/term/thrashing/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was verursacht Thrashing in einem Betriebssystem?","acceptedAnswer":{"@type":"Answer","text":"Laufende Prozesse, deren zusammengenommene Working Sets den physischen Speicher übersteigen, sodass Seiten verdrängt und fast sofort wieder benötigt werden, wodurch das System mit Paging-I/O statt mit nützlicher Arbeit beschäftigt ist."}},{"@type":"Question","name":"Wie stoppt man Thrashing?","acceptedAnswer":{"@type":"Answer","text":"Die Zahl aktiver Prozesse verringern, physischen Speicher hinzufügen oder Working-Set- bzw. Seitenfehlerfrequenz-Strategien verwenden, die Rahmen nach dem tatsächlichen Bedarf jedes Prozesses zuteilen."}},{"@type":"Question","name":"Unterschied zwischen Thrashing und Bélády-Anomalie","acceptedAnswer":{"@type":"Answer","text":"Thrashing ist ein Leistungseinbruch durch Überbelegung des Speichers, während die Bélády-Anomalie der kontraintuitive Fall ist, in dem die FIFO-Ersetzung mehr Seitenfehler verursacht, wenn mehr Rahmen verfügbar sind."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/os-hardware/">Betriebssystem und Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum es auftritt</h2>
+  <p>Jeder Prozess hat ein Working Set, die Seiten, die er innerhalb eines kurzen Zeitfensters aktiv nutzt. Übersteigen die zusammengenommenen Working Sets aller laufenden Prozesse den physischen Speicher, verdrängt das Laden einer Seite für einen Prozess eine Seite, die ein anderer oder derselbe Prozess fast sofort benötigen wird. Diese Seite wird dann per <a class="term-link" href="/de/term/page-fault/">Seitenfehler</a> wieder eingelesen und verdrängt eine weitere benötigte Seite. Seitenfehler gehen an Festplatte oder SSD, was einige zehn Mikrosekunden bis Millisekunden dauert, verglichen mit etwa 100 ns für DRAM, sodass das System fast seine gesamte Zeit mit Warten auf Paging-I/O verbringt.</p>
+</section>
+<section class="term-about">
+  <h2>Die Rückkopplungsfalle</h2>
+  <p>Ein klassisches Lehrbuchszenario zeigt, wie sich Thrashing selbst verstärken kann. Während Prozesse auf <a class="term-link" href="/de/term/page-fault/">Seitenfehler</a> warten, sinkt die CPU-<a class="term-link" href="/de/term/gpu-occupancy/">Auslastung</a>. Ein naiver Scheduler, der die Auslastung durch Zulassen weiterer Prozesse erhöhen will, verkleinert den für jeden verfügbaren Speicher, was noch mehr Seitenfehler und eine noch geringere Auslastung verursacht. Der <a class="term-link" href="/de/term/throughput/">Durchsatz</a> bricht ein, statt allmählich nachzulassen. Die Symptome sind eine sehr hohe Seitenfehlerrate, ausgelastetes Swap-I/O, ein hoher Anteil an I/O-Wartezeit und wenig nützliche Berechnung, obwohl die Maschine beschäftigt erscheint.</p>
+</section>
+<section class="term-about">
+  <h2>Abhilfen</h2>
+  <p>Das grundlegende Gegenmittel ist, den Speicherbedarf passend zu machen: weniger Prozesse gleichzeitig ausführen, indem ganze Prozesse suspendiert oder ausgelagert werden, oder physischen Speicher hinzufügen. Working-Set-basierte Strategien lassen einen Prozess nur zu, wenn sein Working Set gehalten werden kann. Die Steuerung ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> die Seitenfehlerfrequenz gibt einem Prozess mehr Rahmen, wenn seine Fehlerrate eine obere Schwelle überschreitet, und nimmt ihm Rahmen weg, wenn sie unter eine untere fällt. Programme können sich selbst helfen, indem sie ihre Lokalität verbessern, sodass ihre Working Sets kleiner werden.</p>
+</section>
+<section class="term-about">
+  <h2>Thrashing im Vergleich zu verwandten Begriffen</h2>
+  <p>Thrashing ist ein anhaltender Durchsatzeinbruch aufgrund von Speichermangel. Es unterscheidet sich von der Bélády-Anomalie, dem speziellen Fall, in dem die FIFO-Ersetzung mehr <a class="term-link" href="/de/term/page-fault/">Seitenfehler</a> erzeugt, wenn mehr Rahmen zur Verfügung stehen; Stack-Algorithmen wie <a class="term-link" href="/de/term/lru-replacement/">LRU</a> können diese Anomalie nicht zeigen. Es unterscheidet sich auch vom <a class="term-link" href="/de/term/deadlock/">Deadlock</a>, bei dem Tasks stehen bleiben, weil jeder auf Ressourcen wartet, die ein anderer hält. Das Wort wird auch für Caches und TLBs verwendet: Cache-Thrashing beschreibt Lines, die sich wiederholt gegenseitig verdrängen, oft Adressen, die auf dasselbe Set abgebildet werden, was dasselbe Muster in kleinerem Maßstab ist.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Thrashing</h2>
   <article class="q-mini" data-qid="os-hardware-020" data-cat="os-hardware" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Thrashing</p><p class="explanation">Wird die Summe der von gleichzeitig laufenden Prozessen genutzten Seiten (Working Set) größer als der physische Speicher, wiederholt sich Folgendes: Beim Laden einer benötigten Seite wird eine von einem anderen Prozess genutzte Seite ausgelagert, die sofort wieder benötigt wird. Es wird fast nur noch auf Festplattenzugriffe gewartet, und auch die CPU-<a class="term-link" href="/de/term/gpu-occupancy/">Auslastung</a> sinkt. Das ist <a class="term-link" href="/de/term/thrashing/">Thrashing</a>; es wird behoben, indem weniger Prozesse laufen oder der Speicher erweitert wird. Ein <a class="term-link" href="/de/term/deadlock/">Deadlock</a> ist ein Stillstand, bei dem gegenseitig auf Ressourcen gewartet wird.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was verursacht Thrashing in einem Betriebssystem?</h3>
+  <p>Laufende Prozesse, deren zusammengenommene Working Sets den physischen Speicher übersteigen, sodass Seiten verdrängt und fast sofort wieder benötigt werden, wodurch das System mit Paging-I/O statt mit nützlicher Arbeit beschäftigt ist.</p>
+  <h3>Wie stoppt man Thrashing?</h3>
+  <p>Die Zahl aktiver Prozesse verringern, physischen Speicher hinzufügen oder Working-Set- bzw. Seitenfehlerfrequenz-Strategien verwenden, die Rahmen nach dem tatsächlichen Bedarf jedes Prozesses zuteilen.</p>
+  <h3>Unterschied zwischen Thrashing und Bélády-Anomalie</h3>
+  <p>Thrashing ist ein Leistungseinbruch durch Überbelegung des Speichers, während die Bélády-Anomalie der kontraintuitive Fall ist, in dem die FIFO-Ersetzung mehr Seitenfehler verursacht, wenn mehr Rahmen verfügbar sind.</p>
+</section>
 <section>
   <h2>„Thrashing“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Thrashing ist ein Zustand fortgesetzter Ersetzung bei Speichermangel, Copy-on-Write ein Verfahren, beim Schreiben zu duplizieren.</p><a href="/de/q/os-hardware/os-hardware-020/">Wie heißt das Phänomen, dass bei der Seitenersetzung nach d…</a></li><li><p>Das ist Thrashing; es wird behoben, indem weniger Prozesse laufen oder der Speicher erweitert wird.</p><a href="/de/q/os-hardware/os-hardware-021/">Wie heißt der Zustand, in dem wegen Mangels an physischem S…</a></li></ul>

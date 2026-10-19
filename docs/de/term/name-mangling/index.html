@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Name Mangling","item":"https://semiconroom.com/de/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Name Mangling","description":"Vorgang, bei dem ein C++-Compiler Informationen zu Argumenttypen und Namensraum in den Funktionsnamen einbettet und so den Symbolnamen bildet. Dadurch kann der Linker überladene Funktionen unterscheiden.","url":"https://semiconroom.com/de/term/name-mangling/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Name Mangling","item":"https://semiconroom.com/de/term/name-mangling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Name Mangling","description":"Vorgang, bei dem ein C++-Compiler Informationen zu Argumenttypen und Namensraum in den Funktionsnamen einbettet und so den Symbolnamen bildet. Dadurch kann der Linker überladene Funktionen unterscheiden.","url":"https://semiconroom.com/de/term/name-mangling/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"C++-Symbolnamen demanglen","acceptedAnswer":{"@type":"Answer","text":"Man leitet ihn durch c++filt, zum Beispiel gibt echo _Z5printi | c++filt print(int) aus. nm -C und objdump -C führen beim Auflisten von Symbolen ein Demangling durch."}},{"@type":"Question","name":"Was bewirkt extern \"C\" in C++?","acceptedAnswer":{"@type":"Answer","text":"Es gibt den deklarierten Funktionen C-Bindung, sodass der Compiler den einfachen, undekorierten Namen verwendet. So kann C++-Code C-Bibliotheken aufrufen und C-Code auf diese Weise exportierte C++-Funktionen aufrufen."}},{"@type":"Question","name":"Warum ist der Rückgabetyp nicht Teil eines dekorierten Funktionsnamens?","acceptedAnswer":{"@type":"Answer","text":"C++-Überladungen müssen sich in ihren Parametern unterscheiden, daher identifizieren die Parameter allein die Funktion. Instanzen von Funktionstemplates sind die Ausnahme und kodieren den Rückgabetyp mit."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/linker-loader/">Linker, Loader und ausführbare Formate</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was kodiert wird</h2>
+  <p>Ein dekorierter (mangled) Name packt alles in ein einziges <a class="term-link" href="/de/term/linker/">Linker</a>-Symbol, was C++-Entitäten mit demselben Namen auf Quelltextebene unterscheidet: umschließende Namensräume und Klassen, den Funktionsnamen, die Parametertypen, die const- oder volatile-Qualifizierung von Memberfunktionen und Template-Argumente. Der Rückgabetyp wird normalerweise weggelassen, da sich Überladungen nicht nur im Rückgabetyp unterscheiden können, wobei Instanzen von Funktionstemplates ihn allerdings enthalten. Nach der Itanium C++ <a class="term-link" href="/de/term/application-binary-interface/">ABI</a>, die von GCC und Clang unter Linux und auf vielen anderen Plattformen verwendet wird, wird print(int) zu _Z5printi und ns::f(double) zu _ZN2ns1fEd, wobei jedem Namen seine Länge vorangestellt ist und einzelne Buchstaben eingebaute Typen kodieren.</p>
+</section>
+<section class="term-about">
+  <h2>extern &quot;C&quot; und das Mischen von Sprachen</h2>
+  <p>C kennt kein Überladen, daher erzeugen C-Compiler einfache Funktionsnamen. Ruft C++-Code eine C-Bibliothek auf, müssen deren Deklarationen in extern &quot;C&quot; eingeschlossen werden, damit der C++-Compiler nach dem undekorierten Namen sucht; andernfalls sucht er nach etwas wie _Z3fooi, findet nur foo, und das Linken scheitert mit einer undefinierten Referenz. Zwischen den Sprachen geteilte Header schließen ihre Deklarationen meist in extern &quot;C&quot; ein, abgesichert durch eine Prüfung auf das Makro __cplusplus. Als extern &quot;C&quot; deklarierte Funktionen können nicht überladen werden, da zwei von ihnen auf dasselbe Symbol abgebildet würden.</p>
+</section>
+<section class="term-about">
+  <h2>Dekorierte Namen lesen</h2>
+  <p>Dekorierte Namen tauchen in der Ausgabe von nm, in Disassemblierungen, Absturzberichten und <a class="term-link" href="/de/term/linker/">Linker</a>-Fehlern auf. Das Werkzeug c++filt wandelt sie in lesbare Deklarationen zurück, nm -C tut dasselbe in seiner Auflistung, und die meisten Debugger und Linker führen beim Ausgeben von Diagnosen automatisch ein Demangling durch. Die Rohform lesen zu können hilft dennoch: Zwei Symbole, die nach dem Demangling identisch aussehen, können sich in einem const-Qualifizierer oder einem Parametertyp unterscheiden, was offenbart, dass eine Deklaration in einem Header nicht mit der tatsächlich kompilierten Definition übereinstimmt.</p>
+</section>
+<section class="term-about">
+  <h2>Name Mangling ist Teil der ABI</h2>
+  <p>Jede Compilerfamilie definiert ihr eigenes Schema, und der Compiler von Microsoft verwendet eine völlig andere Kodierung als die Itanium-<a class="term-link" href="/de/term/application-binary-interface/">ABI</a>. Das Schema ist Teil der binären Anwendungsschnittstelle (ABI), daher lassen sich Objektdateien von Compilern mit unterschiedlichen Schemata nicht direkt linken, selbst wenn der Quelltext identisch ist. Änderungen an der C++-Schnittstelle einer Bibliothek, etwa die Änderung eines Parametertyps, ändern die dekorierten Namen und brechen die Binärkompatibilität mit Programmen, die gegen die alte Version gebaut wurden. Andere Sprachen mit Überladung oder Modulen, etwa Rust, dekorieren Namen aus denselben Gründen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Name Mangling</h2>
   <article class="q-mini" data-qid="linker-loader-035" data-cat="linker-loader" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Dem Linker die Unterscheidung von Funktionen gleichen Namens mit unterschiedlichen Argumenttypen (Überladung) und von Namensräumen zu ermöglichen</p><p class="explanation">Der <a class="term-link" href="/de/term/linker/">Linker</a> vergleicht Symbole nur anhand der Namenszeichenkette. In C++ können Funktionen gleichen Namens wie „print(int)“ und „print(double)“ angelegt werden, die so nicht unterscheidbar wären. Der Compiler bettet daher Argumenttypen u. Ä. in den Namen ein, etwa „_Z5printi“. Funktionen in C werden nicht dekoriert; beim Aufruf von C-Funktionen aus C++ wird daher „extern &quot;C&quot;“ angegeben, um das Mangling zu unterbinden.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>C++-Symbolnamen demanglen</h3>
+  <p>Man leitet ihn durch c++filt, zum Beispiel gibt echo _Z5printi | c++filt print(int) aus. nm -C und objdump -C führen beim Auflisten von Symbolen ein Demangling durch.</p>
+  <h3>Was bewirkt extern &quot;C&quot; in C++?</h3>
+  <p>Es gibt den deklarierten Funktionen C-Bindung, sodass der Compiler den einfachen, undekorierten Namen verwendet. So kann C++-Code C-Bibliotheken aufrufen und C-Code auf diese Weise exportierte C++-Funktionen aufrufen.</p>
+  <h3>Warum ist der Rückgabetyp nicht Teil eines dekorierten Funktionsnamens?</h3>
+  <p>C++-Überladungen müssen sich in ihren Parametern unterscheiden, daher identifizieren die Parameter allein die Funktion. Instanzen von Funktionstemplates sind die Ausnahme und kodieren den Rückgabetyp mit.</p>
+</section>
 <section>
   <h2>„Name Mangling“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>-lm), dass der Name falsch geschrieben ist oder dass eine in C++ geschriebene Funktion ohne extern &quot;C&quot; aufgerufen wird und durch Name Mangling einen anderen Namen erhält.</p><a href="/de/q/linker-loader/linker-loader-005/">Beim Linken eines C-Programms trat der Fehler „undefined re…</a></li></ul>

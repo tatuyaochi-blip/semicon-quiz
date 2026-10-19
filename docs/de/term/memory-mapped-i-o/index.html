@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Memory-Mapped I/O","item":"https://semiconroom.com/de/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory-Mapped I/O","description":"Verfahren, bei dem Register von Peripheriegeräten bestimmten Adressen im selben Adressraum wie der Speicher zugewiesen und mit gewöhnlichen Lese- und Schreibbefehlen bedient werden. Dieser Bereich wird als nicht cachebar konfiguriert.","url":"https://semiconroom.com/de/term/memory-mapped-i-o/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Memory-Mapped I/O","item":"https://semiconroom.com/de/term/memory-mapped-i-o/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Memory-Mapped I/O","description":"Verfahren, bei dem Register von Peripheriegeräten bestimmten Adressen im selben Adressraum wie der Speicher zugewiesen und mit gewöhnlichen Lese- und Schreibbefehlen bedient werden. Dieser Bereich wird als nicht cachebar konfiguriert.","url":"https://semiconroom.com/de/term/memory-mapped-i-o/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Memory-Mapped I/O und Port-Mapped I/O","acceptedAnswer":{"@type":"Answer","text":"Memory-Mapped I/O legt Geräteregister in den normalen Speicheradressraum und greift mit gewöhnlichen Loads und Stores darauf zu, während Port-Mapped I/O einen separaten Adressraum und spezielle Befehle wie IN und OUT auf x86 verwendet."}},{"@type":"Question","name":"Warum müssen speicherabgebildete Register volatile deklariert werden?","acceptedAnswer":{"@type":"Answer","text":"Das Gerät kann Registerwerte unabhängig vom Programm ändern, daher zwingt volatile den Compiler, jeden Lese- und Schreibzugriff auszuführen, statt Werte in Registern zwischenzuspeichern oder scheinbar redundante Zugriffe zu entfernen."}},{"@type":"Question","name":"Warum ist der Memory-Mapped-I/O-Bereich nicht cachebar?","acceptedAnswer":{"@type":"Answer","text":"Ein Cache würde veraltete Werte statt des aktuellen Gerätezustands liefern und könnte Schreibzugriffe verzögern oder zusammenfassen, daher werden Gerätebereiche mit nicht cachebaren bzw. Device-Attributen eingeblendet."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/os-hardware/">Betriebssystem und Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie es funktioniert</h2>
+  <p>Der Adressdecoder des Prozessors leitet bestimmte Adressbereiche nicht zum RAM, sondern zu Peripheriegeräten. Das Steuerregister eines Timers, das Datenregister eines <a class="term-link" href="/de/term/uart/">UART</a> oder ein <a class="term-link" href="/de/term/gpio/">GPIO</a>-Port erscheinen jeweils an einer festen Adresse, und gewöhnliche Load- und Store-Befehle werden zu Lese- und Schreibtransaktionen mit diesem Gerät. Anders als beim Speicher können diese Zugriffe Nebenwirkungen haben: Das Lesen eines Status- oder Datenregisters kann ein Flag löschen oder ein Element aus einem FIFO entnehmen, das Schreiben einer 1 kann einen <a class="term-link" href="/de/term/interrupt/">Interrupt</a> quittieren, und der Wert kann sich jederzeit ändern, weil die Hardware ihn unabhängig vom Programm aktualisiert.</p>
+</section>
+<section class="term-about">
+  <h2>Memory-Mapped I/O und Port-Mapped I/O im Vergleich</h2>
+  <p>Port-Mapped I/O gibt Geräten einen separaten Adressraum, der nur ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> eigene Befehle erreichbar ist, etwa IN und OUT auf x86. Memory-Mapped I/O braucht keine speziellen Befehle, sodass jede <a class="term-link" href="/de/term/addressing-mode/">Adressierungsart</a>, jeder Zeiger und jedes C-struct verwendet werden kann, um Register zu erreichen, was den Befehlssatz einfach hält. Es ist der Standard bei ARM- und RISC-V-Mikrocontrollern, und selbst auf x86-Systemen stellen PCI-Express-Geräte die meisten ihrer Register über speicherabgebildete Bereiche bereit, während die herkömmliche Port-I/O hauptsächlich aus Kompatibilitätsgründen erhalten bleibt.</p>
+</section>
+<section class="term-about">
+  <h2>Caching, volatile und Reihenfolge</h2>
+  <p>Gerätebereiche müssen als nicht cachebar konfiguriert sein; sonst könnte die CPU immer wieder eine veraltete Kopie aus dem Cache lesen und die Änderung im Gerät nie bemerken oder Schreibzugriffe im Cache zurückhalten. In C werden Registerzeiger als volatile deklariert, damit der Compiler jeden Zugriff genau wie geschrieben ausführt, statt einmal zu lesen und endlos zu schleifen oder wiederholte Schreibzugriffe wegzulassen. volatile steuert jedoch weder die Umordnung durch die Hardware noch die Schreibpufferung. Prozessoren und Busse können Schreibzugriffe gepuffert absetzen (Posted Writes), daher verwenden Treiber Speicherbarrieren oder Device-Memory-Attribute und manchmal ein Zurücklesen, um Reihenfolge und Abschluss zu garantieren.</p>
+</section>
+<section class="term-about">
+  <h2>MMIO in Betriebssystemen</h2>
+  <p>Auf Systemen mit virtuellem Speicher werden die physischen Registeradressen eines Geräts mit nicht cachebaren Attributen in den virtuellen Adressraum des Kernels eingeblendet, bevor ein Treiber sie nutzen kann, und gelegentlich für User-Space-Treiber in einen Benutzerprozess. MMIO wird typischerweise für Steuerung und Status verwendet: ein Gerät konfigurieren, Operationen starten und Interrupts quittieren. Große Datenmengen werden meist per <a class="term-link" href="/de/term/dma/">DMA (Direct Memory Access)</a> bewegt, bei dem das Gerät selbst den Hauptspeicher liest und beschreibt, statt dass die CPU die Daten ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Register kopiert.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Memory-Mapped I/O</h2>
   <article class="q-mini" data-qid="cpu-043" data-cat="cpu" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Memory-Mapped I/O</p><p class="explanation">Beim <a class="term-link" href="/de/term/memory-mapped-i-o/">Memory-Mapped I/O</a> werden den Steuerregistern von Peripheriegeräten wie Timer oder <a class="term-link" href="/de/term/uart/">UART</a> bestimmte Adressen zugewiesen, und sie werden mit gewöhnlichen Load-/Store-Befehlen bedient. Im Vergleich zu Verfahren mit eigenen Ein-/Ausgabebefehlen (Port-Mapped I/O, z. B. IN/OUT bei x86) vereinfacht es den Befehlssatz und ist bei ARM- und RISC-V-Mikrocontrollern Standard. Zu beachten ist, dass Peripherieregister nicht gecacht und vom Compiler nicht wegoptimiert werden dürfen (volatile).</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Memory-Mapped I/O und Port-Mapped I/O</h3>
+  <p>Memory-Mapped I/O legt Geräteregister in den normalen Speicheradressraum und greift mit gewöhnlichen Loads und Stores darauf zu, während Port-Mapped I/O einen separaten Adressraum und spezielle Befehle wie IN und OUT auf x86 verwendet.</p>
+  <h3>Warum müssen speicherabgebildete Register volatile deklariert werden?</h3>
+  <p>Das Gerät kann Registerwerte unabhängig vom Programm ändern, daher zwingt volatile den Compiler, jeden Lese- und Schreibzugriff auszuführen, statt Werte in Registern zwischenzuspeichern oder scheinbar redundante Zugriffe zu entfernen.</p>
+  <h3>Warum ist der Memory-Mapped-I/O-Bereich nicht cachebar?</h3>
+  <p>Ein Cache würde veraltete Werte statt des aktuellen Gerätezustands liefern und könnte Schreibzugriffe verzögern oder zusammenfassen, daher werden Gerätebereiche mit nicht cachebaren bzw. Device-Attributen eingeblendet.</p>
+</section>
 <section>
   <h2>„Memory-Mapped I/O“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Beim Memory-Mapped I/O werden den Steuerregistern von Peripheriegeräten wie Timer oder UART bestimmte Adressen zugewiesen, und sie werden mit gewöhnlichen Load-/Store-Befehlen bedient.</p><a href="/de/q/cpu/cpu-043/">Welches Verfahren ordnet bei Mikrocontrollern usw. die Regi…</a></li></ul>

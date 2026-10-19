@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"FP8","item":"https://semiconroom.com/de/term/fp8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FP8","description":"8-Bit-Gleitkommaformat. Es gibt E4M3 mit 4 Exponenten- und 3 Mantissenbits sowie E5M2 mit 5 Exponenten- und 2 Mantissenbits, die je nach Bedarf für Genauigkeit oder Bereich gewählt werden. Wird eingesetzt, um Training und Inferenz von KI schneller und energiesparender zu machen.","url":"https://semiconroom.com/de/term/fp8/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"FP8","item":"https://semiconroom.com/de/term/fp8/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"FP8","description":"8-Bit-Gleitkommaformat. Es gibt E4M3 mit 4 Exponenten- und 3 Mantissenbits sowie E5M2 mit 5 Exponenten- und 2 Mantissenbits, die je nach Bedarf für Genauigkeit oder Bereich gewählt werden. Wird eingesetzt, um Training und Inferenz von KI schneller und energiesparender zu machen.","url":"https://semiconroom.com/de/term/fp8/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen E4M3 und E5M2","acceptedAnswer":{"@type":"Answer","text":"E4M3 verwendet 4 Exponentenbits und 3 Mantissenbits, was mehr Genauigkeit, aber einen kleineren Wertebereich mit einem Maximum von 448 ergibt. E5M2 verwendet 5 Exponentenbits und 2 Mantissenbits, was einen viel größeren Wertebereich, aber gröbere Schritte ergibt."}},{"@type":"Question","name":"Warum braucht FP8-Training Skalierungsfaktoren?","acceptedAnswer":{"@type":"Answer","text":"Der darstellbare Bereich von FP8 ist so eng, dass unskalierte Tensoren über- oder unterlaufen würden. Ein Skalierungsfaktor pro Tensor oder pro Block verschiebt die Werte vor der Umwandlung in den nutzbaren Bereich und wird nach der Berechnung wieder entfernt."}},{"@type":"Question","name":"Ist FP8 für die Inferenz besser als INT8?","acceptedAnswer":{"@type":"Answer","text":"Nicht generell. FP8 bewältigt breite, ausreißeranfällige Werteverteilungen mit weniger Kalibrierung, während INT8 breit unterstützt wird und bei sorgfältiger Quantisierung für viele Modelle genau ist."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/computer-arithmetic/">Computerarithmetik</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Die zwei Layouts</h2>
+  <p>Beide FP8-Formate haben ein Vorzeichenbit; sie unterscheiden sich darin, wie die übrigen sieben Bits aufgeteilt sind. E4M3 hat einen 4-Bit-Exponenten und eine 3-Bit-<a class="term-link" href="/de/term/significand/">Mantisse</a>; in der weit verbreiteten Definition verzichtet es auf Unendlichkeiten und behält nur ein <a class="term-link" href="/de/term/nan/">NaN</a>-Muster pro Vorzeichen, um seinen größten endlichen Wert auf 448 zu erweitern. E5M2 hat einen 5-Bit-Exponenten und eine 2-Bit-Mantisse und folgt den Konventionen von <a class="term-link" href="/de/term/ieee-754/">IEEE 754</a> mit Unendlichkeiten und NaNs, wobei es etwa 57.344 erreicht. Mit 3 Mantissenbits unterscheiden sich benachbarte E4M3-Werte innerhalb einer Binade um 12,5 Prozent der Untergrenze der Binade; mit 2 Bit betragen die E5M2-Schritte 25 Prozent.</p>
+</section>
+<section class="term-about">
+  <h2>Welches Format für welchen Tensor</h2>
+  <p>Gewichte und Aktivierungen in einem trainierten Netz haben meist eine recht vorhersehbare Verteilung der Beträge, daher ist die zusätzliche Genauigkeit von E4M3 mehr wert als Wertebereich. Gradienten bei der <a class="term-link" href="/de/term/backpropagation/">Backpropagation</a> können zwischen Schichten und Schritten ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> viele Größenordnungen variieren, daher zählt dort das zusätzliche Exponentenbit von E5M2 mehr. Ein verbreitetes Rezept ist daher E4M3 für den Vorwärtsdurchlauf und E5M2 für die Gradienten, wobei manche Systeme durchgehend E4M3 verwenden. So oder so sind nur die Eingaben der Matrixmultiplikation FP8; Master-Gewichte, Optimierer-Zustand und viele empfindliche Operationen bleiben in höherer Genauigkeit.</p>
+</section>
+<section class="term-about">
+  <h2>Skalierungsfaktoren sind unverzichtbar</h2>
+  <p>Acht Bit können die Werte eines realen Tensors ohne Hilfe nicht abdecken. Vor der Umwandlung multipliziert die Software jeden Tensor oder jeden Block eines Tensors mit einem Skalierungsfaktor, der aus seinem zuletzt beobachteten maximalen Absolutwert gewählt wird, sodass die größten Elemente nahe der Obergrenze des FP8-Bereichs landen und kleine nicht auf null gesetzt werden. Der Skalierungsfaktor wird in höherer Genauigkeit gespeichert und nach der Matrixmultiplikation wieder herausdividiert. Matrixeinheiten multiplizieren die FP8-Eingaben, akkumulieren die Produkte aber in einem breiteren Format wie FP16 oder FP32, damit lange Skalarprodukte nicht Schritt für Schritt an Genauigkeit verlieren.</p>
+</section>
+<section class="term-about">
+  <h2>FP8 und INT8 im Vergleich</h2>
+  <p>Die <a class="term-link" href="/de/term/int8/">INT8</a>-Quantisierung verteilt ihre 256 Werte gleichmäßig, was zu Tensoren mit begrenzter, gleichmäßiger Verteilung passt, aber Auflösung verschwendet, wenn wenige Ausreißer die Skala bestimmen. FP8-Werte sind näherungsweise logarithmisch verteilt, mit feinen Schritten nahe null und groben Schritten bei großen Beträgen, was besser zu den in neuronalen Netzen häufigen glockenförmigen Verteilungen mit langen Ausläufern passt und oft den Kalibrierungsaufwand verringert. Beide halbieren Speicher und Bandbreite gegenü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> 16-Bit-Formaten und erlauben mehr Multiply-Accumulate-Einheiten pro Fläche und Watt. Welches genauer ist, hängt vom Modell ab.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu FP8</h2>
   <article class="q-mini" data-qid="computer-arithmetic-029" data-cat="computer-arithmetic" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. E4M3 für Gewichte und Aktivierungen, E5M2 für Gradienten</p><p class="explanation">Je nachdem, wie die begrenzten 8 Bit auf <a class="term-link" href="/de/term/exponent-field/">Exponent</a> und <a class="term-link" href="/de/term/significand/">Mantisse</a> aufgeteilt werden, ändern sich die Eigenschaften. E4M3 hat 1 Mantissenbit mehr und ist genauer, dafür ist der Bereich enger; E5M2 hat 1 Exponentenbit mehr und einen weiteren Bereich, dafür ist die Genauigkeit geringer. Üblich ist daher E4M3 für Gewichte und Aktivierungen, deren Größenordnung einigermaßen einheitlich ist, und E5M2 für Gradienten, deren Größe stark streut. Beide sind Gleitkommaformate, keine Ganzzahlen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen E4M3 und E5M2</h3>
+  <p>E4M3 verwendet 4 Exponentenbits und 3 Mantissenbits, was mehr Genauigkeit, aber einen kleineren Wertebereich mit einem Maximum von 448 ergibt. E5M2 verwendet 5 Exponentenbits und 2 Mantissenbits, was einen viel größeren Wertebereich, aber gröbere Schritte ergibt.</p>
+  <h3>Warum braucht FP8-Training Skalierungsfaktoren?</h3>
+  <p>Der darstellbare Bereich von FP8 ist so eng, dass unskalierte Tensoren über- oder unterlaufen würden. Ein Skalierungsfaktor pro Tensor oder pro Block verschiebt die Werte vor der Umwandlung in den nutzbaren Bereich und wird nach der Berechnung wieder entfernt.</p>
+  <h3>Ist FP8 für die Inferenz besser als INT8?</h3>
+  <p>Nicht generell. FP8 bewältigt breite, ausreißeranfällige Werteverteilungen mit weniger Kalibrierung, während INT8 breit unterstützt wird und bei sorgfältiger Quantisierung für viele Modelle genau ist.</p>
+</section>
 <section>
   <h2>„FP8“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Sie werden meist mit niedriger Genauigkeit wie FP16, BF16, FP8 oder INT8 verwendet und beschleunigen das Matrixprodukt, das den größten Teil von Training und Inferenz neuronaler Netze ausmacht, erheblich.</p><a href="/de/q/gpu-programming/gpu-programming-039/">Welche Aussage zu Tensor Cores (Matrixrecheneinheiten) in n…</a></li></ul>

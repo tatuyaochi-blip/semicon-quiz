@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"PC-relative Adressierung","item":"https://semiconroom.com/de/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC-relative Adressierung","description":"Verfahren, bei dem Sprungziele oder Datenadressen als Abstand von der Adresse des aktuellen Befehls (PC) angegeben werden. Der Abstand bleibt unabhängig von der Platzierung des Programms gleich und bildet die Grundlage für positionsunabhängigen Code.","url":"https://semiconroom.com/de/term/pc-relative-addressing/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"PC-relative Adressierung","item":"https://semiconroom.com/de/term/pc-relative-addressing/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"PC-relative Adressierung","description":"Verfahren, bei dem Sprungziele oder Datenadressen als Abstand von der Adresse des aktuellen Befehls (PC) angegeben werden. Der Abstand bleibt unabhängig von der Platzierung des Programms gleich und bildet die Grundlage für positionsunabhängigen Code.","url":"https://semiconroom.com/de/term/pc-relative-addressing/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Welche Reichweite hat ein RISC-V-Verzweigungsbefehl?","acceptedAnswer":{"@type":"Answer","text":"Bedingte Verzweigungen wie beq haben einen vorzeichenbehafteten 13-Bit-Offset in Vielfachen von 2 Byte, also etwa ±4 KiB vom Sprungbefehl aus. jal erreicht etwa ±1 MiB, und auipc kombiniert mit jalr erreicht etwa ±2 GiB."}},{"@type":"Question","name":"Warum verwendet x86-64 RIP-relative Adressierung?","acceptedAnswer":{"@type":"Answer","text":"Sie erlaubt dem Code, relativ zum aktuellen Befehl auf globale Daten zuzugreifen, sodass positionsunabhängiger Code keine Anpassung beim Laden und kein eigenes Basisregister braucht. 32-Bit-x86 hatte keinen solchen Modus für Daten."}},{"@type":"Question","name":"Ist PC-relative Adressierung für Shared Libraries erforderlich?","acceptedAnswer":{"@type":"Answer","text":"In der Praxis ja. Gemeinsam genutzte Bibliotheken werden in verschiedenen Prozessen an unterschiedliche Adressen geladen, und PC-relative Sprünge und Datenzugriffe sowie die Indirektion über Tabellen wie die GOT sorgen dafür, dass dieselben Codeseiten überall funktionieren."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/isa-assembly/">Befehlssatz und Assembler</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie das Ziel berechnet wird</h2>
+  <p>Der Befehl enthält einen vorzeichenbehafteten Offset, und die Hardware addiert ihn nach der <a class="term-link" href="/de/term/sign-extension/">Vorzeichenerweiterung</a> zu einer Referenzadresse, die vom Programmzähler (PC) abgeleitet ist. Bei RISC-V ist die Referenz die Adresse des Sprungbefehls selbst. Bedingte Verzweigungen kodieren einen geraden 13-Bit-Offset mit einer Reichweite von etwa ±4 KiB, und jal kodiert einen 21-Bit-Offset, etwa ±1 MiB. Für alles, was weiter entfernt ist, addiert auipc einen um 12 nach links verschobenen 20-Bit-Upper-<a class="term-link" href="/de/term/immediate-operand/">Immediate</a> zum PC, und ein nachfolgendes jalr, addi oder ein Ladebefehl liefert die unteren 12 Bit, womit zusammen etwa ±2 GiB erreicht werden. Andere ISAs verwenden andere Referenzpunkte, etwa die Adresse des nächsten Befehls bei x86.</p>
+</section>
+<section class="term-about">
+  <h2>Warum sie positionsunabhängigen Code ermöglicht</h2>
+  <p><a class="term-link" href="/de/term/position-independent-code/">Positionsunabhängiger Code (PIC)</a> muss an jeder Adresse, an die er geladen wird, korrekt laufen. Mit absoluten Adressen müsste der <a class="term-link" href="/de/term/program-loader/">Lader</a> jeden Befehl anpassen, der eine Adresse nennt, was Zeit kostet, die Kopie des Codes in jedem Prozess anders macht und verhindert, dass sich Prozesse dieselben physischen Seiten teilen. PC-relative Offsets zwischen Teilen desselben Images ändern sich nicht, wenn das ganze Image verschoben wird, daher ist keine Anpassung nötig. Gemeinsam genutzte Bibliotheken und ausführbare Dateien, die aus Sicherheitsgründen an zufälligen Adressen geladen werden (Address Space Layout Randomization), sind darauf angewiesen.</p>
+</section>
+<section class="term-about">
+  <h2>Nicht nur Code, sondern auch Daten erreichen</h2>
+  <p>PC-relative Adressierung ist für Daten ebenso wichtig. x86-64 führte die RIP-relative Adressierung ein, damit Lade- und Speicherbefehle globale Variablen relativ zum Befehlszeiger ansprechen können, etwas, das 32-Bit-x86 fehlte, wodurch <a class="term-link" href="/de/term/position-independent-code/">PIC</a> auf dieser Architektur den PC per call-Trick ermitteln und ein Register dafür reservieren musste. Für Symbole, deren endgültige Adresse erst zur Laufzeit bekannt ist, etwa Variablen in einer anderen gemeinsam genutzten Bibliothek, verwendet der Code einen PC-relativen Ladevorgang aus der <a class="term-link" href="/de/term/global-offset-table/">Global Offset Table</a> (GOT), einer Adresstabelle, die der dynamische <a class="term-link" href="/de/term/linker/">Linker</a> einmal beim Laden füllt.</p>
+</section>
+<section class="term-about">
+  <h2>PC-relative Adressierung im Vergleich zu anderen Adressierungsarten</h2>
+  <p>Die absolute Adressierung nennt eine feste Adresse und muss relokiert werden, wenn der Code verschoben wird. Die registerindirekte Adressierung springt oder lädt ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> eine in einem Register gehaltene Adresse, so funktionieren Funktionszeiger, virtuelle Aufrufe und Rücksprünge, da ihre Ziele beim Assemblieren des Codes nicht bekannt sind. Die PC-relative Adressierung deckt das breite Mittelfeld der Ziele ab, die relativ zum Code fest sind: Schleifensprünge, Aufrufe innerhalb eines Programms und Zugriffe auf dessen eigene Konstanten und globale Variablen. Ihre Einschränkung ist die Breite des Offset-Felds, weshalb es Sequenzen mit großer Reichweite wie auipc plus jalr gibt.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu PC-relative Adressierung</h2>
   <article class="q-mini" data-qid="isa-assembly-010" data-cat="isa-assembly" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Im Befehl steht der Abstand von der Adresse (PC) des Verzweigungsbefehls selbst</p><p class="explanation">RISC-V-Verzweigungsbefehle geben das Ziel als vorzeichenbehafteten Abstand an, nämlich „wie viele Byte von der aktuellen Befehlsadresse (PC) entfernt“. Das heißt <a class="term-link" href="/de/term/pc-relative-addressing/">PC-relative Adressierung</a>. Da das Ziel meist nahe liegt, genügt ein kurzer Abstand, der in den 32-Bit-Befehl passt. Ein weiterer Vorteil: Wird das ganze Programm an eine andere Adresse gelegt, ändert sich der Abstand nicht, und es läuft ohne Umschreiben.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Welche Reichweite hat ein RISC-V-Verzweigungsbefehl?</h3>
+  <p>Bedingte Verzweigungen wie beq haben einen vorzeichenbehafteten 13-Bit-Offset in Vielfachen von 2 Byte, also etwa ±4 KiB vom Sprungbefehl aus. jal erreicht etwa ±1 MiB, und auipc kombiniert mit jalr erreicht etwa ±2 GiB.</p>
+  <h3>Warum verwendet x86-64 RIP-relative Adressierung?</h3>
+  <p>Sie erlaubt dem Code, relativ zum aktuellen Befehl auf globale Daten zuzugreifen, sodass positionsunabhängiger Code keine Anpassung beim Laden und kein eigenes Basisregister braucht. 32-Bit-x86 hatte keinen solchen Modus für Daten.</p>
+  <h3>Ist PC-relative Adressierung für Shared Libraries erforderlich?</h3>
+  <p>In der Praxis ja. Gemeinsam genutzte Bibliotheken werden in verschiedenen Prozessen an unterschiedliche Adressen geladen, und PC-relative Sprünge und Datenzugriffe sowie die Indirektion über Tabellen wie die GOT sorgen dafür, dass dieselben Codeseiten überall funktionieren.</p>
+</section>
 <section>
   <h2>„PC-relative Adressierung“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Das heißt PC-relative Adressierung.</p><a href="/de/q/isa-assembly/isa-assembly-010/">Wie wird beim RISC-V-Verzweigungsbefehl „beq a0, a1, label“…</a></li></ul>

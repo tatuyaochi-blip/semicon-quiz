@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Bootloader","item":"https://semiconroom.com/de/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bootloader","description":"Kleines Programm, das nach dem Einschalten als Erstes läuft. Es prüft und startet die eigentliche Firmware oder schreibt eine neue Firmware.","url":"https://semiconroom.com/de/term/bootloader/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Bootloader","item":"https://semiconroom.com/de/term/bootloader/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bootloader","description":"Kleines Programm, das nach dem Einschalten als Erstes läuft. Es prüft und startet die eigentliche Firmware oder schreibt eine neue Firmware.","url":"https://semiconroom.com/de/term/bootloader/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Bootloader und Firmware","acceptedAnswer":{"@type":"Answer","text":"Der Bootloader ist ein kleines, selten geändertes Programm, das zuerst läuft und entscheidet, was gestartet wird; die Anwendungsfirmware ist das Hauptprogramm, das er verifiziert und startet. Der Bootloader kann außerdem neue Anwendungsfirmware installieren."}},{"@type":"Question","name":"Warum nutzen OTA-Updates zwei Firmware-Slots?","acceptedAnswer":{"@type":"Answer","text":"Damit das neue Image geschrieben und verifiziert werden kann, während das alte unversehrt bleibt. Wird das Update unterbrochen oder versagt die neue Version, bootet das Gerät weiterhin aus dem ursprünglichen Slot."}},{"@type":"Question","name":"Reicht eine CRC-Prüfung für Secure Boot?","acceptedAnswer":{"@type":"Answer","text":"Nein. Eine CRC erkennt zufällige Beschädigung, aber jeder, der das Image verändert, kann sie neu berechnen; Secure Boot erfordert die Verifizierung einer kryptografischen Signatur."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Fachgebiet: <a href="/de/c/embedded/">Embedded Systems und Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Was beim Einschalten passiert</h2>
+  <p>Nach einem Reset beginnt ein Prozessor die Ausführung an einer festen Adresse, und in vielen Embedded-Geräten liegt dort der Bootloader statt der Anwendung. Er initialisiert die minimal benötigte Hardware, prüft, ob ein gültiges Anwendungs-Image vorhanden ist, meist durch Validierung eines Headers plus CRC oder Signatur, und springt dann zum Einstiegspunkt der Anwendung, typischerweise nachdem er <a class="term-link" href="/de/term/stack-pointer/">Stackpointer</a> und <a class="term-link" href="/de/term/interrupt-vector-table/">Interrupt-Vektortabelle</a> eingerichtet hat. Existiert kein gültiges Image oder wurde ein Update angefordert, behält er stattdessen die Kontrolle und wartet auf neue Firmware.</p>
+</section>
+<section class="term-about">
+  <h2>Feld-Updates und Schutz des Bootloaders</h2>
+  <p>Ein Bootloader kann Firmware ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> <a class="term-link" href="/de/term/uart/">UART</a>, USB, CAN, Ethernet oder eine Funkverbindung empfangen und in den Flash schreiben, sodass Produkte nach der Auslieferung ohne Hardware-Programmiergerät korrigiert werden können. Da ein beschädigter Bootloader das Gerät unwiederbringlich unbrauchbar („gebrickt“) machen würde, liegt er normalerweise in einem schreibgeschützten Flash-Bereich und ist von Updates ausgenommen. Viele <a class="term-link" href="/de/term/microcontroller/">Mikrocontroller</a> enthalten zudem einen Hersteller-Bootloader im ROM, der über einen Boot-Mode-Pin ausgewählt wird und für die Erstprogrammierung sowie zur Rettung einer Platine mit leerem oder beschädigtem Flash praktisch ist.</p>
+</section>
+<section class="term-about">
+  <h2>A/B-Slots für sichere OTA-Updates</h2>
+  <p>Die laufende Firmware an Ort und Stelle zu überschreiben ist riskant: Fallen Strom oder Verbindung auf halbem Weg aus, bleibt kein bootfähiges Image übrig. <a class="term-link" href="/de/term/over-the-air-update/">Over-the-Air</a>-Designs (OTA) teilen den Flash daher in zwei Slots. Das neue Image wird in den inaktiven Slot geschrieben und verifiziert, und erst dann wechselt der Bootloader den Slot, von dem er bootet. Startet die neue Version nicht oder bestätigt sie nie, dass sie fehlerfrei läuft, kehrt der Bootloader zum vorherigen Slot zurück (Rollback). Der Preis ist etwa doppelt so viel Flash-Speicher für die Firmware.</p>
+</section>
+<section class="term-about">
+  <h2>Secure Boot und Vertrauenskette</h2>
+  <p>Beim <a class="term-link" href="/de/term/secure-boot/">Secure Boot</a> verifiziert unveränderlicher ROM-Code die digitale Signatur des First-Stage-Bootloaders, diese Stufe verifiziert die nächste Stufe oder den Betriebssystemkernel und so weiter, wodurch eine Vertrauenskette (Chain of Trust) entsteht. Eine fehlgeschlagene Prüfung stoppt den Bootvorgang, sodass manipulierter Bootcode nie ausgeführt wird. Ein Bootloader, der nur eine CRC prüft, erkennt zufällige Beschädigung, aber keine absichtliche Veränderung, weil ein Angreifer die CRC einfach neu berechnen kann; Authentizität erfordert eine Signatur, die mit einem Schlüssel verifiziert wird, den der Angreifer nicht besitzt.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Bootloader</h2>
   <article class="q-mini" data-qid="embedded-037" data-cat="embedded" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -92,7 +107,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Damit die neue Firmware in den anderen Bereich geschrieben wird und bei einem Fehlschlag mittendrin vom ursprünglichen Bereich neu gestartet werden kann</p><p class="explanation">Wird direkt ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> die laufende Firmware geschrieben, kann das Gerät nicht mehr starten, wenn mittendrin die Stromversorgung oder die Verbindung abbricht. Beim Zwei-<a class="term-link" href="/de/term/bank/">Bank</a>-Verfahren wird die neue Firmware in den ungenutzten Bereich geschrieben und erst nach Bestätigung des korrekten Schreibens der Startbereich umgeschaltet. Schlägt der Start mit der neuen Version fehl, schaltet der <a class="term-link" href="/de/term/bootloader/">Bootloader</a> auf den ursprünglichen Bereich zurück. Der Preis ist der doppelte Speicherbedarf, dafür ist das Update sicher.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Bootloader und Firmware</h3>
+  <p>Der Bootloader ist ein kleines, selten geändertes Programm, das zuerst läuft und entscheidet, was gestartet wird; die Anwendungsfirmware ist das Hauptprogramm, das er verifiziert und startet. Der Bootloader kann außerdem neue Anwendungsfirmware installieren.</p>
+  <h3>Warum nutzen OTA-Updates zwei Firmware-Slots?</h3>
+  <p>Damit das neue Image geschrieben und verifiziert werden kann, während das alte unversehrt bleibt. Wird das Update unterbrochen oder versagt die neue Version, bootet das Gerät weiterhin aus dem ursprünglichen Slot.</p>
+  <h3>Reicht eine CRC-Prüfung für Secure Boot?</h3>
+  <p>Nein. Eine CRC erkennt zufällige Beschädigung, aber jeder, der das Image verändert, kann sie neu berechnen; Secure Boot erfordert die Verifizierung einer kryptografischen Signatur.</p>
+</section>
 <section>
   <h2>„Bootloader“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Der Bootloader ist ein kleines Programm an einer festen Stelle im Flash-Speicher und läuft beim Einschalten als Erstes.</p><a href="/de/q/embedded/embedded-037/">Welche Aussage zur Aufgabe des Bootloaders in Embedded-Gerä…</a></li><li><p>Schlägt der Start mit der neuen Version fehl, schaltet der Bootloader auf den ursprünglichen Bereich zurück.</p><a href="/de/q/embedded/embedded-038/">Warum werden bei einem Gerät mit Firmware-Update per Funk (…</a></li><li><p>Passt die Signatur in irgendeiner Phase nicht, wird der Start angehalten, sodass Malware, die Bootloader oder Startteile des Betriebssystems umschreibt, nicht ausgeführt werden kann.</p><a href="/de/q/hw-security/hw-security-019/">Welche Beschreibung von Secure Boot ist richtig?</a></li></ul>
