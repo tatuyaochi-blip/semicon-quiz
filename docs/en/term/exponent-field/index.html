@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Exponent field","item":"https://semiconroom.com/en/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Exponent field","description":"The bits of a floating-point number giving the power of two. To represent negative exponents, the true exponent plus a bias (127 for single precision) is stored.","url":"https://semiconroom.com/en/term/exponent-field/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Exponent field","item":"https://semiconroom.com/en/term/exponent-field/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Exponent field","description":"The bits of a floating-point number giving the power of two. To represent negative exponents, the true exponent plus a bias (127 for single precision) is stored.","url":"https://semiconroom.com/en/term/exponent-field/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is the exponent biased in IEEE 754?","acceptedAnswer":{"@type":"Answer","text":"A bias lets the field be stored as an unsigned number while still representing negative exponents, and it makes positive floats order the same way as their bit patterns read as integers."}},{"@type":"Question","name":"What is the exponent bias for double precision?","acceptedAnswer":{"@type":"Answer","text":"1023, with an 11-bit exponent field; single precision uses 127 with 8 bits, and half precision uses 15 with 5 bits."}},{"@type":"Question","name":"What does an exponent field of all zeros mean?","acceptedAnswer":{"@type":"Answer","text":"It encodes zero when the significand is zero and a subnormal number otherwise, with no implicit leading 1 and the exponent fixed at the minimum normal value."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -109,7 +109,22 @@
 </svg><figcaption class="fig-cap">IEEE 754 single-precision bit layout · <a href="/en/figures/#fig-ieee754">View in diagrams</a></figcaption></figure>
   <p>Field: <a href="/en/c/computer-arithmetic/">Computer Arithmetic</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the bias works</h2>
+  <p>The exponent field is an unsigned integer that stores the true exponent plus a fixed bias, so negative exponents need no sign. Single precision (FP32) uses 8 bits with bias 127, double precision (FP64) 11 bits with bias 1023, and half precision (FP16) 5 bits with bias 15. In FP32, stored values 1 to 254 cover true exponents −126 to +127; a stored 130 means 2³. Forgetting to subtract the bias is the most common decoding mistake.</p>
+</section>
+<section class="term-about">
+  <h2>Reserved values</h2>
+  <p>Two exponent patterns are special. All zeros means zero or a <a class="term-link" href="/en/term/subnormal-number/">subnormal number</a>: the implicit leading 1 is dropped and the exponent is fixed at the minimum normal value (−126 in FP32), letting values shrink gradually toward zero. All ones means infinity when the <a class="term-link" href="/en/term/significand/">significand</a> is zero and <a class="term-link" href="/en/term/nan/">NaN</a> (not a number) otherwise. Hence the largest normal FP32 exponent field is 254, and FP16 <a class="term-link" href="/en/term/tops/">tops</a> out at 65504 because its exponent field stops at 30.</p>
+</section>
+<section class="term-about">
+  <h2>Exponent bits vs. significand bits</h2>
+  <p>Exponent width sets range; <a class="term-link" href="/en/term/significand/">significand</a> width sets precision. FP32&#39;s 8 exponent bits reach about 3.4 × 10³⁸ with normals down to about 1.2 × 10⁻³⁸, while FP16&#39;s 5 bits stop at 65504, which is why FP16 training must watch for overflow. The <a class="term-link" href="/en/term/bfloat16/">bfloat16</a> format keeps FP32&#39;s 8-bit exponent with only 7 significand bits, giving the same range as FP32 with far less precision, a trade-off that suits many neural-network workloads.</p>
+</section>
+<section class="term-about">
+  <h2>Why biased rather than two&#39;s complement</h2>
+  <p>Placing the biased exponent just below the sign bit and above the <a class="term-link" href="/en/term/significand/">significand</a> means that, for positive numbers, a larger value always has a larger bit pattern when read as an integer. Comparisons and sorting can therefore use integer hardware with only sign handling added. A worked example: 10.0 is 1.25 × 2³, so the sign is 0, the exponent field is 130 (binary 10000010) and the fraction is .01, giving the FP32 pattern 0x41200000.</p>
+</section>
 <section>
   <h2>Try it: questions about Exponent field</h2>
   <article class="q-mini" data-qid="computer-arithmetic-005" data-cat="computer-arithmetic" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -123,7 +138,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Infinity if the significand is zero, NaN if it is nonzero</p><p class="explanation">The maximum exponent value (all ones) is reserved for special values. With an all-zero <a class="term-link" href="/en/term/significand/">significand</a> it represents positive or negative infinity according to the sign bit; with a nonzero significand it represents <a class="term-link" href="/en/term/nan/">NaN</a>. NaNs are further subdivided by significand value, for instance into kinds that do or do not signal exceptions. The largest normal number has an <a class="term-link" href="/en/term/exponent-field/">exponent field</a> of 254, and zero is the pattern with exponent and significand all zero. An exponent field of 0 represents zero and subnormals.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why is the exponent biased in IEEE 754?</h3>
+  <p>A bias lets the field be stored as an unsigned number while still representing negative exponents, and it makes positive floats order the same way as their bit patterns read as integers.</p>
+  <h3>What is the exponent bias for double precision?</h3>
+  <p>1023, with an 11-bit exponent field; single precision uses 127 with 8 bits, and half precision uses 15 with 5 bits.</p>
+  <h3>What does an exponent field of all zeros mean?</h3>
+  <p>It encodes zero when the significand is zero and a subnormal number otherwise, with no implicit leading 1 and the exponent fixed at the minimum normal value.</p>
+</section>
 <section>
   <h2>Exponent field in the explanations</h2>
   <ul class="term-quotes"><li><p>To allow negative exponents, the exponent field stores the true exponent plus a bias.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-005/">In IEEE 754 single precision, if the stored exponent field …</a></li><li><p>The largest normal number has an exponent field of 254, and zero is the pattern with exponent and significand all zero.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-017/">In IEEE 754 single precision, what do bit patterns with an …</a></li><li><p>A floating-point number represents a value as (−1)^sign × 1.significand × 2^exponent and stores three parts: a sign bit for positive or negative, an exponent field for the power of two, and a significand for the significant digits.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-002/">Which three parts make up an IEEE 754 floating-point number?</a></li><li><p>An all-ones exponent (31) is reserved for infinity and NaN, so the maximum exponent field is 30, giving a true exponent of 30 − 15 = 15.</p><a href="/en/q/computer-arithmetic/computer-arithmetic-028/">What is the largest finite value representable in FP16 (1 s…</a></li></ul>

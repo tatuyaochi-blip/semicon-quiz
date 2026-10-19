@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Register allocation","item":"https://semiconroom.com/en/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Register allocation","description":"Assigning program variables and temporaries to the CPU's limited registers, ensuring values in use at the same time get different registers, often via coloring an interference graph.","url":"https://semiconroom.com/en/term/register-allocation/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Register allocation","item":"https://semiconroom.com/en/term/register-allocation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Register allocation","description":"Assigning program variables and temporaries to the CPU's limited registers, ensuring values in use at the same time get different registers, often via coloring an interference graph.","url":"https://semiconroom.com/en/term/register-allocation/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is register spilling?","acceptedAnswer":{"@type":"Answer","text":"Spilling is keeping a value in memory, usually a stack slot, because there are not enough registers for everything live at that point; the compiler inserts stores and loads around its uses, which slows the code."}},{"@type":"Question","name":"Why is register allocation a graph coloring problem?","acceptedAnswer":{"@type":"Answer","text":"Values live at the same time interfere and need different registers, so if values are nodes and interferences are edges, giving each node one of k colors with no neighbors alike is exactly assigning k registers."}},{"@type":"Question","name":"What is the difference between graph coloring and linear scan register allocation?","acceptedAnswer":{"@type":"Answer","text":"Graph coloring builds a full interference graph and usually produces better code but takes longer; linear scan allocates in one pass over sorted live intervals, trading some code quality for much faster compilation."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/compiler/">Compilers</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Virtual registers to physical registers</h2>
+  <p>Compilers generate intermediate code using an unlimited supply of virtual registers or temporaries, but a real CPU has only a small fixed set, typically 16 to 32 general-purpose registers. Register allocation decides which values live in which physical registers at each point and which must be kept in memory instead. Because registers are far faster than even an L1 cache access, good allocation has a large effect on speed, especially inside loops. The hard rule is that two values needed at the same time cannot share a register.</p>
+</section>
+<section class="term-about">
+  <h2>Liveness and the interference graph</h2>
+  <p>The allocator first runs liveness analysis over the <a class="term-link" href="/en/term/control-flow-graph/">control-flow graph</a> to find, at every point, which values may still be read later. It then builds an interference graph: each value is a node, and an edge joins two values that are live at the same time. Assigning registers becomes coloring the graph with k colors, where k is the number of available registers, so that no neighbors share a color. Optimal coloring is NP-complete in general, so compilers use heuristics such as Chaitin-style simplification, repeatedly removing nodes with fewer than k neighbors.</p>
+</section>
+<section class="term-about">
+  <h2>Spilling and its cost</h2>
+  <p>When the graph cannot be colored with k colors, some values are spilled: they are kept in a stack slot, with a store after each definition and a load before each use. Spills add instructions and memory traffic, so the allocator estimates a spill cost for each candidate, weighting uses by loop nesting depth, and prefers to spill values that are used rarely but interfere with many others. Splitting a long live range into shorter pieces can also let a value stay in a register where it matters most.</p>
+</section>
+<section class="term-about">
+  <h2>Calling conventions, coalescing and linear scan</h2>
+  <p>Real allocators must respect the <a class="term-link" href="/en/term/calling-convention/">calling convention</a>: arguments and return values use specific registers, caller-saved registers are clobbered by calls, and callee-saved registers must be restored before returning. Coalescing assigns the same register to the source and destination of a copy when they do not interfere, deleting the move instruction. Just-in-time (JIT) compilers often use linear-scan allocation instead of graph coloring, walking sorted live intervals in a single pass, which is much faster to run at the cost of somewhat lower code quality.</p>
+</section>
 <section>
   <h2>Try it: questions about Register allocation</h2>
   <article class="q-mini" data-qid="compiler-020" data-cat="compiler" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Stores and reloads to the stack are added, tending to slow the code</p><p class="explanation">A spill places some values in memory (the stack) when more values are live than there are registers. Each use of such a value needs a load and each update a store, adding instructions and memory-access delays. Compilers therefore keep heavily used values, such as those in loops, in registers and choose rarely used values to spill. The register count is fixed by the CPU and does not grow, and deleting unused values is a separate matter.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is register spilling?</h3>
+  <p>Spilling is keeping a value in memory, usually a stack slot, because there are not enough registers for everything live at that point; the compiler inserts stores and loads around its uses, which slows the code.</p>
+  <h3>Why is register allocation a graph coloring problem?</h3>
+  <p>Values live at the same time interfere and need different registers, so if values are nodes and interferences are edges, giving each node one of k colors with no neighbors alike is exactly assigning k registers.</p>
+  <h3>What is the difference between graph coloring and linear scan register allocation?</h3>
+  <p>Graph coloring builds a full interference graph and usually produces better code but takes longer; linear scan allocates in one pass over sorted live intervals, trading some code quality for much faster compilation.</p>
+</section>
 
 <section>
   <h2>Questions that mention Register allocation (3)</h2>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"System call","item":"https://semiconroom.com/en/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"System call","description":"The mechanism by which applications ask the OS for services such as file I/O or memory allocation. A dedicated instruction raises an exception that switches to privileged mode and invokes the kernel.","url":"https://semiconroom.com/en/term/system-call/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"System call","item":"https://semiconroom.com/en/term/system-call/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"System call","description":"The mechanism by which applications ask the OS for services such as file I/O or memory allocation. A dedicated instruction raises an exception that switches to privileged mode and invokes the kernel.","url":"https://semiconroom.com/en/term/system-call/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a system call and an interrupt?","acceptedAnswer":{"@type":"Answer","text":"A system call is a synchronous trap the program triggers on purpose with a dedicated instruction. An interrupt is an asynchronous signal from hardware, such as a timer or device, that arrives regardless of what the program is doing."}},{"@type":"Question","name":"Is printf a system call?","acceptedAnswer":{"@type":"Answer","text":"No. printf is a C library function that formats output in user space; it eventually calls the write system call to hand the buffered data to the kernel."}},{"@type":"Question","name":"Why are system calls slow?","acceptedAnswer":{"@type":"Answer","text":"Each one switches into privileged mode, saves state, validates arguments and returns, and it disturbs caches and the TLB. The cost is fixed per call, so many tiny calls add up."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>A system call step by step</h2>
+  <p>On RISC-V Linux, a program places the system call number in register a7 and its arguments in a0 onward, then executes ecall. The instruction deliberately raises an exception: the CPU records the address of the ecall, switches to supervisor mode and jumps to the kernel&#39;s trap entry. The kernel saves user registers, looks up the handler by number, checks the arguments, does the work and puts the result in a0. It then advances the saved address past the ecall and returns to user mode with sret. Other architectures use instructions such as syscall on x86-64 and svc on Arm.</p>
+</section>
+<section class="term-about">
+  <h2>System call vs. library function</h2>
+  <p>Programs usually reach system calls through library wrappers, so the boundary is easy to miss. A function such as printf runs entirely in user space, formatting text into a buffer, and only occasionally calls the write system call to pass that buffer to the kernel. Many library functions, such as string handling or math routines, never enter the kernel at all. A system call is defined by the switch into <a class="term-link" href="/en/term/privileged-mode/">privileged mode</a>, not by how the function is named.</p>
+</section>
+<section class="term-about">
+  <h2>Why system calls cost time</h2>
+  <p>Each call pays a fixed overhead: the mode switch, saving and restoring registers, argument validation and the return. Entering the kernel also disturbs caches and the <a class="term-link" href="/en/term/tlb/">TLB</a>, and countermeasures for speculative-execution attacks, such as <a class="term-link" href="/en/term/kernel-page-table-isolation/">kernel page-table isolation (KPTI)</a>, add a page-table switch on every entry. Writing one byte per call therefore runs far slower than buffering several kilobytes in user space and writing them in one call.</p>
+</section>
+<section class="term-about">
+  <h2>Ways to avoid calls</h2>
+  <p>Besides buffering, programs can map a file into memory with mmap, after which reads are ordinary loads served by page faults on first touch rather than a call per read. Interfaces that submit several operations in one call reduce crossings further. Some operating systems also map read-only kernel data, such as the current time, into user space so frequent queries need no trap at all.</p>
+</section>
 <section>
   <h2>Try it: questions about System call</h2>
   <article class="q-mini" data-qid="os-hardware-050" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Fewer calls cut the fixed per-call overhead</p><p class="explanation">Every <a class="term-link" href="/en/term/system-call/">system call</a> requires switching from user to <a class="term-link" href="/en/term/privileged-mode/">privileged mode</a>, saving registers, checking arguments and returning, a fixed cost paid even for a single byte. Entering the kernel also disturbs cache and <a class="term-link" href="/en/term/tlb/">TLB</a> contents. Buffering and writing several kilobytes at a time drastically cuts the number of system calls and speeds up the whole process. The total data written is unchanged, and it still ends up on disk.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a system call and an interrupt?</h3>
+  <p>A system call is a synchronous trap the program triggers on purpose with a dedicated instruction. An interrupt is an asynchronous signal from hardware, such as a timer or device, that arrives regardless of what the program is doing.</p>
+  <h3>Is printf a system call?</h3>
+  <p>No. printf is a C library function that formats output in user space; it eventually calls the write system call to hand the buffered data to the kernel.</p>
+  <h3>Why are system calls slow?</h3>
+  <p>Each one switches into privileged mode, saves state, validates arguments and returns, and it disturbs caches and the TLB. The cost is fixed per call, so many tiny calls add up.</p>
+</section>
 <section>
   <h2>System call in the explanations</h2>
   <ul class="term-quotes"><li><p>Every system call requires switching from user to privileged mode, saving registers, checking arguments and returning, a fixed cost paid even for a single byte.</p><a href="/en/q/os-hardware/os-hardware-050/">When writing small data one byte at a time, why is accumula…</a></li><li><p>The kernel identifies the system call by the number in a7, uses a0–a2 as arguments, returns the result and goes back to user mode.</p><a href="/en/q/os-hardware/os-hardware-003/">What happens when the ecall instruction at the end of the R…</a></li><li><p>It is the same mechanism as demand paging, avoiding a system call per read and reducing extra data copies.</p><a href="/en/q/os-hardware/os-hardware-049/">In a mechanism that maps a file into memory (such as mmap),…</a></li><li><p>Switching page tables on every system call, however, costs performance.</p><a href="/en/q/hw-security/hw-security-009/">What is the idea behind KPTI (kernel page-table isolation),…</a></li></ul>

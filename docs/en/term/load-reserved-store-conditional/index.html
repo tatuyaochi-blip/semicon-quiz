@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Load-reserved/store-conditional (LR/SC)","item":"https://semiconroom.com/en/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Load-reserved/store-conditional (LR/SC)","description":"A pair of instructions, also called LL/SC: if another core writes the address after the load-reserved, the store-conditional fails, enabling atomic updates.","url":"https://semiconroom.com/en/term/load-reserved-store-conditional/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Load-reserved/store-conditional (LR/SC)","item":"https://semiconroom.com/en/term/load-reserved-store-conditional/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Load-reserved/store-conditional (LR/SC)","description":"A pair of instructions, also called LL/SC: if another core writes the address after the load-reserved, the store-conditional fails, enabling atomic updates.","url":"https://semiconroom.com/en/term/load-reserved-store-conditional/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"When does a store-conditional fail?","acceptedAnswer":{"@type":"Answer","text":"It fails when the reservation set by the load-reserved has been lost, most commonly because another core wrote the address, but also possibly due to an interrupt, context switch or cache eviction."}},{"@type":"Question","name":"Does LR/SC solve the ABA problem?","acceptedAnswer":{"@type":"Answer","text":"Yes. LR/SC detects any intervening write to the reserved location, so a value that changes and changes back still causes the store-conditional to fail, unlike compare-and-swap."}},{"@type":"Question","name":"What is the difference between LL/SC and LR/SC?","acceptedAnswer":{"@type":"Answer","text":"They are the same idea under different names: load-linked/store-conditional is the traditional term, and load-reserved/store-conditional is the RISC-V name."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the pair works</h2>
+  <p>Load-reserved (LR) reads a memory word and at the same time registers a reservation on that address, usually covering its <a class="term-link" href="/en/term/cache-line/">cache line</a>. The program computes a new value in registers, then store-conditional (SC) attempts to write it. SC writes only if the reservation is still intact and returns a status code indicating success or failure; on RISC-V, zero means success. Software wraps the sequence in a retry loop. RISC-V calls the pair lr and sc, Arm provides equivalent load-exclusive and store-exclusive instructions, and the general name is LL/SC.</p>
+</section>
+<section class="term-about">
+  <h2>What breaks a reservation</h2>
+  <p>The main cause of failure is another core writing to the reserved location between the LR and the SC. The core detects this through cache coherence: the write invalidates its copy of the line and clears the reservation. The reservation may also be cleared by an <a class="term-link" href="/en/term/interrupt/">interrupt</a> or <a class="term-link" href="/en/term/context-switch/">context switch</a>, another SC, or eviction of the line, so SC can fail even without a real conflict. Correct code must always be prepared to retry, and RISC-V guarantees eventual success only for short loops that follow specified restrictions.</p>
+</section>
+<section class="term-about">
+  <h2>LR/SC vs. CAS and the ABA problem</h2>
+  <p><a class="term-link" href="/en/term/compare-and-swap/">Compare-and-swap</a> (CAS) checks whether memory still holds an expected value. If another thread changes a value from A to B and back to A, CAS cannot tell and succeeds, which can corrupt lock-free structures such as linked lists: the <a class="term-link" href="/en/term/aba-problem/">ABA problem</a>. LR/SC checks whether any write happened, not what the value is, so an A-B-A sequence still breaks the reservation. LR/SC can also build any single-word <a class="term-link" href="/en/term/read-modify-write/">read-modify-write</a> in software, including CAS itself and fetch-and-add. Its weaknesses are spurious failures and possible livelock under heavy contention.</p>
+</section>
+<section class="term-about">
+  <h2>Why load-store architectures favor it</h2>
+  <p>A single CAS instruction must read, compare and write memory in one step, which fits awkwardly into a pipeline where each instruction performs at most one memory access. LR/SC keeps that load/store discipline: LR behaves like a load plus a reservation register, and SC like a store gated by that register. No bus locking is needed, because the coherence protocol already tells the core when another processor writes the line. For this reason the pair has long been used in RISC instruction sets, often alongside single-instruction atomics.</p>
+</section>
 <section>
   <h2>Try it: questions about Load-reserved/store-conditional (LR/SC)</h2>
   <article class="q-mini" data-qid="multicore-sync-017" data-cat="multicore-sync" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. When the reservation is lost, for example because another core wrote that address between the LR and the SC</p><p class="explanation">LR reads a value and at the same time &quot;reserves&quot; the address. When SC later writes, it succeeds if the reservation is intact and fails without writing if the reservation was lost, for example because another core wrote there. Whereas CAS checks for a matching value, <a class="term-link" href="/en/term/load-reserved-store-conditional/">LR/SC</a> checks whether any write happened, so it also detects a value that changed and changed back. Arm has a similar instruction pair.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>When does a store-conditional fail?</h3>
+  <p>It fails when the reservation set by the load-reserved has been lost, most commonly because another core wrote the address, but also possibly due to an interrupt, context switch or cache eviction.</p>
+  <h3>Does LR/SC solve the ABA problem?</h3>
+  <p>Yes. LR/SC detects any intervening write to the reserved location, so a value that changes and changes back still causes the store-conditional to fail, unlike compare-and-swap.</p>
+  <h3>What is the difference between LL/SC and LR/SC?</h3>
+  <p>They are the same idea under different names: load-linked/store-conditional is the traditional term, and load-reserved/store-conditional is the RISC-V name.</p>
+</section>
 <section>
   <h2>Load-reserved/store-conditional (LR/SC) in the explanations</h2>
   <ul class="term-quotes"><li><p>Whereas CAS checks for a matching value, LR/SC checks whether any write happened, so it also detects a value that changed and changed back.</p><a href="/en/q/multicore-sync/multicore-sync-017/">With an instruction pair such as RISC-V LR/SC (load-reserve…</a></li><li><p>Examples include CAS (compare-and-swap), fetch-and-add and RISC-V&#39;s LR/SC and AMO instructions, which are the building blocks of locks and lock-free data structures.</p><a href="/en/q/multicore-sync/multicore-sync-014/">Which describes an atomic instruction?</a></li><li><p>It is prevented by pairing the pointer with a modification counter compared together, or by using LR/SC.</p><a href="/en/q/multicore-sync/multicore-sync-018/">Which describes the ABA problem that affects lock-free data…</a></li></ul>

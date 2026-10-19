@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Computational graph","item":"https://semiconroom.com/en/term/computational-graph/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Computational graph","description":"A representation of a model's computation with operations as nodes and tensor flows as edges, underpinning automatic differentiation and AI compiler optimization.","url":"https://semiconroom.com/en/term/computational-graph/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Computational graph","item":"https://semiconroom.com/en/term/computational-graph/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Computational graph","description":"A representation of a model's computation with operations as nodes and tensor flows as edges, underpinning automatic differentiation and AI compiler optimization.","url":"https://semiconroom.com/en/term/computational-graph/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a computational graph in deep learning?","acceptedAnswer":{"@type":"Answer","text":"It is a representation of a model as operations (nodes) connected by the tensors they pass to each other (edges). Frameworks use it to compute gradients automatically and compilers use it to optimize execution."}},{"@type":"Question","name":"Why does operator fusion speed up neural networks?","acceptedAnswer":{"@type":"Answer","text":"Many operations, such as activations and normalization, are memory-bound, so writing their outputs to DRAM and reading them back dominates the time. Fusing them into one kernel keeps intermediates on chip and cuts memory traffic."}},{"@type":"Question","name":"What is the difference between eager execution and graph mode?","acceptedAnswer":{"@type":"Answer","text":"Eager execution runs each operation immediately as Python reaches it, while graph mode builds or captures the whole graph first and then optimizes and runs it. Eager is easier to debug; graph mode allows fusion and other whole-model optimizations."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Nodes, edges and what they carry</h2>
+  <p>A computational graph is usually a directed acyclic graph. Nodes are operations such as matrix multiplication, convolution, addition or an activation function; edges are tensors, each with a known shape and data type, flowing from the operation that produces them to the ones that consume them. Inputs and trainable weights appear as source nodes. Because dependencies are explicit, the graph shows at a glance which operations can run in parallel and which must wait, and it gives software a complete, analyzable description of the model independent of the Python code that created it.</p>
+</section>
+<section class="term-about">
+  <h2>Graphs and automatic differentiation</h2>
+  <p>Training needs the gradient of the loss with respect to every weight. During the forward pass a framework records the graph; reverse-mode automatic differentiation then walks it backward from the loss, applying each operation&#39;s local derivative rule and the chain rule to accumulate gradients, which is <a class="term-link" href="/en/term/backpropagation/">backpropagation</a>. This requires the intermediate outputs (activations) saved from the forward pass, which is why training uses far more memory than inference. Activation checkpointing trades compute for memory by discarding some activations and recomputing them during the backward pass.</p>
+</section>
+<section class="term-about">
+  <h2>Static vs. dynamic graphs</h2>
+  <p>In a static, define-and-run style, the whole graph is built first and then executed, which makes global optimization easy but complicates data-dependent control flow and debugging. In a dynamic, define-by-run or eager style, operations execute immediately as the program runs and the graph is recorded on the fly, which is flexible but leaves little room for optimization across operations. Modern frameworks commonly mix the two: code is written eagerly, and a compile step traces or captures the graph so that a compiler can optimize it before execution.</p>
+</section>
+<section class="term-about">
+  <h2>What compilers and runtimes do with it</h2>
+  <p>AI compilers rewrite the graph before generating code. <a class="term-link" href="/en/term/operator-fusion/">Operator fusion</a> merges chains such as matrix multiply, bias add and activation into one kernel so intermediate tensors stay in on-chip memory instead of making a round trip to DRAM. Other passes include <a class="term-link" href="/en/term/constant-folding/">constant folding</a>, removal of unused nodes, choice of tensor memory layout, tiling to fit caches or scratchpads, and memory planning that reuses buffers whose lifetimes do not overlap. Exchange formats such as <a class="term-link" href="/en/term/onnx/">ONNX</a> (Open Neural Network Exchange) serialize the graph and weights so different runtimes and hardware toolchains can execute the same model.</p>
+</section>
 <section>
   <h2>Try it: questions about Computational graph</h2>
   <article class="q-mini" data-qid="ai-stack-021" data-cat="ai-stack" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. A representation of a model&#39;s computation with operations as nodes and tensor flows as edges</p><p class="explanation">A <a class="term-link" href="/en/term/computational-graph/">computational graph</a> is a blueprint of a model&#39;s computation, with operations such as matrix products, additions and activations as nodes and the tensors flowing between them as edges. Frameworks traverse it backward to compute <a class="term-link" href="/en/term/backpropagation/">backpropagation</a> gradients automatically, and compilers optimize it as a whole through fusion and reordering. The graph also shows which operations are independent and can run in parallel.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a computational graph in deep learning?</h3>
+  <p>It is a representation of a model as operations (nodes) connected by the tensors they pass to each other (edges). Frameworks use it to compute gradients automatically and compilers use it to optimize execution.</p>
+  <h3>Why does operator fusion speed up neural networks?</h3>
+  <p>Many operations, such as activations and normalization, are memory-bound, so writing their outputs to DRAM and reading them back dominates the time. Fusing them into one kernel keeps intermediates on chip and cuts memory traffic.</p>
+  <h3>What is the difference between eager execution and graph mode?</h3>
+  <p>Eager execution runs each operation immediately as Python reaches it, while graph mode builds or captures the whole graph first and then optimizes and runs it. Eager is easier to debug; graph mode allows fusion and other whole-model optimizations.</p>
+</section>
 <section>
   <h2>Computational graph in the explanations</h2>
   <ul class="term-quotes"><li><p>A computational graph is a blueprint of a model&#39;s computation, with operations such as matrix products, additions and activations as nodes and the tensors flowing between them as edges.</p><a href="/en/q/ai-stack/ai-stack-021/">Which describes the computational graph used by AI framewor…</a></li><li><p>An AI compiler takes the model as a computational graph of operations and data flows, fuses operations where possible, removes unnecessary computation, chooses memory layouts and tunes tile sizes, then generates kernels suited to the target, such as a GPU or NPU.</p><a href="/en/q/ai-stack/ai-stack-020/">What do AI compilers such as XLA, TVM or PyTorch&#39;s compile …</a></li><li><p>ONNX (Open Neural Network Exchange) is a standard for representing a model&#39;s computational graph and weights in a common format.</p><a href="/en/q/ai-stack/ai-stack-022/">Which describes ONNX?</a></li><li><p>The framework or an AI compiler or runtime optimizes the computational graph, and operations such as matrix products and convolutions call kernels from highly optimized libraries.</p><a href="/en/q/ai-stack/ai-stack-050/">Which orders the AI software stack from the layer closest t…</a></li></ul>

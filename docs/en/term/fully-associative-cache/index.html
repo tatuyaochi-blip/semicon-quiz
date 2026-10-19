@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Fully associative cache","item":"https://semiconroom.com/en/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Fully associative cache","description":"A cache organization in which any data can be placed in any location. It has no conflict misses but must compare against every tag, so it suits small structures such as TLBs rather than large caches.","url":"https://semiconroom.com/en/term/fully-associative-cache/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Fully associative cache","item":"https://semiconroom.com/en/term/fully-associative-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Fully associative cache","description":"A cache organization in which any data can be placed in any location. It has no conflict misses but must compare against every tag, so it suits small structures such as TLBs rather than large caches.","url":"https://semiconroom.com/en/term/fully-associative-cache/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many index bits does a fully associative cache have?","acceptedAnswer":{"@type":"Answer","text":"Zero. The entire cache is a single set, so the address consists only of a tag and an offset, and the tag is compared against every line."}},{"@type":"Question","name":"Why are TLBs often fully associative?","acceptedAnswer":{"@type":"Answer","text":"TLBs are small and every miss forces a costly page-table walk, so the extra comparators are worth it to avoid conflict misses entirely."}},{"@type":"Question","name":"Does a fully associative cache eliminate all misses?","acceptedAnswer":{"@type":"Answer","text":"No. It removes conflict misses, but compulsory misses on first use and capacity misses from a working set larger than the cache still occur."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>No index, only tag and offset</h2>
+  <p>In a fully associative cache, the whole cache is one set, so any block can be stored in any line. No bits are needed to select a set: the index is 0 bits, and the address is split only into an offset within the line and a tag made of all remaining bits. On every access, the requested tag must be compared with the tags of all valid lines at once, which is typically done with content-addressable memory (CAM), where each entry has its own <a class="term-link" href="/en/term/comparator/">comparator</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Why it is used only for small structures</h2>
+  <p>A CAM with N entries needs N wide comparators firing on every lookup, plus a large <a class="term-link" href="/en/term/multiplexer/">multiplexer</a> to deliver the matching data. Area, power and hit time grow quickly with the number of entries, so large data caches are set-associative instead. Full associativity is affordable and worthwhile in small structures that see heavy use and where every miss is expensive, such as translation lookaside buffers (TLBs) that cache page-table entries, or small victim caches that hold lines recently evicted from a <a class="term-link" href="/en/term/direct-mapped-cache/">direct-mapped cache</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Replacement policy decides performance</h2>
+  <p>Since any line can be evicted, the cache needs a replacement policy. Least recently used (LRU) evicts the line untouched for longest. With two lines and the reference string A, B, A, C, B, A, LRU gives five misses: the hit on A makes B the victim when C arrives, then A and C are evicted in turn. True LRU becomes costly to track for many entries, so hardware often uses pseudo-LRU or random replacement. LRU also performs badly on cyclic patterns slightly larger than the cache, where random can do better.</p>
+</section>
+<section class="term-about">
+  <h2>What full associativity cannot fix</h2>
+  <p>Full associativity eliminates conflict misses, because blocks never compete for a particular set. In the usual three-category model, conflict misses are in fact defined as the misses that a fully associative cache of the same size would avoid. Compulsory misses on first access remain, as do capacity misses when the working set is larger than the whole cache. Those require a larger cache, <a class="term-link" href="/en/term/prefetching/">prefetching</a>, or restructuring code to reuse data sooner, for example by <a class="term-link" href="/en/term/loop-blocking/">loop blocking</a> (tiling).</p>
+</section>
 <section>
   <h2>Try it: questions about Fully associative cache</h2>
   <article class="q-mini" data-qid="memory-hierarchy-005" data-cat="memory-hierarchy" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. 5</p><p class="explanation">Step by step: A (miss, [A]), B (miss, [A,B]), A (hit, A becomes most recent), C (miss, evicts least recent B, [A,C]), B (miss, evicts least recent A, [C,B]), A (miss, evicts least recent C, [B,A]), for 5 misses. Counting 4 comes from wrongly evicting A when C arrives; under LRU, the hit on A made it the most recent. 6 overlooks the hit on the third reference.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How many index bits does a fully associative cache have?</h3>
+  <p>Zero. The entire cache is a single set, so the address consists only of a tag and an offset, and the tag is compared against every line.</p>
+  <h3>Why are TLBs often fully associative?</h3>
+  <p>TLBs are small and every miss forces a costly page-table walk, so the extra comparators are worth it to avoid conflict misses entirely.</p>
+  <h3>Does a fully associative cache eliminate all misses?</h3>
+  <p>No. It removes conflict misses, but compulsory misses on first use and capacity misses from a working set larger than the cache still occur.</p>
+</section>
 <section>
   <h2>Fully associative cache in the explanations</h2>
   <ul class="term-quotes"><li><p>In a fully associative cache any data can go anywhere, so the whole cache is a single set.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-005/">In a fully associative cache, how many address bits are use…</a></li><li><p>In a fully associative cache any data can go anywhere, so conflict misses from competing for a set disappear.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-009/">Which misses are not reduced even by making a cache fully a…</a></li></ul>

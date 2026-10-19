@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Spatial locality","item":"https://semiconroom.com/en/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spatial locality","description":"The tendency to access addresses near one just accessed, as when reading an array in order. It is why caches fetch data a whole cache line at a time.","url":"https://semiconroom.com/en/term/spatial-locality/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Spatial locality","item":"https://semiconroom.com/en/term/spatial-locality/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spatial locality","description":"The tendency to access addresses near one just accessed, as when reading an array in order. It is why caches fetch data a whole cache line at a time.","url":"https://semiconroom.com/en/term/spatial-locality/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is an example of spatial locality?","acceptedAnswer":{"@type":"Answer","text":"Reading an array from beginning to end: after element i is used, element i+1 at the next address is used, and it was likely brought into the cache by the same line fill."}},{"@type":"Question","name":"How do caches take advantage of spatial locality?","acceptedAnswer":{"@type":"Answer","text":"They transfer whole cache lines, commonly 64 bytes, on each miss and often prefetch the following lines, so neighboring data is already present when the program asks for it."}},{"@type":"Question","name":"Why is column-wise traversal of a C array slow?","acceptedAnswer":{"@type":"Answer","text":"C stores arrays row by row, so stepping down a column jumps a full row each access and uses only a small part of each cache line fetched."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why programs have it</h2>
+  <p>Instructions are fetched one after another from consecutive addresses until a branch, arrays are commonly walked element by element, and the fields of a structure or the local variables in a <a class="term-link" href="/en/term/stack-frame/">stack frame</a> sit side by side. As a result, an access to one address is often followed soon by accesses to neighboring addresses. Spatial locality is this tendency, and it is a property of the program&#39;s access pattern rather than of the hardware.</p>
+</section>
+<section class="term-about">
+  <h2>How hardware exploits it</h2>
+  <p>Caches move data in lines, typically 64 bytes in current CPUs, so one miss brings in neighbors that will likely be used next. This also fits DRAM bursts: in DDR4, eight transfers of 8 bytes deliver exactly 64 bytes. Hardware prefetchers detect sequential or constant-stride streams and fetch upcoming lines ahead of time, and DRAM rows left open serve nearby accesses faster. Pages and the <a class="term-link" href="/en/term/tlb/">TLB</a> benefit as well, since one translation covers many nearby addresses.</p>
+</section>
+<section class="term-about">
+  <h2>Spatial vs. temporal locality</h2>
+  <p><a class="term-link" href="/en/term/temporal-locality/">Temporal locality</a> means reusing the same data soon, such as a loop counter or a running sum; spatial locality means using nearby data soon, such as the next array element. A single pass over a large array has strong spatial but no temporal locality, while repeatedly updating one variable has temporal but little spatial locality. Random accesses to a large data set, as in some hash tables or graph traversals, have little of either and miss frequently.</p>
+</section>
+<section class="term-about">
+  <h2>Writing code that has it</h2>
+  <p>In C, two-dimensional arrays are stored row-major, so iterating the inner loop over columns touches consecutive addresses while swapping the loops jumps a full row each step. Choosing a structure-of-arrays layout when only one field is processed avoids loading unused fields. Larger cache lines exploit spatial locality better but raise <a class="term-link" href="/en/term/miss-penalty/">miss penalty</a> and can load unneeded data, and in multithreaded code unrelated variables sharing one line cause <a class="term-link" href="/en/term/false-sharing/">false sharing</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Spatial locality</h2>
   <article class="q-mini" data-qid="cpu-002" data-cat="cpu" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. 64 bytes</p><p class="explanation">Most CPUs transfer data between cache and main memory in 64-byte lines. Neighboring addresses are often used together (<a class="term-link" href="/en/term/spatial-locality/">spatial locality</a>), so fetching them as a block is efficient, and it matches DRAM bursts (8 transfers × 8 bytes = 64 bytes in DDR4). In multithreaded code, beware of <a class="term-link" href="/en/term/false-sharing/">false sharing</a>, where separate variables in the same line cause cores to contend for it.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is an example of spatial locality?</h3>
+  <p>Reading an array from beginning to end: after element i is used, element i+1 at the next address is used, and it was likely brought into the cache by the same line fill.</p>
+  <h3>How do caches take advantage of spatial locality?</h3>
+  <p>They transfer whole cache lines, commonly 64 bytes, on each miss and often prefetch the following lines, so neighboring data is already present when the program asks for it.</p>
+  <h3>Why is column-wise traversal of a C array slow?</h3>
+  <p>C stores arrays row by row, so stepping down a column jumps a full row each access and uses only a small part of each cache line fetched.</p>
+</section>
 <section>
   <h2>Spatial locality in the explanations</h2>
   <ul class="term-quotes"><li><p>Caches exploit temporal locality (reusing the same data soon) and spatial locality (using nearby addresses next), with L1 reachable in a few cycles and even L3 in tens of cycles.</p><a href="/en/q/cpu/cpu-002/">What is the main purpose of cache memory?</a></li><li><p>Neighboring addresses are often used together (spatial locality), so fetching them as a block is efficient, and it matches DRAM bursts (8 transfers × 8 bytes = 64 bytes in DDR4).</p><a href="/en/q/cpu/cpu-039/">What is the typical size of a cache line (cache block) in m…</a></li><li><p>Reading an array from start to end is an example of spatial locality, using nearby addresses in succession, which is a different property.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-001/">Which is the best example of temporal locality?</a></li><li><p>Larger lines bring in more neighboring data per miss, so workloads with spatial locality see fewer compulsory misses.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-010/">What is the effect of increasing a cache&#39;s line size?</a></li></ul>

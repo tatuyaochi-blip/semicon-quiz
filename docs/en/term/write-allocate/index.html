@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Write-allocate","item":"https://semiconroom.com/en/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-allocate","description":"A policy that, on a write miss, first brings the line into the cache and then writes it. Usually paired with write-back; writing directly to the lower level without fetching is called no-write-allocate.","url":"https://semiconroom.com/en/term/write-allocate/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Write-allocate","item":"https://semiconroom.com/en/term/write-allocate/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write-allocate","description":"A policy that, on a write miss, first brings the line into the cache and then writes it. Usually paired with write-back; writing directly to the lower level without fetching is called no-write-allocate.","url":"https://semiconroom.com/en/term/write-allocate/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between write-allocate and no-write-allocate?","acceptedAnswer":{"@type":"Answer","text":"On a write miss, write-allocate loads the line into the cache and writes it there, while no-write-allocate writes directly to the lower level without loading the line."}},{"@type":"Question","name":"Why is write-allocate usually paired with write-back?","acceptedAnswer":{"@type":"Answer","text":"Once the line is in a write-back cache, further writes to it hit and are absorbed without memory traffic, so the cost of the initial fetch is recovered."}},{"@type":"Question","name":"What are non-temporal stores used for?","acceptedAnswer":{"@type":"Answer","text":"They write large amounts of data that will not be reused soon directly to memory, avoiding the read of each line that write-allocate would cause and keeping the cache free for useful data."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What happens on a write miss</h2>
+  <p>With write-allocate, a store that misses first fetches the whole line from the lower level, places it in the cache, and then merges the stored bytes into it. In a write-back cache the line is then marked dirty and reaches memory only when it is later evicted. In a multicore system the fetch also obtains exclusive ownership of the line, so other cores&#39; copies are invalidated before the write; this read-for-ownership is why a store miss looks like a read on the memory bus.</p>
+</section>
+<section class="term-about">
+  <h2>Write-allocate vs. no-write-allocate</h2>
+  <p>No-write-allocate sends a missed store directly to the lower level and leaves the cache untouched. Write-allocate pays off when written data is soon read or written again, because later accesses hit; it is therefore the usual partner of write-back. No-write-allocate suits data written once and not reused, and is the usual partner of <a class="term-link" href="/en/term/write-through/">write-through</a>. Note that write-back versus write-through decides how hits are propagated, while allocation decides what a miss does; the two are separate choices.</p>
+</section>
+<section class="term-about">
+  <h2>The hidden cost for write-only data</h2>
+  <p>When a program writes a large buffer it will not read soon, such as clearing memory or producing output, write-allocate first reads every line from memory only to overwrite it, then writes it back later, roughly doubling traffic. Those lines also evict useful data. Non-temporal or streaming stores avoid this by combining writes and sending them straight to memory. Some ISAs also offer instructions that zero a whole <a class="term-link" href="/en/term/cache-line/">cache line</a> without fetching its old contents.</p>
+</section>
+<section class="term-about">
+  <h2>Related miss-handling techniques</h2>
+  <p>Write-allocate determines whether a line is brought in, but other techniques shape how long the miss takes. Critical word first sends the requested word ahead of the rest of the 64-byte line so the CPU can resume early. A write buffer hides store latency in <a class="term-link" href="/en/term/write-through/">write-through</a> caches, and a victim cache holds recently evicted lines. Each addresses a different part of miss cost, which is a frequent source of confusion.</p>
+</section>
 <section>
   <h2>Try it: questions about Write-allocate</h2>
   <article class="q-mini" data-qid="memory-hierarchy-011" data-cat="memory-hierarchy" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. No-write-allocate</p><p class="explanation">Writing straight to the lower level on a write miss without loading the line is no-<a class="term-link" href="/en/term/write-allocate/">write-allocate</a>, commonly paired with <a class="term-link" href="/en/term/write-through/">write-through</a>. It avoids useless fetches for data that is written once and not read back. Write-allocate instead loads the line and then writes it, which pays off when written data is soon reused, so it is commonly paired with write-back. Write-back governs when hits are propagated to memory, a separate axis from whether a miss loads the line.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between write-allocate and no-write-allocate?</h3>
+  <p>On a write miss, write-allocate loads the line into the cache and writes it there, while no-write-allocate writes directly to the lower level without loading the line.</p>
+  <h3>Why is write-allocate usually paired with write-back?</h3>
+  <p>Once the line is in a write-back cache, further writes to it hit and are absorbed without memory traffic, so the cost of the initial fetch is recovered.</p>
+  <h3>What are non-temporal stores used for?</h3>
+  <p>They write large amounts of data that will not be reused soon directly to memory, avoiding the read of each line that write-allocate would cause and keeping the cache free for useful data.</p>
+</section>
 <section>
   <h2>Write-allocate in the explanations</h2>
   <ul class="term-quotes"><li><p>Whether to load a line on a write miss is the write-allocate decision, separate from the write buffer.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-011/">What is the main purpose of a write buffer in a write-throu…</a></li><li><p>Writing straight to the lower level on a write miss without loading the line is no-write-allocate, commonly paired with write-through.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-013/">Which policy, on a write miss, writes directly to the lower…</a></li><li><p>Ordinary stores with write-allocate fetch the line from memory before writing, so even write-only data costs read traffic and evicts other data that will be reused.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-043/">When writing out a large amount of data that will not be re…</a></li><li><p>Write-allocate concerns whether a write miss loads the line, and a victim cache is a small buffer for evicted lines; neither relates to transfer order.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-045/">Which technique, when fetching a missed line from memory, s…</a></li></ul>

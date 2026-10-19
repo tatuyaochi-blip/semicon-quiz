@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Context switch","item":"https://semiconroom.com/en/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Context switch","description":"Switching the process or thread running on a CPU. Registers, the program counter and other state are saved and restored, and switching processes also switches address spaces.","url":"https://semiconroom.com/en/term/context-switch/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Context switch","item":"https://semiconroom.com/en/term/context-switch/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Context switch","description":"Switching the process or thread running on a CPU. Registers, the program counter and other state are saved and restored, and switching processes also switches address spaces.","url":"https://semiconroom.com/en/term/context-switch/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is saved during a context switch?","acceptedAnswer":{"@type":"Answer","text":"The CPU state of the outgoing thread: registers, program counter, stack pointer and status information, plus the page-table pointer when switching processes. Memory itself is not saved because it stays in place."}},{"@type":"Question","name":"Why are context switches expensive?","acceptedAnswer":{"@type":"Answer","text":"Beyond the kernel work itself, the incoming process starts with caches and the TLB holding another process's contents, so it suffers many misses until they are refilled."}},{"@type":"Question","name":"Is a system call a context switch?","acceptedAnswer":{"@type":"Answer","text":"No. A system call is a mode switch within the same process; a context switch occurs only if the kernel decides to run a different thread or process before returning."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What is saved and restored</h2>
+  <p>The kernel saves the outgoing thread&#39;s CPU state, meaning its general-purpose registers, program counter, <a class="term-link" href="/en/term/stack-pointer/">stack pointer</a> and status bits such as the previous mode, and later reloads it so the thread resumes exactly where it stopped. Floating-point and vector registers are part of the state too, and some kernels save them lazily only when the next thread actually uses them. When the switch is between processes, the register pointing to the <a class="term-link" href="/en/term/page-table/">page table</a> is also changed, giving the new process its own address space. Memory contents and open files stay in place and are not copied.</p>
+</section>
+<section class="term-about">
+  <h2>When switches happen</h2>
+  <p>A switch is triggered when the running thread blocks, for example waiting for disk I/O or a lock, when it voluntarily yields, or when a timer <a class="term-link" href="/en/term/interrupt/">interrupt</a> tells the scheduler its time slice has expired and another thread should run. In each case the CPU is already in the kernel, handling a <a class="term-link" href="/en/term/system-call/">system call</a> or interrupt, and the scheduler picks the next thread. Switching between threads of the same process is cheaper because the address space does not change.</p>
+</section>
+<section class="term-about">
+  <h2>Direct and indirect cost</h2>
+  <p>Saving and loading registers takes little time; the whole kernel path, including scheduling, typically costs on the order of microseconds. The larger cost is often indirect: the new process finds caches and the <a class="term-link" href="/en/term/tlb/">TLB</a> filled with the previous process&#39;s data and translations, so it misses repeatedly until they warm up. CPUs that tag TLB entries with an address-space identifier (<a class="term-link" href="/en/term/asid/">ASID</a>) avoid flushing the TLB on each switch, but cache warm-up remains. Frequent switching therefore lowers <a class="term-link" href="/en/term/throughput/">throughput</a> more than the switch time alone suggests.</p>
+</section>
+<section class="term-about">
+  <h2>Context switch vs. mode switch</h2>
+  <p>A <a class="term-link" href="/en/term/system-call/">system call</a> or <a class="term-link" href="/en/term/interrupt/">interrupt</a> moves the CPU from user mode to <a class="term-link" href="/en/term/privileged-mode/">privileged mode</a> and back, but the same process continues afterward; that is a mode switch, not a context switch. A context switch changes which thread or process owns the CPU. The two often happen together, since a switch always takes place inside the kernel, but a system call that returns to its caller involves no context switch at all.</p>
+</section>
 <section>
   <h2>Try it: questions about Context switch</h2>
   <article class="q-mini" data-qid="os-hardware-023" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Cache and TLB misses rise after the switch</p><p class="explanation">Saving and restoring registers is quick, but after the switch the caches and <a class="term-link" href="/en/term/tlb/">TLB</a> hold the previous process&#39;s contents, so the new process misses until its data and translations are reloaded. On CPUs without ASIDs, the TLB must also be flushed when changing address spaces. This indirect cost can exceed the direct switching time. The clock does not slow down, and programs are not reloaded from disk.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is saved during a context switch?</h3>
+  <p>The CPU state of the outgoing thread: registers, program counter, stack pointer and status information, plus the page-table pointer when switching processes. Memory itself is not saved because it stays in place.</p>
+  <h3>Why are context switches expensive?</h3>
+  <p>Beyond the kernel work itself, the incoming process starts with caches and the TLB holding another process&#39;s contents, so it suffers many misses until they are refilled.</p>
+  <h3>Is a system call a context switch?</h3>
+  <p>No. A system call is a mode switch within the same process; a context switch occurs only if the kernel decides to run a different thread or process before returning.</p>
+</section>
 <section>
   <h2>Context switch in the explanations</h2>
   <ul class="term-quotes"><li><p>A context switch saves CPU state, such as general registers, the program counter, the stack pointer and the operating mode, so the process can later resume exactly where it left off, and loads the state of the next process.</p><a href="/en/q/os-hardware/os-hardware-023/">During a context switch, what must be saved for the process…</a></li><li><p>A context switch changes which process runs, and demand paging loads pages only when needed.</p><a href="/en/q/os-hardware/os-hardware-002/">What is the mechanism by which applications ask the OS to p…</a></li><li><p>It wastes no CPU while waiting, so it suits long waits, but sleeping, waking and the context switch cost several microseconds.</p><a href="/en/q/multicore-sync/multicore-sync-023/">Which correctly compares a mutex (a lock that sleeps while …</a></li></ul>

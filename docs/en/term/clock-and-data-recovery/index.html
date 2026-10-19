@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Clock and data recovery (CDR)","item":"https://semiconroom.com/en/term/clock-and-data-recovery/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock and data recovery (CDR)","description":"A receiver circuit that extracts clock timing from transitions in the received data and decides each bit, removing the need for a dedicated clock wire.","url":"https://semiconroom.com/en/term/clock-and-data-recovery/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Clock and data recovery (CDR)","item":"https://semiconroom.com/en/term/clock-and-data-recovery/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock and data recovery (CDR)","description":"A receiver circuit that extracts clock timing from transitions in the received data and decides each bit, removing the need for a dedicated clock wire.","url":"https://semiconroom.com/en/term/clock-and-data-recovery/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does a CDR do in a SerDes receiver?","acceptedAnswer":{"@type":"Answer","text":"It extracts a clock aligned to the incoming bit stream from the data transitions and uses it to sample each bit near the center of the eye, so no separate clock wire is needed."}},{"@type":"Question","name":"Why do serial links need 8b/10b or 128b/130b encoding?","acceptedAnswer":{"@type":"Answer","text":"The coding guarantees frequent transitions and DC balance so the receiver's CDR can stay locked and AC-coupled signals stay centered; 128b/130b achieves this with scrambling at much lower overhead than 8b/10b."}},{"@type":"Question","name":"What is the difference between a CDR and a PLL?","acceptedAnswer":{"@type":"Answer","text":"A PLL locks an oscillator to a clean periodic reference clock, while a CDR locks to random data, whose transitions occur irregularly; many CDRs are built around a PLL with a phase detector designed for data."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/io-interface/">I/O Interfaces &amp; Buses</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why recover the clock from the data</h2>
+  <p>At rates of tens of gigabits per second a bit lasts only tens of picoseconds, and a separately routed clock would arrive with skew relative to the data lanes that consumes a large part of that bit time. High-speed serial links therefore send no clock at all. Each receiver lane includes a clock and data recovery (CDR) circuit that derives timing from the data transitions themselves, so every lane aligns independently. Source-synchronous interfaces such as DDR memory take the other approach and forward a strobe alongside the data.</p>
+</section>
+<section class="term-about">
+  <h2>How a CDR loop works</h2>
+  <p>A CDR is a feedback loop. A phase detector compares where data transitions occur with the local sampling clock and decides whether the clock is early or late; a bang-bang detector of this kind uses samples taken at the bit centers and at the edges. A loop filter smooths these decisions and steers either a voltage-controlled oscillator, as in a <a class="term-link" href="/en/term/pll/">PLL</a>-based CDR, or a phase interpolator that rotates the phase of a reference clock. The goal is to sample each bit near the center of the data eye, where the margin is largest.</p>
+</section>
+<section class="term-about">
+  <h2>Transitions and line coding</h2>
+  <p>The phase detector gets information only when the data changes, so long runs of identical bits let the clock drift and also shift the average voltage on AC-coupled links. Line coding guarantees enough transitions. 8b/10b coding maps 8 data bits to 10-bit symbols with balanced ones and zeros and short run lengths, costing 25% extra bits for 80% efficiency; it was used in <a class="term-link" href="/en/term/pci-express/">PCI Express</a> generations 1 and 2 and USB 3.0. Later links use scrambling with lighter framing, such as 128b/130b, which provides transitions statistically with far less overhead.</p>
+</section>
+<section class="term-about">
+  <h2>Tracking offset, SSC and jitter</h2>
+  <p>Transmitter and receiver reference clocks are never exactly equal, so a CDR must track a small frequency offset as well as phase. With <a class="term-link" href="/en/term/spread-spectrum-clocking/">spread-spectrum clocking (SSC)</a>, the transmit clock is swept slowly by about 0.5% to lower electromagnetic emission peaks, and the CDR must follow that sweep too. Loop bandwidth is a trade-off: <a class="term-link" href="/en/term/jitter/">jitter</a> slower than the loop bandwidth is tracked out, while faster jitter must fit inside the eye margin. Standards specify jitter tolerance masks that a receiver must meet across frequency.</p>
+</section>
 <section>
   <h2>Try it: questions about Clock and data recovery (CDR)</h2>
   <article class="q-mini" data-qid="io-interface-004" data-cat="io-interface" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. It extracts clock timing from the transitions of the received data and decides each bit at that timing</p><p class="explanation">Sending the clock on a separate wire would introduce skew relative to the data. So in high-speed serial links, a <a class="term-link" href="/en/term/clock-and-data-recovery/">CDR</a> circuit watches where the data switches between 0 and 1, generates a clock of matching frequency and phase with a <a class="term-link" href="/en/term/pll/">PLL</a> or similar, and samples the data in the middle of each bit. This requires the data to contain transitions often enough, which line coding guarantees.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does a CDR do in a SerDes receiver?</h3>
+  <p>It extracts a clock aligned to the incoming bit stream from the data transitions and uses it to sample each bit near the center of the eye, so no separate clock wire is needed.</p>
+  <h3>Why do serial links need 8b/10b or 128b/130b encoding?</h3>
+  <p>The coding guarantees frequent transitions and DC balance so the receiver&#39;s CDR can stay locked and AC-coupled signals stay centered; 128b/130b achieves this with scrambling at much lower overhead than 8b/10b.</p>
+  <h3>What is the difference between a CDR and a PLL?</h3>
+  <p>A PLL locks an oscillator to a clean periodic reference clock, while a CDR locks to random data, whose transitions occur irregularly; many CDRs are built around a PLL with a phase detector designed for data.</p>
+</section>
 <section>
   <h2>Clock and data recovery (CDR) in the explanations</h2>
   <ul class="term-quotes"><li><p>So in high-speed serial links, a CDR circuit watches where the data switches between 0 and 1, generates a clock of matching frequency and phase with a PLL or similar, and samples the data in the middle of each bit.</p><a href="/en/q/io-interface/io-interface-004/">What is the role of the clock and data recovery (CDR) circu…</a></li><li><p>Long runs of 0s or 1s make the receiver&#39;s CDR lose timing and shift the average signal voltage, preventing correct decisions.</p><a href="/en/q/io-interface/io-interface-005/">What has been the purpose of 8b/10b encoding (sending 8 dat…</a></li><li><p>The receiver&#39;s CDR is designed to track this slow variation and still capture the data.</p><a href="/en/q/io-interface/io-interface-044/">What is the purpose of spread-spectrum clocking (SSC), used…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Clock uncertainty","item":"https://semiconroom.com/en/term/clock-uncertainty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock uncertainty","description":"A margin subtracted from the available time in timing analysis to account for jitter and for clock skew not yet known. It is set with set_clock_uncertainty in SDC, and before the clock tree is built it is set larger to cover skew as well.","url":"https://semiconroom.com/en/term/clock-uncertainty/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Clock uncertainty","item":"https://semiconroom.com/en/term/clock-uncertainty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock uncertainty","description":"A margin subtracted from the available time in timing analysis to account for jitter and for clock skew not yet known. It is set with set_clock_uncertainty in SDC, and before the clock tree is built it is set larger to cover skew as well.","url":"https://semiconroom.com/en/term/clock-uncertainty/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does clock uncertainty apply to hold checks?","acceptedAnswer":{"@type":"Answer","text":"Yes, but it is set separately with set_clock_uncertainty -hold and is usually smaller, because period jitter largely cancels when launch and capture share the same edge. Before CTS it still includes the expected skew."}},{"@type":"Question","name":"Why is clock uncertainty reduced after clock tree synthesis?","acceptedAnswer":{"@type":"Answer","text":"Once the clock tree exists, the tool calculates real clock skew from the tree's delays, so the part of the margin that estimated skew is no longer needed. Only jitter and any design margin remain."}},{"@type":"Question","name":"How do I calculate setup slack with clock uncertainty?","acceptedAnswer":{"@type":"Answer","text":"Required time equals the clock period minus setup time minus uncertainty (adjusted for clock latencies), and slack is required time minus data arrival time. For example, 1.25 − 0.05 − 0.05 = 1.15 ns required versus 1.05 ns arrival gives 0.10 ns slack."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/sta-cdc/">Timing analysis and CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How it enters the timing checks</h2>
+  <p>In <a class="term-link" href="/en/term/sta/">static timing analysis</a>, clock uncertainty is a user-specified margin that makes setup and hold checks stricter. For setup, it is subtracted from the time available before the capturing edge: with a 1.25 ns period, 0.05 ns <a class="term-link" href="/en/term/setup-time/">setup time</a> and 0.05 ns uncertainty, data must arrive by 1.15 ns. For hold, it is added to the hold requirement, so data must stay stable for longer after the edge. It is specified in <a class="term-link" href="/en/term/sdc/">SDC</a> (Synopsys Design Constraints) with commands such as set_clock_uncertainty -setup 0.05 [get_clocks clk], with a separate -hold value.</p>
+</section>
+<section class="term-about">
+  <h2>What the margin covers</h2>
+  <p>Three ingredients are usually folded in. <a class="term-link" href="/en/term/jitter/">Jitter</a> from the <a class="term-link" href="/en/term/pll/">phase-locked loop</a> (PLL) and clock distribution makes edges arrive early or late from cycle to cycle. Before clock tree synthesis (CTS), clocks are ideal and skew between flip-flops is unknown, so an estimate of it is added. Many teams also add a design margin for effects not modeled precisely at that stage, such as supply noise. Period jitter matters for setup, which spans two different edges, but almost cancels for hold, where launch and capture use the same edge; the skew estimate applies to both.</p>
+</section>
+<section class="term-about">
+  <h2>How the value changes through the flow</h2>
+  <p>During synthesis and placement, with ideal clocks, uncertainty is set relatively large to cover <a class="term-link" href="/en/term/jitter/">jitter</a> plus expected skew. After CTS the clocks become propagated: the tool computes each <a class="term-link" href="/en/term/flip-flop/">flip-flop</a>&#39;s actual clock latency, so skew is analyzed explicitly and is removed from the uncertainty, leaving jitter and margin. Uncertainty can also be set between specific clock pairs with -from and -to options, for example for paths between related clocks generated by different <a class="term-link" href="/en/term/pll/">PLL</a> outputs. Too large a value over-constrains the design and costs area and power; too small risks failures in silicon.</p>
+</section>
+<section class="term-about">
+  <h2>Uncertainty vs. skew and derating</h2>
+  <p>Skew is a computed difference between the clock arrival times at two flip-flops, known only once a clock tree exists. Clock uncertainty is not computed; it is an assumed lump margin applied to every path of that clock. <a class="term-link" href="/en/term/ocv/">On-chip variation</a> (OCV) <a class="term-link" href="/en/term/derating/">derating</a> is different again: it scales cell and wire delays by factors, making the launch path slower and the capture path faster, or vice versa, rather than subtracting a fixed time. A complete signoff setup typically combines propagated skew, derating and a small remaining uncertainty.</p>
+</section>
 <section>
   <h2>Try it: questions about Clock uncertainty</h2>
   <article class="q-mini" data-qid="sta-cdc-002" data-cat="sta-cdc" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. 0.10 ns</p><p class="explanation"><a class="term-link" href="/en/term/clock-uncertainty/">Clock uncertainty</a> is a margin subtracted from the available time to account for <a class="term-link" href="/en/term/jitter/">jitter</a> and skew that is not yet determined. The required time is 1.25 − 0.05 (uncertainty) − 0.05 (<a class="term-link" href="/en/term/setup-time/">setup time</a>) = 1.15 ns and the arrival time is 1.05 ns, so the <a class="term-link" href="/en/term/slack/">slack</a> is 0.10 ns. 0.15 ns leaves out the uncertainty, and 0.20 ns subtracts neither the setup time nor the uncertainty. Before <a class="term-link" href="/en/term/place-and-route/">place and route</a> there is no clock tree, so it is common to set a larger uncertainty that also covers skew.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Does clock uncertainty apply to hold checks?</h3>
+  <p>Yes, but it is set separately with set_clock_uncertainty -hold and is usually smaller, because period jitter largely cancels when launch and capture share the same edge. Before CTS it still includes the expected skew.</p>
+  <h3>Why is clock uncertainty reduced after clock tree synthesis?</h3>
+  <p>Once the clock tree exists, the tool calculates real clock skew from the tree&#39;s delays, so the part of the margin that estimated skew is no longer needed. Only jitter and any design margin remain.</p>
+  <h3>How do I calculate setup slack with clock uncertainty?</h3>
+  <p>Required time equals the clock period minus setup time minus uncertainty (adjusted for clock latencies), and slack is required time minus data arrival time. For example, 1.25 − 0.05 − 0.05 = 1.15 ns required versus 1.05 ns arrival gives 0.10 ns slack.</p>
+</section>
 <section>
   <h2>Clock uncertainty in the explanations</h2>
   <ul class="term-quotes"><li><p>Clock uncertainty is a margin subtracted from the available time to account for jitter and skew that is not yet determined.</p><a href="/en/q/sta-cdc/sta-cdc-009/">On a path with a clock period of 1.25 ns (800 MHz), the clo…</a></li><li><p>Clock uncertainty is a setting that subtracts margin in timing analysis for clock jitter and, before place-and-route, expected skew.</p><a href="/en/q/eda/eda-047/">In timing constraints (SDC), which setting specifies margin…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Procedure linkage table (PLT)","item":"https://semiconroom.com/en/term/procedure-linkage-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Procedure linkage table (PLT)","description":"A table of small stubs used to call shared-library functions. With lazy binding, the dynamic linker resolves the address on the first call and writes it into the GOT.","url":"https://semiconroom.com/en/term/procedure-linkage-table/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Procedure linkage table (PLT)","item":"https://semiconroom.com/en/term/procedure-linkage-table/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Procedure linkage table (PLT)","description":"A table of small stubs used to call shared-library functions. With lazy binding, the dynamic linker resolves the address on the first call and writes it into the GOT.","url":"https://semiconroom.com/en/term/procedure-linkage-table/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between the PLT and the GOT?","acceptedAnswer":{"@type":"Answer","text":"The PLT contains small executable stubs that external calls jump to, while the GOT is a data table holding the resolved addresses; each PLT stub jumps indirectly through its GOT entry."}},{"@type":"Question","name":"What is lazy binding in dynamic linking?","acceptedAnswer":{"@type":"Answer","text":"Lazy binding defers resolving a shared-library function's address until the first time it is called, when the dynamic linker looks it up and stores it in the GOT for all later calls."}},{"@type":"Question","name":"What does full RELRO do?","acceptedAnswer":{"@type":"Answer","text":"It makes the dynamic linker resolve all symbols at start-up and then remaps the GOT read-only, so attackers cannot overwrite GOT entries to redirect function calls."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why calls go through a stub</h2>
+  <p>A <a class="term-link" href="/en/term/shared-library/">shared library</a> can be loaded at a different address in each process, so the address of a function like printf is unknown when the program is linked. Patching every call instruction at load time would make code pages writable and unshareable between processes. Instead, the <a class="term-link" href="/en/term/linker/">linker</a> points each external call at a small stub in the procedure linkage table (PLT). The stub performs an indirect jump through a slot in the <a class="term-link" href="/en/term/global-offset-table/">global offset table</a> (GOT), a writable data area that the <a class="term-link" href="/en/term/dynamic-linker/">dynamic linker</a> fills with real addresses.</p>
+</section>
+<section class="term-about">
+  <h2>Lazy binding step by step</h2>
+  <p>With lazy binding, each GOT slot initially points back into its own PLT stub. On the first call, the stub pushes an index identifying the function&#39;s <a class="term-link" href="/en/term/relocation/">relocation</a> entry and jumps to a common PLT header, which enters the <a class="term-link" href="/en/term/dynamic-linker/">dynamic linker</a>&#39;s resolver. The resolver looks up the symbol in the loaded libraries, writes its address into the GOT slot and jumps to the function. Every later call goes stub, GOT, function with no further lookup. Functions that are never called are never resolved, which shortens program start-up.</p>
+</section>
+<section class="term-about">
+  <h2>Eager binding and read-only GOT</h2>
+  <p>Because the GOT is writable and holds code addresses, an attacker who can overwrite memory may redirect a GOT entry to hijack control flow. Many systems therefore resolve all symbols at start-up, for example by linking with -z now or setting LD_BIND_NOW on Linux, and then mark the GOT read-only, a hardening known as full RELRO (<a class="term-link" href="/en/term/relocation/">relocation</a> read-only). The trade-off is a slower start for programs that import many functions, in exchange for removing a common attack target.</p>
+</section>
+<section class="term-about">
+  <h2>Symbol visibility and internal calls</h2>
+  <p>Exported functions in a <a class="term-link" href="/en/term/shared-library/">shared library</a> can be overridden, or interposed, by a definition with the same name in another module, so even calls from inside the library must normally go through the PLT. Giving internal functions hidden visibility removes them from the dynamic <a class="term-link" href="/en/term/symbol-table/">symbol table</a>, so calls to them become direct PC-relative calls, the <a class="term-link" href="/en/term/dynamic-linker/">dynamic linker</a> has fewer symbols to process and name clashes with other libraries are avoided. The GOT also holds addresses of external data, but data accesses read the GOT directly without a PLT stub.</p>
+</section>
 <section>
   <h2>Try it: questions about Procedure linkage table (PLT)</h2>
   <article class="q-mini" data-qid="linker-loader-026" data-cat="linker-loader" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. A shared-library function&#39;s address is resolved the first time it is called, and later calls jump straight to the resolved address</p><p class="explanation">The program calls external functions through small <a class="term-link" href="/en/term/procedure-linkage-table/">PLT</a> stubs. With lazy binding, the first call makes the stub jump to the <a class="term-link" href="/en/term/dynamic-linker/">dynamic linker</a>&#39;s resolver, which finds the real address and writes it into the GOT. Later calls jump directly to the address in the GOT. Skipping resolution of unused functions speeds up start-up. For security, though, resolving everything at start-up and making the GOT read-only is also widely used.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between the PLT and the GOT?</h3>
+  <p>The PLT contains small executable stubs that external calls jump to, while the GOT is a data table holding the resolved addresses; each PLT stub jumps indirectly through its GOT entry.</p>
+  <h3>What is lazy binding in dynamic linking?</h3>
+  <p>Lazy binding defers resolving a shared-library function&#39;s address until the first time it is called, when the dynamic linker looks it up and stores it in the GOT for all later calls.</p>
+  <h3>What does full RELRO do?</h3>
+  <p>It makes the dynamic linker resolve all symbols at start-up and then remaps the GOT read-only, so attackers cannot overwrite GOT entries to redirect function calls.</p>
+</section>
 <section>
   <h2>Procedure linkage table (PLT) in the explanations</h2>
   <ul class="term-quotes"><li><p>The program calls external functions through small PLT stubs.</p><a href="/en/q/linker-loader/linker-loader-026/">When dynamic linking uses lazy binding through the PLT (pro…</a></li><li><p>With dynamic linking, the call is pointed at a PLT stub, and the dynamic linker places the real library function&#39;s address in the GOT at run time.</p><a href="/en/q/linker-loader/linker-loader-038/">Disassembling an object file shows that an instruction call…</a></li><li><p>A shared library&#39;s exported symbols might be overridden by a same-named definition in another module, so even internal calls must go through the PLT or GOT.</p><a href="/en/q/linker-loader/linker-loader-049/">When building a shared library, what is the advantage of ex…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Pseudo-instruction","item":"https://semiconroom.com/en/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Pseudo-instruction","description":"Something written like an instruction in assembly that the assembler replaces with one or more real instructions, such as RISC-V nop, mv, li, j and ret.","url":"https://semiconroom.com/en/term/pseudo-instruction/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Pseudo-instruction","item":"https://semiconroom.com/en/term/pseudo-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Pseudo-instruction","description":"Something written like an instruction in assembly that the assembler replaces with one or more real instructions, such as RISC-V nop, mv, li, j and ret.","url":"https://semiconroom.com/en/term/pseudo-instruction/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a pseudo-instruction and a real instruction?","acceptedAnswer":{"@type":"Answer","text":"A real instruction has its own machine encoding that the CPU executes. A pseudo-instruction is only assembler syntax that is translated into one or more real instructions before execution."}},{"@type":"Question","name":"What does li expand to in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"For a small constant that fits in 12 signed bits, a single addi from x0; for larger 32-bit values, lui followed by addi, and longer sequences for 64-bit constants."}},{"@type":"Question","name":"Is nop a real instruction in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"No. nop is a pseudo-instruction encoded as addi x0, x0, 0, which changes nothing because writes to x0 are discarded."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/isa-assembly/">ISA &amp; Assembly</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the assembler expands them</h2>
+  <p>A pseudo-instruction is assembly syntax with no encoding of its own; the <a class="term-link" href="/en/term/assembler/">assembler</a> replaces it with one or more real instructions. In RISC-V, nop becomes addi x0, x0, 0, mv rd, rs becomes addi rd, rs, 0, j label becomes jal x0, label, ret becomes jalr x0, 0(ra), and bnez rs, label becomes bne rs, x0, label. Many rely on register x0, which always reads as zero and discards writes. Disassemblers usually print the pseudo form back, which makes listings easier to read.</p>
+</section>
+<section class="term-about">
+  <h2>One line, several instructions</h2>
+  <p>Some pseudo-instructions expand to a variable number of real instructions. li (load immediate) becomes a single addi when the constant fits in a 12-bit signed immediate but lui followed by addi for a larger 32-bit value, and longer sequences for 64-bit constants. la (load address) and call for a distant function use auipc plus a second instruction to form a PC-relative address. Hand-computed code sizes and offsets must account for this.</p>
+</section>
+<section class="term-about">
+  <h2>Why ISAs rely on them</h2>
+  <p>Defining nop, mv or a plain jump as separate hardware instructions would add opcodes and <a class="term-link" href="/en/term/decoder/">decoder</a> logic without adding capability, since existing instructions with x0 already do the job. Pseudo-instructions keep the hardware instruction set small, a core RISC-V design goal, while giving programmers readable names for common idioms such as returning from a function or comparing against zero.</p>
+</section>
+<section class="term-about">
+  <h2>Pseudo-instructions vs. directives and macros</h2>
+  <p><a class="term-link" href="/en/term/assembler/">Assembler</a> directives such as .text, .globl or .word are instructions to the assembler itself: they choose sections, export symbols or emit data, and do not correspond to machine instructions. A pseudo-instruction always turns into real instructions with a fixed meaning defined by the toolchain. Macros are similar expansions but defined by the programmer. Toolchains may also shorten some expansions later, for example turning an auipc-plus-jalr call into a single jal at link time when the target is close enough.</p>
+</section>
 <section>
   <h2>Try it: questions about Pseudo-instruction</h2>
   <article class="q-mini" data-qid="isa-assembly-006" data-cat="isa-assembly" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. jalr x0, 0(ra)</p><p class="explanation">jalr (jump and link register) jumps to a register value plus an offset and writes the next instruction&#39;s address into the destination. ret is &quot;jalr x0, 0(ra)&quot;: it jumps to the address in ra and discards the link in x0. jalr is also used for jumps whose target is decided at run time, such as calls through function pointers or virtual functions. Restoring ra with &quot;lw ra, ...&quot; is preparation done before ret.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a pseudo-instruction and a real instruction?</h3>
+  <p>A real instruction has its own machine encoding that the CPU executes. A pseudo-instruction is only assembler syntax that is translated into one or more real instructions before execution.</p>
+  <h3>What does li expand to in RISC-V?</h3>
+  <p>For a small constant that fits in 12 signed bits, a single addi from x0; for larger 32-bit values, lui followed by addi, and longer sequences for 64-bit constants.</p>
+  <h3>Is nop a real instruction in RISC-V?</h3>
+  <p>No. nop is a pseudo-instruction encoded as addi x0, x0, 0, which changes nothing because writes to x0 are discarded.</p>
+</section>
 <section>
   <h2>Pseudo-instruction in the explanations</h2>
   <ul class="term-quotes"><li><p>bnez is a pseudo-instruction for &quot;bne t1, zero, loop&quot;.</p><a href="/en/q/isa-assembly/isa-assembly-023/">When the RISC-V code above finishes, what is the value in t…</a></li><li><p>The calling convention puts the return address in ra (x1), so a call is written &quot;jal ra, func&quot;, or &quot;call func&quot; as a pseudo-instruction.</p><a href="/en/q/isa-assembly/isa-assembly-025/">What does the RISC-V instruction &quot;jal ra, func&quot; do?</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Demand paging","item":"https://semiconroom.com/en/term/demand-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Demand paging","description":"Loading a program's pages into physical memory only when first accessed and a page fault occurs, rather than all at once. It speeds startup and saves memory for unused parts.","url":"https://semiconroom.com/en/term/demand-paging/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Demand paging","item":"https://semiconroom.com/en/term/demand-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Demand paging","description":"Loading a program's pages into physical memory only when first accessed and a page fault occurs, rather than all at once. It speeds startup and saves memory for unused parts.","url":"https://semiconroom.com/en/term/demand-paging/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between demand paging and swapping?","acceptedAnswer":{"@type":"Answer","text":"Demand paging brings individual pages into memory when they are first used. Swapping, in its original sense, moves whole processes between memory and disk; modern systems page individual pages out and in instead."}},{"@type":"Question","name":"Is a page fault an error?","acceptedAnswer":{"@type":"Answer","text":"Usually not. Under demand paging a page fault is the normal way a page gets loaded; only an access to an address outside any valid region is turned into an error such as a segmentation fault."}},{"@type":"Question","name":"Why does demand paging make programs start faster?","acceptedAnswer":{"@type":"Answer","text":"The OS only builds page tables at startup and loads pages as they are touched, so parts of the program that are never used are never read from storage."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What happens on a page fault</h2>
+  <p>When a program starts, the OS sets up page tables describing its address space but marks most pages as not present. The first access to such a page makes the memory management unit (MMU) raise a <a class="term-link" href="/en/term/page-fault/">page fault</a>. The kernel checks that the address belongs to a valid region (if not, the program gets a segmentation fault), finds a free physical frame, fills it from the executable, a file or with zeros, updates the page-table entry and re-executes the faulting instruction, which now succeeds.</p>
+</section>
+<section class="term-about">
+  <h2>Minor and major faults</h2>
+  <p>If the needed data is already in memory, for example in the OS file cache or as a <a class="term-link" href="/en/term/shared-library/">shared library</a> page another process loaded, the kernel only has to map it: a minor fault costing roughly a microsecond. A major fault must read from storage and costs far more, from tens of microseconds on fast flash to milliseconds on a hard disk. Kernels reduce major faults by reading ahead neighboring pages of a file when sequential access is detected.</p>
+</section>
+<section class="term-about">
+  <h2>Demand paging vs. loading everything</h2>
+  <p>Loading a whole program at startup wastes time and memory on code paths and data that are never used, such as error handlers or optional features. Demand paging loads only what is touched, so programs start quickly and more processes fit in memory. The downside is unpredictable latency on first touch, which is why real-time systems often lock or pre-touch their pages. If the active working sets exceed physical memory, the system thrashes, spending most of its time paging.</p>
+</section>
+<section class="term-about">
+  <h2>Related techniques</h2>
+  <p>Memory-mapped files use the same machinery: mmap only records the mapping, and the first read of each page faults the file data in. <a class="term-link" href="/en/term/copy-on-write/">Copy-on-write</a> lets a newly created process share its parent&#39;s pages until one side writes, at which point a fault creates a private copy. Large memory allocations often receive physical pages only when first touched, so allocating memory and actually using it are different events.</p>
+</section>
 <section>
   <h2>Try it: questions about Demand paging</h2>
   <article class="q-mini" data-qid="os-hardware-018" data-cat="os-hardware" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. A page fault occurs on a page&#39;s first use, and the page is loaded into physical memory then</p><p class="explanation">Under <a class="term-link" href="/en/term/demand-paging/">demand paging</a>, starting a program only sets up page tables without loading actual pages. The first access to a page causes a <a class="term-link" href="/en/term/page-fault/">page fault</a>, and the OS loads just that page from disk. Startup is faster and no memory is spent on code or data that is never used. It is the opposite of loading everything up front and has nothing to do with pinning pages in the cache.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between demand paging and swapping?</h3>
+  <p>Demand paging brings individual pages into memory when they are first used. Swapping, in its original sense, moves whole processes between memory and disk; modern systems page individual pages out and in instead.</p>
+  <h3>Is a page fault an error?</h3>
+  <p>Usually not. Under demand paging a page fault is the normal way a page gets loaded; only an access to an address outside any valid region is turned into an error such as a segmentation fault.</p>
+  <h3>Why does demand paging make programs start faster?</h3>
+  <p>The OS only builds page tables at startup and loads pages as they are touched, so parts of the program that are never used are never read from storage.</p>
+</section>
 <section>
   <h2>Demand paging in the explanations</h2>
   <ul class="term-quotes"><li><p>Under demand paging, starting a program only sets up page tables without loading actual pages.</p><a href="/en/q/os-hardware/os-hardware-018/">Which describes demand paging?</a></li><li><p>A context switch changes which process runs, and demand paging loads pages only when needed.</p><a href="/en/q/os-hardware/os-hardware-002/">What is the mechanism by which applications ask the OS to p…</a></li><li><p>Copy-on-write and demand paging are memory-management techniques.</p><a href="/en/q/os-hardware/os-hardware-037/">What is it called when a guest OS executes a privileged ins…</a></li><li><p>It is the same mechanism as demand paging, avoiding a system call per read and reducing extra data copies.</p><a href="/en/q/os-hardware/os-hardware-049/">In a mechanism that maps a file into memory (such as mmap),…</a></li></ul>

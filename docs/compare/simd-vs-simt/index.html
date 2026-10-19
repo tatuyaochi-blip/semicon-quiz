@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIMDとSIMTの違い：実行モデル・プログラミング・分岐・メモリアクセスを比較 | 半導体教室</title>
+<meta name="description" content="CPUのベクトル命令で使われるSIMDと、GPUのワープで使われるSIMTを、実行モデル・プログラムの書き方・並列の幅・分岐の扱い・メモリアクセス・遅延の隠し方の観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/simd-vs-simt/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/simd-vs-simt/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SIMDとSIMTの違い：実行モデル・プログラミング・分岐・メモリアクセスを比較 | 半導体教室">
+<meta property="og:description" content="CPUのベクトル命令で使われるSIMDと、GPUのワープで使われるSIMTを、実行モデル・プログラムの書き方・並列の幅・分岐の扱い・メモリアクセス・遅延の隠し方の観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/simd-vs-simt/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"SIMDとSIMTの違い：実行モデル・プログラミング・分岐・メモリアクセスを比較","item":"https://semiconroom.com/compare/simd-vs-simt/"}]},{"@context":"https://schema.org","@type":"Article","headline":"SIMDとSIMTの違い：実行モデル・プログラミング・分岐・メモリアクセスを比較","description":"CPUのベクトル命令で使われるSIMDと、GPUのワープで使われるSIMTを、実行モデル・プログラムの書き方・並列の幅・分岐の扱い・メモリアクセス・遅延の隠し方の観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/simd-vs-simt/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"SIMTは、SIMDとまったく別の仕組みなのですか？","acceptedAnswer":{"@type":"Answer","text":"ハードウェアの中では近い仕組みです。ワープの各スレッドはSIMDの演算器の1つのレーンに対応し、同じ命令で動きます。違いは見せ方で、SIMTではスレッドごとのレジスタ、番地、分岐をハードウェアが扱うので、プログラマはベクトルの幅を意識せずに書けます。"}},{"@type":"Question","name":"ワープダイバージェンスを減らすにはどうすればよいですか？","acceptedAnswer":{"@type":"Answer","text":"同じワープのスレッドが、なるべく同じ側の分岐を通るようにします。例えば、条件の結果がそろうようにデータを並べ替える、ワープの単位で条件が切り替わるようにスレッドの番号を割り当てる、短い分岐は選択の演算に置き換える、などの方法があります。"}},{"@type":"Question","name":"SIMDで、if文のある処理はどう書くのですか？","acceptedAnswer":{"@type":"Answer","text":"比較命令で要素ごとの条件をマスクにし、両方の結果を計算したうえで、マスクに従って要素ごとに選びます。マスク付きの命令がある命令セットでは、条件を満たす要素だけを演算・格納できます。両方の経路を計算するので、分岐の中身が重いと効率が下がる点は、SIMTのダイバージェンスと似ています。"}},{"@type":"Question","name":"コンパイラの自動ベクトル化がうまくいかないのは、どんなときですか？","acceptedAnswer":{"@type":"Answer","text":"繰り返しの間に依存があるとき(前の結果を次で使うとき)、ポインタが同じ領域を指している可能性があるとき、データが連続して並んでいないとき、ループの中に複雑な分岐や関数の呼び出しがあるときなどです。依存がないことをコンパイラに伝える指定や、データの並べ方の変更で、ベクトル化できる場合があります。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>SIMDとSIMTの違い：実行モデル・プログラミング・分岐・メモリアクセスを比較</h1>
+  <p class="lead">SIMDもSIMTも、1つの命令で多くのデータに同じ演算をする点は同じですが、プログラムからの見え方が違います。SIMDはCPUのベクトル命令で、プログラマやコンパイラが幅の決まったベクトルレジスタにデータを並べ、明示的に命令を使います。SIMTはGPUの方式で、1本のスレッドの処理を普通に書くと、ハードウェアが32本などのスレッドをワープに束ねて同じ命令で動かします。スレッドごとに分岐も書けますが、ワープの中で分岐が分かれると両方の経路を順に実行するので、効率が下がります。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">SIMD</th><th scope="col">SIMT</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">実行モデル</th><td>1つの命令で、ベクトルレジスタに並べた複数の要素を同時に処理する</td><td>1つの命令を、ワープに束ねた多数のスレッドが同時に実行する。各スレッドは自分のレジスタを持つ</td></tr>
+        <tr><th scope="row">プログラムの見え方</th><td>ベクトルの幅を意識して書く。組み込み関数、アセンブリ、コンパイラの自動ベクトル化を使う</td><td>1本のスレッドの処理をスカラのコードとして書く。束ねるのはハードウェア</td></tr>
+        <tr><th scope="row">並列の幅</th><td>レジスタの幅で決まる。例: 512ビットなら32ビットの数16個</td><td>ワープの幅(32本など)。チップ全体では数万本のスレッドを同時に保持する</td></tr>
+        <tr><th scope="row">分岐の扱い</th><td>要素ごとの分岐は書けない。比較結果のマスクで両方を計算して選ぶ</td><td>スレッドごとに書ける。ワープ内で分かれると両方の経路を順に実行し、該当しないスレッドを休ませる(ダイバージェンス)</td></tr>
+        <tr><th scope="row">有効な要素の管理</th><td>プログラマやコンパイラが、マスク付き命令やブレンド命令で明示する</td><td>ハードウェアが、有効なスレッドを自動で管理する</td></tr>
+        <tr><th scope="row">メモリアクセス</th><td>連続した番地をまとめて読むのが得意。ばらばらの番地はギャザー・スキャッタ命令で扱うが遅い</td><td>各スレッドが自由に番地を指定できる。隣り合うスレッドが隣り合う番地を読むとまとめられる(コアレッシング)</td></tr>
+        <tr><th scope="row">メモリの遅延の隠し方</th><td>大きなキャッシュ、アウトオブオーダー実行、プリフェッチ</td><td>多数のワープを切り替え、待っているワープの間に別のワープを動かす</td></tr>
+        <tr><th scope="row">フリンの分類での位置づけ</th><td>SIMDそのもの</td><td>SIMDの一種を、スレッドの形で見せる方式</td></tr>
+        <tr><th scope="row">代表的な使われ方</th><td>CPUのベクトル命令。画像・音声の処理、暗号、行列演算のループなど</td><td>GPUのワープ。グラフィックス、AIの学習・推論、科学技術計算などの大規模な並列計算</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>SIMD</dt><dd>CPUの上で、配列の要素ごとに同じ計算をするループを速くしたいとき。データが連続して並び、繰り返しの間に依存がないと効果が大きく、コンパイラの自動ベクトル化でも使えます。</dd>
+    <dt>SIMT</dt><dd>数千〜数百万の独立した要素に同じ処理をする大規模な並列計算。GPUで、スレッドごとのプログラムを書いて実行します。ワープの中で分岐とメモリの番地がそろうように作ると効率が上がります。</dd>
+    <dt>組み合わせ</dt><dd>GPUの中では、ワープを単位としたSIMTの実行がSIMDの演算器の上で行われます。CPUとGPUを一緒に使うシステムでは、前処理や制御をCPUのSIMDで、大きな並列計算をGPUで分担します。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>SIMTは、SIMDとまったく別の仕組みなのですか？</h3>
+  <p>ハードウェアの中では近い仕組みです。ワープの各スレッドはSIMDの演算器の1つのレーンに対応し、同じ命令で動きます。違いは見せ方で、SIMTではスレッドごとのレジスタ、番地、分岐をハードウェアが扱うので、プログラマはベクトルの幅を意識せずに書けます。</p>
+  <h3>ワープダイバージェンスを減らすにはどうすればよいですか？</h3>
+  <p>同じワープのスレッドが、なるべく同じ側の分岐を通るようにします。例えば、条件の結果がそろうようにデータを並べ替える、ワープの単位で条件が切り替わるようにスレッドの番号を割り当てる、短い分岐は選択の演算に置き換える、などの方法があります。</p>
+  <h3>SIMDで、if文のある処理はどう書くのですか？</h3>
+  <p>比較命令で要素ごとの条件をマスクにし、両方の結果を計算したうえで、マスクに従って要素ごとに選びます。マスク付きの命令がある命令セットでは、条件を満たす要素だけを演算・格納できます。両方の経路を計算するので、分岐の中身が重いと効率が下がる点は、SIMTのダイバージェンスと似ています。</p>
+  <h3>コンパイラの自動ベクトル化がうまくいかないのは、どんなときですか？</h3>
+  <p>繰り返しの間に依存があるとき(前の結果を次で使うとき)、ポインタが同じ領域を指している可能性があるとき、データが連続して並んでいないとき、ループの中に複雑な分岐や関数の呼び出しがあるときなどです。依存がないことをコンパイラに伝える指定や、データの並べ方の変更で、ベクトル化できる場合があります。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="cpu-019" data-cat="cpu" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/cpu/cpu-019/">1つの命令で複数のデータに同じ演算を同時に行う方式はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">SISD</span></li><li><span class="choice-mark">B</span><span class="choice-text">SIMD</span></li><li><span class="choice-mark">C</span><span class="choice-text">MISD</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. SIMD</p><p class="explanation"><a class="term-link" href="/term/simd/">SIMD</a>は、1つの命令で複数のデータに同じ演算を並列に行う方式で、例えば512ビットのレジスタなら32ビットの数値16個を一度に計算できます。x86のSSE・AVX、ARMのNEON・SVEなどがあり、画像処理、動画の圧縮、行列演算などで数倍以上の高速化が得られます。フリンの分類ではほかにSISD(通常の逐次処理)、MIMD(マルチコア)などがあります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="gpu-programming-009" data-cat="gpu-programming" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/gpu-programming/gpu-programming-009/">NVIDIAのGPUで、32本のスレッドを1つの束にして、同じ命令を一斉に実行する単位を何と呼ぶか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">ワープ</span></li><li><span class="choice-mark">B</span><span class="choice-text">グリッド</span></li><li><span class="choice-mark">C</span><span class="choice-text">ページ</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ワープ</p><p class="explanation">ブロックの中のスレッドは、ハードウェアの中では32本ずつのワープに分けられ、1つのワープの32本は同じ命令を同時に別々のデータに対して実行します。このように、スレッドとして書いたプログラムを束にして同じ命令で動かす方式を<a class="term-link" href="/term/single-instruction-multiple-threads/">SIMT</a>と呼びます。AMDの<a class="term-link" href="/term/gpu/">GPU</a>では同じような単位をウェーブフロントと呼び、64本または32本です。ブロックの大きさは32の倍数にするのが基本です。</p></details>
+  </article>
+  <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/gpu-programming/gpu-programming-010/">GPUのSIMT(単一命令・複数スレッド)の方式と、CPUのSIMD命令の違いとして正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">SIMTは1つのデータに複数の命令を同時に行い、SIMDは1つの命令を1つのデータに行う</span></li><li><span class="choice-mark">B</span><span class="choice-text">SIMTとSIMDはまったく同じもので、名前が違うだけである</span></li><li><span class="choice-mark">C</span><span class="choice-text">SIMTでは各スレッドを独立したプログラムとして書け、分岐もハードウェアが処理するが、SIMDではプログラマやコンパイラが幅の決まったベクトルの命令を明示的に使う</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. SIMTでは各スレッドを独立したプログラムとして書け、分岐もハードウェアが処理するが、SIMDではプログラマやコンパイラが幅の決まったベクトルの命令を明示的に使う</p><p class="explanation">CPUの<a class="term-link" href="/term/simd/">SIMD</a>では、4個や8個のデータをまとめたベクトルのレジスタに1つの命令をかけるので、プログラムはベクトルの幅を意識して書きます。<a class="term-link" href="/term/gpu/">GPU</a>の<a class="term-link" href="/term/single-instruction-multiple-threads/">SIMT</a>では、プログラマは1本のスレッドの処理を普通に書き、ハードウェアが32本ずつ束ねて同じ命令で動かします。スレッドごとに分岐してもよく、ハードウェアが分岐した経路を順に実行しますが、そのときは効率が下がります。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/gpu-programming/gpu-programming-011/">1つのワープの中で、条件分岐によってスレッドの半分がif側、残りの半分がelse側に分かれた(ワープダイバージェンス)。一般にどう実行されるか。</a></li>
+  <li data-level="1"><a href="/q/gpu-programming/gpu-programming-013/">GPUのメモリ合体アクセス(コアレッシング)の説明として正しいものはどれか。</a></li>
+  <li data-level="2"><a href="/q/compiler/compiler-045/">コンパイラの自動ベクトル化で使われる命令の種類として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/gpu-programming/">GPUプログラミングの練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/simd/">SIMD</a></dt><dd>Single Instruction, Multiple Data の略。1つの命令で複数のデータに同じ演算を同時に行う方式。画像処理やAIの計算を高速化する。</dd></div>
+    <div class="term"><dt><a href="/term/single-instruction-multiple-threads/">SIMT</a></dt><dd>単一命令・複数スレッドの方式。プログラムはスレッドごとに書くが、ハードウェアはワープ(NVIDIAでは32本)ごとにスレッドを束ねて同じ命令で実行する。</dd></div>
+    <div class="term"><dt><a href="/term/warp-divergence/">ワープダイバージェンス</a></dt><dd>1つのワープの中で条件分岐によりスレッドの進む道が分かれること。分かれた道を順に実行するので効率が下がる。</dd></div>
+    <div class="term"><dt><a href="/term/memory-coalescing/">メモリコアレッシング</a></dt><dd>ワープの中の隣り合うスレッドが隣り合う番地にアクセスしたとき、まとめて少ない回数のメモリアクセスにすること。合体アクセス。</dd></div>
+    <div class="term"><dt><a href="/term/vectorization/">ベクトル化</a></dt><dd>ループの中で要素ごとに行う同じ計算を、SIMD命令を使って複数の要素にまとめて行う形に変える最適化。繰り返しの間にデータの依存がないことが条件になる。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu/"><strong>CPUとGPUの違い：構造・得意な処理・用途を比較</strong><span>CPUとGPUを、設計の目的・コア数・実行モデル・キャッシュ・メモリ帯域・分岐・データ転送・得意な処理の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/i2c-vs-spi-vs-uart/"><strong>I2C・SPI・UARTの違い：配線・速度・使い分けを比較</strong><span>I2C、SPI、UARTを、配線の数・クロック・速度・接続形態・アドレス・誤り検出・マイコンでの主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/verilog-vs-vhdl/"><strong>VerilogとVHDLの違い：2つのハードウェア記述言語を比較</strong><span>VerilogとVHDLを、成り立ち・文法・型・大文字小文字・検証機能・使われる分野・選び方の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/nvme-vs-sata-ssd/"><strong>NVMeとSATAのSSDの違い：速度・インターフェース・選び方</strong><span>NVMeとSATAのSSDを、インターフェース・速度・遅延・コマンドキュー・形状・消費電力・互換性・価格・向いている人の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/mcu-vs-mpu/"><strong>MCUとMPUの違い：マイコンとマイクロプロセッサを比較</strong><span>MCUとMPUを、集積度・クロック・メモリ・OS・リアルタイム性・消費電力・起動時間・コスト・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/process-vs-thread/"><strong>プロセスとスレッドの違い：メモリ・切り替え・使い分けを比較</strong><span>プロセスとスレッドを、メモリ・作成のコスト・コンテキストスイッチ・通信・分離・同期・用途の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

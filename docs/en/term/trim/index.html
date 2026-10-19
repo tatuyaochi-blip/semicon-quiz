@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/en/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"A command by which the operating system tells an SSD which areas belong to deleted files. Knowing which data is no longer needed makes garbage collection more efficient.","url":"https://semiconroom.com/en/term/trim/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"TRIM","item":"https://semiconroom.com/en/term/trim/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TRIM","description":"A command by which the operating system tells an SSD which areas belong to deleted files. Knowing which data is no longer needed makes garbage collection more efficient.","url":"https://semiconroom.com/en/term/trim/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does TRIM erase data immediately?","acceptedAnswer":{"@type":"Answer","text":"Not necessarily. TRIM marks the data as invalid and removes its address mapping; the physical erase happens later when garbage collection reclaims the block, though reads of trimmed addresses may already return zeros."}},{"@type":"Question","name":"Do NVMe SSDs support TRIM?","acceptedAnswer":{"@type":"Answer","text":"Yes, through the Deallocate option of the NVMe Dataset Management command, which does the same job; operating systems usually still call it TRIM or discard."}},{"@type":"Question","name":"Is TRIM needed on a hard disk drive?","acceptedAnswer":{"@type":"Answer","text":"Conventional hard drives can overwrite sectors in place, so they do not benefit from TRIM; it matters for flash storage, where blocks must be erased before reuse."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/sram-flash/">SRAM and flash memory</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why an SSD needs to be told</h2>
+  <p>An SSD&#39;s controller runs a flash translation layer (FTL) that maps the logical block addresses used by the operating system to physical flash pages. Deleting a file only updates the file system&#39;s own bookkeeping; the SSD receives no write and still considers the old data valid. During <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a>, the drive therefore keeps copying data that nobody will ever read again, wasting time and flash endurance. TRIM closes this information gap: the operating system sends the address ranges that no longer hold useful data, so the drive can stop preserving them.</p>
+</section>
+<section class="term-about">
+  <h2>What happens after a TRIM</h2>
+  <p>On receiving TRIM, the FTL removes the mapping for those logical addresses and marks the corresponding physical pages invalid. The data is not necessarily erased immediately; erasure happens later, block by block, when <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> reclaims the space. Blocks containing mostly invalid pages can then be erased with little or no copying, which reduces <a class="term-link" href="/en/term/write-amplification/">write amplification</a> and keeps write performance steady as the drive fills. Depending on the drive, reading a trimmed address afterward may return zeros or undefined data, so deleted files on SSDs are typically much harder to recover than on hard disks.</p>
+</section>
+<section class="term-about">
+  <h2>Interfaces and how it is issued</h2>
+  <p>TRIM is the name of the ATA (SATA) command option; SCSI and SAS systems use UNMAP, and <a class="term-link" href="/en/term/nvme/">NVMe</a> provides the same function through the Deallocate option of its Dataset Management command. Operating systems issue it either continuously, sending a discard as each file is deleted, or in periodic batches, which avoids slowing down deletions. Layers between the file system and the drive, such as some RAID or disk-encryption setups and virtual disks, must pass the command through for it to reach the flash, and may need to be configured to do so.</p>
+</section>
+<section class="term-about">
+  <h2>Not to be confused with</h2>
+  <p>TRIM is only a hint from the host; <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> is the drive&#39;s internal process that actually relocates valid data and erases blocks, and it runs with or without TRIM. In semiconductor fabrication, resist trimming is an unrelated <a class="term-link" href="/en/term/plasma/">plasma</a> process that thins resist lines below the exposure limit, and laser trimming adjusts resistor values in analog chips. Conventional hard disks overwrite data in place and do not need TRIM, although thin-provisioned storage uses the equivalent unmap command to reclaim space.</p>
+</section>
 <section>
   <h2>Try it: questions about TRIM</h2>
   <article class="q-mini" data-qid="sram-flash-028" data-cat="sram-flash" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. The amount of data actually written to flash exceeding the amount written by the host</p><p class="explanation">Because flash cannot overwrite and erases by block, <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> adds extra writes such as copying valid data to new blocks, so the flash receives more data than the host wrote. The ratio is the <a class="term-link" href="/en/term/write-amplification/">write amplification</a> factor (WAF), which can reach several times under small random writes. <a class="term-link" href="/en/term/trim/">TRIM</a>, spare area and data compression reduce it, protecting lifespan and performance.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Does TRIM erase data immediately?</h3>
+  <p>Not necessarily. TRIM marks the data as invalid and removes its address mapping; the physical erase happens later when garbage collection reclaims the block, though reads of trimmed addresses may already return zeros.</p>
+  <h3>Do NVMe SSDs support TRIM?</h3>
+  <p>Yes, through the Deallocate option of the NVMe Dataset Management command, which does the same job; operating systems usually still call it TRIM or discard.</p>
+  <h3>Is TRIM needed on a hard disk drive?</h3>
+  <p>Conventional hard drives can overwrite sectors in place, so they do not benefit from TRIM; it matters for flash storage, where blocks must be erased before reuse.</p>
+</section>
 <section>
   <h2>TRIM in the explanations</h2>
   <ul class="term-quotes"><li><p>The TRIM command tells the SSD which ranges are no longer needed; it marks those pages invalid and can erase them without copying, reducing write amplification and improving performance and lifespan.</p><a href="/en/q/sram-flash/sram-flash-028/">Which command notifies an SSD of space freed by files delet…</a></li><li><p>TRIM, spare area and data compression reduce it, protecting lifespan and performance.</p><a href="/en/q/sram-flash/sram-flash-042/">Which correctly describes &quot;write amplification&quot; in an SSD?</a></li><li><p>It does not shrink pitch, however, and variations in trim amount and LER translate directly into dimensional variation, so control is critical.</p><a href="/en/q/etching/etching-038/">Which technique gradually thins an exposed resist pattern w…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Atomic instruction","item":"https://semiconroom.com/en/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Atomic instruction","description":"An instruction that performs a memory read and write as one operation no other core can interrupt, such as CAS, fetch-and-add and LR/SC.","url":"https://semiconroom.com/en/term/atomic-instruction/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Atomic instruction","item":"https://semiconroom.com/en/term/atomic-instruction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Atomic instruction","description":"An instruction that performs a memory read and write as one operation no other core can interrupt, such as CAS, fetch-and-add and LR/SC.","url":"https://semiconroom.com/en/term/atomic-instruction/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between an atomic instruction and a lock?","acceptedAnswer":{"@type":"Answer","text":"An atomic instruction makes a single read-modify-write on one memory location indivisible in hardware; a lock is a software construct, built from atomics, that protects a longer section of code touching many locations."}},{"@type":"Question","name":"What is compare-and-swap?","acceptedAnswer":{"@type":"Answer","text":"Compare-and-swap writes a new value to a memory location only if it still contains an expected value, and reports success or failure, all as one atomic operation."}},{"@type":"Question","name":"Why are atomic operations slow?","acceptedAnswer":{"@type":"Answer","text":"The core must gain exclusive ownership of the cache line and often enforce memory ordering, and when several cores contend for the same line it is repeatedly transferred and invalidated between them."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why ordinary loads and stores are not enough</h2>
+  <p>A statement like counter++ compiles into a load, an add and a store. If two cores run it at the same time, both can load the same old value and both store old + 1, losing one increment. An atomic instruction performs the whole <a class="term-link" href="/en/term/read-modify-write/">read-modify-write</a> as one indivisible operation: no other core&#39;s access to that location can <a class="term-link" href="/en/term/slip/">slip</a> in between, and other cores observe only the value before or after it. This guarantee is the foundation for locks, counters and lock-free data structures on multicore processors.</p>
+</section>
+<section class="term-about">
+  <h2>Common kinds of atomic operations</h2>
+  <p>Test-and-set and atomic swap write a new value and return the old one. Fetch-and-add adds to memory and returns the previous value. <a class="term-link" href="/en/term/compare-and-swap/">Compare-and-swap</a> (CAS) writes a new value only if memory still holds an expected value, reporting whether it succeeded. <a class="term-link" href="/en/term/load-reserved-store-conditional/">Load-reserved/store-conditional (LR/SC)</a> splits the operation into a reserving load and a store that fails if the reservation was lost. RISC-V also provides atomic memory operation (AMO) instructions such as amoadd and amoswap, while x86 applies a LOCK prefix to instructions such as cmpxchg and xadd.</p>
+</section>
+<section class="term-about">
+  <h2>How hardware keeps them atomic</h2>
+  <p>Early systems locked the shared bus for the duration of the operation. Modern cores instead use the cache coherence protocol: the core obtains exclusive ownership of the <a class="term-link" href="/en/term/cache-line/">cache line</a>, in the Modified or Exclusive state of a MESI-style protocol, and delays other cores&#39; requests for that line until the <a class="term-link" href="/en/term/read-modify-write/">read-modify-write</a> finishes. An atomic is therefore much slower than a plain cached load, and under contention the line bounces between cores. Atomics also interact with memory ordering; on x86, locked instructions act as full memory barriers.</p>
+</section>
+<section class="term-about">
+  <h2>From atomics to locks</h2>
+  <p>A <a class="term-link" href="/en/term/spinlock/">spinlock</a> tries to set a lock variable with an atomic instruction and retries in a loop if it is already taken. Retrying the atomic write directly causes heavy coherence traffic, because every attempt demands exclusive ownership. The test-and-test-and-set pattern spins with ordinary reads on a shared copy in the local cache and attempts the atomic only when the lock appears free. Lock-free structures use CAS or <a class="term-link" href="/en/term/load-reserved-store-conditional/">LR/SC</a> directly, but CAS-based designs must guard against the <a class="term-link" href="/en/term/aba-problem/">ABA problem</a>, where a value changes and changes back unnoticed.</p>
+</section>
 <section>
   <h2>Try it: questions about Atomic instruction</h2>
   <article class="q-mini" data-qid="multicore-sync-014" data-cat="multicore-sync" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Reads can wait inside the core&#39;s own cache, greatly reducing coherence traffic as the line bounces between cores</p><p class="explanation">An <a class="term-link" href="/en/term/atomic-instruction/">atomic instruction</a> involves a write, so waiting threads that keep executing it fight to own the line in the M state and keep invalidating others&#39; copies. With ordinary reads, each core just keeps reading its Shared copy in its own cache, generating no traffic. Only when the lock is released and the value changes does a thread try to grab it with an atomic instruction.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between an atomic instruction and a lock?</h3>
+  <p>An atomic instruction makes a single read-modify-write on one memory location indivisible in hardware; a lock is a software construct, built from atomics, that protects a longer section of code touching many locations.</p>
+  <h3>What is compare-and-swap?</h3>
+  <p>Compare-and-swap writes a new value to a memory location only if it still contains an expected value, and reports success or failure, all as one atomic operation.</p>
+  <h3>Why are atomic operations slow?</h3>
+  <p>The core must gain exclusive ownership of the cache line and often enforce memory ordering, and when several cores contend for the same line it is repeatedly transferred and invalidated between them.</p>
+</section>
 <section>
   <h2>Atomic instruction in the explanations</h2>
   <ul class="term-quotes"><li><p>An atomic instruction performs a read, compute and write sequence such that no other core&#39;s access can come in between.</p><a href="/en/q/multicore-sync/multicore-sync-014/">Which describes an atomic instruction?</a></li><li><p>An atomic instruction involves a write, so waiting threads that keep executing it fight to own the line in the M state and keep invalidating others&#39; copies.</p><a href="/en/q/multicore-sync/multicore-sync-022/">Why does a spinlock usually wait with ordinary reads and us…</a></li><li><p>A spinlock tries to acquire the lock with an atomic instruction and, if that fails, immediately tries again, over and over.</p><a href="/en/q/multicore-sync/multicore-sync-020/">Which describes a spinlock?</a></li></ul>

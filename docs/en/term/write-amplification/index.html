@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Write amplification","item":"https://semiconroom.com/en/term/write-amplification/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write amplification","description":"The amount of data actually written to flash exceeding what the host wrote, because of garbage collection and similar operations. The larger it is, the shorter the SSD's life.","url":"https://semiconroom.com/en/term/write-amplification/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Write amplification","item":"https://semiconroom.com/en/term/write-amplification/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Write amplification","description":"The amount of data actually written to flash exceeding what the host wrote, because of garbage collection and similar operations. The larger it is, the shorter the SSD's life.","url":"https://semiconroom.com/en/term/write-amplification/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a good write amplification factor?","acceptedAnswer":{"@type":"Answer","text":"A WAF near 1 is ideal and typical for sequential workloads; small random writes on a nearly full drive can push it to several. Lower is better for both endurance and sustained write speed."}},{"@type":"Question","name":"Can write amplification be less than 1?","acceptedAnswer":{"@type":"Answer","text":"Yes, if the controller compresses or deduplicates data, it can write less to flash than the host sent, giving an effective WAF below 1 for compressible data."}},{"@type":"Question","name":"Does over-provisioning reduce write amplification?","acceptedAnswer":{"@type":"Answer","text":"Yes. Extra spare area means garbage collection can choose blocks with fewer valid pages to copy, which lowers WAF, especially under random write workloads."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/sram-flash/">SRAM and flash memory</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Where the extra writes come from</h2>
+  <p>NAND flash is programmed in pages but erased only in much larger blocks containing hundreds or more pages, and a page cannot be overwritten in place. When the host updates data, the SSD writes the new version to a fresh page and marks the old one invalid. To reclaim space, <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> picks a block with many invalid pages, copies its remaining valid pages elsewhere, and erases it. Those copies are writes the host never asked for. <a class="term-link" href="/en/term/wear-leveling/">Wear leveling</a>, which moves rarely changed data off lightly worn blocks, and the drive&#39;s own mapping-table updates add more.</p>
+</section>
+<section class="term-about">
+  <h2>Defining and estimating WAF</h2>
+  <p>The write amplification factor (WAF) is the amount of data written to flash divided by the amount written by the host. Large sequential writes tend to invalidate whole blocks at once, so <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> has little to copy and WAF stays near 1. Small random writes scatter invalid pages across many blocks, so each reclaimed block still holds much valid data and WAF can reach several. The fuller the drive and the less spare area it has, the fewer mostly-empty blocks are available, and write amplification and performance loss both grow.</p>
+</section>
+<section class="term-about">
+  <h2>Effect on lifetime</h2>
+  <p>Each flash block survives only a limited number of program/erase cycles, so write amplification directly consumes endurance. As a simple illustration, if a 1 TB drive&#39;s flash could withstand 1,000 cycles, its raw budget would be about 1 PB of flash writes; at a WAF of 3, the host could write only about a third of that. Drive endurance ratings in terabytes written already assume some typical workload WAF, so a workload dominated by small random writes can wear a drive out faster than its rating suggests.</p>
+</section>
+<section class="term-about">
+  <h2>How to reduce it</h2>
+  <p><a class="term-link" href="/en/term/trim/">TRIM</a> tells the drive which data is obsolete so <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> does not copy it. Over-provisioning, spare flash capacity hidden from the host, gives garbage collection more free blocks to work with, so victim blocks contain fewer valid pages; enterprise drives reserve a larger share for this reason. Controllers that compress data before writing can push the effective WAF below 1 for compressible data. Writing in large, aligned, sequential chunks and separating short-lived from long-lived data in different blocks also help, which is the idea behind zoned storage interfaces that let the host place data deliberately.</p>
+</section>
 <section>
   <h2>Try it: questions about Write amplification</h2>
   <article class="q-mini" data-qid="sram-flash-042" data-cat="sram-flash" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. The amount of data actually written to flash exceeding the amount written by the host</p><p class="explanation">Because flash cannot overwrite and erases by block, <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a> adds extra writes such as copying valid data to new blocks, so the flash receives more data than the host wrote. The ratio is the <a class="term-link" href="/en/term/write-amplification/">write amplification</a> factor (WAF), which can reach several times under small random writes. <a class="term-link" href="/en/term/trim/">TRIM</a>, spare area and data compression reduce it, protecting lifespan and performance.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a good write amplification factor?</h3>
+  <p>A WAF near 1 is ideal and typical for sequential workloads; small random writes on a nearly full drive can push it to several. Lower is better for both endurance and sustained write speed.</p>
+  <h3>Can write amplification be less than 1?</h3>
+  <p>Yes, if the controller compresses or deduplicates data, it can write less to flash than the host sent, giving an effective WAF below 1 for compressible data.</p>
+  <h3>Does over-provisioning reduce write amplification?</h3>
+  <p>Yes. Extra spare area means garbage collection can choose blocks with fewer valid pages to copy, which lowers WAF, especially under random write workloads.</p>
+</section>
 <section>
   <h2>Write amplification in the explanations</h2>
   <ul class="term-quotes"><li><p>The ratio is the write amplification factor (WAF), which can reach several times under small random writes.</p><a href="/en/q/sram-flash/sram-flash-042/">Which correctly describes &quot;write amplification&quot; in an SSD?</a></li><li><p>These extra copies cause write amplification, and the fuller the drive, the more often garbage collection runs and the more write performance suffers.</p><a href="/en/q/sram-flash/sram-flash-015/">Which correctly describes garbage collection in an SSD?</a></li><li><p>The TRIM command tells the SSD which ranges are no longer needed; it marks those pages invalid and can erase them without copying, reducing write amplification and improving performance and lifespan.</p><a href="/en/q/sram-flash/sram-flash-028/">Which command notifies an SSD of space freed by files delet…</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Roofline model","item":"https://semiconroom.com/en/term/roofline-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Roofline model","description":"A model expressing attainable performance as the smaller of peak compute and memory bandwidth × arithmetic intensity, used to tell compute-bound from memory-bound work.","url":"https://semiconroom.com/en/term/roofline-model/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Roofline model","item":"https://semiconroom.com/en/term/roofline-model/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Roofline model","description":"A model expressing attainable performance as the smaller of peak compute and memory bandwidth × arithmetic intensity, used to tell compute-bound from memory-bound work.","url":"https://semiconroom.com/en/term/roofline-model/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the ridge point in a roofline model?","acceptedAnswer":{"@type":"Answer","text":"It is the arithmetic intensity where the bandwidth slope meets the compute ceiling, equal to peak FLOP/s divided by memory bandwidth in bytes per second. Workloads below it are memory-bound, those above it can be compute-bound."}},{"@type":"Question","name":"How do I measure arithmetic intensity for a kernel?","acceptedAnswer":{"@type":"Answer","text":"Divide the number of operations by the bytes actually transferred from DRAM, which you can estimate by hand or measure with hardware counters or a profiler. Use measured traffic when caches change the amount of data moved."}},{"@type":"Question","name":"Why is my workload memory-bound even on a fast GPU?","acceptedAnswer":{"@type":"Answer","text":"Fast accelerators have very high ridge points, often tens to hundreds of FLOP per byte, so element-wise operations and small-batch matrix-vector work cannot reach peak. Fusing operations and increasing data reuse or batch size raise intensity."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -106,7 +106,22 @@
 </svg><figcaption class="fig-cap">Roofline model · <a href="/en/figures/#fig-roofline">View in diagrams</a></figcaption></figure>
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How the chart is built</h2>
+  <p>The roofline model plots attainable performance (operations per second, usually FLOP/s) against <a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a> (operations per byte moved to or from memory), normally on log-log axes. Two ceilings bound every workload: a sloped line equal to memory bandwidth times arithmetic intensity, and a flat line at peak compute. Attainable performance is the lower of the two. The corner where they meet, the ridge point, sits at peak compute divided by bandwidth. With 100 TFLOPS and 2 TB/s, the ridge is 50 FLOP/byte, so a kernel at 10 FLOP/byte is memory-bound at 20 TFLOPS.</p>
+</section>
+<section class="term-about">
+  <h2>Computing arithmetic intensity</h2>
+  <p>Count the useful operations and divide by the bytes that actually cross the memory interface. Adding two arrays of 8-byte doubles into a third performs 1 FLOP while moving 24 bytes, about 0.04 FLOP/byte, so it is hopelessly memory-bound on any modern chip. Multiplying two n-by-n matrices performs about 2n³ FLOPs on roughly 3n² elements, so intensity grows with n, provided caches or tiling actually deliver that reuse. Because intensity depends on real traffic, the same algorithm can sit at different points depending on blocking, cache size and data type.</p>
+</section>
+<section class="term-about">
+  <h2>Reading the chart and acting on it</h2>
+  <p>A kernel under the sloped roof will not speed up with more arithmetic units; it needs fewer bytes per operation. Blocking or tiling to reuse data in caches, fusing consecutive operations so intermediates never reach DRAM, and using lower-precision data all move the point right or up. A kernel near the flat roof needs better use of compute instead: <a class="term-link" href="/en/term/vectorization/">vectorization</a>, <a class="term-link" href="/en/term/fused-multiply-add/">fused multiply-add</a>, matrix units and enough parallelism. Extra lower ceilings are often drawn for missing optimizations, such as peak without <a class="term-link" href="/en/term/simd/">SIMD</a>, and separate rooflines can be drawn for each cache level.</p>
+</section>
+<section class="term-about">
+  <h2>Where the numbers come from and limits</h2>
+  <p>The flat roof is usually the vendor&#39;s peak for the relevant data type; the slope is better taken from a measured bandwidth, such as the <a class="term-link" href="/en/term/stream-benchmark/">STREAM benchmark</a>, than from the theoretical figure. The model is an upper bound, not a prediction: real kernels sit below the roof because of latency, imperfect overlap of memory and compute, synchronization and load imbalance. A familiar application is large language model inference at <a class="term-link" href="/en/term/batch-size/">batch size</a> one, where each weight is read for about two operations, giving intensity near 1 FLOP/byte at 16-bit precision and a firmly memory-bound result.</p>
+</section>
 <section>
   <h2>Try it: questions about Roofline model</h2>
   <article class="q-mini" data-qid="ai-stack-008" data-cat="ai-stack" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -120,7 +135,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Raise arithmetic intensity, for example by increasing data reuse, or reduce memory traffic</p><p class="explanation">In the Roofline chart, workloads under the slanted line are capped by memory bandwidth, and adding arithmetic units does not raise that cap. Reusing data through blocking or <a class="term-link" href="/en/term/operator-fusion/">operator fusion</a> increases operations per byte (<a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a>), moving the workload rightward and raising its ceiling. Using lower-precision data to cut memory traffic has a similar effect.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the ridge point in a roofline model?</h3>
+  <p>It is the arithmetic intensity where the bandwidth slope meets the compute ceiling, equal to peak FLOP/s divided by memory bandwidth in bytes per second. Workloads below it are memory-bound, those above it can be compute-bound.</p>
+  <h3>How do I measure arithmetic intensity for a kernel?</h3>
+  <p>Divide the number of operations by the bytes actually transferred from DRAM, which you can estimate by hand or measure with hardware counters or a profiler. Use measured traffic when caches change the amount of data moved.</p>
+  <h3>Why is my workload memory-bound even on a fast GPU?</h3>
+  <p>Fast accelerators have very high ridge points, often tens to hundreds of FLOP per byte, so element-wise operations and small-batch matrix-vector work cannot reach peak. Fusing operations and increasing data reuse or batch size raise intensity.</p>
+</section>
 <section>
   <h2>Roofline model in the explanations</h2>
   <ul class="term-quotes"><li><p>In the Roofline model, attainable performance is the smaller of the peak and bandwidth × arithmetic intensity.</p><a href="/en/q/ai-stack/ai-stack-008/">On an accelerator with 100 TFLOPS peak and 2 TB/s memory ba…</a></li><li><p>The roofline model plots performance against arithmetic intensity (operations per byte read from memory).</p><a href="/en/q/cpu/cpu-050/">Which model plots whether a program&#39;s performance is limite…</a></li><li><p>It shows how much bandwidth is actually usable compared with the theoretical figure and supplies the slope of the slanted line in the Roofline model.</p><a href="/en/q/performance/performance-037/">What does the STREAM benchmark mainly measure?</a></li></ul>

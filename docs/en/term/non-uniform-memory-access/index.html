@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Non-uniform memory access (NUMA)","item":"https://semiconroom.com/en/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Non-uniform memory access (NUMA)","description":"An organization in which each core has near and far memory, and far accesses take longer. Placing data and threads on the same side is faster.","url":"https://semiconroom.com/en/term/non-uniform-memory-access/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Non-uniform memory access (NUMA)","item":"https://semiconroom.com/en/term/non-uniform-memory-access/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Non-uniform memory access (NUMA)","description":"An organization in which each core has near and far memory, and far accesses take longer. Placing data and threads on the same side is faster.","url":"https://semiconroom.com/en/term/non-uniform-memory-access/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I check whether my machine is NUMA?","acceptedAnswer":{"@type":"Answer","text":"On Linux, run lscpu or numactl --hardware; more than one NUMA node listed means memory access cost depends on location. Most dual-socket servers show at least two nodes."}},{"@type":"Question","name":"Do programs need to be rewritten for NUMA?","acceptedAnswer":{"@type":"Answer","text":"No, a ccNUMA machine presents one coherent address space, so programs run correctly as is. Rewriting matters only for performance, mainly by keeping each thread's data on its own node."}},{"@type":"Question","name":"What is the first-touch policy?","acceptedAnswer":{"@type":"Answer","text":"It is the common rule that a physical page is allocated on the NUMA node of the thread that first writes to it. It is why parallel initialization of arrays matters on NUMA systems."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/multicore-sync/">Multicore &amp; Synchronization</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why memory access becomes non-uniform</h2>
+  <p>Modern processors integrate their memory controllers, so in a multi-socket server each socket has its own directly attached DRAM. A core reaching memory on its own socket goes straight through its local controller; reaching memory on another socket requires a trip across the inter-socket link and through the remote controller. The group of cores plus their local memory is called a NUMA node. Remote accesses typically show noticeably higher latency, often in the range of roughly 1.3 to 2 times local, and lower bandwidth, with the exact ratio depending on the platform and how heavily the link is loaded.</p>
+</section>
+<section class="term-about">
+  <h2>NUMA vs. UMA and vs. clusters</h2>
+  <p>In a uniform memory access (UMA) system, often a single-socket machine with one memory controller complex, every core sees every address at about the same cost. A cache-coherent NUMA (ccNUMA) system keeps a single shared address space and hardware cache coherence, so unmodified programs run correctly; only their speed depends on where data lives. That distinguishes it from a cluster of separate computers, where each node has a private address space and data must be exchanged explicitly by message passing. Large <a class="term-link" href="/en/term/chiplet/">chiplet</a>-based processors can also expose more than one NUMA node within a single socket.</p>
+</section>
+<section class="term-about">
+  <h2>First-touch placement and its trap</h2>
+  <p>Linux usually places a page on the node of the thread that first writes it, not the one that allocated it, since malloc only reserves virtual addresses. If a single thread zero-initializes a large array, every page lands on that thread&#39;s node, and later parallel loops on other nodes run almost entirely from remote memory, while one memory controller is saturated and the others sit idle. The fix is to initialize data in parallel with the same work partitioning as the computation, so that each thread&#39;s portion ends up local to it.</p>
+</section>
+<section class="term-about">
+  <h2>Tools and good practice</h2>
+  <p>On Linux, numactl --hardware lists the nodes, their memory and a distance table in which local access is conventionally 10 and remote values are larger. The same tool can bind a process to a node&#39;s CPUs and memory, or interleave pages across nodes, which suits data that every thread reads evenly. Pinning threads (setting CPU affinity) keeps the scheduler from migrating a thread away from its data and makes benchmarks reproducible. The kernel can also migrate pages automatically toward the threads using them, but explicit placement is more predictable for performance-critical code.</p>
+</section>
 <section>
   <h2>Try it: questions about Non-uniform memory access (NUMA)</h2>
   <article class="q-mini" data-qid="multicore-sync-041" data-cat="multicore-sync" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. If one thread zero-initializes a large array, all of it lands on one node, and threads on other nodes end up using far memory</p><p class="explanation">malloc alone assigns no physical pages; the <a class="term-link" href="/en/term/page-fault/">page fault</a> on first write places each page in the memory of the node where the writing thread runs. So if one thread does the initialization, the whole array gathers on that node, and in the parallel computation much of each thread&#39;s portion is in far memory. Initializing in parallel with the same division of work as the computation puts each portion near its thread.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do I check whether my machine is NUMA?</h3>
+  <p>On Linux, run lscpu or numactl --hardware; more than one NUMA node listed means memory access cost depends on location. Most dual-socket servers show at least two nodes.</p>
+  <h3>Do programs need to be rewritten for NUMA?</h3>
+  <p>No, a ccNUMA machine presents one coherent address space, so programs run correctly as is. Rewriting matters only for performance, mainly by keeping each thread&#39;s data on its own node.</p>
+  <h3>What is the first-touch policy?</h3>
+  <p>It is the common rule that a physical page is allocated on the NUMA node of the thread that first writes to it. It is why parallel initialization of arrays matters on NUMA systems.</p>
+</section>
 <section>
   <h2>Non-uniform memory access (NUMA) in the explanations</h2>
   <ul class="term-quotes"><li><p>The destination core&#39;s cache lacks the needed data, and on NUMA systems the thread may land on a socket far from the memory holding its data.</p><a href="/en/q/performance/performance-045/">When measuring performance on multicore or NUMA systems, wh…</a></li><li><p>In multi-socket servers, memory attached directly to each CPU is faster, creating a NUMA architecture.</p><a href="/en/q/dram/dram-043/">In most current PC processors, where is the memory controll…</a></li></ul>

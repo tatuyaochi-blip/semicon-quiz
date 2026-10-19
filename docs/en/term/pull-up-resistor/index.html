@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Pull-up resistor","item":"https://semiconroom.com/en/term/pull-up-resistor/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Pull-up resistor","description":"A resistor connecting a signal line to the supply so it rests at logic 1 when nothing drives it. It keeps input pins from floating and is used on I2C lines and elsewhere.","url":"https://semiconroom.com/en/term/pull-up-resistor/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Pull-up resistor","item":"https://semiconroom.com/en/term/pull-up-resistor/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Pull-up resistor","description":"A resistor connecting a signal line to the supply so it rests at logic 1 when nothing drives it. It keeps input pins from floating and is used on I2C lines and elsewhere.","url":"https://semiconroom.com/en/term/pull-up-resistor/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why do I2C lines need pull-up resistors?","acceptedAnswer":{"@type":"Answer","text":"I²C devices have open-drain outputs that can only pull SDA and SCL low, so external pull-ups are needed to create the high level and allow several devices to share the lines safely."}},{"@type":"Question","name":"What happens if a pull-up resistor value is too small?","acceptedAnswer":{"@type":"Answer","text":"Edges get faster, but more current flows whenever a device holds the line low, which wastes power and can push the low voltage above its specified VOL if the driver's sink rating is exceeded."}},{"@type":"Question","name":"What happens if a microcontroller input is left floating?","acceptedAnswer":{"@type":"Answer","text":"The pin's level is undefined, so noise makes it read 0 and 1 unpredictably and an intermediate voltage can cause extra current in the input buffer; a pull-up or pull-down resistor fixes it."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/embedded/">Embedded Systems &amp; Firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why inputs need a defined level</h2>
+  <p>A <a class="term-link" href="/en/term/cmos/">CMOS</a> input draws almost no current, so if nothing drives it, its voltage is undefined. Coupled noise or even a nearby hand can make it read 0 and 1 at random, and an input resting at an intermediate voltage can turn on both transistors of the input stage, wasting shoot-through current. A pull-up resistor connects the line to the supply so it reads 1 by default. A switch wired from the pin to ground then reads 1 when open and 0 when pressed. A pull-down resistor does the mirror-image job.</p>
+</section>
+<section class="term-about">
+  <h2>Open-drain lines and wired-AND</h2>
+  <p>An open-drain (or open-collector) output can only pull a line to ground or release it; it never drives high. The pull-up resistor supplies the high level. When several such outputs share one line, the line is high only if all of them release it and goes low if any one pulls down, forming a wired-AND. Multiple devices can therefore drive the line simultaneously without damaging each other, which is why I²C, shared <a class="term-link" href="/en/term/interrupt/">interrupt</a> lines and reset lines use this arrangement. Pulling up to a different supply also provides simple level shifting.</p>
+</section>
+<section class="term-about">
+  <h2>Choosing the resistor value</h2>
+  <p>The rising edge is an RC charge of the line capacitance through the pull-up, so the <a class="term-link" href="/en/term/time-constant/">time constant</a> is R × C: 10 kΩ and 100 pF give 1 µs, with the 10–90% rise taking about 2.2 time constants. A smaller resistor speeds this up, but whenever an output holds the line low, current V/R flows, for example 3.3 mA from 3.3 V through 1 kΩ. That current must stay within the sink current at which the datasheet guarantees the low output voltage VOL, and it wastes power. Buses like I²C specify both maximum rise time and sink current.</p>
+</section>
+<section class="term-about">
+  <h2>Weak pulls vs. strong drivers</h2>
+  <p>A pull-up is deliberately weak, so any active driver can override it; it only sets the default state. A push-pull output, by contrast, actively drives both high and low with low impedance and must never be tied to another push-pull output. Most microcontrollers offer internal pull-ups, typically in the tens of kilohms, which are fine for buttons but often too weak for fast buses that need external resistors. Pull-ups and pull-downs also hold enable, reset and configuration pins in a known state during power-up.</p>
+</section>
 <section>
   <h2>Try it: questions about Pull-up resistor</h2>
   <article class="q-mini" data-qid="logic-050" data-cat="logic" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. The rise becomes faster, but the current flowing while the output is low increases, and VOL also tends to rise</p><p class="explanation">The high level of an <a class="term-link" href="/en/term/open-drain-output/">open-drain output</a> is produced by the <a class="term-link" href="/en/term/pull-up-resistor/">pull-up resistor</a> pulling the signal line up while the output transistor is off. The rise speed is set by the <a class="term-link" href="/en/term/time-constant/">time constant</a> of the resistor and the line capacitance—for example, 1 µs for 10 kΩ and 100 pF. A smaller resistor makes it faster, but when the output is low, current flows from the supply through the resistor: 3.3 mA for 3.3 V and 1 kΩ. If this current exceeds the IOL condition in the datasheet, VOL will not stay within its specified value, so choose a value that satisfies both.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why do I2C lines need pull-up resistors?</h3>
+  <p>I²C devices have open-drain outputs that can only pull SDA and SCL low, so external pull-ups are needed to create the high level and allow several devices to share the lines safely.</p>
+  <h3>What happens if a pull-up resistor value is too small?</h3>
+  <p>Edges get faster, but more current flows whenever a device holds the line low, which wastes power and can push the low voltage above its specified VOL if the driver&#39;s sink rating is exceeded.</p>
+  <h3>What happens if a microcontroller input is left floating?</h3>
+  <p>The pin&#39;s level is undefined, so noise makes it read 0 and 1 unpredictably and an intermediate voltage can cause extra current in the input buffer; a pull-up or pull-down resistor fixes it.</p>
+</section>
 <section>
   <h2>Pull-up resistor in the explanations</h2>
   <ul class="term-quotes"><li><p>An open-drain output either pulls the line to ground or releases it; a pull-up resistor provides the 1.</p><a href="/en/q/logic/logic-050/">When several open-drain outputs are connected to one signal…</a></li><li><p>The high level of an open-drain output is produced by the pull-up resistor pulling the signal line up while the output transistor is off.</p><a href="/en/q/datasheet/datasheet-012/">Which correctly describes the change when the value of the …</a></li><li><p>With a pull-up resistor to the supply, the pin reads 1 when the switch is open and 0 when it closes to ground.</p><a href="/en/q/embedded/embedded-007/">A switch alone is connected to a microcontroller input pin,…</a></li></ul>

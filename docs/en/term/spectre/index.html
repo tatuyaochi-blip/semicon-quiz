@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Spectre","item":"https://semiconroom.com/en/term/spectre/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spectre","description":"A class of vulnerabilities, disclosed in 2018, that induces mispredicted speculative execution to read secret data and infers its value from traces left in the cache.","url":"https://semiconroom.com/en/term/spectre/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Spectre","item":"https://semiconroom.com/en/term/spectre/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spectre","description":"A class of vulnerabilities, disclosed in 2018, that induces mispredicted speculative execution to read secret data and infers its value from traces left in the cache.","url":"https://semiconroom.com/en/term/spectre/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Spectre fixed in modern CPUs?","acceptedAnswer":{"@type":"Answer","text":"Specific variants are mitigated by microcode, compiler and operating system changes and by hardware updates, but the underlying class cannot be eliminated without giving up speculation. New variants have continued to be found since 2018."}},{"@type":"Question","name":"What is the difference between Spectre and Meltdown?","acceptedAnswer":{"@type":"Answer","text":"Meltdown let user code read kernel memory by exploiting a delayed permission check in some processors, and was fixed fairly directly. Spectre misleads branch prediction so a program speculatively leaks data it can address, which makes it far broader and harder to mitigate."}},{"@type":"Question","name":"Why does Spectre need a cache timing measurement?","acceptedAnswer":{"@type":"Answer","text":"Speculative results are discarded, so the secret never appears in a register the attacker can read. Encoding it in which cache line was loaded, and then timing loads, is how the value is recovered."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How a Spectre attack works</h2>
+  <p>The classic bounds-check-bypass form targets code like: if (x &lt; size) y = table[data[x] * 4096]. The attacker first calls it many times with valid x, training the branch predictor to expect the check to pass. Then the attacker supplies an out-of-range x while size is not in the cache. Waiting for size, the CPU speculatively reads data[x], which is really a secret byte elsewhere in memory, and loads the table line chosen by that byte. When the check resolves, the work is discarded, but the line remains cached; timing accesses to each table line reveals which one is fast, and therefore the secret.</p>
+</section>
+<section class="term-about">
+  <h2>Architectural vs. microarchitectural state</h2>
+  <p>The <a class="term-link" href="/en/term/instruction-set-architecture/">instruction set architecture (ISA)</a> promises that a mispredicted path leaves no trace in program-visible, or architectural, state: registers and memory are rolled back exactly. Microarchitectural state, such as cache contents, branch predictor tables and translation buffers, exists only for performance and is not restored. Spectre turns that hidden state into a covert channel by measuring timing differences, typically with flush-and-reload techniques. No ISA rule is broken, which is why the problem spans processors from many vendors and why it is described as a class of vulnerabilities rather than a single bug.</p>
+</section>
+<section class="term-about">
+  <h2>Spectre vs. Meltdown</h2>
+  <p><a class="term-link" href="/en/term/meltdown/">Meltdown</a>, disclosed at the same time, abused <a class="term-link" href="/en/term/out-of-order-execution/">out-of-order execution</a> in certain designs that let a user-mode load forward kernel data to dependent instructions before the permission fault was raised. It was largely fixed by separating kernel and user page tables in operating systems and then by hardware changes. Spectre instead tricks a victim into speculatively accessing memory that the victim itself is allowed to address, steering it with branch predictors. Because it relies on speculation in general, not on one implementation shortcut, it affects nearly all high-performance CPUs and has no single complete fix.</p>
+</section>
+<section class="term-about">
+  <h2>Mitigations and their cost</h2>
+  <p>Software defenses insert a speculation barrier such as x86 lfence after sensitive bounds checks, or clamp indices with a mask so even speculative accesses stay in range. The branch-target-injection variant, which poisons indirect branch predictions, is countered by retpoline code sequences and by microcode and hardware controls that restrict or flush predictor state across privilege or process boundaries. Browsers reduced timer precision and isolated websites in separate processes. Each measure costs some performance, so they are applied at vulnerable points rather than by disabling speculation altogether.</p>
+</section>
 <section>
   <h2>Try it: questions about Spectre</h2>
   <article class="q-mini" data-qid="hw-security-006" data-cat="hw-security" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Only architectural state such as registers is rolled back; microarchitectural state such as caches is not restored</p><p class="explanation">CPUs are designed to fully restore program-visible state (registers and memory contents) on a misprediction. But microarchitectural state, such as cache contents and branch predictor state, is internal performance state and is not restored. The <a class="term-link" href="/en/term/instruction-set-architecture/">ISA</a> contract is honored, yet internal state becomes visible from outside as timing differences; that is the essence of this class of vulnerability.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is Spectre fixed in modern CPUs?</h3>
+  <p>Specific variants are mitigated by microcode, compiler and operating system changes and by hardware updates, but the underlying class cannot be eliminated without giving up speculation. New variants have continued to be found since 2018.</p>
+  <h3>What is the difference between Spectre and Meltdown?</h3>
+  <p>Meltdown let user code read kernel memory by exploiting a delayed permission check in some processors, and was fixed fairly directly. Spectre misleads branch prediction so a program speculatively leaks data it can address, which makes it far broader and harder to mitigate.</p>
+  <h3>Why does Spectre need a cache timing measurement?</h3>
+  <p>Speculative results are discarded, so the secret never appears in a register the attacker can read. Encoding it in which cache line was loaded, and then timing loads, is how the value is recovered.</p>
+</section>
 <section>
   <h2>Spectre in the explanations</h2>
   <ul class="term-quotes"><li><p>In Spectre, an attacker trains the predictor to mispredict, so a path that should never execute reads secret data and loads a cache location that depends on its value.</p><a href="/en/q/hw-security/hw-security-006/">What is the principle behind the speculative execution vuln…</a></li><li><p>Countermeasures to Spectre include inserting instructions that halt speculation after conditional branches (such as x86 lfence), masking indices so out-of-range data cannot be read, coding patterns that prevent abuse of indirect branch prediction (such as retpoline) and CPU microcode updates that control predictors.</p><a href="/en/q/hw-security/hw-security-010/">Which is NOT used as a countermeasure to speculative-execut…</a></li><li><p>Spectre and Meltdown, disclosed in 2018, exploit the fact that although speculatively executed results are discarded, data they loaded remains in the cache; timing differences (a side channel) then reveal secrets that should be inaccessible.</p><a href="/en/q/cpu/cpu-027/">Which is an example of vulnerabilities revealing attacks th…</a></li></ul>

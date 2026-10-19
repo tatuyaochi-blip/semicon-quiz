@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Direct-mapped cache","item":"https://semiconroom.com/en/term/direct-mapped-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Direct-mapped cache","description":"A cache organization in which each address can be placed in exactly one location. It is simple with short hit time, but prone to conflict misses when addresses compete for the same slot.","url":"https://semiconroom.com/en/term/direct-mapped-cache/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Direct-mapped cache","item":"https://semiconroom.com/en/term/direct-mapped-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Direct-mapped cache","description":"A cache organization in which each address can be placed in exactly one location. It is simple with short hit time, but prone to conflict misses when addresses compete for the same slot.","url":"https://semiconroom.com/en/term/direct-mapped-cache/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do you calculate the tag bits of a direct-mapped cache?","acceptedAnswer":{"@type":"Answer","text":"Subtract the offset bits (log2 of the line size) and the index bits (log2 of the number of lines) from the address width; for example 32 − 6 − 9 = 17 bits for a 32 KB cache with 64-byte lines."}},{"@type":"Question","name":"Why does a direct-mapped cache have more conflict misses?","acceptedAnswer":{"@type":"Answer","text":"Each block can go in only one line, so any blocks sharing an index evict each other even when other lines are free; associative caches give each index several slots."}},{"@type":"Question","name":"Is a direct-mapped cache faster than a set-associative cache?","acceptedAnswer":{"@type":"Answer","text":"Its hit time is usually shorter because only one tag is compared, but its higher miss rate can make the overall average access time worse, so the comparison depends on the workload and miss penalty."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/memory-hierarchy/">Memory Hierarchy</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How an address is split</h2>
+  <p>A direct-mapped cache divides each address into three fields. The offset selects a byte within a line, the index selects the one line where the block may live, and the remaining high bits form the tag stored with the line. For a 32-bit address, a 32 KB cache and 64-byte lines, the offset is 6 bits, there are 512 lines so the index is 9 bits, and the tag is 32 − 9 − 6 = 17 bits. A hit occurs when the stored tag matches and the valid bit is set.</p>
+</section>
+<section class="term-about">
+  <h2>Why the hit time is short</h2>
+  <p>Because a block has only one possible location, a lookup reads one tag and one data entry and uses a single <a class="term-link" href="/en/term/comparator/">comparator</a>. No <a class="term-link" href="/en/term/multiplexer/">multiplexer</a> is needed to choose among ways, and the data can be forwarded speculatively while the tag check finishes, since there is only one candidate. No replacement policy is needed either: on a miss, the block in that line is simply replaced. This simplicity gives short hit time, small area and low energy per access, which is why small, speed-critical caches have sometimes been direct-mapped.</p>
+</section>
+<section class="term-about">
+  <h2>The conflict miss problem</h2>
+  <p>Misses are often classified as compulsory (first access), capacity (working set larger than the cache) and conflict misses. In a direct-mapped cache, any two addresses that differ by a multiple of the cache size map to the same line. If a loop alternates between two such blocks, for example two arrays aligned on the same power-of-two boundary, each access evicts the other even though most of the cache is empty. Padding or offsetting one array, or adding a small fully associative victim cache for recently evicted lines, reduces this <a class="term-link" href="/en/term/thrashing/">thrashing</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Direct-mapped vs. set-associative</h2>
+  <p>A direct-mapped cache is simply a one-way <a class="term-link" href="/en/term/set-associative-cache/">set-associative cache</a>, and a <a class="term-link" href="/en/term/fully-associative-cache/">fully associative cache</a> is the opposite extreme with a single set. Moving from direct-mapped to n-way associativity lets n blocks with the same index coexist, cutting conflict misses, but requires comparing n tags in parallel and selecting the matching way, which tends to lengthen hit time and raise power. For the same capacity, a 4-way cache has four times fewer sets, so the index shrinks by 2 bits and the tag grows by 2 bits. The right choice depends on <a class="term-link" href="/en/term/average-memory-access-time/">average memory access time</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Direct-mapped cache</h2>
   <article class="q-mini" data-qid="memory-hierarchy-003" data-cat="memory-hierarchy" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Conflict miss</p><p class="explanation">Misses where two pieces of data fight over the same set and evict each other, even though the cache as a whole has room, are conflict misses. Raising associativity so a set can hold both, or offsetting one array so it maps to different sets, reduces them. Capacity misses arise because the working set exceeds the whole cache and persist even with full associativity. Compulsory misses happen on first access and do not describe repeated accesses.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How do you calculate the tag bits of a direct-mapped cache?</h3>
+  <p>Subtract the offset bits (log2 of the line size) and the index bits (log2 of the number of lines) from the address width; for example 32 − 6 − 9 = 17 bits for a 32 KB cache with 64-byte lines.</p>
+  <h3>Why does a direct-mapped cache have more conflict misses?</h3>
+  <p>Each block can go in only one line, so any blocks sharing an index evict each other even when other lines are free; associative caches give each index several slots.</p>
+  <h3>Is a direct-mapped cache faster than a set-associative cache?</h3>
+  <p>Its hit time is usually shorter because only one tag is compared, but its higher miss rate can make the overall average access time worse, so the comparison depends on the workload and miss penalty.</p>
+</section>
 <section>
   <h2>Direct-mapped cache in the explanations</h2>
   <ul class="term-quotes"><li><p>The number of lines is 32 KB ÷ 64 B = 32,768 ÷ 64 = 512 = 2⁹, and in a direct-mapped cache each line is its own set, so the index is 9 bits.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-003/">For a direct-mapped cache with 32-bit addresses, 32 KB capa…</a></li><li><p>A set-associative cache has several ways per set, so multiple blocks mapping to the same set can coexist, reducing conflict misses compared with a direct-mapped cache.</p><a href="/en/q/memory-hierarchy/memory-hierarchy-035/">What changes when a cache is switched from direct-mapped to…</a></li></ul>

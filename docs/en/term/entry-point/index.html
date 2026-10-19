@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Entry point","item":"https://semiconroom.com/en/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Entry point","description":"The address where a program begins execution, recorded in the ELF header. In C it is usually start-up code such as _start, which initializes and then calls main.","url":"https://semiconroom.com/en/term/entry-point/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Entry point","item":"https://semiconroom.com/en/term/entry-point/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Entry point","description":"The address where a program begins execution, recorded in the ELF header. In C it is usually start-up code such as _start, which initializes and then calls main.","url":"https://semiconroom.com/en/term/entry-point/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is main the entry point of a C program?","acceptedAnswer":{"@type":"Answer","text":"Usually not. The executable's entry point is start-up code such as _start, which prepares arguments and the runtime, calls main and then passes main's return value to exit."}},{"@type":"Question","name":"Where is the entry point stored in an ELF file?","acceptedAnswer":{"@type":"Answer","text":"In the e_entry field of the ELF header, which holds the virtual address at which execution begins after the program is loaded."}},{"@type":"Question","name":"What runs before main in a C program?","acceptedAnswer":{"@type":"Answer","text":"The C runtime start-up code, library initialization and constructors for global objects; in a dynamically linked program, the dynamic linker also loads and relocates shared libraries first."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/linker-loader/">Linkers, Loaders &amp; Executables</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Entry point vs. main</h2>
+  <p>The entry point is the address of the first instruction the loader transfers control to, stored in the executable&#39;s header, such as the e_entry field of an <a class="term-link" href="/en/term/executable-and-linkable-format/">ELF</a> file. For a C program it is normally not main. The <a class="term-link" href="/en/term/linker/">linker</a> adds start-up objects from the C runtime, such as crt1.o, and makes the _start symbol inside them the entry point. To C code, main looks like the beginning, but it is just an ordinary function called by this start-up code. Linkers let you choose a different entry symbol when needed.</p>
+</section>
+<section class="term-about">
+  <h2>What the start-up code does</h2>
+  <p>On Linux the kernel starts a new process with argc, the argv pointers, the environment pointers and an auxiliary vector laid out on the stack. The _start routine gathers these, aligns the stack and calls the C library&#39;s initialization, which sets up the standard library, runs constructors and initializers for global objects, and then calls main. When main returns, its return value is passed to exit, which runs registered atexit handlers, flushes buffered output and finally asks the kernel to terminate the process.</p>
+</section>
+<section class="term-about">
+  <h2>Dynamically linked programs</h2>
+  <p>A dynamically linked executable names its <a class="term-link" href="/en/term/dynamic-linker/">dynamic linker</a>, such as ld.so on Linux, in a program header. The kernel maps both the program and the dynamic linker and starts execution at the dynamic linker&#39;s own entry point, not the program&#39;s. The dynamic linker loads the required shared libraries, applies relocations, binds symbols and runs the libraries&#39; initialization functions, then jumps to the program&#39;s entry point, _start. So in a dynamically linked process, a substantial amount of code runs before the program&#39;s own first instruction.</p>
+</section>
+<section class="term-about">
+  <h2>Entry points in kernels and microcontrollers</h2>
+  <p>The term also covers other places where execution begins. An operating system registers exception and <a class="term-link" href="/en/term/interrupt/">interrupt</a> entry points with the CPU; on RISC-V, for example, an ecall instruction raises an exception that switches to a higher privilege mode and jumps to the trap vector the OS configured. On a bare-metal <a class="term-link" href="/en/term/microcontroller/">microcontroller</a>, the reset vector points to start-up code that prepares the stack, copies initialized data from flash to RAM, zeroes the uninitialized .<a class="term-link" href="/en/term/bss-section/">bss section</a> and only then calls main.</p>
+</section>
 <section>
   <h2>Try it: questions about Entry point</h2>
   <article class="q-mini" data-qid="linker-loader-031" data-cat="linker-loader" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. It is usually not main but start-up code such as _start, which initializes things and then calls main</p><p class="explanation">The <a class="term-link" href="/en/term/linker/">linker</a> adds start-up objects supplied by the C runtime (such as crt1.o) to the program and makes the _start inside them the <a class="term-link" href="/en/term/entry-point/">entry point</a>. _start takes the command-line arguments from the stack, initializes the standard library and global objects, and then calls main. When main returns, its return value is passed to exit, which performs the shutdown steps.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is main the entry point of a C program?</h3>
+  <p>Usually not. The executable&#39;s entry point is start-up code such as _start, which prepares arguments and the runtime, calls main and then passes main&#39;s return value to exit.</p>
+  <h3>Where is the entry point stored in an ELF file?</h3>
+  <p>In the e_entry field of the ELF header, which holds the virtual address at which execution begins after the program is loaded.</p>
+  <h3>What runs before main in a C program?</h3>
+  <p>The C runtime start-up code, library initialization and constructors for global objects; in a dynamically linked program, the dynamic linker also loads and relocates shared libraries first.</p>
+</section>
 <section>
   <h2>Entry point in the explanations</h2>
   <ul class="term-quotes"><li><p>The linker adds start-up objects supplied by the C runtime (such as crt1.o) to the program and makes the _start inside them the entry point.</p><a href="/en/q/linker-loader/linker-loader-031/">In a C program, which statement is correct about the addres…</a></li><li><p>The dynamic linker finds and loads the required shared libraries, applies relocations and binds symbols, then transfers control to the program&#39;s entry point.</p><a href="/en/q/linker-loader/linker-loader-027/">What is the role of the dynamic linker (such as ld.so) when…</a></li><li><p>The CPU saves the current instruction address, switches to a higher-privilege mode and jumps to the exception entry point set up by the OS.</p><a href="/en/q/os-hardware/os-hardware-003/">What happens when the ecall instruction at the end of the R…</a></li></ul>
