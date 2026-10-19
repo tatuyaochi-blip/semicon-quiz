@@ -891,7 +891,7 @@ ${list.length ? `<section>
 </section>` : ''}
 ${c ? bookSection(c) : ''}
 <div data-ad="term"></div>
-${cmpSection(t('compare_in_term'), cmp.filter(e => (e.terms ?? []).includes(g.key)))}
+${cmpSection(t('compare_in_term'), cmp.filter(e => (e.terms ?? []).includes(g.key) || termIds([e.title, ...(e.items ?? [])].join(' ')).includes(g.key)))}
 ${related.length ? `<section>
   <h2>${esc(t('term_related'))}</h2>
   <p class="term-chips">${related.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
