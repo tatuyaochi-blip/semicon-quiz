@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"アウトオブオーダー実行","item":"https://semiconroom.com/term/out-of-order-execution/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"アウトオブオーダー実行","description":"命令の依存関係を調べ、実行できる命令からプログラムの順序と異なる順に実行して性能を高める方式。結果はリオーダバッファで本来の順に確定させる。","url":"https://semiconroom.com/term/out-of-order-execution/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"アウトオブオーダー実行","item":"https://semiconroom.com/term/out-of-order-execution/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"アウトオブオーダー実行","description":"命令の依存関係を調べ、実行できる命令からプログラムの順序と異なる順に実行して性能を高める方式。結果はリオーダバッファで本来の順に確定させる。","url":"https://semiconroom.com/term/out-of-order-execution/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"アウトオブオーダー実行とスーパースカラの違いは?","acceptedAnswer":{"@type":"Answer","text":"スーパースカラは1クロックに複数の命令を発行すること、アウトオブオーダーは依存関係が許す範囲でプログラム順と異なる順に命令を実行することです。両者は独立した考え方で、高性能コアでは通常組み合わせて使われます。"}},{"@type":"Question","name":"アウトオブオーダー実行のCPUにリオーダバッファが必要なのはなぜ?","acceptedAnswer":{"@type":"Answer","text":"命令は順不同で完了しますが、精密な例外を実現し、予測ミスの処理を破棄できるよう、アーキテクチャ状態はプログラム順に更新しなければならないためです。リオーダバッファは、各命令が順序どおりにリタイアできるまで結果を保持します。"}},{"@type":"Question","name":"アウトオブオーダー実行でキャッシュミスは減る?","acceptedAnswer":{"@type":"Answer","text":"減りません。ミスの処理中に、別のミスの並列発行も含めて独立した処理を進めることでミスのレイテンシを隠すだけで、ミスの回数は変わりません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>アウトオブオーダー実行の仕組み</h2>
+  <p>フロントエンドは従来どおりプログラム順に命令をフェッチ・デコードします。各命令はその後リネームされ、リオーダバッファ(ROB)にエントリを確保して発行キューに入ります。スケジューリング論理はソースオペランドがそろった命令を監視し、プログラム上の位置に関係なく空いている実行ユニットに送ります。遅いロードを待つ命令は脇に置かれ、その間に後続の独立した命令が実行されます。結果はROBが命令を本来の順序でリタイアするまで保持されるため、ソフトウェアからは逐次実行マシンとまったく同じ動作に見えます。高性能コアでは、この命令ウィンドウは数百命令に及びます。</p>
+</section>
+<section class="term-about">
+  <h2>レジスタリネーミングとインオーダーコミット</h2>
+  <p>プログラムは少数のアーキテクチャレジスタを使い回すため、偽の依存関係が生じます。後の書き込みが、同じレジスタへの前の読み出しや書き込みを追い越してはいけないという制約です。レジスタリネーミングは新しい値ごとに空いている物理レジスタを割り当て、ある命令が別の命令の計算した値を実際に必要とする真のデータ依存だけを残します。ROBを通した順序どおりのコミットにより精密な例外が実現し、予測した分岐の先まで実行を進め、予測が外れたら誤ったパスの処理を破棄できます。命令セットの細部も効いてきます。RV64Iのlw命令が結果をレジスタ全体に<a class="term-link" href="/term/sign-extension/">符号拡張</a>するのは、上位ビットがレジスタの以前の値に依存しないようにするためです。</p>
+</section>
+<section class="term-about">
+  <h2>メモリレイテンシの隠蔽</h2>
+  <p>最大の効果はキャッシュミスの間に現れます。インオーダーコアはミスしたロードの後ろで停止しますが、アウトオブオーダーコアは独立した処理を見つけ続け、さらに別のロードを発行して、そのミスを最初のミスと重ねることができます。そのためには<a class="term-link" href="/term/non-blocking-cache/">ノンブロッキングキャッシュ</a>が必要で、未処理のミスをMSHR(ミスステータス保持レジスタ)で管理しながら、その間もヒットに応答し続けます。ミスの回数や各ミスのレイテンシは変わりませんが、重ね合わせることでコストの多くを隠せます。<a class="term-link" href="/term/superscalar/">スーパースカラ</a>発行、<a class="term-link" href="/term/branch-prediction/">分岐予測</a>、大容量キャッシュと組み合わせることで<a class="term-link" href="/term/ipc/">IPC</a>(1クロックあたりの命令数)が向上し、性能はIPCと周波数の積で決まります。</p>
+</section>
+<section class="term-about">
+  <h2>スーパースカラとの違いとコスト</h2>
+  <p><a class="term-link" href="/term/superscalar/">スーパースカラ</a>は1サイクルに複数の命令を発行する「幅」を表し、アウトオブオーダーは命令を実行する「順序」を表します。インオーダーのスーパースカラコアもありえますが、最近の高性能コアは両方を組み合わせ、およそ6〜10命令幅を持ちます。コストは大きく、依存関係のチェックはおおよそ幅の2乗に比例して増え、リネームテーブル、ウェイクアップ論理、ROBがすべての命令に面積とエネルギーの負担を加えます。スマートフォンの<a class="term-link" href="/term/soc/">SoC</a>の高効率コアが小さく単純なのはこのためで、<a class="term-link" href="/term/gpu/">GPU</a>はそのシリコンを、<a class="term-link" href="/term/throughput/">スループット</a>のための多数の単純な演算器に振り向けています。</p>
+</section>
 <section>
   <h2>アウトオブオーダー実行の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-047" data-cat="cpu" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. プログラムが使うレジスタ名を変えずに、物理レジスタを割り当て直して、見かけ上の依存(WARやWAW)を取り除く</p><p class="explanation">命令セットのレジスタ数は16〜32個程度と限られるため、同じレジスタ名が使い回され、本当のデータの流れとは関係のない依存(逆依存WAR、出力依存WAW)が生じます。レジスタリネーミングは、数百個の物理レジスタを動的に割り当て、書き込みのたびに新しい物理レジスタを使うことでこれらを取り除き、並列に実行できる命令を増やします。本当の依存(RAW)は取り除けません。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>アウトオブオーダー実行とスーパースカラの違いは?</h3>
+  <p>スーパースカラは1クロックに複数の命令を発行すること、アウトオブオーダーは依存関係が許す範囲でプログラム順と異なる順に命令を実行することです。両者は独立した考え方で、高性能コアでは通常組み合わせて使われます。</p>
+  <h3>アウトオブオーダー実行のCPUにリオーダバッファが必要なのはなぜ?</h3>
+  <p>命令は順不同で完了しますが、精密な例外を実現し、予測ミスの処理を破棄できるよう、アーキテクチャ状態はプログラム順に更新しなければならないためです。リオーダバッファは、各命令が順序どおりにリタイアできるまで結果を保持します。</p>
+  <h3>アウトオブオーダー実行でキャッシュミスは減る?</h3>
+  <p>減りません。ミスの処理中に、別のミスの並列発行も含めて独立した処理を進めることでミスのレイテンシを隠すだけで、ミスの回数は変わりません。</p>
+</section>
 <section>
   <h2>解説の中の「アウトオブオーダー実行」</h2>
   <ul class="term-quotes"><li><p>命令の順序を入れ替えるアウトオブオーダー実行と組み合わせて性能を高めますが、依存関係の検査回路は幅の2乗程度で複雑になるため、むやみに広げられません。</p><a href="/q/cpu/cpu-013/">1クロックサイクルに複数の命令を同時に発行・実行するプロセッサの方式を何と呼ぶか。</a></li><li><p>アウトオブオーダー実行では、前の命令の結果やメモリからのデータを待っている命令を後回しにし、準備のできた後続の命令を先に実行します。</p><a href="/q/cpu/cpu-021/">命令の依存関係を調べ、実行できる命令からプログラムの順序と異なる順で実行して性能を高める方式はどれか。</a></li><li><p>スーパースカラ、アウトオブオーダー実行、分岐予測、大きなキャッシュはすべてIPCを高める技術です。</p><a href="/q/cpu/cpu-029/">1クロックあたりに実行できる命令数を表す指標はどれか。</a></li><li><p>上位を前の値のまま残すと、前の値への依存が生まれてアウトオブオーダー実行の妨げになるので、RISC-Vはそうしません。</p><a href="/q/isa-assembly/isa-assembly-048/">64ビットのRV64Iでlw命令を実行すると、読み込んだ32ビットの値は64ビットのレジスタにどのように入るか。</a></li><li><p>アウトオブオーダー実行と組み合わせて効果を発揮します。</p><a href="/q/memory-hierarchy/memory-hierarchy-025/">ノンブロッキングキャッシュ(ミスの処理中もほかのアクセスを受け付けるキャッシュ)の主な利点はどれか。</a></li></ul>

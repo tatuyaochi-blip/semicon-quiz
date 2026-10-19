@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"TLB(変換索引バッファ)","item":"https://semiconroom.com/term/tlb/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLB(変換索引バッファ)","description":"仮想アドレスから物理アドレスへの変換結果を保持する小さなキャッシュ。メモリ上のページテーブルを毎回たどらずに済むため、アドレス変換が速くなる。","url":"https://semiconroom.com/term/tlb/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"TLB(変換索引バッファ)","item":"https://semiconroom.com/term/tlb/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLB(変換索引バッファ)","description":"仮想アドレスから物理アドレスへの変換結果を保持する小さなキャッシュ。メモリ上のページテーブルを毎回たどらずに済むため、アドレス変換が速くなる。","url":"https://semiconroom.com/term/tlb/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TLBミスが起きるとどうなる?","acceptedAnswer":{"@type":"Answer","text":"MMU(アーキテクチャによってはOSのハンドラ)がメモリ上のページテーブルをたどって変換を見つけ、TLBに登録してからアクセスをやり直します。ページテーブルエントリが無効だったりアクセスが許可されていなかったりすると、代わりにページフォールトが発生し、OSが処理を引き継ぎます。"}},{"@type":"Question","name":"TLBリーチの計算方法は?","acceptedAnswer":{"@type":"Answer","text":"TLBのエントリ数にページサイズを掛けます。たとえば64エントリ × 4 KB = 256 KB、64エントリ × 2 MB = 128 MBで、ヒュージページでTLBミスが減るのはこのためです。"}},{"@type":"Question","name":"TLBはCPUキャッシュの一部?","acceptedAnswer":{"@type":"Answer","text":"TLBもキャッシュですが、保持するのはデータではなくアドレス変換です。L1キャッシュの隣に置かれ、通常はそれと並行して参照されますが、メモリの内容そのものを保持することはありません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>TLB参照の流れ</h2>
+  <p>命令フェッチ、ロード、ストアのたびに、MMU(メモリ管理ユニット)は仮想アドレスを仮想ページ番号とページオフセットに分けます。4 KBページなら下位12ビットがオフセットで、変換されずにそのまま使われます。TLBにヒットすると、格納されている物理ページ番号をオフセットと連結し、同時にアクセス権限も確認します。ミスした場合はページテーブルウォークでメモリ上のテーブルを読み出し(4 KBページで48ビットアドレスなら最大4段)、エントリを補充します。ページフォールトが起きるのは、ページテーブルエントリが無効か、そのアクセスを許可していない場合だけです。</p>
+</section>
+<section class="term-about">
+  <h2>TLBリーチとヒュージページ</h2>
+  <p>TLBリーチ(TLBでカバーできるメモリ範囲)はエントリ数とページサイズの積です。4 KBのエントリ64個では256 KBしかカバーできませんが、同じ64エントリでも2 MBのヒュージページなら128 MBをカバーできます。TLBのエントリ数は数十〜数千しかないため、データベースや仮想マシンのようにワーキングセットが大きい、または散在するプログラムでは、ページテーブルウォークに無視できない割合の時間を費やすことがあります。対策には、ヒュージページの利用、小さな1次TLBの後ろに置く大きな2次TLB、ページテーブルエントリのデータキャッシュへの保持、局所性の改善があります。</p>
+</section>
+<section class="term-about">
+  <h2>TLB、ページテーブル、データキャッシュの違い</h2>
+  <p><a class="term-link" href="/term/page-table/">ページテーブル</a>は正式な対応表で、OSがプロセスごとに作成してメモリに置きます。TLBはそこから最近使ったエントリをキャッシュしたもので、保持しているのはデータではなくアドレス変換です。データキャッシュは別物ですが、密接に連携します。多くのL1キャッシュは仮想インデックス・物理タグ(VIPT)方式で、変換されないオフセットのビットでセットを選ぶため、セットの読み出しとTLB参照を並行して行い、その後で物理タグを比較できます。キャッシュミスはハードウェアで処理されますが、ページフォールトはOSが処理する例外です。</p>
+</section>
+<section class="term-about">
+  <h2>コンテキストスイッチ、ASID、仮想化</h2>
+  <p>各プロセスは同じ仮想アドレスを使い回すため、アドレス空間が切り替わった後に古い変換が残ってはいけません。タグがなければスイッチのたびにTLBをフラッシュすることになり、ミスが集中します。エントリに<a class="term-link" href="/term/asid/">アドレス空間識別子</a>(ASID)のタグを付ければ、プロセスが戻ってきたときにエントリを再利用できます。カーネルをすべてのアドレス空間にマップしておけば、<a class="term-link" href="/term/system-call/">システムコール</a>で空間を切り替える必要はありません。OSが対応関係を変更したときは、該当エントリを保持している可能性のあるすべてのコアで無効化しなければなりません。ネステッドページングでゲストとホストの両方が4段のテーブルを使うと、1回のミスで最大24回のメモリアクセスが必要になります。</p>
+</section>
 <section>
   <h2>TLB(変換索引バッファ)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-025" data-cat="os-hardware" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 24回</p><p class="explanation">ゲストの<a class="term-link" href="/term/page-table/">ページテーブル</a>の4段の各表の場所はゲスト物理アドレスで書かれているので、それぞれを読む前にホストの4段の表で変換する必要があります。ゲストの各段で「ホストの4回 + ゲストの表の1回」の5回、4段で20回になり、最後に得たゲスト物理アドレスのデータ自体をホストの4段で変換する4回を足して24回です。式では (4 + 1) × (4 + 1) − 1 = 24 です。8回は4段を2回たどるだけと考えた値で、表の場所の変換を見落としています。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>TLBミスが起きるとどうなる?</h3>
+  <p>MMU(アーキテクチャによってはOSのハンドラ)がメモリ上のページテーブルをたどって変換を見つけ、TLBに登録してからアクセスをやり直します。ページテーブルエントリが無効だったりアクセスが許可されていなかったりすると、代わりにページフォールトが発生し、OSが処理を引き継ぎます。</p>
+  <h3>TLBリーチの計算方法は?</h3>
+  <p>TLBのエントリ数にページサイズを掛けます。たとえば64エントリ × 4 KB = 256 KB、64エントリ × 2 MB = 128 MBで、ヒュージページでTLBミスが減るのはこのためです。</p>
+  <h3>TLBはCPUキャッシュの一部?</h3>
+  <p>TLBもキャッシュですが、保持するのはデータではなくアドレス変換です。L1キャッシュの隣に置かれ、通常はそれと並行して参照されますが、メモリの内容そのものを保持することはありません。</p>
+</section>
 <section>
   <h2>解説の中の「TLB(変換索引バッファ)」</h2>
   <ul class="term-quotes"><li><p>ASIDがないと、プロセスごとに同じ仮想アドレスが別の物理アドレスを指すため、プロセスを切り替えるたびにTLBを空にしなければならず、切り替え後にTLBミスが続きます。</p><a href="/q/os-hardware/os-hardware-025/">TLBの各項目にASID(アドレス空間識別子)を付ける利点として正しいものはどれか。</a></li><li><p>TLBの1エントリは1ページ分の変換を保持するので、TLBリーチ = エントリ数 × ページサイズ = 64 × 4 KB = 256 KBです。</p><a href="/q/memory-hierarchy/memory-hierarchy-027/">TLBのエントリが64個で、ページサイズが4 KBのとき、TLBのミスなしでアクセスできるメモリの範囲(TLBリーチ)…</a></li><li><p>そこで最近使った変換結果をTLBに保持します。</p><a href="/q/cpu/cpu-014/">仮想アドレスから物理アドレスへの変換結果を保持し、アドレス変換を高速化するキャッシュはどれか。</a></li><li><p>よく使う変換結果はTLBに保持されます。</p><a href="/q/os-hardware/os-hardware-010/">ページテーブルの役割として正しいものはどれか。</a></li><li><p>TLBにあればすぐ変換できるので、フォルトは起きません。</p><a href="/q/os-hardware/os-hardware-011/">ページフォルトが起こる場合として正しいものはどれか。</a></li></ul>

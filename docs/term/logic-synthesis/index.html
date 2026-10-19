@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"論理合成","item":"https://semiconroom.com/term/logic-synthesis/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"論理合成","description":"RTLで記述された回路を、セルライブラリのゲートを使ったネットリストに変換する設計工程。","url":"https://semiconroom.com/term/logic-synthesis/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"論理合成","item":"https://semiconroom.com/term/logic-synthesis/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"論理合成","description":"RTLで記述された回路を、セルライブラリのゲートを使ったネットリストに変換する設計工程。","url":"https://semiconroom.com/term/logic-synthesis/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"論理合成と高位合成の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"高位合成は C や C++ によるアルゴリズム記述を RTL に変換し、各演算をどのクロックサイクルで実行するかを決めます。論理合成は RTL を受け取り、ライブラリセルからなるゲートレベルのネットリストに変換します。"}},{"@type":"Question","name":"論理合成で意図しないラッチができるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"組み合わせ回路のブロックで、ある経路で出力に代入されないと、出力は前の値を記憶しなければならず、それを実現する手段がラッチしかないからです。デフォルト値を代入するか、すべての場合を網羅すれば解消できます。"}},{"@type":"Question","name":"論理合成の入力と出力は何ですか?","acceptedAnswer":{"@type":"Answer","text":"入力は RTL、セルライブラリ、タイミング制約(通常は SDC)です。出力はゲートレベルのネットリストと、タイミング・面積・電力のレポートです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/eda/">LSI設計フロー・EDA</a></p>
 </article>
-
+<section class="term-about">
+  <h2>論理合成ツールが行うこと</h2>
+  <p>論理合成には三つの入力があります。<a class="term-link" href="/term/hardware-description-language/">ハードウェア記述言語</a>で書かれた <a class="term-link" href="/term/rtl/">RTL</a>、各ゲートの機能・タイミング・面積・電力を記述したセルライブラリ、そしてクロック周期や入出力遅延などの制約で、制約は通常 SDC 形式で与えます。ツールはまず RTL を汎用ロジックに変換し、レジスタ、<a class="term-link" href="/term/multiplexer/">マルチプレクサ</a>、算術演算器を推定します。次にテクノロジーに依存しない形でブール論理を最適化し、ライブラリのセルにマッピングしたうえで、制約を満たすようセルのサイジング、バッファ挿入、パスの再構成を行います。出力はゲートレベルの<a class="term-link" href="/term/netlist/">ネットリスト</a>と、タイミング・面積・電力のレポートです。</p>
+</section>
+<section class="term-about">
+  <h2>RTL がハードウェアになるしくみ</h2>
+  <p>論理合成はコードを命令ではなく回路に変換するので、すべてのブロックが並行して動作します。always @(posedge clk) ブロックはエッジトリガの<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>になります。else のない if のように、<a class="term-link" href="/term/combinational-circuit/">組み合わせ回路</a>のブロックがすべての分岐で出力に代入していないと、ツールは前の値を保持するためにラッチを推定せざるをえません。論理合成は<a class="term-link" href="/term/sensitivity-list/">センシティビティリスト</a>を無視するため、リストが不完全だとシミュレーションとゲートの動作が食い違いますが、@(*) を使えば防げます。#10 のような遅延や $display のような<a class="term-link" href="/term/testbench/">テストベンチ</a>用タスクはシミュレーション専用で、合成では無視されます。</p>
+</section>
+<section class="term-about">
+  <h2>制約が結果を左右する</h2>
+  <p>同じ <a class="term-link" href="/term/rtl/">RTL</a> でも、まったく異なる<a class="term-link" href="/term/netlist/">ネットリスト</a>になりえます。クロックが厳しいと、ツールは大きく高速なセル、低<a class="term-link" href="/term/threshold-voltage/">しきい値電圧</a>セル、並列構造(リップルキャリー加算器の代わりにキャリールックアヘッド加算器など)を選び、面積とリーク電流が増えます。クロックに余裕があれば面積を最小化できます。フォールスパスやマルチサイクルパスは、ツールが労力をかけなくてよい箇所を示します。誤った制約は危険で、すべてのツールチェックに合格しても実際のシリコンで動かないことがあります。レイアウト前の配線遅延は推定値にすぎないため、物理情報を考慮した論理合成では配置情報を使って結果の一致度を高めます。</p>
+</section>
+<section class="term-about">
+  <h2>設計フローでの位置づけ</h2>
+  <p>典型的なフローは、仕様策定、<a class="term-link" href="/term/rtl/">RTL</a> 設計、論理合成、<a class="term-link" href="/term/place-and-route/">配置配線</a>、寄生抽出、サインオフのタイミング解析を経て<a class="term-link" href="/term/tape-out/">テープアウト</a>に至ります。その上流に位置する<a class="term-link" href="/term/high-level-synthesis/">高位合成(HLS)</a>は、演算をクロックサイクルに割り当てて C や C++ から RTL を生成し、その RTL を論理合成がゲートに変換します。形式等価性検証は、シミュレーションを使わずに<a class="term-link" href="/term/netlist/">ネットリスト</a>が RTL と同じ論理を実装していることを証明します。テスト用のスキャン挿入は、論理合成中またはその直後に行うのが一般的です。<a class="term-link" href="/term/fpga/">FPGA</a> では、論理合成がロジックを<a class="term-link" href="/term/standard-cell/">スタンダードセル</a>ではなくルックアップテーブルと<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>にマッピングします。</p>
+</section>
 <section>
   <h2>論理合成の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="eda-002" data-cat="eda" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 形式的等価性検証(フォーマル検証)</p><p class="explanation">形式的等価性検証は、2つの回路が同じ論理関数を実現しているかを、数学的な手法で網羅的に確かめる検証です。テストパターンを用意する必要がなく、すべての入力の組み合わせについて等価性を保証できるため、<a class="term-link" href="/term/logic-synthesis/">論理合成</a>や<a class="term-link" href="/term/place-and-route/">配置配線</a>、ECOの前後の確認に使われます。シミュレーションで全組み合わせを試すのは、入力が数十ビットあるだけで現実的に不可能です。<a class="term-link" href="/term/drc/">DRC</a>は図形の規則の検査です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>論理合成と高位合成の違いは何ですか?</h3>
+  <p>高位合成は C や C++ によるアルゴリズム記述を RTL に変換し、各演算をどのクロックサイクルで実行するかを決めます。論理合成は RTL を受け取り、ライブラリセルからなるゲートレベルのネットリストに変換します。</p>
+  <h3>論理合成で意図しないラッチができるのはなぜですか?</h3>
+  <p>組み合わせ回路のブロックで、ある経路で出力に代入されないと、出力は前の値を記憶しなければならず、それを実現する手段がラッチしかないからです。デフォルト値を代入するか、すべての場合を網羅すれば解消できます。</p>
+  <h3>論理合成の入力と出力は何ですか?</h3>
+  <p>入力は RTL、セルライブラリ、タイミング制約(通常は SDC)です。出力はゲートレベルのネットリストと、タイミング・面積・電力のレポートです。</p>
+</section>
 <section>
   <h2>解説の中の「論理合成」</h2>
   <ul class="term-quotes"><li><p>論理合成は、RTLで書かれた回路の動作記述を、セルライブラリにある論理ゲートやフリップフロップの接続情報(ネットリスト)に変換する工程です。</p><a href="/q/eda/eda-002/">論理合成の説明として正しいものはどれか。</a></li><li><p>テストパターンを用意する必要がなく、すべての入力の組み合わせについて等価性を保証できるため、論理合成や配置配線、ECOの前後の確認に使われます。</p><a href="/q/eda/eda-006/">論理合成の前後で回路の論理が変わっていないことを、シミュレーションを使わずに数学的に確認する手法はどれか。</a></li><li><p>「always @(posedge clk)」は、クロックの立ち上がりの瞬間にだけ中の代入を行うという意味で、論理合成はこれをエッジで動くフリップフロップにします。</p><a href="/q/hdl-verification/hdl-verification-005/">上のVerilogの記述が論理合成で作る回路として正しいものはどれか。</a></li><li><p>組み合わせ回路には記憶の働きがないので、論理合成は値を保つためのラッチを作ります。</p><a href="/q/hdl-verification/hdl-verification-012/">組み合わせ回路のつもりで上のように書くと、論理合成で何ができるか。</a></li><li><p>「#10」は、シミュレーションの中で時間を10単位進めることを表しますが、論理合成は遅延を作ることができないので無視します。</p><a href="/q/hdl-verification/hdl-verification-015/">次のVerilogの記述のうち、論理合成で回路にならず無視されるもの(シミュレーション用の記述)はどれか。</a></li></ul>

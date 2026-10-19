@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"バッチサイズ","item":"https://semiconroom.com/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"バッチサイズ","description":"まとめて処理する入力の数。大きくすると重みを再利用できて効率が上がるが、応答の遅れとメモリが増える。","url":"https://semiconroom.com/term/batch-size/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"バッチサイズ","item":"https://semiconroom.com/term/batch-size/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"バッチサイズ","description":"まとめて処理する入力の数。大きくすると重みを再利用できて効率が上がるが、応答の遅れとメモリが増える。","url":"https://semiconroom.com/term/batch-size/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"バッチサイズを大きくすると推論は速くなりますか?","acceptedAnswer":{"@type":"Answer","text":"重みを1回読むごとに処理できる入力が増えるので、全体のスループットは上がります。ただし個々の要求の待ち時間は通常長くなるため、遅延は悪化します。"}},{"@type":"Question","name":"バッチサイズを大きくするとGPUメモリの使用量が増えるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"活性値やLLMのKVキャッシュは入力ごとに保持されるため、重みの量は変わらなくても、バッチサイズに比例して増えるからです。"}},{"@type":"Question","name":"バッチサイズとエポックの違いは?","acceptedAnswer":{"@type":"Answer","text":"バッチサイズは1ステップ(1回の重み更新)で処理するサンプル数で、エポックは学習データ全体を1周することです。1エポックには「データセットのサイズ ÷ バッチサイズ」回のステップがかかります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>バッチ処理で効率が上がる理由</h2>
+  <p>ニューラルネットワークの層では、重みはどの入力に対しても同じです。バッチサイズ1では、全結合層は行列ベクトル積となり、各重みはメモリから読み出されても1回の積和演算にしか使われません。<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>はFP16で約1 FLOP/バイトとなり、演算器はほとんどメモリを待つことになります。バッチサイズをBにすると層は行列同士の積となり、重みのトラフィックは変わらないまま演算がB倍になるので、演算強度もおよそB倍になり、処理はメモリ律速から演算律速の側へ移ります。サーバは多数のユーザからの要求をまとめることで、この性質を利用しています。</p>
+</section>
+<section class="term-about">
+  <h2>遅延とメモリのコスト</h2>
+  <p>バッチを大きくすると全体の<a class="term-link" href="/term/throughput/">スループット</a>は上がりますが、個々の速度は上がりません。他の要求がそろうのを待つことがあり、1バッチの計算にも時間がかかるため、要求ごとの遅延は大きくなります。対話型のサービスでは、応答時間の目標が許す範囲でしかバッチを大きくしません。メモリも増えます。LLM(大規模言語モデル)の<a class="term-link" href="/term/ai-inference/">推論</a>では、過去のトークンの<a class="term-link" href="/term/attention-mechanism/">アテンション</a>のキーとバリューを再計算しないよう保存する<a class="term-link" href="/term/kv-cache/">KVキャッシュ</a>が、層数、キーとバリューの次元、トークン数、バッチサイズ、要素あたりのバイト数に比例して増えます。長いコンテキストや多数の要求では数十GBに達し、重みより大きくなることもあります。</p>
+</section>
+<section class="term-about">
+  <h2>LLMのデコードでの具体的な数値</h2>
+  <p>バッチサイズ1のデコードでは、トークンを1つ生成するたびにすべての重みを読み出す必要があります。そのため、FP16で約14 GBの重みを持つモデルを帯域2 TB/sの<a class="term-link" href="/term/gpu/">GPU</a>で動かすと、1トークンに少なくとも14 GB ÷ 2 TB/s = 7 msかかり、毎秒約140トークンが上限です。重みを4ビットに量子化して約3.5 GBにすれば、この下限は約1.75 msに下がります。バッチを大きくすると重みを1回読むごとに複数のトークンを生成でき、演算性能か<a class="term-link" href="/term/kv-cache/">KVキャッシュ</a>のメモリが制約になるまで全体の<a class="term-link" href="/term/throughput/">スループット</a>が何倍にもなります。KVキャッシュの圧迫は、キャッシュの低精度化、ヘッド間でのキーとバリューの共有、ブロック単位のメモリ管理で緩和できます。</p>
+</section>
+<section class="term-about">
+  <h2>学習におけるバッチサイズ</h2>
+  <p>学習でのバッチ(ミニバッチ)は、1回の重み更新のために勾配を平均するサンプルの集まりです。バッチを大きくするとハードウェアを効率よく使え、データ全体を1周する(1エポック)のに必要な更新ステップも減ります。ただし、<a class="term-link" href="/term/backpropagation/">逆伝播</a>のための活性値のメモリはバッチサイズとモデルの深さに応じて増えます。これに対処するのが<a class="term-link" href="/term/gradient-checkpointing/">勾配チェックポイント</a>で、一部の活性値だけを保存し、残りを順伝播およそ1回分の追加計算で再計算します。バッチサイズを大きく変えると勾配のノイズが変わるため、通常は学習率の調整し直しが必要になります。</p>
+</section>
 <section>
   <h2>バッチサイズの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-010" data-cat="ai-stack" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. まとめる入力がそろうのを待つ時間や1回の処理の時間が増えて、1つの要求の応答が遅くなり、メモリも多く使う</p><p class="explanation">バッチを大きくすると全体の処理量(<a class="term-link" href="/term/throughput/">スループット</a>)は上がりますが、ほかの入力が集まるまで待ったり、まとめた分だけ1回の計算が長くなったりするので、1つの要求が返るまでの時間(レイテンシ)は長くなります。途中の結果や<a class="term-link" href="/term/kv-cache/">KVキャッシュ</a>のメモリもバッチに比例して増えます。対話のアプリケーションでは、応答の速さの目標を守れる範囲でバッチを大きくします。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>バッチサイズを大きくすると推論は速くなりますか?</h3>
+  <p>重みを1回読むごとに処理できる入力が増えるので、全体のスループットは上がります。ただし個々の要求の待ち時間は通常長くなるため、遅延は悪化します。</p>
+  <h3>バッチサイズを大きくするとGPUメモリの使用量が増えるのはなぜですか?</h3>
+  <p>活性値やLLMのKVキャッシュは入力ごとに保持されるため、重みの量は変わらなくても、バッチサイズに比例して増えるからです。</p>
+  <h3>バッチサイズとエポックの違いは?</h3>
+  <p>バッチサイズは1ステップ(1回の重み更新)で処理するサンプル数で、エポックは学習データ全体を1周することです。1エポックには「データセットのサイズ ÷ バッチサイズ」回のステップがかかります。</p>
+</section>
 <section>
   <h2>解説の中の「バッチサイズ」</h2>
   <ul class="term-quotes"><li><p>バッチサイズがBなら、重みの行列とB個のベクトルの積は、重みの行列と幅Bの行列の積になります。</p><a href="/q/ai-stack/ai-stack-010/">推論でバッチサイズ(まとめて処理する入力の数)を大きくすると、処理全体の効率が上がりやすい理由はどれか。</a></li></ul>

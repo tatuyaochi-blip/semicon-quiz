@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"分岐予測","item":"https://semiconroom.com/term/branch-prediction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"分岐予測","description":"条件分岐の結果を実行前に予測し、パイプラインを止めずに先の命令を処理する技術。予測が外れると処理をやり直す。","url":"https://semiconroom.com/term/branch-prediction/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"分岐予測","item":"https://semiconroom.com/term/branch-prediction/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"分岐予測","description":"条件分岐の結果を実行前に予測し、パイプラインを止めずに先の命令を処理する技術。予測が外れると処理をやり直す。","url":"https://semiconroom.com/term/branch-prediction/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"分岐予測が外れるとどうなりますか?","acceptedAnswer":{"@type":"Answer","text":"CPU は誤った経路で投機的にフェッチ・実行した命令を破棄し、正しい分岐先から処理をやり直します。一般的な深いパイプラインでは、およそ 10〜20 サイクルを失います。"}},{"@type":"Question","name":"最近のCPUの分岐予測の精度はどれくらいですか?","acceptedAnswer":{"@type":"Answer","text":"高性能な予測器は、通常のコードで一般に 95% を超える精度があります。ただし、ランダムなデータに依存する分岐の予測ははるかに難しくなります。"}},{"@type":"Question","name":"分岐予測と投機実行の違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"分岐予測は分岐がどちらへ進むかを推測することです。投機実行は、その推測が確定する前に、推測した経路に沿って実際に命令を実行することです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>パイプラインに分岐予測が必要な理由</h2>
+  <p>パイプライン化した CPU は毎サイクル新しい命令をフェッチしますが、条件分岐が成立するか、どこへ飛ぶかは、数ステージ後に実行されるまでわかりません。結果を待てばパイプラインが空になってしまい、しかも命令のおよそ 5 個に 1 個は分岐です。そこで分岐予測では、フェッチの時点で結果を推測し、予測した経路に沿って投機的に処理を続けます。予測が当たれば時間の損失はありません。外れた場合は、投機的に処理した命令をアーキテクチャ状態に影響させずにフラッシュし、正しい経路からフェッチし直します。深いパイプラインでは、これに 10 数サイクルから 20 サイクル程度かかります。</p>
+</section>
+<section class="term-about">
+  <h2>予測器はどう推測するか</h2>
+  <p>静的な方式は固定の規則を使い、たとえば後方への分岐(ループ)は成立、前方への分岐は不成立と予測します。動的な予測器は過去の履歴から学習します。分岐アドレスで引く 2 ビット飽和カウンタの表では、予測を反転させるには 2 回連続で外れる必要があるため、ループの脱出時に外れるのは 1 回だけで済みます。より高性能な予測器は、アドレスと直近の分岐結果のグローバル履歴を組み合わせ、分岐どうしの相関をとらえます。方向の予測は仕事の半分にすぎず、分岐先アドレスは分岐ターゲットバッファ(BTB)が供給し、関数からの戻り先はリターンアドレススタックが予測します。</p>
+</section>
+<section class="term-about">
+  <h2>予測ミスのコスト</h2>
+  <p>影響は、1 命令あたりのサイクル数(<a class="term-link" href="/term/cycles-per-instruction/">CPI</a>)の増加分として、分岐の頻度 × 予測ミス率 × ペナルティで見積もれます。分岐が 20%、予測精度が 95%、ペナルティが 20 サイクルなら、0.2 × 0.05 × 20 = 0.2 の CPI 増加となり、最近のコアにとっては大きな割合です。精度が 1〜2% 上がるだけでも重要なのはこのためです。ランダムなデータに依存して予測できない分岐に対しては、コンパイラやプログラマが条件付き移動命令などの分岐のないコードを使うことがあります。わずかに処理が増える代わりに、フラッシュが確実に起こらなくなります。</p>
+</section>
+<section class="term-about">
+  <h2>投機実行とセキュリティ</h2>
+  <p>予測ミスした命令はアーキテクチャ上は破棄されますが、キャッシュなどのマイクロアーキテクチャの状態には痕跡が残ることがあります。<a class="term-link" href="/term/spectre/">Spectre</a> 系の攻撃は予測器を訓練して、被害者のプログラムに秘密データを投機的に読ませ、キャッシュのタイミングを通じて漏えいさせます。対策には、重要な境界チェックの後に置く投機実行バリア(x86 の lfence など)、配列インデックスのマスク、間接分岐向けの retpoline、予測器に対するマイクロコード制御などがあります。どの制限も性能を下げるため、選択的に適用されます。MIPS などの古い命令セットは予測の代わりに<a class="term-link" href="/term/branch-delay-slot/">分岐遅延スロット</a>を採用しましたが、この規則は後の設計にとって負担になりました。</p>
+</section>
 <section>
   <h2>分岐予測の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-007" data-cat="cpu" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 分岐命令の結果を予測して先の命令を実行し、パイプラインの停止を減らす</p><p class="explanation">パイプラインでは分岐命令の結果がわかるまで次の命令が決まらず、処理が止まってしまいます。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>では過去の履歴などから分岐先を予測して先へ実行を進め、外れたときだけやり直します。プログラムの約5命令に1つが分岐なので影響は大きく、現在の高性能CPUは95%を超える精度で予測します。予測ミス1回で十数〜二十クロック程度を失うため、わずかな精度向上でも性能に効きます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>分岐予測が外れるとどうなりますか?</h3>
+  <p>CPU は誤った経路で投機的にフェッチ・実行した命令を破棄し、正しい分岐先から処理をやり直します。一般的な深いパイプラインでは、およそ 10〜20 サイクルを失います。</p>
+  <h3>最近のCPUの分岐予測の精度はどれくらいですか?</h3>
+  <p>高性能な予測器は、通常のコードで一般に 95% を超える精度があります。ただし、ランダムなデータに依存する分岐の予測ははるかに難しくなります。</p>
+  <h3>分岐予測と投機実行の違いは何ですか?</h3>
+  <p>分岐予測は分岐がどちらへ進むかを推測することです。投機実行は、その推測が確定する前に、推測した経路に沿って実際に命令を実行することです。</p>
+</section>
 <section>
   <h2>解説の中の「分岐予測」</h2>
   <ul class="term-quotes"><li><p>分岐予測では過去の履歴などから分岐先を予測して先へ実行を進め、外れたときだけやり直します。</p><a href="/q/cpu/cpu-007/">CPUの分岐予測の目的として正しいものはどれか。</a></li><li><p>データの依存、分岐、資源の取り合いで流れが乱れること(ハザード)があり、フォワーディングや分岐予測で対処します。</p><a href="/q/cpu/cpu-001/">CPUのパイプライン処理の主な目的として正しいものはどれか。</a></li><li><p>スーパースカラ、アウトオブオーダー実行、分岐予測、大きなキャッシュはすべてIPCを高める技術です。</p><a href="/q/cpu/cpu-029/">1クロックあたりに実行できる命令数を表す指標はどれか。</a></li><li><p>分岐予測ミスや例外が起きたときは、それ以降の命令の結果を捨てて正しい状態に戻せるため、外から見るとプログラムどおりに実行されたように見えます(正確な例外)。</p><a href="/q/cpu/cpu-047/">アウトオブオーダー実行のCPUで、順序を入れ替えて実行した命令の結果を、プログラムの本来の順序で確定(リタイア)させる…</a></li><li><p>パイプラインの段数やキャッシュの大きさ、分岐予測の方式といった内部の作りはマイクロアーキテクチャと呼ばれ、ISAとは別に決められます。</p><a href="/q/isa-assembly/isa-assembly-001/">同じ命令セットアーキテクチャ(ISA)を採用した2つのCPUについて正しいものはどれか。</a></li></ul>

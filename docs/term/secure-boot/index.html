@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"セキュアブート","item":"https://semiconroom.com/term/secure-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"セキュアブート","description":"起動の各段階で次に動かすソフトウェアの電子署名を確かめ、正しいものだけを起動する仕組み。信頼の鎖をつないでいく。","url":"https://semiconroom.com/term/secure-boot/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"セキュアブート","item":"https://semiconroom.com/term/secure-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"セキュアブート","description":"起動の各段階で次に動かすソフトウェアの電子署名を確かめ、正しいものだけを起動する仕組み。信頼の鎖をつないでいく。","url":"https://semiconroom.com/term/secure-boot/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"セキュアブートの信頼の起点(ルート・オブ・トラスト)とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"チップのマスクROMにある書き換え不能なコードと、最初のブートローダの検証に使う公開鍵(またはeFuseに格納したそのハッシュ値)のことです。鎖の後に続くすべての段階は、これが変更できないことを前提にしています。"}},{"@type":"Question","name":"セキュアブートとメジャードブートの違いは?","acceptedAnswer":{"@type":"Answer","text":"セキュアブートは署名の検証に失敗したソフトウェアの実行を拒否します。メジャードブートはすべてを実行させたうえでハッシュ値をTPMに記録し、後から起動状態を確認したり証明(アテステーション)したりできるようにします。"}},{"@type":"Question","name":"セキュアブートにロールバック防止が必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"古いバージョンのファームウェアも有効な署名を持っているため、最小バージョンのカウンタがないと、攻撃者が既知の脆弱性を持つバージョンを再インストールできてしまうからです。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/hw-security/">ハードウェアセキュリティ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>信頼の鎖の仕組み</h2>
+  <p>電源を入れると、チップのROMにあるブートコードが最初の<a class="term-link" href="/term/bootloader/">ブートローダ</a>を読み込み、その電子署名を検証します。イメージのハッシュ値を計算し、そのハッシュに対するベンダの署名を確かめるのです。検証に合格した場合にだけブートローダを実行し、ブートローダも同様に次の段階やOSのカーネルを検証してから制御を渡します。各段階が次の段階を保証することで、信頼の鎖(チェーン・オブ・トラスト)が形成されます。どこかで署名の検証に失敗すると起動は止まるため、ブートローダやOSの起動コードを書き換えるマルウェアは実行できません。スマートフォン、PC、多くの組込み機器がこの仕組みを採用しています。</p>
+</section>
+<section class="term-about">
+  <h2>シリコンに置かれた信頼の起点</h2>
+  <p>信頼の鎖は最初の検証以上には強くならないため、信頼の起点(ルート・オブ・トラスト)は書き換え不能でなければなりません。具体的には、製造時に固定されるマスクROMのブートコードと、署名の検証に使う公開鍵です。公開鍵は容量を節約するため、ハッシュ値として<a class="term-link" href="/term/efuse/">eFuse</a>(一度だけ書き込めるヒューズ)に格納されることがよくあります。ここでは公開鍵暗号であることが重要です。共通鍵方式では検証に使う鍵で署名もできてしまうため、1台から鍵を抜き取られると全機器向けの偽ファームウェアを作れてしまいます。公開鍵による署名なら、機器が持つのは検証用の鍵だけで、署名用の秘密鍵はベンダの安全な施設から外に出ません。</p>
+</section>
+<section class="term-about">
+  <h2>ロールバック防止とデバッグポートのロック</h2>
+  <p>署名の検証だけでは古いファームウェアも受け入れてしまいます。ベンダが正規に署名したものだからです。脆弱性が修正された後に、攻撃者が脆弱な旧バージョンを再インストールできてしまうため、イメージにはバージョン番号を持たせ、チップは<a class="term-link" href="/term/efuse/">eFuse</a>のような一度だけ書き込める記憶領域に許可する最小バージョンを保存し、更新のたびに引き上げます。<a class="term-link" href="/term/jtag/">JTAG</a>やSWDなどのデバッグポートはメモリを読み書きしたりプロセッサを停止させたりでき、セキュアブートを完全に迂回できてしまいます。そのため出荷製品ではヒューズで無効化するか、暗号による認証の後にだけ開放します。</p>
+</section>
+<section class="term-about">
+  <h2>セキュアブートとメジャードブートの違い</h2>
+  <p>セキュアブートは強制する仕組みで、検証されていないコードは起動しません。メジャードブートは記録する仕組みで、各段階が次の段階のハッシュ値を計算し、<a class="term-link" href="/term/trusted-platform-module/">TPM</a>(トラステッド・プラットフォーム・モジュール)のPCR(プラットフォーム構成レジスタ)に拡張します。PCRの新しい値は、古い値と新しいハッシュ値を組み合わせることでしか作れません。起動はそのまま続きますが、この記録により、後からソフトウェアやリモートのサーバが何が実行されたかを正確に検証できます。なお、署名が証明するのは真正性であって機密性ではなく、ファームウェアを秘密にするには暗号化が必要です。セキュアブートが守るのは起動経路だけなので、メモリ保護、<a class="term-link" href="/term/trusted-execution-environment/">TEE(信頼できる実行環境)</a>、<a class="term-link" href="/term/tamper-resistance/">耐タンパ性</a>と組み合わせた多層防御の一層と位置づけられます。</p>
+</section>
 <section>
   <h2>セキュアブートの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hw-security-019" data-cat="hw-security" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 書き換えられないROMの起動コードと、署名を確かめるための公開鍵(またはそのハッシュ値)</p><p class="explanation">信頼の鎖は、最初の確認をする部分が正しいことを前提にしています。そのため、チップの製造時に書き込まれ、後から変えられないマスクROMの起動コードと、署名の検証に使う公開鍵(容量を節約するためハッシュ値を<a class="term-link" href="/term/efuse/">eFuse</a>に書くことも多い)を<a class="term-link" href="/term/root-of-trust/">ルートオブトラスト</a>にします。ここが書き換えられると、その後のすべての確認が意味を失います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>セキュアブートの信頼の起点(ルート・オブ・トラスト)とは何ですか?</h3>
+  <p>チップのマスクROMにある書き換え不能なコードと、最初のブートローダの検証に使う公開鍵(またはeFuseに格納したそのハッシュ値)のことです。鎖の後に続くすべての段階は、これが変更できないことを前提にしています。</p>
+  <h3>セキュアブートとメジャードブートの違いは?</h3>
+  <p>セキュアブートは署名の検証に失敗したソフトウェアの実行を拒否します。メジャードブートはすべてを実行させたうえでハッシュ値をTPMに記録し、後から起動状態を確認したり証明(アテステーション)したりできるようにします。</p>
+  <h3>セキュアブートにロールバック防止が必要なのはなぜですか?</h3>
+  <p>古いバージョンのファームウェアも有効な署名を持っているため、最小バージョンのカウンタがないと、攻撃者が既知の脆弱性を持つバージョンを再インストールできてしまうからです。</p>
+</section>
 <section>
   <h2>解説の中の「セキュアブート」</h2>
   <ul class="term-quotes"><li><p>セキュアブートでは、書き換えられないROMのコードが最初のブートローダの署名を確かめ、そのブートローダが次の段階やOSのカーネルの署名を確かめる、というように、信頼の鎖をつないでいきます。</p><a href="/q/hw-security/hw-security-019/">セキュアブートの説明として正しいものはどれか。</a></li><li><p>製品にそのまま残っていると、攻撃者が基板の端子に装置をつないで、ファームウェアを読み出したり、セキュアブートを飛ばしたり、鍵を取り出したりできてしまいます。</p><a href="/q/hw-security/hw-security-040/">製品として出荷する機器で、JTAGなどのデバッグ用のポートを無効にしたり、認証が必要なようにしたりする理由として正しい…</a></li><li><p>多層防御では、セキュアブート、メモリの保護、TEE、暗号化、サイドチャネル対策、物理的な耐タンパ性など、性質の違う対策を重ねて、1つが破られても次の層で守れるようにします。</p><a href="/q/hw-security/hw-security-048/">ハードウェアとソフトウェアのセキュリティで重視される「多層防御」の考え方として正しいものはどれか。</a></li></ul>

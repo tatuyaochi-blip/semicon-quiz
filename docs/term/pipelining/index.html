@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"パイプライン処理","item":"https://semiconroom.com/term/pipelining/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"パイプライン処理","description":"命令の処理を取り出し・解読・実行などの段階に分け、複数の命令を少しずつずらして同時に処理する方式。","url":"https://semiconroom.com/term/pipelining/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"パイプライン処理","item":"https://semiconroom.com/term/pipelining/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"パイプライン処理","description":"命令の処理を取り出し・解読・実行などの段階に分け、複数の命令を少しずつずらして同時に処理する方式。","url":"https://semiconroom.com/term/pipelining/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"パイプライン処理で命令のレイテンシは短くなりますか?","acceptedAnswer":{"@type":"Answer","text":"短くなりません。パイプライン処理は命令を重ね合わせてスループットを上げるものですが、各命令はすべてのステージを通過する必要があり、レジスタのオーバーヘッドのため通常はわずかに長くなります。"}},{"@type":"Question","name":"パイプラインハザードの3種類とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"資源の競合による構造ハザード、まだ得られていない結果への依存によるデータハザード、分岐による制御ハザードの 3 種類です。代表的な対策はそれぞれ資源の複製、フォワーディング、分岐予測です。"}},{"@type":"Question","name":"パイプラインをできるだけ深くしないのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"ステージの論理が短くなってもレジスタのオーバーヘッドは一定なので、効果が次第に小さくなるからです。さらに深いパイプラインほど分岐予測ミスで無駄になる処理が増え、消費電力や設計の複雑さも増します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>スループットを上げるしくみ</h2>
+  <p>パイプラインは、命令の処理をレジスタで区切られたステージに分割する方式で、組み立てラインに似ています。古典的な 5 段の RISC パイプラインは、命令フェッチ、デコードとレジスタ読み出し、実行、メモリアクセス、ライトバックの 5 段で構成されます。ある命令の実行中に次の命令をデコードし、さらに次の命令をフェッチするので、理想的には毎クロック 1 命令が完了し、<a class="term-link" href="/term/throughput/">スループット</a>はパイプライン化しない設計のほぼ 5 倍になります。ただし個々の命令のレイテンシは短くならず、すべての命令がパイプラインレジスタを通過するため、むしろわずかに長くなります。</p>
+</section>
+<section class="term-about">
+  <h2>理想どおりに速くならない理由</h2>
+  <p>クロック周期は、最も遅いステージの遅延に、クロックから出力までの遅延、<a class="term-link" href="/term/setup-time/">セットアップ時間</a>、<a class="term-link" href="/term/clock-skew/">クロックスキュー</a>といったレジスタのオーバーヘッドを加えた時間をカバーする必要があります。論理を均等に分割できなければ、最も長いステージが周波数を決め、ほかのステージは各サイクルの一部で遊んでしまいます。パイプラインを深くすると各ステージは短くなりますが、固定のレジスタオーバーヘッドが周期に占める割合が大きくなります。また<a class="term-link" href="/term/branch-prediction/">分岐予測</a>を外したときは、途中まで処理した命令をより多く破棄しなければならず、ペナルティが増えます。ある段数を超えると性能は下がり消費電力は増えるため、パイプラインの段数はバランスを取って決めます。</p>
+</section>
+<section class="term-about">
+  <h2>ハザードとその対処</h2>
+  <p>理想的な流れを妨げるハザードには 3 種類あります。構造ハザードは、二つの命令が同じサイクルに同じ資源を必要とするときに起こります。データハザードは、まだ書き込まれていない結果を命令が必要とするときに起こります。フォワーディング(バイパス)で後段のステージから結果を直接回して対処しますが、古典的なパイプラインでは、ロードの直後にその結果を使う場合は通常 1 サイクルのストールが残ります。制御ハザードは分岐によって起こり、分岐結果はフェッチから数ステージ後でないとわかりません。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>で進む方向を推測し、外れたら誤った命令をフラッシュします。</p>
+</section>
+<section class="term-about">
+  <h2>CPU以外でのパイプライン</h2>
+  <p>命令長がそろい、ロード/ストア型のアーキテクチャを持つ RISC 命令セットは、パイプライン化しやすいように設計されています。x86 プロセッサは、複雑な命令を単純な<a class="term-link" href="/term/micro-operation/">マイクロオペレーション</a>に分解することで同様の動作を実現しています。この考え方は同期式のデータパス全般に使えます。長いクリティカルパスの途中にレジスタを挿入して分割すると、レイテンシと引き換えに最大クロック周波数を上げられ、<a class="term-link" href="/term/high-level-synthesis/">高位合成</a>ツールではパイプライン化のオプションとして提供されています。ソフトウェアパイプラインはそのコンパイラ版で、ループの異なる反復を重ね合わせてロード、演算、ストアを並行して進め、ループの前後にプロローグとエピローグのコードを置きます。</p>
+</section>
 <section>
   <h2>パイプライン処理の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-001" data-cat="cpu" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 命令処理を複数の段階に分け、異なる命令の段階を重ねて実行することでスループットを高める</p><p class="explanation">パイプラインは、命令の取り出し・解読・実行・メモリアクセス・書き戻しなどの段階を流れ作業のように重ね、毎クロック1命令ずつ完了させて<a class="term-link" href="/term/throughput/">スループット</a>を高めます。5段なら理想的には約5倍です。1命令の処理時間(レイテンシ)はむしろ少し延びます。データの依存、分岐、資源の取り合いで流れが乱れること(ハザード)があり、フォワーディングや<a class="term-link" href="/term/branch-prediction/">分岐予測</a>で対処します。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>パイプライン処理で命令のレイテンシは短くなりますか?</h3>
+  <p>短くなりません。パイプライン処理は命令を重ね合わせてスループットを上げるものですが、各命令はすべてのステージを通過する必要があり、レジスタのオーバーヘッドのため通常はわずかに長くなります。</p>
+  <h3>パイプラインハザードの3種類とは何ですか?</h3>
+  <p>資源の競合による構造ハザード、まだ得られていない結果への依存によるデータハザード、分岐による制御ハザードの 3 種類です。代表的な対策はそれぞれ資源の複製、フォワーディング、分岐予測です。</p>
+  <h3>パイプラインをできるだけ深くしないのはなぜですか?</h3>
+  <p>ステージの論理が短くなってもレジスタのオーバーヘッドは一定なので、効果が次第に小さくなるからです。さらに深いパイプラインほど分岐予測ミスで無駄になる処理が増え、消費電力や設計の複雑さも増します。</p>
+</section>
 <section>
   <h2>解説の中の「パイプライン処理」</h2>
   <ul class="term-quotes"><li><p>それ以前の非同期DRAMは制御信号のタイミングで動いていましたが、同期させることでコマンドをパイプライン処理し、バースト転送で連続データを高速に送れるようになりました。</p><a href="/q/dram/dram-034/">SDRAMの「S(Synchronous)」が表す特徴として正しいものはどれか。</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"動的リンカ","item":"https://semiconroom.com/term/dynamic-linker/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"動的リンカ","description":"動的リンクのプログラムの起動時に、共有ライブラリを探して読み込み、再配置とシンボルの結合を行ってからプログラムを開始させるソフトウェア。Linuxのld.soなど。","url":"https://semiconroom.com/term/dynamic-linker/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"動的リンカ","item":"https://semiconroom.com/term/dynamic-linker/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"動的リンカ","description":"動的リンクのプログラムの起動時に、共有ライブラリを探して読み込み、再配置とシンボルの結合を行ってからプログラムを開始させるソフトウェア。Linuxのld.soなど。","url":"https://semiconroom.com/term/dynamic-linker/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Linuxのld.soとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"動的リンカ/ローダのことです。動的リンクされた実行ファイルに対してカーネルが最初に実行するプログラムで、共有ライブラリを読み込み、シンボルを解決してからプログラムを開始させます。"}},{"@type":"Question","name":"プログラムを実行すると共有ライブラリが見つからないと言われるのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"動的リンカが検索パスの中で必要なライブラリを見つけられなかったか、互換性のないバージョンしか見つからなかったためです。プログラムに対してlddを実行すると、どの依存ライブラリが欠けているかがわかります。"}},{"@type":"Question","name":"GOTとPLTの違いは?","acceptedAnswer":{"@type":"Answer","text":"GOTは動的リンカが解決済みのアドレスを書き込むデータテーブルです。PLTは外部関数の呼び出しが経由する小さなコードのスタブの集まりで、飛び先をGOTから読み出します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/linker-loader/">リンカ・ローダと実行形式</a></p>
 </article>
-
+<section class="term-about">
+  <h2>プログラム起動時に行うこと</h2>
+  <p><a class="term-link" href="/term/dynamic-linking/">動的リンク</a>された<a class="term-link" href="/term/executable-and-linkable-format/">ELF</a>実行ファイルは、プログラムヘッダにLinuxのld-linuxのようなインタプリタを指定しています。execveがプログラムをマッピングした後、カーネルはこの動的リンカもマッピングし、プログラムではなく動的リンカに制御を渡します。動的リンカは必要なライブラリの一覧を読み、設定されたパスやキャッシュから探してアドレス空間にマッピングし、<a class="term-link" href="/term/relocation/">再配置</a>の適用とシンボルの結合を行います。続いて.init_arrayなどのセクションに登録されたライブラリの初期化関数を実行し、最後にプログラムの<a class="term-link" href="/term/entry-point/">エントリポイント</a>へジャンプします。後からdlopenで開くライブラリも同じ仕組みで処理されます。</p>
+</section>
+<section class="term-about">
+  <h2>GOT・PLTと遅延結合</h2>
+  <p><a class="term-link" href="/term/shared-library/">共有ライブラリ</a>は<a class="term-link" href="/term/position-independent-code/">位置独立コード</a>としてビルドされるため、コードのページには他のモジュールの絶対アドレスが含まれません。その代わり、コードは<a class="term-link" href="/term/global-offset-table/">GOT(グローバルオフセットテーブル)</a>からアドレスを読み出します。GOTは動的リンカが書き込む、書き込み可能なデータテーブルです。関数呼び出しは<a class="term-link" href="/term/procedure-linkage-table/">PLT(プロシージャリンケージテーブル)</a>のスタブを経由します。遅延結合では、スタブを通る最初の呼び出しで<a class="term-link" href="/term/linker/">リンカ</a>のリゾルバに入り、実際のアドレスをGOTに書き込み、以降の呼び出しはそこへ直接ジャンプします。多くのシステムでは、代わりに起動時にすべてを結合してからGOTを読み出し専用にし(Full RELRO)、GOT上書き攻撃を防いでいます。</p>
+</section>
+<section class="term-about">
+  <h2>動的リンカと静的リンカの違い</h2>
+  <p>静的<a class="term-link" href="/term/linker/">リンカ</a>(ld)はビルド時に動作し、<a class="term-link" href="/term/object-file/">オブジェクトファイル</a>を結合してシンボルを解決し、ほとんどの<a class="term-link" href="/term/relocation/">再配置</a>を適用して実行ファイルを作ります。動的リンカはプログラムを起動するたびに動作し、<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>について残りの作業を仕上げます。この分担があるからこそ、ライブラリのコードの物理的なコピー1つを多くのプロセスで共有でき、ファイルを1つ置き換えるだけでセキュリティ修正をすべてのプログラムに行き渡らせられます。その代償は、起動時の余分な処理と、実行するマシンに適切なバージョンのライブラリが存在することへの依存です。</p>
+</section>
+<section class="term-about">
+  <h2>制御とデバッグの方法</h2>
+  <p><a class="term-link" href="/term/dynamic-linking/">動的リンク</a>されたプログラムが起動しない原因の多くは、ライブラリが見つからないか互換性がないことです。lddコマンドは依存関係を一覧表示し、見つからないものを示します。Linuxでは、LD_LIBRARY_PATHなどの環境変数で検索するディレクトリを追加でき、LD_PRELOADで他より先にライブラリを差し込めるので、デバッグや計測に役立ちます。ライブラリの作者は、公開する関数だけをエクスポートして内部シンボルをhiddenにすることで読み込みを高速化できます。動的リンカが処理するシンボルが減り、内部呼び出しが<a class="term-link" href="/term/procedure-linkage-table/">PLT</a>を経由せずに済むからです。</p>
+</section>
 <section>
   <h2>動的リンカの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="linker-loader-027" data-cat="linker-loader" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 必要な共有ライブラリを探してメモリに読み込み、シンボルを結びつけてからプログラムを開始させる</p><p class="explanation"><a class="term-link" href="/term/dynamic-linking/">動的リンク</a>の実行ファイルには、使う<a class="term-link" href="/term/dynamic-linker/">動的リンカ</a>の場所が書かれており、OSはプログラムを読み込むと、まず動的リンカに処理を渡します。動的リンカは必要な<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>を探して読み込み、<a class="term-link" href="/term/relocation/">再配置</a>とシンボルの結合を行ってから、プログラムの入口へ制御を移します。dlopenで実行中にライブラリを追加で読み込む処理も、動的リンカが受け持ちます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>Linuxのld.soとは何ですか?</h3>
+  <p>動的リンカ/ローダのことです。動的リンクされた実行ファイルに対してカーネルが最初に実行するプログラムで、共有ライブラリを読み込み、シンボルを解決してからプログラムを開始させます。</p>
+  <h3>プログラムを実行すると共有ライブラリが見つからないと言われるのはなぜですか?</h3>
+  <p>動的リンカが検索パスの中で必要なライブラリを見つけられなかったか、互換性のないバージョンしか見つからなかったためです。プログラムに対してlddを実行すると、どの依存ライブラリが欠けているかがわかります。</p>
+  <h3>GOTとPLTの違いは?</h3>
+  <p>GOTは動的リンカが解決済みのアドレスを書き込むデータテーブルです。PLTは外部関数の呼び出しが経由する小さなコードのスタブの集まりで、飛び先をGOTから読み出します。</p>
+</section>
 <section>
   <h2>解説の中の「動的リンカ」</h2>
   <ul class="term-quotes"><li><p>動的リンクの実行ファイルには、使う動的リンカの場所が書かれており、OSはプログラムを読み込むと、まず動的リンカに処理を渡します。</p><a href="/q/linker-loader/linker-loader-027/">Linuxで動的リンクのプログラムを起動するときに働く動的リンカ(ld.soなど)の役割として正しいものはどれか。</a></li><li><p>動的リンクでは、同じような書き換えの一部を実行時に動的リンカが行います。</p><a href="/q/linker-loader/linker-loader-004/">リンカが行う再配置(リロケーション)の説明として正しいものはどれか。</a></li><li><p>動的リンクでは、実行ファイルには「どの共有ライブラリのどの関数を使うか」だけを記録し、実行時に動的リンカがライブラリを読み込んで結びつけます。</p><a href="/q/linker-loader/linker-loader-020/">動的リンク(共有ライブラリ)の利点として正しいものはどれか。</a></li><li><p>必要なライブラリがない、または関数が足りない古いバージョンしかないと、動的リンカが結合できず起動に失敗します。</p><a href="/q/linker-loader/linker-loader-021/">動的リンクを使ったプログラムを別のコンピュータにコピーして実行したら、起動しなかった。最も考えられる原因はどれか。</a></li><li><p>動的リンカは読み込んだときにGOTに実際の番地を書き込みます。</p><a href="/q/linker-loader/linker-loader-025/">共有ライブラリで使われるGOT(グローバルオフセットテーブル)の役割として正しいものはどれか。</a></li></ul>

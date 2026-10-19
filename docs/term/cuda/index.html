@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"CUDA","item":"https://semiconroom.com/term/cuda/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CUDA","description":"NVIDIAのGPUで汎用の計算を行うためのプログラミングの仕組み。C++を拡張した言語でカーネルを書き、グリッド・ブロック・スレッドの階層で並列性を表す。","url":"https://semiconroom.com/term/cuda/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"CUDA","item":"https://semiconroom.com/term/cuda/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"CUDA","description":"NVIDIAのGPUで汎用の計算を行うためのプログラミングの仕組み。C++を拡張した言語でカーネルを書き、グリッド・ブロック・スレッドの階層で並列性を表す。","url":"https://semiconroom.com/term/cuda/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"CUDAのブロックとワープの違いは?","acceptedAnswer":{"@type":"Answer","text":"ブロックはプログラマが決めるスレッドのまとまりで、1つのSM上で実行され、メモリを共有したり同期したりできます。ワープはブロック内でハードウェアがまとめる32スレッドの組で、命令をそろって一斉に実行します。"}},{"@type":"Question","name":"CUDAでグローバルなスレッドインデックスはどう計算しますか?","acceptedAnswer":{"@type":"Answer","text":"1次元の起動なら、i = blockIdx.x * blockDim.x + threadIdx.xで求めます。最後のブロックには残りの要素数より多くのスレッドが含まれることが多いので、配列にアクセスする前にi \u003c nを確認します。"}},{"@type":"Question","name":"CUDAの共有メモリは何に使いますか?","acceptedAnswer":{"@type":"Answer","text":"1つのブロックのスレッドが共有する高速なオンチップメモリで、グローバルメモリのデータを置いて再利用したり、中間結果をやり取りしたりするのに使います。キャッシュと違って何を置くかはプログラムが決め、アクセスの順序は__syncthreads()で保証します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/gpu-programming/">GPUプログラミング</a></p>
 </article>
-
+<section class="term-about">
+  <h2>カーネルとスレッドの階層</h2>
+  <p>CUDAでは、CPU(ホスト)がカーネルを起動します。カーネルは多数の<a class="term-link" href="/term/gpu/">GPU</a>スレッドが同時に実行する関数です。1回の起動でブロックの集まりであるグリッドが作られ、各ブロックには多数のスレッドが含まれます。各スレッドは固有のグローバルインデックスを計算して担当するデータ要素を決めます。典型的にはi = blockIdx.x × blockDim.x + threadIdx.xで、1ブロック256スレッドのとき、ブロック2のスレッド5は要素517を担当します。スレッドはブロック単位でまとめて起動されるため、最後のブロックには通常余分なスレッドがあり、配列の範囲外に書き込まないよう、カーネルではif (i &lt; n)でメモリアクセスを保護します。</p>
+</section>
+<section class="term-about">
+  <h2>ブロックとGPUハードウェアの対応</h2>
+  <p>各ブロックは1つの<a class="term-link" href="/term/streaming-multiprocessor/">ストリーミングマルチプロセッサ</a>(SM)に割り当てられ、そこで最後まで実行されます。1つのSMは複数のブロックを同時に保持できます。SMの内部では、スレッドは32本ずつのワープ単位で実行されます。SMが保持できる最大ワープ数に対する常駐ワープ数の比率をオキュパンシといい、スレッドあたりのレジスタ数、ブロックあたりの共有メモリ量、ブロックサイズで制限されます。オキュパンシが低いと、メモリの遅延を隠すのに十分なワープがありません。ブロックは独立に任意の順序で実行されるため、カーネル内で他の全ブロックを待つと<a class="term-link" href="/term/deadlock/">デッドロック</a>するおそれがあり、全体の同期は通常、処理を2回のカーネル起動に分けて実現します。</p>
+</section>
+<section class="term-about">
+  <h2>メモリ空間の種類</h2>
+  <p>グローバルメモリは<a class="term-link" href="/term/gpu/">GPU</a>のDRAMで、帯域は広いものの遅延が大きく、隣り合うスレッドが隣り合うアドレスにアクセスするときに最も速くなります。共有メモリはブロックごとの小さなオンチップメモリで、プログラムが明示的に管理します。共有メモリは32個の<a class="term-link" href="/term/bank/">バンク</a>に分かれており、1つのワープのスレッドが同じバンクの異なるアドレスにアクセスすると、アクセスが直列化されます。__syncthreads()はブロック内の全スレッドがそろうまで待たせる関数で、一部のスレッドが通らない分岐の中に置くと、ハングや未定義の結果を招きます。<a class="term-link" href="/term/unified-memory/">ユニファイドメモリ</a>を使うと、ホストとデバイスが1つのポインタを共有でき、ページは必要に応じて移動されます。</p>
+</section>
+<section class="term-about">
+  <h2>GPUを遊ばせない工夫</h2>
+  <p>ホストからデバイスへのコピーは<a class="term-link" href="/term/pci-express/">PCI Express</a>を通るため、しばしばボトルネックになります。転送とカーネルを順序付きで並べたキューであるストリームを使うと、異なるストリームの処理を重ねられるので、現在のデータを計算しながら次のデータをコピーできます。また、カーネルの起動には1回あたり数マイクロ秒かかるため、小さなカーネルを何千回も起動するプログラムでは、カーネルを融合すると効果があり、中間結果をメモリに書き出す手間も省けます。記録した一連の起動をCUDA Graphsでまとめて投入する方法もあります。CUDA自体はNVIDIAの<a class="term-link" href="/term/gpu/">GPU</a>でしか動きませんが、<a class="term-link" href="/term/opencl/">OpenCL</a>のようなベンダ共通の代替技術も、似たカーネルとワークグループのモデルを採用しています。</p>
+</section>
 <section>
   <h2>CUDAの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="gpu-programming-004" data-cat="gpu-programming" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. グリッド → ブロック → スレッド</p><p class="explanation">カーネルを1回起動すると、全体がグリッドになり、グリッドは多数のブロックに、ブロックは多数のスレッドに分かれます。1つのブロックのスレッドは同じSM(演算器の集まり)で実行され、共有メモリで協力したり、同期を取ったりできます。異なるブロックは独立に実行されるので、<a class="term-link" href="/term/gpu/">GPU</a>の規模に応じて同時に動くブロックの数が変わり、同じプログラムが大小のGPUで動きます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>CUDAのブロックとワープの違いは?</h3>
+  <p>ブロックはプログラマが決めるスレッドのまとまりで、1つのSM上で実行され、メモリを共有したり同期したりできます。ワープはブロック内でハードウェアがまとめる32スレッドの組で、命令をそろって一斉に実行します。</p>
+  <h3>CUDAでグローバルなスレッドインデックスはどう計算しますか?</h3>
+  <p>1次元の起動なら、i = blockIdx.x * blockDim.x + threadIdx.xで求めます。最後のブロックには残りの要素数より多くのスレッドが含まれることが多いので、配列にアクセスする前にi &lt; nを確認します。</p>
+  <h3>CUDAの共有メモリは何に使いますか?</h3>
+  <p>1つのブロックのスレッドが共有する高速なオンチップメモリで、グローバルメモリのデータを置いて再利用したり、中間結果をやり取りしたりするのに使います。キャッシュと違って何を置くかはプログラムが決め、アクセスの順序は__syncthreads()で保証します。</p>
+</section>
 <section>
   <h2>解説の中の「CUDA」</h2>
   <ul class="term-quotes"><li><p>CUDAには占有率を計算する道具も用意されています。</p><a href="/q/gpu-programming/gpu-programming-023/">GPUの占有率(オキュパンシー)の説明として正しいものはどれか。</a></li><li><p>起動の並びをまとめて記録して一度に送る仕組み(CUDA Graphsなど)も使われます。</p><a href="/q/gpu-programming/gpu-programming-035/">非常に小さなカーネルを何千回も続けて起動するプログラムが遅いとき、改善の方法として最も適切なものはどれか。</a></li><li><p>CUDAはNVIDIAのGPU向けの仕組みですが、OpenCLは業界団体が定めた標準の規格で、複数の会社のGPUやCPU、FPGAなどで使えます。</p><a href="/q/gpu-programming/gpu-programming-046/">NVIDIA以外のGPUでも使える、GPUなどの並列計算のためのプログラミングの仕組みの例として正しいものはどれか。</a></li></ul>

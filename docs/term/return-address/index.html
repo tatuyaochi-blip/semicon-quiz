@@ -16,7 +16,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"リターンアドレス","item":"https://semiconroom.com/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"リターンアドレス","description":"関数の処理を終えたときに戻る番地。RISC-Vではjal命令が次の命令の番地をra(x1)に入れ、x86ではcall命令がスタックに積む。","url":"https://semiconroom.com/term/return-address/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"リターンアドレス","item":"https://semiconroom.com/term/return-address/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"リターンアドレス","description":"関数の処理を終えたときに戻る番地。RISC-Vではjal命令が次の命令の番地をra(x1)に入れ、x86ではcall命令がスタックに積む。","url":"https://semiconroom.com/term/return-address/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"RISC-Vではリターンアドレスはどこに保存されますか?","acceptedAnswer":{"@type":"Answer","text":"呼び出し時にjalまたはjalrが書き込むレジスタra(x1)に保存されます。非リーフ関数は、自分が他の関数を呼ぶ前にそれをスタックフレームに退避し、retの前に復元します。"}},{"@type":"Question","name":"x86のcall/retとRISC-Vのjal/retの違いは?","acceptedAnswer":{"@type":"Answer","text":"x86のcallは必ずリターンアドレスをスタックにプッシュし、retがそれをポップします。RISC-Vのjalはリターンアドレスをレジスタに入れ、関数が退避すると決めた場合にだけメモリに書き込みます。"}},{"@type":"Question","name":"リターンアドレスが上書きされると何が危険なのですか?","acceptedAnswer":{"@type":"Answer","text":"関数が戻るとき、CPUはそこに書かれたアドレスへジャンプします。そのため攻撃者がバッファオーバーフローでリターンアドレスを書き換えると、プログラムの制御を奪えてしまいます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
+<section class="term-about">
+  <h2>関数呼び出しでの保存方法</h2>
+  <p>関数呼び出しでは、実行を再開する場所、つまり呼び出し命令の次の命令のアドレスを記録しておく必要があります。RISC-Vでは、jal(jump and link)がPC + 4をレジスタ(慣例ではra、すなわちx1)に書き込んでジャンプし、戻るときはjalr x0, 0(ra)の<a class="term-link" href="/term/pseudo-instruction/">疑似命令</a>であるretを使います。関数ポインタ、仮想関数、<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>のスタブを経由する呼び出しでは、飛び先をレジスタで指定するjalrを使います。x86では、callがリターンアドレスをスタックにプッシュし、retがそれをポップして命令ポインタに戻すため、リターンアドレスは常にスタック上にあります。</p>
+</section>
+<section class="term-about">
+  <h2>リーフ関数と非リーフ関数</h2>
+  <p>jalを実行するたびにraは上書きされるため、RISC-Vで他の関数を呼び出す関数は、先に自分のリターンアドレスを退避しておく必要があります。典型的なプロローグでは、addi sp, sp, -16で下位アドレスへ伸びるスタックにフレームを確保し、sw ra, 12(sp)とsw s0, 8(sp)でraと<a class="term-link" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a>を退避します。エピローグではこれらを読み戻してspを元に戻し、retを実行します。何も呼び出さないリーフ関数はraをレジスタに置いたままでよく、<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>がまったく要らない場合もあるため、小さな関数を低コストで実行できます。</p>
+</section>
+<section class="term-about">
+  <h2>攻撃の標的になる理由</h2>
+  <p>スタック上のリターンアドレスはローカルのバッファのすぐ隣にあるため、バッファオーバーフローで上書きされると、関数から戻るときに実行先を乗っ取られてしまいます。古典的な攻撃はスタックに機械語を書き込んでそこへジャンプさせるものでしたが、<a class="term-link" href="/term/page-table/">ページテーブル</a>の実行禁止ビットを使ったW^Xポリシーで防がれるようになりました。そこで攻撃者は、既存のコード断片をつなぎ合わせるリターン指向プログラミング(ROP)に移りました。さらなる対策として、戻る前に検査するスタックカナリア、アドレス空間配置のランダム化(<a class="term-link" href="/term/address-space-layout-randomization/">ASLR</a>)、各リターンアドレスの保護された複製を持つハードウェアのシャドウスタックがあります。</p>
+</section>
+<section class="term-about">
+  <h2>ハードウェアでの扱い</h2>
+  <p>アウトオブオーダ実行のCPUは、raやスタックを読み出すよりずっと前にリターンの飛び先を予測します。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器のリターンアドレススタック(RAS)は、呼び出しのたびに次の命令のアドレスをプッシュし、リターンのたびにポップするので、きれいに入れ子になったコードでは非常に正確に予測できます。例外や<a class="term-link" href="/term/interrupt/">割り込み</a>は扱いが異なり、CPUは中断したPCをRISC-Vのmepcやsepcのような専用レジスタに、直前の<a class="term-link" href="/term/privileged-mode/">特権モード</a>とともに保存します。復帰には通常のretではなくmretやsretを使い、これらをまとめて元に戻します。</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>RISC-Vではリターンアドレスはどこに保存されますか?</h3>
+  <p>呼び出し時にjalまたはjalrが書き込むレジスタra(x1)に保存されます。非リーフ関数は、自分が他の関数を呼ぶ前にそれをスタックフレームに退避し、retの前に復元します。</p>
+  <h3>x86のcall/retとRISC-Vのjal/retの違いは?</h3>
+  <p>x86のcallは必ずリターンアドレスをスタックにプッシュし、retがそれをポップします。RISC-Vのjalはリターンアドレスをレジスタに入れ、関数が退避すると決めた場合にだけメモリに書き込みます。</p>
+  <h3>リターンアドレスが上書きされると何が危険なのですか?</h3>
+  <p>関数が戻るとき、CPUはそこに書かれたアドレスへジャンプします。そのため攻撃者がバッファオーバーフローでリターンアドレスを書き換えると、プログラムの制御を奪えてしまいます。</p>
+</section>
 
 
 <section class="books">

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"STA(静的タイミング解析)","item":"https://semiconroom.com/term/sta/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"STA(静的タイミング解析)","description":"テストパターンを使わずに回路の各パスの遅延を計算し、タイミング制約を満たしているかを検証する手法。","url":"https://semiconroom.com/term/sta/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"STA(静的タイミング解析)","item":"https://semiconroom.com/term/sta/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"STA(静的タイミング解析)","description":"テストパターンを使わずに回路の各パスの遅延を計算し、タイミング制約を満たしているかを検証する手法。","url":"https://semiconroom.com/term/sta/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"静的タイミング解析とタイミングシミュレーションの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"STA は入力ベクタを使わずに回路構造から全パスの最悪遅延を計算するため、網羅的かつ高速です。タイミングシミュレーションは特定のベクタを与えて動作を確認するため、そのベクタが通るパスしかカバーできませんが、機能も検証できます。"}},{"@type":"Question","name":"STA のスラックとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"スラックは、パスの要求時刻から到着時刻を引いた値です。正のスラックは制約を余裕をもって満たしていることを、負のスラックは修正が必要な違反を意味します。"}},{"@type":"Question","name":"タイミングレポートの WNS と TNS とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"WNS(最悪負スラック)は最も悪い1本のパスのスラック、TNS(負スラックの総和)は違反しているすべてのエンドポイントの負スラックの合計です。WNS が小さく TNS が大きい場合は、多数のパスがわずかずつ違反していることを意味します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/eda/">LSI設計フロー・EDA</a></p>
 </article>
-
+<section class="term-about">
+  <h2>STA のしくみ</h2>
+  <p>静的タイミング解析(STA)は、同期回路を主に<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>から次のフリップフロップまでのタイミングパスに分解します。各パスについて、入力遷移時間と出力負荷を引数とするライブラリの特性表から補間したセル遅延と、配線遅延を足し合わせ、データ到着時刻を求めます。これを、クロックエッジと取り込み側フリップフロップのセットアップまたはホールド要件で決まる要求時刻と比較します。スラックは要求時刻から到着時刻を引いた値で、負のスラックは違反です。テストベクタが不要なのですべてのパスを網羅できますが、論理的な正しさは別途シミュレーションで検証する必要があります。</p>
+</section>
+<section class="term-about">
+  <h2>制約で検査内容を指定する</h2>
+  <p>STA ツールには、通常 SDC 形式のタイミング制約が必要です。クロックの周期と波形、入出力遅延、そして例外指定を与えます。フォールスパスは、互いに排他的なセレクト信号で遮断されるパスのように、実際には決して動作しない接続を解析から除外します。マルチサイクルパスはセットアップに N サイクルを与え、通常はホールドのマルチサイクルを N − 1 として、ホールドチェックを本来のエッジに戻します。誤った制約は危険で、すべてのツールチェックに合格してもシリコンで動かないことがあります。結果は、WNS(最悪負スラック)と TNS(負スラックの総和)にまとめて報告されます。</p>
+</section>
+<section class="term-about">
+  <h2>コーナーとオンチップばらつき</h2>
+  <p>遅延はプロセス・電圧・温度(PVT)で変わるため、複数のコーナーで解析を繰り返します。セットアップは一般に、トランジスタが遅く電圧が低いスローコーナーで最も厳しく、ホールドはファストコーナーで最も厳しくなります。先端プロセスでは、低電圧の回路ほど低温で遅くなる温度逆転現象があるため、コーナーが増えます。同じダイ内のばらつきについては、OCV(オンチップばらつき)のディレーティングにより、セットアップチェックではデータパスと送り出し側クロックパスを遅く、取り込み側クロックパスを速く見積もります。さらに CRPR(共通パス悲観性除去)で、両パスが共有するクロックバッファを遅くも速くも扱うというありえない悲観分を差し戻します。</p>
+</section>
+<section class="term-about">
+  <h2>違反の修正方法</h2>
+  <p>セットアップ違反はパスが遅すぎることを意味します。対策は論理段数の削減、セルのサイズアップや高速な低しきい値セルへの置き換え、セルを近くに配置して配線を短くすることなどで、最後の手段はクロック周波数を下げることです。ホールド違反はパスが速すぎることを意味し、チェックにクロック周期が関係しないため、遅延バッファの挿入で修正します。グラフベース解析は各ノードで最悪の遷移時間を採用するため悲観的になりがちで、パスベース解析(PBA)は違反パスを実際の遷移時間で再計算し、不要な修正を避けます。</p>
+</section>
 <section>
   <h2>STA(静的タイミング解析)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="eda-003" data-cat="eda" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. ホールド違反</p><p class="explanation">ホールド違反は、データの経路が短すぎて、クロックのエッジのあと必要な時間だけデータが保持されず、新しいデータが同じエッジで取り込まれてしまう違反です。ホールドの条件は同じエッジどうしの比較で周期が入らないため、クロック周波数を下げても解消せず、遅延用のバッファを挿入して修正します。経路が長すぎて間に合わないのはセットアップ違反、<a class="term-link" href="/term/drc/">DRC</a>違反はレイアウトの規則違反です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>静的タイミング解析とタイミングシミュレーションの違いは何ですか?</h3>
+  <p>STA は入力ベクタを使わずに回路構造から全パスの最悪遅延を計算するため、網羅的かつ高速です。タイミングシミュレーションは特定のベクタを与えて動作を確認するため、そのベクタが通るパスしかカバーできませんが、機能も検証できます。</p>
+  <h3>STA のスラックとは何ですか?</h3>
+  <p>スラックは、パスの要求時刻から到着時刻を引いた値です。正のスラックは制約を余裕をもって満たしていることを、負のスラックは修正が必要な違反を意味します。</p>
+  <h3>タイミングレポートの WNS と TNS とは何ですか?</h3>
+  <p>WNS(最悪負スラック)は最も悪い1本のパスのスラック、TNS(負スラックの総和)は違反しているすべてのエンドポイントの負スラックの合計です。WNS が小さく TNS が大きい場合は、多数のパスがわずかずつ違反していることを意味します。</p>
+</section>
 <section>
   <h2>解説の中の「STA(静的タイミング解析)」</h2>
   <ul class="term-quotes"><li><p>STAは、回路のすべての信号経路(パス)について、セルや配線の遅延を積み上げて計算し、セットアップ時間やホールド時間などのタイミング制約を満たしているかを網羅的に調べる手法です。</p><a href="/q/eda/eda-003/">静的タイミング解析(STA)の説明として正しいものはどれか。</a></li><li><p>そこでSTAは、イネーブルがクロックの立ち上がりより前に安定すること(ゲーティングのセットアップ)と、立ち下がりの後まで保たれること(ゲーティングのホールド)を確認します。</p><a href="/q/sta-cdc/sta-cdc-019/">クロックとイネーブル信号の2入力ANDゲートでクロックを止める回路で、STAのクロックゲーティングチェックが確認する内…</a></li><li><p>非同期のクロックどうしの経路はSTAではタイミングを決められないため、クロックグループの指定などで解析から外すのが普通です。</p><a href="/q/sta-cdc/sta-cdc-049/">STAとRTLシミュレーションを行っていても、CDC検証ツールによる確認が必要とされる理由として正しいものはどれか。</a></li><li><p>この検証は静的タイミング解析(STA)で全経路を網羅的に行えるため、数十億トランジスタの回路でも設計できます。</p><a href="/q/logic/logic-028/">すべてのフリップフロップが共通のクロックで動作する同期式回路の利点として正しいものはどれか。</a></li><li><p>その値を使って、静的タイミング解析、消費電力やクロストークの解析を正確に行います。</p><a href="/q/eda/eda-018/">配置配線後のレイアウトから、配線の抵抗や容量を取り出す工程を何と呼ぶか。</a></li></ul>

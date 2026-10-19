@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ページフォルト","item":"https://semiconroom.com/term/page-fault/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ページフォルト","description":"アクセスしたページが物理メモリに割り当てられていない、または許されない種類のアクセスをしたときにCPUが起こす例外。OSがページを用意して命令をやり直すか、不正なアクセスとして扱う。","url":"https://semiconroom.com/term/page-fault/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ページフォルト","item":"https://semiconroom.com/term/page-fault/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ページフォルト","description":"アクセスしたページが物理メモリに割り当てられていない、または許されない種類のアクセスをしたときにCPUが起こす例外。OSがページを用意して命令をやり直すか、不正なアクセスとして扱う。","url":"https://semiconroom.com/term/page-fault/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ページフォルトはエラーなのですか?","acceptedAnswer":{"@type":"Answer","text":"必ずしもエラーではありません。ほとんどのページフォルトはデマンドページング、コピーオンライト、メモリマップトファイルのための正常な動作で、プロセスにアクセスが許されていないアドレスで起きたフォルトだけがセグメンテーション違反などのエラーになります。"}},{"@type":"Question","name":"マイナーフォルトとメジャーフォルトの違いは?","acceptedAnswer":{"@type":"Answer","text":"マイナーフォルトは、すでにメモリ上にあるページをマッピングするなど、ディスクI/Oなしで解決します。メジャーフォルトはページをストレージから読み込む必要があり、数千倍も遅くなります。"}},{"@type":"Question","name":"ページフォルトの後、命令を飛ばさずにやり直すのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"フォルトを起こしたアクセスは完了していないため、OSはマッピングを修正したうえで命令を最初から実行し直します。これにより、プログラムは何事もなかったかのように処理を続けられます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>ページフォルトが起きたときの処理</h2>
+  <p>メモリ管理ユニット(MMU)は仮想アドレスを変換するとき、<a class="term-link" href="/term/page-table/">ページテーブル</a>のエントリを調べます。エントリが無効だったり、アクセスの種類が許可されていなかったりすると、MMUはページフォルトを発生させます。これはフォルトを起こした命令に結びついた同期例外です。OSのハンドラは、そのアドレスがプロセスに使用を許された領域かどうかを確認します。許された領域であれば空いている物理フレームを探し、必要なら別のページを追い出したうえで、ディスクの内容かゼロで埋め、エントリを有効にしてフォルトした命令をやり直します。許されない領域であれば、プロセスにはセグメンテーション違反が通知されます。</p>
+</section>
+<section class="term-about">
+  <h2>マイナーフォルトとメジャーフォルト</h2>
+  <p>ページフォルトのすべてがディスクにアクセスするわけではありません。マイナー(ソフト)フォルトはI/Oなしで解決するもので、ページがすでにファイルキャッシュとしてメモリ上にある場合、ゼロで埋めた新しいフレームを割り当てるだけでよい場合、<a class="term-link" href="/term/copy-on-write/">コピーオンライト</a>でページを複製する場合などが当たります。メジャー(ハード)フォルトはページをストレージから読み込む必要があり、ミリ秒単位の時間がかかります。この差は非常に大きく、メモリアクセスが100 ns、フォルト処理が8 msとすると、メジャーフォルトが100万回のアクセスに1回起きるだけで、平均アクセス時間は100 nsから約108 nsに延びます。</p>
+</section>
+<section class="term-about">
+  <h2>ページフォルトを意図的に利用する仕組み</h2>
+  <p>OSはページフォルトを遅延評価の道具として活用しています。<a class="term-link" href="/term/demand-paging/">デマンドページング</a>はプログラムを読み込まずにマッピングだけしておき、各ページに初めて触れたときに読み込みます。メモリマップトファイル(mmap)も同じ方法でファイルの内容を読み込みます。<a class="term-link" href="/term/copy-on-write/">コピーオンライト</a>では、forkした親子プロセスがページを読み出し専用で共有し、後から書き込まれたページだけをコピーします。スタックの先にはアクセス権のないガードページが置かれ、再帰が暴走してもデータを壊す前にフォルトで止まります。<a class="term-link" href="/term/non-uniform-memory-access/">NUMA</a>システムのLinuxでは、ページは最初に書き込んだスレッドのノードに配置されるため、初期化の順序が性能を左右します。</p>
+</section>
+<section class="term-about">
+  <h2>ページフォルト・TLBミス・キャッシュミスの違い</h2>
+  <p>この3つはよく混同されます。キャッシュミスはすべてハードウェアで処理され、下位のメモリ階層からラインを取ってきます。<a class="term-link" href="/term/tlb/">TLB</a>ミスはアドレス変換の結果がTLB(変換索引バッファ)に入っていない状態で、現在の多くのCPUではハードウェアのページテーブルウォーカが変換を取りに行き、エントリが有効なら例外は起きません。<a class="term-link" href="/term/page-table/">ページテーブル</a>のエントリ自体が無効か、そのアクセスを禁じている場合に限って、ページフォルトとしてOSに処理が渡ります。フォルトが頻発し、システムが時間の大半をページングに費やす状態は<a class="term-link" href="/term/thrashing/">スラッシング</a>と呼ばれます。</p>
+</section>
 <section>
   <h2>ページフォルトの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-011" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. ページを用意してディスクから読み込み、表を更新して命令をやり直す</p><p class="explanation">正当なアクセスによる<a class="term-link" href="/term/page-fault/">ページフォルト</a>では、OSは空いている物理ページを探し(なければ別のページを追い出し)、ディスクから内容を読み込んで<a class="term-link" href="/term/page-table/">ページテーブル</a>の項目を有効にします。そのうえで、フォルトを起こした命令を最初からやり直すので、プログラムは何事もなかったように続きます。命令を飛ばすとそのアクセスが実行されず、結果が誤ります。異常終了させるのは、割り当てのないアドレスへの不正なアクセスの場合です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ページフォルトはエラーなのですか?</h3>
+  <p>必ずしもエラーではありません。ほとんどのページフォルトはデマンドページング、コピーオンライト、メモリマップトファイルのための正常な動作で、プロセスにアクセスが許されていないアドレスで起きたフォルトだけがセグメンテーション違反などのエラーになります。</p>
+  <h3>マイナーフォルトとメジャーフォルトの違いは?</h3>
+  <p>マイナーフォルトは、すでにメモリ上にあるページをマッピングするなど、ディスクI/Oなしで解決します。メジャーフォルトはページをストレージから読み込む必要があり、数千倍も遅くなります。</p>
+  <h3>ページフォルトの後、命令を飛ばさずにやり直すのはなぜですか?</h3>
+  <p>フォルトを起こしたアクセスは完了していないため、OSはマッピングを修正したうえで命令を最初から実行し直します。これにより、プログラムは何事もなかったかのように処理を続けられます。</p>
+</section>
 <section>
   <h2>解説の中の「ページフォルト」</h2>
   <ul class="term-quotes"><li><p>ページフォルトは、アクセスしたページのページテーブルの項目が無効、つまり物理メモリに割り当てられていない(ディスクに追い出されている、まだ読み込んでいないなど)ときや、読み出し専用のページに書き込むような許されないアクセスをしたときに起こる例外です。</p><a href="/q/os-hardware/os-hardware-011/">ページフォルトが起こる場合として正しいものはどれか。</a></li><li><p>正当なアクセスによるページフォルトでは、OSは空いている物理ページを探し(なければ別のページを追い出し)、ディスクから内容を読み込んでページテーブルの項目を有効にします。</p><a href="/q/os-hardware/os-hardware-012/">追い出されてディスクにあるページにアクセスしてページフォルトが起きたとき、OSが行う処理の流れとして正しいものはどれか。</a></li><li><p>直感的には物理ページを増やせばページフォルトは減るはずですが、FIFO方式では、特定のアクセスの並びで、ページ数を3から4に増やすとフォルトがかえって増えることが知られています。</p><a href="/q/os-hardware/os-hardware-020/">ページ置き換えでFIFO方式を使うと、物理メモリのページ数を増やしたのにページフォルトが増える場合がある。この現象を何…</a></li><li><p>100万回に1回という低い頻度でも、平均が8%遅くなるほどページフォルトの処理は重いことが分かります。</p><a href="/q/os-hardware/os-hardware-022/">メモリのアクセス時間が100 ns、ページフォルトの処理に8 msかかるとき、100万回に1回ページフォルトが起こると…</a></li><li><p>再帰が深すぎてスタックがここに達すると、ページフォルトが起きてOSがプログラムを止めます(セグメンテーション違反)。</p><a href="/q/linker-loader/linker-loader-046/">再帰が深くなりすぎてスタックの上限を超えたとき、Linuxなどで一般に起こることとして正しいものはどれか。</a></li></ul>

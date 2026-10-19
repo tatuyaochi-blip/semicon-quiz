@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"キャッシュライン","item":"https://semiconroom.com/term/cache-line/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"キャッシュライン","description":"キャッシュと下の階層の間でデータを読み書きする単位。キャッシュブロックともいう。多くのCPUでは64バイトで、アドレスの下位ビットがライン内の位置(オフセット)を表す。","url":"https://semiconroom.com/term/cache-line/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"キャッシュライン","item":"https://semiconroom.com/term/cache-line/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"キャッシュライン","description":"キャッシュと下の階層の間でデータを読み書きする単位。キャッシュブロックともいう。多くのCPUでは64バイトで、アドレスの下位ビットがライン内の位置(オフセット)を表す。","url":"https://semiconroom.com/term/cache-line/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"キャッシュラインのサイズはどのくらいですか?","acceptedAnswer":{"@type":"Answer","text":"現在のほとんどのCPUでは64バイトですが、32バイトや128バイトのプロセッサもあります。サイズはハードウェアの特性で、ソフトウェアから問い合わせることができます。"}},{"@type":"Question","name":"キャッシュラインとページの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"キャッシュライン(通常64バイト)はキャッシュ階層間やメモリとの間で転送される単位で、ページ(多くは4 KB)はOSとMMUが管理する仮想メモリのマッピングの単位です。"}},{"@type":"Question","name":"フォールスシェアリングを避けるにはどうすればよいですか?","acceptedAnswer":{"@type":"Answer","text":"異なるスレッドが書き込むデータを別々のキャッシュラインに配置します。一般には、スレッドごとの構造体を64バイトにパディングまたはアラインして実現します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/memory-hierarchy/">メモリ階層と性能</a></p>
 </article>
-
+<section class="term-about">
+  <h2>キャッシュがライン単位でデータを運ぶ理由</h2>
+  <p>あるアドレスにアクセスしたプログラムは、その直後に近くのアドレスにもアクセスすることが多く、この性質を<a class="term-link" href="/term/spatial-locality/">空間的局所性</a>といいます。キャッシュはこれを利用し、1ワードずつではなく一定サイズのブロック(一般に64バイト)単位でデータを転送します。このサイズは、64ビット幅のDDR4チャネルで8バイト×8回の転送というDRAMの1回のバースト転送とちょうど一致します。キャッシュされた各ラインには、アドレスを識別するタグ、有効なデータであることを示す有効ビット、ライトバック方式のキャッシュではダーティビット、さらに置き換えやコヒーレンスのための状態情報が付きます。そのためアドレスはタグ、インデックス、オフセットの各フィールドに分けられ、64バイトのラインでは下位6ビットがオフセットになります。</p>
+</section>
+<section class="term-about">
+  <h2>ラインサイズとアクセスパターン</h2>
+  <p>ラインサイズによって、アクセスパターンがそのままミス率に反映されます。4バイト整数の配列を順に読むと、1回のミスで続く15個の要素も読み込まれるため、ミスは16要素に1回、ミス率は6.25%です。一方、16要素おきに読むと毎回ミスします。C言語は2次元配列を行優先で格納するため、内側のループで列の添字を回すと連続したアドレスをたどりますが、ループを入れ替えるとアクセスごとに1行分ずつ飛び、再利用される前にラインが追い出されることがあります。ラインを大きくすると順次アクセスのコードには有利ですが、各ラインのごく一部しか使わない場合は帯域と容量を無駄にします。</p>
+</section>
+<section class="term-about">
+  <h2>コヒーレンスはライン単位で管理される</h2>
+  <p>マルチコアプロセッサでは、コヒーレンスプロトコルがライン単位で所有状態を管理します。<a class="term-link" href="/term/mesi-protocol/">MESIプロトコル</a>では、各ラインはModified(変更済みでこのキャッシュだけが保持し、メモリの内容は古い)、Exclusive(変更なしでこのキャッシュだけが保持)、Shared(変更なしで他にもコピーがありうる)、Invalid(無効)のいずれかの状態をとります。書き込みたいコアは、まず他のキャッシュにあるコピーを無効化しなければなりません。すでにM状態のラインなら、誰にも通知せずに何度でも書き込めます。小規模なシステムではこうした要求をブロードキャストしますが、大規模なシステムでは各ラインをどのキャッシュが保持しているかを記録するディレクトリを使い、コア数が増えてもトラフィックが過大にならないようにしています。</p>
+</section>
+<section class="term-about">
+  <h2>フォールスシェアリング</h2>
+  <p>コヒーレンスはライン単位で管理されるため、2つのスレッドが異なる変数に書き込んでいても、それらが偶然同じ64バイトのラインに載っていると、書き込みのたびに互いのコピーを無効化してしまいます。ラインがコア間を行き来し、結果は正しいままでも性能が大きく低下することがあります。スレッドごとのカウンタやフラグを配列に並べた場合が典型例です。対策は、各スレッドのデータを専用のラインにパディングまたはアラインすることで、たとえばC/C++のアライメント指定を使います。これと対照的なのがトゥルーシェアリングで、スレッドが本当に同じ変数にアクセスしているため、データ配置を工夫しても通信は避けられません。</p>
+</section>
 <section>
   <h2>キャッシュラインの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-039" data-cat="cpu" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 64バイト</p><p class="explanation">多くのCPUは、キャッシュと主記憶の間のデータを64バイトのライン単位でやりとりします。近くのアドレスのデータは続けて使われることが多い(<a class="term-link" href="/term/spatial-locality/">空間的局所性</a>)ため、まとめて取り込むと効率がよく、DRAMのバースト転送(DDR4で8回 × 8バイト = 64バイト)とも合っています。マルチスレッドのプログラムでは、別々の変数が同じラインにあると取り合いが起きる「<a class="term-link" href="/term/false-sharing/">偽共有</a>」に注意が必要です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>キャッシュラインのサイズはどのくらいですか?</h3>
+  <p>現在のほとんどのCPUでは64バイトですが、32バイトや128バイトのプロセッサもあります。サイズはハードウェアの特性で、ソフトウェアから問い合わせることができます。</p>
+  <h3>キャッシュラインとページの違いは何ですか?</h3>
+  <p>キャッシュライン(通常64バイト)はキャッシュ階層間やメモリとの間で転送される単位で、ページ(多くは4 KB)はOSとMMUが管理する仮想メモリのマッピングの単位です。</p>
+  <h3>フォールスシェアリングを避けるにはどうすればよいですか?</h3>
+  <p>異なるスレッドが書き込むデータを別々のキャッシュラインに配置します。一般には、スレッドごとの構造体を64バイトにパディングまたはアラインして実現します。</p>
+</section>
 <section>
   <h2>解説の中の「キャッシュライン」</h2>
   <ul class="term-quotes"><li><p>DDR4のバースト長は8、DDR5は16で、64ビット幅のDDR4なら8 × 8バイト = 64バイトとなり、CPUのキャッシュライン(64バイト)1本分にちょうど合います。</p><a href="/q/dram/dram-038/">DRAMのバースト転送の説明として正しいものはどれか。</a></li><li><p>コヒーレンシ制御は、各キャッシュラインに「変更済み・共有・無効」などの状態をもたせ(MESIプロトコルなど)、書き込み時に他のコアのコピーを無効にして一貫性を保ちます。</p><a href="/q/cpu/cpu-025/">マルチコアCPUで、各コアのキャッシュに同じアドレスのデータがあるとき、その内容の一貫性を保つ仕組みはどれか。</a></li><li><p>内側をjにすると連続したアドレスを順に読むため、1回のミスで読み込んだ64バイトのキャッシュラインの残りもすぐ使われます。</p><a href="/q/memory-hierarchy/memory-hierarchy-002/">C言語の2次元配列a[i][j]を上のように内側のループをjにして走査すると、内側をiにするより速くなりやすい。その理…</a></li><li><p>コヒーレンシはキャッシュライン(一般に64バイト)の単位で管理されます。</p><a href="/q/multicore-sync/multicore-sync-010/">マルチスレッドのプログラムで起こる偽共有(フォールスシェアリング)の説明として正しいものはどれか。</a></li><li><p>各カウンタを64バイトごとに置くように詰め物を入れるか、構造体をキャッシュラインの大きさに整列させれば、スレッドごとに別のラインを使えます。</p><a href="/q/multicore-sync/multicore-sync-011/">スレッドごとのカウンタを「long cnt[8];」のように並べた配列で偽共有が起きている。対策として最も適切なものは…</a></li></ul>

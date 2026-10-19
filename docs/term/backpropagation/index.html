@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"逆伝播","item":"https://semiconroom.com/term/backpropagation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"逆伝播","description":"ニューラルネットワークの学習で、出力と正解の誤差を出力側から入力側へさかのぼって伝え、各重みの勾配を求める計算。バックプロパゲーション。","url":"https://semiconroom.com/term/backpropagation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"逆伝播","item":"https://semiconroom.com/term/backpropagation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"逆伝播","description":"ニューラルネットワークの学習で、出力と正解の誤差を出力側から入力側へさかのぼって伝え、各重みの勾配を求める計算。バックプロパゲーション。","url":"https://semiconroom.com/term/backpropagation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"逆伝播と勾配降下法の違いは?","acceptedAnswer":{"@type":"Answer","text":"逆伝播は、すべての重みについて損失の勾配を計算する手法です。勾配降下法やAdamなどのオプティマイザは、その勾配を使って重みを更新します。"}},{"@type":"Question","name":"学習に推論より多くのメモリが必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"学習では逆伝播のために順伝播の活性値を保持し、さらにすべての重みに対応する勾配とオプティマイザの状態も必要になるからです。推論で必要なのは重みと一時的な活性値だけです。"}},{"@type":"Question","name":"逆伝播の計算量は順伝播と比べてどのくらいですか?","acceptedAnswer":{"@type":"Answer","text":"およそ2倍です。そのため1回の学習ステップは順伝播約3回分のコストになり、これが「1トークンあたり6N回の演算」という目安の由来です。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>逆伝播の仕組み</h2>
+  <p>学習ではまず順伝播で出力を計算し、目標値との誤差を表す損失を求めます。続いて逆伝播では、連鎖律を逆向きに適用します。損失から出発して、各層は自分の出力に関する勾配を受け取り、重みに関する勾配と入力に関する勾配の2つを計算して、後者を1つ前の層に渡します。全結合層の場合、重みの勾配は、受け取った勾配と順伝播のときに保存しておいた入力の活性値を組み合わせて求めます。その後、最適化手法(オプティマイザ)が各重みを勾配と逆の方向に少しずつ動かします。</p>
+</section>
+<section class="term-about">
+  <h2>計算グラフと自動微分</h2>
+  <p>フレームワークはモデルを<a class="term-link" href="/term/computational-graph/">計算グラフ</a>として表現します。行列積、加算、活性化関数などの演算がノード、テンソルがエッジです。各ノードは自分の局所的な導関数を知っているので、フレームワークはグラフを逆向きにたどってすべての勾配を自動的に計算できます。この手法をリバースモード自動微分と呼びます。計算グラフからは、どの演算が互いに独立しているかもわかります。TensorRTや<a class="term-link" href="/term/onnx/">ONNX</a> Runtimeなどの<a class="term-link" href="/term/inference-runtime/">推論ランタイム</a>は、逆伝播のための管理処理を省いたうえで演算を融合し、精度を下げ、ハードウェアに特化したカーネルを選びます。そのため、学習用のフレームワークで<a class="term-link" href="/term/ai-inference/">推論</a>するより高速に動作します。</p>
+</section>
+<section class="term-about">
+  <h2>計算量とメモリのコスト</h2>
+  <p>逆伝播の計算量は順伝播の約2倍です。各層が入力と重みの両方について勾配を計算するからです。パラメータ数Nのモデルでは順伝播が1トークンあたり約2N回の演算なので、学習は1トークンあたり約6N回、Dトークンでは約6ND回になります。70億パラメータのモデルを1兆トークンで学習すると、約4.2 × 10²²回の演算が必要です。メモリはさらに増え、学習では中間の活性値、重みと同じ数の勾配、Adamの2つの移動平均のようなオプティマイザの状態を保持します。<a class="term-link" href="/term/gradient-checkpointing/">勾配チェックポイント</a>は一部の活性値だけを保存して残りを再計算する手法で、順伝播およそ1回分の追加計算で済みます。</p>
+</section>
+<section class="term-about">
+  <h2>数値精度とロススケーリング</h2>
+  <p>勾配は非常に小さいことがよくあります。FP16(符号1ビット、指数5ビット、仮数10ビット)が表せる正の値は、<a class="term-link" href="/term/subnormal-number/">非正規化数</a>を含めても約6 × 10⁻⁸から65504までしかないため、多くの勾配がアンダーフローして0になり、学習が止まってしまいます。ロススケーリングでは、逆伝播の前に損失を1024などの係数倍して勾配を表現範囲に持ち上げ、重みを更新する前に同じ係数で割り戻します。<a class="term-link" href="/term/mixed-precision/">混合精度</a>学習では通常、重みのマスターコピーを高い精度で保持します。BF16はFP32と同じ8ビットの<a class="term-link" href="/term/exponent-field/">指数部</a>を持ち、範囲がずっと広いため、ロススケーリングはほとんど必要ありません。</p>
+</section>
 <section>
   <h2>逆伝播の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="computer-arithmetic-027" data-cat="computer-arithmetic" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 学習は順伝播・逆伝播・重みの更新を繰り返して重みを決め、推論は決まった重みで順伝播だけを行って答えを出す</p><p class="explanation">学習では、入力を順に計算して出力を求め(順伝播)、正解との誤差を出力側から入力側へさかのぼって各重みの勾配を求め(<a class="term-link" href="/term/backpropagation/">逆伝播</a>)、勾配にしたがって重みを少しずつ直す、ということを大量のデータで繰り返します。<a class="term-link" href="/term/ai-inference/">推論</a>では、学習で決まった重みを使って順伝播だけを行います。逆伝播は順伝播のおよそ2倍の計算が必要で、途中の結果も保存するので、学習は推論よりずっと重い処理です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>逆伝播と勾配降下法の違いは?</h3>
+  <p>逆伝播は、すべての重みについて損失の勾配を計算する手法です。勾配降下法やAdamなどのオプティマイザは、その勾配を使って重みを更新します。</p>
+  <h3>学習に推論より多くのメモリが必要なのはなぜですか?</h3>
+  <p>学習では逆伝播のために順伝播の活性値を保持し、さらにすべての重みに対応する勾配とオプティマイザの状態も必要になるからです。推論で必要なのは重みと一時的な活性値だけです。</p>
+  <h3>逆伝播の計算量は順伝播と比べてどのくらいですか?</h3>
+  <p>およそ2倍です。そのため1回の学習ステップは順伝播約3回分のコストになり、これが「1トークンあたり6N回の演算」という目安の由来です。</p>
+</section>
 <section>
   <h2>解説の中の「逆伝播」</h2>
   <ul class="term-quotes"><li><p>ロススケーリングでは損失を例えば1024倍してから逆伝播し、勾配を表せる範囲に持ち上げ、重みを更新する前に元に戻します。</p><a href="/q/computer-arithmetic/computer-arithmetic-027/">FP16(半精度:符号1・指数部5・仮数10ビット)でニューラルネットワークを学習させるときに問題になりやすく、損失の…</a></li><li><p>学習では、入力を順に計算して出力を求め(順伝播)、正解との誤差を出力側から入力側へさかのぼって各重みの勾配を求め(逆伝播)、勾配にしたがって重みを少しずつ直す、ということを大量のデータで繰り返します。</p><a href="/q/ai-stack/ai-stack-001/">ニューラルネットワークの「学習」と「推論」の違いとして正しいものはどれか。</a></li><li><p>しかし学習では、逆伝播で勾配を計算するために順伝播の途中の結果を各層で保存し、重みと同じ数の勾配と、Adamなどのオプティマイザが持つ重みごとの値(2つの移動平均など)も必要です。</p><a href="/q/ai-stack/ai-stack-002/">学習に必要なメモリが、同じモデルの推論よりずっと大きくなる理由として当てはまらないものはどれか。</a></li><li><p>フレームワークはこのグラフを逆にたどって逆伝播の勾配を自動で計算し、コンパイラはグラフ全体を見て融合や並べ替えの最適化を行います。</p><a href="/q/ai-stack/ai-stack-021/">AIのフレームワークやコンパイラで使われる「計算グラフ」の説明として正しいものはどれか。</a></li><li><p>学習用のフレームワークは、柔軟に書けることや逆伝播のための記録を重視しているので、推論だけに使うと無駄があります。</p><a href="/q/ai-stack/ai-stack-023/">TensorRTやONNX Runtimeのような推論ランタイムが、学習用のフレームワークでそのまま推論するより速くで…</a></li></ul>

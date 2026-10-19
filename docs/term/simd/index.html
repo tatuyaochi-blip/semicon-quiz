@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SIMD","item":"https://semiconroom.com/term/simd/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMD","description":"Single Instruction, Multiple Data の略。1つの命令で複数のデータに同じ演算を同時に行う方式。画像処理やAIの計算を高速化する。","url":"https://semiconroom.com/term/simd/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"SIMD","item":"https://semiconroom.com/term/simd/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMD","description":"Single Instruction, Multiple Data の略。1つの命令で複数のデータに同じ演算を同時に行う方式。画像処理やAIの計算を高速化する。","url":"https://semiconroom.com/term/simd/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"SIMDとは何の略で、何をするもの?","acceptedAnswer":{"@type":"Answer","text":"Single Instruction, Multiple Dataの略で、幅の広いレジスタに詰め込んだ複数のデータ要素を1つの命令で処理します。たとえば128ビットのレジスタに入れた4個の32ビット数を一度に演算します。"}},{"@type":"Question","name":"ループが自動ベクトル化されないのはなぜ?","acceptedAnswer":{"@type":"Answer","text":"よくある原因は、反復が前の反復の結果を必要とするループ伝搬依存、連続していないメモリアクセス、コンパイラが否定できないポインタのエイリアシングの可能性です。"}},{"@type":"Question","name":"SIMDとSIMTの違いは?","acceptedAnswer":{"@type":"Answer","text":"SIMDはCPUで固定幅のベクトル命令を明示的に使う方式です。GPUで使われるSIMTは、スレッドごとのスカラーコードをスレッドのグループでロックステップ実行し、分岐の分かれ(ダイバージェンス)はハードウェアが処理します。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>この用語の分野: <a href="/c/cpu/">CPU・アーキテクチャ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>SIMDの仕組み</h2>
+  <p>SIMD(単一命令・複数データ)ユニットは、幅の広いレジスタを独立したレーンの集まりとして扱います。128ビットのレジスタには32ビットの値が4個、512ビットのレジスタには16個入り、1つの加算命令で全レーンを並列に加算します。x86のSSEやAVX、ArmのNEONやSVEといった命令セット拡張は、整数と浮動小数点のレーン演算のほか、ロード、シャッフル、比較の命令を備えています。フリンの分類では、SIMDは通常の逐次プロセッサであるSISDや、複数のコアが独立した命令列を実行するMIMDと並ぶ位置づけです。画像フィルタ、動画コーデック、行列演算は、一般に数倍以上高速化します。</p>
+</section>
+<section class="term-about">
+  <h2>ループをベクトル化できる条件</h2>
+  <p>コンパイラは、配列の各要素に同じ演算を施すループを自動<a class="term-link" href="/term/vectorization/">ベクトル化</a>します。重要な条件は、ループ伝搬依存がないことです。a[i] = a[i-1] + b[i] では各要素が直前の結果を必要とするため、レーンを同時に実行できません。データは連続していることが望ましく、ポインタが重なる可能性(<a class="term-link" href="/term/aliasing/">エイリアシング</a>)があるとコンパイラはベクトル化をあきらめることがあります。反復回数がコンパイル時に分からないことは障害になりません。ベクトルループで完全なまとまりを処理し、残りを短い剰余ループで処理します。メディア処理では<a class="term-link" href="/term/saturating-arithmetic/">飽和演算</a>も使われ、8ビット符号付きの127 + 1は −128 に折り返さず127にとどまります。</p>
+</section>
+<section class="term-about">
+  <h2>データ配置:AoSとSoA</h2>
+  <p>構造体の配列(AoS)は、x、y、z、質量のように各レコードのフィールドをまとめて格納します。xだけを読むループでは各<a class="term-link" href="/term/cache-line/">キャッシュライン</a>の大部分が無駄になり、ベクトルレーンを埋めるのにギャザーやシャッフルの処理が必要になります。配列の構造体(SoA)はすべてのxを連続して並べるため、取り込んだラインが全部使われ、メモリトラフィックが大幅に減ることがあり、1回のベクトルロードで直接レーンを埋められます。同じ配置にすると、<a class="term-link" href="/term/gpu/">GPU</a>でも隣り合うスレッドが隣り合うアドレスを読むため、メモリアクセスが結合(コアレス)されます。</p>
+</section>
+<section class="term-about">
+  <h2>SIMDとSIMT</h2>
+  <p>CPUのSIMDでは、プログラマやコンパイラが固定幅のベクトル命令を明示的に使うため、ベクトル幅を意識してコードを書きます。<a class="term-link" href="/term/gpu/">GPU</a>の<a class="term-link" href="/term/single-instruction-multiple-threads/">SIMT</a>(単一命令・複数スレッド)では、プログラマは1スレッド分の普通のコードを書き、ハードウェアがスレッドをグループ(一般に32スレッド)にまとめて、共通の命令発行でロックステップ実行します。グループ内のスレッドが異なる分岐に進むと、ハードウェアは非アクティブなスレッドをマスクしながら各パスを順に実行するので、コードは動作しますが効率は下がります。根底にあるのは、1つの命令のコストを多数のデータ要素で分け合うという同じ原理です。</p>
+</section>
 <section>
   <h2>SIMDの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. SIMTでは各スレッドを独立したプログラムとして書け、分岐もハードウェアが処理するが、SIMDではプログラマやコンパイラが幅の決まったベクトルの命令を明示的に使う</p><p class="explanation">CPUの<a class="term-link" href="/term/simd/">SIMD</a>では、4個や8個のデータをまとめたベクトルのレジスタに1つの命令をかけるので、プログラムはベクトルの幅を意識して書きます。<a class="term-link" href="/term/gpu/">GPU</a>の<a class="term-link" href="/term/single-instruction-multiple-threads/">SIMT</a>では、プログラマは1本のスレッドの処理を普通に書き、ハードウェアが32本ずつ束ねて同じ命令で動かします。スレッドごとに分岐してもよく、ハードウェアが分岐した経路を順に実行しますが、そのときは効率が下がります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>SIMDとは何の略で、何をするもの?</h3>
+  <p>Single Instruction, Multiple Dataの略で、幅の広いレジスタに詰め込んだ複数のデータ要素を1つの命令で処理します。たとえば128ビットのレジスタに入れた4個の32ビット数を一度に演算します。</p>
+  <h3>ループが自動ベクトル化されないのはなぜ?</h3>
+  <p>よくある原因は、反復が前の反復の結果を必要とするループ伝搬依存、連続していないメモリアクセス、コンパイラが否定できないポインタのエイリアシングの可能性です。</p>
+  <h3>SIMDとSIMTの違いは?</h3>
+  <p>SIMDはCPUで固定幅のベクトル命令を明示的に使う方式です。GPUで使われるSIMTは、スレッドごとのスカラーコードをスレッドのグループでロックステップ実行し、分岐の分かれ(ダイバージェンス)はハードウェアが処理します。</p>
+</section>
 <section>
   <h2>解説の中の「SIMD」</h2>
   <ul class="term-quotes"><li><p>ベクトル化では、例えば4つの要素の計算を1つのSIMD命令で同時に行います。</p><a href="/q/compiler/compiler-018/">上のループを、SIMD命令を使ってベクトル化しにくい主な理由はどれか。</a></li><li><p>CPUのSIMDでは、4個や8個のデータをまとめたベクトルのレジスタに1つの命令をかけるので、プログラムはベクトルの幅を意識して書きます。</p><a href="/q/gpu-programming/gpu-programming-010/">GPUのSIMT(単一命令・複数スレッド)の方式と、CPUのSIMD命令の違いとして正しいものはどれか。</a></li><li><p>SIMDは、1つの命令で複数のデータに同じ演算を並列に行う方式で、例えば512ビットのレジスタなら32ビットの数値16個を一度に計算できます。</p><a href="/q/cpu/cpu-019/">1つの命令で複数のデータに同じ演算を同時に行う方式はどれか。</a></li><li><p>DSPやSIMDの命令に用意されています。</p><a href="/q/computer-arithmetic/computer-arithmetic-035/">信号処理で使われる飽和演算の説明として正しいものはどれか。</a></li><li><p>自動ベクトル化は、配列の要素ごとに同じ計算をするループを見つけ、複数の要素をまとめて処理するSIMD命令に置き換える最適化です。</p><a href="/q/compiler/compiler-045/">コンパイラの自動ベクトル化で使われる命令の種類として正しいものはどれか。</a></li></ul>
