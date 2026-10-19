@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Geneste paginering (nested paging)","item":"https://semiconroom.com/nl/term/nested-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Geneste paginering (nested paging)","description":"Methode waarbij de hardware achtereenvolgens twee niveaus van paginatabellen doorloopt: de vertaling die door het besturingssysteem van de virtuele machine wordt beheerd en die van de hypervisor. Verlaagt de tussenkomst van de hypervisor en versnelt virtualisatie.","url":"https://semiconroom.com/nl/term/nested-paging/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Geneste paginering (nested paging)","item":"https://semiconroom.com/nl/term/nested-paging/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Geneste paginering (nested paging)","description":"Methode waarbij de hardware achtereenvolgens twee niveaus van paginatabellen doorloopt: de vertaling die door het besturingssysteem van de virtuele machine wordt beheerd en die van de hypervisor. Verlaagt de tussenkomst van de hypervisor en versnelt virtualisatie.","url":"https://semiconroom.com/nl/term/nested-paging/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen geneste paginering en shadow paging?","acceptedAnswer":{"@type":"Answer","text":"Bij shadow paging houdt de hypervisor in software gecombineerde tabellen van guest-virtual naar host-physical bij en onderschept hij updates van de paginatabellen van de gast. Bij geneste paginering doorloopt de hardware de tabellen van gast en host na elkaar, zodat de gast zijn eigen tabellen bijwerkt zonder tussenkomst van de hypervisor."}},{"@type":"Question","name":"Hoeveel geheugentoegangen vraagt een geneste page walk?","acceptedAnswer":{"@type":"Answer","text":"Met paginatabellen van vier niveaus in zowel gast als host kan een TLB-miss in het slechtste geval tot 24 geheugentoegangen vragen, tegenover vier bij een niet-gevirtualiseerde walk."}},{"@type":"Question","name":"Is geneste paginering hetzelfde als geneste virtualisatie?","acceptedAnswer":{"@type":"Answer","text":"Nee. Geneste paginering is adresvertaling in twee fasen voor gewone virtuele machines, terwijl geneste virtualisatie betekent dat er een hypervisor binnen een virtuele machine draait."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,18 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Twee vertalingen in één hardwarewalk</h2>
+  <p>Een gastbesturingssysteem in een virtuele machine beheert paginatabellen die virtuele adressen van de gast afbeelden op wat het voor fysieke adressen houdt, de zogeheten guest-physical adressen. Dat geheugen staat in werkelijkheid waar de <a class="term-link" href="/nl/term/hypervisor/">hypervisor</a> het heeft geplaatst. Met geneste paginering, ook wel vertaling in twee fasen genoemd, doorloopt de hardware de paginatabellen van de gast en daarna de eigen tabellen van de hypervisor, en vertaalt zo automatisch van guest-virtual naar guest-physical naar host-physical. De gangbare implementaties zijn Extended Page Tables (EPT) van Intel, Nested Page Tables (NPT) van AMD en de stage-2-vertaling van Arm.</p>
+</section>
+<section class="term-about">
+  <h2>Wat het verving: shadow page tables</h2>
+  <p>Vóór de hardwareondersteuning gebruikten hypervisors shadow page tables: door software bijgehouden tabellen die guest-virtual adressen direct op host-physical adressen afbeeldden en die de echte MMU gebruikte. Om ze correct te houden, moest de <a class="term-link" href="/nl/term/hypervisor/">hypervisor</a> schrijfacties van de gast naar paginatabellen en wisselingen van adresruimte onderscheppen, wat frequente en dure exits uit de virtuele machine veroorzaakte. Met geneste paginering kan de gast zijn eigen tabellen vrij bewerken, wat de meeste van die exits wegneemt en de hypervisor vereenvoudigt. De prijs verschuift naar de kosten van een <a class="term-link" href="/nl/term/tlb/">TLB</a>-miss.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom een TLB-miss 24 geheugentoegangen kan kosten</h2>
+  <p>Elke entry die de walker van de gast nodig heeft, wordt gevonden <a class="term-link" href="/nl/term/interconnect-via/">via</a> een guest-physical adres, dat zelf eerst via de tabellen van de host moet worden vertaald voordat het kan worden gelezen. Met tabellen van vier niveaus aan beide kanten kost elk gastniveau vier hostleesacties plus één leesactie in de gasttabel, vijf in totaal, dus 20 over vier niveaus, en het vertalen van het uiteindelijke data-adres via de host voegt er nog vier toe: (4 + 1) × (4 + 1) − 1 = 24, tegenover vier bij een native walk. Page-walk caches, <a class="term-link" href="/nl/term/tlb/">TLB</a>&#39;s die de uiteindelijke gecombineerde vertaling cachen en grote pagina&#39;s aan de hostkant houden de gemiddelde kosten veel lager.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Geneste paginering (nested paging)</h2>
   <article class="q-mini" data-qid="os-hardware-035" data-cat="os-hardware" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -78,7 +89,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. 24</p><p class="explanation">De plaats van elke tabel van de 4 trappen van de gastpaginatabel staat in gast-fysieke adressen, dus vóór het lezen ervan moet met de 4-traps tabel van de host worden vertaald. Per gasttrap zijn dat 5 toegangen (4 van de host + 1 van de gasttabel), bij 4 trappen 20, en daar komen de 4 bij voor het vertalen van het uiteindelijk verkregen gast-fysieke adres van de gegevens zelf met de 4 trappen van de host, samen 24. Als formule: (4 + 1) × (4 + 1) − 1 = 24. 8 is de waarde als men denkt dat 4 trappen twee keer worden doorlopen, waarbij de vertaling van de plaats van de tabellen is vergeten.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen geneste paginering en shadow paging?</h3>
+  <p>Bij shadow paging houdt de hypervisor in software gecombineerde tabellen van guest-virtual naar host-physical bij en onderschept hij updates van de paginatabellen van de gast. Bij geneste paginering doorloopt de hardware de tabellen van gast en host na elkaar, zodat de gast zijn eigen tabellen bijwerkt zonder tussenkomst van de hypervisor.</p>
+  <h3>Hoeveel geheugentoegangen vraagt een geneste page walk?</h3>
+  <p>Met paginatabellen van vier niveaus in zowel gast als host kan een TLB-miss in het slechtste geval tot 24 geheugentoegangen vragen, tegenover vier bij een niet-gevirtualiseerde walk.</p>
+  <h3>Is geneste paginering hetzelfde als geneste virtualisatie?</h3>
+  <p>Nee. Geneste paginering is adresvertaling in twee fasen voor gewone virtuele machines, terwijl geneste virtualisatie betekent dat er een hypervisor binnen een virtuele machine draait.</p>
+</section>
 <section>
   <h2>“Geneste paginering (nested paging)” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij geneste paginering vertaalt de hardware met de paginatabel van de gast tot het gast-fysieke adres en vervolgens met de tabel van de hypervisor tot het fysieke adres van de host.</p><a href="/nl/q/os-hardware/os-hardware-035/">Welke uitleg over de adresvertaling door hardware is juist …</a></li><li><p>CPU-virtualisatieondersteuning en geneste paginering ondersteunen de prestaties.</p><a href="/nl/q/os-hardware/os-hardware-033/">Hoe heet de software waarmee op één computer meerdere bestu…</a></li></ul>

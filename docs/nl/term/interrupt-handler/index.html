@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Interrupt handler","item":"https://semiconroom.com/nl/term/interrupt-handler/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interrupt handler","description":"Verwerking die de CPU uitvoert wanneer een interrupt of exception optreedt. Slaat de toestand van de onderbroken verwerking op, handelt af wat bij de oorzaak hoort en keert terug naar de oorspronkelijke verwerking. Het uitgangspunt is de verwerking zo kort mogelijk te houden.","url":"https://semiconroom.com/nl/term/interrupt-handler/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Interrupt handler","item":"https://semiconroom.com/nl/term/interrupt-handler/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Interrupt handler","description":"Verwerking die de CPU uitvoert wanneer een interrupt of exception optreedt. Slaat de toestand van de onderbroken verwerking op, handelt af wat bij de oorzaak hoort en keert terug naar de oorspronkelijke verwerking. Het uitgangspunt is de verwerking zo kort mogelijk te houden.","url":"https://semiconroom.com/nl/term/interrupt-handler/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen een interrupt handler en een ISR?","acceptedAnswer":{"@type":"Answer","text":"Er is geen echt verschil: interrupt service routine (ISR) is een andere naam voor de interrupt handler, de code die de CPU uitvoert als reactie op een interrupt."}},{"@type":"Question","name":"Waarom moet een variabele die met een interrupt handler wordt gedeeld volatile zijn?","acceptedAnswer":{"@type":"Answer","text":"Zonder volatile kan de compiler aannemen dat de variabele binnen een lus niet verandert en haar in een register houden, zodat de hoofdcode de wijziging van de handler nooit ziet. Volatile dwingt af dat elke toegang het geheugen leest of schrijft."}},{"@type":"Question","name":"Wat is het verschil tussen een interrupt en een exception?","acceptedAnswer":{"@type":"Answer","text":"Een interrupt is een asynchroon signaal van hardware, zoals een timer of randapparaat, dat los staat van de huidige instructie. Een exception wordt synchroon veroorzaakt door de instructie die wordt uitgevoerd, bijvoorbeeld een page fault of een ongeldige bewerking."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Vakgebied: <a href="/nl/c/os-hardware/">Besturingssysteem en hardware</a></p>
 </article>
+<section class="term-about">
+  <h2>Wat er gebeurt als een interrupt wordt geaccepteerd</h2>
+  <p>Wanneer een device een <a class="term-link" href="/nl/term/interrupt/">interrupt</a> geeft, maakt de CPU de huidige instructie af, slaat het adres op dat hij als volgende zou hebben uitgevoerd, samen met toestand zoals de bedrijfsmodus en de vlaggen, en springt naar de interrupt handler, ook interrupt service routine (ISR) genoemd, die meestal <a class="term-link" href="/nl/term/interconnect-via/">via</a> een <a class="term-link" href="/nl/term/interrupt-vector-table/">interruptvectortabel</a> wordt gevonden. De handler bewaart de registers die hij gebruikt, handelt de oorzaak af, wist de interruptvlag van het device, herstelt de toestand en voert een return-from-interrupt-instructie uit. Het onderbroken programma gaat dan precies verder waar het stopte; het wordt niet weggegooid of opnieuw gestart.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom handlers kort moeten zijn</h2>
+  <p>Terwijl een handler draait, worden andere interrupts met dezelfde of een lagere prioriteit doorgaans tegengehouden en staat de hoofdcode stil, dus een lange handler verhoogt de latency voor al het andere. Trage aanroepen zoals printf zijn extra riskant, omdat ze tijd kosten en zelf van interrupts afhankelijk kunnen zijn. Een goede handler doet het minimum, zoals ontvangen data naar een buffer verplaatsen of een vlag zetten, en laat zware verwerking over aan de hoofdlus of een taak. Kernels van besturingssystemen formaliseren dit door het werk op te splitsen in een direct deel en een uitgesteld deel.</p>
+</section>
+<section class="term-about">
+  <h2>Data delen met de hoofdcode</h2>
+  <p>Variabelen die een handler en het hoofdprogramma delen, veroorzaken klassieke bugs. Als de hoofdcode wacht op een vlag die alleen de handler zet, kan een optimaliserende compiler die één keer in een register laden en de wijziging nooit zien; door haar volatile te declareren gaat elke toegang naar het geheugen. Een <a class="term-link" href="/nl/term/read-modify-write/">read-modify-write</a> zoals reg |= mask kan tussen het lezen en het schrijven worden onderbroken, waardoor een wijziging die de handler in een andere bit maakte verloren gaat. Kort interrupts uitschakelen of hardwarematige set- en clear-registers gebruiken voorkomt dit, en variabelen van meerdere bytes moeten worden beschermd tegen gedeeltelijk bijgewerkte (torn) reads.</p>
+</section>
+<section class="term-about">
+  <h2>Interrupts bij scheduling en watchdogs</h2>
+  <p>Een periodieke timerinterrupt is wat een besturingssysteem in staat stelt de CPU terug te nemen van een programma dat nooit vrijwillig opgeeft, en maakt preëmptieve scheduling en contextwisselingen mogelijk. Interrupts zijn asynchrone gebeurtenissen van hardware, terwijl exceptions zoals page faults of delen door nul synchroon voortkomen uit de instructie die wordt uitgevoerd, al komen beide <a class="term-link" href="/nl/term/interconnect-via/">via</a> vergelijkbare handlers de kernel binnen. Een veelgemaakte fout is een watchdogtimer onvoorwaardelijk resetten (kicken) binnen een timerinterrupt: de <a class="term-link" href="/nl/term/interrupt/">interrupt</a> blijft komen, ook als de hoofdlus is vastgelopen, zodat de watchdog de fout nooit detecteert.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen een interrupt handler en een ISR?</h3>
+  <p>Er is geen echt verschil: interrupt service routine (ISR) is een andere naam voor de interrupt handler, de code die de CPU uitvoert als reactie op een interrupt.</p>
+  <h3>Waarom moet een variabele die met een interrupt handler wordt gedeeld volatile zijn?</h3>
+  <p>Zonder volatile kan de compiler aannemen dat de variabele binnen een lus niet verandert en haar in een register houden, zodat de hoofdcode de wijziging van de handler nooit ziet. Volatile dwingt af dat elke toegang het geheugen leest of schrijft.</p>
+  <h3>Wat is het verschil tussen een interrupt en een exception?</h3>
+  <p>Een interrupt is een asynchroon signaal van hardware, zoals een timer of randapparaat, dat los staat van de huidige instructie. Een exception wordt synchroon veroorzaakt door de instructie die wordt uitgevoerd, bijvoorbeeld een page fault of een ongeldige bewerking.</p>
+</section>
 
 
 

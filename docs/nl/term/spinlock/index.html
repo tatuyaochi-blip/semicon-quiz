@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Spinlock","item":"https://semiconroom.com/nl/term/spinlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spinlock","description":"Lock waarbij wordt gewacht door in een lus de lockvariabele te blijven controleren tot de lock vrij is. Snel als de wachttijd kort is, maar de CPU blijft ook tijdens het wachten in gebruik.","url":"https://semiconroom.com/nl/term/spinlock/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Spinlock","item":"https://semiconroom.com/nl/term/spinlock/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Spinlock","description":"Lock waarbij wordt gewacht door in een lus de lockvariabele te blijven controleren tot de lock vrij is. Snel als de wachttijd kort is, maar de CPU blijft ook tijdens het wachten in gebruik.","url":"https://semiconroom.com/nl/term/spinlock/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen een spinlock en een mutex?","acceptedAnswer":{"@type":"Answer","text":"Een spinlock wacht door in een lus de lockvariabele te controleren en houdt de CPU bezig, wat alleen efficiënt is bij heel korte wachttijden. Een mutex laat de wachtende thread slapen en andere threads draaien, wat beter past bij langere wachttijden maar de kosten van slapen, wekken en contextswitches toevoegt."}},{"@type":"Question","name":"Wanneer gebruik je een spinlock?","acceptedAnswer":{"@type":"Answer","text":"Gebruik er een als de kritieke sectie heel kort is en threads op verschillende cores draaien, of in kernelcontexten zoals interrupthandlers die niet mogen slapen. Vermijd hem als de lock lang kan worden vastgehouden of op systemen met één core."}},{"@type":"Question","name":"Wat is test-and-test-and-set?","acceptedAnswer":{"@type":"Answer","text":"Het is een spinlocktechniek waarbij wachtende threads de lock herhaaldelijk met gewone loads uit hun eigen cache lezen en de atomaire test-and-set pas proberen als de lock vrij lijkt. Dat voorkomt voortdurende invalidaties van de cacheline en vermindert het coherentieverkeer sterk."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe een spinlock wordt verkregen en vrijgegeven</h2>
+  <p>Een spinlock is een gedeelde variabele, meestal 0 als hij vrij is en 1 als hij bezet is. Om hem te verkrijgen gebruikt een thread een atomaire <a class="term-link" href="/nl/term/read-modify-write/">read-modify-write</a>-instructie zoals test-and-set, swap of <a class="term-link" href="/nl/term/compare-and-swap/">compare-and-swap</a>, die de variabele in één ondeelbare stap op 1 zet en de oude waarde teruggeeft; op RISC-V is dat een atomaire swap of een load-reserved/store-conditional-paar. Was de oude waarde 0, dan bezit de thread de lock; anders probeert hij het in een lus opnieuw. Vrijgeven is simpelweg 0 opslaan. Verkrijgen en vrijgeven moeten ook als <a class="term-link" href="/nl/term/memory-barrier/">geheugenbarrière</a> werken, zodat toegangen binnen de <a class="term-link" href="/nl/term/critical-section/">kritieke sectie</a> ertussen blijven.</p>
+</section>
+<section class="term-about">
+  <h2>Test-and-test-and-set en cacheverkeer</h2>
+  <p>De <a class="term-link" href="/nl/term/atomic-instruction/">atomaire instructie</a> in een strakke lus blijven herhalen presteert slecht op multicorechips. Elke atomaire bewerking heeft exclusief eigendom van de cacheline nodig, dus wachtende cores trekken de line steeds in de modified-toestand (M) en invalideren elkaars kopieën, wat het coherentienetwerk overspoelt. Het patroon test-and-test-and-set wacht in plaats daarvan met gewone loads: elke wachtende core leest zijn eigen gedeelde kopie in zijn cache, wat geen verkeer veroorzaakt, en probeert de atomaire bewerking pas als hij ziet dat de lock vrij komt. Exponentiële backoff en ticket- of wachtrijgebaseerde locks verminderen de contentie verder en voegen eerlijkheid (fairness) toe.</p>
+</section>
+<section class="term-about">
+  <h2>Spinlock vs. mutex</h2>
+  <p>Een slapende <a class="term-link" href="/nl/term/mutex/">mutex</a> zet een wachtende thread in een geblokkeerde toestand en geeft de CPU aan andere threads; het besturingssysteem wekt hem wanneer de lock wordt vrijgegeven. Dat verspilt geen <a class="term-link" href="/nl/term/cpu-time/">CPU-tijd</a>, maar kost een <a class="term-link" href="/nl/term/system-call/">systeemaanroep</a>, scheduling en een contextswitch, doorgaans enkele microseconden. Een spinlock vermijdt die overhead volledig en wint als de lock maar kort wordt vastgehouden, korter dan een slaap- en wekcyclus zou duren. Bij lange houdtijden slaat de balans om; daarom spinnen veel mutexen in bibliotheken eerst even en gaan ze daarna slapen, zodat de sterke punten van beide worden gecombineerd.</p>
+</section>
+<section class="term-about">
+  <h2>Waar spinlocks passen en waar ze falen</h2>
+  <p>Spinlocks komen veel voor in kernels van besturingssystemen, voor korte kritieke secties op multiprocessors en voor data die wordt gedeeld met interrupthandlers, die niet mogen slapen. Code die een spinlock vasthoudt mag niet slapen, en kernels schakelen tijdens het vasthouden meestal preemption uit, en waar nodig interrupts, zodat een interrupthandler op dezelfde core niet eeuwig blijft spinnen op een lock die zijn eigen core vasthoudt. Op een systeem met één core is een spinlock op gebruikersniveau extra verspillend: de houder kan niet draaien om de lock vrij te geven terwijl de wachtende thread spint, dus die verbruikt zijn hele tijdsslot.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Spinlock</h2>
   <article class="q-mini" data-qid="multicore-sync-020" data-cat="multicore-sync" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Wanneer de lock lang wordt vastgehouden en wachtende threads nodeloos CPU-tijd blijven gebruiken</p><p class="explanation">Een thread die bij een <a class="term-link" href="/nl/term/spinlock/">spinlock</a> wacht, gebruikt <a class="term-link" href="/nl/term/cpu-time/">CPU-tijd</a> tot de lock vrij is. Bij een lange vasthoudtijd is al die CPU-tijd verspild en worden ook andere threads gehinderd. Met name als er maar één core is, komt de lock niet vrij zolang de lockhoudende thread niet draait, dus duurt het wachten tot de tijdsindeling is afgelopen. Voor lange wachttijden wordt een slapende <a class="term-link" href="/nl/term/mutex/">mutex</a> gebruikt, en er is ook een methode die een korte tijd draait en dan gaat slapen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen een spinlock en een mutex?</h3>
+  <p>Een spinlock wacht door in een lus de lockvariabele te controleren en houdt de CPU bezig, wat alleen efficiënt is bij heel korte wachttijden. Een mutex laat de wachtende thread slapen en andere threads draaien, wat beter past bij langere wachttijden maar de kosten van slapen, wekken en contextswitches toevoegt.</p>
+  <h3>Wanneer gebruik je een spinlock?</h3>
+  <p>Gebruik er een als de kritieke sectie heel kort is en threads op verschillende cores draaien, of in kernelcontexten zoals interrupthandlers die niet mogen slapen. Vermijd hem als de lock lang kan worden vastgehouden of op systemen met één core.</p>
+  <h3>Wat is test-and-test-and-set?</h3>
+  <p>Het is een spinlocktechniek waarbij wachtende threads de lock herhaaldelijk met gewone loads uit hun eigen cache lezen en de atomaire test-and-set pas proberen als de lock vrij lijkt. Dat voorkomt voortdurende invalidaties van de cacheline en vermindert het coherentieverkeer sterk.</p>
+</section>
 <section>
   <h2>“Spinlock” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Een spinlock probeert met een atomaire instructie de lock te nemen en probeert het, als dat niet lukt, direct opnieuw.</p><a href="/nl/q/multicore-sync/multicore-sync-020/">Welke uitleg over een spinlock is juist?</a></li><li><p>Een thread die bij een spinlock wacht, gebruikt CPU-tijd tot de lock vrij is.</p><a href="/nl/q/multicore-sync/multicore-sync-021/">In welke situatie is een spinlock het minst geschikt?</a></li></ul>

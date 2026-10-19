@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"ABA-Problem","item":"https://semiconroom.com/de/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA-Problem","description":"Problem, bei dem ein nur Werte vergleichendes CAS erfolgreich ist und eine Änderung nicht bemerkt, wenn der Wert von A zu B und wieder zurück zu A wurde. Bei lockfreien Datenstrukturen ist Vorsicht geboten.","url":"https://semiconroom.com/de/term/aba-problem/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"ABA-Problem","item":"https://semiconroom.com/de/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA-Problem","description":"Problem, bei dem ein nur Werte vergleichendes CAS erfolgreich ist und eine Änderung nicht bemerkt, wenn der Wert von A zu B und wieder zurück zu A wurde. Bei lockfreien Datenstrukturen ist Vorsicht geboten.","url":"https://semiconroom.com/de/term/aba-problem/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist das ABA-Problem einfach erklärt?","acceptedAnswer":{"@type":"Answer","text":"Ein Thread sieht den Wert A, ein anderer Thread ändert ihn zu B und wieder zurück zu A, und das Compare-and-Swap des ersten Threads gelingt, als wäre nichts geschehen. Der Wert stimmt überein, aber der Zustand dahinter hat sich geändert."}},{"@type":"Question","name":"Wie vermeidet LL/SC das ABA-Problem?","acceptedAnswer":{"@type":"Answer","text":"Store-Conditional gelingt nur, wenn seit dem zugehörigen Load-Linked kein Schreibzugriff auf die Speicherstelle erfolgt ist, unabhängig vom geschriebenen Wert. Ein Wechsel von A zu B und zurück zu A lässt den Speicherbefehl daher trotzdem fehlschlagen."}},{"@type":"Question","name":"Löst ein Versionszähler das ABA-Problem vollständig?","acceptedAnswer":{"@type":"Answer","text":"In der Praxis ja, solange der Zähler breit genug ist, dass er nicht auf denselben Wert überlaufen kann, während ein Thread blockiert ist. Ein sehr schmaler Zähler kann prinzipiell überlaufen und das Problem wieder einführen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/multicore-sync/">Multicore und Synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie das ABA-Problem entsteht</h2>
+  <p><a class="term-link" href="/de/term/compare-and-swap/">Compare-and-Swap (CAS)</a> schreibt einen neuen Wert nur, wenn eine Speicherstelle noch einen erwarteten Wert enthält, und vergleicht dabei Werte, nicht die Historie. Betrachten wir einen lockfreien Stack, dessen head auf Knoten A zeigt, wobei der next-Zeiger von A auf B zeigt. Thread 1 liest head = A und next = B und wird dann unterbrochen. Thread 2 entnimmt A, entnimmt B und legt A wieder ab oder legt einen neuen Knoten ab, der zufällig die Adresse von A wiederverwendet. Thread 1 setzt fort, sein CAS(head, A, B) gelingt, weil head noch A ist, und head zeigt nun auf B, einen Knoten, der nicht mehr im Stack liegt.</p>
+</section>
+<section class="term-about">
+  <h2>Warum Speicherwiederverwendung es wahrscheinlich macht</h2>
+  <p>Das Problem tritt am häufigsten in Sprachen mit manueller Speicherverwaltung auf. Wird ein Knoten freigegeben, vergibt der Allokator dieselbe Adresse bereitwillig an die nächste Allokation, sodass ein Zeigerwert wieder A sein kann, obwohl er auf einen anderen Knoten verweist. In Sprachen mit <a class="term-link" href="/de/term/garbage-collection/">Garbage Collection</a> kann ein Knoten nicht freigegeben werden, solange ein Thread noch eine Referenz darauf hält; das beseitigt die Form des ABA-Problems durch Adresswiederverwendung weitgehend, die logische Form kann aber weiterhin auftreten, wenn derselbe Knoten bewusst erneut eingefügt wird.</p>
+</section>
+<section class="term-about">
+  <h2>Übliche Gegenmaßnahmen</h2>
+  <p>Die klassische Lösung koppelt den Zeiger mit einem Änderungszähler und vergleicht beide in einer atomaren Operation, entweder mit einem <a class="term-link" href="/de/term/compare-and-swap/">CAS</a> doppelter Breite oder ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> freie Zeigerbits; jedes Update erhöht den Zähler, sodass sich A mit Tag 5 von A mit Tag 7 unterscheidet. Load-Linked/Store-Conditional (LL/SC, in RISC-V <a class="term-link" href="/de/term/load-reserved-store-conditional/">LR/SC</a> genannt) schlägt fehl, wenn seit dem Laden überhaupt auf die Speicherstelle geschrieben wurde, selbst wenn der Wert gleich ist. Verfahren zur sicheren Speicherfreigabe wie Hazard Pointers und epochenbasierte Freigabe verhindern, dass ein Knoten freigegeben und wiederverwendet wird, solange noch ein Thread darauf zugreifen könnte.</p>
+</section>
+<section class="term-about">
+  <h2>ABA und lockfreier Fortschritt</h2>
+  <p>Ein lockfreier Algorithmus garantiert, dass stets irgendein Thread Fortschritt macht, auch wenn andere stocken, denn ein <a class="term-link" href="/de/term/compare-and-swap/">CAS</a> schlägt nur fehl, wenn das Update eines anderen Threads gelungen ist. Diese Fortschrittsgarantie sagt nichts ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> die Korrektheit aus, und ABA ist das klassische Beispiel dafür, wie eine scheinbar korrekte CAS-Schleife eine Datenstruktur beschädigt. In Tests ist es schwer zu erwischen, weil es eine bestimmte Verzahnung plus Speicherwiederverwendung erfordert; lockfreier Code sollte daher von Anfang an mit einer expliziten ABA-Strategie entworfen werden.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu ABA-Problem</h2>
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Wenn sich ein Wert von A auf B und wieder zurück auf A ändert, bemerkt CAS die Änderung nicht und gelingt</p><p class="explanation">Ist der Kopfzeiger einer verketteten Liste A, kann es vorkommen, dass ein anderer Thread, während ein Thread A liest und <a class="term-link" href="/de/term/compare-and-swap/">CAS</a> vorbereitet, A entfernt, Operationen mit B durchführt und dann wieder einen Knoten mit derselben Adresse A einfügt. CAS gelingt, weil der Wert noch A ist, doch der Listeninhalt hat sich bereits geändert, und die Struktur wird zerstört. Verhindert wird dies, indem man dem Zeiger einen Aktualisierungszähler beifügt und beide gemeinsam vergleicht, oder durch den Einsatz von <a class="term-link" href="/de/term/load-reserved-store-conditional/">LR/SC</a>.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist das ABA-Problem einfach erklärt?</h3>
+  <p>Ein Thread sieht den Wert A, ein anderer Thread ändert ihn zu B und wieder zurück zu A, und das Compare-and-Swap des ersten Threads gelingt, als wäre nichts geschehen. Der Wert stimmt überein, aber der Zustand dahinter hat sich geändert.</p>
+  <h3>Wie vermeidet LL/SC das ABA-Problem?</h3>
+  <p>Store-Conditional gelingt nur, wenn seit dem zugehörigen Load-Linked kein Schreibzugriff auf die Speicherstelle erfolgt ist, unabhängig vom geschriebenen Wert. Ein Wechsel von A zu B und zurück zu A lässt den Speicherbefehl daher trotzdem fehlschlagen.</p>
+  <h3>Löst ein Versionszähler das ABA-Problem vollständig?</h3>
+  <p>In der Praxis ja, solange der Zähler breit genug ist, dass er nicht auf denselben Wert überlaufen kann, während ein Thread blockiert ist. Ein sehr schmaler Zähler kann prinzipiell überlaufen und das Problem wieder einführen.</p>
+</section>
 
 <section>
   <h2>Fragen mit „ABA-Problem“ (1)</h2>

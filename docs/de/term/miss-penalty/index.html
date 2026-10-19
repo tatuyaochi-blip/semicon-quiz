@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Miss Penalty","item":"https://semiconroom.com/de/term/miss-penalty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Miss Penalty","description":"Zusätzliche Zeit, die bei einem Cache-Fehlzugriff zum Holen der Daten aus der darunterliegenden Ebene anfällt. Sie ergibt sich aus der Zugriffszeit der unteren Ebene und der Übertragungszeit der Zeile.","url":"https://semiconroom.com/de/term/miss-penalty/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Miss Penalty","item":"https://semiconroom.com/de/term/miss-penalty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Miss Penalty","description":"Zusätzliche Zeit, die bei einem Cache-Fehlzugriff zum Holen der Daten aus der darunterliegenden Ebene anfällt. Sie ergibt sich aus der Zugriffszeit der unteren Ebene und der Übertragungszeit der Zeile.","url":"https://semiconroom.com/de/term/miss-penalty/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wie berechnet man die Miss Penalty bei einem zweistufigen Cache?","acceptedAnswer":{"@type":"Answer","text":"Die L1-Miss-Penalty entspricht der mittleren Zugriffszeit des L2: L2-Trefferzeit plus lokale L2-Fehlzugriffsrate mal Hauptspeicherzugriffszeit. Zum Beispiel 10 ns + 0,2 × 100 ns = 30 ns."}},{"@type":"Question","name":"Was ist der Unterschied zwischen Fehlzugriffsrate und Miss Penalty?","acceptedAnswer":{"@type":"Answer","text":"Die Fehlzugriffsrate ist der Anteil der Zugriffe, die im Cache fehlschlagen, die Miss Penalty die zusätzliche Zeit, die jeder Fehlzugriff kostet. Die mittlere Zugriffszeit hängt von ihrem Produkt plus der Trefferzeit ab."}},{"@type":"Question","name":"Erhöht eine größere Cache-Zeile die Miss Penalty?","acceptedAnswer":{"@type":"Answer","text":"Ja. Jeder Fehlzugriff muss mehr Bytes übertragen, sodass der Übertragungsanteil der Penalty wächst, auch wenn größere Zeilen bei Code mit guter räumlicher Lokalität die Zahl der Fehlzugriffe verringern können."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Fachgebiet: <a href="/de/c/memory-hierarchy/">Speicherhierarchie und Leistung</a></p>
 </article>
+<section class="term-about">
+  <h2>Was die Miss Penalty bestimmt</h2>
+  <p>Die Miss Penalty ist die Zeit, um die fehlende Zeile aus der nächsten Ebene der Speicherhierarchie zu holen. Sie besteht aus zwei Teilen: der Latenz bis zum Eintreffen der ersten Daten und der Übertragungszeit für den Rest der Zeile, also Zeilengröße geteilt durch Bandbreite. In einer mehrstufigen Hierarchie ist die L1-Miss-Penalty einfach die mittlere Zugriffszeit des L2. Bei 10 ns L2-Trefferzeit, 20 % lokaler L2-Fehlzugriffsrate und 100 ns Hauptspeicher beträgt die L1-Miss-Penalty 10 + 0,2 × 100 = 30 ns, weit kürzer als der direkte Weg zum Hauptspeicher.</p>
+</section>
+<section class="term-about">
+  <h2>Wie sie in AMAT und CPI eingeht</h2>
+  <p>Die <a class="term-link" href="/de/term/average-memory-access-time/">mittlere Speicherzugriffszeit (AMAT)</a> ist Trefferzeit + Fehlzugriffsrate × Miss Penalty. Bei 2 Zyklen Trefferzeit, 4 % Fehlzugriffsrate und 150 Zyklen Penalty beträgt die AMAT 2 + 0,04 × 150 = 8 Zyklen, das Vierfache der Trefferzeit. Bezogen auf den <a class="term-link" href="/de/term/cycles-per-instruction/">CPI</a> kommen bei einem idealen CPI von 1,0 mit 1,3 Speicherzugriffen pro Befehl, 2 % Fehlzugriffsrate und 100 Zyklen Penalty 1,3 × 0,02 × 100 = 2,6 Wartezyklen hinzu, was einen CPI von 3,6 ergibt. Eine große Penalty macht selbst kleine Fehlzugriffsraten zu großen Verlangsamungen.</p>
+</section>
+<section class="term-about">
+  <h2>Warum die Fehlzugriffsrate allein täuschen kann</h2>
+  <p>Größere oder höher assoziative Caches senken die Fehlzugriffsrate, können aber die Trefferzeit verlängern, und größere Zeilen nutzen die <a class="term-link" href="/de/term/spatial-locality/">räumliche Lokalität</a>, erhöhen jedoch die Miss Penalty, weil jeder Fehlzugriff mehr Daten überträgt. Designs müssen daher anhand der <a class="term-link" href="/de/term/average-memory-access-time/">AMAT</a> verglichen werden, nicht anhand der Fehlzugriffsrate. Bei 20 Zyklen Penalty kommt ein Cache mit 1 Zyklus Trefferzeit und 5 % Fehlzugriffsrate im Mittel auf 1 + 0,05 × 20 = 2,0 Zyklen, einer mit 2 Zyklen Trefferzeit und 4 % Fehlzugriffsrate dagegen auf 2 + 0,04 × 20 = 2,8 Zyklen; der Cache mit der niedrigeren Fehlzugriffsrate ist also langsamer.</p>
+</section>
+<section class="term-about">
+  <h2>Techniken zur Verringerung der effektiven Penalty</h2>
+  <p>Zusätzliche Cache-Ebenen verkürzen den Weg für die meisten Fehlzugriffe. Bei Critical Word First wird das von der CPU angeforderte Wort vor dem Rest der Zeile gesendet, und Early Restart lässt die Ausführung fortfahren, sobald dieses Wort eintrifft. Nicht blockierende Caches bedienen weiter Treffer, während ein Fehlzugriff aussteht, und Out-of-Order-Kerne überlappen mehrere Fehlzugriffe, sodass sich ihre Latenzen teilweise gegenseitig verbergen. <a class="term-link" href="/de/term/prefetching/">Prefetching</a> verbirgt die Penalty durch vorausschauendes Laden; als nützliche Faustregel setzt man die Prefetch-Distanz auf etwa die Miss Penalty geteilt durch die Zeit pro Schleifeniteration.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Wie berechnet man die Miss Penalty bei einem zweistufigen Cache?</h3>
+  <p>Die L1-Miss-Penalty entspricht der mittleren Zugriffszeit des L2: L2-Trefferzeit plus lokale L2-Fehlzugriffsrate mal Hauptspeicherzugriffszeit. Zum Beispiel 10 ns + 0,2 × 100 ns = 30 ns.</p>
+  <h3>Was ist der Unterschied zwischen Fehlzugriffsrate und Miss Penalty?</h3>
+  <p>Die Fehlzugriffsrate ist der Anteil der Zugriffe, die im Cache fehlschlagen, die Miss Penalty die zusätzliche Zeit, die jeder Fehlzugriff kostet. Die mittlere Zugriffszeit hängt von ihrem Produkt plus der Trefferzeit ab.</p>
+  <h3>Erhöht eine größere Cache-Zeile die Miss Penalty?</h3>
+  <p>Ja. Jeder Fehlzugriff muss mehr Bytes übertragen, sodass der Übertragungsanteil der Penalty wächst, auch wenn größere Zeilen bei Code mit guter räumlicher Lokalität die Zahl der Fehlzugriffe verringern können.</p>
+</section>
 
 
 

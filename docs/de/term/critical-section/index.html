@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Kritischer Abschnitt","item":"https://semiconroom.com/de/term/critical-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Kritischer Abschnitt","description":"Programmteil, der gemeinsame Daten bearbeitet und daher nur von jeweils einem Thread gleichzeitig ausgeführt werden darf. Er wird z. B. durch Sperren geschützt und möglichst kurz gehalten.","url":"https://semiconroom.com/de/term/critical-section/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Kritischer Abschnitt","item":"https://semiconroom.com/de/term/critical-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Kritischer Abschnitt","description":"Programmteil, der gemeinsame Daten bearbeitet und daher nur von jeweils einem Thread gleichzeitig ausgeführt werden darf. Er wird z. B. durch Sperren geschützt und möglichst kurz gehalten.","url":"https://semiconroom.com/de/term/critical-section/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist der Unterschied zwischen einem kritischen Abschnitt und einem Mutex?","acceptedAnswer":{"@type":"Answer","text":"Ein kritischer Abschnitt ist der Codebereich, der auf gemeinsame Daten zugreift und nicht nebenläufig ausgeführt werden darf. Ein Mutex ist ein Mechanismus, um das durchzusetzen, indem er nur den Thread in den Bereich lässt, der ihn hält."}},{"@type":"Question","name":"Warum sollten kritische Abschnitte kurz sein?","acceptedAnswer":{"@type":"Answer","text":"Andere Threads müssen warten, solange sich ein Thread darin befindet, und auf Mikrocontrollern sind währenddessen möglicherweise Interrupts deaktiviert. Lange Abschnitte verringern die Parallelität und verzögern die Reaktion auf andere Ereignisse."}},{"@type":"Question","name":"Reicht das Sperren von Interrupts aus, um einen kritischen Abschnitt zu schützen?","acceptedAnswer":{"@type":"Answer","text":"Auf einem Single-Core-System, auf dem nur ein Interrupt-Handler konkurriert, in der Regel ja. Auf einem Mehrkernsystem können andere Kerne weiterlaufen, daher ist zusätzlich ein Lock oder eine atomare Operation erforderlich."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/multicore-sync/">Multicore und Synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum es kritische Abschnitte gibt</h2>
+  <p>Selbst eine einfache Anweisung wie count++ wird in Lesen, Ändern und Schreiben übersetzt. Führen zwei Threads sie gleichzeitig aus, können beide denselben alten Wert lesen, und eine Erhöhung geht verloren. Code, der gemeinsame Daten auf diese Weise liest und aktualisiert, ist ein kritischer Abschnitt, und der Fehler, der entsteht, wenn zwei Threads ihn gleichzeitig betreten, ist ein <a class="term-link" href="/de/term/data-race/">Data Race</a> oder eine Race Condition. Eine korrekte Lösung muss gegenseitigen Ausschluss garantieren, sodass sich jeweils nur ein Thread darin befindet, und dabei wartenden Threads dennoch Fortschritt ermöglichen, statt sie ewig warten zu lassen.</p>
+</section>
+<section class="term-about">
+  <h2>Wie kritische Abschnitte geschützt werden</h2>
+  <p>Das übliche Werkzeug ist ein Lock: Ein Thread erwirbt vor dem Eintritt einen <a class="term-link" href="/de/term/mutex/">Mutex</a> und gibt ihn beim Verlassen frei; jeder andere Thread, der ihn erwerben will, blockiert oder spinnt, bis er frei ist. Locks werden aus atomaren Hardwarebefehlen wie Test-and-Set, <a class="term-link" href="/de/term/compare-and-swap/">Compare-and-Swap</a> oder Load-Linked/Store-Conditional aufgebaut, die ein Speicherwort ohne Störung lesen und aktualisieren. Ein <a class="term-link" href="/de/term/spinlock/">Spinlock</a> wartet aktiv und eignet sich für sehr kurze Abschnitte auf Mehrkernsystemen, während ein Mutex, der den wartenden Thread schlafen legt, für längere Wartezeiten passt. Werden mehrere Locks in uneinheitlicher Reihenfolge erworben, kann ein <a class="term-link" href="/de/term/deadlock/">Deadlock</a> entstehen.</p>
+</section>
+<section class="term-about">
+  <h2>Interrupts sperren auf Mikrocontrollern</h2>
+  <p>Auf einem Single-Core-<a class="term-link" href="/de/term/microcontroller/">Mikrocontroller</a> ist der konkurrierende Code oft ein <a class="term-link" href="/de/term/interrupt-handler/">Interrupt-Handler</a> statt eines anderen Threads, daher wird ein kritischer Abschnitt häufig geschützt, indem Interrupts deaktiviert und danach wieder aktiviert werden. Zwischenzeitlich eintreffende Interrupts bleiben normalerweise anhängig und werden beim Wiederaktivieren bedient, lange gesperrte Phasen verzögern jedoch Timer- und Kommunikationsverarbeitung und können Puffer überlaufen lassen. Der Abschnitt muss daher so kurz wie möglich sein. Auf einem Mehrkernsystem reicht es nicht, Interrupts auf einem Kern zu deaktivieren, weil ein anderer Kern weiterhin auf die Daten zugreifen kann; dann ist zusätzlich ein <a class="term-link" href="/de/term/spinlock/">Spinlock</a> oder eine atomare Operation nötig.</p>
+</section>
+<section class="term-about">
+  <h2>Kurze Abschnitte und Transactional Memory</h2>
+  <p>Solange ein Thread ein Lock hält, warten die anderen; lange kritische Abschnitte serialisieren daher ein Programm und machen den Nutzen zusätzlicher Kerne zunichte. Entwickler verkürzen sie, teilen ein grobes Lock in feinere Locks für unabhängige Daten auf oder verwenden lockfreie atomare Operationen. Hardware-Transactional-Memory bietet einen weiteren Weg: Der kritische Abschnitt läuft spekulativ als Transaktion, deren Schreibzugriffe für andere Threads unsichtbar bleiben. Hat kein anderer Thread dieselben Daten <a class="term-link" href="/de/term/bit-error-rate/">ber</a>ührt, wird alles auf einmal festgeschrieben (Commit); bei einem Konflikt wird abgebrochen, zurückgerollt und erneut versucht oder auf ein normales Lock zurückgegriffen.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Kritischer Abschnitt</h2>
   <article class="q-mini" data-qid="multicore-sync-038" data-cat="multicore-sync" data-answer="0" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist A.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: A. Der Programmteil, der gemeinsame Daten bearbeitet und daher nur von einem Thread gleichzeitig ausgeführt werden darf</p><p class="explanation">Führen mehrere Threads gleichzeitig den Teil aus, der eine gemeinsame Variable liest und ändert, entsteht ein <a class="term-link" href="/de/term/data-race/">Data Race</a>. Ein solcher Teil, der nur von einem Thread gleichzeitig ausgeführt werden darf, heißt <a class="term-link" href="/de/term/critical-section/">kritischer Abschnitt</a> und wird geschützt, indem vor dem Eintritt eine Sperre erworben und beim Verlassen freigegeben wird. Je länger der kritische Abschnitt, desto länger warten andere Threads; grundsätzlich wird er daher möglichst kurz gehalten.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist der Unterschied zwischen einem kritischen Abschnitt und einem Mutex?</h3>
+  <p>Ein kritischer Abschnitt ist der Codebereich, der auf gemeinsame Daten zugreift und nicht nebenläufig ausgeführt werden darf. Ein Mutex ist ein Mechanismus, um das durchzusetzen, indem er nur den Thread in den Bereich lässt, der ihn hält.</p>
+  <h3>Warum sollten kritische Abschnitte kurz sein?</h3>
+  <p>Andere Threads müssen warten, solange sich ein Thread darin befindet, und auf Mikrocontrollern sind währenddessen möglicherweise Interrupts deaktiviert. Lange Abschnitte verringern die Parallelität und verzögern die Reaktion auf andere Ereignisse.</p>
+  <h3>Reicht das Sperren von Interrupts aus, um einen kritischen Abschnitt zu schützen?</h3>
+  <p>Auf einem Single-Core-System, auf dem nur ein Interrupt-Handler konkurriert, in der Regel ja. Auf einem Mehrkernsystem können andere Kerne weiterlaufen, daher ist zusätzlich ein Lock oder eine atomare Operation erforderlich.</p>
+</section>
 <section>
   <h2>„Kritischer Abschnitt“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Ein solcher Teil, der nur von einem Thread gleichzeitig ausgeführt werden darf, heißt kritischer Abschnitt und wird geschützt, indem vor dem Eintritt eine Sperre erworben und beim Verlassen freigegeben wird.</p><a href="/de/q/multicore-sync/multicore-sync-038/">Welche Aussage zum kritischen Abschnitt (Critical Section) …</a></li></ul>

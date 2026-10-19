@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Asynchroner Reset","item":"https://semiconroom.com/de/term/asynchronous-reset/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Asynchroner Reset","description":"Reset, der das Flipflop unabhängig vom Takt sofort initialisiert, sobald das Reset-Signal aktiv wird. Das Lösen sollte grundsätzlich mit dem Takt synchronisiert werden.","url":"https://semiconroom.com/de/term/asynchronous-reset/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Asynchroner Reset","item":"https://semiconroom.com/de/term/asynchronous-reset/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Asynchroner Reset","description":"Reset, der das Flipflop unabhängig vom Takt sofort initialisiert, sobald das Reset-Signal aktiv wird. Das Lösen sollte grundsätzlich mit dem Takt synchronisiert werden.","url":"https://semiconroom.com/de/term/asynchronous-reset/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist der Unterschied zwischen synchronem und asynchronem Reset?","acceptedAnswer":{"@type":"Answer","text":"Ein synchroner Reset wirkt nur an einer aktiven Taktflanke und braucht einen laufenden Takt, während ein asynchroner Reset unabhängig vom Takt sofort über den Reset-Pin des Flipflops wirkt."}},{"@type":"Question","name":"Warum wird das Lösen eines asynchronen Resets synchronisiert?","acceptedAnswer":{"@type":"Answer","text":"Wird der Reset nahe einer Taktflanke gelöst, können Flipflops das Recovery- oder Removal-Timing verletzen, metastabil werden oder den Reset in unterschiedlichen Zyklen verlassen; ein Synchronisierer aus zwei Flipflops richtet das Lösen am Takt aus."}},{"@type":"Question","name":"Was sind Recovery- und Removal-Zeit?","acceptedAnswer":{"@type":"Answer","text":"Das sind die Mindestzeiten, um die ein asynchroner Reset vor einer aktiven Taktflanke deaktiviert (Recovery) bzw. nach ihr gehalten (Removal) werden muss, analog zu Setup- und Hold-Zeit für Daten."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/hdl-verification/">Hardwarebeschreibungssprachen und Verifikation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie ein asynchroner Reset beschrieben wird</h2>
+  <p>In <a class="term-link" href="/de/term/verilog/">Verilog</a> steht ein asynchroner Reset zusammen mit dem Takt in der <a class="term-link" href="/de/term/sensitivity-list/">Sensitivitätsliste</a>, etwa always @(posedge clk or negedge rst_n), gefolgt von if (!rst_n) q &lt;= 0; else q &lt;= d;. Da auch die fallende Flanke von rst_n den Block auslöst, wird q in dem Moment gelöscht, in dem der Reset aktiviert wird, ohne auf eine Taktflanke zu warten. Das Suffix _n ist eine übliche Namenskonvention für Low-aktive Signale. Die Synthese bildet dieses Muster auf Flipflops mit eigenem Reset- oder Clear-Pin ab, sodass der Reset nicht durch die Logik des Datenpfads läuft.</p>
+</section>
+<section class="term-about">
+  <h2>Asynchroner vs. synchroner Reset</h2>
+  <p>Ein <a class="term-link" href="/de/term/synchronous-reset/">synchroner Reset</a> ist einfach ein weiterer Eingang, der an der Taktflanke abgetastet wird: Er läuft durch Logik vor dem D-Eingang des Flipflops und wirkt nur, wenn der Takt läuft. Das macht die Timing-Analyse einfach, kann aber einen Block mit angehaltenem Takt nicht initialisieren und fügt dem Datenpfad Logik hinzu. Ein asynchroner Reset nutzt den Reset-Pin des Flipflops und wirkt sofort, auch ohne Takt, was beim Einschalten oder bei abgeschalteten Takten (Clock Gating) nützlich ist. Seine Schwäche ist der Moment des Lösens, der eigene Timing-Anforderungen hat.</p>
+</section>
+<section class="term-about">
+  <h2>Das Problem beim Lösen des Resets</h2>
+  <p>Für Flipflops sind Recovery- und Removal-Zeiten spezifiziert, die beim Deaktivieren eines asynchronen Resets die Rolle von Setup- und <a class="term-link" href="/de/term/hold-time/">Hold-Zeit</a> übernehmen. Wird der Reset zu nah an einer Taktflanke gelöst, kann ein <a class="term-link" href="/de/term/flip-flop/">Flipflop</a> metastabil werden, oder Flipflops an verschiedenen Stellen des Reset-Netzes verlassen den Reset in unterschiedlichen Taktzyklen. Eine Zustandsmaschine, deren Bits einen Takt versetzt starten, kann in einem unzulässigen Zustand beginnen. Da die externe Reset-Quelle in keiner Beziehung zum Takt steht, lässt sich diese Situation ohne Synchronisierung des Lösens nicht ausschließen.</p>
+</section>
+<section class="term-about">
+  <h2>Asynchron aktivieren, synchron lösen</h2>
+  <p>Die übliche Abhilfe ist ein <a class="term-link" href="/de/term/reset-synchronizer/">Reset-Synchronisierer</a>: zwei in Reihe geschaltete Flipflops, getaktet mit dem Zieltakt, deren asynchrone Reset-Pins vom externen Reset getrieben werden, wobei der Dateneingang der ersten Stufe fest auf dem inaktiven Pegel liegt. Das Aktivieren des Resets löscht beide Stufen zugleich, sodass der Reset weiterhin sofort wirkt. Beim Lösen muss der inaktive Pegel erst durch die beiden Flipflops wandern, sodass der verteilte Reset im Gleichschritt mit dem Takt deaktiviert wird, und die zweite Stufe gibt der ersten Zeit, eine <a class="term-link" href="/de/term/metastability/">Metastabilität</a> aufzulösen. Jede Taktdomäne braucht ihren eigenen Synchronisierer.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Asynchroner Reset</h2>
   <article class="q-mini" data-qid="hdl-verification-018" data-cat="hdl-verification" data-answer="1" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist B.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: B. Der synchrone Reset wirkt nur an der Taktflanke, der asynchrone sofort unabhängig vom Takt</p><p class="explanation">Ein <a class="term-link" href="/de/term/synchronous-reset/">synchroner Reset</a> wird wie die übrigen Eingänge an der Taktflanke übernommen; die Timing-Analyse ist dadurch einfacher, bei stehendem Takt kann aber nicht zurückgesetzt werden. Ein <a class="term-link" href="/de/term/asynchronous-reset/">asynchroner Reset</a> nutzt direkt den Reset-Anschluss des Flipflops und setzt auch ohne Takt sofort zurück; liegt der Moment der Rücknahme nahe an der Taktflanke, kann der Zeitpunkt der Rücknahme jedoch von <a class="term-link" href="/de/term/flip-flop/">Flipflop</a> zu Flipflop streuen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist der Unterschied zwischen synchronem und asynchronem Reset?</h3>
+  <p>Ein synchroner Reset wirkt nur an einer aktiven Taktflanke und braucht einen laufenden Takt, während ein asynchroner Reset unabhängig vom Takt sofort über den Reset-Pin des Flipflops wirkt.</p>
+  <h3>Warum wird das Lösen eines asynchronen Resets synchronisiert?</h3>
+  <p>Wird der Reset nahe einer Taktflanke gelöst, können Flipflops das Recovery- oder Removal-Timing verletzen, metastabil werden oder den Reset in unterschiedlichen Zyklen verlassen; ein Synchronisierer aus zwei Flipflops richtet das Lösen am Takt aus.</p>
+  <h3>Was sind Recovery- und Removal-Zeit?</h3>
+  <p>Das sind die Mindestzeiten, um die ein asynchroner Reset vor einer aktiven Taktflanke deaktiviert (Recovery) bzw. nach ihr gehalten (Removal) werden muss, analog zu Setup- und Hold-Zeit für Daten.</p>
+</section>
 <section>
   <h2>„Asynchroner Reset“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Das ist ein asynchroner Reset.</p><a href="/de/q/hdl-verification/hdl-verification-017/">Welche Art von Reset und welches Verhalten hat die obige Be…</a></li><li><p>Ein asynchroner Reset nutzt direkt den Reset-Anschluss des Flipflops und setzt auch ohne Takt sofort zurück; liegt der Moment der Rücknahme nahe an der Taktflanke, kann der Zeitpunkt der Rücknahme jedoch von Flipflop zu Flipflop streuen.</p><a href="/de/q/hdl-verification/hdl-verification-018/">Welche Aussage zum Unterschied zwischen synchronem und asyn…</a></li></ul>

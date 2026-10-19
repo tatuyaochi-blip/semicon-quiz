@@ -16,7 +16,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Miss penalty","item":"https://semiconroom.com/nl/term/miss-penalty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Miss penalty","description":"Extra tijd die nodig is om bij een cachemiss data uit het onderliggende niveau op te halen. Wordt bepaald door de toegangstijd van het onderliggende niveau en de overdrachtstijd van de regel.","url":"https://semiconroom.com/nl/term/miss-penalty/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Miss penalty","item":"https://semiconroom.com/nl/term/miss-penalty/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Miss penalty","description":"Extra tijd die nodig is om bij een cachemiss data uit het onderliggende niveau op te halen. Wordt bepaald door de toegangstijd van het onderliggende niveau en de overdrachtstijd van de regel.","url":"https://semiconroom.com/nl/term/miss-penalty/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Hoe bereken je de miss penalty in een cache met twee niveaus?","acceptedAnswer":{"@type":"Answer","text":"De L1-miss penalty is gelijk aan de gemiddelde toegangstijd van L2: de L2-hittijd plus de lokale L2-missrate maal de toegangstijd van het hoofdgeheugen. Bijvoorbeeld 10 ns + 0,2 × 100 ns = 30 ns."}},{"@type":"Question","name":"Wat is het verschil tussen missrate en miss penalty?","acceptedAnswer":{"@type":"Answer","text":"De missrate is het aandeel toegangen dat in de cache misst, terwijl de miss penalty de extra tijd is die elke miss kost. De gemiddelde toegangstijd hangt af van hun product plus de hittijd."}},{"@type":"Question","name":"Verhoogt een grotere cacheregel de miss penalty?","acceptedAnswer":{"@type":"Answer","text":"Ja. Elke miss moet meer bytes overdragen, dus het overdrachtsdeel van de penalty groeit, ook al kunnen grotere regels het aantal misses verminderen bij code met goede ruimtelijke lokaliteit."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Vakgebied: <a href="/nl/c/memory-hierarchy/">Geheugenhiërarchie en prestaties</a></p>
 </article>
+<section class="term-about">
+  <h2>Wat de miss penalty bepaalt</h2>
+  <p>De miss penalty is de tijd die nodig is om de ontbrekende regel uit het volgende niveau van de hiërarchie op te halen. Ze bestaat uit twee delen: de latency tot de eerste data binnenkomt en de overdrachtstijd voor de rest van de regel, namelijk de regelgrootte gedeeld door de bandbreedte. In een hiërarchie met meerdere niveaus is de L1-miss penalty simpelweg de gemiddelde toegangstijd van L2. Met een L2-hittijd van 10 ns, een lokale L2-missrate van 20% en een hoofdgeheugen van 100 ns is de L1-miss penalty 10 + 0,2 × 100 = 30 ns, veel korter dan rechtstreeks naar het geheugen gaan.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe ze in AMAT en CPI doorwerkt</h2>
+  <p>De <a class="term-link" href="/nl/term/average-memory-access-time/">gemiddelde geheugentoegangstijd (AMAT)</a> is hittijd + missrate × miss penalty. Met een hittijd van 2 cycli, een missrate van 4% en een penalty van 150 cycli is de AMAT 2 + 0,04 × 150 = 8 cycli, vier keer de hittijd. In termen van <a class="term-link" href="/nl/term/cycles-per-instruction/">CPI</a> levert een ideale CPI van 1,0 met 1,3 geheugentoegangen per instructie, een missrate van 2% en een penalty van 100 cycli er 1,3 × 0,02 × 100 = 2,6 stallcycli bij op, wat een CPI van 3,6 geeft. Een grote penalty maakt van zelfs kleine missrates grote vertragingen.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom alleen de missrate kan misleiden</h2>
+  <p>Grotere of meer associatieve caches verlagen de missrate maar kunnen de hittijd verlengen, en grotere regels benutten <a class="term-link" href="/nl/term/spatial-locality/">ruimtelijke lokaliteit</a> maar verhogen de miss penalty, omdat elke miss meer data overdraagt. Ontwerpen moeten daarom worden vergeleken op <a class="term-link" href="/nl/term/average-memory-access-time/">AMAT</a>, niet op missrate. Met een penalty van 20 cycli komt een cache met een hit van 1 cyclus en een missrate van 5% gemiddeld uit op 1 + 0,05 × 20 = 2,0 cycli, terwijl een cache met een hit van 2 cycli en een missrate van 4% gemiddeld 2 + 0,04 × 20 = 2,8 cycli haalt; de cache met de lagere missrate is dus trager.</p>
+</section>
+<section class="term-about">
+  <h2>Technieken die de effectieve penalty verkleinen</h2>
+  <p>Extra cacheniveaus verkorten de weg voor de meeste misses. Critical word first stuurt het door de CPU gevraagde woord vóór de rest van de regel, en early restart laat de uitvoering hervatten zodra dat woord binnen is. Non-blocking caches blijven hits bedienen terwijl een miss uitstaat, en out-of-order-cores laten meerdere misses overlappen zodat hun latencies elkaar deels verbergen. <a class="term-link" href="/nl/term/prefetching/">Prefetching</a> verbergt de penalty door vooruit op te halen; een bruikbare vuistregel stelt de prefetchafstand op ruwweg de miss penalty gedeeld door de tijd per lusiteratie.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Hoe bereken je de miss penalty in een cache met twee niveaus?</h3>
+  <p>De L1-miss penalty is gelijk aan de gemiddelde toegangstijd van L2: de L2-hittijd plus de lokale L2-missrate maal de toegangstijd van het hoofdgeheugen. Bijvoorbeeld 10 ns + 0,2 × 100 ns = 30 ns.</p>
+  <h3>Wat is het verschil tussen missrate en miss penalty?</h3>
+  <p>De missrate is het aandeel toegangen dat in de cache misst, terwijl de miss penalty de extra tijd is die elke miss kost. De gemiddelde toegangstijd hangt af van hun product plus de hittijd.</p>
+  <h3>Verhoogt een grotere cacheregel de miss penalty?</h3>
+  <p>Ja. Elke miss moet meer bytes overdragen, dus het overdrachtsdeel van de penalty groeit, ook al kunnen grotere regels het aantal misses verminderen bij code met goede ruimtelijke lokaliteit.</p>
+</section>
 
 
 

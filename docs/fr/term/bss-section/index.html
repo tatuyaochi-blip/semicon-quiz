@@ -16,7 +16,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Section BSS","item":"https://semiconroom.com/fr/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Section BSS","description":"Zone des variables globales et statiques sans valeur initiale (ou initialisées à 0). Seule sa taille est enregistrée dans le fichier, la zone étant remplie de 0 au chargement, ce qui n'alourdit pas l'exécutable.","url":"https://semiconroom.com/fr/term/bss-section/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Section BSS","item":"https://semiconroom.com/fr/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Section BSS","description":"Zone des variables globales et statiques sans valeur initiale (ou initialisées à 0). Seule sa taille est enregistrée dans le fichier, la zone étant remplie de 0 au chargement, ce qui n'alourdit pas l'exécutable.","url":"https://semiconroom.com/fr/term/bss-section/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Que signifie BSS ?","acceptedAnswer":{"@type":"Answer","text":"BSS se développe généralement en block started by symbol, d'après une ancienne directive d'assembleur. Dans les chaînes d'outils modernes, il désigne simplement la section des variables globales et static initialisées à zéro."}},{"@type":"Question","name":"Un grand tableau non initialisé rend-il l'exécutable plus gros ?","acceptedAnswer":{"@type":"Answer","text":"Non. Un tableau global ou static sans initialiseur va dans .bss, où seule sa taille est enregistrée ; la mémoire est allouée et remplie de zéros au chargement du programme."}},{"@type":"Question","name":"Quelle est la différence entre .data et .bss ?","acceptedAnswer":{"@type":"Answer","text":"La section .data contient les globales et static à valeur initiale non nulle, qui doivent être stockées dans le fichier. La section .bss contient celles qui commencent à zéro : elle occupe de la mémoire à l'exécution, mais aucune place pour un contenu dans le fichier."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Domaine: <a href="/fr/c/linker-loader/">Éditeurs de liens, chargeurs et exécutables</a></p>
 </article>
+<section class="term-about">
+  <h2>Ce qui se retrouve dans .bss</h2>
+  <p>Le langage C impose que tout objet à durée de stockage statique, c&#39;est-à-dire les variables globales et static, commence à zéro si aucun initialiseur n&#39;est fourni. Les compilateurs placent ces variables, et généralement aussi celles explicitement initialisées à 0, dans la section .bss. Les globales à valeur initiale non nulle vont dans .data, et les constantes qualifiées const dans la section en lecture seule .rodata. Le mot-clé static ne choisit pas la section ; il limite seulement la visibilité à un fichier. Les variables locales automatiques n&#39;apparaissent jamais dans .bss, car elles résident sur la pile et n&#39;ont pas de valeur initiale définie.</p>
+</section>
+<section class="term-about">
+  <h2>Pourquoi .bss n&#39;occupe pas de place dans le fichier</h2>
+  <p>Stocker une longue suite de zéros dans l&#39;exécutable ne ferait que gaspiller de l&#39;espace disque et du temps de chargement ; la section .bss n&#39;enregistre donc que sa taille et son alignement. Dans <a class="term-link" href="/fr/term/executable-and-linkable-format/">ELF</a>, elle est marquée comme n&#39;occupant aucun octet du fichier. Le <a class="term-link" href="/fr/term/program-loader/">chargeur</a> projette le segment lecture-écriture contenant .data et .bss, et lorsque la taille mémoire du segment dépasse sa taille dans le fichier, les octets supplémentaires sont fournis sous forme de pages remplies de zéros. Ainsi, une déclaration comme static char buf[1000000]; ajoute environ 1 Mo à l&#39;occupation mémoire, mais presque rien au fichier.</p>
+</section>
+<section class="term-about">
+  <h2>BSS dans les systèmes embarqués</h2>
+  <p>Sur un <a class="term-link" href="/fr/term/microcontroller/">microcontrôleur</a> sans système d&#39;exploitation, personne d&#39;autre ne remplit la mémoire de zéros ; c&#39;est donc le code de démarrage qui s&#39;en charge. Avant d&#39;appeler main, le gestionnaire de reset copie généralement les valeurs initiales de .data depuis la flash vers la RAM et efface la plage .bss en RAM, à l&#39;aide des adresses de début et de fin que le <a class="term-link" href="/fr/term/linker-script/">script d&#39;édition de liens</a> exporte sous forme de symboles. Oublier l&#39;une de ces étapes laisse des variables globales avec des valeurs aléatoires. Des outils comme la commande size indiquent séparément text, data et bss, ce qui aide à estimer l&#39;occupation de la flash et de la RAM.</p>
+</section>
+<section class="term-about">
+  <h2>L&#39;origine du nom</h2>
+  <p>BSS se développe couramment en block started by symbol, un nom hérité d&#39;une directive d&#39;<a class="term-link" href="/fr/term/assembler/">assembleur</a> des premiers mainframes IBM qui réservait, sous une étiquette, un bloc de stockage non initialisé. Ce sens a survécu dans les formats objets Unix puis dans <a class="term-link" href="/fr/term/executable-and-linkable-format/">ELF</a>, bien que la directive elle-même ait disparu depuis longtemps. Aujourd&#39;hui, le nom désigne simplement la section des données initialisées à zéro, à côté de .text pour le code, .data pour les données initialisées et .rodata pour les constantes.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Que signifie BSS ?</h3>
+  <p>BSS se développe généralement en block started by symbol, d&#39;après une ancienne directive d&#39;assembleur. Dans les chaînes d&#39;outils modernes, il désigne simplement la section des variables globales et static initialisées à zéro.</p>
+  <h3>Un grand tableau non initialisé rend-il l&#39;exécutable plus gros ?</h3>
+  <p>Non. Un tableau global ou static sans initialiseur va dans .bss, où seule sa taille est enregistrée ; la mémoire est allouée et remplie de zéros au chargement du programme.</p>
+  <h3>Quelle est la différence entre .data et .bss ?</h3>
+  <p>La section .data contient les globales et static à valeur initiale non nulle, qui doivent être stockées dans le fichier. La section .bss contient celles qui commencent à zéro : elle occupe de la mémoire à l&#39;exécution, mais aucune place pour un contenu dans le fichier.</p>
+</section>
 
 
 

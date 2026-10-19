@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Prioritätsinversion","item":"https://semiconroom.com/de/term/priority-inversion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Prioritätsinversion","description":"Phänomen, bei dem ein Task hoher Priorität auf eine von einem Task niedriger Priorität gehaltene Ressource wartet, während ein Task mittlerer Priorität den niedrigen verdrängt und weiterläuft, sodass der hohe lange warten muss.","url":"https://semiconroom.com/de/term/priority-inversion/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Prioritätsinversion","item":"https://semiconroom.com/de/term/priority-inversion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Prioritätsinversion","description":"Phänomen, bei dem ein Task hoher Priorität auf eine von einem Task niedriger Priorität gehaltene Ressource wartet, während ein Task mittlerer Priorität den niedrigen verdrängt und weiterläuft, sodass der hohe lange warten muss.","url":"https://semiconroom.com/de/term/priority-inversion/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist Prioritätsinversion in einem RTOS?","acceptedAnswer":{"@type":"Answer","text":"Eine Situation, in der ein Task hoher Priorität auf eine von einem Task niedriger Priorität gehaltene Ressource wartet und ein Task mittlerer Priorität den niedrigen verdrängt, sodass der Task hoher Priorität faktisch durch den mittleren verzögert wird. Die Verzögerung kann unbegrenzt werden."}},{"@type":"Question","name":"Was ist der Unterschied zwischen Prioritätsvererbung und Priority Ceiling?","acceptedAnswer":{"@type":"Answer","text":"Prioritätsvererbung hebt die Priorität des Lock-Halters nur an, wenn ein Task höherer Priorität tatsächlich an diesem Lock blockiert. Priority Ceiling hebt jeden Task auf eine voreingestellte Obergrenze an, sobald er das Lock nimmt, was auch hilft, Deadlocks zu verhindern."}},{"@type":"Question","name":"Wie wurde die Prioritätsinversion bei Mars Pathfinder behoben?","acceptedAnswer":{"@type":"Answer","text":"Die wiederholten Resets wurden auf eine Prioritätsinversion an einem gemeinsam genutzten Mutex zurückgeführt, und die Ingenieure behoben sie, indem sie in der Flugsoftware die Prioritätsvererbung für diesen Mutex aktivierten."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Fachgebiet: <a href="/de/c/embedded/">Embedded Systems und Firmware</a></p>
 </article>
+<section class="term-about">
+  <h2>Wie Prioritätsinversion entsteht</h2>
+  <p>Betrachten wir drei Tasks in einem präemptiven <a class="term-link" href="/de/term/real-time-operating-system/">Echtzeitbetriebssystem</a> (RTOS): hohe (H), mittlere (M) und niedrige (L) Priorität. L sperrt einen <a class="term-link" href="/de/term/mutex/">Mutex</a>, der eine gemeinsame Ressource schützt. H wird lauffähig, braucht denselben Mutex und blockiert, bis L ihn freigibt. Nun wird M lauffähig, das mit der Ressource nichts zu tun hat. Da M eine höhere Priorität als L hat, führt der Scheduler M aus, und L kann die Stelle nicht erreichen, an der es den Mutex freigibt. Solange M läuft, wartet auch H; faktisch verzögert also ein Task mittlerer Priorität den Task höchster Priorität, und die beabsichtigte Reihenfolge kehrt sich um.</p>
+</section>
+<section class="term-about">
+  <h2>Begrenzte vs. unbegrenzte Inversion</h2>
+  <p>Ein gewisses Blockieren ist unvermeidlich, sobald Tasks eine Ressource teilen: Hält L den <a class="term-link" href="/de/term/mutex/">Mutex</a>, muss H warten, bis L seinen kritischen Abschnitt beendet hat. Diese Verzögerung ist durch die Länge des kritischen Abschnitts begrenzt und kann in die Zeitanalyse einbezogen werden. Das Problem ist die Störung durch mittlere Prioritäten, die die Verzögerung unbegrenzt macht, da beliebig viele mittlere Tasks dazwischen laufen können. In einem harten Echtzeitsystem, in dem Deadlines garantiert werden müssen, kann eine unbegrenzte Verzögerung eine verpasste Deadline, einen Watchdog-Reset oder unsicheres Verhalten bedeuten; deshalb erhält das Thema so viel Aufmerksamkeit.</p>
+</section>
+<section class="term-about">
+  <h2>Prioritätsvererbung und Priority Ceiling</h2>
+  <p><a class="term-link" href="/de/term/priority-inheritance/">Prioritätsvererbung</a> (Priority Inheritance) löst das Problem dynamisch: Blockiert H an einem von L gehaltenen <a class="term-link" href="/de/term/mutex/">Mutex</a>, übernimmt L vorübergehend die Priorität von H, sodass M es nicht verdrängen kann. L beendet seinen kritischen Abschnitt, gibt den Mutex frei, fällt auf seine eigene Priorität zurück, und H läuft. Viele <a class="term-link" href="/de/term/real-time-operating-system/">RTOS</a>-Mutexe bieten diese Option. Das Priority-Ceiling-Protokoll ist eine statische Alternative: Jedem Mutex wird die Priorität des höchsten Tasks zugewiesen, der ihn nutzen darf, und jeder Task, der ihn sperrt, wird sofort auf diese Obergrenze angehoben. Ceiling-Protokolle verhindern auch bestimmte Deadlocks, erfordern aber eine Analyse, welche Tasks welche Ressourcen nutzen.</p>
+</section>
+<section class="term-about">
+  <h2>Der Vorfall bei Mars Pathfinder</h2>
+  <p>Ein bekanntes Beispiel ereignete sich 1997 beim Mars-Pathfinder-Lander. Nach der Landung kam es wiederholt zu System-Resets. Ein Task hoher Priorität wartete auf einen <a class="term-link" href="/de/term/mutex/">Mutex</a>, den ein Task niedriger Priorität hielt, der wiederum von Arbeit mittlerer Priorität verdrängt wurde, bis ein <a class="term-link" href="/de/term/watchdog-timer/">Watchdog-Timer</a> bemerkte, dass ein periodischer Task nicht rechtzeitig fertig geworden war, und das System zurücksetzte. Ingenieure reproduzierten das Problem an einem Nachbau am Boden und behoben es, indem sie die <a class="term-link" href="/de/term/priority-inheritance/">Prioritätsvererbung</a> für den betroffenen Mutex aktivierten. Kritische Abschnitte kurz zu halten und möglichst wenige Ressourcen ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> Prioritätsebenen hinweg zu teilen, bleiben nützliche Entwurfsregeln.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist Prioritätsinversion in einem RTOS?</h3>
+  <p>Eine Situation, in der ein Task hoher Priorität auf eine von einem Task niedriger Priorität gehaltene Ressource wartet und ein Task mittlerer Priorität den niedrigen verdrängt, sodass der Task hoher Priorität faktisch durch den mittleren verzögert wird. Die Verzögerung kann unbegrenzt werden.</p>
+  <h3>Was ist der Unterschied zwischen Prioritätsvererbung und Priority Ceiling?</h3>
+  <p>Prioritätsvererbung hebt die Priorität des Lock-Halters nur an, wenn ein Task höherer Priorität tatsächlich an diesem Lock blockiert. Priority Ceiling hebt jeden Task auf eine voreingestellte Obergrenze an, sobald er das Lock nimmt, was auch hilft, Deadlocks zu verhindern.</p>
+  <h3>Wie wurde die Prioritätsinversion bei Mars Pathfinder behoben?</h3>
+  <p>Die wiederholten Resets wurden auf eine Prioritätsinversion an einem gemeinsam genutzten Mutex zurückgeführt, und die Ingenieure behoben sie, indem sie in der Flugsoftware die Prioritätsvererbung für diesen Mutex aktivierten.</p>
+</section>
 
 
 

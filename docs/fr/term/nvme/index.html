@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"NVMe","item":"https://semiconroom.com/fr/term/nvme/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NVMe","description":"Norme d'interface permettant d'exploiter à grande vitesse des SSD connectés en PCI Express. Elle traite de nombreuses commandes en parallèle et offre une latence inférieure au SATA, conçu pour les disques durs.","url":"https://semiconroom.com/fr/term/nvme/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"NVMe","item":"https://semiconroom.com/fr/term/nvme/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"NVMe","description":"Norme d'interface permettant d'exploiter à grande vitesse des SSD connectés en PCI Express. Elle traite de nombreuses commandes en parallèle et offre une latence inférieure au SATA, conçu pour les disques durs.","url":"https://semiconroom.com/fr/term/nvme/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Que signifie NVMe ?","acceptedAnswer":{"@type":"Answer","text":"NVMe signifie Non-Volatile Memory Express, également écrit NVM Express. C'est une interface hôte et un protocole de commandes permettant d'accéder aux SSD et à d'autres mémoires non volatiles via PCI Express."}},{"@type":"Question","name":"Quelle est la différence entre un SSD NVMe et un SSD SATA ?","acceptedAnswer":{"@type":"Answer","text":"Un SSD SATA utilise le protocole AHCI avec une seule file de 32 commandes et une liaison limitée à environ 600 Mo/s. Un SSD NVMe se connecte en PCIe avec des milliers de files parallèles, ce qui donne de plusieurs à plus de dix gigaoctets par seconde et une latence logicielle plus faible."}},{"@type":"Question","name":"NVMe prend-il en charge le TRIM ?","acceptedAnswer":{"@type":"Answer","text":"Oui. NVMe offre la même fonction grâce à l'attribut Deallocate de la commande Dataset Management, que les systèmes d'exploitation émettent lorsque des fichiers sont supprimés."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Domaine: <a href="/fr/c/sram-flash/">SRAM et mémoire flash</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Pourquoi les SSD avaient besoin d&#39;une nouvelle interface</h2>
+  <p>Les SSD SATA utilisent l&#39;AHCI, une interface hôte conçue pour les disques durs : une seule file de commandes de 32 commandes au maximum, derrière une liaison plafonnant à environ 600 Mo/s. La mémoire flash peut traiter de nombreuses requêtes en parallèle, et cette interface est donc devenue le goulot d&#39;étranglement. NVMe (NVM Express) est un protocole conçu pour la <a class="term-link" href="/fr/term/nonvolatile-memory/">mémoire non volatile</a> reliée directement au <a class="term-link" href="/fr/term/pci-express/">PCI Express</a>. Il prend en charge jusqu&#39;à 64K files d&#39;E/S, chacune d&#39;une profondeur allant jusqu&#39;à 64K commandes, utilise un jeu de commandes compact et permet à chaque cœur de CPU de disposer de ses propres files, ce qui réduit la surcharge logicielle et la contention sur les verrous.</p>
+</section>
+<section class="term-about">
+  <h2>Files de soumission et de complétion</h2>
+  <p>Les files NVMe sont des anneaux situés en mémoire hôte. Pour lancer une lecture ou une écriture, le pilote place une commande de 64 octets dans une file de soumission et écrit la nouvelle position de queue dans un registre doorbell du périphérique. Le contrôleur récupère les commandes par <a class="term-link" href="/fr/term/dma/">DMA</a>, transfère les données directement depuis ou vers la mémoire hôte, et écrit une entrée de 16 octets dans la file de complétion associée, en signalant généralement l&#39;hôte par une <a class="term-link" href="/fr/term/interrupt/">interruption</a> <a class="term-link" href="/fr/term/message-signaled-interrupts/">MSI</a>-X. L&#39;hôte met ensuite à jour le doorbell de tête de la file de complétion. Hôte et périphérique avancent indépendamment, si bien que de nombreux transferts sont en cours simultanément.</p>
+</section>
+<section class="term-about">
+  <h2>Bande passante et formats</h2>
+  <p>Comme NVMe s&#39;appuie sur PCIe, sa bande passante dépend de la génération de la liaison et du nombre de voies : environ 7 Go/s pour les disques PCIe 4.0 x4 et plus de 10 Go/s en PCIe 5.0 x4. La latence du protocole est de quelques microsecondes, faible devant les temps de lecture de la flash de quelques dizaines de microsecondes. Les disques NVMe existent en cartes M.2 compactes, en disques U.2 de 2,5 pouces et en cartes d&#39;extension. <a class="term-link" href="/fr/term/attention-mechanism/">Attention</a> : M.2 n&#39;est qu&#39;un connecteur. Un emplacement M.2 peut transporter du SATA ou du PCIe, et un SSD M.2 n&#39;est donc pas forcément NVMe. NVMe over Fabrics étend le protocole à travers les réseaux.</p>
+</section>
+<section class="term-about">
+  <h2>Commandes de gestion</h2>
+  <p>Outre les lectures et écritures, NVMe définit des commandes d&#39;administration pour créer des files, identifier le contrôleur, gérer les espaces de noms (namespaces) et mettre à jour le firmware. L&#39;opération Deallocate, qui fait partie de la commande Dataset Management, est l&#39;équivalent NVMe du <a class="term-link" href="/fr/term/trim/">TRIM</a> ATA : elle indique au SSD quels blocs logiques ne contiennent plus de données utiles, afin que le <a class="term-link" href="/fr/term/garbage-collection/">ramasse-miettes (garbage collection)</a> puisse les effacer sans les copier. Cela réduit l&#39;<a class="term-link" href="/fr/term/write-amplification/">amplification d&#39;écriture</a>, ce qui améliore les performances en écriture soutenue et prolonge l&#39;endurance de la flash.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur NVMe</h2>
   <article class="q-mini" data-qid="io-interface-049" data-cat="io-interface" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Le CPU se contente d&#39;écrire l&#39;adresse et la longueur du transfert dans un descripteur et d&#39;en informer le périphérique, qui lit le descripteur et effectue lui-même le transfert</p><p class="explanation">L&#39;anneau de descripteurs est une table placée en mémoire principale, décrivant « à partir de quelle adresse et combien d&#39;octets transférer », utilisée de façon circulaire. Le CPU écrit le contenu du transfert dans un descripteur libre, puis signale une fois au périphérique, <a class="term-link" href="/fr/term/interconnect-via/">via</a> un registre, « écrit jusqu&#39;ici ». Le périphérique lit le descripteur par <a class="term-link" href="/fr/term/dma/">DMA</a>, transfère les données et marque comme terminés les descripteurs traités. CPU et périphérique peuvent ainsi mener de nombreux transferts sans s&#39;attendre mutuellement.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Que signifie NVMe ?</h3>
+  <p>NVMe signifie Non-Volatile Memory Express, également écrit NVM Express. C&#39;est une interface hôte et un protocole de commandes permettant d&#39;accéder aux SSD et à d&#39;autres mémoires non volatiles via PCI Express.</p>
+  <h3>Quelle est la différence entre un SSD NVMe et un SSD SATA ?</h3>
+  <p>Un SSD SATA utilise le protocole AHCI avec une seule file de 32 commandes et une liaison limitée à environ 600 Mo/s. Un SSD NVMe se connecte en PCIe avec des milliers de files parallèles, ce qui donne de plusieurs à plus de dix gigaoctets par seconde et une latence logicielle plus faible.</p>
+  <h3>NVMe prend-il en charge le TRIM ?</h3>
+  <p>Oui. NVMe offre la même fonction grâce à l&#39;attribut Deallocate de la commande Dataset Management, que les systèmes d&#39;exploitation émettent lorsque des fichiers sont supprimés.</p>
+</section>
 <section>
   <h2>« NVMe » dans les explications</h2>
   <ul class="term-quotes"><li><p>En NVMe, la commande Deallocate remplit le même rôle.</p><a href="/fr/q/sram-flash/sram-flash-028/">Quelle commande permet à l&#39;OS de signaler au SSD les zones …</a></li><li><p>NVMe (NVM Express) est une norme conçue pour exploiter efficacement la flash sur PCI Express ; elle peut gérer en parallèle jusqu&#39;à 64 000 files de commandes.</p><a href="/fr/q/sram-flash/sram-flash-044/">Quelle norme d&#39;interface basée sur PCI Express est largemen…</a></li></ul>

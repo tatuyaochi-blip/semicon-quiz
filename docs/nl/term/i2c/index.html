@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"I2C","item":"https://semiconroom.com/nl/term/i2c/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"I2C","description":"Synchrone seriële communicatie waarbij meerdere apparaten op twee lijnen, klok (SCL) en data (SDA), zijn aangesloten en de tegenpartij met een adres wordt gekozen. De lijnen zijn open-drain met pull-up.","url":"https://semiconroom.com/nl/term/i2c/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"I2C","item":"https://semiconroom.com/nl/term/i2c/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"I2C","description":"Synchrone seriële communicatie waarbij meerdere apparaten op twee lijnen, klok (SCL) en data (SDA), zijn aangesloten en de tegenpartij met een adres wordt gekozen. De lijnen zijn open-drain met pull-up.","url":"https://semiconroom.com/nl/term/i2c/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom heeft I2C pull-upweerstanden nodig?","acceptedAnswer":{"@type":"Answer","text":"I2C-apparaten gebruiken open-drainuitgangen die een lijn alleen laag kunnen trekken, dus weerstanden zijn nodig om SDA en SCL weer hoog te brengen als geen apparaat ze aanstuurt. Zonder pull-ups zouden de lijnen zweven en zou de bus niet werken."}},{"@type":"Question","name":"Hoe snel is I2C?","acceptedAnswer":{"@type":"Answer","text":"Standard mode haalt tot 100 kHz, fast mode 400 kHz en fast mode plus 1 MHz, met een minder gebruikelijke high-speed mode op 3,4 MHz. De werkelijke snelheid wordt ook beperkt door de buscapaciteit en de sterkte van de pull-ups."}},{"@type":"Question","name":"Wat is het verschil tussen I2C en SPI?","acceptedAnswer":{"@type":"Answer","text":"I2C deelt twee open-draindraden tussen veel apparaten en selecteert ze op adres, wat pinnen bespaart maar de snelheid beperkt. SPI gebruikt een klok, aparte data-in- en data-uitlijnen en een chip-select per apparaat, wat veel hogere snelheden mogelijk maakt ten koste van meer draden."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/embedded/">Embedded systemen en firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Twee open-draindraden</h2>
+  <p>I2C (inter-integrated circuit) verbindt een controller en veel target-apparaten (vroeger master en slaves genoemd) met slechts twee lijnen: een seriële klok, SCL, en seriële data, SDA. Elk apparaat stuurt de lijnen alleen aan <a class="term-link" href="/nl/term/interconnect-via/">via</a> open-drainuitgangen, die een lijn laag kunnen trekken of loslaten; pull-upweerstanden trekken losgelaten lijnen weer hoog. Door deze wired-AND-opstelling kunnen nooit twee apparaten tegen elkaar in sturen met tegengestelde niveaus. De waarde van de pull-up is een afweging: kleinere weerstanden laden de buscapaciteit sneller op voor schonere stijgende flanken, maar verspillen meer stroom als een lijn laag wordt gehouden. Gangbare snelheidsklassen zijn standard mode op 100 kHz, fast mode op 400 kHz en fast mode plus op 1 MHz.</p>
+</section>
+<section class="term-about">
+  <h2>Anatomie van een transfer</h2>
+  <p>Een transfer begint met een START-conditie: SDA daalt terwijl SCL hoog is; verder mag SDA alleen veranderen als SCL laag is. De controller stuurt dan een adres van 7 bits en een lees/schrijfbit. Op de negende klokpuls van elke byte bevestigt de ontvanger door SDA laag te trekken (ACK); blijft SDA hoog, dan is dat een NACK. Daarna volgen databytes, elk met een eigen bevestiging, en een STOP-conditie, SDA stijgt terwijl SCL hoog is, beëindigt de transfer. Om een sensorregister te lezen, wordt meestal eerst het registernummer geschreven en daarna een repeated START gegeven om van richting te wisselen zonder de bus vrij te geven.</p>
+</section>
+<section class="term-about">
+  <h2>Clock stretching en arbitrage</h2>
+  <p>Open-drainlijnen laten apparaten ook samenwerken. Een traag target kan SCL <a class="term-link" href="/nl/term/numerical-aperture/">na</a> een byte laag houden, wat clock stretching heet, en de controller wacht tot de lijn wordt losgelaten. Als twee controllers tegelijk starten, houdt elk tijdens het zenden SDA in de gaten; een controller die SDA loslaat voor een 1 maar ziet dat de lijn op 0 wordt gehouden, weet dat een ander apparaat een 0 stuurt en trekt zich terug. Het bericht van de winnaar raakt nooit beschadigd. Bij het zoeken naar fouten wijst een ontbrekende ACK na het adres op een verkeerd adres, een ontbrekend of niet gevoed apparaat, of defecte bedrading.</p>
+</section>
+<section class="term-about">
+  <h2>Adresconflicten en I2C versus SPI</h2>
+  <p>Omdat apparaten op adres worden geselecteerd, kunnen twee identieke componenten met hetzelfde vaste adres geen bus delen. Veel componenten hebben adresselectiepinnen die de laagste bits veranderen als ze aan de voeding of massa worden gelegd; gebruik anders een tweede I2C-peripheral of een I2C-<a class="term-link" href="/nl/term/multiplexer/">multiplexer</a>. Vergeleken met <a class="term-link" href="/nl/term/spi/">SPI</a>, dat push-pull-lijnen en een chip-select per apparaat gebruikt om tientallen MHz te halen, is I2C langzamer, maar heeft het maar twee draden nodig, hoeveel apparaten er ook zijn aangesloten.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over I2C</h2>
   <article class="q-mini" data-qid="embedded-024" data-cat="embedded" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Tijdens de negende klokpuls trekt de ontvanger SDA naar 0 (ACK)</p><p class="explanation">Bij <a class="term-link" href="/nl/term/i2c/">I2C</a> trekt de ontvanger bij de negende klokpuls <a class="term-link" href="/nl/term/numerical-aperture/">na</a> de 8 databits SDA naar 0 om aan te geven dat de byte is ontvangen (ACK). Als niemand de lijn naar beneden trekt, blijft SDA door de pull-up op 1, wat een NACK is. Als na het versturen van een adres geen ACK terugkomt, kan het apparaat ontbreken, de bedrading zijn verbroken of het adres onjuist zijn, wat een aanwijzing is bij het opsporen van storingen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom heeft I2C pull-upweerstanden nodig?</h3>
+  <p>I2C-apparaten gebruiken open-drainuitgangen die een lijn alleen laag kunnen trekken, dus weerstanden zijn nodig om SDA en SCL weer hoog te brengen als geen apparaat ze aanstuurt. Zonder pull-ups zouden de lijnen zweven en zou de bus niet werken.</p>
+  <h3>Hoe snel is I2C?</h3>
+  <p>Standard mode haalt tot 100 kHz, fast mode 400 kHz en fast mode plus 1 MHz, met een minder gebruikelijke high-speed mode op 3,4 MHz. De werkelijke snelheid wordt ook beperkt door de buscapaciteit en de sterkte van de pull-ups.</p>
+  <h3>Wat is het verschil tussen I2C en SPI?</h3>
+  <p>I2C deelt twee open-draindraden tussen veel apparaten en selecteert ze op adres, wat pinnen bespaart maar de snelheid beperkt. SPI gebruikt een klok, aparte data-in- en data-uitlijnen en een chip-select per apparaat, wat veel hogere snelheden mogelijk maakt ten koste van meer draden.</p>
+</section>
 <section>
   <h2>“I2C” in de toelichting</h2>
   <ul class="term-quotes"><li><p>I2C is synchrone seriële communicatie waarmee meerdere apparaten met slechts twee lijnen, SCL en SDA, worden verbonden.</p><a href="/nl/q/embedded/embedded-024/">Welke eigenschap van I2C-communicatie is juist?</a></li><li><p>Bij I2C trekt de ontvanger bij de negende klokpuls na de 8 databits SDA naar 0 om aan te geven dat de byte is ontvangen (ACK).</p><a href="/nl/q/embedded/embedded-025/">Hoe geeft bij I2C de ontvangende partij aan dat een byte aa…</a></li><li><p>Omdat bij I2C de tegenpartij via het adres wordt gekozen, antwoorden bij twee apparaten met hetzelfde adres beide tegelijk en wordt de communicatie verstoord.</p><a href="/nl/q/embedded/embedded-026/">Twee I2C-temperatuursensoren van hetzelfde type moeten op d…</a></li><li><p>I2C kan veel apparaten op twee lijnen aansluiten, maar vanwege open-drain ligt de snelheid op enkele honderden kHz tot enkele MHz.</p><a href="/nl/q/embedded/embedded-027/">Welke vergelijking van UART, SPI en I2C is juist?</a></li></ul>

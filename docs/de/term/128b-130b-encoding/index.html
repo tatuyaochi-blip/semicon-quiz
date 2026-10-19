@@ -16,7 +16,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b-Kodierung","item":"https://semiconroom.com/de/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b-Kodierung","description":"Verfahren, bei dem 128 Datenbits mit einem 2-Bit-Header gesendet werden. Die Effizienz beträgt etwa 98,5 %, Signalwechsel werden durch Scrambling sichergestellt. Wird ab PCI Express 3.0 verwendet.","url":"https://semiconroom.com/de/term/128b-130b-encoding/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b-Kodierung","item":"https://semiconroom.com/de/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b-Kodierung","description":"Verfahren, bei dem 128 Datenbits mit einem 2-Bit-Header gesendet werden. Die Effizienz beträgt etwa 98,5 %, Signalwechsel werden durch Scrambling sichergestellt. Wird ab PCI Express 3.0 verwendet.","url":"https://semiconroom.com/de/term/128b-130b-encoding/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Warum ist 128b/130b effizienter als 8b/10b?","acceptedAnswer":{"@type":"Answer","text":"8b/10b wendet für je 8 Datenbits 2 zusätzliche Bits auf, ein Overhead von 20 %, während 128b/130b für je 128 Datenbits 2 Header-Bits aufwendet, etwa 1,5 %. Das ist möglich, weil Scrambling und nicht der Code selbst die Pegelwechsel und die Balance liefert, die der Empfänger braucht."}},{"@type":"Question","name":"Was ist der Sync-Header bei der 128b/130b-Kodierung?","acceptedAnswer":{"@type":"Answer","text":"Er ist das 2-Bit-Präfix jedes 130-Bit-Blocks, entweder 01 oder 10. Er markiert die Blockgrenze mit einem garantierten Pegelwechsel und zeigt an, ob der Block Daten oder ein Ordered Set enthält."}},{"@type":"Question","name":"Wie viel Bandbreite hat ein PCIe-3.0-x16-Link?","acceptedAnswer":{"@type":"Answer","text":"Etwa 15,8 GB/s in jeder Richtung, berechnet aus 8 GT/s × 128/130 ÷ 8 Bit pro Byte × 16 Lanes. Durch Paket-Overhead ist der nutzbare Durchsatz etwas geringer."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -56,9 +56,32 @@
   
   <p>Fachgebiet: <a href="/de/c/io-interface/">Schnittstellen und Busstandards</a></p>
 </article>
+<section class="term-about">
+  <h2>Aufbau eines 128b/130b-Blocks</h2>
+  <p>Die 128b/130b-Kodierung fasst Daten zu Blöcken von 130 Bit zusammen: ein 2-Bit-Sync-Header gefolgt von 128 Bit Nutzdaten. Nur die Header-Werte 01 und 10 sind zulässig, daher hat jeder Block an seinem Anfang garantiert mindestens einen Pegelwechsel, ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> den der Empfänger die Blockgrenzen findet. Der Header teilt dem Empfänger außerdem mit, ob die Nutzdaten Daten oder ein Ordered Set enthalten, also die speziellen Symbole für Link-Training und Taktkompensation. Die Nutzdaten selbst durchlaufen einen Scrambler, der sie mit einer Pseudozufallsfolge aus einem linear rückgekoppelten <a class="term-link" href="/de/term/shift-register/">Schieberegister</a> per XOR verknüpft, und der Empfänger entwürfelt sie mit derselben Folge.</p>
+</section>
+<section class="term-about">
+  <h2>Scrambling statt garantierter Balance</h2>
+  <p>Ein serieller Empfänger gewinnt seinen Takt aus den Pegelwechseln der Daten, und AC-gekoppelte Verbindungen brauchen etwa gleich viele Einsen und Nullen. Die <a class="term-link" href="/de/term/8b-10b-encoding/">8b/10b-Kodierung</a> garantiert beides konstruktionsbedingt: keine Folge von mehr als fünf gleichen Bits und eine Running Disparity, die die Leitung gleichanteilsfrei hält, auf Kosten von zwei zusätzlichen Bits pro Byte. 128b/130b verlässt sich stattdessen auf Scrambling, das lange Folgen und Ungleichgewicht statistisch sehr unwahrscheinlich macht. Die Garantie ist schwächer, Entzerrung und Taktrückgewinnung müssen also gelegentlich längere Folgen verkraften, dafür sinkt der Overhead von 20 % auf etwa 1,5 %.</p>
+</section>
+<section class="term-about">
+  <h2>Was die Effizienz für PCI Express bedeutet</h2>
+  <p>Die Effizienz beträgt 128/130, etwa 98,5 %, gegenü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> 80 % bei 8b/10b. Deshalb verdoppelte <a class="term-link" href="/de/term/pci-express/">PCI Express</a> 3.0 die nutzbare Bandbreite nahezu, obwohl die Signalrate nur von 5 auf 8 GT/s stieg: Eine PCIe-2.0-Lane überträgt 5 × 0,8 = 4 Gbit/s Daten, eine PCIe-3.0-Lane dagegen 8 × 128/130 ≈ 7,88 Gbit/s, also etwa 0,985 GB/s. Ein x16-Link liefert daher etwa 15,8 GB/s in jeder Richtung, bevor Paket-Header und Protokoll-Overhead den tatsächlich übertragenen Wert etwas verringern.</p>
+</section>
+<section class="term-about">
+  <h2>Verwandte Kodierungen</h2>
+  <p>128b/130b wird von <a class="term-link" href="/de/term/pci-express/">PCI Express</a> 3.0, 4.0 und 5.0 verwendet, die die Kodierung beibehielten und die Übertragungsrate mit jeder Generation verdoppelten. Sie gehört zur selben Familie wie 64b/66b, das in 10-Gigabit-Ethernet eingesetzt wird und ebenfalls einen 2-Bit-Sync-Header mit gescrambelten Nutzdaten kombiniert. PCI Express 6.0 wechselte zu <a class="term-link" href="/de/term/pam4/">PAM4</a>-Signalisierung mit Flits fester Größe und Vorwärtsfehlerkorrektur und verwendet daher keine 128b/130b-Blöcke mehr. Beim Vergleich von Link-Geschwindigkeiten sollte man stets prüfen, welche Kodierung gilt, denn die Rohrate in GT/s ist nicht die Datenrate.</p>
+</section>
 
-
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Warum ist 128b/130b effizienter als 8b/10b?</h3>
+  <p>8b/10b wendet für je 8 Datenbits 2 zusätzliche Bits auf, ein Overhead von 20 %, während 128b/130b für je 128 Datenbits 2 Header-Bits aufwendet, etwa 1,5 %. Das ist möglich, weil Scrambling und nicht der Code selbst die Pegelwechsel und die Balance liefert, die der Empfänger braucht.</p>
+  <h3>Was ist der Sync-Header bei der 128b/130b-Kodierung?</h3>
+  <p>Er ist das 2-Bit-Präfix jedes 130-Bit-Blocks, entweder 01 oder 10. Er markiert die Blockgrenze mit einem garantierten Pegelwechsel und zeigt an, ob der Block Daten oder ein Ordered Set enthält.</p>
+  <h3>Wie viel Bandbreite hat ein PCIe-3.0-x16-Link?</h3>
+  <p>Etwa 15,8 GB/s in jeder Richtung, berechnet aus 8 GT/s × 128/130 ÷ 8 Bit pro Byte × 16 Lanes. Durch Paket-Overhead ist der nutzbare Durchsatz etwas geringer.</p>
+</section>
 
 
 

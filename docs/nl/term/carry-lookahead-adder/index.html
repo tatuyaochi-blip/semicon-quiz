@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Carry-lookahead-opteller","item":"https://semiconroom.com/nl/term/carry-lookahead-adder/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Carry-lookahead-opteller","description":"Opteller die de overdracht (carry) parallel bepaalt uit het generatiesignaal g = a·b en het propagatiesignaal p = a ⊕ b van elke positie, zonder te wachten op doorgifte van lagere posities. De vertraging blijft klein, ook bij veel bits.","url":"https://semiconroom.com/nl/term/carry-lookahead-adder/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Carry-lookahead-opteller","item":"https://semiconroom.com/nl/term/carry-lookahead-adder/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Carry-lookahead-opteller","description":"Opteller die de overdracht (carry) parallel bepaalt uit het generatiesignaal g = a·b en het propagatiesignaal p = a ⊕ b van elke positie, zonder te wachten op doorgifte van lagere posities. De vertraging blijft klein, ook bij veel bits.","url":"https://semiconroom.com/nl/term/carry-lookahead-adder/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom is een carry-lookahead-opteller sneller dan een ripple-carry-opteller?","acceptedAnswer":{"@type":"Answer","text":"Een ripple-carry-opteller wacht tot de carry bit voor bit door alle posities is gelopen, zodat de vertraging lineair met de breedte groeit. Een carry-lookahead-opteller berekent alle carries parallel uit de generate- en propagate-signalen, zodat de vertraging ongeveer met de logaritme van de breedte groeit."}},{"@type":"Question","name":"Kan het propagate-signaal OR gebruiken in plaats van XOR?","acceptedAnswer":{"@type":"Answer","text":"Ja, voor de carryketen: p = a + b geeft dezelfde carries, omdat de generate-term de carry al produceert als beide ingangen 1 zijn. Het sombit heeft nog steeds a ⊕ b nodig, dus veel ontwerpen berekenen XOR voor p en gebruiken die voor beide."}},{"@type":"Question","name":"Wat zijn groeps-generate en groeps-propagate?","acceptedAnswer":{"@type":"Answer","text":"Ze vatten een blok bits samen: groeps-generate is 1 als het blok zelf een uitgaande carry produceert, en groeps-propagate is 1 als een carry die het blok binnenkomt er helemaal doorheen wordt doorgegeven. Hogere lookahead-niveaus gebruiken ze om blokcarries snel te berekenen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/computer-arithmetic/">Computerarithmetiek</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Generate- en propagate-signalen</h2>
+  <p>Voor elk bit met ingangen a en b is het generatiesignaal g = a·b gelijk aan 1 als het bit een carry produceert, ongeacht de inkomende carry, en het propagatiesignaal p = a ⊕ b gelijk aan 1 als een inkomende carry wordt doorgegeven. De uitgaande carry is c(i+1) = g(i) + p(i)·c(i) en de som is s(i) = p(i) ⊕ c(i). Door de recursie uit te schrijven krijg je c1 = g0 + p0·c0 en c2 = g1 + p1·g0 + p1·p0·c0, zodat elke carry in logica met twee niveaus kan worden geschreven met alleen de g- en p-signalen en de ingangscarry c0.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom ripple-carry-optellen traag is</h2>
+  <p>In een ripple-carry-opteller moet elke <a class="term-link" href="/nl/term/full-adder/">full adder</a> wachten op de carry van het bit eronder. In het slechtste geval, zoals bij het optellen van 1 bij een woord met alleen enen, loopt de carry door alle bits, zodat de vertraging lineair met de breedte toeneemt; een 64-bit ripple-carry-opteller is veel te traag voor een processor met een klokfrequentie in het gigahertzbereik. Een carry-lookahead-opteller (CLA) berekent de carries parallel rechtstreeks uit de ingangen, en met hiërarchische lookahead groeit de vertraging slechts met de logaritme van de breedte.</p>
+</section>
+<section class="term-about">
+  <h2>Brede optellers hiërarchisch opbouwen</h2>
+  <p>Volledig uitgeschreven carryvergelijkingen vereisen al snel poorten met te veel ingangen, dus praktische ontwerpen gebruiken blokken van ongeveer 4 bits. Elk blok levert een groeps-generate G = g3 + p3·g2 + p3·p2·g1 + p3·p2·p1·g0 en een groeps-propagate P = p3·p2·p1·p0. Een lookahead-eenheid op het tweede niveau behandelt deze precies als g- en p-signalen van één bit om de carries naar elk blok te berekenen, en een derde niveau breidt het schema uit tot 64 bits. Parallel-prefixoptellers zoals Kogge-Stone en Brent-Kung generaliseren hetzelfde idee en ruilen bedrading en oppervlak in tegen logische diepte.</p>
+</section>
+<section class="term-about">
+  <h2>Waar carry-lookahead-optellers worden gebruikt</h2>
+  <p>Snelle optellers zitten in ALU&#39;s, adresgeneratoren en floating-point-eenheden, en in de laatste trap van vermenigvuldigers. Een vermenigvuldiger reduceert eerst zijn vele partiële producten met carry-save-optellers: onafhankelijke full adders die drie getallen omzetten in twee met slechts één full-adder-vertraging en zonder carrypropagatie. Alleen de laatste twee getallen hebben een optelling met carrypropagatie nodig, die één keer wordt uitgevoerd door een carry-lookahead- of prefixopteller. Andere compromissen, zoals carry-select- en carry-skip-optellers, zitten qua snelheid en oppervlak tussen ripple-carry en volledige lookahead in.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Carry-lookahead-opteller</h2>
   <article class="q-mini" data-qid="logic-046" data-cat="logic" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. g = a·b, p = a ⊕ b, c(i+1) = g + p·c(i)</p><p class="explanation">Als a en b op die positie beide 1 zijn, ontstaat altijd een overdracht, ongeacht de overdracht van onderaf, dus het generatiesignaal is g = a·b. Als slechts één van a en b 1 is, wordt de overdracht van onderaf ongewijzigd doorgegeven, dus het propagatiesignaal is p = a ⊕ b (soms wordt OR gebruikt). Hieruit volgt c(i+1) = g(i) + p(i)·c(i); wordt dit uitgewerkt, dan kunnen de overdrachten van alle posities parallel in twee logische niveaus worden bepaald uit uitsluitend de g en p van de ingangen en de laagste overdracht. Formules waarin generatie en propagatie zijn verwisseld, rekenen niet juist.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom is een carry-lookahead-opteller sneller dan een ripple-carry-opteller?</h3>
+  <p>Een ripple-carry-opteller wacht tot de carry bit voor bit door alle posities is gelopen, zodat de vertraging lineair met de breedte groeit. Een carry-lookahead-opteller berekent alle carries parallel uit de generate- en propagate-signalen, zodat de vertraging ongeveer met de logaritme van de breedte groeit.</p>
+  <h3>Kan het propagate-signaal OR gebruiken in plaats van XOR?</h3>
+  <p>Ja, voor de carryketen: p = a + b geeft dezelfde carries, omdat de generate-term de carry al produceert als beide ingangen 1 zijn. Het sombit heeft nog steeds a ⊕ b nodig, dus veel ontwerpen berekenen XOR voor p en gebruiken die voor beide.</p>
+  <h3>Wat zijn groeps-generate en groeps-propagate?</h3>
+  <p>Ze vatten een blok bits samen: groeps-generate is 1 als het blok zelf een uitgaande carry produceert, en groeps-propagate is 1 als een carry die het blok binnenkomt er helemaal doorheen wordt doorgegeven. Hogere lookahead-niveaus gebruiken ze om blokcarries snel te berekenen.</p>
+</section>
 <section>
   <h2>“Carry-lookahead-opteller” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Een carry-lookahead-opteller gebruikt per bit generate G = A·B (geeft altijd een carry) en propagate P = A⊕B (geeft de carry van de lagere positie door), en berekent de carry van elke positie parallel uit de ingangen, zoals C1 = G0 + P0·C0 en C2 = G1 + P1·G0 + P1·P0·C0 … De vertraging neemt dan alleen evenredig met de logaritme van het aantal bits toe.</p><a href="/nl/q/logic/logic-046/">Wat is de juiste reden dat een carry-lookahead-opteller sne…</a></li><li><p>Door dit te herhalen worden de partiële producten tot twee teruggebracht, waarna één keer met bijvoorbeeld een carry-lookahead-opteller wordt opgeteld.</p><a href="/nl/q/computer-arithmetic/computer-arithmetic-037/">Wat is de belangrijkste reden dat een carry-save-opteller w…</a></li></ul>

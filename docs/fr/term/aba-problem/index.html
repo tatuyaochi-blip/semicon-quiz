@@ -24,7 +24,7 @@
 <link rel="manifest" href="/fr/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Problème ABA","item":"https://semiconroom.com/fr/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Problème ABA","description":"Problème où une valeur passe de A à B puis revient à A, si bien qu'un CAS qui ne compare que la valeur réussit sans voir le changement. À surveiller dans les structures de données sans verrou.","url":"https://semiconroom.com/fr/term/aba-problem/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Glossaire","item":"https://semiconroom.com/fr/glossary/"},{"@type":"ListItem","position":3,"name":"Problème ABA","item":"https://semiconroom.com/fr/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Problème ABA","description":"Problème où une valeur passe de A à B puis revient à A, si bien qu'un CAS qui ne compare que la valeur réussit sans voir le changement. À surveiller dans les structures de données sans verrou.","url":"https://semiconroom.com/fr/term/aba-problem/","inLanguage":"fr","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossaire","url":"https://semiconroom.com/fr/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Qu'est-ce que le problème ABA en termes simples ?","acceptedAnswer":{"@type":"Answer","text":"Un thread voit la valeur A, un autre thread la change en B puis la remet à A, et le compare-and-swap du premier thread réussit comme si rien ne s'était passé. La valeur correspond, mais l'état sous-jacent a changé."}},{"@type":"Question","name":"Comment LL/SC évite-t-il le problème ABA ?","acceptedAnswer":{"@type":"Answer","text":"Le store-conditional ne réussit que si aucune écriture n'a eu lieu à l'emplacement depuis le load-linked correspondant, quelle que soit la valeur écrite. Un passage de A à B puis de nouveau à A fait donc tout de même échouer l'écriture."}},{"@type":"Question","name":"Un compteur de version résout-il entièrement l'ABA ?","acceptedAnswer":{"@type":"Answer","text":"En pratique oui, tant que le compteur est assez large pour ne pas pouvoir reboucler sur la même valeur pendant qu'un thread est bloqué. Un compteur très étroit peut en principe reboucler et réintroduire le problème."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Domaine: <a href="/fr/c/multicore-sync/">Multicœur et synchronisation</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Comment survient le problème ABA</h2>
+  <p>Le <a class="term-link" href="/fr/term/compare-and-swap/">compare-and-swap</a> (CAS) n&#39;écrit une nouvelle valeur que si un emplacement contient encore une valeur attendue, et il compare des valeurs, pas un historique. Prenons une pile <a class="term-link" href="/fr/term/lock-free-algorithm/">sans verrou</a> dont la tête pointe vers le nœud A, dont le pointeur next pointe vers B. Le thread 1 lit head = A et next = B, puis est préempté. Le thread 2 dépile A, dépile B et rempile A, ou empile un nouveau nœud qui réutilise par hasard l&#39;adresse de A. Le thread 1 reprend, son CAS(head, A, B) réussit car head vaut toujours A, et head pointe désormais vers B, un nœud qui ne fait plus partie de la pile.</p>
+</section>
+<section class="term-about">
+  <h2>Pourquoi la réutilisation de la mémoire le rend probable</h2>
+  <p>Le problème est le plus fréquent dans les langages à gestion manuelle de la mémoire. Lorsqu&#39;un nœud est libéré, l&#39;allocateur redonne volontiers la même adresse à l&#39;allocation suivante ; une valeur de pointeur peut donc redevenir A alors qu&#39;elle désigne un nœud différent. Dans les langages à <a class="term-link" href="/fr/term/garbage-collection/">ramasse-miettes</a>, un nœud ne peut pas être récupéré tant qu&#39;un thread en détient encore une référence, ce qui élimine en grande partie la forme d&#39;ABA liée à la réutilisation d&#39;adresse, bien que la forme logique puisse encore se produire si le même nœud est délibérément réinséré.</p>
+</section>
+<section class="term-about">
+  <h2>Contre-mesures standard</h2>
+  <p>La correction classique associe au pointeur un compteur de modifications et compare les deux en une seule opération atomique, à l&#39;aide d&#39;un CAS double largeur ou de bits libres du pointeur ; chaque mise à jour incrémente le compteur, si bien que A avec l&#39;étiquette 5 diffère de A avec l&#39;étiquette 7. Le load-linked/store-conditional (LL/SC, appelé <a class="term-link" href="/fr/term/load-reserved-store-conditional/">LR/SC</a> en RISC-V) échoue si l&#39;emplacement a été écrit d&#39;une manière quelconque depuis le chargement, même si la valeur est identique. Les schémas de récupération mémoire sûre, comme les hazard pointers et la récupération par époques, empêchent qu&#39;un nœud soit libéré et réutilisé tant qu&#39;un thread peut encore y accéder.</p>
+</section>
+<section class="term-about">
+  <h2>ABA et progression sans verrou</h2>
+  <p>Un algorithme <a class="term-link" href="/fr/term/lock-free-algorithm/">sans verrou (lock-free)</a> garantit qu&#39;un thread au moins progresse toujours même si d&#39;autres sont bloqués, car un CAS n&#39;échoue que lorsque la mise à jour d&#39;un autre thread a réussi. Cette garantie de progression ne dit rien de la correction, et l&#39;ABA est la manière classique dont une boucle CAS apparemment correcte corrompt une structure de données. Il est difficile à détecter par les tests, car il exige un entrelacement précis en plus d&#39;une réutilisation de la mémoire ; le code sans verrou doit donc être conçu dès le départ avec une stratégie ABA explicite.</p>
+</section>
 <section>
   <h2>S&#39;entraîner : questions sur Problème ABA</h2>
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Lorsque la valeur passe de A à B puis revient à A, CAS ne remarque pas le changement et réussit</p><p class="explanation">Si le pointeur de tête d’une liste chaînée vaut A, il peut arriver que, pendant qu’un thread lit A et prépare son CAS, un autre thread retire A, effectue une opération sur B, puis réinsère un nœud à la même adresse A. Le CAS réussit puisque la valeur est toujours A, mais le contenu de la liste a déjà changé et la structure est corrompue. On l’évite en associant au pointeur un compteur de mises à jour comparé en même temps, ou en utilisant <a class="term-link" href="/fr/term/load-reserved-store-conditional/">LR/SC</a>.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Qu&#39;est-ce que le problème ABA en termes simples ?</h3>
+  <p>Un thread voit la valeur A, un autre thread la change en B puis la remet à A, et le compare-and-swap du premier thread réussit comme si rien ne s&#39;était passé. La valeur correspond, mais l&#39;état sous-jacent a changé.</p>
+  <h3>Comment LL/SC évite-t-il le problème ABA ?</h3>
+  <p>Le store-conditional ne réussit que si aucune écriture n&#39;a eu lieu à l&#39;emplacement depuis le load-linked correspondant, quelle que soit la valeur écrite. Un passage de A à B puis de nouveau à A fait donc tout de même échouer l&#39;écriture.</p>
+  <h3>Un compteur de version résout-il entièrement l&#39;ABA ?</h3>
+  <p>En pratique oui, tant que le compteur est assez large pour ne pas pouvoir reboucler sur la même valeur pendant qu&#39;un thread est bloqué. Un compteur très étroit peut en principe reboucler et réintroduire le problème.</p>
+</section>
 <section>
   <h2>« Problème ABA » dans les explications</h2>
   <ul class="term-quotes"><li><p>Cependant, ces algorithmes sont difficiles à écrire correctement et exigent de prendre garde notamment au problème ABA.</p><a href="/fr/q/multicore-sync/multicore-sync-037/">Quelle propriété caractérise un algorithme sans verrou (loc…</a></li></ul>

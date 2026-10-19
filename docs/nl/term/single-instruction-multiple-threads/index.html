@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"SIMT","item":"https://semiconroom.com/nl/term/single-instruction-multiple-threads/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMT","description":"Single instruction, multiple threads. Het programma wordt per thread geschreven, maar de hardware bundelt threads in warps (bij NVIDIA 32) en voert ze met dezelfde instructie uit.","url":"https://semiconroom.com/nl/term/single-instruction-multiple-threads/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"SIMT","item":"https://semiconroom.com/nl/term/single-instruction-multiple-threads/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMT","description":"Single instruction, multiple threads. Het programma wordt per thread geschreven, maar de hardware bundelt threads in warps (bij NVIDIA 32) en voert ze met dezelfde instructie uit.","url":"https://semiconroom.com/nl/term/single-instruction-multiple-threads/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is een warp bij GPU-computing?","acceptedAnswer":{"@type":"Answer","text":"Een warp is een groep van 32 threads op NVIDIA-GPU's die samen in lockstep dezelfde instructie uitvoeren. Het is de basiseenheid voor het uitgeven van instructies in het SIMT-model; het equivalent bij AMD heet een wavefront."}},{"@type":"Question","name":"Wat is het verschil tussen SIMT en SIMD?","acceptedAnswer":{"@type":"Answer","text":"SIMD biedt vectorinstructies met een vaste breedte die de programmeur of compiler expliciet moet gebruiken. Bij SIMT wordt elke thread als onafhankelijke scalaire code geschreven, terwijl de hardware threads in warps groepeert en divergerende takken afhandelt."}},{"@type":"Question","name":"Wat is warp divergence?","acceptedAnswer":{"@type":"Answer","text":"Warp divergence treedt op als threads in dezelfde warp verschillende branchpaden nemen. De hardware voert elk pad na elkaar uit met de inactieve threads gemaskeerd, wat de efficiëntie verlaagt tot de paden weer samenkomen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/gpu-programming/">GPU-programmeren</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe SIMT threads uitvoert</h2>
+  <p>In het model single instruction, multiple threads (SIMT) schrijft de programmeur een kernel als gewone code voor één thread, en duizenden threads voeren die uit op verschillende data. De hardware groepeert threads in vaste bundels, warps van 32 threads op NVIDIA-GPU&#39;s en wavefronts van 64 of 32 op AMD-GPU&#39;s. Eén instructie wordt voor de hele bundel opgehaald en gedecodeerd en door alle threads tegelijk in lockstep uitgevoerd, elk met eigen registers en data. Zo worden de kosten van de besturingslogica over veel rekenlanes verdeeld, en gaat het grootste deel van het chipoppervlak naar rekenwerk.</p>
+</section>
+<section class="term-about">
+  <h2>Branch divergence</h2>
+  <p>Omdat elke thread onafhankelijk wordt geschreven, kunnen threads in één warp verschillende takken nemen. De hardware vangt dat op door elk pad om de beurt uit te voeren, met de threads die niet op dat pad zitten gemaskeerd, en daarna weer samen te komen (reconvergentie). De correctheid blijft behouden, maar als de helft van de threads elk een kant van een if-else neemt, besteedt de warp tijd aan beide en halveert de <a class="term-link" href="/nl/term/throughput/">doorvoer</a> ongeveer. Prestatiebewuste code ordent de data zo dat threads in dezelfde warp hetzelfde pad volgen, bijvoorbeeld door branchcondities af te laten hangen van de warpindex in plaats van van de data van elke thread.</p>
+</section>
+<section class="term-about">
+  <h2>SIMT vs. SIMD op de CPU</h2>
+  <p><a class="term-link" href="/nl/term/simd/">SIMD</a>-uitbreidingen (single instruction, multiple data) van CPU&#39;s passen één instructie toe op een vectorregister met een vast aantal elementen, zoals 4 of 8. Het programma of de compiler moet rond die breedte worden geschreven, met expliciete vectorinstructies en maskers voor randgevallen. SIMT verbergt de breedte: de code beschrijft een scalaire thread, en de hardware vormt de vectoren uit veel threads en regelt het maskeren bij divergentie. Onder de motorkap is de uitvoering vergelijkbaar; daarom hangt de prestatie bij SIMT er nog steeds van af of threads in een warp gelijk oplopen.</p>
+</section>
+<section class="term-about">
+  <h2>Praktische gevolgen</h2>
+  <p>Verschillende gangbare regels voor <a class="term-link" href="/nl/term/gpu/">GPU</a>-programmering volgen uit SIMT. Thread-blockgroottes zijn normaal veelvouden van 32, zodat geen warp deels leeg draait. Geheugentoegangen zijn het snelst als naburige threads in een warp naburige adressen benaderen, zodat de hardware ze kan samenvoegen tot een paar brede transacties, een patroon dat coalescing heet. En GPU&#39;s verbergen lange geheugenlatentie door veel warps resident te houden en over te schakelen naar een andere gereedstaande warp zodra er een stilvalt; daarom is een hoge <a class="term-link" href="/nl/term/gpu-occupancy/">occupancy</a>, genoeg actieve warps per core, vaak belangrijk voor de prestaties.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over SIMT</h2>
   <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Bij SIMT kan elke thread als een onafhankelijk programma worden geschreven en handelt de hardware ook sprongen af, terwijl bij SIMD de programmeur of compiler expliciet vectorinstructies met vaste breedte gebruikt</p><p class="explanation">Bij <a class="term-link" href="/nl/term/simd/">SIMD</a> van de CPU wordt één instructie toegepast op een vectorregister met bijvoorbeeld 4 of 8 data-elementen, dus het programma wordt geschreven met aandacht voor de vectorbreedte. Bij <a class="term-link" href="/nl/term/single-instruction-multiple-threads/">SIMT</a> van de <a class="term-link" href="/nl/term/gpu/">GPU</a> schrijft de programmeur de bewerking van één thread gewoon uit, en bundelt de hardware die in groepen van 32 en voert ze met dezelfde instructie uit. Threads mogen individueel vertakken, en de hardware voert de gesplitste paden <a class="term-link" href="/nl/term/numerical-aperture/">na</a> elkaar uit, maar dan daalt de efficiëntie.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is een warp bij GPU-computing?</h3>
+  <p>Een warp is een groep van 32 threads op NVIDIA-GPU&#39;s die samen in lockstep dezelfde instructie uitvoeren. Het is de basiseenheid voor het uitgeven van instructies in het SIMT-model; het equivalent bij AMD heet een wavefront.</p>
+  <h3>Wat is het verschil tussen SIMT en SIMD?</h3>
+  <p>SIMD biedt vectorinstructies met een vaste breedte die de programmeur of compiler expliciet moet gebruiken. Bij SIMT wordt elke thread als onafhankelijke scalaire code geschreven, terwijl de hardware threads in warps groepeert en divergerende takken afhandelt.</p>
+  <h3>Wat is warp divergence?</h3>
+  <p>Warp divergence treedt op als threads in dezelfde warp verschillende branchpaden nemen. De hardware voert elk pad na elkaar uit met de inactieve threads gemaskeerd, wat de efficiëntie verlaagt tot de paden weer samenkomen.</p>
+</section>
 <section>
   <h2>“SIMT” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij SIMT van de GPU schrijft de programmeur de bewerking van één thread gewoon uit, en bundelt de hardware die in groepen van 32 en voert ze met dezelfde instructie uit.</p><a href="/nl/q/gpu-programming/gpu-programming-010/">Welke uitspraak over het verschil tussen de SIMT-methode (s…</a></li><li><p>Deze methode, waarbij als threads geschreven programma&#39;s tot een bundel worden gevormd en met dezelfde instructie werken, heet SIMT.</p><a href="/nl/q/gpu-programming/gpu-programming-009/">Hoe heet bij NVIDIA-GPU&#39;s de eenheid waarin 32 threads tot …</a></li></ul>

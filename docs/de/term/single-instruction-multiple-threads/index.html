@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"SIMT","item":"https://semiconroom.com/de/term/single-instruction-multiple-threads/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMT","description":"Verfahren mit einem Befehl und mehreren Threads. Programme werden pro Thread geschrieben, die Hardware bündelt die Threads jedoch zu Warps (bei NVIDIA 32 Threads) und führt sie mit demselben Befehl aus.","url":"https://semiconroom.com/de/term/single-instruction-multiple-threads/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"SIMT","item":"https://semiconroom.com/de/term/single-instruction-multiple-threads/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"SIMT","description":"Verfahren mit einem Befehl und mehreren Threads. Programme werden pro Thread geschrieben, die Hardware bündelt die Threads jedoch zu Warps (bei NVIDIA 32 Threads) und führt sie mit demselben Befehl aus.","url":"https://semiconroom.com/de/term/single-instruction-multiple-threads/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist ein Warp bei GPUs?","acceptedAnswer":{"@type":"Answer","text":"Ein Warp ist auf NVIDIA-GPUs eine Gruppe von 32 Threads, die denselben Befehl gemeinsam im Gleichschritt ausführen. Er ist die grundlegende Einheit der Befehlsausgabe im SIMT-Modell; das Gegenstück bei AMD heißt Wavefront."}},{"@type":"Question","name":"Was ist der Unterschied zwischen SIMT und SIMD?","acceptedAnswer":{"@type":"Answer","text":"SIMD stellt Vektorbefehle fester Breite bereit, die Programmierer oder Compiler explizit verwenden müssen. SIMT erlaubt, jeden Thread als unabhängigen skalaren Code zu schreiben, während die Hardware die Threads zu Warps bündelt und divergierende Verzweigungen behandelt."}},{"@type":"Question","name":"Was ist Warp-Divergenz?","acceptedAnswer":{"@type":"Answer","text":"Warp-Divergenz tritt auf, wenn Threads desselben Warps unterschiedliche Verzweigungspfade nehmen. Die Hardware führt jeden Pfad nacheinander aus und maskiert inaktive Threads, was die Effizienz senkt, bis die Pfade wieder zusammenlaufen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/gpu-programming/">GPU-Programmierung</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wie SIMT Threads ausführt</h2>
+  <p>Im Modell Single Instruction, Multiple Threads (SIMT) schreibt der Programmierer einen Kernel als gewöhnlichen Code für einen Thread, und Tausende von Threads führen ihn auf unterschiedlichen Daten aus. Die Hardware fasst die Threads zu festen Bündeln zusammen, auf NVIDIA-GPUs Warps aus 32 Threads, auf AMD-GPUs Wavefronts aus 64 oder 32. Ein Befehl wird für das ganze Bündel einmal geholt und dekodiert und von allen Threads im Gleichschritt ausgeführt, jeder mit eigenen Registern und Daten. So verteilt sich die Steuerlogik auf viele Rechenspuren, und der größte Teil der Chipfläche dient der Berechnung.</p>
+</section>
+<section class="term-about">
+  <h2>Verzweigungsdivergenz</h2>
+  <p>Da jeder Thread unabhängig geschrieben ist, können Threads eines Warps unterschiedliche Verzweigungen nehmen. Die Hardware führt dann jeden Pfad nacheinander aus, wobei die Threads, die nicht auf diesem Pfad sind, ausmaskiert werden, und führt die Threads danach wieder zusammen. Die Korrektheit bleibt erhalten, aber wenn je die Hälfte der Threads einen Zweig eines if-else nimmt, durchläuft der Warp beide, und sein <a class="term-link" href="/de/term/throughput/">Durchsatz</a> halbiert sich etwa. Performancebewusster Code ordnet die Daten so an, dass Threads desselben Warps demselben Pfad folgen, etwa indem Verzweigungsbedingungen vom Warp-Index statt von den Daten jedes einzelnen Threads abhängen.</p>
+</section>
+<section class="term-about">
+  <h2>SIMT vs. SIMD auf CPUs</h2>
+  <p><a class="term-link" href="/de/term/simd/">SIMD</a>-Erweiterungen (Single Instruction, Multiple Data) von CPUs wenden einen Befehl auf ein Vektorregister mit einer festen Zahl von Elementen an, etwa 4 oder 8. Programm oder Compiler müssen auf diese Breite ausgerichtet sein, mit expliziten Vektorbefehlen und Masken für Randfälle. SIMT verbirgt die Breite: Der Code beschreibt einen skalaren Thread, und die Hardware bildet die Vektoren aus vielen Threads und übernimmt bei Divergenz die Maskierung. Darunter ist die Ausführung ähnlich, weshalb die SIMT-Leistung weiterhin davon abhängt, dass die Threads eines Warps im Gleichschritt bleiben.</p>
+</section>
+<section class="term-about">
+  <h2>Praktische Konsequenzen</h2>
+  <p>Mehrere gängige Regeln der <a class="term-link" href="/de/term/gpu/">GPU</a>-Programmierung folgen aus SIMT. <a class="term-link" href="/de/term/thread-block/">Thread-Block</a>-Größen sind normalerweise Vielfache von 32, damit kein Warp teilweise leer läuft. Speicherzugriffe sind am schnellsten, wenn benachbarte Threads eines Warps auf benachbarte Adressen zugreifen, sodass die Hardware sie zu wenigen breiten Transaktionen zusammenfassen kann; dieses Muster heißt Coalescing. Und GPUs verbergen lange Speicherlatenzen, indem sie viele Warps resident halten und zu einem anderen bereiten Warp wechseln, sobald einer blockiert; deshalb ist eine hohe <a class="term-link" href="/de/term/gpu-occupancy/">Occupancy</a>, also genügend aktive Warps pro Kern, oft entscheidend für die Leistung.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu SIMT</h2>
   <article class="q-mini" data-qid="gpu-programming-010" data-cat="gpu-programming" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Bei SIMT lässt sich jeder Thread als unabhängiges Programm schreiben, und die Hardware übernimmt auch Verzweigungen, während bei SIMD Programmierer oder Compiler explizit Vektorbefehle fester Breite verwenden</p><p class="explanation">Bei <a class="term-link" href="/de/term/simd/">SIMD</a> der CPU wird eine Anweisung auf ein Vektorregister angewendet, das z. B. 4 oder 8 Daten bündelt; das Programm wird daher mit Blick auf die Vektorbreite geschrieben. Bei <a class="term-link" href="/de/term/single-instruction-multiple-threads/">SIMT</a> der <a class="term-link" href="/de/term/gpu/">GPU</a> schreibt der Programmierer die Verarbeitung eines einzelnen Threads ganz normal, und die Hardware bündelt je 32 Threads zur Ausführung mit derselben Anweisung. Threads dürfen verzweigen, und die Hardware führt die verzweigten Pfade nacheinander aus, wobei die Effizienz sinkt.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Was ist ein Warp bei GPUs?</h3>
+  <p>Ein Warp ist auf NVIDIA-GPUs eine Gruppe von 32 Threads, die denselben Befehl gemeinsam im Gleichschritt ausführen. Er ist die grundlegende Einheit der Befehlsausgabe im SIMT-Modell; das Gegenstück bei AMD heißt Wavefront.</p>
+  <h3>Was ist der Unterschied zwischen SIMT und SIMD?</h3>
+  <p>SIMD stellt Vektorbefehle fester Breite bereit, die Programmierer oder Compiler explizit verwenden müssen. SIMT erlaubt, jeden Thread als unabhängigen skalaren Code zu schreiben, während die Hardware die Threads zu Warps bündelt und divergierende Verzweigungen behandelt.</p>
+  <h3>Was ist Warp-Divergenz?</h3>
+  <p>Warp-Divergenz tritt auf, wenn Threads desselben Warps unterschiedliche Verzweigungspfade nehmen. Die Hardware führt jeden Pfad nacheinander aus und maskiert inaktive Threads, was die Effizienz senkt, bis die Pfade wieder zusammenlaufen.</p>
+</section>
 <section>
   <h2>„SIMT“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Bei SIMT der GPU schreibt der Programmierer die Verarbeitung eines einzelnen Threads ganz normal, und die Hardware bündelt je 32 Threads zur Ausführung mit derselben Anweisung.</p><a href="/de/q/gpu-programming/gpu-programming-010/">Welche Aussage zum Unterschied zwischen dem SIMT-Verfahren …</a></li><li><p>Diese Methode, als Threads geschriebene Programme in Bündeln mit derselben Anweisung auszuführen, heißt SIMT.</p><a href="/de/q/gpu-programming/gpu-programming-009/">Wie heißt bei NVIDIA-GPUs die Einheit, in der 32 Threads zu…</a></li></ul>

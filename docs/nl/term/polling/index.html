@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Polling","item":"https://semiconroom.com/nl/term/polling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Polling","description":"Methode waarbij de CPU herhaaldelijk de toestand van randschakelingen opvraagt om veranderingen te vinden. Eenvoudig, maar het blijft controleren ook als er niets gebeurt, wat tijd en energie kost.","url":"https://semiconroom.com/nl/term/polling/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Polling","item":"https://semiconroom.com/nl/term/polling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Polling","description":"Methode waarbij de CPU herhaaldelijk de toestand van randschakelingen opvraagt om veranderingen te vinden. Eenvoudig, maar het blijft controleren ook als er niets gebeurt, wat tijd en energie kost.","url":"https://semiconroom.com/nl/term/polling/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het verschil tussen polling en interrupts?","acceptedAnswer":{"@type":"Answer","text":"Bij polling controleert de CPU herhaaldelijk de status van een apparaat; bij interrupts meldt het apparaat de CPU wanneer zijn status verandert. Polling is eenvoudiger en voorspelbaar, terwijl interrupts de CPU in de tussentijd ander werk laten doen of laten slapen."}},{"@type":"Question","name":"Waarom moet een gepold register in C volatile worden gedeclareerd?","acceptedAnswer":{"@type":"Answer","text":"Zonder volatile mag de compiler aannemen dat de waarde niet kan veranderen en haar maar één keer lezen, waardoor de pollinglus een oneindige lus wordt. Volatile dwingt bij elke iteratie een nieuwe leesactie van het hardwareregister af."}},{"@type":"Question","name":"Is polling altijd inefficiënt?","acceptedAnswer":{"@type":"Answer","text":"Nee. Als gebeurtenissen met een zeer hoge snelheid binnenkomen, vermijdt polling de overhead van opslaan en herstellen bij elke interrupt en kan het gebeurtenissen in batches verwerken, waardoor het efficiënter is dan interrupts."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/embedded/">Embedded systemen en firmware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe polling werkt</h2>
+  <p>Bij polling komt de CPU de toestand van een randapparaat te weten door in een lus het statusregister ervan te lezen, bijvoorbeeld door de vlag &#39;receive data ready&#39; van een <a class="term-link" href="/nl/term/uart/">UART</a> te controleren tot die gezet is en daarna de byte te lezen. De controle kan een strakke busy-wait zijn of een periodieke test in de hoofdlus of een timerroutine. Polling is eenvoudig te schrijven en te debuggen, en de timing is voorspelbaar omdat de controles precies plaatsvinden waar het programma ze neerzet. In C moet de registerpointer volatile worden gedeclareerd, zodat de compiler bij elke doorgang echt de hardware opnieuw leest in plaats van een eerder gelezen waarde te hergebruiken.</p>
+</section>
+<section class="term-about">
+  <h2>Polling vs. interrupts</h2>
+  <p>Bij interrupts geeft het randapparaat de CPU een signaal als er iets gebeurt; de CPU onderbreekt zijn huidige werk, slaat zijn toestand op, voert een handler uit en gaat daarna verder. Zo kan de CPU tijdens het wachten ander werk doen of slapen, wat belangrijk is voor apparaten op batterijen. Polling kost <a class="term-link" href="/nl/term/cpu-time/">CPU-tijd</a> en energie, ook als er niets is veranderd, en de reactietijd in het slechtste geval wordt bepaald door het pollinginterval. Elke <a class="term-link" href="/nl/term/interrupt/">interrupt</a> heeft daarentegen een vaste overhead voor het binnengaan en verlaten van de handler, die polling vermijdt.</p>
+</section>
+<section class="term-about">
+  <h2>Wanneer polling de betere keuze is</h2>
+  <p>Polling wint als gebeurtenissen zo vaak optreden dat de overhead per <a class="term-link" href="/nl/term/interrupt/">interrupt</a> zou domineren. Netwerkverwerking op hoge snelheid is het klassieke voorbeeld: onder zware belasting schakelen drivers over van een interrupt per pakket naar het pollen van batches pakketten, en sommige frameworks voor pakketverwerking reserveren cores voor continu pollen. Polling past ook bij heel korte wachttijden, zoals een statusvlag die binnen enkele cycli klaar is, bij eenvoudige opstartcode waarin interrupts nog niet zijn geconfigureerd en bij regellussen die op strikt vaste momenten moeten bemonsteren.</p>
+</section>
+<section class="term-about">
+  <h2>Hybride benaderingen</h2>
+  <p>Echte systemen combineren de twee vaak. Een <a class="term-link" href="/nl/term/interrupt/">interrupt</a> wekt de CPU uit de slaapstand, en de handler pollt daarna om alle openstaande data te verwerken voordat de interrupt weer wordt ingeschakeld, zodat een burst van gebeurtenissen één interrupt kost in plaats van veel. <a class="term-link" href="/nl/term/dma/">DMA (direct memory access)</a> vermindert de behoefte aan beide door data zonder tussenkomst van de CPU te verplaatsen en pas een signaal te geven als een heel blok klaar is. Let op bij statusregisters waarvan de vlaggen door het lezen zelf worden gewist, omdat een extra leesactie dan ongemerkt een gebeurtenis kan weggooien.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Polling</h2>
   <article class="q-mini" data-qid="os-hardware-028" data-cat="os-hardware" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: A. Bij polling gaat de CPU de toestand herhaaldelijk controleren en bij interrupts meldt de randschakeling aan de CPU wanneer de toestand verandert</p><p class="explanation"><a class="term-link" href="/nl/term/polling/">Polling</a> is eenvoudig en voorspelbaar in gedrag omdat het controle-interval vaststaat, maar de CPU blijft controleren, ook als er niets gebeurt, wat tijd en vermogen verspilt. Bij interrupts reageert de CPU alleen als er een verandering is, zodat tijdens het wachten ander werk kan worden gedaan of de CPU kan slapen. Bij zeer veel interrupts neemt de verwerkingslast juist toe, dus het is belangrijk ze op de juiste plaats te gebruiken.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het verschil tussen polling en interrupts?</h3>
+  <p>Bij polling controleert de CPU herhaaldelijk de status van een apparaat; bij interrupts meldt het apparaat de CPU wanneer zijn status verandert. Polling is eenvoudiger en voorspelbaar, terwijl interrupts de CPU in de tussentijd ander werk laten doen of laten slapen.</p>
+  <h3>Waarom moet een gepold register in C volatile worden gedeclareerd?</h3>
+  <p>Zonder volatile mag de compiler aannemen dat de waarde niet kan veranderen en haar maar één keer lezen, waardoor de pollinglus een oneindige lus wordt. Volatile dwingt bij elke iteratie een nieuwe leesactie van het hardwareregister af.</p>
+  <h3>Is polling altijd inefficiënt?</h3>
+  <p>Nee. Als gebeurtenissen met een zeer hoge snelheid binnenkomen, vermijdt polling de overhead van opslaan en herstellen bij elke interrupt en kan het gebeurtenissen in batches verwerken, waardoor het efficiënter is dan interrupts.</p>
+</section>
 <section>
   <h2>“Polling” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij zeldzame verwerking of wanneer de CPU moet rusten om vermogen te besparen, is voortdurend leeg controleren met polling verspillend en zijn interrupts geschikter.</p><a href="/nl/q/os-hardware/os-hardware-028/">In welk geval is polling, waarbij de CPU de status van een …</a></li><li><p>Polling is eenvoudig en voorspelbaar in gedrag omdat het controle-interval vaststaat, maar de CPU blijft controleren, ook als er niets gebeurt, wat tijd en vermogen verspilt.</p><a href="/nl/q/embedded/embedded-028/">Wat is het juiste verschil tussen polling en interrupts als…</a></li><li><p>Dit geeft minder verspilling en een snellere reactie dan het voortdurend door de CPU controleren van de toestand van randapparatuur (polling).</p><a href="/nl/q/cpu/cpu-022/">Welk CPU-mechanisme onderbreekt tijdelijk de lopende verwer…</a></li></ul>

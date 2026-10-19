@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b-codering","item":"https://semiconroom.com/nl/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b-codering","description":"Methode waarbij aan 128 databits een kop van 2 bits wordt toegevoegd. Het rendement is ongeveer 98,5% en schakelovergangen worden met scrambling gewaarborgd. Wordt gebruikt vanaf PCI Express 3.0.","url":"https://semiconroom.com/nl/term/128b-130b-encoding/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"128b/130b-codering","item":"https://semiconroom.com/nl/term/128b-130b-encoding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"128b/130b-codering","description":"Methode waarbij aan 128 databits een kop van 2 bits wordt toegevoegd. Het rendement is ongeveer 98,5% en schakelovergangen worden met scrambling gewaarborgd. Wordt gebruikt vanaf PCI Express 3.0.","url":"https://semiconroom.com/nl/term/128b-130b-encoding/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waarom is 128b/130b efficiënter dan 8b/10b?","acceptedAnswer":{"@type":"Answer","text":"8b/10b besteedt 2 extra bits aan elke 8 databits, een overhead van 20%, terwijl 128b/130b 2 headerbits besteedt aan elke 128 databits, ongeveer 1,5%. Dat kan omdat scrambling, en niet de code zelf, voor de overgangen en balans zorgt die de ontvanger nodig heeft."}},{"@type":"Question","name":"Wat is de sync-header bij 128b/130b-codering?","acceptedAnswer":{"@type":"Answer","text":"Het is het voorvoegsel van 2 bits van elk blok van 130 bits, 01 of 10, dat de bloklimiet markeert met een gegarandeerde overgang en aangeeft of het blok data of een ordered set bevat."}},{"@type":"Question","name":"Hoeveel bandbreedte heeft een PCIe 3.0 x16-link?","acceptedAnswer":{"@type":"Answer","text":"Ongeveer 15,8 GB/s in elke richting, uit 8 GT/s × 128/130 ÷ 8 bits per byte × 16 lanes. Door pakketoverhead is de bruikbare doorvoer iets lager."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/io-interface/">Interfaces en busstandaarden</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe een 128b/130b-blok is opgebouwd</h2>
+  <p>128b/130b-codering groepeert data in blokken van 130 bits: een sync-header van 2 bits gevolgd door een payload van 128 bits. Alleen de headerwaarden 01 en 10 zijn toegestaan, zodat elk blok gegarandeerd minstens één overgang aan het begin heeft, waarmee de ontvanger de bloklimieten kan vinden. De header vertelt de ontvanger ook of de payload data bevat of een ordered set, de speciale symbolen voor linktraining en klokcompensatie. De payload zelf gaat door een scrambler, die hem XOR&#39;t met een pseudowillekeurige reeks uit een lineair teruggekoppeld <a class="term-link" href="/nl/term/shift-register/">schuifregister</a> (LFSR), en de ontvanger descrambelt hem met dezelfde reeks.</p>
+</section>
+<section class="term-about">
+  <h2>Scrambling in plaats van gegarandeerde balans</h2>
+  <p>Een seriële ontvanger haalt zijn klok uit de overgangen in de data, en AC-gekoppelde links hebben ongeveer evenveel enen als nullen nodig. <a class="term-link" href="/nl/term/8b-10b-encoding/">8b/10b-codering</a> garandeert beide per constructie: geen reeks van meer dan vijf gelijke bits en een running disparity die de lijn DC-gebalanceerd houdt, ten koste van twee extra bits per byte. 128b/130b vertrouwt in plaats daarvan op scrambling om lange reeksen en onbalans statistisch zeer onwaarschijnlijk te maken. De garantie is zwakker, dus egalisatie (equalization) en klokherstel moeten af en toe een langere reeks verdragen, maar de overhead daalt van 20% naar ongeveer 1,5%.</p>
+</section>
+<section class="term-about">
+  <h2>Wat het rendement betekent voor PCI Express</h2>
+  <p>Het rendement is 128/130, ongeveer 98,5%, tegenover 80% voor 8b/10b. Daarom verdubbelde <a class="term-link" href="/nl/term/pci-express/">PCI Express</a> 3.0 de bruikbare bandbreedte bijna, terwijl de signaleringssnelheid alleen van 5 naar 8 GT/s ging: een PCIe 2.0-lane draagt 5 × 0,8 = 4 Gb/s aan data, terwijl een PCIe 3.0-lane 8 × 128/130 ≈ 7,88 Gb/s draagt, ofwel ongeveer 0,985 GB/s. Een x16-link geeft daardoor ongeveer 15,8 GB/s in elke richting vóór pakketheaders en protocoloverhead, die het geleverde getal wat verlagen.</p>
+</section>
+<section class="term-about">
+  <h2>Verwante codes</h2>
+  <p>128b/130b wordt gebruikt door <a class="term-link" href="/nl/term/pci-express/">PCI Express</a> 3.0, 4.0 en 5.0, die de codering behielden en de transfersnelheid elke generatie verdubbelden. Het behoort tot dezelfde familie als 64b/66b, gebruikt in 10 Gigabit Ethernet, dat eveneens een sync-header van 2 bits combineert met een gescrambelde payload. PCI Express 6.0 stapte over op <a class="term-link" href="/nl/term/pam4/">PAM4</a>-signalering met flits van vaste grootte en forward error correction, en gebruikt dus geen 128b/130b-blokken meer. Controleer bij het vergelijken van linksnelheden altijd welke codering geldt, omdat de ruwe snelheid in GT/s niet de datasnelheid is.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over 128b/130b-codering</h2>
   <article class="q-mini" data-qid="io-interface-007" data-cat="io-interface" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. Ongeveer 16 GB/s</p><p class="explanation">De effectieve snelheid van één lane is 8 Gb/s × 128/130 ≈ 7,88 Gb/s, en gedeeld door 8 ongeveer 0,985 GB/s. Bij 16 lanes is de bandbreedte in één richting ongeveer 15,8 GB/s, dus ongeveer 16 GB/s, en voor zenden en ontvangen samen ongeveer 32 GB/s. De bandbreedte van <a class="term-link" href="/nl/term/pci-express/">PCI Express</a> volgt uit het product van generatie (snelheid per lane), coderingsefficiëntie en aantal lanes. In de praktijk is hij iets kleiner door overhead zoals pakketheaders.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waarom is 128b/130b efficiënter dan 8b/10b?</h3>
+  <p>8b/10b besteedt 2 extra bits aan elke 8 databits, een overhead van 20%, terwijl 128b/130b 2 headerbits besteedt aan elke 128 databits, ongeveer 1,5%. Dat kan omdat scrambling, en niet de code zelf, voor de overgangen en balans zorgt die de ontvanger nodig heeft.</p>
+  <h3>Wat is de sync-header bij 128b/130b-codering?</h3>
+  <p>Het is het voorvoegsel van 2 bits van elk blok van 130 bits, 01 of 10, dat de bloklimiet markeert met een gegarandeerde overgang en aangeeft of het blok data of een ordered set bevat.</p>
+  <h3>Hoeveel bandbreedte heeft een PCIe 3.0 x16-link?</h3>
+  <p>Ongeveer 15,8 GB/s in elke richting, uit 8 GT/s × 128/130 ÷ 8 bits per byte × 16 lanes. Door pakketoverhead is de bruikbare doorvoer iets lager.</p>
+</section>
 <section>
   <h2>“128b/130b-codering” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Bij 128b/130b-codering worden 128 databits met een header van 2 bits in 130 bits verzonden, dus de efficiëntie is 128/130 ≈ 98,5%.</p><a href="/nl/q/io-interface/io-interface-007/">Welke waarde komt het best overeen met de efficiëntie van d…</a></li></ul>

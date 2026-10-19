@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"KV-cache","item":"https://semiconroom.com/nl/term/kv-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KV-cache","description":"Geheugen dat bij inferentie van grote taalmodellen de Key- en Value-waarden van de attention van al verwerkte tokens bewaart. Voorkomt herberekening, maar groeit evenredig met de lengte van de tekst en de batch.","url":"https://semiconroom.com/nl/term/kv-cache/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"KV-cache","item":"https://semiconroom.com/nl/term/kv-cache/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KV-cache","description":"Geheugen dat bij inferentie van grote taalmodellen de Key- en Value-waarden van de attention van al verwerkte tokens bewaart. Voorkomt herberekening, maar groeit evenredig met de lengte van de tekst en de batch.","url":"https://semiconroom.com/nl/term/kv-cache/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is de KV-cache in grote taalmodellen?","acceptedAnswer":{"@type":"Answer","text":"Het is geheugen dat de attention-keys en -values bevat van tokens die al zijn verwerkt, zodat voor elk nieuw gegenereerd token alleen zijn eigen keys en values hoeven te worden berekend in plaats van de hele reeks opnieuw."}},{"@type":"Question","name":"Waarom gebruikt de KV-cache zoveel geheugen?","acceptedAnswer":{"@type":"Answer","text":"De grootte groeit lineair met het aantal lagen, de attention-breedte, de contextlengte en de batchgrootte, dus lange contexten of veel gelijktijdige verzoeken kunnen hem groter maken dan de modelgewichten."}},{"@type":"Question","name":"Beïnvloedt de KV-cache de kwaliteit van de uitvoer?","acceptedAnswer":{"@type":"Answer","text":"Het cachen van exacte keys en values is wiskundig gelijkwaardig aan ze opnieuw berekenen; alleen benaderingen zoals opslag van de cache met lage precisie of het weglaten van oude tokens kunnen de uitvoer veranderen."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/ai-stack/">AI-hardware en softwarestack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Waarom LLM-inferentie keys en values bewaart</h2>
+  <p>Een transformer-taalmodel genereert tekst token voor token. In elke <a class="term-link" href="/nl/term/attention-mechanism/">attention</a>-laag wordt de query van het nieuwe token vergeleken met de keys van alle eerdere tokens, en het resultaat weegt hun values. Omdat attention causaal is, veranderen de keys en values van eerdere tokens nooit meer zodra ze zijn berekend. De KV-cache slaat ze per laag op, zodat elke decodeerstap alleen query, key en value van het nieuwe token berekent en de laatste twee toevoegt, in plaats van de hele reeks opnieuw te verwerken. Zo wordt steeds opnieuw alles herberekenen vervangen door bescheiden kosten per token.</p>
+</section>
+<section class="term-about">
+  <h2>Hoe groot de KV-cache wordt</h2>
+  <p>De cachegrootte is 2 (keys en values) × aantal lagen × key/value-dimensie per laag × aantal tokens × <a class="term-link" href="/nl/term/batch-size/">batchgrootte</a> × bytes per element. Ter illustratie: een model met 32 lagen, een hidden size van 4096 en standaard multi-head <a class="term-link" href="/nl/term/attention-mechanism/">attention</a> heeft in FP16 ongeveer 0,5 MB per token nodig. Een context van 4096 tokens neemt dan ongeveer 2 GB per reeks in, en een batch van acht van zulke reeksen ongeveer 16 GB, meer dan de ongeveer 14 GB die de gewichten van een FP16-model met 7 miljard parameters innemen.</p>
+</section>
+<section class="term-about">
+  <h2>Prefill, decode en geheugenbandbreedte</h2>
+  <p><a class="term-link" href="/nl/term/ai-inference/">Inferentie</a> kent twee fasen. <a class="term-link" href="/nl/term/prefill/">Prefill</a> verwerkt de hele prompt parallel en schrijft de keys en values ervan in de cache; deze fase wordt vooral door rekenkracht begrensd. Decode produceert daarna één token per stap, en elke stap moet de modelgewichten plus de volledige KV-cache van die reeks lezen, dus wordt meestal door geheugenbandbreedte begrensd. Grotere batches verdelen het lezen van de gewichten over meer verzoeken en verhogen de <a class="term-link" href="/nl/term/throughput/">doorvoer</a>, maar vergroten de KV-cache en verlengen elke stap, wat de latentie van individuele verzoeken verhoogt.</p>
+</section>
+<section class="term-about">
+  <h2>Manieren om hem te verkleinen of te beheren</h2>
+  <p>Verschillende technieken verminderen de druk op de KV-cache. Grouped-query en multi-query <a class="term-link" href="/nl/term/attention-mechanism/">attention</a> laten meerdere query-heads één set key- en value-heads delen, wat de cachegrootte evenredig verkleint. De cache in 8 bit of lagere precisie opslaan halveert het geheugen ten opzichte van FP16 of verkleint het verder. De cache in kleine blokken van vaste grootte alloceren, in plaats van één aaneengesloten gebied per reeks dat op de maximale lengte is gedimensioneerd, voorkomt <a class="term-link" href="/nl/term/memory-fragmentation/">fragmentatie</a> en laat meer verzoeken passen; het maakt ook mogelijk dat reeksen met een gemeenschappelijk promptprefix blokken delen. Sommige modellen beperken attention bovendien tot een schuivend venster van recente tokens.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over KV-cache</h2>
   <article class="q-mini" data-qid="ai-stack-013" data-cat="ai-stack" data-answer="2" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is C.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: C. De Key en Value van de attention van reeds verwerkte tokens worden opgeslagen, zodat ze niet bij elk nieuw token opnieuw hoeven te worden berekend</p><p class="explanation">Bij de attentionberekening verwijst een nieuw token naar de Key en Value van alle voorgaande tokens. Omdat de Key en Value van eerdere tokens niet veranderen, hoeft alleen het nieuwe token te worden berekend als ze worden opgeslagen in plaats van telkens opnieuw berekend. Dit is de <a class="term-link" href="/nl/term/kv-cache/">KV-cache</a>. De berekening neemt sterk af, maar de hoeveelheid opgeslagen Key en Value groeit evenredig met de lengte van de tekst en de grootte van de batch.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is de KV-cache in grote taalmodellen?</h3>
+  <p>Het is geheugen dat de attention-keys en -values bevat van tokens die al zijn verwerkt, zodat voor elk nieuw gegenereerd token alleen zijn eigen keys en values hoeven te worden berekend in plaats van de hele reeks opnieuw.</p>
+  <h3>Waarom gebruikt de KV-cache zoveel geheugen?</h3>
+  <p>De grootte groeit lineair met het aantal lagen, de attention-breedte, de contextlengte en de batchgrootte, dus lange contexten of veel gelijktijdige verzoeken kunnen hem groter maken dan de modelgewichten.</p>
+  <h3>Beïnvloedt de KV-cache de kwaliteit van de uitvoer?</h3>
+  <p>Het cachen van exacte keys en values is wiskundig gelijkwaardig aan ze opnieuw berekenen; alleen benaderingen zoals opslag van de cache met lage precisie of het weglaten van oude tokens kunnen de uitvoer veranderen.</p>
+</section>
 <section>
   <h2>“KV-cache” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Dit is de KV-cache.</p><a href="/nl/q/ai-stack/ai-stack-013/">Welke uitspraak over de rol van de KV-cache bij de inferent…</a></li><li><p>Bij inferentie komen daar nog tussenresultaten en bij grote taalmodellen het geheugen voor de KV-cache bij.</p><a href="/nl/q/ai-stack/ai-stack-004/">Hoeveel bedraagt het geheugen voor de gewichten ongeveer wa…</a></li><li><p>Ook het geheugen voor tussenresultaten en de KV-cache groeit evenredig met de batch.</p><a href="/nl/q/ai-stack/ai-stack-011/">Welke uitspraak over het nadeel van een te grote batchgroot…</a></li><li><p>De grootte van de KV-cache wordt bepaald door aantal lagen × dimensie van Key en Value × aantal tokens × batchgrootte × aantal bytes per element.</p><a href="/nl/q/ai-stack/ai-stack-014/">Welke uitspraak over wat bij de inferentie van grote taalmo…</a></li></ul>

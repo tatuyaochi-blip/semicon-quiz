@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"BSS-sectie","item":"https://semiconroom.com/nl/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"BSS-sectie","description":"Gebied voor globale en statische variabelen zonder beginwaarde (of met waarde 0). In het bestand wordt alleen de grootte vastgelegd en bij het laden wordt het met nullen gevuld, zodat het uitvoerbare bestand niet groter wordt.","url":"https://semiconroom.com/nl/term/bss-section/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"BSS-sectie","item":"https://semiconroom.com/nl/term/bss-section/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"BSS-sectie","description":"Gebied voor globale en statische variabelen zonder beginwaarde (of met waarde 0). In het bestand wordt alleen de grootte vastgelegd en bij het laden wordt het met nullen gevuld, zodat het uitvoerbare bestand niet groter wordt.","url":"https://semiconroom.com/nl/term/bss-section/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Waar staat BSS voor?","acceptedAnswer":{"@type":"Answer","text":"BSS wordt meestal uitgelegd als block started by symbol, naar een oud assemblerdirectief. In moderne toolchains is het gewoon de naam van de sectie voor met nul geïnitialiseerde globale en statische variabelen."}},{"@type":"Question","name":"Maakt een grote niet-geïnitialiseerde array het uitvoerbare bestand groter?","acceptedAnswer":{"@type":"Answer","text":"Nee. Een globale of statische array zonder initializer komt in .bss terecht, waar alleen de grootte wordt vastgelegd; het geheugen wordt gealloceerd en met nullen gevuld wanneer het programma wordt geladen."}},{"@type":"Question","name":"Wat is het verschil tussen .data en .bss?","acceptedAnswer":{"@type":"Answer","text":"De .data-sectie bevat globale en statische variabelen met een beginwaarde ongelijk aan nul, die in het bestand moeten worden opgeslagen. De .bss-sectie bevat de variabelen die op nul beginnen, zodat ze tijdens runtime geheugen inneemt maar in het bestand geen ruimte voor inhoud."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/linker-loader/">Linker, loader en uitvoerbare formaten</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Wat er in .bss terechtkomt</h2>
+  <p>De taal C vereist dat elk object met statische opslagduur, dus globale en statische variabelen, op nul begint als er geen initializer is opgegeven. Compilers plaatsen zulke variabelen, en meestal ook variabelen die expliciet op 0 zijn geïnitialiseerd, in de .bss-sectie. Globale variabelen met een beginwaarde ongelijk aan nul gaan naar .data, en const-constanten naar de read-only sectie .rodata. Het sleutelwoord static bepaalt niet de sectie; het beperkt alleen de zichtbaarheid tot één bestand. Lokale automatische variabelen komen nooit in .bss terecht, omdat ze op de stack staan en geen gedefinieerde beginwaarde hebben.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom .bss geen bestandsruimte kost</h2>
+  <p>Een lange reeks nullen in het uitvoerbare bestand opslaan zou alleen schijfruimte en laadtijd verspillen, dus de .bss-sectie legt alleen haar grootte en uitlijning vast. In <a class="term-link" href="/nl/term/executable-and-linkable-format/">ELF</a> is ze gemarkeerd als sectie die geen bytes in het bestand inneemt. De <a class="term-link" href="/nl/term/program-loader/">loader</a> mapt het read-write-segment met .data en .bss, en waar de geheugengrootte van het segment groter is dan zijn bestandsgrootte, worden de extra bytes geleverd als met nullen gevulde pagina&#39;s. Daardoor voegt een declaratie als static char buf[1000000]; ongeveer 1 MB toe aan het geheugengebruik, maar vrijwel niets aan het bestand.</p>
+</section>
+<section class="term-about">
+  <h2>BSS op embedded systemen</h2>
+  <p>Op een <a class="term-link" href="/nl/term/microcontroller/">microcontroller</a> zonder besturingssysteem vult niemand anders het geheugen met nullen, dus doet de opstartcode dat. Vóór de aanroep van main kopieert de reset-handler doorgaans de beginwaarden van .data van flash naar RAM en maakt hij het .bss-bereik in RAM leeg, met begin- en eindadressen die het <a class="term-link" href="/nl/term/linker-script/">linkerscript</a> als symbolen exporteert. Wie een van beide stappen vergeet, krijgt globale variabelen met willekeurige waarden. Tools zoals het commando size rapporteren text, data en bss apart, wat helpt om het flash- en RAM-gebruik in te schatten.</p>
+</section>
+<section class="term-about">
+  <h2>Waar de naam vandaan komt</h2>
+  <p>BSS wordt meestal uitgelegd als block started by symbol, een naam die is overgenomen van een assemblerdirectief op vroege IBM-mainframes waarmee onder een label een niet-geïnitialiseerd geheugenblok werd gereserveerd. De betekenis bleef behouden in Unix-objectformaten en later <a class="term-link" href="/nl/term/executable-and-linkable-format/">ELF</a>, ook al is het directief zelf allang verdwenen. Tegenwoordig verwijst de naam gewoon naar de sectie voor met nul geïnitialiseerde data, naast .text voor code, .data voor geïnitialiseerde data en .rodata voor constanten.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over BSS-sectie</h2>
   <article class="q-mini" data-qid="linker-loader-012" data-cat="linker-loader" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Het is het gebied voor variabelen zonder beginwaarde (of met 0); in het bestand wordt alleen de grootte vastgelegd en bij het laden wordt het met 0 gevuld</p><p class="explanation">Globale en statische variabelen waarvoor geen beginwaarde is geschreven, beginnen volgens de regels van C op 0. Als de inhoud geheel uit nullen bestaat, is het verspilling om nullen in het bestand op te slaan, dus legt de .<a class="term-link" href="/nl/term/bss-section/">bss-sectie</a> alleen de grootte vast en reserveert de <a class="term-link" href="/nl/term/program-loader/">loader</a> geheugen en vult dat met 0. Bij bijvoorbeeld „static char buf[1000000];” wordt het uitvoerbare bestand niet 1 MB groter.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Waar staat BSS voor?</h3>
+  <p>BSS wordt meestal uitgelegd als block started by symbol, naar een oud assemblerdirectief. In moderne toolchains is het gewoon de naam van de sectie voor met nul geïnitialiseerde globale en statische variabelen.</p>
+  <h3>Maakt een grote niet-geïnitialiseerde array het uitvoerbare bestand groter?</h3>
+  <p>Nee. Een globale of statische array zonder initializer komt in .bss terecht, waar alleen de grootte wordt vastgelegd; het geheugen wordt gealloceerd en met nullen gevuld wanneer het programma wordt geladen.</p>
+  <h3>Wat is het verschil tussen .data en .bss?</h3>
+  <p>De .data-sectie bevat globale en statische variabelen met een beginwaarde ongelijk aan nul, die in het bestand moeten worden opgeslagen. De .bss-sectie bevat de variabelen die op nul beginnen, zodat ze tijdens runtime geheugen inneemt maar in het bestand geen ruimte voor inhoud.</p>
+</section>
 <section>
   <h2>“BSS-sectie” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Als de inhoud geheel uit nullen bestaat, is het verspilling om nullen in het bestand op te slaan, dus legt de .bss-sectie alleen de grootte vast en reserveert de loader geheugen en vult dat met 0.</p><a href="/nl/q/linker-loader/linker-loader-012/">Welke eigenschap van de .bss-sectie is juist?</a></li></ul>

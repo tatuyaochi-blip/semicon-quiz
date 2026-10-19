@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"ABA-probleem","item":"https://semiconroom.com/nl/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA-probleem","description":"Probleem waarbij een waarde van A naar B en weer terug naar A verandert en een CAS die alleen de waarde vergelijkt de wijziging niet opmerkt en toch slaagt. Vraagt aandacht bij lock-free datastructuren.","url":"https://semiconroom.com/nl/term/aba-problem/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"ABA-probleem","item":"https://semiconroom.com/nl/term/aba-problem/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ABA-probleem","description":"Probleem waarbij een waarde van A naar B en weer terug naar A verandert en een CAS die alleen de waarde vergelijkt de wijziging niet opmerkt en toch slaagt. Vraagt aandacht bij lock-free datastructuren.","url":"https://semiconroom.com/nl/term/aba-problem/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat is het ABA-probleem in eenvoudige woorden?","acceptedAnswer":{"@type":"Answer","text":"Een thread ziet waarde A, een andere thread verandert die in B en weer terug in A, en de compare-and-swap van de eerste thread slaagt alsof er niets is gebeurd. De waarde klopt, maar de toestand erachter is veranderd."}},{"@type":"Question","name":"Hoe voorkomt LL/SC het ABA-probleem?","acceptedAnswer":{"@type":"Answer","text":"Store-conditional slaagt alleen als er sinds de bijbehorende load-linked niet naar de locatie is geschreven, ongeacht welke waarde er werd geschreven. Een wijziging van A naar B en terug naar A laat de store dus toch mislukken."}},{"@type":"Question","name":"Lost een versieteller ABA volledig op?","acceptedAnswer":{"@type":"Answer","text":"In de praktijk wel, zolang de teller breed genoeg is om niet rond te lopen naar dezelfde waarde terwijl een thread stilstaat. Een heel smalle teller kan in principe rondlopen en het probleem opnieuw introduceren."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/multicore-sync/">Multicore en synchronisatie</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Hoe het ABA-probleem ontstaat</h2>
+  <p><a class="term-link" href="/nl/term/compare-and-swap/">Compare-and-swap</a> (CAS) schrijft alleen een nieuwe waarde als een locatie nog een verwachte waarde bevat, en vergelijkt waarden, niet de geschiedenis. Neem een <a class="term-link" href="/nl/term/lock-free-algorithm/">lock-free</a> stack waarvan de head naar node A wijst, met de next-pointer van A naar B. Thread 1 leest head = A en next = B en wordt dan onderbroken. Thread 2 popt A, popt B en pusht A terug, of pusht een nieuwe node die toevallig het adres van A hergebruikt. Thread 1 gaat verder, zijn CAS(head, A, B) slaagt omdat head nog steeds A is, en head wijst nu naar B, een node die niet meer in de stack zit.</p>
+</section>
+<section class="term-about">
+  <h2>Waarom hergebruik van geheugen het waarschijnlijk maakt</h2>
+  <p>Het probleem komt het meest voor in talen met handmatig geheugenbeheer. Wanneer een node wordt vrijgegeven, geeft de allocator hetzelfde adres graag mee aan de volgende allocatie, zodat een pointerwaarde terug kan keren naar A terwijl ze naar een andere node verwijst. In talen met <a class="term-link" href="/nl/term/garbage-collection/">garbage collection</a> kan een node niet worden opgeruimd zolang een thread er nog een referentie naar heeft, wat de vorm van ABA door adreshergebruik grotendeels wegneemt, al kan de logische vorm nog steeds optreden als dezelfde node bewust opnieuw wordt ingevoegd.</p>
+</section>
+<section class="term-about">
+  <h2>Standaard tegenmaatregelen</h2>
+  <p>De klassieke oplossing koppelt de pointer aan een wijzigingsteller en vergelijkt beide in één atomaire bewerking, met een CAS van dubbele breedte of ongebruikte pointerbits; elke update verhoogt de teller, zodat A met tag 5 verschilt van A met tag 7. Load-linked/store-conditional (LL/SC, in RISC-V <a class="term-link" href="/nl/term/load-reserved-store-conditional/">LR/SC</a> genoemd) mislukt als er sinds de load überhaupt naar de locatie is geschreven, ook als de waarde gelijk is. Schema&#39;s voor veilige geheugenvrijgave (safe memory reclamation), zoals hazard pointers en epoch-based reclamation, voorkomen dat een node wordt vrijgegeven en hergebruikt zolang een thread er nog bij kan.</p>
+</section>
+<section class="term-about">
+  <h2>ABA en lock-free voortgang</h2>
+  <p>Een <a class="term-link" href="/nl/term/lock-free-algorithm/">lock-free</a> algoritme garandeert dat altijd een thread voortgang boekt, ook als andere stilvallen, omdat een CAS alleen mislukt als de update van een andere thread is geslaagd. Die voortgangsgarantie zegt niets over correctheid, en ABA is de klassieke manier waarop een ogenschijnlijk correcte CAS-lus een datastructuur corrumpeert. Het is moeilijk te vangen met testen, omdat er een specifieke interleaving plus geheugenhergebruik voor nodig is; lock-free code moet daarom vanaf het begin met een expliciete ABA-strategie worden ontworpen.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over ABA-probleem</h2>
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is B.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. Wanneer een waarde van A naar B verandert en dan terug naar A, merkt CAS de verandering niet op en slaagt</p><p class="explanation">Wanneer de kop van een gekoppelde lijst A is, kan terwijl een thread A leest en CAS voorbereidt een andere thread A verwijderen, bewerkingen met B uitvoeren en weer een knoop op hetzelfde adres A invoegen. CAS slaagt omdat de waarde nog A is, maar de inhoud van de lijst is intussen veranderd en de structuur raakt beschadigd. Dit wordt voorkomen door de pointer samen met een bijwerkteller te vergelijken, of met <a class="term-link" href="/nl/term/load-reserved-store-conditional/">LR/SC</a>.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat is het ABA-probleem in eenvoudige woorden?</h3>
+  <p>Een thread ziet waarde A, een andere thread verandert die in B en weer terug in A, en de compare-and-swap van de eerste thread slaagt alsof er niets is gebeurd. De waarde klopt, maar de toestand erachter is veranderd.</p>
+  <h3>Hoe voorkomt LL/SC het ABA-probleem?</h3>
+  <p>Store-conditional slaagt alleen als er sinds de bijbehorende load-linked niet naar de locatie is geschreven, ongeacht welke waarde er werd geschreven. Een wijziging van A naar B en terug naar A laat de store dus toch mislukken.</p>
+  <h3>Lost een versieteller ABA volledig op?</h3>
+  <p>In de praktijk wel, zolang de teller breed genoeg is om niet rond te lopen naar dezelfde waarde terwijl een thread stilstaat. Een heel smalle teller kan in principe rondlopen en het probleem opnieuw introduceren.</p>
+</section>
 <section>
   <h2>“ABA-probleem” in de toelichting</h2>
   <ul class="term-quotes"><li><p>Het correct maken is echter moeilijk en aandacht voor onder meer het ABA-probleem is nodig.</p><a href="/nl/q/multicore-sync/multicore-sync-037/">Welke eigenschap van een lock-free algoritme is juist?</a></li></ul>
