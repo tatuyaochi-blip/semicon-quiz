@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FP32、FP16、BF16、INT8 的差異：位元構成、範圍、精度、用途比較 | 半導體教室</title>
+<meta name="description" content="從位元構成（符號、指數、尾數）、可表示範圍、精度、由 FP32 轉換、記憶體、運算器效率，以及在訓練與推論中的用途等面向，以表格比較 FP32、FP16、BF16、INT8。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FP32、FP16、BF16、INT8 的差異：位元構成、範圍、精度、用途比較 | 半導體教室">
+<meta property="og:description" content="從位元構成（符號、指數、尾數）、可表示範圍、精度、由 FP32 轉換、記憶體、運算器效率，以及在訓練與推論中的用途等面向，以表格比較 FP32、FP16、BF16、INT8。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/zh-hant/compare/"},{"@type":"ListItem","position":3,"name":"FP32、FP16、BF16、INT8 的差異：位元構成、範圍、精度、用途比較","item":"https://semiconroom.com/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/"}]},{"@context":"https://schema.org","@type":"Article","headline":"FP32、FP16、BF16、INT8 的差異：位元構成、範圍、精度、用途比較","description":"從位元構成（符號、指數、尾數）、可表示範圍、精度、由 FP32 轉換、記憶體、運算器效率，以及在訓練與推論中的用途等面向，以表格比較 FP32、FP16、BF16、INT8。","inLanguage":"zh-Hant","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/zh-hant/compare/fp32-vs-fp16-vs-bf16-vs-int8/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為什麼 AI 訓練常偏好 BF16 而非 FP16？","acceptedAnswer":{"@type":"Answer","text":"BF16 的指數部與 FP32 相同為 8 位元，可表示的範圍與 FP32 幾乎相同。FP16 為了防止小梯度變成 0 或大的值溢位，需要損失縮放，而 BF16 多數情況下不需要，由 FP32 轉換也很簡單。精度雖然較低，但在神經網路的訓練中不太會造成問題。"}},{"@type":"Question","name":"為什麼 FP16 的最大值是 65504？","acceptedAnswer":{"@type":"Answer","text":"FP16 的指數部為 5 位元（偏移值 15），全為 1 的值用於表示無限大與 NaN，因此指數的最大值為 2 的 15 次方。將尾數的 10 位元全部設為 1 時，(2 − 2⁻¹⁰) × 2¹⁵ 是最大的有限值，即為 65504。"}},{"@type":"Question","name":"INT8 如何表示含小數的值？","acceptedAnswer":{"@type":"Answer","text":"以 實數 ≈ 比例因子 × （整數 − 零點） 的形式近似。以 0 為中心對稱量化時，零點設為 0，比例因子則設為「數值的最大絕對值 ÷ 127」等。比例因子可依張量或依通道分別設定。"}},{"@type":"Question","name":"INT8 也能用於訓練嗎？","acceptedAnswer":{"@type":"Answer","text":"一般而言，訓練使用浮點數格式。因為訓練中梯度值的範圍很廣，也需要處理對權重的微小更新。INT8 主要用於將訓練好的模型量化後的推論，即使在量化感知訓練中，權重的更新也以浮點數進行。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/fp32-vs-fp16-vs-bf16-vs-int8/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>FP32、FP16、BF16、INT8 的差異：位元構成、範圍、精度、用途比較</h1>
+  <p class="lead">FP32 是 32 位元的單精度浮點數，作為計算的基準使用。FP16 與 BF16 都是 16 位元，但位元的分配不同。FP16 在尾數上使用較多位元以取得精度，可表示的範圍較窄，最大值為 65504。BF16 將指數部設為與 FP32 相同的 8 位元，保持與 FP32 相當的範圍，相對地降低了精度。INT8 是 8 位元整數，用於乘上比例因子來近似實數的量化，在 AI 推論中能大幅減少記憶體與功耗。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="已複製">複製表格</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="已複製連結">分享</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">FP32</th><th scope="col">FP16</th><th scope="col">BF16</th><th scope="col">INT8</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">位元數</th><td>32 位元</td><td>16 位元</td><td>16 位元</td><td>8 位元</td></tr>
+        <tr><th scope="row">符號、指數、尾數的位元數</th><td>1、8、23</td><td>1、5、10</td><td>1、8、7</td><td>沒有指數與尾數。2 的補數整數，範圍為 −128 至 127</td></tr>
+        <tr><th scope="row">可表示的最大值</th><td>約 3.4 × 10³⁸</td><td>65504</td><td>約 3.4 × 10³⁸（與 FP32 幾乎相同）</td><td>127（實數以乘上比例因子表示）</td></tr>
+        <tr><th scope="row">最小正規化數</th><td>約 1.2 × 10⁻³⁸</td><td>約 6.1 × 10⁻⁵（2⁻¹⁴）</td><td>約 1.2 × 10⁻³⁸</td><td>無（可表示值的間隔由比例因子決定）</td></tr>
+        <tr><th scope="row">精度的大致範圍</th><td>十進位約 7 位數（1 與下一個數的差為 2⁻²³ ≈ 1.2 × 10⁻⁷）</td><td>十進位約 3 位數（2⁻¹⁰ ≈ 9.8 × 10⁻⁴）</td><td>十進位 2 至 3 位數（2⁻⁷ ≈ 7.8 × 10⁻³）</td><td>256 個刻度</td></tr>
+        <tr><th scope="row">由 FP32 轉換</th><td>無（基準）</td><td>範圍窄，大的值可能溢位，小的值可能變成 0</td><td>只需取出高位 16 位元並捨入，範圍不會溢位</td><td>決定比例因子（與零點）進行量化。需要調查數值範圍的校準</td></tr>
+        <tr><th scope="row">1 個值的記憶體</th><td>4 位元組</td><td>2 位元組</td><td>2 位元組</td><td>1 位元組</td></tr>
+        <tr><th scope="row">運算器的效率</th><td>乘法器大，相同面積下的乘積累加數量少</td><td>以比 FP32 小的運算器，可排列較多的乘積累加單元</td><td>與 FP16 相當。尾數較短，乘法器更小</td><td>乘法器最小且省電。乘積多以 32 位元整數累加</td></tr>
+        <tr><th scope="row">在訓練中的用法</th><td>主權重、最佳化器的狀態、乘積的累加</td><td>混合精度訓練。以損失縮放防止小梯度變成 0</td><td>廣泛用於混合精度訓練。多數情況不需要損失縮放</td><td>一般不使用（量化感知訓練中會模擬量化的影響）</td></tr>
+        <tr><th scope="row">在推論中的用法</th><td>精度的基準。比起效能更重視正確性時</td><td>在 GPU 等上進行推論</td><td>在 GPU 或 AI 加速器上進行推論</td><td>量化模型的推論。特別是邊緣裝置的 NPU 等</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">數值為具代表性的大致參考值，會因世代或產品而異。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>適用於什麼情況</h2>
+  <dl class="compare-when">
+    <dt>FP32</dt><dd>需要精度的計算、訓練中的主權重與乘積累加，以及確認低精度結果的基準。</dd>
+    <dt>FP16、BF16</dt><dd>在 AI 訓練與推論中，想將記憶體與計算量減半時。重視範圍的訓練用 BF16；若數值落在範圍內且重視精度，則用 FP16。</dd>
+    <dt>INT8</dt><dd>想將訓練好的模型量化，使推論更快、更省電時。在記憶體與電力有限的邊緣裝置上進行推論。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為什麼 AI 訓練常偏好 BF16 而非 FP16？</h3>
+  <p>BF16 的指數部與 FP32 相同為 8 位元，可表示的範圍與 FP32 幾乎相同。FP16 為了防止小梯度變成 0 或大的值溢位，需要損失縮放，而 BF16 多數情況下不需要，由 FP32 轉換也很簡單。精度雖然較低，但在神經網路的訓練中不太會造成問題。</p>
+  <h3>為什麼 FP16 的最大值是 65504？</h3>
+  <p>FP16 的指數部為 5 位元（偏移值 15），全為 1 的值用於表示無限大與 NaN，因此指數的最大值為 2 的 15 次方。將尾數的 10 位元全部設為 1 時，(2 − 2⁻¹⁰) × 2¹⁵ 是最大的有限值，即為 65504。</p>
+  <h3>INT8 如何表示含小數的值？</h3>
+  <p>以 實數 ≈ 比例因子 × （整數 − 零點） 的形式近似。以 0 為中心對稱量化時，零點設為 0，比例因子則設為「數值的最大絕對值 ÷ 127」等。比例因子可依張量或依通道分別設定。</p>
+  <h3>INT8 也能用於訓練嗎？</h3>
+  <p>一般而言，訓練使用浮點數格式。因為訓練中梯度值的範圍很廣，也需要處理對權重的微小更新。INT8 主要用於將訓練好的模型量化後的推論，即使在量化感知訓練中，權重的更新也以浮點數進行。</p>
+</section>
+<section>
+  <h2>理解度檢測</h2>
+  <article class="q-mini" data-qid="computer-arithmetic-003" data-cat="computer-arithmetic" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-003/">在IEEE 754的單精度（32位元）浮點數中，分配給符號、指數部分、尾數的位元數組合為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">1・11・20</span></li><li><span class="choice-mark">B</span><span class="choice-text">1・8・23</span></li><li><span class="choice-mark">C</span><span class="choice-text">1・5・26</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 1・8・23</p><p class="explanation">單精度（FP32）由符號1位元、指數部分8位元、尾數23位元，共32位元構成。在正規化數中會省略尾數開頭的1，因此精度相當於24位元，換算成十進位約為7位數。雙精度（FP64）為符號1、指數部分11、尾數52位元，指數範圍較廣，精度也較高。1・11・20是與雙精度的指數部分寬度混淆的組合，1・5・26則是與半精度的指數部分寬度混淆。</p></details>
+  </article>
+  <article class="q-mini" data-qid="computer-arithmetic-028" data-cat="computer-arithmetic" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
+    <h3><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-028/">FP16（符號1・指數部分5位元（偏移值15）・尾數10位元）所能表示的最大有限值是多少？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">32768</span></li><li><span class="choice-mark">B</span><span class="choice-text">65536</span></li><li><span class="choice-mark">C</span><span class="choice-text">65504</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 65504</p><p class="explanation">指數部分全為1（31）是用於無限大與<a class="term-link" href="/zh-hant/term/nan/">NaN</a>，因此最大的指數部分為30，實際指數為 30 − 15 = 15。當尾數全為1時，值為 (1 + 1 − 2⁻¹⁰) × 2¹⁵ = (2 − 2⁻¹⁰) × 32768 = 65536 − 32 = 65504。超過此值的結果會成為無限大，因此在以FP16訓練時也須留意溢位。32768是尾數為0時的 2¹⁵，65536是 2¹⁶，兩者都不是最大值。</p></details>
+  </article>
+  <article class="q-mini" data-qid="computer-arithmetic-026" data-cat="computer-arithmetic" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-026/">bfloat16主要被用於AI訓練的理由為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">因為指數部分與FP32相同為8位元，可表示的數值範圍廣</span></li><li><span class="choice-mark">B</span><span class="choice-text">因為尾數部分比FP32長，精度高</span></li><li><span class="choice-mark">C</span><span class="choice-text">因為可以用整數運算來計算</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 因為指數部分與FP32相同為8位元，可表示的數值範圍廣</p><p class="explanation"><a class="term-link" href="/zh-hant/term/bfloat16/">bfloat16</a>是由符號1位元、指數部分8位元、尾數部分7位元構成的16位元格式。由於指數部分與FP32相同，可表示的範圍幾乎一樣，即使是訓練中梯度這類非常小或非常大的值，也不易發生溢位或下溢，從FP32模型轉換過來也很簡單。精度雖然較低，但訓練對些許誤差有一定的容忍度，因此不易成為問題，並且能將資料量與運算單元的面積減半。尾數部分比FP32短，而且是以浮點數而非整數的運算來計算。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-027/">以FP16（半精度：符號1・指數部分5・尾數10位元）訓練類神經網路時容易發生問題，而以將損失值放大數倍後再計算的方法（損失縮放，loss scaling）來因應的是下列何者？</a></li>
+  <li data-level="1"><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-030/">在AI推論中，將權重從FP32轉換（量化）為INT8的主要優點為下列何者？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/computer-arithmetic/computer-arithmetic-050/">在AI的混合精度訓練中，大部分計算以FP16或bfloat16進行，同時以FP32保存權重的原始值（主權重，master weights），其主要理由為下列何者？</a></li></ol>
+  <p><a class="btn btn-primary" href="/zh-hant/c/computer-arithmetic/">前往電腦算術的練習題</a></p>
+</section>
+<section>
+  <h2>相關名詞的解說</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/zh-hant/term/ieee-754/">IEEE 754</a></dt><dd>規定浮點數表示方式與運算規則的國際標準。規定單精度(32位元)、雙精度(64位元)等格式、捨入方法，以及無限大與NaN等特殊值，使計算結果不因電腦而異。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/bfloat16/">bfloat16</a></dt><dd>符號1位元、指數8位元、有效數7位元的16位元浮點格式。因指數與FP32相同，可表示的範圍廣，精度雖低但用於AI訓練。FP16為指數5位元、有效數10位元，精度高但範圍窄。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/int8/">INT8</a></dt><dd>8位元的有號整數(−128〜127)。在AI推論中，將權重或激活值乘上縮放係數轉換(量化)為INT8，可大幅減少計算與記憶體，並以整數的小型電路高速處理。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/mixed-precision/">混合精度（Mixed precision）</a></dt><dd>針對運算的各個部分使用不同精度的數值。以 FP16 等進行乘法，以 FP32 進行累加，兼顧速度與精度。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/post-training-quantization/">訓練後量化（Post-training quantization）</a></dt><dd>針對訓練完成的模型，以具代表性的資料調查權重與激活值的數值範圍後，轉換為低精度的方法。PTQ。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>相關的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/fixed-vs-floating-point/"><strong>定點數與浮點數的差異：表示方式、範圍與精度、運算器規模、溢位、用途比較</strong><span>從表示方式、可表示的範圍與精度、運算器的規模與功耗、溢位的處理、程式撰寫的工夫、使用場合等面向，以表格比較定點數與浮點數。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/cpu-vs-gpu-vs-npu/"><strong>CPU、GPU、NPU 的差異：設計理念、運算單元、資料型態、能源效率比較</strong><span>從設計理念、運算單元的組成、控制方式、記憶體、資料型態（INT8、FP16 等）、效能的表示方式、能源效率、彈性與程式設計等面向，比較 CPU、GPU、NPU。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/training-vs-inference/"><strong>AI 訓練與推論的差異：計算、記憶體、數值格式、批次大小、硬體比較</strong><span>從計算內容（前向傳播與反向傳播）、計算量、所需記憶體（梯度與最佳化器狀態）、數值格式、批次大小、延遲與吞吐量、硬體與能源等面向，比較 AI 的訓練與推論。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/cpu-vs-gpu/"><strong>CPU 與 GPU 的差異：結構、擅長的運算、用途比較</strong><span>從設計目的、核心數、執行模型、快取、記憶體頻寬、分支、資料傳輸與擅長的運算等面向，以表格比較 CPU 與 GPU。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/i2c-vs-spi-vs-uart/"><strong>I2C、SPI、UART 的差異：佈線、速度、使用時機比較</strong><span>從佈線數量、時脈、速度、連接形態、位址、錯誤偵測與在微控制器上的主要用途等面向，以表格比較 I2C、SPI、UART。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/verilog-vs-vhdl/"><strong>Verilog 與 VHDL 的差異：兩種硬體描述語言比較</strong><span>從來歷、語法、型別、大小寫、驗證功能、使用領域與選擇方式等面向，以表格比較 Verilog 與 VHDL。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

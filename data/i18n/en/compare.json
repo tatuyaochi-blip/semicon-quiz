@@ -7679,5 +7679,1330 @@
         "Not any time soon. Ethernet is used for the high-speed backbone and for cameras and the like, but for low-volume communication where reliability matters, such as switches, motors and control data, the inexpensive and proven CAN and LIN will continue to be used."
       ]
     ]
+  },
+  "open-drain-vs-push-pull": {
+    "title": "Open-Drain vs Push-Pull Output: Key Differences Explained",
+    "description": "Open-drain vs push-pull outputs in one table: output stage, how H is driven, rise time, wired-AND, mixed-voltage interfacing, current draw and uses.",
+    "lead": "Both are output stages that drive digital signals, but they differ in how they output H. A push-pull output combines a pMOS on the supply side with an nMOS on the ground side and actively drives both H and L with transistors, so it is fast and draws almost no current while idle. An open-drain output has only the ground-side nMOS: it pulls the line down for L, but for H it releases the output and lets a pull-up resistor pull it up. The rise is slower, but several outputs can share one line (wired-AND) and the pull-up voltage can be chosen, so it is used for I2C and interrupt lines.",
+    "items": [
+      "Push-pull output",
+      "Open-drain output"
+    ],
+    "rows": [
+      [
+        "Output stage",
+        "Two transistors: a supply-side pMOS and a ground-side nMOS (the same form as a CMOS inverter)",
+        "Only a ground-side nMOS. Its drain is brought out to the pin, with nothing on the supply side"
+      ],
+      [
+        "How H is output",
+        "The pMOS turns on and connects the pin to the supply",
+        "The nMOS turns off, releasing the pin (high impedance), and an external pull-up resistor pulls it up"
+      ],
+      [
+        "How L is output",
+        "The nMOS turns on and connects the pin to ground",
+        "The nMOS turns on and connects the pin to ground (the same)"
+      ],
+      [
+        "Rise speed",
+        "Fast. The pMOS charges the line",
+        "Slow. Set by the RC time constant of the pull-up resistor R and the line capacitance C (e.g. about 0.47 µs with 4.7 kΩ and 100 pF)"
+      ],
+      [
+        "Fall speed",
+        "Fast. The nMOS discharges the line",
+        "Fast. The nMOS discharges the line"
+      ],
+      [
+        "Connecting several outputs to one line",
+        "Not possible. If H and L collide, a large current flows from the supply to ground",
+        "Possible. If any one output drives L, the line goes L (wired-AND)"
+      ],
+      [
+        "Interfacing with circuits at a different voltage",
+        "The H voltage is set by its own supply voltage. A level shifter is needed for circuits at a different voltage",
+        "The H voltage is set by the pull-up voltage, so it can match the other side's voltage within the pin's voltage rating"
+      ],
+      [
+        "Current consumption",
+        "Almost none while idle (leakage only). Charge and discharge current flows when switching",
+        "Current keeps flowing through the pull-up resistor while L is output (about 0.7 mA with 3.3 V and 4.7 kΩ)"
+      ],
+      [
+        "Typical speed",
+        "Tens of MHz or more is possible",
+        "Limited by the pull-up resistor and capacitance. For I2C, 100 kHz, 400 kHz, 1 MHz, etc."
+      ],
+      [
+        "Typical uses",
+        "Fast signals such as SPI and UART signals, clocks, general-purpose GPIO and memory buses",
+        "I2C and SMBus, interrupt and reset lines shared by several devices, interfacing with circuits at a different voltage, driving LEDs"
+      ]
+    ],
+    "when": [
+      [
+        "Push-pull output",
+        "When a single output drives inputs and speed or low current consumption matters. Ordinary digital signals such as GPIO, SPI and UART use this type."
+      ],
+      [
+        "Open-drain output",
+        "When several devices drive the same line (I2C, shared interrupt or reset lines), or when you want to pass a signal to a circuit at a different voltage by changing the pull-up voltage."
+      ],
+      [
+        "Switching between them",
+        "Many microcontroller GPIOs can be configured as either push-pull or open-drain. Pins used for I2C are set to open-drain, with external pull-up resistors."
+      ]
+    ],
+    "faq": [
+      [
+        "How do you choose the pull-up resistor value?",
+        "A smaller value gives a faster rise, but increases the current that flows while L is output and also raises the L voltage (VOL). The upper limit is set by the line capacitance and the required rise time, and the lower limit by the current the output can sink and the VOL specification. For I2C, a few kΩ (e.g. about 2.2 to 10 kΩ) is commonly used."
+      ],
+      [
+        "What happens if push-pull outputs are connected directly together?",
+        "If one outputs H and the other L, a large current flows from the supply to ground through the pMOS on the H side and the nMOS on the L side (bus contention). The line voltage is also left somewhere in between, which can cause heating or device damage, so shared lines use open-drain outputs or tri-state outputs that can release the line."
+      ],
+      [
+        "Why does I2C use open-drain?",
+        "Because several devices drive the same SDA and SCL lines. Operations such as the receiver pulling SDA L to return an ACK, a slave holding SCL L to make the master wait (clock stretching), and arbitration when several masters start sending at the same time all rely on the wired-AND property: if any one device outputs L, the line goes L."
+      ],
+      [
+        "How is open-collector different?",
+        "The idea is the same. It is called open-collector when the output transistor is a bipolar transistor and open-drain when it is a MOSFET. Both only pull L down, and H is created by a pull-up resistor."
+      ]
+    ]
+  },
+  "class-a-vs-ab-vs-d-amplifier": {
+    "title": "Class A vs AB vs D Amplifiers: Key Differences Explained",
+    "description": "Class A, AB and D amplifiers in one table: operation, conduction angle, max efficiency, distortion, heat, noise and uses, plus how Class B fits in.",
+    "lead": "An amplifier's class describes how its output transistors are operated. Class A keeps current flowing through the transistor over the whole cycle, so distortion is lowest, but it consumes power even with no signal, and its efficiency is 25% or 50% even in theory. Class AB is Class B, in which two transistors share the positive and negative half-cycles, with a small idle current added to suppress crossover distortion; its efficiency approaches Class B's theoretical maximum of about 78.5%. Class D switches the transistors on and off and filters pulses such as PWM back into the original signal, achieving high efficiency of around 90% at high output.",
+    "items": [
+      "Class A",
+      "Class AB",
+      "Class D"
+    ],
+    "rows": [
+      [
+        "Operating principle",
+        "Current always flows through the transistor (linear region) and increases or decreases with the signal",
+        "A push-pull pair of two transistors shares the positive and negative half-cycles. A small idle current is kept flowing",
+        "The transistors switch on and off; the signal is converted into pulses such as PWM, amplified, and restored by an LC low-pass filter"
+      ],
+      [
+        "Conduction angle (period during which one transistor conducts)",
+        "360° (full cycle)",
+        "More than 180° and less than 360° (Class B is 180°)",
+        "Used fully on or off, so it is not classified by conduction angle"
+      ],
+      [
+        "Theoretical maximum efficiency",
+        "25% (with a series resistive load). 50% with transformer or choke coupling",
+        "Slightly below Class B's approximately 78.5% (π/4)",
+        "100% with ideal switches. In practice, around 90% at high output"
+      ],
+      [
+        "Efficiency at low output",
+        "Very low. Uses the same power even with no signal",
+        "Drops with output, but much better than Class A",
+        "Easy to keep high (at very low output, switching losses take a larger share)"
+      ],
+      [
+        "Distortion",
+        "Lowest. No crossover distortion",
+        "Low. Crossover distortion is suppressed by the idle current and negative feedback",
+        "Distortion arises from dead time, imperfect switching and supply variation. It can be reduced with negative feedback and similar techniques"
+      ],
+      [
+        "Heat",
+        "Highest. Maximum when there is no signal",
+        "Moderate. A heat sink is often needed",
+        "Low. The heat sink can be made small or omitted"
+      ],
+      [
+        "Noise and EMI",
+        "No switching noise",
+        "No switching noise",
+        "Switching at hundreds of kHz to several MHz produces EMI. Care is needed with the output filter and wiring"
+      ],
+      [
+        "Circuit and components",
+        "Simple. Can be built with a single transistor",
+        "A pair of output transistors and a bias circuit",
+        "A pulse modulator, a gate driver circuit and an output filter (inductor and capacitor)"
+      ],
+      [
+        "Typical uses",
+        "Small-signal amplification, preamplifiers, driver stages that drive the following stage, some high-end audio",
+        "Audio power amplifiers, headphone amplifiers, op-amp output stages",
+        "Speaker drive in smartphones and TVs, car audio, portable speakers, high-power amplifiers"
+      ]
+    ],
+    "when": [
+      [
+        "Class A",
+        "When the output is small and low distortion is the top priority. Small-signal amplification, preamplifiers and driver stages that drive the following stage."
+      ],
+      [
+        "Class AB",
+        "When you want both low distortion and good efficiency. Audio power amplifiers, headphone amplifiers, and output stages of op-amps and buffers."
+      ],
+      [
+        "Class D",
+        "When you want long battery life, less heat or a smaller heat sink, or high output power. Speakers in smartphones and TVs, car audio."
+      ]
+    ],
+    "faq": [
+      [
+        "Why does Class A have two maximum efficiencies, 25% and 50%?",
+        "Because the load is connected differently. If the load resistor is connected in series with the transistor, DC current also flows through the load and wastes power, so the theoretical maximum is 25%. If the load is coupled through a transformer or choke, the DC power is not wasted in the load and the output voltage can swing up to twice the supply voltage, so the maximum is 50%."
+      ],
+      [
+        "What is crossover distortion?",
+        "In a Class B push-pull stage, when the signal passes near 0 there is a region where neither transistor is on, which distorts the output waveform. With bipolar transistors it occurs because no current flows until about 0.6 to 0.7 V is applied between base and emitter. Class AB removes this region by keeping a small idle current flowing."
+      ],
+      [
+        "Does the D in Class D stand for digital?",
+        "No. The name simply follows Class A, B and C and does not mean digital. Many Class D amplifiers work by comparing an analog input signal with a triangle wave in a comparator to convert it into PWM pulses."
+      ],
+      [
+        "Why is Class D so efficient?",
+        "Because the output transistors are used fully on or fully off. When on, the voltage across them is nearly zero, and when off, the current is nearly zero, so little power is turned into heat in the transistors. The remaining losses include conduction losses due to on-resistance, losses during switching transitions and the power needed to drive the gates."
+      ]
+    ]
+  },
+  "op-amp-vs-comparator": {
+    "title": "Op-Amp vs Comparator: Key Differences Explained",
+    "description": "Op-amps vs comparators in one table: feedback or open loop, output stage, speed, saturation recovery, phase compensation, hysteresis and substitution.",
+    "lead": "Both use the same triangle symbol and greatly amplify the voltage difference between two inputs, but they are designed for different purposes. An op-amp is designed to be used with negative feedback: it includes phase compensation so that it does not oscillate, and its output moves smoothly as an analog voltage. A comparator is used open loop and is built to output which of two voltages is larger quickly as a binary H or L; it has no phase compensation, and its output is easy to connect to logic. That is why an op-amp used as a comparator is slow, and a comparator with negative feedback tends to oscillate.",
+    "items": [
+      "Op-amp",
+      "Comparator"
+    ],
+    "rows": [
+      [
+        "Main usage",
+        "Used with negative feedback; gain and frequency response are set by external resistors and capacitors",
+        "Used open loop (or with positive feedback for hysteresis) to judge which voltage is larger"
+      ],
+      [
+        "Output",
+        "An analog voltage that varies continuously with the input",
+        "Binary H or L. Normally saturated at one or the other"
+      ],
+      [
+        "Output stage",
+        "Push-pull. Some rail-to-rail parts swing close to the supply rails",
+        "Open-drain (open-collector), or push-pull matched to logic levels"
+      ],
+      [
+        "Phase compensation",
+        "Built in. Many parts do not oscillate even at unity gain with negative feedback",
+        "None. As a result, it switches faster"
+      ],
+      [
+        "Speed metrics",
+        "Gain-bandwidth product (GBW) and slew rate",
+        "Propagation delay (a few ns to a few µs depending on the part) and output rise and fall times"
+      ],
+      [
+        "Recovery from saturation",
+        "Not intended to be saturated. Recovery can take time and is often not specified",
+        "Designed to repeatedly saturate and toggle, and switches quickly"
+      ],
+      [
+        "Hysteresis",
+        "Normally not used",
+        "Positive feedback through external resistors, or a part with built-in hysteresis, prevents output chatter caused by noise"
+      ],
+      [
+        "Inputs",
+        "Negative feedback keeps the two input voltages nearly equal (virtual short). Some parts have protection diodes between the inputs",
+        "Large differences between the two inputs are expected. Many parts tolerate large differential voltages"
+      ],
+      [
+        "Substitution",
+        "Can sometimes replace a comparator if slow response is acceptable and the output levels match",
+        "Cannot replace an op-amp. Tends to oscillate with negative feedback"
+      ],
+      [
+        "Typical uses",
+        "Amplification, filters, buffers, integrators, sensor signal conditioning",
+        "Threshold detection, zero-cross detection, voltage monitoring, flash ADCs, PWM generation"
+      ]
+    ],
+    "when": [
+      [
+        "Op-amp",
+        "When amplifying a signal while keeping it analog, or building filters and buffers. Applications that use negative feedback to move the output continuously."
+      ],
+      [
+        "Comparator",
+        "When you want to judge quickly and reliably whether a voltage has crossed a threshold and pass the result to logic. Battery voltage monitoring, zero-cross detection, comparison inside ADCs, etc."
+      ],
+      [
+        "Using an op-amp instead",
+        "When slow response is acceptable and the output voltage levels suit the following circuit. Check the input differential voltage range and the behavior in saturation in the datasheet before using it."
+      ]
+    ],
+    "faq": [
+      [
+        "Can I use an op-amp instead of a comparator?",
+        "It can work in applications where slow response is acceptable. However, phase compensation makes it switch slowly, recovery from saturation takes time, and its output H and L voltages may not match the logic. In parts with protection diodes between the inputs, current flows when a large differential voltage is applied, so care is needed."
+      ],
+      [
+        "What happens if negative feedback is applied to a comparator?",
+        "In most cases it oscillates. A comparator has no phase compensation so that it can switch quickly, so the negative feedback loop lacks phase margin. For amplification and similar uses, use an op-amp."
+      ],
+      [
+        "Why add hysteresis to a comparator?",
+        "Because when the input changes slowly near the threshold, a little noise can make the output toggle between H and L many times. Using positive feedback to separate the thresholds for a rising input and a falling input (a Schmitt trigger) makes the output switch only once."
+      ],
+      [
+        "Why do so many comparators have open-drain outputs?",
+        "Because by changing the pull-up voltage, the output can connect directly to logic at a voltage different from the comparator's supply. It also allows uses such as tying several comparator outputs to one line that goes L when any one of them responds (wired-AND)."
+      ]
+    ]
+  },
+  "pll-vs-dll": {
+    "title": "PLL vs DLL: Key Differences Explained",
+    "description": "PLL vs DLL in one table: what is controlled, VCO vs delay line, frequency multiplication, jitter, loop stability, and uses (clock generation, deskew).",
+    "lead": "Both detect the phase error relative to a reference clock and use feedback to drive it to zero, but they adjust different things. A PLL adjusts the frequency of a voltage-controlled oscillator (VCO) and aligns the clock it generates itself with the reference, so combined with a divider it can produce frequencies many times the reference. A DLL passes the input clock itself through a delay line and only adjusts that delay to align the phase, so it cannot change the frequency, but jitter does not accumulate and the loop is stable and easy to design.",
+    "items": [
+      "PLL",
+      "DLL"
+    ],
+    "rows": [
+      [
+        "Name",
+        "Phase-Locked Loop",
+        "Delay-Locked Loop"
+      ],
+      [
+        "What it controls",
+        "VCO frequency (phase is the integral of frequency)",
+        "The delay of the delay line"
+      ],
+      [
+        "Main building blocks",
+        "Phase-frequency detector, charge pump, loop filter, VCO, feedback divider",
+        "Phase detector, charge pump, loop filter (capacitor), voltage-controlled delay line"
+      ],
+      [
+        "Output clock",
+        "A clock generated by the VCO itself",
+        "A delayed version of the input clock"
+      ],
+      [
+        "Frequency multiplication",
+        "Possible. A 1/N divider in the feedback gives N times the reference (fractional schemes also exist)",
+        "Basically not possible. The output has the same frequency as the input (some schemes multiply by combining multiphase outputs)"
+      ],
+      [
+        "Jitter",
+        "VCO fluctuations accumulate cycle by cycle, and only components below the loop bandwidth are corrected. Reference jitter components above the bandwidth are removed",
+        "The delay line does not accumulate jitter. Input jitter passes almost unchanged to the output"
+      ],
+      [
+        "Loop stability",
+        "The VCO acts as an integrator, making the loop second order or higher, so the loop filter must be designed with phase margin in mind",
+        "The delay line has no integrating action, so the loop can be first order, stable and easy to design"
+      ],
+      [
+        "Locking",
+        "Can lock over a wide frequency range, but takes longer to lock",
+        "Locks quickly, but the delay range is limited and false lock (locking one cycle off) must be watched for"
+      ],
+      [
+        "Typical uses",
+        "Generating high-frequency clocks from a crystal reference, RF frequency synthesizers, SerDes clocks and clock and data recovery (CDR)",
+        "Aligning DDR DRAM output timing with the clock, clock deskew, multiphase clock generation"
+      ]
+    ],
+    "when": [
+      [
+        "PLL",
+        "When you need a clock at a different frequency from the reference (usually many times higher). Generating CPU or SerDes clocks from a crystal reference, or generating radio frequencies."
+      ],
+      [
+        "DLL",
+        "When the same frequency is fine and you want to cancel on-chip delay to align clock phase. Aligning DDR DRAM data output timing, and clock deskew."
+      ],
+      [
+        "Combined",
+        "A common combination is to generate a clock at the required frequency with a PLL and then, in memory interfaces and similar circuits, use a DLL referenced to that clock for fine phase adjustment (for example, shifting a strobe by 1/4 cycle)."
+      ]
+    ],
+    "faq": [
+      [
+        "Why can't a DLL change the frequency?",
+        "Because a DLL's output is the input clock delayed by a delay line. No matter how the delay is changed, the edge spacing stays the same as the input, so the frequency does not change. A PLL has a VCO that oscillates on its own and aligns its divided clock with the reference, so it can produce N times the reference frequency."
+      ],
+      [
+        "Why does jitter not accumulate in a DLL?",
+        "Because each output edge of a DLL is a delayed copy of an input edge and does not inherit errors from the previous cycle. In a PLL's VCO, each cycle starts where the previous one ended, so fluctuations add up and remain until the loop corrects them. On the other hand, a DLL passes input jitter straight through."
+      ],
+      [
+        "How is the PLL loop bandwidth chosen?",
+        "A wider bandwidth corrects VCO fluctuations quickly but lets more reference clock jitter through. A narrower bandwidth rejects reference jitter well, but leaves more VCO fluctuation and slows locking. It is chosen by considering whether the reference or the VCO has lower noise, along with loop stability (phase margin)."
+      ],
+      [
+        "Why are DLLs used in DDR DRAM?",
+        "The on-chip clock path and output circuits have delays that vary with voltage and temperature. Canceling this delay with a DLL lets data be output aligned with the edges of the external clock. There is no need to change the frequency, so a DLL, which adds little jitter, is well suited."
+      ]
+    ]
+  },
+  "single-ended-vs-differential-signaling": {
+    "title": "Single-Ended vs Differential Signaling: Key Differences Explained",
+    "description": "Single-ended vs differential signaling in one table: wire count, reference, noise immunity, EMI, swing and speed, routing and standards (LVDS, USB, PCIe).",
+    "lead": "Single-ended signaling reads the voltage on one signal line relative to ground, which is simple and needs few wires. Differential signaling sends opposite signals on two lines and reads 0 and 1 from the voltage difference between them. Noise and ground potential differences that appear equally on both lines cancel when the difference is taken, and the electromagnetic fields from the opposite currents also cancel, so signals can be sent faster and farther with a small swing. The trade-off is that each signal needs two lines, and the design must match the length and spacing of the two lines.",
+    "items": [
+      "Single-ended",
+      "Differential"
+    ],
+    "rows": [
+      [
+        "Wires per signal",
+        "One (the return current shares ground)",
+        "Two (a positive and negative pair)"
+      ],
+      [
+        "Reference for reading",
+        "Voltage relative to ground",
+        "Voltage difference between the two lines"
+      ],
+      [
+        "Common-mode noise",
+        "Adds directly to the signal",
+        "Cancels when the difference is taken (depending on the receiver's CMRR)"
+      ],
+      [
+        "Ground potential differences",
+        "A ground offset between transmitter and receiver becomes error directly",
+        "Little effect as long as it is within the receiver's allowed common-mode voltage range"
+      ],
+      [
+        "Radiated noise (EMI)",
+        "Current loops are large, so it radiates easily",
+        "Fields from the opposite currents cancel, so it radiates little"
+      ],
+      [
+        "Signal swing",
+        "Large. Close to the supply voltage (e.g. 0 to 3.3 V)",
+        "Small. A few hundred mV (about 350 mV for LVDS)"
+      ],
+      [
+        "Typical speed",
+        "Tens to hundreds of Mbit/s. Memory buses with careful termination reach several Gbit/s per line",
+        "Hundreds of Mbit/s to tens of Gbit/s per pair"
+      ],
+      [
+        "Routing design",
+        "Simple. For fast signals, watch the characteristic impedance and termination",
+        "Match the length and spacing of the two lines and maintain the differential impedance (often 85 to 100 Ω)"
+      ],
+      [
+        "Cost and pin count",
+        "Low cost, fewer pins",
+        "Twice the pins and wiring. Transmitter and receiver circuits are also more complex"
+      ],
+      [
+        "Typical examples",
+        "GPIO, I2C, SPI, UART, DDR data (DQ)",
+        "LVDS, USB, PCI Express, SATA, HDMI, Ethernet, CAN, RS-485"
+      ]
+    ],
+    "when": [
+      [
+        "Single-ended",
+        "When speed is not very high, distances are short, and you want to keep pin count and cost down. On-board GPIO, I2C, SPI, etc."
+      ],
+      [
+        "Differential",
+        "For high-speed signals in the Gbit/s class, connecting separate equipment by cable, noisy environments, or when radiated noise must be suppressed. PCIe, USB, Ethernet, automotive CAN, etc."
+      ],
+      [
+        "Example of using both",
+        "DDR memory uses single-ended signaling for the numerous data lines (DQ) and differential signaling for the clock and strobes (DQS) that serve as timing references, balancing pin count and reliability."
+      ]
+    ],
+    "faq": [
+      [
+        "Why is differential signaling robust against common-mode noise?",
+        "When two lines run close together, external noise couples onto both by nearly the same amount. The receiver reads only the voltage difference between them, so noise that appears equally on both (common-mode noise) is removed by subtraction. A shift in ground potential also appears equally on both lines, so it has little effect."
+      ],
+      [
+        "Differential signaling needs two lines, so why can it go faster?",
+        "Because it is robust against noise, the swing can be reduced to a few hundred mV, and the smaller voltage to charge and discharge allows faster switching. It also radiates little and is less sensitive to ground potential differences, so serial links can reach tens of Gbit/s per pair."
+      ],
+      [
+        "What should you watch for when routing a differential pair?",
+        "First, match the lengths of the two lines. If the lengths differ, the two signals arrive at different times, the difference waveform is distorted, part of it turns into common-mode noise, and radiation increases. Also keep the spacing constant to hold the differential impedance at the specified value (often 85 to 100 Ω), and terminate at the receiver."
+      ],
+      [
+        "Does differential signaling need no ground?",
+        "It is not that no ground is needed at all. The average of the two voltages (the common-mode voltage) must stay within the range the receiver allows. To ensure this, either share a common ground, or block DC with capacitors or transformers and re-establish the common-mode voltage at the receiver. Ethernet uses transformers to isolate the equipment from each other."
+      ]
+    ]
+  },
+  "buck-vs-boost-converter": {
+    "title": "Buck vs Boost Converter: Key Differences Explained",
+    "description": "Buck vs boost converters: output range, ideal ratio (D vs 1/(1−D)), component layout, input and output current continuity, efficiency, control and uses.",
+    "lead": "Both are switching DC-DC converters built from the same parts (a switch, an inductor, a diode or second switch, and a capacitor), but the parts are arranged differently. A buck converter places the switch between the input and the inductor, chops and averages the input voltage according to the fraction of on-time (duty cycle D), and ideally outputs a lower voltage of D times the input. A boost converter places the inductor on the input side, uses the switch to connect it to ground to store energy in the inductor, then releases that energy to the output, ideally outputting a higher voltage of 1/(1−D) times the input.",
+    "items": [
+      "Buck (step-down) converter",
+      "Boost (step-up) converter"
+    ],
+    "rows": [
+      [
+        "Output voltage range",
+        "Lower than the input (0 to the input voltage)",
+        "Higher than the input (the input voltage or above)"
+      ],
+      [
+        "Ideal conversion ratio (continuous conduction mode)",
+        "Vout/Vin = D",
+        "Vout/Vin = 1/(1−D)"
+      ],
+      [
+        "Example (D = 0.5)",
+        "12 V to 6 V",
+        "12 V to 24 V"
+      ],
+      [
+        "Component layout",
+        "Switch between the input and the inductor; inductor on the output side. Diode between ground and the node between the switch and the inductor",
+        "Inductor on the input side; switch between ground and the node after the inductor. Diode between that node and the output"
+      ],
+      [
+        "Operation",
+        "When on, current flows through the inductor to the output; when off, the inductor current keeps flowing through the diode",
+        "When on, energy is stored in the inductor; when off, the inductor voltage adds to the input and the energy is released to the output"
+      ],
+      [
+        "Input current",
+        "Discontinuous (flows only while the switch is on). The input capacitor is important",
+        "Continuous (keeps flowing through the inductor)"
+      ],
+      [
+        "Output current",
+        "Continuous (keeps flowing from the inductor). Output ripple is small",
+        "Discontinuous (delivered only while the switch is off). The ripple current in the output capacitor is large"
+      ],
+      [
+        "Efficiency",
+        "About 80 to 95% depending on conditions",
+        "About 80 to 95% depending on conditions. Drops at high boost ratios"
+      ],
+      [
+        "Control",
+        "The control loop is easy to design",
+        "In continuous conduction mode there is a right-half-plane zero, making it hard to raise the control loop bandwidth"
+      ],
+      [
+        "When switching stops",
+        "The input and output are disconnected",
+        "The input voltage remains at the output through the inductor and diode. A separate switch is needed to disconnect completely"
+      ],
+      [
+        "Typical uses",
+        "Generating CPU or SoC core voltages (around 1 V) from 12 V or 5 V, generating low voltages from batteries",
+        "Generating 5 V from a lithium-ion battery (about 3.0 to 4.2 V), driving series LEDs, power factor correction (PFC) in AC power supplies"
+      ]
+    ],
+    "when": [
+      [
+        "Buck (step-down) converter",
+        "When you want to efficiently generate a voltage lower than the input at high current. CPU and SoC core supplies, and generating various voltages from 12 V or 5 V."
+      ],
+      [
+        "Boost (step-up) converter",
+        "When you need a voltage higher than the input. Generating a 5 V USB output from a battery, driving series-connected LEDs, or generating a high DC voltage in PFC."
+      ],
+      [
+        "Buck-boost",
+        "When the battery voltage crosses above and below the output voltage as it is used, use a buck-boost converter, which can do both."
+      ]
+    ],
+    "faq": [
+      [
+        "How are the conversion ratios D and 1/(1−D) derived?",
+        "In steady state, the voltage across the inductor averages to zero over one cycle (the volt-second balance). In a buck converter, (Vin − Vout) is applied during the on-time and −Vout during the off-time, so (Vin − Vout) × D = Vout × (1 − D), giving Vout = D × Vin. In a boost converter, Vin × D = (Vout − Vin) × (1 − D) gives Vout = Vin/(1 − D)."
+      ],
+      [
+        "Why does a boost converter output a voltage higher than its input?",
+        "While the switch is on, current flows through the inductor and stores energy. When the switch turns off, the inductor tries to keep the current flowing and generates a voltage, which adds to the input voltage and flows through the diode to the output, so the output is higher than the input."
+      ],
+      [
+        "Can the boost ratio be made arbitrarily large by bringing D close to 1?",
+        "Ideally 1/(1−D) grows without limit, but in practice losses from the resistance of the inductor and switch increase, the output voltage levels off and efficiency drops. Practical boost ratios are up to a few times; for higher ratios, approaches such as transformer-based topologies are chosen."
+      ],
+      [
+        "What is synchronous rectification?",
+        "It replaces the diode with a MOSFET that is turned on when the diode would conduct. It reduces the loss from the diode's forward voltage (about 0.3 to 0.5 V even for a Schottky barrier diode), so efficiency improves more as the output voltage gets lower."
+      ]
+    ]
+  },
+  "clock-gating-vs-power-gating": {
+    "title": "Clock Gating vs Power Gating: Key Differences Explained",
+    "description": "Clock vs power gating: power saved (dynamic or static), what stops, wake-up time, state retention, cells needed (ICG, power switch, isolation), granularity.",
+    "lead": "Both are low-power design techniques that reduce the power of unused circuits, but they stop different things. Clock gating stops the clock to registers, eliminating signal switching and reducing dynamic power. Power stays on, so state is retained and operation can resume immediately within one to a few cycles. Power gating cuts a block's power with a switch, eliminating almost all static power from leakage current in addition to dynamic power. The trade-off is that state is lost, so a mechanism to save it is needed, and wake-up takes longer.",
+    "items": [
+      "Clock gating",
+      "Power gating"
+    ],
+    "rows": [
+      [
+        "Power reduced",
+        "Dynamic power (switching in the clock network, flip-flops and downstream logic)",
+        "Both static power (leakage) and dynamic power"
+      ],
+      [
+        "What is stopped",
+        "The clock to registers",
+        "The power supply to the block"
+      ],
+      [
+        "Power supply",
+        "Stays on. Leakage current keeps flowing",
+        "Power switches disconnect the block's supply rail"
+      ],
+      [
+        "State retention",
+        "Retained",
+        "Lost. Required state is saved in retention flip-flops (retention registers) or memory"
+      ],
+      [
+        "Wake-up time",
+        "One to a few cycles",
+        "Long. Power is restored while limiting inrush current and the state is restored, typically on the order of µs"
+      ],
+      [
+        "Required circuits",
+        "ICG (a clock-gating cell built from a latch and an AND gate) and logic to generate the enable",
+        "Power switches (headers or footers), isolation cells, retention flip-flops and a power sequencing controller"
+      ],
+      [
+        "Granularity",
+        "Fine. Can be applied to groups of just a few registers",
+        "Coarse. Applied per block (power domain), such as a CPU core or an IP block"
+      ],
+      [
+        "Design and verification",
+        "Logic synthesis tools can insert it automatically from enable conditions. STA performs clock-gating checks",
+        "Power intent is described in UPF or similar formats, and behavior and sequencing when power is cut must also be verified"
+      ],
+      [
+        "Overhead",
+        "Small. ICG area and delay",
+        "Power switch area and voltage drop, plus energy to save and restore. Not worthwhile for short idle periods"
+      ],
+      [
+        "Typical use",
+        "In almost all digital circuits, stopping the registers of inactive functions",
+        "Shutting down blocks that are unused for long periods. Deep CPU idle states, unused blocks in smartphone SoCs"
+      ]
+    ],
+    "when": [
+      [
+        "Clock gating",
+        "Any time a circuit has an inactive period, from a few cycles to long durations. It resumes immediately and retains state, so it is used in almost all digital circuits."
+      ],
+      [
+        "Power gating",
+        "When a block is unused for a long time, or when leakage power is a large share (advanced processes or high temperatures). Used when the idle period is long enough to recover the energy spent saving and restoring."
+      ],
+      [
+        "Combined",
+        "A common staged approach is to stop the clock first and, if the idle period looks long, save state and cut power as well. It is also combined with DVFS."
+      ]
+    ],
+    "faq": [
+      [
+        "Why isn't an AND gate alone enough to stop the clock?",
+        "Because if the enable signal changes while the clock is 1, a short pulse (glitch) appears on the clock and flip-flops can operate erroneously. An ICG holds the enable in a latch that passes it only while the clock is 0 and then ANDs it with the clock, so no glitch occurs."
+      ],
+      [
+        "Why does power gating take long to wake up?",
+        "Because the large capacitance of the powered-down block must be recharged. Turning all the switches on at once causes a large inrush current that drops the supply voltage of other active circuits, so the switches are turned on gradually in sequence. After that, reset and state restoration are also needed."
+      ],
+      [
+        "Why are isolation cells needed?",
+        "The outputs of a powered-down block sit at a voltage that is neither 0 nor 1. If active blocks receive them directly, they can malfunction or shoot-through current can flow in their input gates. Isolation cells clamp the signals at the boundary to a fixed value (0 or 1)."
+      ],
+      [
+        "Should power be cut even for short idle periods?",
+        "Not necessarily. Cutting power uses energy to save and restore state and to recharge capacitance, so unless the block can stay idle longer than the time needed to recover that energy through reduced leakage power (the break-even time), it actually costs more. Use clock gating for short idle periods."
+      ]
+    ]
+  },
+  "scan-test-vs-bist": {
+    "title": "Scan Test vs BIST: Key Differences Explained",
+    "description": "Scan test vs BIST (built-in self-test): pattern generation (ATPG vs on-chip), tester dependence, logic and memory, fault coverage, added logic, test time.",
+    "lead": "Scan test connects the flip-flops in a chip into shift registers (scan chains), shifts test patterns in from an external tester, and shifts out the circuit's responses to compare them with expected values. The patterns are generated from the netlist by ATPG tools. BIST builds a circuit that generates patterns and a circuit that checks results into the chip, so that the chip tests itself. In production test, it is common to combine scan test for logic with memory BIST for embedded memories, and BIST can also be used for self-diagnosis after shipment.",
+    "items": [
+      "Scan test",
+      "BIST (built-in self-test)"
+    ],
+    "rows": [
+      [
+        "Basic idea",
+        "Flip-flops are connected into scan chains; a pattern is shifted in, the circuit is clocked once, and the result is shifted out and compared",
+        "Circuits that generate patterns and check responses are built into the chip, which tests itself and reports pass or fail"
+      ],
+      [
+        "How test patterns are generated",
+        "ATPG creates deterministic patterns from the netlist that target stuck-at and transition delay faults",
+        "Logic BIST generates pseudo-random patterns with an LFSR. Memory BIST generates addresses and data using fixed procedures such as March tests"
+      ],
+      [
+        "Response checking",
+        "The tester compares responses with expected values (with test compression, responses compressed on chip are compared)",
+        "Logic BIST compresses responses with a MISR into a signature that is compared with an expected value. Memory BIST checks read values directly with comparators"
+      ],
+      [
+        "Dependence on the tester",
+        "Patterns and expected values are held in tester memory. Requires scan pins plus tester performance and memory capacity",
+        "Only starting the test and reading the result (via JTAG, etc.) are needed, so a simple tester suffices"
+      ],
+      [
+        "Main targets",
+        "Logic circuits (combinational logic and flip-flops)",
+        "Memory BIST: embedded memories such as SRAM. Logic BIST: logic circuits"
+      ],
+      [
+        "Fault coverage",
+        "Easy to make high because patterns are generated for the targeted faults",
+        "Logic BIST tends to leave faults that are hard to detect with pseudo-random patterns, which test point insertion compensates for. Memory BIST achieves high coverage with procedures tailored to memory fault models"
+      ],
+      [
+        "Added circuitry",
+        "Flip-flops are replaced with scan flip-flops (with a selection multiplexer), and chain wiring is added",
+        "Requires a pattern generator, a response compactor and a control circuit. Logic BIST also requires preparing the design so that no unknown values (X) occur"
+      ],
+      [
+        "Test time",
+        "Long chains take time to shift, and speed is also limited by the tester. Test compression shortens it",
+        "Many patterns can run quickly with on-chip clocks. Logic BIST needs a large number of patterns"
+      ],
+      [
+        "When it is used",
+        "Mainly in production wafer test and final test. Also used for failure diagnosis of defective parts",
+        "In addition to production test, it can also be used for inspection after board mounting and for self-diagnosis after shipment, such as at power-on"
+      ]
+    ],
+    "when": [
+      [
+        "Scan test",
+        "When you want to find structural logic faults with high coverage in production test, or to narrow down the fault location in a failed chip."
+      ],
+      [
+        "BIST",
+        "Testing embedded memories that are hard to access directly from outside. When you want to reduce tester pins or memory. When self-diagnosis after shipment is needed at power-on or before driving, as in automotive applications."
+      ],
+      [
+        "Combined",
+        "Real chips commonly use scan test (with test compression) for logic and memory BIST for memories. Logic BIST also runs on top of the scan chains."
+      ]
+    ],
+    "faq": [
+      [
+        "If a chip has BIST, is scan test unnecessary?",
+        "Many chips use both. Logic BIST uses pseudo-random patterns, so hard-to-detect faults tend to remain, and production test typically secures high fault coverage with scan test using ATPG-generated patterns. Memories have a regular structure, so they are tested with memory BIST."
+      ],
+      [
+        "How are logic BIST and scan test related?",
+        "Logic BIST also uses scan chains. Patterns generated by an LFSR are shifted into the chains, the circuit is clocked, the responses that come out are compressed by a MISR, and the final signature is compared with an expected value. It is built on a scan design."
+      ],
+      [
+        "Why is BIST widely used to test embedded memories?",
+        "Because memories embedded in a chip are hard to read and write directly from external pins, and their regular structure lets a small circuit generate addresses and data in fixed sequences such as March tests. It is also often combined with repair that replaces failing bits with spare rows or columns."
+      ],
+      [
+        "Why do automotive chips run BIST at power-on?",
+        "To find faults that arise after shipment and latent faults that do not show up in normal operation. BIST can run on the chip itself without a tester, so it can be used for self-diagnosis inside the vehicle."
+      ]
+    ]
+  },
+  "wafer-test-vs-final-test": {
+    "title": "Wafer Test vs Final Test: Key Differences Explained",
+    "description": "Wafer test (probe test) vs final test: timing and target, contact method (probe card vs socket), temperature, test items, screening purpose and KGD.",
+    "lead": "Wafer test is performed on the wafer after front-end processing and before dicing: the needles of a probe card are placed on each chip's bond pads to check whether it is good or bad. Removing defective chips before assembly avoids wasting packaging and assembly costs. Final test measures packaged ICs that a handler places in sockets; it confirms that they operate to specification, including catching defects introduced during assembly, before they are shipped.",
+    "items": [
+      "Wafer test (probe test)",
+      "Final test"
+    ],
+    "rows": [
+      [
+        "Timing",
+        "After front-end processing, before dicing",
+        "After assembly (encapsulation in a package), before shipment"
+      ],
+      [
+        "Target",
+        "All chips on the wafer",
+        "Packaged ICs (chips that passed wafer test, after assembly)"
+      ],
+      [
+        "Contact method",
+        "A prober moves the wafer and the probe card needles are placed on the chip's bond pads",
+        "A handler places the IC in a socket, and pogo pins or similar contact the package terminals (leads or balls)"
+      ],
+      [
+        "Equipment",
+        "Tester, prober, probe card",
+        "Tester, handler, load board with sockets"
+      ],
+      [
+        "Temperature",
+        "Measured by changing the temperature of the chuck that holds the wafer. Besides room temperature, it is sometimes measured hot or cold",
+        "The handler heats or cools the ICs, which are often measured hot and cold within the product's guaranteed temperature range"
+      ],
+      [
+        "Main test items",
+        "DC parameters (such as leakage current), functional test, scan test. For memory, measurements for repair that replaces failing bits with spares",
+        "Function, DC parameters, AC parameters such as timing, operation at actual speed. Grading by speed and other criteria"
+      ],
+      [
+        "High-speed signal measurement",
+        "The electrical characteristics of the needles impose limits, and high-speed signals or high-current measurements can be difficult",
+        "Sockets are electrically more favorable, making high-speed signals easier to measure"
+      ],
+      [
+        "Purpose of finding defects",
+        "Remove defective chips before assembly to save packaging and assembly costs. Find process problems early from the wafer map",
+        "Remove defects, including those introduced in assembly (such as connection defects), to guarantee quality before shipment"
+      ],
+      [
+        "Handling of defects",
+        "Defective chips are recorded in electronic wafer map data and are not used in assembly (formerly they were marked with ink)",
+        "Defective parts are removed, and good parts are sorted by performance and other criteria before shipment"
+      ],
+      [
+        "Relation to KGD",
+        "When several chips are mounted in one package, chips confirmed good at this stage (KGD) are required",
+        "Even if a defect is found after assembly, it is difficult to replace only the defective chip"
+      ]
+    ],
+    "when": [
+      [
+        "Wafer test",
+        "When you want to remove defective chips before assembly to save packaging and assembly costs. For products with several chips in one package, when you want to use only chips confirmed good (KGD)."
+      ],
+      [
+        "Final test",
+        "When you guarantee after assembly that the packaged part works to specification before shipping it. When you want to verify operation over the guaranteed temperature range and at actual speed."
+      ],
+      [
+        "Combined",
+        "Typical products undergo both tests in the order wafer test → assembly → final test → shipment. The two tests divide the test items between them, reducing overlap to lower test cost."
+      ]
+    ],
+    "faq": [
+      [
+        "Why perform wafer test when there is a final test?",
+        "Because assembling defective chips wastes package materials and assembly costs. Removing defects at the wafer stage means only good chips are assembled. Also, the distribution of defects on the wafer map helps find the responsible process step early."
+      ],
+      [
+        "How does wafer test differ from WAT (parametric test)?",
+        "WAT measures parameters such as threshold voltage and sheet resistance on TEGs (evaluation test patterns) on the wafer to confirm that the process was completed to specification. Wafer test checks whether each product chip operates correctly to judge whether it is good or bad."
+      ],
+      [
+        "What is KGD?",
+        "A chip confirmed to be good before mounting (Known Good Die). When several chips are mounted in one package, a single defective chip makes the whole package defective, so the chips must be verified thoroughly at the wafer test stage."
+      ],
+      [
+        "At what stage is burn-in performed?",
+        "Burn-in is a test that applies high temperature and voltage to weed out chips prone to early failure, and it is often performed after packaging. Where KGD is required, wafer-level burn-in, performed on the wafer, is also used."
+      ]
+    ]
+  },
+  "damascene-vs-subtractive-etch-interconnect": {
+    "title": "Damascene vs Subtractive Etch Interconnects: Key Differences",
+    "description": "Damascene vs subtractive etch interconnects: process order, metal (Cu vs Al), use of CMP, via formation, and renewed interest for the finest wires.",
+    "lead": "Subtractive etch interconnects are formed by depositing a metal film over the whole surface, removing the unwanted parts by dry etching through a resist pattern, and filling the gaps between the remaining lines with dielectric; this method was long used for aluminum wiring. The damascene process works in the opposite order: trenches are first etched into the dielectric, metal is filled in, and the excess metal is removed by CMP. Copper hardly forms volatile compounds and is difficult to dry etch, so damascene became the standard for copper wiring. For the finest wires, forming ruthenium or other metals by etching is also being studied.",
+    "items": [
+      "Damascene process",
+      "Subtractive etch interconnect"
+    ],
+    "rows": [
+      [
+        "Process order",
+        "Deposit dielectric → etch trenches and via holes → barrier metal and seed layer → copper plating → remove excess by CMP",
+        "Deposit metal film → lithography → dry etch the metal → fill between lines with dielectric and planarize"
+      ],
+      [
+        "What is etched",
+        "Dielectric",
+        "Metal film"
+      ],
+      [
+        "Main metal",
+        "Copper (Cu)",
+        "Aluminum (Al-Cu alloy). Ruthenium and others are also being studied for the finest wires"
+      ],
+      [
+        "Metal fill",
+        "Trenches are filled by electroplating. Filling narrow trenches without gaps (voids) is a challenge",
+        "Only a flat film made by sputtering or a similar method is needed"
+      ],
+      [
+        "Dielectric fill",
+        "The dielectric is deposited flat first, so it is rarely a problem",
+        "Narrow gaps between lines must be filled with dielectric without voids (HDP-CVD and similar methods have been used)"
+      ],
+      [
+        "CMP",
+        "Essential. Removes the copper and barrier metal outside the trenches, separating each line",
+        "Not used to pattern the metal. Used to planarize the dielectric"
+      ],
+      [
+        "Barrier layer",
+        "Trench bottoms and sidewalls are lined with TaN/Ta or similar to prevent copper diffusion. In narrow lines it takes up a larger share of the cross section",
+        "Diffusion is less of a problem with aluminum; Ti/TiN or similar films are stacked above and below"
+      ],
+      [
+        "How vias are made",
+        "In dual damascene, line trenches and vias are filled at the same time and finished with a single CMP",
+        "Vias are opened in a separate step, filled with tungsten or similar and planarized by CMP before the next wiring layer is made"
+      ],
+      [
+        "Challenges for fine wires",
+        "As lines narrow, copper resistivity rises (size effect) and the barrier layer takes a larger share",
+        "Precision in etching thin metal lines, and filling between lines with dielectric, are challenges"
+      ]
+    ],
+    "when": [
+      [
+        "Damascene process",
+        "When making copper interconnects. Multilevel interconnects in advanced LSIs that need low-resistance wiring with high resistance to electromigration."
+      ],
+      [
+        "Subtractive etch interconnect",
+        "When making aluminum interconnects. Products with few wiring layers, or relatively wide wires. It is also being studied as a method for the finest wires using ruthenium or other metals."
+      ],
+      [
+        "Trend",
+        "Today's advanced LSIs make most of their wiring with copper dual damascene. For the finest layers, forming metals whose resistance rises less and that allow thinner barrier layers by etching is being reconsidered."
+      ]
+    ],
+    "faq": [
+      [
+        "Why is copper difficult to dry etch?",
+        "Because the copper compounds formed by reaction with chlorine and other etch gases are hard to volatilize and remain on the surface near room temperature. They can be volatilized at high temperatures, but the resist and other materials cannot withstand that, making practical patterning difficult. That is why copper is shaped by filling trenches and using CMP."
+      ],
+      [
+        "What is dual damascene?",
+        "A method in which both the line trenches and the via holes connecting to the layer below are formed in the dielectric, filled at the same time in a single copper plating step, and finished with a single CMP. It requires fewer steps than single damascene, which makes trenches and vias separately."
+      ],
+      [
+        "Where does the name damascene come from?",
+        "It comes from damascening, a decorative inlay technique in which grooves are carved into a metal surface and filled with another metal. The name was chosen because the process of filling trenches in the dielectric with metal resembles this technique."
+      ],
+      [
+        "Will interconnects return to subtractive etching?",
+        "Not entirely. Layers with wide wires will continue to be made with copper damascene. For layers with very small line widths, rising copper resistivity and barrier layer thickness become problems, so methods that pattern ruthenium or other metals by etching are being studied."
+      ]
+    ]
+  },
+  "msi-vs-mesi-vs-moesi": {
+    "title": "MSI vs MESI vs MOESI: Key Differences Explained",
+    "description": "MSI, MESI and MOESI cache coherence protocols in one table: number and meaning of states, benefits of Exclusive and Owned, memory write-back and complexity.",
+    "lead": "MSI, MESI and MOESI are protocols that attach a state to each line held in each cache of a multicore system so that data at the same address never becomes inconsistent. MSI is the basic form with only three states: Modified, Shared and Invalid. MESI adds Exclusive (held only by this cache, with the same contents as memory), which saves bus traffic when writing data that no other core holds. MOESI further adds the Owned state, which allows modified data to be shared with other caches without writing it back to memory.",
+    "items": [
+      "MSI",
+      "MESI",
+      "MOESI"
+    ],
+    "rows": [
+      [
+        "Number of states",
+        "Three (M, S, I)",
+        "Four (M, E, S, I)",
+        "Five (M, O, E, S, I)"
+      ],
+      [
+        "Modified (M)",
+        "Held only by this cache; contents differ from memory",
+        "Same",
+        "Same"
+      ],
+      [
+        "Shared (S)",
+        "Other caches may also hold it. Contents match memory",
+        "Same",
+        "Other caches may also hold it. Contents may differ from memory (when a line in O state exists)"
+      ],
+      [
+        "Exclusive (E)",
+        "None",
+        "Held only by this cache; contents match memory",
+        "Present (same as MESI)"
+      ],
+      [
+        "Owned (O)",
+        "None",
+        "None",
+        "Contents differ from memory, but other caches share it in S. Responsible for writing back to memory"
+      ],
+      [
+        "When reading data no other core holds",
+        "Enters S state",
+        "Enters E state",
+        "Enters E state"
+      ],
+      [
+        "When then writing to that data",
+        "To change from S to M, issues a request on the bus or similar to invalidate other copies",
+        "Changes from E to M without any communication",
+        "Changes from E to M without any communication"
+      ],
+      [
+        "When another core reads an M line",
+        "Writes back to memory; both become S",
+        "Writes back to memory; both become S (the data may also be passed directly from the cache)",
+        "Passes the data without writing back; this cache becomes O and the other becomes S"
+      ],
+      [
+        "Write-back to memory",
+        "Occurs each time a modified line is read by another core",
+        "Occurs each time a modified line is read by another core",
+        "Can be deferred until the O line is evicted"
+      ],
+      [
+        "State bits and complexity",
+        "2 bits. Simplest",
+        "2 bits. Moderate",
+        "3 bits. Most complex"
+      ]
+    ],
+    "when": [
+      [
+        "MSI",
+        "As the basic form for learning how coherence works. When you want to keep state transitions as simple as possible."
+      ],
+      [
+        "MESI",
+        "When there are many reads and writes to data used by only one core. Thanks to the E state, read-then-write operations avoid communication. It forms the basis of the protocols in many multicore CPUs."
+      ],
+      [
+        "MOESI",
+        "When modified data is frequently passed between cores. When you want to reduce write-backs to memory and save memory bandwidth."
+      ]
+    ],
+    "faq": [
+      [
+        "What is the benefit of MESI's E state?",
+        "Reading data that no other core holds puts the line in E state, and a later write can change it to M without notifying other cores. In MSI, the same case enters S state, so an invalidation request must be issued for each write. It reduces bus traffic for read-then-write operations on data used by only one thread."
+      ],
+      [
+        "What is the benefit of MOESI's O state?",
+        "When another core reads modified data (M state), MESI writes it back to memory before sharing it, but MOESI passes the data between caches without writing back, and the original cache keeps responsibility for the write-back in O state. This reduces writes to memory."
+      ],
+      [
+        "How do the E and M states differ?",
+        "In both, this cache is the only one holding the line. In E state the contents match memory, so no write-back is needed on eviction. In M state the line has been modified and differs from memory, so it must be written back on eviction."
+      ],
+      [
+        "Are these protocols used with snooping or with directory-based coherence?",
+        "Either. MSI, MESI and MOESI define how line states are assigned, which is a separate matter from how other caches are notified (snooping, which monitors a shared bus or similar, or a directory scheme, which records the owners of each line)."
+      ]
+    ]
+  },
+  "spinlock-vs-mutex": {
+    "title": "Spinlock vs Mutex: Key Differences Explained",
+    "description": "Spinlock vs mutex: waiting (busy-wait vs sleep), CPU use, suitable hold time, kernel use (interrupt context), priority inversion and implementation (futex).",
+    "lead": "Spinlocks and mutexes are both locks that admit only one thread at a time into a critical section, but they differ in how they wait for the lock to become free. A spinlock waits by busy-waiting, repeatedly checking the lock variable in a loop, so it keeps using the CPU while waiting but can take the lock immediately once it is free. A mutex puts the waiting thread to sleep, giving up the CPU, and has the OS wake it when the lock is released. Use a spinlock when the hold time is very short or inside an interrupt handler that cannot sleep, and a mutex when the lock is held for a long time or the holder may sleep.",
+    "items": [
+      "Spinlock",
+      "Mutex"
+    ],
+    "rows": [
+      [
+        "How it waits",
+        "Repeatedly checks the variable in a loop until the lock is free (busy-waiting)",
+        "If the lock is not free, sleeps and is woken when it is released"
+      ],
+      [
+        "CPU while waiting",
+        "Keeps using it",
+        "Gives it up. Other threads can use the CPU meanwhile"
+      ],
+      [
+        "Waiting overhead",
+        "No context switch; takes the lock immediately once it is free",
+        "System calls and context switches add overhead when sleeping and waking"
+      ],
+      [
+        "Suitable hold time",
+        "Very short (shorter than the time a context switch takes)",
+        "Long. When the holder may sleep, such as waiting for I/O while holding the lock"
+      ],
+      [
+        "Sleeping while holding",
+        "Not allowed. Waiters would keep using the CPU",
+        "Allowed"
+      ],
+      [
+        "On a single core",
+        "While a thread waits, the lock holder cannot run, so spinning never frees the lock. In the kernel it is used with preemption disabled",
+        "Works without problems"
+      ],
+      [
+        "Use in the kernel",
+        "Usable even where sleeping is not allowed, such as interrupt handlers (interrupt context). When sharing data with an interrupt, disable interrupts before taking it",
+        "May sleep, so usable only in process context, not in interrupt handlers"
+      ],
+      [
+        "Priority inversion",
+        "If the lock holder is preempted, waiters keep spinning. The kernel prevents this by disabling preemption while the lock is held",
+        "Can be addressed with priority-inheritance mutexes"
+      ],
+      [
+        "Implementation examples",
+        "Atomic instructions (test-and-set or compare-and-swap) update the variable. Test-and-test-and-set waits with ordinary reads to reduce inter-core traffic",
+        "Linux futex locks with only user-space atomic instructions when uncontended and asks the kernel to put the thread to sleep only on contention. Some implementations spin briefly before sleeping"
+      ]
+    ],
+    "when": [
+      [
+        "Spinlock",
+        "On multicore systems when the lock is held for a very short time (shorter than the context-switch overhead). Kernel code where sleeping is not allowed, such as interrupt handlers."
+      ],
+      [
+        "Mutex",
+        "When the lock is held for a long time, or the holder may sleep for I/O, memory allocation and the like. Ordinary mutual exclusion in user-space applications."
+      ],
+      [
+        "Combined",
+        "Many mutex implementations combine the strengths of both, taking the lock with atomic instructions alone without sleeping when uncontended, and spinning briefly before sleeping when it cannot be taken."
+      ]
+    ],
+    "faq": [
+      [
+        "Spinlocks waste CPU time, so why are they used?",
+        "Because if the lock is held for a very short time, spinning briefly is faster than paying the context-switch overhead of sleeping and waking. Also, in situations where sleeping is not allowed, such as kernel interrupt handlers, only spinlocks can be used."
+      ],
+      [
+        "Why can't a mutex be used in an interrupt handler?",
+        "A mutex puts the waiting thread to sleep when the lock cannot be taken, but an interrupt handler does not run as a particular thread, so it cannot sleep and be woken later. When sharing data with an interrupt handler, use a spinlock combined with disabling interrupts."
+      ],
+      [
+        "What is a futex?",
+        "A Linux mechanism for implementing mutexes and similar locks quickly. When there is no contention, it just updates the lock variable with atomic instructions in user space, and only when it must wait due to contention does it make a system call to have the kernel put it to sleep. When most locks are uncontended, it saves system call overhead."
+      ],
+      [
+        "What happens if you use a spinlock on a single-core system?",
+        "Even if a thread spins in user space, the lock-holding thread cannot run on that core, so the lock is not freed until the spinning thread uses up its time slice. That is why kernels on single-core systems disable preemption or interrupts for mutual exclusion instead of using spinlocks."
+      ]
+    ]
+  },
+  "fp32-vs-fp16-vs-bf16-vs-int8": {
+    "title": "FP32 vs FP16 vs BF16 vs INT8: Key Differences Explained",
+    "description": "FP32 vs FP16 vs BF16 vs INT8: bit layout (sign, exponent, mantissa), range, precision, FP32 conversion, memory, compute efficiency, training and inference.",
+    "lead": "FP32 is the 32-bit single-precision floating-point format and is used as the reference for calculations. FP16 and BF16 are both 16 bits but allocate their bits differently. FP16 spends more bits on the mantissa for precision, so its range is narrow, with a maximum of 65504. BF16 keeps the exponent at 8 bits, the same as FP32, preserving an FP32-like range at the cost of precision. INT8 is an 8-bit integer used for quantization, which approximates real numbers by applying a scale, and it greatly reduces memory and power in AI inference.",
+    "items": [
+      "FP32",
+      "FP16",
+      "BF16",
+      "INT8"
+    ],
+    "rows": [
+      [
+        "Bit width",
+        "32 bits",
+        "16 bits",
+        "16 bits",
+        "8 bits"
+      ],
+      [
+        "Sign, exponent and mantissa bits",
+        "1, 8, 23",
+        "1, 5, 10",
+        "1, 8, 7",
+        "No exponent or mantissa. Two's complement integer from −128 to 127"
+      ],
+      [
+        "Largest representable value",
+        "About 3.4 × 10³⁸",
+        "65504",
+        "About 3.4 × 10³⁸ (almost the same as FP32)",
+        "127 (real values are represented with a scale)"
+      ],
+      [
+        "Smallest normal number",
+        "About 1.2 × 10⁻³⁸",
+        "About 6.1 × 10⁻⁵ (2⁻¹⁴)",
+        "About 1.2 × 10⁻³⁸",
+        "None (the step between representable values is set by the scale)"
+      ],
+      [
+        "Precision",
+        "About 7 decimal digits (the gap between 1 and the next number is 2⁻²³ ≈ 1.2 × 10⁻⁷)",
+        "About 3 decimal digits (2⁻¹⁰ ≈ 9.8 × 10⁻⁴)",
+        "2 to 3 decimal digits (2⁻⁷ ≈ 7.8 × 10⁻³)",
+        "256 levels"
+      ],
+      [
+        "Conversion from FP32",
+        "None (the reference)",
+        "The range is narrow, so large values can overflow and small values can become 0",
+        "Just take the upper 16 bits and round; the range does not overflow",
+        "Quantize by choosing a scale (and zero point). Calibration to examine the value range is needed"
+      ],
+      [
+        "Memory per value",
+        "4 bytes",
+        "2 bytes",
+        "2 bytes",
+        "1 byte"
+      ],
+      [
+        "Arithmetic unit efficiency",
+        "Large multipliers; fewer multiply-accumulates fit in the same area",
+        "Arithmetic units are smaller than for FP32, so many more multiply-accumulates can be placed",
+        "About the same as FP16. The shorter mantissa makes the multiplier even smaller",
+        "Smallest multipliers and lowest power. Products are often accumulated as 32-bit integers"
+      ],
+      [
+        "Use in training",
+        "Master weights, optimizer states, accumulation of products",
+        "Mixed-precision training. Loss scaling keeps small gradients from becoming 0",
+        "Widely used in mixed-precision training. Loss scaling is often unnecessary",
+        "Generally not used (quantization-aware training simulates the effects of quantization)"
+      ],
+      [
+        "Use in inference",
+        "Accuracy reference. When accuracy takes priority over performance",
+        "Inference on GPUs and similar hardware",
+        "Inference on GPUs and AI accelerators",
+        "Inference of quantized models, especially on edge NPUs"
+      ]
+    ],
+    "when": [
+      [
+        "FP32",
+        "Calculations that need precision, master weights and product accumulation in training, and as a reference for checking low-precision results."
+      ],
+      [
+        "FP16 and BF16",
+        "When you want to halve memory and compute in AI training and inference. BF16 for training where range matters; FP16 when values fit in its range and precision matters."
+      ],
+      [
+        "INT8",
+        "When you want to quantize a trained model for faster, lower-power inference. Inference on edge devices with limited memory and power."
+      ]
+    ],
+    "faq": [
+      [
+        "Why is BF16 often preferred over FP16 for AI training?",
+        "BF16 has an 8-bit exponent, the same as FP32, so its range is almost the same as FP32. FP16 needs loss scaling to keep small gradients from becoming 0 and large values from overflowing, but BF16 often does not, and conversion from FP32 is simple. Its precision is lower, but this is rarely a problem for neural network training."
+      ],
+      [
+        "Why is the maximum value of FP16 65504?",
+        "FP16 has a 5-bit exponent (bias 15), and the all-ones exponent is reserved for infinity and NaN, so the largest exponent is 2 to the 15th power. With all 10 mantissa bits set to 1, (2 − 2⁻¹⁰) × 2¹⁵ is the largest finite value, which equals 65504."
+      ],
+      [
+        "How does INT8 represent values with fractional parts?",
+        "It approximates them in the form real value ≈ scale × (integer − zero point). For quantization symmetric around 0, the zero point is 0 and the scale is set to something like “largest absolute value ÷ 127”. Scales are kept per tensor or per channel."
+      ],
+      [
+        "Can INT8 be used for training?",
+        "Training generally uses floating-point formats, because gradient values span a wide range and small updates to the weights must also be handled. INT8 is mainly used for inference with quantized trained models, and even quantization-aware training performs the weight updates in floating point."
+      ]
+    ]
+  },
+  "training-vs-inference": {
+    "title": "AI Training vs Inference: Key Differences Explained",
+    "description": "AI training vs inference: forward/backward passes, compute, memory (gradients, optimizer state), formats, batch size, latency and throughput, hardware, energy.",
+    "lead": "Training is the process of determining a model's weights by repeating, a huge number of times, the steps of running data through the forward pass to compute the loss, computing gradients by backpropagation and updating the weights with an optimizer. Inference runs only the forward pass with fixed weights to produce answers for new inputs. Training stores gradients, optimizer states and activations for backpropagation in addition to the weights, so it needs far more memory and compute than inference with the same model. Each inference computation is small, but it runs every time the model is used, and response speed matters.",
+    "items": [
+      "Training",
+      "Inference"
+    ],
+    "rows": [
+      [
+        "Purpose",
+        "Determine the model's weights from data",
+        "Produce answers for new inputs with fixed weights"
+      ],
+      [
+        "Computation",
+        "Repeat forward pass → loss calculation → gradient computation by backpropagation → weight update by the optimizer",
+        "Forward pass only"
+      ],
+      [
+        "Compute estimate",
+        "About 3 times the forward pass per input (backpropagation is about 2 times the forward pass). For Transformers, about 6 × parameters × tokens in total",
+        "About 2N per token for a model with N parameters"
+      ],
+      [
+        "Memory required",
+        "Weights, gradients, optimizer states (two for Adam) and activations for backpropagation. All in FP32, 16 bytes per parameter plus activations",
+        "Weights and activations during computation (plus the KV cache for large language models). 2 bytes per parameter in FP16"
+      ],
+      [
+        "Number formats",
+        "Mixed precision with BF16 or FP16 (master weights in FP32)",
+        "FP16 or BF16, or formats quantized to INT8, INT4, etc."
+      ],
+      [
+        "Batch size",
+        "Large batches to raise arithmetic unit utilization",
+        "Small when responses are urgent (sometimes 1). Servers batch multiple requests to improve efficiency"
+      ],
+      [
+        "Performance priority",
+        "Throughput (time to finish training, arithmetic unit utilization)",
+        "Balancing latency (response time per request) and throughput, and cost per task"
+      ],
+      [
+        "Hardware",
+        "Many GPUs or accelerators with large-capacity HBM and high compute performance, connected by a high-speed network",
+        "A wide range, from data center GPUs and inference accelerators to smartphone NPUs and microcontrollers"
+      ],
+      [
+        "Parallelism",
+        "Data, tensor and pipeline parallelism. Gradients are gathered with all-reduce",
+        "Multiple requests are processed in parallel. Large models are split across multiple chips with tensor parallelism and similar methods"
+      ],
+      [
+        "Energy",
+        "A single training run operates many chips for a long period, using a large amount of power",
+        "Small per run, but it runs every time the model is used, so the total becomes large with heavy use"
+      ]
+    ],
+    "when": [
+      [
+        "Training",
+        "When creating a new model, or when further training (fine-tuning) an existing model on your own data."
+      ],
+      [
+        "Inference",
+        "When using a trained model in a service or product. Image recognition, text generation, speech recognition, etc."
+      ],
+      [
+        "Techniques",
+        "For inference, models are made lighter with quantization, pruning and knowledge distillation. For training, mixed precision and gradient checkpointing save memory and compute."
+      ]
+    ],
+    "faq": [
+      [
+        "Why does training use far more memory than inference?",
+        "Because in addition to the weights, training holds the same number of gradients and the optimizer states (two for Adam), and also stores intermediate activations from the forward pass for backpropagation. For example, for a 7-billion-parameter model, holding all of these in FP32 takes about 112 GB excluding activations, whereas inference with only FP16 weights needs about 14 GB."
+      ],
+      [
+        "What happens if you increase the batch size in inference?",
+        "Weights loaded once can be used for computations on multiple inputs, so the arithmetic units are used more effectively and overall throughput rises. On the other hand, the time spent waiting for inputs to gather and the time per pass increase, so the response to each request (latency) becomes slower, and more memory is used."
+      ],
+      [
+        "Can the same hardware be used for training and inference?",
+        "Yes. GPUs are used for both training and inference. However, inference alone does not need backpropagation or large memory, so power-efficient hardware is also used, such as inference accelerators with many low-precision arithmetic units like INT8, and smartphone NPUs."
+      ],
+      [
+        "How much computation does training require?",
+        "For Transformer models, with N parameters and D training tokens, the total number of operations is commonly approximated as about 6ND. This is because the forward pass takes about 2N per token and the backward pass takes about twice that."
+      ]
+    ]
   }
 }
