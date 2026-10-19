@@ -42,7 +42,11 @@ export function linkTerms(text, { keys, re }) {
   let last = 0;
   for (const m of text.matchAll(re)) {
     const id = keys.get(m[0].toLowerCase());
-    if (used.has(id)) continue;
+    // ハイフンでつながった別の略語の一部(「ICP-MS」の中の「ICP」など)はリンクしない。「SiC-based」「GPIO-Pins」「MEMS-Gyroskop」は対象
+    const end = m.index + m[0].length;
+    const acronym = /^[A-Z0-9]+$/.test(m[0]);
+    if (used.has(id) || (acronym && (/^-[A-Z0-9]{2,}(?![a-z])/.test(text.slice(end, end + 12))
+      || /(?:^|[^A-Za-z0-9])[A-Z0-9]{2,}-$/.test(text.slice(Math.max(0, m.index - 12), m.index))))) continue;
     used.add(id);
     parts.push(text.slice(last, m.index), { text: m[0], id });
     last = m.index + m[0].length;

@@ -98,6 +98,10 @@ export function validate() {
     const gloT = opt(`${base}/glossary.json`);
     for (const term of Object.keys(gloT)) {
       if (!glossaryTerms.has(term)) errors.push(`${base}/glossary.json: 用語 "${term}" が glossary.json にありません`);
+      // 用語ページの詳しい解説(about: [{h, p}])とよくある質問(faq: [{q, a}])は、見出しと本文がそろっていること
+      const { about = [], faq = [] } = gloT[term];
+      if (about.some(s => !s.h?.trim() || !s.p?.trim())) errors.push(`${base}/glossary.json: "${term}" の about に見出しか本文が空のものがあります`);
+      if (faq.some(x => !x.q?.trim() || !x.a?.trim())) errors.push(`${base}/glossary.json: "${term}" の faq に質問か答えが空のものがあります`);
     }
     const figT = opt(`${base}/figures.json`);
     for (const [id, map] of Object.entries(figT)) {

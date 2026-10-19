@@ -308,6 +308,8 @@ function buildLang(L) {
   const cmp = compares.filter(e => isDef || cmpT[e.slug]).map(e => ({ ...e, ...(isDef ? {} : cmpT[e.slug]) }));
   const qById = new Map(categories.flatMap(c => qs[c.id].map(q => [q.id, { ...q, cat: c.id }])));
   const abs = x => new URL(x, baseUrl).href;
+  const crumbs = (...items) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: abs(url) })) });
   const cmpUrl = e => `${home}compare/${e.slug}/`;
   for (const e of cmp) {
     const where = `data/compare.json「${e.slug}」`;
@@ -643,8 +645,6 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
   // 比較ページ /compare/ と /compare/{slug}/
   const cmpLangs = slug => langs.filter(x => x.code === defLang || readOpt(`data/i18n/${x.code}/compare.json`, {})[slug]);
   if (cmp.length) {
-    const crumbs = (...items) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-      itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: abs(url) })) });
     const topCrumb = [t('breadcrumb_top'), home];
     const idxCrumb = [t('breadcrumb_compare'), `${home}compare/`];
     for (const e of cmp) {
@@ -751,6 +751,22 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
     <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
   </article>`).join('')}
 </section>` : '';
+    // 詳しい解説(about: 見出しと段落)とよくある質問(faq)。用語集の訳にあるときだけ出す(今は表示回数の多い英語の用語)
+    // 段落の中の用語は、このページ自身の語を除いて用語ページにリンクする
+    const linkedOther = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? esc(p)
+      : p.id === g.key ? esc(p.text) : `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`)).join('');
+    const about = g.about ?? [];
+    const faq = g.faq ?? [];
+    const aboutHtml = about.map(s => `<section class="term-about">
+  <h2>${esc(s.h)}</h2>
+  <p>${linkedOther(s.p)}</p>
+</section>`).join('\n');
+    const faqHtml = faq.length ? `<section class="faq">
+  <h2>${esc(t('compare_faq'))}</h2>${faq.map(x => `
+  <h3>${esc(x.q)}</h3>
+  <p>${esc(x.a)}</p>`).join('')}
+</section>` : '';
+    const termUrl = `${home}term/${termSlug[g.key]}/`;
     page({
       path: `${L.path}term/${termSlug[g.key]}/`,
       alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
@@ -758,6 +774,13 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
       description: termDescription(g.desc, list.length),
       scripts: ['answer.js'],
       noindex: !list.length, // 問題に一度も出てこない用語のページは検索に出さない
+      jsonld: [
+        crumbs([t('breadcrumb_top'), home], [S.nav_glossary, `${home}glossary/`], [g.term, termUrl]),
+        { '@context': 'https://schema.org', '@type': 'DefinedTerm', name: g.term, description: g.desc, url: abs(termUrl), inLanguage: L.htmlLang,
+          inDefinedTermSet: { '@type': 'DefinedTermSet', name: S.nav_glossary, url: abs(`${home}glossary/`) } },
+        ...(faq.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage',
+          mainEntity: faq.map(x => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) }] : []),
+      ],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
 <article class="term-page">
   <h1>${esc(t('term_heading', { term: g.term }))}</h1>
@@ -768,7 +791,9 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
   ${c ? `<p>${esc(t('term_category'))}: <a href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
 </article>
+${aboutHtml}
 ${practiceHtml}
+${faqHtml}
 ${quotes.length ? `<section>
   <h2>${esc(t('term_quotes', { term: g.term }))}</h2>
   <ul class="term-quotes">${quotes.map(({ q, s }) => `<li><p>${esc(s)}</p><a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 60))}</a></li>`).join('')}</ul>
