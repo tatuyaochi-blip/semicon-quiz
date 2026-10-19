@@ -24,7 +24,7 @@
 <link rel="manifest" href="/nl/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Slack","item":"https://semiconroom.com/nl/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Slack","description":"Waarde die de timingmarge uitdrukt. Voor setup is het de vereiste tijd min de aankomsttijd, voor hold de aankomsttijd min de vereiste tijd; een negatieve waarde betekent een schending.","url":"https://semiconroom.com/nl/term/slack/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/nl/"},{"@type":"ListItem","position":2,"name":"Woordenlijst","item":"https://semiconroom.com/nl/glossary/"},{"@type":"ListItem","position":3,"name":"Slack","item":"https://semiconroom.com/nl/term/slack/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Slack","description":"Waarde die de timingmarge uitdrukt. Voor setup is het de vereiste tijd min de aankomsttijd, voor hold de aankomsttijd min de vereiste tijd; een negatieve waarde betekent een schending.","url":"https://semiconroom.com/nl/term/slack/","inLanguage":"nl","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Woordenlijst","url":"https://semiconroom.com/nl/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wat betekent negatieve slack bij timinganalyse?","acceptedAnswer":{"@type":"Answer","text":"Het betekent dat het pad zijn constraint schendt: bij setup komt de data te laat aan voor de capture-flank en bij hold komt ze te vroeg aan en kan ze de waarde die wordt ingelezen overschrijven. De grootte geeft aan hoeveel vertraging moet worden verwijderd of toegevoegd."}},{"@type":"Question","name":"Verschil tussen WNS en TNS","acceptedAnswer":{"@type":"Answer","text":"WNS is de slack van het slechtste enkele pad, terwijl TNS de som is van alle negatieve endpoint-slacks. Een ontwerp kan een kleine WNS maar een grote TNS hebben wanneer veel paden met een klein beetje falen."}},{"@type":"Question","name":"Hoe los je een holdschending op?","acceptedAnswer":{"@type":"Answer","text":"Voeg vertraging toe aan het korte datapad, typisch met buffer- of vertragingscellen, of verklein de skew die de capture-klok later maakt. Een lagere klokfrequentie helpt niet, omdat de holdcontrole de periode niet bevat."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Vakgebied: <a href="/nl/c/sta-cdc/">Timinganalyse en CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Setup-slack berekenen</h2>
+  <p><a class="term-link" href="/nl/term/sta/">Statische timinganalyse</a> (STA) vergelijkt wanneer data aankomt met wanneer die vereist is. Voor setup moet de data die op één klokflank wordt gelanceerd aankomen vóór de volgende capture-flank min de setuptijd, dus slack = vereist − aankomst. Met een periode van 2,0 ns, 0,2 ns clock-to-output, 1,4 ns logica en 0,1 ns setup is de aankomst 1,6 ns, de vereiste tijd 1,9 ns en de slack +0,3 ns. <a class="term-link" href="/nl/term/clock-uncertainty/">Klokonzekerheid</a> voor <a class="term-link" href="/nl/term/jitter/">jitter</a> en nog niet opgebouwde klokbomen wordt ook van de vereiste tijd afgetrokken, en een <a class="term-link" href="/nl/term/multicycle-path/">multicyclepad</a> van 2 schuift de capture-flank één extra periode later.</p>
+</section>
+<section class="term-about">
+  <h2>Hold-slack en waarom de frequentie niet helpt</h2>
+  <p>Hold stelt de omgekeerde vraag: komt nieuwe data die door een flank wordt gelanceerd zo vroeg aan dat ze de waarde verstoort die dezelfde flank aan het inlezen is? Hier geldt slack = aankomst − vereist, met minimale vertragingen en vereist = aankomst capture-klok + <a class="term-link" href="/nl/term/hold-time/">holdtijd</a>. Omdat beide controles naar dezelfde flank verwijzen, komt de klokperiode er niet in voor, dus een tragere klok lost een holdschending nooit op; in silicium is die meestal fataal. Holdproblemen treden op bij korte paden zoals schuifregisters en worden normaal opgelost door vertragingscellen in het datapad te plaatsen.</p>
+</section>
+<section class="term-about">
+  <h2>Skew, OCV en CRPR</h2>
+  <p>Klokskew verschuift de twee controles in tegengestelde richting. Als de capture-klok later aankomt dan de launch-klok (positieve skew), groeit de setup-slack met dat bedrag en krimpt de hold-slack met hetzelfde bedrag; negatieve skew doet het omgekeerde. <a class="term-link" href="/nl/term/ocv/">On-chip variation</a>-<a class="term-link" href="/nl/term/derating/">derating</a> (OCV) maakt de analyse pessimistisch: voor setup worden de launch-klok en datapaden vertraagd en de capture-klok versneld. Waar beide klokpaden vanaf de root buffers delen, kan dat gedeelde stuk niet tegelijk snel en langzaam zijn, dus common path pessimism removal (<a class="term-link" href="/nl/term/crpr/">CRPR</a>) telt het verschil weer op.</p>
+</section>
+<section class="term-about">
+  <h2>Een timingrapport lezen</h2>
+  <p>Rapporten vatten de slack per endpoint samen. <a class="term-link" href="/nl/term/wns/">WNS (worst negative slack)</a> is de slechtste enkele waarde en geeft aan hoe ver de klok van timing closure af is; TNS (total negative slack) telt de negatieve slacks van alle schendende endpoints op en geeft aan hoeveel werk er nog is. Drie endpoints op −0,1 ns geven een WNS van −0,1 ns en een TNS van −0,3 ns. Beide worden apart gerapporteerd voor setup en hold, en per klokgroep. Setupschendingen worden aangepakt door logica in te korten, cellen te vergroten of te herstructureren; een multicycle-uitzondering is alleen terecht als de logica echt maar elke tweede cyclus inleest.</p>
+</section>
 <section>
   <h2>Nu oefenen: vragen over Slack</h2>
   <article class="q-mini" data-qid="sta-cdc-001" data-cat="sta-cdc" data-answer="0" data-correct="Goed!" data-incorrect="Fout. Het juiste antwoord is A.">
@@ -78,7 +93,15 @@
     <details class="q-answer"><summary>Antwoord en toelichting tonen</summary><p class="verdict ok">Antwoord: B. +0,02 ns</p><p class="explanation">Als de ontvangende klok later aankomt (positieve skew), verschuift de capture-flank naar achteren en komt er meer tijd beschikbaar voor setup. De vereiste tijd is 1,0 + 0,05 − 0,08 = 0,97 ns en de aankomsttijd 0,1 + 0,85 = 0,95 ns, dus de <a class="term-link" href="/nl/term/slack/">slack</a> is +0,02 ns. −0,03 ns is de waarde waarbij de skew is genegeerd, −0,08 ns de waarde waarbij de richting van de skew is omgedraaid (alsof de ontvangende klok eerder aankomt). Let op: dezelfde skew werkt nadelig voor hold.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Veelgestelde vragen</h2>
+  <h3>Wat betekent negatieve slack bij timinganalyse?</h3>
+  <p>Het betekent dat het pad zijn constraint schendt: bij setup komt de data te laat aan voor de capture-flank en bij hold komt ze te vroeg aan en kan ze de waarde die wordt ingelezen overschrijven. De grootte geeft aan hoeveel vertraging moet worden verwijderd of toegevoegd.</p>
+  <h3>Verschil tussen WNS en TNS</h3>
+  <p>WNS is de slack van het slechtste enkele pad, terwijl TNS de som is van alle negatieve endpoint-slacks. Een ontwerp kan een kleine WNS maar een grote TNS hebben wanneer veel paden met een klein beetje falen.</p>
+  <h3>Hoe los je een holdschending op?</h3>
+  <p>Voeg vertraging toe aan het korte datapad, typisch met buffer- of vertragingscellen, of verklein de skew die de capture-klok later maakt. Een lagere klokfrequentie helpt niet, omdat de holdcontrole de periode niet bevat.</p>
+</section>
 <section>
   <h2>“Slack” in de toelichting</h2>
   <ul class="term-quotes"><li><p>De setup-slack wordt berekend als „vereiste tijd − aankomsttijd”.</p><a href="/nl/q/sta-cdc/sta-cdc-001/">In een synchrone schakeling met een klokperiode van 2,0 ns …</a></li><li><p>De vereiste tijd is 1,0 + 0,05 − 0,08 = 0,97 ns en de aankomsttijd 0,1 + 0,85 = 0,95 ns, dus de slack is +0,02 ns.</p><a href="/nl/q/sta-cdc/sta-cdc-004/">Een pad heeft een klokperiode van 1,0 ns, een clock-to-outp…</a></li><li><p>De hold-slack is „aankomsttijd − vereiste tijd” en controleert of de data niet te vroeg aankomt.</p><a href="/nl/q/sta-cdc/sta-cdc-006/">De clock-to-output-vertraging van de verzendende flip-flop …</a></li><li><p>Daarom verandert de slack van −0,03 ns niet als de frequentie wordt verlaagd, en verslechtert hij ook niet.</p><a href="/nl/q/sta-cdc/sta-cdc-007/">Op een gewoon pad dat op de stijgende flank van dezelfde kl…</a></li><li><p>De vereiste tijd is 1,25 − 0,05 (onzekerheid) − 0,05 (setuptijd) = 1,15 ns en de aankomsttijd 1,05 ns, dus de slack is 0,10 ns.</p><a href="/nl/q/sta-cdc/sta-cdc-009/">Op een pad met een klokperiode van 1,25 ns (800 MHz) is de …</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/de/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Clock-Gating","item":"https://semiconroom.com/de/term/clock-gating/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock-Gating","description":"Methode des Low-Power-Entwurfs, bei der die Taktzufuhr zu ungenutzten Schaltungsblöcken gestoppt wird, um die Leistungsaufnahme durch unnötiges Schalten zu senken.","url":"https://semiconroom.com/de/term/clock-gating/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Start","item":"https://semiconroom.com/de/"},{"@type":"ListItem","position":2,"name":"Glossar","item":"https://semiconroom.com/de/glossary/"},{"@type":"ListItem","position":3,"name":"Clock-Gating","item":"https://semiconroom.com/de/term/clock-gating/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock-Gating","description":"Methode des Low-Power-Entwurfs, bei der die Taktzufuhr zu ungenutzten Schaltungsblöcken gestoppt wird, um die Leistungsaufnahme durch unnötiges Schalten zu senken.","url":"https://semiconroom.com/de/term/clock-gating/","inLanguage":"de","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossar","url":"https://semiconroom.com/de/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Unterschied zwischen Clock-Gating und Power-Gating?","acceptedAnswer":{"@type":"Answer","text":"Clock-Gating stoppt den Takt, um die dynamische Leistung zu senken, während der Block versorgt bleibt; er arbeitet daher sofort weiter, hat aber weiterhin Leckströme. Power-Gating trennt die Versorgung und beseitigt auch die Leckströme, erfordert aber das Sichern des Zustands und ein längeres Aufwachen."}},{"@type":"Question","name":"Warum den Takt nicht mit einem einfachen UND-Gatter gaten?","acceptedAnswer":{"@type":"Answer","text":"Ändert sich das Enable, während der Takt High ist, kann der UND-Ausgang einen verkürzten Impuls oder Glitch erzeugen, der Flipflops fehlerhaft takten kann. Eine integrierte Clock-Gating-Zelle speichert das Enable während der Low-Phase in einem Latch, um dies zu verhindern."}},{"@type":"Question","name":"Verringert Clock-Gating die Leckleistung?","acceptedAnswer":{"@type":"Answer","text":"Nein. Es beseitigt nur die Schaltleistung in den gegateten Flipflops und der Taktverdrahtung; Leckströme fließen weiter, solange der Block versorgt ist."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -64,7 +64,22 @@
   
   <p>Fachgebiet: <a href="/de/c/eda/">LSI-Entwurfsablauf und EDA</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Warum das Anhalten des Takts Leistung spart</h2>
+  <p>Die <a class="term-link" href="/de/term/dynamic-power/">dynamische Verlustleistung</a> ist ungefähr <a class="term-link" href="/de/term/activity-factor/">Aktivitätsfaktor</a> mal Kapazität mal Quadrat der Spannung mal Frequenz. Das Taktnetz schaltet in jedem Zyklus und treibt ü<a class="term-link" href="/de/term/bit-error-rate/">ber</a> einen großen gepufferten Baum den Takteingang jedes Flipflops, daher ist das Taktnetz oft einer der größten Einzelverbraucher dynamischer Leistung. Wenn sich der Inhalt eines Registers nicht ändert, weil sein Enable inaktiv ist, verschwendet das Takten Energie in den Flipflops und im zuführenden Taktzweig. Clock-Gating stoppt den Takt zu solchen Registern oder Blöcken und beseitigt dieses Schalten, während deren gespeicherter Zustand erhalten bleibt.</p>
+</section>
+<section class="term-about">
+  <h2>Die integrierte Clock-Gating-Zelle</h2>
+  <p>Den Takt einfach mit einem Enable per UND zu verknüpfen ist riskant: Ändert sich das Enable, während der Takt High ist, kann der gegatete Takt verkürzt werden oder einen <a class="term-link" href="/de/term/glitch/">Glitch</a> erzeugen. Die <a class="term-link" href="/de/term/sta/">statische Timing-Analyse</a> prüft, dass sich das Enable vor der steigenden Taktflanke einstellt und bis zur fallenden Flanke stabil bleibt, was bei einem Takt von 2,0 ns mit 50 % <a class="term-link" href="/de/term/duty-cycle/">Tastverhältnis</a> nur die Low-Phase von 1,0 ns übrig lässt. Designs verwenden daher integrierte Clock-Gating-Zellen (ICG), die ein Latch enthalten, das nur während der Low-Phase des Takts transparent ist, sodass das Enable während der High-Phase eingefroren ist. ICGs haben außerdem einen Test-Enable-Eingang, damit gegatete Flipflops beim <a class="term-link" href="/de/term/scan-test/">Scan-Test</a> getaktet werden.</p>
+</section>
+<section class="term-about">
+  <h2>Wie Werkzeuge es einfügen</h2>
+  <p>Im <a class="term-link" href="/de/term/rtl/">RTL</a>-Code wird ein Register, das nur bei aktivem Enable beschrieben wird, normalerweise mit einem <a class="term-link" href="/de/term/multiplexer/">Multiplexer</a> realisiert, der den alten Wert zurückführt. Synthesewerkzeuge erkennen dieses Muster und ersetzen die Rückführungsmultiplexer einer Gruppe von Flipflops durch eine einzige ICG, was sowohl Leistung als auch Multiplexerfläche spart. Dieses feingranulare Gating erfolgt automatisch. Grobgranulares Gating, gesteuert von einem Power-Manager oder von Software, stoppt den Takt für ganze Blöcke wie einen untätigen Beschleuniger. Näher an der Taktwurzel platzierte Gating-Zellen sparen mehr Leistung, erschweren aber das Timing des Taktbaums.</p>
+</section>
+<section class="term-about">
+  <h2>Clock-Gating vs. Power-Gating</h2>
+  <p>Clock-Gating beseitigt die <a class="term-link" href="/de/term/dynamic-power/">dynamische Verlustleistung</a>, nicht aber die Leckströme, da der Block versorgt bleibt; im Gegenzug bleibt der Zustand erhalten und der Block arbeitet bereits bei der nächsten Taktflanke weiter. Power-Gating schaltet einen großen Schalttransistor zwischen Block und Versorgung ab und beseitigt so auch nahezu alle Leckströme, doch der Zustand muss gesichert oder in Retention-Registern gehalten werden, Ausgänge benötigen Isolationszellen, und das Aufwachen dauert, bis sich die Versorgung stabilisiert hat. Chips kombinieren beides: Clock-Gating für Ruhephasen von wenigen Takten, Power-Gating für lange.</p>
+</section>
 <section>
   <h2>Jetzt üben: Fragen zu Clock-Gating</h2>
   <article class="q-mini" data-qid="sta-cdc-019" data-cat="sta-cdc" data-answer="2" data-correct="Richtig!" data-incorrect="Falsch. Die richtige Antwort ist C.">
@@ -73,7 +88,15 @@
     <details class="q-answer"><summary>Antwort und Erläuterung anzeigen</summary><p class="verdict ok">Antwort: C. Dass sich das Enable-Signal nicht ändert, während der Takt 1 ist, und seine Änderung abgeschlossen ist, während der Takt 0 ist</p><p class="explanation">Ändert sich beim AND-Gatter das Enable, während der Takt 1 ist, wird der Ausgangstakt mittendrin abgeschnitten, oder es entsteht ein kurzer Impuls (<a class="term-link" href="/de/term/glitch/">Glitch</a>). Die <a class="term-link" href="/de/term/sta/">STA</a> prüft daher, dass das Enable vor der steigenden Taktflanke stabil ist (Gating-Setup) und bis nach der fallenden Flanke gehalten wird (Gating-Hold). Bei einer Periode von 2,0 ns und 50 % <a class="term-link" href="/de/term/duty-cycle/">Tastverhältnis</a> muss die Änderung des Enables in den 1,0 ns zwischen der fallenden und der nächsten steigenden Flanke liegen. Mit einer <a class="term-link" href="/de/term/clock-gating/">Clock-Gating</a>-Zelle mit integriertem Latch lässt sich dies leichter erfüllen.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Unterschied zwischen Clock-Gating und Power-Gating?</h3>
+  <p>Clock-Gating stoppt den Takt, um die dynamische Leistung zu senken, während der Block versorgt bleibt; er arbeitet daher sofort weiter, hat aber weiterhin Leckströme. Power-Gating trennt die Versorgung und beseitigt auch die Leckströme, erfordert aber das Sichern des Zustands und ein längeres Aufwachen.</p>
+  <h3>Warum den Takt nicht mit einem einfachen UND-Gatter gaten?</h3>
+  <p>Ändert sich das Enable, während der Takt High ist, kann der UND-Ausgang einen verkürzten Impuls oder Glitch erzeugen, der Flipflops fehlerhaft takten kann. Eine integrierte Clock-Gating-Zelle speichert das Enable während der Low-Phase in einem Latch, um dies zu verhindern.</p>
+  <h3>Verringert Clock-Gating die Leckleistung?</h3>
+  <p>Nein. Es beseitigt nur die Schaltleistung in den gegateten Flipflops und der Taktverdrahtung; Leckströme fließen weiter, solange der Block versorgt ist.</p>
+</section>
 <section>
   <h2>„Clock-Gating“ in den Erläuterungen</h2>
   <ul class="term-quotes"><li><p>Mit einer Clock-Gating-Zelle mit integriertem Latch lässt sich dies leichter erfüllen.</p><a href="/de/q/sta-cdc/sta-cdc-019/">Was prüft die Clock-Gating-Prüfung der STA bei einer Schalt…</a></li></ul>
