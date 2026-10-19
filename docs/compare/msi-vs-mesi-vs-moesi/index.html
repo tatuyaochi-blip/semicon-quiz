@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MSI・MESI・MOESIの違い：状態の数・Exclusive状態・Owned状態・通信を比較 | 半導体教室</title>
+<meta name="description" content="キャッシュコヒーレンシのMSI・MESI・MOESIプロトコルを、状態の数と意味・Exclusive状態の利点・Owned状態の利点・メモリへの書き戻し・回路の複雑さの観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/msi-vs-mesi-vs-moesi/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/msi-vs-mesi-vs-moesi/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MSI・MESI・MOESIの違い：状態の数・Exclusive状態・Owned状態・通信を比較 | 半導体教室">
+<meta property="og:description" content="キャッシュコヒーレンシのMSI・MESI・MOESIプロトコルを、状態の数と意味・Exclusive状態の利点・Owned状態の利点・メモリへの書き戻し・回路の複雑さの観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/msi-vs-mesi-vs-moesi/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"MSI・MESI・MOESIの違い：状態の数・Exclusive状態・Owned状態・通信を比較","item":"https://semiconroom.com/compare/msi-vs-mesi-vs-moesi/"}]},{"@context":"https://schema.org","@type":"Article","headline":"MSI・MESI・MOESIの違い：状態の数・Exclusive状態・Owned状態・通信を比較","description":"キャッシュコヒーレンシのMSI・MESI・MOESIプロトコルを、状態の数と意味・Exclusive状態の利点・Owned状態の利点・メモリへの書き戻し・回路の複雑さの観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/msi-vs-mesi-vs-moesi/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"MESIのE状態があると、何がよいのですか？","acceptedAnswer":{"@type":"Answer","text":"ほかのコアが持っていないデータを読み込むとE状態になり、そのあと書き込むときに、ほかのコアへ知らせずにM状態へ変われます。MSIでは同じ場合にS状態で入るので、書き込みのたびに無効化の要求を出す必要があります。1つのスレッドだけが使うデータの「読んでから書く」処理でバスの通信を減らせます。"}},{"@type":"Question","name":"MOESIのO状態があると、何がよいのですか？","acceptedAnswer":{"@type":"Answer","text":"書き換えたデータ(M状態)をほかのコアが読むとき、MESIではメモリに書き戻してから共有しますが、MOESIでは書き戻さずにキャッシュどうしでデータを渡し、元のキャッシュがO状態として書き戻しの責任を持ち続けます。メモリへの書き込みを減らせます。"}},{"@type":"Question","name":"E状態とM状態はどう違いますか？","acceptedAnswer":{"@type":"Answer","text":"どちらも、そのラインを持っているのは自分のキャッシュだけです。E状態は内容がメモリと同じなので、追い出すときに書き戻す必要がありません。M状態は書き換えられていてメモリと内容が違うので、追い出すときに書き戻しが必要です。"}},{"@type":"Question","name":"これらのプロトコルは、スヌーピングとディレクトリ方式のどちらで使われますか？","acceptedAnswer":{"@type":"Answer","text":"どちらでも使えます。MSI・MESI・MOESIはラインの状態の決め方で、ほかのキャッシュへの知らせ方(共有のバスなどを監視するスヌーピングか、ラインの持ち主を記録するディレクトリ方式か)とは別の話です。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>MSI・MESI・MOESIの違い：状態の数・Exclusive状態・Owned状態・通信を比較</h1>
+  <p class="lead">MSI・MESI・MOESIは、マルチコアの各キャッシュが持つラインに状態をつけて、同じアドレスのデータが食い違わないようにするプロトコルです。MSIはModified・Shared・Invalidの3つの状態だけの基本形です。MESIはExclusive(自分だけが持ち、メモリと同じ内容)を加え、ほかのコアが持っていないデータへの書き込みで、バスへの通信を省けます。MOESIはさらにOwned状態を加え、書き換えたデータをメモリに書き戻さないまま、ほかのキャッシュと共有できます。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">MSI</th><th scope="col">MESI</th><th scope="col">MOESI</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">状態の数</th><td>3つ(M、S、I)</td><td>4つ(M、E、S、I)</td><td>5つ(M、O、E、S、I)</td></tr>
+        <tr><th scope="row">Modified(M)</th><td>自分だけが持ち、内容はメモリと違う</td><td>同じ</td><td>同じ</td></tr>
+        <tr><th scope="row">Shared(S)</th><td>ほかのキャッシュも持っている可能性がある。内容はメモリと同じ</td><td>同じ</td><td>ほかのキャッシュも持っている可能性がある。内容はメモリと違うこともある(O状態のラインがあるとき)</td></tr>
+        <tr><th scope="row">Exclusive(E)</th><td>なし</td><td>自分だけが持ち、内容はメモリと同じ</td><td>あり(MESIと同じ)</td></tr>
+        <tr><th scope="row">Owned(O)</th><td>なし</td><td>なし</td><td>内容はメモリと違うが、ほかのキャッシュもSで共有している。メモリへの書き戻しの責任を持つ</td></tr>
+        <tr><th scope="row">ほかに持つコアがないデータを読んだとき</th><td>S状態で入る</td><td>E状態で入る</td><td>E状態で入る</td></tr>
+        <tr><th scope="row">そのデータに書き込むとき</th><td>SからMに変えるため、ほかのコピーを無効にする要求をバスなどに出す</td><td>EからMへ、通信なしで変われる</td><td>EからMへ、通信なしで変われる</td></tr>
+        <tr><th scope="row">Mのラインをほかのコアが読んだとき</th><td>メモリに書き戻し、両方ともS状態になる</td><td>メモリに書き戻し、両方ともS状態になる(データはキャッシュから直接渡すこともある)</td><td>書き戻さずにデータを渡し、自分はO状態、相手はS状態になる</td></tr>
+        <tr><th scope="row">メモリへの書き戻し</th><td>変更されたラインがほかのコアに読まれるたびに起こる</td><td>変更されたラインがほかのコアに読まれるたびに起こる</td><td>O状態のラインが追い出されるときまで遅らせられる</td></tr>
+        <tr><th scope="row">状態を表すビット数と複雑さ</th><td>2ビット。最も簡単</td><td>2ビット。中くらい</td><td>3ビット。最も複雑</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>MSI</dt><dd>コヒーレンシの仕組みを学ぶときの基本形。状態の遷移をできるだけ簡単にしたいとき。</dd>
+    <dt>MESI</dt><dd>1つのコアだけが使うデータの読み書きが多いとき。E状態のおかげで、読んでから書く処理で通信を省けます。多くのマルチコアCPUのプロトコルの土台になっています。</dd>
+    <dt>MOESI</dt><dd>コアどうしで書き換えたデータを頻繁に受け渡すとき。メモリへの書き戻しを減らし、メモリの帯域を節約したいとき。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>MESIのE状態があると、何がよいのですか？</h3>
+  <p>ほかのコアが持っていないデータを読み込むとE状態になり、そのあと書き込むときに、ほかのコアへ知らせずにM状態へ変われます。MSIでは同じ場合にS状態で入るので、書き込みのたびに無効化の要求を出す必要があります。1つのスレッドだけが使うデータの「読んでから書く」処理でバスの通信を減らせます。</p>
+  <h3>MOESIのO状態があると、何がよいのですか？</h3>
+  <p>書き換えたデータ(M状態)をほかのコアが読むとき、MESIではメモリに書き戻してから共有しますが、MOESIでは書き戻さずにキャッシュどうしでデータを渡し、元のキャッシュがO状態として書き戻しの責任を持ち続けます。メモリへの書き込みを減らせます。</p>
+  <h3>E状態とM状態はどう違いますか？</h3>
+  <p>どちらも、そのラインを持っているのは自分のキャッシュだけです。E状態は内容がメモリと同じなので、追い出すときに書き戻す必要がありません。M状態は書き換えられていてメモリと内容が違うので、追い出すときに書き戻しが必要です。</p>
+  <h3>これらのプロトコルは、スヌーピングとディレクトリ方式のどちらで使われますか？</h3>
+  <p>どちらでも使えます。MSI・MESI・MOESIはラインの状態の決め方で、ほかのキャッシュへの知らせ方(共有のバスなどを監視するスヌーピングか、ラインの持ち主を記録するディレクトリ方式か)とは別の話です。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="multicore-sync-002" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/multicore-sync/multicore-sync-002/">キャッシュコヒーレンシのプロトコルであるMESIの4つの状態の組み合わせとして正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Memory、Execute、Store、Index</span></li><li><span class="choice-mark">B</span><span class="choice-text">Modified、Exclusive、Shared、Invalid</span></li><li><span class="choice-mark">C</span><span class="choice-text">Miss、Evict、Swap、Idle</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. Modified、Exclusive、Shared、Invalid</p><p class="explanation">MESIでは、キャッシュの各ラインが、変更済みで自分だけが持つModified、変更はないが自分だけが持つExclusive、複数のコアが同じ内容を持つShared、無効なInvalidのどれかの状態をとります。コアが読み書きしたり、ほかのコアの読み書きを知ったりするたびに状態が移り変わり、同じ番地のデータの食い違いを防ぎます。</p></details>
+  </article>
+  <article class="q-mini" data-qid="multicore-sync-003" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/multicore-sync/multicore-sync-003/">MESIプロトコルでキャッシュのラインがModified(M)状態にあるときの意味として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">このコアだけがそのラインを持ち、内容は主記憶と違う(書き戻しが必要)</span></li><li><span class="choice-mark">B</span><span class="choice-text">複数のコアが同じ内容を持ち、主記憶とも一致している</span></li><li><span class="choice-mark">C</span><span class="choice-text">このラインの内容は使えず、読むにはもう一度取ってくる必要がある</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. このコアだけがそのラインを持ち、内容は主記憶と違う(書き戻しが必要)</p><p class="explanation">M状態は、このコアが書き込みをして、最新の値を自分だけが持っている状態です。主記憶の値は古いので、このラインを追い出すときや、ほかのコアが読もうとしたときには、最新の値を書き戻すか直接渡す必要があります。M状態のラインには、ほかのコアに知らせずにそのまま何度でも書き込めるので、同じコアが続けて書き込むときは速く処理できます。</p></details>
+  </article>
+  <article class="q-mini" data-qid="multicore-sync-004" data-cat="multicore-sync" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/multicore-sync/multicore-sync-004/">MESIプロトコルで、Exclusive(E)状態のラインにそのコアが書き込むときの動作として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">ほかのすべてのコアに無効化の要求を送ってから書き込む</span></li><li><span class="choice-mark">B</span><span class="choice-text">書き込みはできないので、いったん主記憶に書いてから読み直す</span></li><li><span class="choice-mark">C</span><span class="choice-text">ほかのコアに知らせる必要がなく、そのままM状態に変わる</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. ほかのコアに知らせる必要がなく、そのままM状態に変わる</p><p class="explanation">E状態は、このコアだけがラインを持ち、内容が主記憶と同じ状態です。ほかのコアにコピーがないと分かっているので、書き込むときに無効化の通知をせずにM状態へ移れます。1つのコアだけが使うデータを読んでから書く、というよくある処理で通信を省けるのが、E状態を設ける利点です。S状態から書き込む場合は、ほかのコピーの無効化が必要です。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/multicore-sync/multicore-sync-005/">無効化型のコヒーレンシプロトコルで、あるコアがShared(S)状態のラインに書き込むときに行われることはどれか。</a></li>
+  <li data-level="3"><a href="/q/multicore-sync/multicore-sync-006/">MESIプロトコルで、コア0がModified(M)状態で持っているラインを、コア1が読もうとしたときの一般的な動作はどれか。</a></li>
+  <li data-level="1"><a href="/q/multicore-sync/multicore-sync-007/">キャッシュコヒーレンシのスヌーピング方式の説明として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/multicore-sync/">マルチコアと同期の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/mesi-protocol/">MESIプロトコル</a></dt><dd>キャッシュの各ラインをModified・Exclusive・Shared・Invalidの4つの状態で管理するコヒーレンシのプロトコル。書き込みのときにほかのコアのコピーを無効にする。</dd></div>
+    <div class="term"><dt><a href="/term/cache-coherency/">キャッシュコヒーレンシ</a></dt><dd>マルチコアのCPUで、各コアのキャッシュに同じアドレスのデータがあるとき、その内容の一貫性を保つ仕組み。あるコアが書き換えると、他のコアの古いコピーを無効にするなどして実現する。</dd></div>
+    <div class="term"><dt><a href="/term/bus-snooping/">スヌーピング</a></dt><dd>各キャッシュが共有のバスなどに流れるほかのコアの読み書きを監視し、自分のラインの状態を変えるコヒーレンシの方式。コアの数が少ないときに向く。</dd></div>
+    <div class="term"><dt><a href="/term/cache-line/">キャッシュライン</a></dt><dd>キャッシュと下の階層の間でデータを読み書きする単位。キャッシュブロックともいう。多くのCPUでは64バイトで、アドレスの下位ビットがライン内の位置(オフセット)を表す。</dd></div>
+    <div class="term"><dt><a href="/term/directory-based-coherence/">ディレクトリ方式</a></dt><dd>各ラインをどのコアが持っているかを表に記録し、関係するコアにだけ通知するコヒーレンシの方式。コアの数が多いシステムで使われる。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/write-through-vs-write-back-cache/"><strong>ライトスルーとライトバックの違い：キャッシュの書き込み方式を比較</strong><span>ライトスルーとライトバックのキャッシュを、書き込みの方式・メモリのトラフィック・速度・整合性・複雑さ・追い出しのコスト・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/mutex-vs-semaphore/"><strong>ミューテックスとセマフォの違い：排他制御と同期を比較</strong><span>ミューテックスとセマフォを、目的・値・所有者・操作・シグナル・優先度逆転・用途・よくある落とし穴の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/spinlock-vs-mutex/"><strong>スピンロックとミューテックスの違い：待ち方・CPU使用・保持時間・カーネルでの使い方を比較</strong><span>スピンロックとミューテックスを、待ち方(ビジーウェイトとスリープ)・CPU使用・向いている保持時間・カーネル内での使い方(割り込みコンテキスト)・優先度逆転・実装の例(futex)の観点で比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/direct-mapped-vs-set-associative-vs-fully-associative-cache/"><strong>ダイレクトマップ・セットアソシアティブ・フルアソシアティブの違い：キャッシュの方式を比較</strong><span>ダイレクトマップ、セットアソシアティブ、フルアソシアティブのキャッシュを、ブロックを置ける場所・タグの比較・速度・コスト・競合ミス・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/l1-vs-l2-vs-l3-cache/"><strong>L1・L2・L3キャッシュの違い：容量・レイテンシ・共有範囲・包含関係を比較</strong><span>L1・L2・L3キャッシュを、容量とレイテンシの目安・コアごとか共有か・命令とデータの分離・包含関係・設計で重視することの観点で、一般的なPCやサーバーのCPUを例に表で比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu/"><strong>CPUとGPUの違い：構造・得意な処理・用途を比較</strong><span>CPUとGPUを、設計の目的・コア数・実行モデル・キャッシュ・メモリ帯域・分岐・データ転送・得意な処理の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スキャンテストとBISTの違い：パターンの作り方・テスター・対象・追加回路・用途を比較 | 半導体教室</title>
+<meta name="description" content="スキャンテストとBIST(組み込み自己テスト)を、テストパターンの作り方(ATPGと内蔵の生成器)・テスターへの依存・対象のロジックとメモリ・故障検出率・追加回路・テスト時間の観点で比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/scan-test-vs-bist/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/scan-test-vs-bist/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="スキャンテストとBISTの違い：パターンの作り方・テスター・対象・追加回路・用途を比較 | 半導体教室">
+<meta property="og:description" content="スキャンテストとBIST(組み込み自己テスト)を、テストパターンの作り方(ATPGと内蔵の生成器)・テスターへの依存・対象のロジックとメモリ・故障検出率・追加回路・テスト時間の観点で比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/scan-test-vs-bist/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"スキャンテストとBISTの違い：パターンの作り方・テスター・対象・追加回路・用途を比較","item":"https://semiconroom.com/compare/scan-test-vs-bist/"}]},{"@context":"https://schema.org","@type":"Article","headline":"スキャンテストとBISTの違い：パターンの作り方・テスター・対象・追加回路・用途を比較","description":"スキャンテストとBIST(組み込み自己テスト)を、テストパターンの作り方(ATPGと内蔵の生成器)・テスターへの依存・対象のロジックとメモリ・故障検出率・追加回路・テスト時間の観点で比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/scan-test-vs-bist/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"BISTがあれば、スキャンテストは要りませんか？","acceptedAnswer":{"@type":"Answer","text":"多くのチップでは両方を使います。ロジックBISTは疑似ランダムなパターンを使うので、見つけにくい故障が残りやすく、量産のテストではATPGで作ったパターンによるスキャンテストで高い故障検出率を確保するのが一般的です。メモリは規則的な構造なので、メモリBISTでテストします。"}},{"@type":"Question","name":"ロジックBISTとスキャンテストはどう関係していますか？","acceptedAnswer":{"@type":"Answer","text":"ロジックBISTもスキャンチェーンを使います。LFSRが作ったパターンをチェーンに送り込み、回路を動かしたあとに出てきた応答をMISRで圧縮して、最後にできたシグネチャを期待値と比べます。スキャン設計が土台になっています。"}},{"@type":"Question","name":"内蔵メモリのテストにBISTがよく使われるのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"チップに埋め込まれたメモリは外部の端子から直接読み書きしにくく、また構造が規則的なので、マーチテストのような決まった手順のアドレスとデータを小さな回路で作れるからです。見つけた不良のビットを予備の行や列に置き換える修復と組み合わせることも多いです。"}},{"@type":"Question","name":"車載のチップで、電源投入時にBISTを行うのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"出荷した後に生じた故障や、ふだんの動作では表に出ない潜在故障を見つけるためです。BISTはテスターがなくてもチップ自身で実行できるので、車の中での自己診断に使えます。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>スキャンテストとBISTの違い：パターンの作り方・テスター・対象・追加回路・用途を比較</h1>
+  <p class="lead">スキャンテストは、チップの中のフリップフロップをつないでシフトレジスタ(スキャンチェーン)にし、外部のテスターからテストパターンを送り込んで、回路の応答を取り出して期待値と比べる方法です。パターンはATPGのツールがネットリストから作ります。BISTは、パターンを作る回路と結果を判定する回路をチップの中に組み込み、チップ自身がテストを行う方法です。量産のテストでは、ロジックにはスキャンテスト、内蔵メモリにはメモリBISTを使う組み合わせが一般的で、BISTは出荷後の自己診断にも使えます。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">スキャンテスト</th><th scope="col">BIST(組み込み自己テスト)</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">基本の考え方</th><td>フリップフロップをスキャンチェーンにつなぎ、パターンをシフトで入れて1回動かし、結果をシフトで取り出して比べる</td><td>パターンを作る回路と応答を判定する回路をチップに内蔵し、チップ自身がテストして合否を出す</td></tr>
+        <tr><th scope="row">テストパターンの作り方</th><td>ATPGがネットリストから、縮退故障や遷移遅延故障を狙った決定的なパターンを作る</td><td>ロジックBISTはLFSRで疑似ランダムなパターンを作る。メモリBISTはマーチテストなどの決まった手順でアドレスとデータを作る</td></tr>
+        <tr><th scope="row">応答の判定</th><td>テスターが期待値と比べる(テスト圧縮では、チップ内で圧縮した応答を比べる)</td><td>ロジックBISTはMISRで応答を圧縮したシグネチャを期待値と比べる。メモリBISTは読み出した値を比較器で直接確かめる</td></tr>
+        <tr><th scope="row">テスターへの依存</th><td>パターンと期待値をテスターのメモリに持つ。スキャン用の端子と、テスターの性能・メモリ容量が必要</td><td>開始の指示と結果の読み出し(JTAGなど)だけで済み、簡単なテスターでよい</td></tr>
+        <tr><th scope="row">主な対象</th><td>ロジック回路(組み合わせ回路とフリップフロップ)</td><td>メモリBISTは内蔵のSRAMなどのメモリ。ロジックBISTはロジック回路</td></tr>
+        <tr><th scope="row">故障検出率</th><td>狙った故障に向けてパターンを作るので高くしやすい</td><td>ロジックBISTは疑似ランダムでは見つけにくい故障が残りやすく、テストポイントの挿入で補う。メモリBISTはメモリの故障モデルに合わせた手順で高い検出率が得られる</td></tr>
+        <tr><th scope="row">追加する回路</th><td>フリップフロップをスキャンフリップフロップ(切り替えのマルチプレクサつき)に置き換え、チェーンの配線を加える</td><td>パターン発生器、応答の圧縮器、制御回路が必要。ロジックBISTでは不定値(X)が出ないように回路を整える必要もある</td></tr>
+        <tr><th scope="row">テスト時間</th><td>チェーンが長いとシフトに時間がかかり、テスターの速度にも制限される。テスト圧縮で短くする</td><td>チップ内のクロックで多数のパターンを速く流せる。ロジックBISTはパターンの数は多くなる</td></tr>
+        <tr><th scope="row">使う時期</th><td>量産のウエハテストと最終テストが中心。不良品の故障診断にも使う</td><td>量産のテストに加え、基板に実装した後の検査や、出荷後の電源投入時などの自己診断にも使える</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>スキャンテスト</dt><dd>量産のテストで、ロジックの構造上の故障を高い検出率で見つけたいとき。不良になったチップの故障の場所を絞り込みたいとき。</dd>
+    <dt>BIST</dt><dd>外部から直接アクセスしにくい内蔵メモリのテスト。テスターの端子やメモリを減らしたいとき。車載などで、出荷後に電源投入時や走行前の自己診断が必要なとき。</dd>
+    <dt>組み合わせ</dt><dd>実際のチップでは、ロジックにスキャンテスト(テスト圧縮つき)、メモリにメモリBISTを使うのが一般的です。ロジックBISTもスキャンチェーンを土台にして動きます。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>BISTがあれば、スキャンテストは要りませんか？</h3>
+  <p>多くのチップでは両方を使います。ロジックBISTは疑似ランダムなパターンを使うので、見つけにくい故障が残りやすく、量産のテストではATPGで作ったパターンによるスキャンテストで高い故障検出率を確保するのが一般的です。メモリは規則的な構造なので、メモリBISTでテストします。</p>
+  <h3>ロジックBISTとスキャンテストはどう関係していますか？</h3>
+  <p>ロジックBISTもスキャンチェーンを使います。LFSRが作ったパターンをチェーンに送り込み、回路を動かしたあとに出てきた応答をMISRで圧縮して、最後にできたシグネチャを期待値と比べます。スキャン設計が土台になっています。</p>
+  <h3>内蔵メモリのテストにBISTがよく使われるのはなぜですか？</h3>
+  <p>チップに埋め込まれたメモリは外部の端子から直接読み書きしにくく、また構造が規則的なので、マーチテストのような決まった手順のアドレスとデータを小さな回路で作れるからです。見つけた不良のビットを予備の行や列に置き換える修復と組み合わせることも多いです。</p>
+  <h3>車載のチップで、電源投入時にBISTを行うのはなぜですか？</h3>
+  <p>出荷した後に生じた故障や、ふだんの動作では表に出ない潜在故障を見つけるためです。BISTはテスターがなくてもチップ自身で実行できるので、車の中での自己診断に使えます。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="test-003" data-cat="test" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/test/test-003/">テスト容易化設計(DFT)の一つであるスキャン設計の説明として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">チップの表面を光学顕微鏡で走査して欠陥を探す</span></li><li><span class="choice-mark">B</span><span class="choice-text">テスト時に電源電圧を徐々に上げて動作限界を調べる</span></li><li><span class="choice-mark">C</span><span class="choice-text">回路内のフリップフロップをシフトレジスタ状につなぎ、内部状態の設定と観測を容易にする</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 回路内のフリップフロップをシフトレジスタ状につなぎ、内部状態の設定と観測を容易にする</p><p class="explanation">スキャン設計では、各<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>の入力に切り替えのセレクタを付け、テストのときはそれらを数珠つなぎ(スキャンチェーン)にして、外部から任意の値をシフトで設定し、内部の値をシフトで読み出せるようにします。<a class="term-link" href="/term/sequential-circuit/">順序回路</a>のテストが<a class="term-link" href="/term/combinational-circuit/">組み合わせ回路</a>のテストに置き換わるため、<a class="term-link" href="/term/atpg/">ATPG</a>で高い<a class="term-link" href="/term/fault-coverage/">故障検出率</a>のパターンを自動生成できます。顕微鏡での走査や電圧の掃引とは別物です。</p></details>
+  </article>
+  <article class="q-mini" data-qid="test-005" data-cat="test" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/test/test-005/">BIST(組み込み自己テスト)の説明として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">外部のテスタだけですべてのテストを行う</span></li><li><span class="choice-mark">B</span><span class="choice-text">テスト用の回路をチップ内に組み込み、チップ自身でテストを行う</span></li><li><span class="choice-mark">C</span><span class="choice-text">人の目で外観を検査する</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. テスト用の回路をチップ内に組み込み、チップ自身でテストを行う</p><p class="explanation"><a class="term-link" href="/term/bist/">BIST</a>は、テストパターンの生成回路と結果の判定回路をチップに内蔵し、チップ自身でテストを実行する仕組みです。メモリ用のMBISTはマーチテストなどのパターンを高速に発生させ、論理回路用のLBISTは擬似乱数のパターンを使います。高価なテスタへの依存とテスト時間を減らせるほか、車載用では電源を入れるたびに出荷後も自己診断できる利点があります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="test-011" data-cat="test" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/test/test-011/">回路のネットリストから、故障を検出するためのテストパターンを自動で生成することを何と呼ぶか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">DRC</span></li><li><span class="choice-mark">B</span><span class="choice-text">ATPG(自動テストパターン生成)</span></li><li><span class="choice-mark">C</span><span class="choice-text">CTS</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. ATPG(自動テストパターン生成)</p><p class="explanation"><a class="term-link" href="/term/atpg/">ATPG</a>は、<a class="term-link" href="/term/stuck-at-fault/">縮退故障</a>などの故障モデルにもとづいて、各故障を出力まで伝えて検出できる入力パターンを、<a class="term-link" href="/term/netlist/">ネットリスト</a>から自動で生成する技術です。スキャン設計と組み合わせることで、数億ゲートの回路でも高い<a class="term-link" href="/term/fault-coverage/">故障検出率</a>のパターンを効率よく作成できます。<a class="term-link" href="/term/drc/">DRC</a>はレイアウトの設計ルールの検査、CTSはクロックツリーの合成で、どちらも設計の工程です。</p></details>
+  </article>
+  <ol class="q-list">
+  <li><a href="/q/test/test-008/">テストパターンの故障検出率(フォールトカバレッジ)の定義として正しいものはどれか。</a></li>
+  <li><a href="/q/test/test-018/">スキャンテストのデータ量とテスト時間を減らすため、チップ内でテストパターンを展開し、応答を圧縮する技術を何と呼ぶか。</a></li>
+  <li><a href="/q/automotive/automotive-028/">車載マイコンで、電源を入れたときや走行の前などに、ロジックBISTやメモリBISTを実行する機能安全上の主な目的はどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/test/">テスト・検査の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/scan-test/">スキャンテスト</a></dt><dd>回路の中のフリップフロップを鎖状につないだスキャンチェーンを使い、内部の状態を設定・観測してテストする方法。</dd></div>
+    <div class="term"><dt><a href="/term/bist/">BIST(組み込み自己テスト)</a></dt><dd>テスト用の回路をチップ内に組み込み、チップ自身でテストパターンの生成と結果の判定を行う仕組み。メモリのテストなどで広く使われる。</dd></div>
+    <div class="term"><dt><a href="/term/atpg/">ATPG(自動テストパターン生成)</a></dt><dd>回路のネットリストから、故障を検出するためのテストパターンを自動で生成すること。スキャン設計と組み合わせて使う。</dd></div>
+    <div class="term"><dt><a href="/term/fault-coverage/">故障検出率(フォールトカバレッジ)</a></dt><dd>想定した故障のうち、そのテストパターンで検出できる故障の割合。高いほど不良品を見逃しにくい。</dd></div>
+    <div class="term"><dt><a href="/term/dft/">DFT(テスト容易化設計)</a></dt><dd>スキャンチェーンやBISTなど、テストしやすくする仕組みをあらかじめ回路に組み込む設計手法。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/static-vs-dynamic-burn-in/"><strong>スタティック・ダイナミック・ウエハレベルのバーンインの違い：ストレス・網羅性・コストを比較</strong><span>スタティックバーンイン、ダイナミックバーンイン、ウエハレベルバーンインを、ストレスの加え方・行う段階・代表的な条件・ストレスがかかる範囲・装置と治具・監視・コスト・課題・用途の観点で表にして比較し、使い分けも解説します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/wafer-test-vs-final-test/"><strong>ウエハテストとファイナルテストの違い：時期・接触のしかた・温度・項目・目的を比較</strong><span>ウエハテスト(プローブテスト)とファイナルテストを、テストの時期と対象・接触のしかた(プローブカードとソケット)・温度・テスト項目・不良を見つける目的・KGDの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/wire-bonding-vs-flip-chip/"><strong>ワイヤボンディングとフリップチップの違い：チップの接続方法を比較</strong><span>ワイヤボンディングとフリップチップを、接続のしかた・入出力の数・電気的な性能・コスト・大きさ・工程・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/sem-vs-tem/"><strong>SEMとTEMの違い：電子顕微鏡の使い分けを比較</strong><span>SEMとTEMを、原理・見えるもの・分解能・試料の準備・加速電圧・速度・コスト・チップ解析での用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/bga-vs-qfp-vs-qfn/"><strong>BGA・QFP・QFNの違い：ICパッケージの種類を比較</strong><span>BGA、QFP、QFNのパッケージを、端子・ピン数・ピッチ・大きさ・電気的な性能と放熱・検査・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/ball-vs-wedge-bonding/"><strong>ボールボンディングとウェッジボンディングの違い：材料・工程・方向性・用途を比較</strong><span>ボールボンディングとウェッジボンディングを、接合の形・工具・接合のエネルギー・ワイヤの材料(Au・CuとAl・リボン)・太さ・方向性・速度・ループ・信頼性・用途の観点で表にして比較し、どちらをどんなときに使うかも解説し…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

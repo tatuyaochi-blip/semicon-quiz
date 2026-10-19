@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スピンロックとミューテックスの違い：待ち方・CPU使用・保持時間・カーネルでの使い方を比較 | 半導体教室</title>
+<meta name="description" content="スピンロックとミューテックスを、待ち方(ビジーウェイトとスリープ)・CPU使用・向いている保持時間・カーネル内での使い方(割り込みコンテキスト)・優先度逆転・実装の例(futex)の観点で比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/spinlock-vs-mutex/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/spinlock-vs-mutex/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="スピンロックとミューテックスの違い：待ち方・CPU使用・保持時間・カーネルでの使い方を比較 | 半導体教室">
+<meta property="og:description" content="スピンロックとミューテックスを、待ち方(ビジーウェイトとスリープ)・CPU使用・向いている保持時間・カーネル内での使い方(割り込みコンテキスト)・優先度逆転・実装の例(futex)の観点で比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/spinlock-vs-mutex/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"スピンロックとミューテックスの違い：待ち方・CPU使用・保持時間・カーネルでの使い方を比較","item":"https://semiconroom.com/compare/spinlock-vs-mutex/"}]},{"@context":"https://schema.org","@type":"Article","headline":"スピンロックとミューテックスの違い：待ち方・CPU使用・保持時間・カーネルでの使い方を比較","description":"スピンロックとミューテックスを、待ち方(ビジーウェイトとスリープ)・CPU使用・向いている保持時間・カーネル内での使い方(割り込みコンテキスト)・優先度逆転・実装の例(futex)の観点で比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/spinlock-vs-mutex/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"スピンロックはCPUをむだに使うのに、なぜ使われるのですか？","acceptedAnswer":{"@type":"Answer","text":"ロックを持つ時間がごく短ければ、眠って起きるためのコンテキストスイッチの手間より、少し回って待つほうが速いからです。また、カーネルの割り込みハンドラのように眠ることが許されない場面では、スピンロックしか使えません。"}},{"@type":"Question","name":"割り込みハンドラでミューテックスを使えないのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"ミューテックスはロックが取れないと待つスレッドを眠らせますが、割り込みハンドラは特定のスレッドとして動いていないので、眠って後で起こしてもらうことができないからです。割り込みハンドラとデータを共有するときは、スピンロックと割り込みの禁止を組み合わせて使います。"}},{"@type":"Question","name":"futexとは何ですか？","acceptedAnswer":{"@type":"Answer","text":"Linuxで、ミューテックスなどを速く実装するための仕組みです。競合がないときは、ユーザ空間でアトミック命令を使ってロックの変数を書き換えるだけで済ませ、競合して待つ必要があるときだけシステムコールでカーネルに眠らせてもらいます。ほとんどのロックが競合しない場合に、システムコールの手間を省けます。"}},{"@type":"Question","name":"コアが1つのシステムでスピンロックを使うとどうなりますか？","acceptedAnswer":{"@type":"Answer","text":"ユーザ空間で回って待っても、ロックを持つスレッドはそのコアで動けないので、自分の割り当て時間を使い切るまでロックは空きません。そのため、コアが1つのシステムのカーネルでは、スピンロックの代わりにプリエンプションや割り込みを禁止して排他制御をします。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>スピンロックとミューテックスの違い：待ち方・CPU使用・保持時間・カーネルでの使い方を比較</h1>
+  <p class="lead">スピンロックとミューテックスは、どちらも臨界区間に同時に1つのスレッドだけを入れるロックですが、ロックが空くのを待つ方法が違います。スピンロックは、ループでロックの変数を調べ続けるビジーウェイトで待つので、待つ間もCPUを使い続けますが、空いたらすぐに取れます。ミューテックスは、待つスレッドをスリープさせてCPUを手放し、ロックが解放されたらOSに起こしてもらいます。保持時間がごく短い場合や眠れない割り込みハンドラの中ではスピンロック、長く保持する場合や保持中に眠る可能性がある場合はミューテックスを使います。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">スピンロック</th><th scope="col">ミューテックス</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">待ち方</th><td>ロックが空くまで、ループで変数を調べ続ける(ビジーウェイト)</td><td>空いていなければスリープして待ち、解放されたときに起こしてもらう</td></tr>
+        <tr><th scope="row">待つ間のCPU</th><td>使い続ける</td><td>手放す。その間、ほかのスレッドがCPUを使える</td></tr>
+        <tr><th scope="row">待ちの手間</th><td>コンテキストスイッチがなく、空いたらすぐに取れる</td><td>眠るときと起きるときに、システムコールとコンテキストスイッチの手間がかかる</td></tr>
+        <tr><th scope="row">向いている保持時間</th><td>ごく短い時間(コンテキストスイッチにかかる時間より短い)</td><td>長い時間。保持中にI/Oを待つなど、眠る可能性があるとき</td></tr>
+        <tr><th scope="row">保持中に眠ること</th><td>してはいけない。待つ側がCPUを使い続けることになる</td><td>できる</td></tr>
+        <tr><th scope="row">コアが1つのとき</th><td>待つ間はロックを持つスレッドが動けず、回っても空かない。カーネルではプリエンプションを止めて使う</td><td>問題なく使える</td></tr>
+        <tr><th scope="row">カーネル内での使い方</th><td>割り込みハンドラのような眠れない場面(割り込みコンテキスト)でも使える。割り込みとデータを共有するときは、割り込みを禁止してから取る</td><td>眠る可能性があるので、プロセスコンテキストでだけ使え、割り込みハンドラでは使えない</td></tr>
+        <tr><th scope="row">優先度逆転</th><td>ロックを持つスレッドが止められると、待つ側が回り続けてしまう。カーネルでは保持中のプリエンプションを禁止して防ぐ</td><td>優先度継承つきのミューテックスで対策できる</td></tr>
+        <tr><th scope="row">実装の例</th><td>アトミック命令(test-and-setやcompare-and-swap)で変数を書き換える。普段は通常の読み出しで待つtest-and-test-and-setで、コア間の通信を減らす</td><td>Linuxのfutexでは、競合がなければユーザ空間のアトミック命令だけでロックし、競合したときだけカーネルに眠らせてもらう。少し回ってから眠る実装もある</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>スピンロック</dt><dd>マルチコアで、ロックを持つ時間がごく短い(コンテキストスイッチの手間より短い)とき。割り込みハンドラなど、眠ることが許されないカーネルの中の処理。</dd>
+    <dt>ミューテックス</dt><dd>ロックを持つ時間が長いとき、保持中にI/Oやメモリの確保などで眠る可能性があるとき。ユーザ空間のアプリケーションの、普通の排他制御。</dd>
+    <dt>組み合わせ</dt><dd>多くのミューテックスの実装は、競合がなければスリープせずにアトミック命令だけで取り、取れないときに少し回ってから眠るなど、両方の長所を組み合わせています。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>スピンロックはCPUをむだに使うのに、なぜ使われるのですか？</h3>
+  <p>ロックを持つ時間がごく短ければ、眠って起きるためのコンテキストスイッチの手間より、少し回って待つほうが速いからです。また、カーネルの割り込みハンドラのように眠ることが許されない場面では、スピンロックしか使えません。</p>
+  <h3>割り込みハンドラでミューテックスを使えないのはなぜですか？</h3>
+  <p>ミューテックスはロックが取れないと待つスレッドを眠らせますが、割り込みハンドラは特定のスレッドとして動いていないので、眠って後で起こしてもらうことができないからです。割り込みハンドラとデータを共有するときは、スピンロックと割り込みの禁止を組み合わせて使います。</p>
+  <h3>futexとは何ですか？</h3>
+  <p>Linuxで、ミューテックスなどを速く実装するための仕組みです。競合がないときは、ユーザ空間でアトミック命令を使ってロックの変数を書き換えるだけで済ませ、競合して待つ必要があるときだけシステムコールでカーネルに眠らせてもらいます。ほとんどのロックが競合しない場合に、システムコールの手間を省けます。</p>
+  <h3>コアが1つのシステムでスピンロックを使うとどうなりますか？</h3>
+  <p>ユーザ空間で回って待っても、ロックを持つスレッドはそのコアで動けないので、自分の割り当て時間を使い切るまでロックは空きません。そのため、コアが1つのシステムのカーネルでは、スピンロックの代わりにプリエンプションや割り込みを禁止して排他制御をします。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="multicore-sync-020" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/multicore-sync/multicore-sync-020/">スピンロックの説明として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">ロックが空くまで、スレッドを眠らせてOSに起こしてもらう方式のロック</span></li><li><span class="choice-mark">B</span><span class="choice-text">ロックが空くまで、ループでロックの変数を調べ続けて待つ方式のロック</span></li><li><span class="choice-mark">C</span><span class="choice-text">ディスクを回転させてデータを守る仕組み</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. ロックが空くまで、ループでロックの変数を調べ続けて待つ方式のロック</p><p class="explanation"><a class="term-link" href="/term/spinlock/">スピンロック</a>は、<a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>でロックを取ろうとし、取れなければすぐにもう一度試すことを繰り返します。OSを呼んで眠ったり起きたりする手間がないので、ロックを持つ時間がごく短い場合に速く動きます。OSのカーネルの中や、<a class="term-link" href="/term/interrupt-handler/">割り込みハンドラ</a>との排他などでよく使われます。一方で、待っている間もCPUを使い続けるという欠点があります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="multicore-sync-021" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/multicore-sync/multicore-sync-021/">スピンロックが向かない場面として最も適切なものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">ロックを持つ時間が長く、待つスレッドがCPUをむだに使い続けてしまう場面</span></li><li><span class="choice-mark">B</span><span class="choice-text">ロックを持つ時間が数十ナノ秒と非常に短い場面</span></li><li><span class="choice-mark">C</span><span class="choice-text">OSのカーネルの中で、眠ることのできない処理の場面</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ロックを持つ時間が長く、待つスレッドがCPUをむだに使い続けてしまう場面</p><p class="explanation"><a class="term-link" href="/term/spinlock/">スピンロック</a>で待つスレッドは、ロックが空くまでCPUを使い続けます。ロックを持つ時間が長いと、そのCPUの時間がすべてむだになり、ほかのスレッドの実行も妨げます。特にコアが1つしかないと、ロックを持つスレッドが実行されない限り空かないので、待ちは時間の割り当てが終わるまで続きます。長い待ちには、眠って待つ<a class="term-link" href="/term/mutex/">ミューテックス</a>を使い、短い間だけ回ってから眠る方式もあります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="multicore-sync-022" data-cat="multicore-sync" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/multicore-sync/multicore-sync-022/">スピンロックで、ロックの変数をいきなりアトミック命令で書き換えようとするのではなく、普段は通常の読み出しで空くのを待ち、空いたと見えたときだけアトミック命令を使う(test-and-test-and-set)理由として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">通常の読み出しの方がアトミック命令より正確だから</span></li><li><span class="choice-mark">B</span><span class="choice-text">アトミック命令は1つのプログラムで1回しか使えないから</span></li><li><span class="choice-mark">C</span><span class="choice-text">読むだけなら自分のキャッシュの中で待てるので、キャッシュラインがコア間を行き来する通信を大きく減らせるから</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 読むだけなら自分のキャッシュの中で待てるので、キャッシュラインがコア間を行き来する通信を大きく減らせるから</p><p class="explanation"><a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>は書き込みをともなうので、待っているスレッドが繰り返し実行すると、そのたびにラインをM状態で奪い合い、ほかのコアのコピーを無効にし続けます。通常の読み出しなら、各コアはS状態のコピーを自分のキャッシュで読み続けるだけで、通信は起きません。ロックが解放されて値が変わったときだけ、アトミック命令で取りに行きます。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/multicore-sync/multicore-sync-023/">ミューテックス(眠って待つロック)とスピンロックを比べた説明として正しいものはどれか。</a></li>
+  <li data-level="3"><a href="/q/embedded/embedded-032/">RTOSで起こる優先度逆転の説明として正しいものはどれか。</a></li>
+  <li data-level="3"><a href="/q/embedded/embedded-033/">優先度逆転を防ぐために使われる「優先度継承」の考え方として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/multicore-sync/">マルチコアと同期の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/spinlock/">スピンロック</a></dt><dd>ロックが空くまで、ループでロックの変数を調べ続けて待つ方式のロック。待ちが短いときに速いが、待つ間もCPUを使い続ける。</dd></div>
+    <div class="term"><dt><a href="/term/mutex/">ミューテックス</a></dt><dd>同時に1つのスレッドだけが持てるロック。取れないときはスレッドを眠らせてCPUを譲り、解放されるとOSが起こす実装が一般的。</dd></div>
+    <div class="term"><dt><a href="/term/context-switch/">コンテキストスイッチ</a></dt><dd>CPUで実行するプロセスやスレッドを切り替えること。レジスタやプログラムカウンタなどの状態を保存・復元し、プロセスの切り替えではアドレス空間も切り替える。</dd></div>
+    <div class="term"><dt><a href="/term/atomic-instruction/">アトミック命令</a></dt><dd>メモリの読み出しと書き込みを、途中でほかのコアに割り込まれない1つの操作として行う命令。CAS、フェッチ・アンド・アッド、LR/SCなど。</dd></div>
+    <div class="term"><dt><a href="/term/priority-inversion/">優先度逆転</a></dt><dd>低いタスクが持つ資源を高いタスクが待っている間に、中くらいのタスクが低いタスクを止めて動き続け、高いタスクが長く待たされる現象。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/mutex-vs-semaphore/"><strong>ミューテックスとセマフォの違い：排他制御と同期を比較</strong><span>ミューテックスとセマフォを、目的・値・所有者・操作・シグナル・優先度逆転・用途・よくある落とし穴の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/process-vs-thread/"><strong>プロセスとスレッドの違い：メモリ・切り替え・使い分けを比較</strong><span>プロセスとスレッドを、メモリ・作成のコスト・コンテキストスイッチ・通信・分離・同期・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/msi-vs-mesi-vs-moesi/"><strong>MSI・MESI・MOESIの違い：状態の数・Exclusive状態・Owned状態・通信を比較</strong><span>キャッシュコヒーレンシのMSI・MESI・MOESIプロトコルを、状態の数と意味・Exclusive状態の利点・Owned状態の利点・メモリへの書き戻し・回路の複雑さの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/user-mode-vs-kernel-mode/"><strong>ユーザモードとカーネルモードの違い：命令・メモリ・切り替え・コスト・保護を比較</strong><span>ユーザモードとカーネルモードを、実行できる命令・アクセスできるメモリ・切り替わるきっかけ・切り替えのコスト・不具合の影響・保護の目的の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu/"><strong>CPUとGPUの違い：構造・得意な処理・用途を比較</strong><span>CPUとGPUを、設計の目的・コア数・実行モデル・キャッシュ・メモリ帯域・分岐・データ転送・得意な処理の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/i2c-vs-spi-vs-uart/"><strong>I2C・SPI・UARTの違い：配線・速度・使い分けを比較</strong><span>I2C、SPI、UARTを、配線の数・クロック・速度・接続形態・アドレス・誤り検出・マイコンでの主な用途の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLLとDLLの違い：制御するもの・逓倍・ジッタ・安定性・用途を比較 | 半導体教室</title>
+<meta name="description" content="PLL(位相同期回路)とDLL(遅延同期ループ)を、制御するもの・VCOと遅延線・周波数の逓倍・ジッタの蓄積・ループの安定性・用途(クロックの生成とデスキュー)の観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/pll-vs-dll/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/pll-vs-dll/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PLLとDLLの違い：制御するもの・逓倍・ジッタ・安定性・用途を比較 | 半導体教室">
+<meta property="og:description" content="PLL(位相同期回路)とDLL(遅延同期ループ)を、制御するもの・VCOと遅延線・周波数の逓倍・ジッタの蓄積・ループの安定性・用途(クロックの生成とデスキュー)の観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/pll-vs-dll/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"PLLとDLLの違い：制御するもの・逓倍・ジッタ・安定性・用途を比較","item":"https://semiconroom.com/compare/pll-vs-dll/"}]},{"@context":"https://schema.org","@type":"Article","headline":"PLLとDLLの違い：制御するもの・逓倍・ジッタ・安定性・用途を比較","description":"PLL(位相同期回路)とDLL(遅延同期ループ)を、制御するもの・VCOと遅延線・周波数の逓倍・ジッタの蓄積・ループの安定性・用途(クロックの生成とデスキュー)の観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/pll-vs-dll/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"DLLで、周波数を変えられないのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"DLLの出力は、入力のクロックを遅延線で遅らせたものだからです。遅延をいくら変えても、エッジの間隔は入力と同じで、周波数は変わりません。PLLは自分で発振するVCOを持ち、分周したクロックを基準に合わせるので、基準のN倍の周波数を作れます。"}},{"@type":"Question","name":"DLLでジッタが蓄積しないのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"DLLの出力の各エッジは、入力の各エッジを遅らせたもので、前の周期の誤差を引き継がないからです。PLLのVCOは、前の周期の終わりから次の周期が始まるので、ゆらぎが積み重なり、ループが補正するまで残ります。その代わり、DLLは入力のジッタをそのまま通してしまいます。"}},{"@type":"Question","name":"PLLのループの帯域は、どう決めますか？","acceptedAnswer":{"@type":"Answer","text":"帯域を広くすると、VCOのゆらぎを素早く補正できますが、基準のクロックのジッタは通りやすくなります。狭くすると、基準のジッタはよく除けますが、VCOのゆらぎが残り、ロックも遅くなります。基準とVCOのどちらのノイズが小さいかや、ループの安定性(位相余裕)を見て決めます。"}},{"@type":"Question","name":"DDR DRAMで、DLLが使われるのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"チップの内部のクロックの経路や出力の回路には遅延があり、電圧や温度で変わります。DLLでこの遅延を打ち消すと、外からのクロックのエッジにそろえてデータを出せます。周波数を変える必要はなく、ジッタを増やしにくいDLLが向いています。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>PLLとDLLの違い：制御するもの・逓倍・ジッタ・安定性・用途を比較</h1>
+  <p class="lead">どちらも基準のクロックとの位相のずれを検出し、それがゼロになるようにフィードバックで制御する回路ですが、動かすものが違います。PLLは電圧制御発振器(VCO)の周波数を動かし、自分で発振したクロックを基準に合わせるので、分周器と組み合わせて基準の何倍もの周波数を作れます。DLLは入力のクロックそのものを遅延線に通し、その遅延を調整して位相をそろえるだけなので、周波数は変えられませんが、ジッタが蓄積せず、ループも安定で設計しやすいという特長があります。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">PLL</th><th scope="col">DLL</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">名前</th><td>Phase-Locked Loop(位相同期回路)</td><td>Delay-Locked Loop(遅延同期ループ)</td></tr>
+        <tr><th scope="row">制御するもの</th><td>VCOの周波数(位相は周波数を積分したもの)</td><td>遅延線の遅延の量</td></tr>
+        <tr><th scope="row">主な構成</th><td>位相周波数比較器、チャージポンプ、ループフィルタ、VCO、帰還の分周器</td><td>位相比較器、チャージポンプ、ループフィルタ(コンデンサ)、電圧制御の遅延線</td></tr>
+        <tr><th scope="row">出力のクロック</th><td>VCOが自分で発振したクロック</td><td>入力のクロックを遅らせたもの</td></tr>
+        <tr><th scope="row">周波数の逓倍</th><td>できる。帰還に1/Nの分周器を入れると基準のN倍(小数倍の方式もある)</td><td>基本はできない。出力は入力と同じ周波数(多相の出力を組み合わせて逓倍する方式もある)</td></tr>
+        <tr><th scope="row">ジッタ</th><td>VCOのゆらぎが周期ごとに蓄積し、ループの帯域より低い成分だけが補正される。基準のジッタは帯域より高い成分が除かれる</td><td>遅延線はジッタを蓄積しない。入力のジッタはほぼそのまま出力に伝わる</td></tr>
+        <tr><th scope="row">ループの安定性</th><td>VCOが積分の働きをするので2次以上のループになり、位相余裕を見てループフィルタを設計する必要がある</td><td>遅延線は積分の働きを持たないので1次のループにでき、安定で設計しやすい</td></tr>
+        <tr><th scope="row">ロック</th><td>広い周波数の範囲でロックできるが、ロックまでの時間は長め</td><td>速くロックできるが、遅延の範囲が限られ、1周期ずれた位置にロックする誤ったロックに注意が必要</td></tr>
+        <tr><th scope="row">主な用途</th><td>水晶の基準から高い周波数のクロックを作る、無線の周波数シンセサイザ、SerDesのクロックやクロック・データ・リカバリ(CDR)</td><td>DDR DRAMの出力とクロックのタイミング合わせ、クロックのデスキュー、多相のクロックの生成</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>PLL</dt><dd>基準のクロックと違う周波数(多くは何倍も高い周波数)のクロックが必要なとき。水晶の基準からCPUやSerDesのクロックを作るとき、無線の周波数を作るとき。</dd>
+    <dt>DLL</dt><dd>周波数は同じでよく、チップの内部の遅延を打ち消してクロックの位相をそろえたいとき。DDR DRAMのデータの出力のタイミング合わせや、クロックのデスキュー。</dd>
+    <dt>組み合わせ</dt><dd>PLLで必要な周波数のクロックを作り、メモリのインターフェースなどでは、そのクロックを基準にDLLで細かい位相の調整(例えばストローブを1/4周期ずらす)を行う、という組み合わせがよく使われます。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>DLLで、周波数を変えられないのはなぜですか？</h3>
+  <p>DLLの出力は、入力のクロックを遅延線で遅らせたものだからです。遅延をいくら変えても、エッジの間隔は入力と同じで、周波数は変わりません。PLLは自分で発振するVCOを持ち、分周したクロックを基準に合わせるので、基準のN倍の周波数を作れます。</p>
+  <h3>DLLでジッタが蓄積しないのはなぜですか？</h3>
+  <p>DLLの出力の各エッジは、入力の各エッジを遅らせたもので、前の周期の誤差を引き継がないからです。PLLのVCOは、前の周期の終わりから次の周期が始まるので、ゆらぎが積み重なり、ループが補正するまで残ります。その代わり、DLLは入力のジッタをそのまま通してしまいます。</p>
+  <h3>PLLのループの帯域は、どう決めますか？</h3>
+  <p>帯域を広くすると、VCOのゆらぎを素早く補正できますが、基準のクロックのジッタは通りやすくなります。狭くすると、基準のジッタはよく除けますが、VCOのゆらぎが残り、ロックも遅くなります。基準とVCOのどちらのノイズが小さいかや、ループの安定性(位相余裕)を見て決めます。</p>
+  <h3>DDR DRAMで、DLLが使われるのはなぜですか？</h3>
+  <p>チップの内部のクロックの経路や出力の回路には遅延があり、電圧や温度で変わります。DLLでこの遅延を打ち消すと、外からのクロックのエッジにそろえてデータを出せます。周波数を変える必要はなく、ジッタを増やしにくいDLLが向いています。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="analog-025" data-cat="analog" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/analog/analog-025/">基準クロックに位相を合わせながら、その整数倍などの周波数のクロックをつくる回路はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">PLL(位相同期回路)</span></li><li><span class="choice-mark">B</span><span class="choice-text">整流回路</span></li><li><span class="choice-mark">C</span><span class="choice-text">サンプルホールド回路</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. PLL(位相同期回路)</p><p class="explanation"><a class="term-link" href="/term/pll/">PLL</a>は、位相比較器、ループフィルタ、電圧制御発振器(VCO)、分周器で構成され、VCOの出力を分周した信号と基準クロックの位相が一致するように制御します。分周比をNにすると基準のN倍の周波数が得られ、例えば25 MHzの水晶から数GHzのCPUクロックを作れます。小数分周(フラクショナルN)で細かい周波数も合成でき、無線の局部発振器や、高速シリアル通信のクロック再生にも使われます。</p></details>
+  </article>
+  <article class="q-mini" data-qid="logic-043" data-cat="logic" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/logic/logic-043/">同期式回路の「クロックスキュー」の説明として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">クロックの周波数が時間とともに変動すること</span></li><li><span class="choice-mark">B</span><span class="choice-text">クロック信号がフリップフロップごとに到着する時刻のずれ</span></li><li><span class="choice-mark">C</span><span class="choice-text">クロック信号の電圧が電源電圧より高くなること</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. クロック信号がフリップフロップごとに到着する時刻のずれ</p><p class="explanation"><a class="term-link" href="/term/clock-skew/">クロックスキュー</a>は、同じクロックが配線の長さや負荷の違いで<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>ごとに異なる時刻に到着するずれです。受け側のクロックが遅れるとセットアップには有利でもホールドには不利になり、逆も同様です。チップ全体に届くクロックツリーをCTS(クロックツリー合成)で設計し、バッファの配置や配線長をそろえてスキューを数十ps以下に抑えます。周期の時間的な揺らぎは<a class="term-link" href="/term/jitter/">ジッタ</a>です。</p></details>
+  </article>
+  <article class="q-mini" data-qid="eda-009" data-cat="eda" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/eda/eda-009/">配置配線工程でのクロックツリー合成(CTS)の主な目的はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">クロック信号が各フリップフロップへ届く時間のばらつき(スキュー)を小さくする</span></li><li><span class="choice-mark">B</span><span class="choice-text">電源電圧を上げる</span></li><li><span class="choice-mark">C</span><span class="choice-text">レイアウトのデザインルール違反を修正する</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. クロック信号が各フリップフロップへ届く時間のばらつき(スキュー)を小さくする</p><p class="explanation">チップ内の数百万個の<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>にクロックが届く時刻がばらつくと、タイミング違反の原因になります。CTSでは、バッファを木のように配置してクロックを分配し、各フリップフロップへの到着時刻のばらつき(スキュー)を小さくします。クロックは常に切り替わるため、クロックツリーはチップの消費電力の大きな部分を占めることもあります。電源電圧や<a class="term-link" href="/term/drc/">DRC</a>違反の修正とは別の目的です。</p></details>
+  </article>
+  <ol class="q-list">
+  <li><a href="/q/adc-dac/adc-dac-019/">高い周波数の信号をAD変換するとき、サンプリングクロックの時間的なゆらぎ(ジッタ)が問題になる理由として正しいものはどれか。</a></li>
+  <li data-level="2"><a href="/q/analog/analog-043/">水晶発振器が、時計やマイコンのクロック源として広く使われる主な理由はどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/analog/">アナログ・電子回路の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/pll/">PLL(位相同期回路)</a></dt><dd>基準クロックとの位相差を検出して発振器を制御し、基準に同期した、整数倍などの周波数のクロックをつくる回路。CPUのクロック生成や無線の周波数合成に使われる。</dd></div>
+    <div class="term"><dt><a href="/term/jitter/">ジッタ</a></dt><dd>クロックや信号のエッジのタイミングの、理想からの細かな時間的なゆらぎ。高い周波数の信号をサンプリングするとき、わずかなジッタでも大きな電圧誤差になる。</dd></div>
+    <div class="term"><dt><a href="/term/clock-skew/">クロックスキュー</a></dt><dd>同じクロック信号が、フリップフロップごとに到着する時刻のずれ。セットアップやホールドの余裕を変えるため、クロックツリー合成で小さく抑える。</dd></div>
+    <div class="term"><dt><a href="/term/phase-margin/">位相余裕(フェーズマージン)</a></dt><dd>負帰還ループの利得が1(0 dB)になる周波数で、位相の遅れが180°に達するまでの余裕。小さいと応答が振動的になり、0以下では発振する。一般に45〜60°以上を目安にする。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/jitter-vs-phase-noise/"><strong>ジッタと位相雑音の違い：測る量・単位・測定器・換算・使い分けを比較</strong><span>クロックのゆらぎを時間領域で見るジッタと、周波数領域で見る位相雑音を、測る量・単位・測定器・代表的な指標・積分によるRMSジッタへの換算・使う分野の観点で比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/op-amp-vs-comparator/"><strong>オペアンプとコンパレータの違い：使い方・出力段・速さ・位相補償を比較</strong><span>オペアンプとコンパレータを、使い方(負帰還か開ループか)・出力段・応答の速さ・飽和からの回復・位相補償の有無・ヒステリシス・置き換えの可否の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/ldo-vs-switching-regulator/"><strong>LDOとスイッチングレギュレータの違い：効率・ノイズ・部品・用途を比較</strong><span>リニアレギュレータ(LDO)とスイッチングレギュレータ(DC-DCコンバータ)を、動作の仕組み・効率・発熱・ノイズ・部品点数・昇圧の可否・負荷への応答・用途の観点で表にして比較し、2つを組み合わせる電源の構成も説明しま…</span></a></li>
+  <li><a class="cmp-card" href="/compare/class-a-vs-ab-vs-d-amplifier/"><strong>A級・AB級・D級アンプの違い：動作原理・効率・ひずみ・発熱・用途を比較</strong><span>A級・AB級・D級の電力増幅回路(アンプ)を、動作原理・導通角・理論上の最大効率・ひずみ・発熱・ノイズ・用途の観点で表にして比較し、B級との関係も説明します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/setup-vs-hold-time/"><strong>セットアップ時間とホールド時間の違い：定義・遅延・周波数・直し方を比較</strong><span>フリップフロップのセットアップ時間とホールド時間を、定義・チェックに使う遅延(maxかminか)・クロック周波数との関係・クロックスキューの影響・違反の直し方・確認するコーナーの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/bjt-vs-mosfet/"><strong>BJTとMOSFETの違い：制御方式・速度・用途を比較</strong><span>バイポーラトランジスタ(BJT)とMOSFETを、制御方式・入力電流・キャリア・速度・オン状態・温度特性・集積度・用途の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

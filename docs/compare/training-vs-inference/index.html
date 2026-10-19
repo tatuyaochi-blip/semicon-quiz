@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIの学習と推論の違い：計算・メモリ・数値形式・バッチサイズ・ハードウェアを比較 | 半導体教室</title>
+<meta name="description" content="AIの学習と推論を、計算の内容(順伝播と逆伝播)・計算量・必要なメモリ(勾配とオプティマイザの状態)・数値形式・バッチサイズ・レイテンシとスループット・ハードウェア・エネルギーの観点で比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/training-vs-inference/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/training-vs-inference/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AIの学習と推論の違い：計算・メモリ・数値形式・バッチサイズ・ハードウェアを比較 | 半導体教室">
+<meta property="og:description" content="AIの学習と推論を、計算の内容(順伝播と逆伝播)・計算量・必要なメモリ(勾配とオプティマイザの状態)・数値形式・バッチサイズ・レイテンシとスループット・ハードウェア・エネルギーの観点で比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/training-vs-inference/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"AIの学習と推論の違い：計算・メモリ・数値形式・バッチサイズ・ハードウェアを比較","item":"https://semiconroom.com/compare/training-vs-inference/"}]},{"@context":"https://schema.org","@type":"Article","headline":"AIの学習と推論の違い：計算・メモリ・数値形式・バッチサイズ・ハードウェアを比較","description":"AIの学習と推論を、計算の内容(順伝播と逆伝播)・計算量・必要なメモリ(勾配とオプティマイザの状態)・数値形式・バッチサイズ・レイテンシとスループット・ハードウェア・エネルギーの観点で比較します。","inLanguage":"ja","dateModified":"2026-10-19","mainEntityOfPage":"https://semiconroom.com/compare/training-vs-inference/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"学習が推論よりずっと多くのメモリを使うのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"学習では、重みのほかに、同じ数の勾配と、オプティマイザの状態(Adamでは2つ)を持ち、さらに逆伝播のために順伝播の途中の活性化を保存するからです。たとえば70億パラメータのモデルでは、これらをすべてFP32で持つと活性化を除いて約112 GBになりますが、FP16の重みだけで推論するなら約14 GBで済みます。"}},{"@type":"Question","name":"推論でバッチサイズを大きくすると、どうなりますか？","acceptedAnswer":{"@type":"Answer","text":"一度読み込んだ重みを複数の入力の計算に使えるので、演算器を有効に使えて全体のスループットが上がります。一方で、入力がそろうのを待つ時間や1回の処理の時間が増えるので、1つの要求への応答(レイテンシ)は遅くなり、メモリも多く使います。"}},{"@type":"Question","name":"学習と推論で、同じハードウェアを使えますか？","acceptedAnswer":{"@type":"Answer","text":"使えます。GPUは学習にも推論にも使われます。ただし、推論だけなら逆伝播や大きなメモリは不要なので、INT8などの低い精度の演算器を多く並べた推論向けのアクセラレータや、スマートフォンのNPUのように、電力の効率を重視したハードウェアも使われます。"}},{"@type":"Question","name":"学習にはどのくらいの計算が必要ですか？","acceptedAnswer":{"@type":"Answer","text":"Transformerのモデルでは、パラメータ数をN、学習に使うトークンの数をDとすると、全体の演算の数は約6NDという近似がよく使われます。順伝播が1トークンあたり約2Nで、逆伝播がその約2倍かかるためです。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/#topics">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>AIの学習と推論の違い：計算・メモリ・数値形式・バッチサイズ・ハードウェアを比較</h1>
+  <p class="lead">学習は、データを順伝播させて損失を求め、逆伝播で勾配を計算し、オプティマイザで重みを更新することを大量に繰り返して、モデルの重みを決める処理です。推論は、決まった重みで順伝播だけを行い、新しい入力に答えを出す処理です。学習では重みに加えて勾配やオプティマイザの状態、逆伝播のための活性化を保存するので、同じモデルの推論よりずっと多くのメモリと計算が必要です。推論は1回の計算は小さいものの、使われるたびに実行され、応答の速さが重視されます。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">学習(トレーニング)</th><th scope="col">推論(インファレンス)</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">目的</th><td>データから、モデルの重みを決める</td><td>決まった重みで、新しい入力に答えを出す</td></tr>
+        <tr><th scope="row">計算の内容</th><td>順伝播 → 損失の計算 → 逆伝播で勾配を計算 → オプティマイザで重みを更新、を繰り返す</td><td>順伝播だけ</td></tr>
+        <tr><th scope="row">計算量の目安</th><td>1つの入力あたり順伝播の約3倍(逆伝播が順伝播の約2倍)。Transformerでは全体で約6 × パラメータ数 × トークン数</td><td>パラメータ数Nのモデルで、1トークンあたり約2N</td></tr>
+        <tr><th scope="row">必要なメモリ</th><td>重み、勾配、オプティマイザの状態(Adamでは2つ)、逆伝播のための活性化。すべてFP32なら1パラメータあたり16バイトに活性化が加わる</td><td>重みと、計算中の活性化(大規模言語モデルではKVキャッシュも)。FP16なら1パラメータあたり2バイト</td></tr>
+        <tr><th scope="row">数値形式</th><td>BF16やFP16の混合精度(マスターウェイトはFP32)</td><td>FP16やBF16、INT8やINT4などに量子化した形式</td></tr>
+        <tr><th scope="row">バッチサイズ</th><td>大きなバッチにまとめて、演算器の利用率を上げる</td><td>応答を急ぐ場合は小さく(1のこともある)。サーバでは複数の要求をまとめて効率を上げる</td></tr>
+        <tr><th scope="row">重視する性能</th><td>スループット(学習を終えるまでの時間、演算器の利用率)</td><td>レイテンシ(1つの要求への応答時間)とスループットの両立、処理あたりのコスト</td></tr>
+        <tr><th scope="row">ハードウェア</th><td>大容量のHBMと高い演算性能を持つGPUやアクセラレータを、高速なネットワークで多数つなぐ</td><td>データセンターのGPUや推論向けのアクセラレータから、スマートフォンのNPUやマイコンまで幅広い</td></tr>
+        <tr><th scope="row">並列化</th><td>データ並列、テンソル並列、パイプライン並列。勾配をオールリデュースで集める</td><td>複数の要求を並列に処理する。大きなモデルはテンソル並列などで複数のチップに分ける</td></tr>
+        <tr><th scope="row">エネルギー</th><td>1回の学習で、多数のチップを長い期間動かして大量の電力を使う</td><td>1回は小さいが、使われるたびに実行され、利用が多いと合計は大きくなる</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>学習</dt><dd>新しいモデルを作るとき、既存のモデルを自分のデータに合わせて追加学習(ファインチューニング)するとき。</dd>
+    <dt>推論</dt><dd>学習済みのモデルを、サービスや製品の中で使うとき。画像の認識、文章の生成、音声の認識など。</dd>
+    <dt>工夫</dt><dd>推論では、量子化やプルーニング、知識蒸留でモデルを軽くします。学習では、混合精度や勾配チェックポイントでメモリと計算を節約します。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>学習が推論よりずっと多くのメモリを使うのはなぜですか？</h3>
+  <p>学習では、重みのほかに、同じ数の勾配と、オプティマイザの状態(Adamでは2つ)を持ち、さらに逆伝播のために順伝播の途中の活性化を保存するからです。たとえば70億パラメータのモデルでは、これらをすべてFP32で持つと活性化を除いて約112 GBになりますが、FP16の重みだけで推論するなら約14 GBで済みます。</p>
+  <h3>推論でバッチサイズを大きくすると、どうなりますか？</h3>
+  <p>一度読み込んだ重みを複数の入力の計算に使えるので、演算器を有効に使えて全体のスループットが上がります。一方で、入力がそろうのを待つ時間や1回の処理の時間が増えるので、1つの要求への応答(レイテンシ)は遅くなり、メモリも多く使います。</p>
+  <h3>学習と推論で、同じハードウェアを使えますか？</h3>
+  <p>使えます。GPUは学習にも推論にも使われます。ただし、推論だけなら逆伝播や大きなメモリは不要なので、INT8などの低い精度の演算器を多く並べた推論向けのアクセラレータや、スマートフォンのNPUのように、電力の効率を重視したハードウェアも使われます。</p>
+  <h3>学習にはどのくらいの計算が必要ですか？</h3>
+  <p>Transformerのモデルでは、パラメータ数をN、学習に使うトークンの数をDとすると、全体の演算の数は約6NDという近似がよく使われます。順伝播が1トークンあたり約2Nで、逆伝播がその約2倍かかるためです。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="ai-stack-001" data-cat="ai-stack" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/ai-stack/ai-stack-001/">ニューラルネットワークの「学習」と「推論」の違いとして正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">学習は順伝播・逆伝播・重みの更新を繰り返して重みを決め、推論は決まった重みで順伝播だけを行って答えを出す</span></li><li><span class="choice-mark">B</span><span class="choice-text">学習も推論も、順伝播だけを行う</span></li><li><span class="choice-mark">C</span><span class="choice-text">推論は重みを更新し、学習は重みを使わない</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 学習は順伝播・逆伝播・重みの更新を繰り返して重みを決め、推論は決まった重みで順伝播だけを行って答えを出す</p><p class="explanation">学習では、入力を順に計算して出力を求め(順伝播)、正解との誤差を出力側から入力側へさかのぼって各重みの勾配を求め(<a class="term-link" href="/term/backpropagation/">逆伝播</a>)、勾配にしたがって重みを少しずつ直す、ということを大量のデータで繰り返します。<a class="term-link" href="/term/ai-inference/">推論</a>では、学習で決まった重みを使って順伝播だけを行います。逆伝播は順伝播のおよそ2倍の計算が必要で、途中の結果も保存するので、学習は推論よりずっと重い処理です。</p></details>
+  </article>
+  <article class="q-mini" data-qid="ai-stack-002" data-cat="ai-stack" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/ai-stack/ai-stack-002/">学習に必要なメモリが、同じモデルの推論よりずっと大きくなる理由として当てはまらないものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">学習では重みの数が推論の何倍にも増えるから</span></li><li><span class="choice-mark">B</span><span class="choice-text">逆伝播で使うため、順伝播の途中の結果(活性化)を保存しておく必要があるから</span></li><li><span class="choice-mark">C</span><span class="choice-text">重みと同じ数の勾配や、オプティマイザの状態を持つ必要があるから</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 学習では重みの数が推論の何倍にも増えるから</p><p class="explanation">モデルの重みの数は学習でも<a class="term-link" href="/term/ai-inference/">推論</a>でも同じです。しかし学習では、<a class="term-link" href="/term/backpropagation/">逆伝播</a>で勾配を計算するために順伝播の途中の結果を各層で保存し、重みと同じ数の勾配と、Adamなどのオプティマイザが持つ重みごとの値(2つの移動平均など)も必要です。そのため学習のメモリは、重みだけで済む推論の何倍にもなり、大きなモデルの学習には多数の<a class="term-link" href="/term/gpu/">GPU</a>が必要になります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="ai-stack-003" data-cat="ai-stack" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/ai-stack/ai-stack-003/">パラメータ数70億(7B)のモデルを、重み・勾配・Adamの2つの状態をすべてFP32(4バイト)で持って学習する。活性化を除いて必要なメモリに最も近いものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">約28 GB</span></li><li><span class="choice-mark">B</span><span class="choice-text">約112 GB</span></li><li><span class="choice-mark">C</span><span class="choice-text">約14 GB</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 約112 GB</p><p class="explanation">1パラメータあたり、重み4バイト、勾配4バイト、Adamの1次と2次の移動平均4バイトずつで、合計16バイトです。70億×16バイト=1120億バイトで約112 GBになり、これに活性化のメモリが加わります。1枚の<a class="term-link" href="/term/gpu/">GPU</a>のメモリには収まらないことが多いので、オプティマイザの状態を複数のGPUに分けて持つ、低い精度で持つなどの工夫が使われます。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/ai-stack/ai-stack-010/">推論でバッチサイズ(まとめて処理する入力の数)を大きくすると、処理全体の効率が上がりやすい理由はどれか。</a></li>
+  <li data-level="2"><a href="/q/ai-stack/ai-stack-011/">推論でバッチサイズを大きくしすぎたときの欠点として正しいものはどれか。</a></li>
+  <li data-level="3"><a href="/q/ai-stack/ai-stack-045/">Transformerのモデルの学習に必要な演算の数の目安として、パラメータ数をN、学習に使うトークンの数をDとしたとき、よく使われる近似はどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/ai-stack/">AIハードウェアとソフトウェアスタックの練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/ai-inference/">推論</a></dt><dd>学習で決まった重みを使い、入力から順伝播だけを行って答えを出すAIの処理。学習より計算とメモリが少なくて済む。</dd></div>
+    <div class="term"><dt><a href="/term/backpropagation/">逆伝播</a></dt><dd>ニューラルネットワークの学習で、出力と正解の誤差を出力側から入力側へさかのぼって伝え、各重みの勾配を求める計算。バックプロパゲーション。</dd></div>
+    <div class="term"><dt><a href="/term/batch-size/">バッチサイズ</a></dt><dd>まとめて処理する入力の数。大きくすると重みを再利用できて効率が上がるが、応答の遅れとメモリが増える。</dd></div>
+    <div class="term"><dt><a href="/term/mixed-precision/">混合精度</a></dt><dd>計算の部分ごとに違う精度の数値を使うこと。掛け算をFP16などで行い、累積をFP32で行って、速さと精度を両立させる。</dd></div>
+    <div class="term"><dt><a href="/term/gradient-checkpointing/">勾配チェックポイント</a></dt><dd>順伝播の途中の結果の一部だけを保存し、逆伝播で必要になったときに残りを計算し直して、計算を増やす代わりにメモリを減らす方法。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu-vs-npu/"><strong>CPU・GPU・NPUの違い：設計思想・演算器・データ型・電力効率を比較</strong><span>CPU・GPU・NPUを、設計思想・演算器の構成・制御のしかた・メモリ・データ型(INT8やFP16など)・性能の表し方・電力効率・柔軟性・プログラミングの観点で比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/fp32-vs-fp16-vs-bf16-vs-int8/"><strong>FP32・FP16・BF16・INT8の違い：ビット構成・範囲・精度・用途を比較</strong><span>FP32・FP16・BF16・INT8を、ビット構成(符号・指数・仮数)・表せる範囲・精度・FP32からの変換・メモリ・演算器の効率・学習と推論での用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/cpu-vs-gpu/"><strong>CPUとGPUの違い：構造・得意な処理・用途を比較</strong><span>CPUとGPUを、設計の目的・コア数・実行モデル・キャッシュ・メモリ帯域・分岐・データ転送・得意な処理の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/i2c-vs-spi-vs-uart/"><strong>I2C・SPI・UARTの違い：配線・速度・使い分けを比較</strong><span>I2C、SPI、UARTを、配線の数・クロック・速度・接続形態・アドレス・誤り検出・マイコンでの主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/verilog-vs-vhdl/"><strong>VerilogとVHDLの違い：2つのハードウェア記述言語を比較</strong><span>VerilogとVHDLを、成り立ち・文法・型・大文字小文字・検証機能・使われる分野・選び方の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/nvme-vs-sata-ssd/"><strong>NVMeとSATAのSSDの違い：速度・インターフェース・選び方</strong><span>NVMeとSATAのSSDを、インターフェース・速度・遅延・コマンドキュー・形状・消費電力・互換性・価格・向いている人の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
