@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Physically unclonable function (PUF)","item":"https://semiconroom.com/en/term/physically-unclonable-function/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Physically unclonable function (PUF)","description":"A mechanism using per-chip manufacturing variation to produce values unique to each chip and hard to clone, allowing keys to be regenerated without storing them.","url":"https://semiconroom.com/en/term/physically-unclonable-function/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Physically unclonable function (PUF)","item":"https://semiconroom.com/en/term/physically-unclonable-function/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Physically unclonable function (PUF)","description":"A mechanism using per-chip manufacturing variation to produce values unique to each chip and hard to clone, allowing keys to be regenerated without storing them.","url":"https://semiconroom.com/en/term/physically-unclonable-function/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a PUF used for?","acceptedAnswer":{"@type":"Answer","text":"PUFs provide chip-unique values for device authentication and for deriving cryptographic keys without storing them permanently in non-volatile memory. They are used in secure microcontrollers, FPGAs and other chips that need a hardware root of trust."}},{"@type":"Question","name":"Is a PUF the same as a random number generator?","acceptedAnswer":{"@type":"Answer","text":"No. A true random number generator must produce fresh, unpredictable bits every time, whereas a PUF must reproduce the same chip-specific value on every reading. Some designs do harvest the unstable SRAM cells as an additional entropy source."}},{"@type":"Question","name":"Why does an SRAM PUF need error correction?","acceptedAnswer":{"@type":"Answer","text":"A fraction of SRAM cells are nearly balanced and power up differently depending on temperature, voltage and noise. Error correction with helper data fixes these flipping bits so the derived key is identical every time."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Where the chip-unique value comes from</h2>
+  <p>No two transistors come out of a fab identical: threshold voltages, gate dimensions and wire delays vary randomly from chip to chip. A physically unclonable function (PUF) amplifies these differences into bits. An SRAM PUF reads which way each cell settles at power-up, decided by the stronger of its two cross-coupled inverters. A ring-oscillator PUF compares the frequencies of nominally identical oscillators. An arbiter PUF races a signal down two paths whose routing is set by a challenge and records which arrives first. Because the variation is random and uncontrollable, even the manufacturer cannot build a chip with a chosen response.</p>
+</section>
+<section class="term-about">
+  <h2>From noisy bits to a stable key</h2>
+  <p>A PUF response is not perfectly repeatable. Cells or paths whose two options are nearly balanced can flip with temperature, supply voltage, noise and aging, yet a cryptographic key must be bit-for-bit identical every time. At enrollment the chip therefore records the response and computes helper data, public information for an <a class="term-link" href="/en/term/ecc/">error-correcting code</a>. At each use the PUF is read again, the code corrects the flipped bits with the help of the helper data, and a hash or key-derivation step produces the final key. This construction, often called a fuzzy extractor, is designed so the helper data does not reveal the key.</p>
+</section>
+<section class="term-about">
+  <h2>PUF versus eFuse and OTP key storage</h2>
+  <p>The conventional approach writes a per-device key into one-time-programmable eFuses or OTP memory, ideally readable only by the crypto engine. Such bits exist permanently and can be targeted by opening the package and probing or imaging the storage. With a PUF the key is regenerated only when needed and exists nowhere while power is off, and invasive probing tends to disturb the very variation that defines it. A common hybrid stores keys in flash encrypted with a PUF-derived key. Whatever the approach, restricting the read paths to the key is essential.</p>
+</section>
+<section class="term-about">
+  <h2>Quality measures and limitations</h2>
+  <p>PUFs are judged by uniqueness, the Hamming distance between responses of different chips, ideally 50 percent; reliability, how few bits change between readings of the same chip; and uniformity, an even balance of zeros and ones. Weak PUFs, such as SRAM PUFs, offer few challenge-response pairs and suit key generation. Strong PUFs, such as arbiter PUFs, offer very many pairs for authentication, but their responses can often be learned with machine-learning modeling attacks from observed pairs. Side-channel leakage and helper-data manipulation are further attack surfaces.</p>
+</section>
 <section>
   <h2>Try it: questions about Physically unclonable function (PUF)</h2>
   <article class="q-mini" data-qid="hw-security-030" data-cat="hw-security" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. The key need not be written in non-volatile memory and is regenerated only when used, so it is hard to extract even if the chip is analyzed</p><p class="explanation">Keys written in flash or eFuses are targets for attacks that open the chip and read storage directly. With a <a class="term-link" href="/en/term/physically-unclonable-function/">PUF</a>, the key is regenerated from the chip&#39;s physical properties each time it is used and is stored nowhere while power is off. Physically tampering with the chip to read the PUF also alters the very variation it depends on, making extraction even harder.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a PUF used for?</h3>
+  <p>PUFs provide chip-unique values for device authentication and for deriving cryptographic keys without storing them permanently in non-volatile memory. They are used in secure microcontrollers, FPGAs and other chips that need a hardware root of trust.</p>
+  <h3>Is a PUF the same as a random number generator?</h3>
+  <p>No. A true random number generator must produce fresh, unpredictable bits every time, whereas a PUF must reproduce the same chip-specific value on every reading. Some designs do harvest the unstable SRAM cells as an additional entropy source.</p>
+  <h3>Why does an SRAM PUF need error correction?</h3>
+  <p>A fraction of SRAM cells are nearly balanced and power up differently depending on temperature, voltage and noise. Error correction with helper data fixes these flipping bits so the derived key is identical every time.</p>
+</section>
 <section>
   <h2>Physically unclonable function (PUF) in the explanations</h2>
   <ul class="term-quotes"><li><p>A PUF reads out these differences to produce a value unique to each chip.</p><a href="/en/q/hw-security/hw-security-030/">Which describes a PUF (physically unclonable function)?</a></li><li><p>With a PUF, the key is regenerated from the chip&#39;s physical properties each time it is used and is stored nowhere while power is off.</p><a href="/en/q/hw-security/hw-security-031/">What is the advantage of using a PUF for key storage?</a></li><li><p>PUF values are set by manufacturing variation, but cells whose two options differ only slightly may read differently depending on temperature, voltage and noise.</p><a href="/en/q/hw-security/hw-security-033/">Why is error correction (such as helper data) combined with…</a></li><li><p>Another approach stores keys in flash encrypted with a key derived from a PUF.</p><a href="/en/q/hw-security/hw-security-042/">Which method is commonly used to store keys written into a …</a></li></ul>

@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Garbage collection","item":"https://semiconroom.com/en/term/garbage-collection/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Garbage collection","description":"In an SSD, moving the still-valid data out of blocks that contain invalid data and then erasing those blocks to create free space.","url":"https://semiconroom.com/en/term/garbage-collection/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Garbage collection","item":"https://semiconroom.com/en/term/garbage-collection/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Garbage collection","description":"In an SSD, moving the still-valid data out of blocks that contain invalid data and then erasing those blocks to create free space.","url":"https://semiconroom.com/en/term/garbage-collection/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between TRIM and garbage collection?","acceptedAnswer":{"@type":"Answer","text":"TRIM is a command from the operating system telling the SSD which logical blocks are no longer in use. Garbage collection is the drive's internal process of copying valid data and erasing blocks; TRIM makes it cheaper by marking deleted data invalid so it is not copied."}},{"@type":"Question","name":"Why does an SSD slow down when it is nearly full?","acceptedAnswer":{"@type":"Answer","text":"With little free space, victim blocks still hold many valid pages, so garbage collection must copy more data per erased block and often runs in the foreground, increasing write amplification and stalling host writes."}},{"@type":"Question","name":"Is SSD garbage collection the same as garbage collection in programming languages?","acceptedAnswer":{"@type":"Answer","text":"Only by analogy. Language runtimes reclaim unreachable memory objects, while an SSD reclaims flash blocks by relocating valid pages and erasing the rest, a requirement imposed by NAND's block-level erase."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/sram-flash/">SRAM and flash memory</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why SSDs need it</h2>
+  <p>NAND flash reads and programs in pages of around 16 KB but can erase only whole blocks of hundreds of pages, several to tens of megabytes, because erasure applies high voltage to an entire well. A page cannot be overwritten in place. When the host updates data, the SSD controller writes the new version to a free page, updates its logical-to-physical map in the flash translation layer (FTL), and marks the old page invalid. Over time blocks fill with a mix of valid and invalid pages, and free blocks run out unless space is reclaimed.</p>
+</section>
+<section class="term-about">
+  <h2>How a collection pass works</h2>
+  <p>The controller selects victim blocks, typically those with the most invalid pages because they need the least copying. It copies the remaining valid pages to another block, updates the mapping, erases the victim and returns it to the free pool. Ideally this runs in the background during idle time; if free blocks are exhausted it must run in the foreground, stalling host writes. The fuller the drive, the fewer invalid pages each victim holds, so more copying is needed per block reclaimed and write performance drops.</p>
+</section>
+<section class="term-about">
+  <h2>Write amplification</h2>
+  <p>Every valid page moved during collection is an extra write the host never asked for. The <a class="term-link" href="/en/term/write-amplification/">write amplification</a> factor (WAF) is the ratio of data written to flash to data written by the host, and under small random writes it can reach several times. Because each NAND block tolerates only a limited number of program/erase cycles, a high WAF shortens drive life as well as consuming bandwidth. Garbage collection is distinct from <a class="term-link" href="/en/term/wear-leveling/">wear leveling</a>, which spreads erase cycles evenly across blocks, though controllers coordinate the two.</p>
+</section>
+<section class="term-about">
+  <h2>Making collection cheaper</h2>
+  <p>Three levers reduce the burden. <a class="term-link" href="/en/term/trim/">TRIM</a>, or Deallocate in <a class="term-link" href="/en/term/nvme/">NVMe</a>, lets the operating system report deleted ranges, so the drive can treat those pages as invalid instead of copying them. Over-provisioning installs more flash than the user-visible capacity; 512 GiB of NAND sold as a 480 GB drive leaves about 14% spare, giving collection room to work, and enterprise drives reserve more. Data compression in some controllers reduces the volume written. Together they lower WAF, stabilize write speed and extend endurance.</p>
+</section>
 <section>
   <h2>Try it: questions about Garbage collection</h2>
   <article class="q-mini" data-qid="sram-flash-015" data-cat="sram-flash" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. TRIM</p><p class="explanation">Deleting a file only updates the OS&#39;s bookkeeping, so the SSD does not know the data is obsolete and keeps copying it during <a class="term-link" href="/en/term/garbage-collection/">garbage collection</a>. The <a class="term-link" href="/en/term/trim/">TRIM</a> command tells the SSD which ranges are no longer needed; it marks those pages invalid and can erase them without copying, reducing <a class="term-link" href="/en/term/write-amplification/">write amplification</a> and improving performance and lifespan. <a class="term-link" href="/en/term/nvme/">NVMe</a> provides the same function through the Deallocate command.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between TRIM and garbage collection?</h3>
+  <p>TRIM is a command from the operating system telling the SSD which logical blocks are no longer in use. Garbage collection is the drive&#39;s internal process of copying valid data and erasing blocks; TRIM makes it cheaper by marking deleted data invalid so it is not copied.</p>
+  <h3>Why does an SSD slow down when it is nearly full?</h3>
+  <p>With little free space, victim blocks still hold many valid pages, so garbage collection must copy more data per erased block and often runs in the foreground, increasing write amplification and stalling host writes.</p>
+  <h3>Is SSD garbage collection the same as garbage collection in programming languages?</h3>
+  <p>Only by analogy. Language runtimes reclaim unreachable memory objects, while an SSD reclaims flash blocks by relocating valid pages and erasing the rest, a requirement imposed by NAND&#39;s block-level erase.</p>
+</section>
 <section>
   <h2>Garbage collection in the explanations</h2>
   <ul class="term-quotes"><li><p>These extra copies cause write amplification, and the fuller the drive, the more often garbage collection runs and the more write performance suffers.</p><a href="/en/q/sram-flash/sram-flash-015/">Which correctly describes garbage collection in an SSD?</a></li><li><p>Deleting a file only updates the OS&#39;s bookkeeping, so the SSD does not know the data is obsolete and keeps copying it during garbage collection.</p><a href="/en/q/sram-flash/sram-flash-028/">Which command notifies an SSD of space freed by files delet…</a></li><li><p>Even partial updates cannot overwrite in place: new data goes to a free page, the old page is marked invalid, and garbage collection later erases blocks in bulk.</p><a href="/en/q/sram-flash/sram-flash-008/">What is the unit in which data is erased in NAND flash memo…</a></li><li><p>Over-provisioning installs more flash than the user-visible capacity and uses the surplus for free blocks, garbage collection and bad-block replacement.</p><a href="/en/q/sram-flash/sram-flash-041/">Which correctly describes &quot;overprovisioning&quot; in an SSD?</a></li><li><p>Because flash cannot overwrite and erases by block, garbage collection adds extra writes such as copying valid data to new blocks, so the flash receives more data than the host wrote.</p><a href="/en/q/sram-flash/sram-flash-042/">Which correctly describes &quot;write amplification&quot; in an SSD?</a></li></ul>

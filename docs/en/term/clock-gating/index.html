@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Clock gating","item":"https://semiconroom.com/en/term/clock-gating/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock gating","description":"A low-power design technique that stops the clock to idle circuit blocks, avoiding wasted switching power.","url":"https://semiconroom.com/en/term/clock-gating/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Clock gating","item":"https://semiconroom.com/en/term/clock-gating/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Clock gating","description":"A low-power design technique that stops the clock to idle circuit blocks, avoiding wasted switching power.","url":"https://semiconroom.com/en/term/clock-gating/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between clock gating and power gating?","acceptedAnswer":{"@type":"Answer","text":"Clock gating stops the clock to cut dynamic power while keeping the block powered, so it resumes instantly but still leaks. Power gating cuts the supply, removing leakage as well, but requires state saving and a longer wake-up."}},{"@type":"Question","name":"Why not gate a clock with a simple AND gate?","acceptedAnswer":{"@type":"Answer","text":"If the enable changes while the clock is high, the AND output can produce a shortened pulse or glitch that may clock flip-flops incorrectly. An integrated clock gating cell latches the enable during the low phase to prevent this."}},{"@type":"Question","name":"Does clock gating reduce leakage power?","acceptedAnswer":{"@type":"Answer","text":"No. It only removes switching power in the gated flip-flops and clock wiring; leakage continues as long as the block is powered."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/eda/">IC design flow and EDA</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why stopping the clock saves power</h2>
+  <p><a class="term-link" href="/en/term/dynamic-power/">Dynamic power</a> is roughly <a class="term-link" href="/en/term/activity-factor/">activity factor</a> times capacitance times voltage squared times frequency. The clock net toggles every cycle and drives every <a class="term-link" href="/en/term/flip-flop/">flip-flop</a>&#39;s clock pin through a large buffered tree, so the clock network is often one of the biggest single consumers of dynamic power. When a register&#39;s contents will not change, because its enable is inactive, clocking it wastes energy in the flip-flops and in the clock branch feeding them. Clock gating stops the clock to such registers or blocks, eliminating that switching while keeping their stored state.</p>
+</section>
+<section class="term-about">
+  <h2>The integrated clock gating cell</h2>
+  <p>Simply ANDing the clock with an enable is risky: if the enable changes while the clock is high, the gated clock can be truncated or produce a <a class="term-link" href="/en/term/glitch/">glitch</a>. <a class="term-link" href="/en/term/sta/">Static timing analysis</a> checks that the enable settles before the clock rises and stays stable until it falls, which in a 2.0 ns, 50% <a class="term-link" href="/en/term/duty-cycle/">duty cycle</a> clock leaves only the 1.0 ns low phase. Designs therefore use integrated clock gating (ICG) cells, which contain a latch that is transparent only while the clock is low, so the enable is frozen during the high phase. ICGs also include a test-enable input so gated flip-flops are clocked during scan testing.</p>
+</section>
+<section class="term-about">
+  <h2>How tools insert it</h2>
+  <p>In <a class="term-link" href="/en/term/rtl/">register-transfer level</a> code, a register written only when an enable is true is normally implemented with a <a class="term-link" href="/en/term/multiplexer/">multiplexer</a> that feeds the old value back. Synthesis tools recognize this pattern and replace the feedback multiplexers of a group of flip-flops with one ICG, saving both power and multiplexer area. This fine-grained gating is automatic. Coarse-grained gating, controlled by a power manager or software, stops the clock to entire blocks such as an idle accelerator. Gating cells placed nearer the clock root save more power but complicate clock tree timing.</p>
+</section>
+<section class="term-about">
+  <h2>Clock gating vs. power gating</h2>
+  <p>Clock gating removes <a class="term-link" href="/en/term/dynamic-power/">dynamic power</a> but not leakage, since the block stays powered; in exchange, state is retained and the block resumes on the very next clock edge. <a class="term-link" href="/en/term/power-gating/">Power gating</a> turns off a large switch transistor between the block and its supply, removing nearly all leakage too, but state must be saved or held in retention registers, outputs need isolation cells, and waking up takes time while the supply stabilizes. Chips combine both: clock gating for idle periods of a few cycles, power gating for long ones.</p>
+</section>
 <section>
   <h2>Try it: questions about Clock gating</h2>
   <article class="q-mini" data-qid="sta-cdc-019" data-cat="sta-cdc" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Clock gating cuts dynamic power and resumes instantly; power gating also cuts leakage but takes time to resume</p><p class="explanation"><a class="term-link" href="/en/term/clock-gating/">Clock gating</a> only stops the clock, so state is retained and operation resumes on the next clock, but leakage continues. <a class="term-link" href="/en/term/power-gating/">Power gating</a> cuts power and so also eliminates leakage, but needs time to save and restore state and for the supply to stabilize. They are combined: clock gating for idle periods of a few cycles, power gating for long ones.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between clock gating and power gating?</h3>
+  <p>Clock gating stops the clock to cut dynamic power while keeping the block powered, so it resumes instantly but still leaks. Power gating cuts the supply, removing leakage as well, but requires state saving and a longer wake-up.</p>
+  <h3>Why not gate a clock with a simple AND gate?</h3>
+  <p>If the enable changes while the clock is high, the AND output can produce a shortened pulse or glitch that may clock flip-flops incorrectly. An integrated clock gating cell latches the enable during the low phase to prevent this.</p>
+  <h3>Does clock gating reduce leakage power?</h3>
+  <p>No. It only removes switching power in the gated flip-flops and clock wiring; leakage continues as long as the block is powered.</p>
+</section>
 <section>
   <h2>Clock gating in the explanations</h2>
   <ul class="term-quotes"><li><p>Using a clock gating cell with a built-in latch makes this easier to satisfy.</p><a href="/en/q/sta-cdc/sta-cdc-019/">In a circuit that stops the clock with a two-input AND gate…</a></li><li><p>Clock gating only stops the clock, so state is retained and operation resumes on the next clock, but leakage continues.</p><a href="/en/q/power-management/power-management-009/">Which correctly compares clock gating and power gating?</a></li><li><p>Typical uses include clock gating, which ANDs the clock with an enable so the clock passes only when needed, and bit masking (x AND 0x0F keeps the lower four bits).</p><a href="/en/q/logic/logic-031/">When is the output of a 2-input AND gate 1?</a></li><li><p>Clock gating stops the clock to idle blocks, eliminating wasted switching in flip-flops and clock wiring to reduce dynamic power.</p><a href="/en/q/eda/eda-015/">Which low-power design technique stops the clock to unused …</a></li><li><p>Clock gating stops switching and so cuts dynamic power, but leakage continues as long as power is connected.</p><a href="/en/q/power-management/power-management-007/">Which describes power gating?</a></li></ul>

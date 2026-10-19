@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Correlated double sampling (CDS)","item":"https://semiconroom.com/en/term/correlated-double-sampling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Correlated double sampling (CDS)","description":"Taking the difference between a pixel's voltage just after reset and its voltage when the signal is read. It removes reset noise and per-pixel offsets.","url":"https://semiconroom.com/en/term/correlated-double-sampling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Correlated double sampling (CDS)","item":"https://semiconroom.com/en/term/correlated-double-sampling/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Correlated double sampling (CDS)","description":"Taking the difference between a pixel's voltage just after reset and its voltage when the signal is read. It removes reset noise and per-pixel offsets.","url":"https://semiconroom.com/en/term/correlated-double-sampling/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is it called correlated double sampling?","acceptedAnswer":{"@type":"Answer","text":"Two samples are taken of the same node, one after reset and one after the signal charge arrives, and the reset noise in both is the same random value. Because that noise is correlated between the samples, subtracting them cancels it."}},{"@type":"Question","name":"Does CDS remove fixed pattern noise?","acceptedAnswer":{"@type":"Answer","text":"It removes the pixel-level part caused by amplifier offset and reset level variation. Column circuit mismatch and dark current non-uniformity need additional correction such as black-pixel references or calibration."}},{"@type":"Question","name":"Does CDS reduce shot noise?","acceptedAnswer":{"@type":"Answer","text":"No. Photon shot noise and dark-current shot noise are part of the signal itself and differ between the two samples, so subtraction cannot cancel them."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/image-sensor/">Image sensors and optical devices</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How CDS works in a 4T pixel</h2>
+  <p>In a four-transistor <a class="term-link" href="/en/term/cmos/">CMOS</a> pixel the floating diffusion (FD), a small capacitance node, is first reset. Opening the reset switch freezes a random kTC noise voltage on the node, plus the source-follower offset. The readout circuit samples this reset level, then the transfer gate moves <a class="term-link" href="/en/term/photodiode/">photodiode</a> charge onto the FD and the signal level is sampled. Subtracting the two samples leaves only the charge-induced change. Because the same reset event is present in both samples, its noise is correlated between them and cancels, which is where the name comes from.</p>
+</section>
+<section class="term-about">
+  <h2>What it removes and what it does not</h2>
+  <p>CDS cancels anything common to both samples: reset (kTC) noise, which for a femtofarad-scale FD would otherwise be on the order of ten electrons rms; per-pixel amplifier offsets that would appear as <a class="term-link" href="/en/term/fixed-pattern-noise/">fixed-pattern noise</a>; and much of the slow, low-frequency <a class="term-link" href="/en/term/1-f-noise/">1/f noise</a>, since the two samples are taken close together in time. It cannot remove photon <a class="term-link" href="/en/term/shot-noise/">shot noise</a>, dark-current shot noise or other noise that differs between the samples. White noise from the readout chain is actually increased by about √2, because two independent noisy samples are subtracted.</p>
+</section>
+<section class="term-about">
+  <h2>Why the pinned photodiode matters</h2>
+  <p>True CDS requires that the reset sample be taken before the signal charge arrives on the same node. In an older three-transistor pixel the <a class="term-link" href="/en/term/photodiode/">photodiode</a> itself is the sense node, so the reset that follows a read is a new, uncorrelated event; subtracting it removes offsets but leaves reset noise. The <a class="term-link" href="/en/term/pinned-photodiode/">pinned photodiode</a> with a separate transfer gate allows complete charge transfer onto an already-sampled FD, and together with CDS this brings read noise down to a few electrons or less.</p>
+</section>
+<section class="term-about">
+  <h2>Analog and digital CDS</h2>
+  <p>CDS originated in charge-coupled device (CCD) output stages and is now standard in <a class="term-link" href="/en/term/cmos-image-sensor/">CMOS image sensor</a> column circuits. Analog CDS stores the two levels on sample-and-hold capacitors and subtracts them before conversion. Digital CDS converts both levels with the column analog-to-digital converter (ADC) and subtracts the codes; in single-slope column ADCs this is often done by counting down during the reset conversion and up during the signal conversion. Column-to-column mismatch left after CDS is handled by calibration and optically black reference pixels.</p>
+</section>
 <section>
   <h2>Try it: questions about Correlated double sampling (CDS)</h2>
   <article class="q-mini" data-qid="image-sensor-019" data-cat="image-sensor" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. To take the difference between the reset level and the signal level, removing reset noise and per-pixel offsets</p><p class="explanation"><a class="term-link" href="/en/term/correlated-double-sampling/">CDS</a> samples the floating diffusion&#39;s output right after reset and again after the <a class="term-link" href="/en/term/photodiode/">photodiode</a> charge is transferred, taking the difference as the signal. The kTC noise that varies at each reset and the pixel amplifier&#39;s offset are common to both samples, so they cancel. Combined with complete transfer from pinned photodiodes, this lowers read noise to a few electrons or less.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why is it called correlated double sampling?</h3>
+  <p>Two samples are taken of the same node, one after reset and one after the signal charge arrives, and the reset noise in both is the same random value. Because that noise is correlated between the samples, subtracting them cancels it.</p>
+  <h3>Does CDS remove fixed pattern noise?</h3>
+  <p>It removes the pixel-level part caused by amplifier offset and reset level variation. Column circuit mismatch and dark current non-uniformity need additional correction such as black-pixel references or calibration.</p>
+  <h3>Does CDS reduce shot noise?</h3>
+  <p>No. Photon shot noise and dark-current shot noise are part of the signal itself and differ between the two samples, so subtraction cannot cancel them.</p>
+</section>
 <section>
   <h2>Correlated double sampling (CDS) in the explanations</h2>
   <ul class="term-quotes"><li><p>CDS samples the floating diffusion&#39;s output right after reset and again after the photodiode charge is transferred, taking the difference as the signal.</p><a href="/en/q/image-sensor/image-sensor-019/">What is the purpose of correlated double sampling (CDS) use…</a></li><li><p>Image sensors remove it with correlated double sampling.</p><a href="/en/q/analog/analog-048/">When a voltage is sampled onto a capacitor C through a swit…</a></li><li><p>Since filters cannot cut off instantly, practical systems add margin: audio CDs sample at 44.1 kHz, using 20–22.05 kHz as the filter&#39;s transition band.</p><a href="/en/q/adc-dac/adc-dac-002/">What sampling frequency is needed to sample an analog signa…</a></li><li><p>Audio CDs store 44.1 kHz, 16-bit, two-channel audio at about 1.4 Mb/s.</p><a href="/en/q/adc-dac/adc-dac-036/">What is the sampling frequency of a music CD?</a></li><li><p>This structure enables CDS by sampling before and after transfer, and neighboring pixels often share the FD and readout transistors to save area.</p><a href="/en/q/image-sensor/image-sensor-021/">In the typical four-transistor pixel of a CMOS image sensor…</a></li></ul>

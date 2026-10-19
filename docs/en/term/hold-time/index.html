@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Hold time","item":"https://semiconroom.com/en/term/hold-time/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Hold time","description":"The minimum time after the active clock edge during which a flip-flop's data input must stay unchanged. Violations are not fixed by lowering the clock frequency, so delay is added to the path.","url":"https://semiconroom.com/en/term/hold-time/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Hold time","item":"https://semiconroom.com/en/term/hold-time/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Hold time","description":"The minimum time after the active clock edge during which a flip-flop's data input must stay unchanged. Violations are not fixed by lowering the clock frequency, so delay is added to the path.","url":"https://semiconroom.com/en/term/hold-time/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between setup time and hold time?","acceptedAnswer":{"@type":"Answer","text":"Setup time is how long data must be stable before the clock edge, and hold time is how long it must remain stable after the edge. Setup is violated by paths that are too slow and hold by paths that are too fast."}},{"@type":"Question","name":"Can a flip-flop have a negative hold time?","acceptedAnswer":{"@type":"Answer","text":"Yes. Internal delays can mean the data is effectively sampled slightly before the external clock edge, so the data may change just before the edge without error; the library then reports a negative hold value."}},{"@type":"Question","name":"How do you fix a hold time violation?","acceptedAnswer":{"@type":"Answer","text":"Add delay to the short data path with buffers or delay cells, or reduce the skew that makes the capture clock late. Changing the clock frequency has no effect on a same-edge hold check."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -105,7 +105,22 @@
 </svg><figcaption class="fig-cap">Two-flip-flop synchronizer · <a href="/en/figures/#fig-sync-2ff">View in diagrams</a></figcaption></figure>
   <p>Field: <a href="/en/c/logic/">Logic circuits</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What hold time protects</h2>
+  <p>A <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> needs its data input to stay unchanged for a short window after the active clock edge while the internal latch closes; that minimum interval is the hold time. <a class="term-link" href="/en/term/setup-time/">Setup time</a> is the mirror requirement before the edge. The danger for hold comes from the same edge that captures data: it also launches new data from the upstream flip-flop, and if that new value races through a very short path, it can overwrite the value being captured. Either violation can produce a wrong value or drive the flip-flop into <a class="term-link" href="/en/term/metastability/">metastability</a>.</p>
+</section>
+<section class="term-about">
+  <h2>Checking hold with minimum delays</h2>
+  <p>Hold analysis uses the fastest case: minimum clock-to-output delay plus minimum logic and wire delay must exceed the hold time, adjusted for when the capture clock actually arrives. With 0.08 ns clock-to-output, 0.02 ns of logic, 0.05 ns hold time and a capture clock 0.1 ns late, arrival is 0.10 ns against a requirement of 0.15 ns, a −0.05 ns violation. Board-level interfaces follow the same logic, using the transmitter&#39;s minimum clock-to-output; if a datasheet omits it, assuming 0 ns is the safe choice.</p>
+</section>
+<section class="term-about">
+  <h2>Why slowing the clock does not help</h2>
+  <p>For an ordinary path launched and captured by the same clock edge, the clock period does not appear in the hold equation, so lowering the frequency leaves the violation unchanged. A chip shipped with a real hold violation can be unusable at any speed. The standard fix is inserting buffers or delay cells on the short data path, usually after clock tree synthesis when actual skew is known. Paths with little or no logic, such as shift registers and scan chains, are the classic hold risks, and positive <a class="term-link" href="/en/term/clock-skew/">clock skew</a> makes them worse.</p>
+</section>
+<section class="term-about">
+  <h2>Library values and negative hold</h2>
+  <p>Hold time is a characterized property of each <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> design and depends on input slew, load and process corner. It can be very small, zero or even negative, meaning the data may change slightly before the clock edge without harm, because of internal delays between the clock pin and the sampling point. A negative hold time makes hold easier to meet but does not eliminate the check, since <a class="term-link" href="/en/term/clock-skew/">clock skew</a> and <a class="term-link" href="/en/term/ocv/">on-chip variation</a> still shift the effective requirement at every endpoint.</p>
+</section>
 <section>
   <h2>Try it: questions about Hold time</h2>
   <article class="q-mini" data-qid="logic-017" data-cat="logic" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -119,7 +134,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. The time the data input must remain unchanged after the active clock edge</p><p class="explanation"><a class="term-link" href="/en/term/hold-time/">Hold time</a> is the minimum time data must stay stable after the clock edge. If the path from one <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> to the next is too short, new data launched by the same edge arrives too early and violates hold. Because it does not depend on the clock period, slowing the clock cannot fix it; the remedy is inserting buffers to add delay. A hold violation found after manufacturing can render the chip unusable, so design-time verification is critical.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between setup time and hold time?</h3>
+  <p>Setup time is how long data must be stable before the clock edge, and hold time is how long it must remain stable after the edge. Setup is violated by paths that are too slow and hold by paths that are too fast.</p>
+  <h3>Can a flip-flop have a negative hold time?</h3>
+  <p>Yes. Internal delays can mean the data is effectively sampled slightly before the external clock edge, so the data may change just before the edge without error; the library then reports a negative hold value.</p>
+  <h3>How do you fix a hold time violation?</h3>
+  <p>Add delay to the short data path with buffers or delay cells, or reduce the skew that makes the capture clock late. Changing the clock frequency has no effect on a same-edge hold check.</p>
+</section>
 <section>
   <h2>Hold time in the explanations</h2>
   <ul class="term-quotes"><li><p>Hold time is the minimum time data must stay stable after the clock edge.</p><a href="/en/q/logic/logic-042/">Which correctly describes the hold time of a flip-flop?</a></li><li><p>The minimum data arrival time is 0.08 + 0.02 = 0.10 ns and the required time is the capture clock arrival of 0.1 ns plus the 0.05 ns hold time, 0.15 ns, so the slack is 0.10 − 0.15 = −0.05 ns, a violation.</p><a href="/en/q/sta-cdc/sta-cdc-006/">The launching flip-flop&#39;s minimum clock-to-output delay is …</a></li><li><p>Hold time is the time data must continue to be held after the clock edge.</p><a href="/en/q/datasheet/datasheet-021/">When checking whether the receiver&#39;s hold time is met, whic…</a></li><li><p>The time data must remain stable after the edge is the hold time.</p><a href="/en/q/logic/logic-013/">Which correctly describes the setup time of a flip-flop?</a></li><li><p>To prevent dopant diffusion during annealing from deepening the junction, spike anneals (about 1050 °C with no hold time) or flash-lamp and laser anneals that heat only the surface for milliseconds or less activate dopants while limiting diffusion to a few nm.</p><a href="/en/q/ion-implant/ion-implant-005/">Which is a correct technique for forming shallow junctions …</a></li></ul>

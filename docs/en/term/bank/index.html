@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Bank","item":"https://semiconroom.com/en/term/bank/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bank","description":"One of several independently operating sections inside a DRAM. Overlapping activation and access across different banks raises effective performance.","url":"https://semiconroom.com/en/term/bank/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Bank","item":"https://semiconroom.com/en/term/bank/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Bank","description":"One of several independently operating sections inside a DRAM. Overlapping activation and access across different banks raises effective performance.","url":"https://semiconroom.com/en/term/bank/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many banks does DDR5 have?","acceptedAnswer":{"@type":"Answer","text":"DDR5 devices have 32 banks, organized into bank groups, compared with 16 banks in four bank groups for DDR4."}},{"@type":"Question","name":"What is the difference between a DRAM bank and a rank?","acceptedAnswer":{"@type":"Answer","text":"A bank is an independently operating array inside a single DRAM chip. A rank is a set of chips on a module that share a chip select and together supply the full data width, and each chip in it contains its own banks."}},{"@type":"Question","name":"What is a shared memory bank conflict?","acceptedAnswer":{"@type":"Answer","text":"It occurs when threads in a GPU warp access different addresses that map to the same shared-memory bank, forcing the hardware to serialize the accesses. Padding arrays or changing the access pattern usually avoids it; all threads reading the same address is a broadcast and not a conflict."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/dram/">DRAM</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why DRAM is split into banks</h2>
+  <p>Accessing DRAM involves several slow steps. An activate command opens a row, copying it into the bank&#39;s sense amplifiers, often called the row buffer; reads and writes then select columns from that row; finally a <a class="term-link" href="/en/term/precharge/">precharge</a> closes the row and readies the bit lines. Activation and precharge each take over ten nanoseconds. A bank is an independent array with its own row buffer, so while one bank is activating or precharging, another can be transferring data. Interleaving accesses across banks hides these latencies and keeps the data bus busy.</p>
+</section>
+<section class="term-about">
+  <h2>Bank counts and bank groups</h2>
+  <p>DDR4 devices have 16 banks arranged in four bank groups, and DDR5 doubles this to 32. Bank groups add a timing rule: consecutive column accesses to different groups can be issued closer together than accesses within the same group, so controllers spread traffic across groups. Each bank can hold a different open row, which also raises the chance that a request hits an already-open row (a page hit) instead of paying for another activate. A bank is distinct from a rank, which is a set of chips sharing a chip select on a module.</p>
+</section>
+<section class="term-about">
+  <h2>Refresh and bank availability</h2>
+  <p>DRAM cells leak, so every row must typically be refreshed within 64 ms. A bank under <a class="term-link" href="/en/term/refresh/">refresh</a> cannot serve accesses, and as capacity grows each refresh command covers more rows and lasts longer, a time known as tRFC. For 16 Gbit-class devices, refresh can cost from several percent to about 10% of performance, along with extra power. Per-bank refresh reduces the impact by refreshing one bank while the others remain available, and research has explored refreshing rows with long retention less often.</p>
+</section>
+<section class="term-about">
+  <h2>Banks in GPU shared memory</h2>
+  <p>The word also appears in <a class="term-link" href="/en/term/gpu/">GPU</a> programming with a related idea. <a class="term-link" href="/en/term/cuda/">CUDA</a> shared memory is divided into 32 banks assigned in rotation every 4 bytes, and each bank serves one address per access. If the 32 threads of a warp hit distinct banks, the access completes at once; if several threads hit different addresses in one bank, the accesses are serialized, a <a class="term-link" href="/en/term/bank-conflict/">bank conflict</a>. Reading down a column of a 32 × 32 float tile puts every element in one bank; padding the tile to 32 × 33 shifts each row by one bank and removes the conflict.</p>
+</section>
 <section>
   <h2>Try it: questions about Bank</h2>
   <article class="q-mini" data-qid="gpu-programming-020" data-cat="gpu-programming" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. Allocate the tile as 32 × 33, adding one extra column so each row&#39;s bank alignment shifts</p><p class="explanation">With 32 floats (128 bytes) per row, every row starts in the same <a class="term-link" href="/en/term/bank/">bank</a>, so all elements of a column fall in one bank and reading down the column funnels 32 threads into that bank. Making each row 33 floats long shifts the bank by one with every row, so the 32 elements of a column spread across all banks and are read in one access. It is a simple trick costing only one unused column of memory.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>How many banks does DDR5 have?</h3>
+  <p>DDR5 devices have 32 banks, organized into bank groups, compared with 16 banks in four bank groups for DDR4.</p>
+  <h3>What is the difference between a DRAM bank and a rank?</h3>
+  <p>A bank is an independently operating array inside a single DRAM chip. A rank is a set of chips on a module that share a chip select and together supply the full data width, and each chip in it contains its own banks.</p>
+  <h3>What is a shared memory bank conflict?</h3>
+  <p>It occurs when threads in a GPU warp access different addresses that map to the same shared-memory bank, forcing the hardware to serialize the accesses. Padding arrays or changing the access pattern usually avoids it; all threads reading the same address is a broadcast and not a conflict.</p>
+</section>
 <section>
   <h2>Bank in the explanations</h2>
   <ul class="term-quotes"><li><p>With 32 floats (128 bytes) per row, every row starts in the same bank, so all elements of a column fall in one bank and reading down the column funnels 32 threads into that bank.</p><a href="/en/q/gpu-programming/gpu-programming-020/">A 32 × 32 float tile in shared memory causes bank conflicts…</a></li><li><p>During refresh, the bank cannot be accessed and power is consumed, a burden that grows with capacity.</p><a href="/en/q/dram/dram-002/">Why does DRAM need periodic refresh operations?</a></li><li><p>Dividing the DRAM into banks lets one bank be accessed while another performs these operations, hiding the latency and improving throughput.</p><a href="/en/q/dram/dram-022/">What is the main purpose of dividing the inside of a DRAM i…</a></li><li><p>Mitigations include per-bank refresh, which keeps other banks available, and research into refreshing long-retention rows less often.</p><a href="/en/q/dram/dram-045/">As DRAM capacity grows, what tends to become a problem with…</a></li><li><p>Shared memory consists of 32 banks assigned in rotation every 4 bytes, and each bank can serve only one address per access.</p><a href="/en/q/gpu-programming/gpu-programming-019/">Which describes a bank conflict in CUDA shared memory?</a></li></ul>

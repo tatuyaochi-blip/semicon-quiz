@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Asynchronous FIFO","item":"https://semiconroom.com/en/term/asynchronous-fifo/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Asynchronous FIFO","description":"A FIFO written and read on separate clocks, used to pass multi-bit data between clock domains. Its pointers are converted to Gray code before being synchronized into the other domain to decide full and empty. The pointers have one more bit than the address to distinguish wrap-around.","url":"https://semiconroom.com/en/term/asynchronous-fifo/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Asynchronous FIFO","item":"https://semiconroom.com/en/term/asynchronous-fifo/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Asynchronous FIFO","description":"A FIFO written and read on separate clocks, used to pass multi-bit data between clock domains. Its pointers are converted to Gray code before being synchronized into the other domain to decide full and empty. The pointers have one more bit than the address to distinguish wrap-around.","url":"https://semiconroom.com/en/term/asynchronous-fifo/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does an asynchronous FIFO use Gray code pointers?","acceptedAnswer":{"@type":"Answer","text":"Only one bit changes per increment, so a pointer sampled mid-change by the other clock still resolves to a valid value from just before or after the increment. A binary pointer could be captured as a completely wrong value and corrupt full or empty."}},{"@type":"Question","name":"Why is the FIFO pointer one bit wider than the address?","acceptedAnswer":{"@type":"Answer","text":"The extra bit counts laps. When the addresses match, equal lap bits mean empty and different lap bits mean the writer has gone a full lap ahead, which means full."}},{"@type":"Question","name":"Asynchronous FIFO or handshake for clock domain crossing?","acceptedAnswer":{"@type":"Answer","text":"Use a handshake for occasional transfers such as configuration registers, where a cost of eight or more cycles per item is acceptable. Use an asynchronous FIFO when data must flow continuously at up to one word per cycle."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -104,7 +104,22 @@
 </svg><figcaption class="fig-cap">Asynchronous FIFO structure · <a href="/en/figures/#fig-async-fifo">View in diagrams</a></figcaption></figure>
   <p>Field: <a href="/en/c/sta-cdc/">Timing analysis and CDC</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How an asynchronous FIFO is built</h2>
+  <p>An asynchronous FIFO is a dual-port memory written on the sender&#39;s clock and read on the receiver&#39;s clock. The write pointer lives in the write domain and the read pointer in the read domain. Each pointer is passed through a <a class="term-link" href="/en/term/synchronizer/">synchronizer</a> into the opposite domain: the write side compares its own pointer with the synchronized read pointer to generate full, and the read side compares its pointer with the synchronized write pointer to generate empty. The data itself is never synchronized; it sits stable in memory until the pointers say it may be read.</p>
+</section>
+<section class="term-about">
+  <h2>Why pointers are Gray coded</h2>
+  <p>A binary counter can flip many bits at once, such as 0111 to 1000, and bits synchronized separately may resolve in different cycles, producing a value unrelated to either. In <a class="term-link" href="/en/term/gray-code/">Gray code</a> only one bit changes per increment, so even if that bit is caught mid-change the receiver sees either the old or the new pointer, just possibly one step stale. Depth is normally a power of two so the sequence wraps cleanly. The pointer bits should not simply be declared false paths: a maximum-delay constraint keeps their skew within one sending period.</p>
+</section>
+<section class="term-about">
+  <h2>Telling full from empty</h2>
+  <p>With 16 entries, a 4-bit address cannot distinguish an empty FIFO from one that has wrapped all the way round, because both show equal addresses. Adding a fifth lap bit solves this. In binary, all five bits equal means empty, and only the MSB differing means full. In <a class="term-link" href="/en/term/gray-code/">Gray code</a> the full condition becomes the top two bits inverted and the lower three equal; for a read pointer of 00000, full is 11000. Because each side sees a stale copy of the other pointer, full and empty may be held slightly too long but are never released too early, so it errs safe.</p>
+</section>
+<section class="term-about">
+  <h2>Sizing the depth</h2>
+  <p>Depth must absorb the rate mismatch during a burst. If the writer sends 100 words at 100 MHz and the reader drains one word per cycle at 80 MHz, the burst lasts 1000 ns, the reader removes 80 words, and 20 remain, which follows from burst × (1 − read rate / write rate). Real designs add a few entries for the two-to-three-cycle pointer synchronization latency. Compared with a req/ack <a class="term-link" href="/en/term/handshake/">handshake</a>, which needs eight or more cycles per item, an asynchronous FIFO sustains one word per cycle and is the standard choice for streaming data.</p>
+</section>
 <section>
   <h2>Try it: questions about Asynchronous FIFO</h2>
   <article class="q-mini" data-qid="sta-cdc-039" data-cat="sta-cdc" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -118,7 +133,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. So that when the pointers match, empty (same lap) can be distinguished from full (one lap apart)</p><p class="explanation">The addresses of 16 words fit in 4 bits, but with 4-bit pointers alone, when the read and write addresses match it is impossible to tell whether the FIFO is empty because everything has been read, or full because writing has gone a full lap and caught up. Adding a fifth bit that indicates the lap means that, comparing in binary, the FIFO is empty when all 5 bits match and full when only the MSB differs. With <a class="term-link" href="/en/term/gray-code/">Gray code</a> pointers, the comparison for full is slightly different. The bit is not used as parity.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does an asynchronous FIFO use Gray code pointers?</h3>
+  <p>Only one bit changes per increment, so a pointer sampled mid-change by the other clock still resolves to a valid value from just before or after the increment. A binary pointer could be captured as a completely wrong value and corrupt full or empty.</p>
+  <h3>Why is the FIFO pointer one bit wider than the address?</h3>
+  <p>The extra bit counts laps. When the addresses match, equal lap bits mean empty and different lap bits mean the writer has gone a full lap ahead, which means full.</p>
+  <h3>Asynchronous FIFO or handshake for clock domain crossing?</h3>
+  <p>Use a handshake for occasional transfers such as configuration registers, where a cost of eight or more cycles per item is acceptable. Use an asynchronous FIFO when data must flow continuously at up to one word per cycle.</p>
+</section>
 <section>
   <h2>Asynchronous FIFO in the explanations</h2>
   <ul class="term-quotes"><li><p>For counter values, convert to Gray code so that only one bit changes; for arbitrary data, use a handshake or an asynchronous FIFO.</p><a href="/en/q/sta-cdc/sta-cdc-031/">Each bit of 4-bit data is passed to another clock domain th…</a></li><li><p>For continuous high-volume transfer, use an asynchronous FIFO.</p><a href="/en/q/sta-cdc/sta-cdc-032/">Which is a correct way to pass multi-bit data safely to ano…</a></li><li><p>When the spacing cannot be guaranteed, use a handshake that waits for the receiver&#39;s response, or an asynchronous FIFO.</p><a href="/en/q/sta-cdc/sta-cdc-036/">What constraint applies when passing pulses from a fast clo…</a></li><li><p>For streaming data almost every cycle, use an asynchronous FIFO.</p><a href="/en/q/sta-cdc/sta-cdc-038/">Which is a drawback of transferring data between clock doma…</a></li></ul>

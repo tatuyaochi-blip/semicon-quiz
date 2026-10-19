@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Constant folding","item":"https://semiconroom.com/en/term/constant-folding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Constant folding","description":"An optimization that evaluates expressions whose values are known at compile time and replaces them with the resulting constant, such as turning 3 * 4 into 12. It removes run-time computation.","url":"https://semiconroom.com/en/term/constant-folding/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Constant folding","item":"https://semiconroom.com/en/term/constant-folding/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Constant folding","description":"An optimization that evaluates expressions whose values are known at compile time and replaces them with the resulting constant, such as turning 3 * 4 into 12. It removes run-time computation.","url":"https://semiconroom.com/en/term/constant-folding/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between constant folding and constant propagation?","acceptedAnswer":{"@type":"Answer","text":"Constant folding evaluates an expression whose operands are all constants, such as 3 * 4 becoming 12. Constant propagation substitutes a variable's known constant value into its uses, which often creates new expressions that can then be folded."}},{"@type":"Question","name":"Does constant folding happen with optimization turned off?","acceptedAnswer":{"@type":"Answer","text":"Simple literal expressions are often folded even without optimization, because front ends evaluate them while parsing. Folding through variables, function inlining and branch removal generally require optimization to be enabled."}},{"@type":"Question","name":"Can constant folding change floating-point results?","acceptedAnswer":{"@type":"Answer","text":"A conforming compiler folds floating-point operations with the same IEEE 754 rounding the hardware would use, so results do not change. Options that relax floating-point rules, such as fast-math, allow reassociation and can change the last bits of results."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/compiler/">Compilers</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What the compiler actually does</h2>
+  <p>During optimization the compiler scans its <a class="term-link" href="/en/term/intermediate-representation/">intermediate representation</a> for operations whose operands are all constants, evaluates them, and replaces the operation with the resulting literal. Arithmetic, bit operations, shifts, casts and comparisons can all be folded. Folding a comparison is especially powerful: if a condition such as 10 &gt; 100 becomes a known false, the branch it guards can never run. Compilers usually fold together with algebraic simplification, rewriting expressions like x * 1 or x + 0 into x, although strictly that is a separate transformation because x itself is not constant.</p>
+</section>
+<section class="term-about">
+  <h2>Working with propagation, inlining and dead-code elimination</h2>
+  <p>Constant folding rarely acts alone. Constant propagation replaces uses of a variable known to hold a constant with that constant, which creates new opportunities for folding, whose results can be propagated again. For example, n = 8; m = n * 2; return m + 1 collapses to return 17, after which dead-code elimination removes the unused assignments. Inlining feeds the loop: once a call sq(6) is replaced by its body, 6 * 6 + 1 folds to 37. Compilers based on <a class="term-link" href="/en/term/ssa-form/">SSA form</a> often combine propagation, folding and unreachable-branch removal in one algorithm called sparse conditional constant propagation.</p>
+</section>
+<section class="term-about">
+  <h2>Preserving the program&#39;s meaning</h2>
+  <p>A folded result must be exactly what the target machine would have computed at run time. The compiler must therefore emulate the target&#39;s integer widths and wraparound, which matters when cross-compiling from a 64-bit host to a 32-bit target. Floating-point folding must reproduce <a class="term-link" href="/en/term/ieee-754/">IEEE 754</a> rounding for each operation in source order, which is why compilers do not reassociate floating-point expressions unless options such as fast-math permit it. Operations that would fault, such as integer division by zero, must not be turned into a compile-time error unless the code is certain to execute.</p>
+</section>
+<section class="term-about">
+  <h2>Constant folding versus language-level constant expressions</h2>
+  <p>Some evaluation at compile time is required by the language rather than chosen by the optimizer. In C, array sizes, case labels and initializers of static variables must be constant expressions, and C++ constexpr functions can be evaluated at compile time on request. Optimization-level constant folding is broader and optional: it applies anywhere in the program, including values that only became constant after propagation or inlining, and it can happen at several stages, from the front end through the <a class="term-link" href="/en/term/intermediate-representation/">intermediate representation</a> to instruction selection, where an address offset plus a constant may be merged into one immediate.</p>
+</section>
 <section>
   <h2>Try it: questions about Constant folding</h2>
   <article class="q-mini" data-qid="compiler-010" data-cat="compiler" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Computing x = 3 * 4 at compile time to produce x = 12</p><p class="explanation"><a class="term-link" href="/en/term/constant-folding/">Constant folding</a> evaluates expressions whose values are fixed at compile time and replaces them with the resulting constants. 3 * 4 always yields 12, so there is no need to multiply at run time. Combined with constant propagation, computations through variables can be folded as well. There are caveats, such as matching rounding behavior for floating point. Replicating a loop body is <a class="term-link" href="/en/term/loop-unrolling/">loop unrolling</a>, and merging function calls is a different optimization.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between constant folding and constant propagation?</h3>
+  <p>Constant folding evaluates an expression whose operands are all constants, such as 3 * 4 becoming 12. Constant propagation substitutes a variable&#39;s known constant value into its uses, which often creates new expressions that can then be folded.</p>
+  <h3>Does constant folding happen with optimization turned off?</h3>
+  <p>Simple literal expressions are often folded even without optimization, because front ends evaluate them while parsing. Folding through variables, function inlining and branch removal generally require optimization to be enabled.</p>
+  <h3>Can constant folding change floating-point results?</h3>
+  <p>A conforming compiler folds floating-point operations with the same IEEE 754 rounding the hardware would use, so results do not change. Options that relax floating-point rules, such as fast-math, allow reassociation and can change the last bits of results.</p>
+</section>
 <section>
   <h2>Constant folding in the explanations</h2>
   <ul class="term-quotes"><li><p>Constant folding evaluates expressions whose values are fixed at compile time and replaces them with the resulting constants.</p><a href="/en/q/compiler/compiler-010/">Which is an example of constant folding by a compiler?</a></li><li><p>Constant folding computes 8 * 2 = 16, so m = 16, and further propagation and folding turn m + 1 into 16 + 1 = 17.</p><a href="/en/q/compiler/compiler-011/">After repeatedly applying constant propagation and constant…</a></li><li><p>A major benefit is that constants from the caller flow into the body, enabling constant folding and dead-code elimination.</p><a href="/en/q/compiler/compiler-014/">Which pair gives the advantage and drawback of function inl…</a></li><li><p>Constant folding then computes 6 * 6 = 36 and 36 + 1 = 37, reducing g to code that just returns 37.</p><a href="/en/q/compiler/compiler-042/">In the code above, which optimization applies after inlinin…</a></li></ul>

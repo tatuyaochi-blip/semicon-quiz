@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"IPC","item":"https://semiconroom.com/en/term/ipc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IPC","description":"Short for instructions per cycle: the number of instructions executed per clock. It expresses design efficiency; performance is roughly IPC times clock frequency. Its reciprocal is CPI.","url":"https://semiconroom.com/en/term/ipc/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"IPC","item":"https://semiconroom.com/en/term/ipc/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"IPC","description":"Short for instructions per cycle: the number of instructions executed per clock. It expresses design efficiency; performance is roughly IPC times clock frequency. Its reciprocal is CPI.","url":"https://semiconroom.com/en/term/ipc/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is a higher clock speed or a higher IPC better?","acceptedAnswer":{"@type":"Answer","text":"Performance depends on their product, so neither alone decides speed. A lower-clocked core with much higher IPC can outperform a faster-clocked one on the same program."}},{"@type":"Question","name":"How do I measure the IPC of my program?","acceptedAnswer":{"@type":"Answer","text":"Use hardware performance counters, for example with Linux perf, to count retired instructions and cycles; IPC is instructions divided by cycles. Cache-miss and branch-miss counts then help explain a low value."}},{"@type":"Question","name":"What does a low IPC mean?","acceptedAnswer":{"@type":"Answer","text":"It means the core is idle for many cycles, most often waiting for data from memory after cache misses, or recovering from branch mispredictions and long dependency chains."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/cpu/">CPUs and architecture</a></p>
 </article>
-
+<section class="term-about">
+  <h2>IPC in the performance equation</h2>
+  <p>Program run time equals instruction count times <a class="term-link" href="/en/term/cycles-per-instruction/">cycles per instruction (CPI)</a> divided by clock frequency. IPC, instructions per cycle, is the reciprocal of CPI, so for a given program performance is proportional to IPC times frequency. A 3 GHz core has a cycle time of about 0.33 ns, but two 3 GHz processors can differ widely in speed because their IPC differs. IPC comparisons only make sense for the same program and instruction set, because different instruction sets need different numbers of instructions for the same work.</p>
+</section>
+<section class="term-about">
+  <h2>What raises IPC</h2>
+  <p>A simple pipeline aims for one instruction per cycle. <a class="term-link" href="/en/term/superscalar/">Superscalar</a> cores issue several independent instructions per cycle, with recent high-performance designs about 6 to 10 wide. <a class="term-link" href="/en/term/out-of-order-execution/">Out-of-order execution</a> keeps those units busy by running later independent instructions while earlier ones wait, <a class="term-link" href="/en/term/branch-prediction/">branch prediction</a> avoids pipeline flushes, and large caches with <a class="term-link" href="/en/term/prefetching/">prefetching</a> hide memory latency. Width cannot grow freely: dependency-checking logic grows roughly with the square of the issue width, and real programs offer limited instruction-level parallelism, so achieved IPC stays well below the peak width.</p>
+</section>
+<section class="term-about">
+  <h2>What drags IPC down</h2>
+  <p>The biggest losses are stalls. A last-level cache miss that goes to DRAM can cost hundreds of cycles, a branch misprediction discards work already in a deep pipeline, and chains of dependent instructions serialize execution. An IPC far below 1 on a wide core, such as 0.3, usually means the core spends most of its time waiting on memory; restructuring data for locality, reordering loops or blocking for cache reuse typically help more than any compiler flag. Raising clock frequency does not shorten memory latency in nanoseconds, so memory-bound code sees its IPC fall as frequency rises.</p>
+</section>
+<section class="term-about">
+  <h2>Measuring IPC</h2>
+  <p>Processors include a performance monitoring unit (PMU) with hardware counters for cycles, retired instructions, cache misses at each level, <a class="term-link" href="/en/term/tlb/">TLB</a> misses and branch mispredictions. Dividing retired instructions by cycles gives IPC directly. Tools such as Linux perf read these counters while a program runs, and comparing IPC with miss and misprediction rates shows whether time is going to memory, branches or computation. Because modern CPUs constantly change frequency with load and temperature, counting cycles rather than <a class="term-link" href="/en/term/wall-clock-time/">wall-clock time</a> gives a cleaner view of microarchitectural efficiency.</p>
+</section>
 <section>
   <h2>Try it: questions about IPC</h2>
   <article class="q-mini" data-qid="performance-031" data-cat="performance" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. The CPU spends much time stalled on memory; change data layout or apply blocking to use caches effectively</p><p class="explanation">Modern CPUs can execute several instructions per cycle, so an <a class="term-link" href="/en/term/ipc/">IPC</a> of 0.3 means they are waiting most of the time. Many last-level cache misses suggest long waits for data from main memory. Effective remedies reduce cache misses: laying data out at consecutive addresses, reordering loops, or blocking so data is reused many times.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Is a higher clock speed or a higher IPC better?</h3>
+  <p>Performance depends on their product, so neither alone decides speed. A lower-clocked core with much higher IPC can outperform a faster-clocked one on the same program.</p>
+  <h3>How do I measure the IPC of my program?</h3>
+  <p>Use hardware performance counters, for example with Linux perf, to count retired instructions and cycles; IPC is instructions divided by cycles. Cache-miss and branch-miss counts then help explain a low value.</p>
+  <h3>What does a low IPC mean?</h3>
+  <p>It means the core is idle for many cycles, most often waiting for data from memory after cache misses, or recovering from branch mispredictions and long dependency chains.</p>
+</section>
 <section>
   <h2>IPC in the explanations</h2>
   <ul class="term-quotes"><li><p>Modern CPUs can execute several instructions per cycle, so an IPC of 0.3 means they are waiting most of the time.</p><a href="/en/q/performance/performance-031/">Performance counters show a program&#39;s IPC is very low at 0.…</a></li><li><p>A superscalar processor has multiple execution units and issues several independent instructions per clock, pushing IPC above 1.</p><a href="/en/q/cpu/cpu-013/">What is the processor design called that issues and execute…</a></li><li><p>IPC (instructions per clock) is the average number of instructions executed per cycle, the inverse of CPI.</p><a href="/en/q/cpu/cpu-029/">Which metric indicates the number of instructions executed …</a></li><li><p>Because instructions per clock (IPC) vary greatly between designs, frequency alone cannot compare performance.</p><a href="/en/q/cpu/cpu-032/">Which correctly describes a CPU with a clock frequency of 3…</a></li><li><p>Cycle and instruction counts give IPC, and counts of cache misses at each level, TLB misses, branch mispredictions and more are available.</p><a href="/en/q/performance/performance-030/">Which is an example of what CPU performance counters (the P…</a></li></ul>

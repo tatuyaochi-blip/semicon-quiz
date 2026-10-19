@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Copy-on-write","item":"https://semiconroom.com/en/term/copy-on-write/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Copy-on-write","description":"Sharing duplicated memory with the original at first and copying a page only when either side tries to write it. It speeds process creation and saves memory.","url":"https://semiconroom.com/en/term/copy-on-write/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Copy-on-write","item":"https://semiconroom.com/en/term/copy-on-write/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Copy-on-write","description":"Sharing duplicated memory with the original at first and copying a page only when either side tries to write it. It speeds process creation and saves memory.","url":"https://semiconroom.com/en/term/copy-on-write/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does fork copy all of the parent's memory?","acceptedAnswer":{"@type":"Answer","text":"Not on modern systems. Fork duplicates the page tables and shares physical pages marked read-only; a page is copied only when one of the processes first writes to it."}},{"@type":"Question","name":"What happens when a child process writes to memory after fork?","acceptedAnswer":{"@type":"Answer","text":"The write triggers a page fault, the kernel copies that single page into a new frame and maps it writable for the child. The parent keeps the original, so neither process sees the other's change."}},{"@type":"Question","name":"Is copy-on-write the same as shared memory?","acceptedAnswer":{"@type":"Answer","text":"No. Shared memory is deliberately visible to both processes after writes, whereas copy-on-write only shares pages until someone writes, at which point the writer gets a private copy."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How copy-on-write works</h2>
+  <p>When a process is duplicated, the kernel copies only the page tables. Parent and child entries point to the same physical frames, and every writable private page is temporarily marked read-only while the kernel keeps a reference count per frame. Reads proceed at full speed. The first write by either process causes a protection fault; the kernel recognizes a copy-on-write page, allocates a new frame, copies the page, maps the copy as writable for the writer and restarts the faulting instruction. If the reference count shows the page is no longer shared, it can simply be made writable again without copying.</p>
+</section>
+<section class="term-about">
+  <h2>Why it pays off for process creation</h2>
+  <p>A common pattern on Unix-like systems is fork followed almost immediately by exec, for example when a shell starts a command. Exec throws away the entire address space and loads a new program, so eagerly copying the parent&#39;s memory would be pure waste. With copy-on-write, fork costs roughly the time to duplicate page tables, and only pages that are actually modified before exec, typically a few stack and data pages, are ever copied. Memory is saved too, because pages that neither side writes, such as code and read-only data, remain shared for the lifetime of both processes.</p>
+</section>
+<section class="term-about">
+  <h2>Where else you will meet it</h2>
+  <p>The same idea appears whenever data is logically duplicated but usually left unmodified. Private file mappings use it: a <a class="term-link" href="/en/term/shared-library/">shared library</a>&#39;s writable data section starts out shared with the file cache and each process gets its own copy of a page only when it writes. Many kernels map freshly allocated anonymous memory to a single shared zero page until it is written. Copy-on-write file systems and storage snapshots write modified blocks to new locations instead of overwriting, and virtual machine snapshots and some language runtimes apply the principle to disk images and strings.</p>
+</section>
+<section class="term-about">
+  <h2>Costs and pitfalls</h2>
+  <p>Copy-on-write moves cost rather than eliminating it. Each first write to a shared page takes a fault, a trap into the kernel and a page copy, which is far slower than an ordinary store. If a large process forks and the parent keeps writing to most of its memory, nearly every page is eventually copied and memory use can approach double. Marking pages read-only at fork also requires invalidating stale <a class="term-link" href="/en/term/tlb/">TLB</a> entries on other cores. Copy-on-write must not be confused with shared memory: with shared memory both processes see each other&#39;s writes, while copy-on-write gives each writer a private copy.</p>
+</section>
 <section>
   <h2>Try it: questions about Copy-on-write</h2>
   <article class="q-mini" data-qid="os-hardware-017" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -72,7 +87,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Only pages that get written are copied later, so it is fast and saves memory</p><p class="explanation">Copying all memory immediately when duplicating a process is slow and memory-hungry, and wasted if a new program is loaded right after. With <a class="term-link" href="/en/term/copy-on-write/">copy-on-write</a>, both page tables point to the same physical pages marked read-only; when either side writes, a <a class="term-link" href="/en/term/page-fault/">page fault</a> occurs and the OS copies just that page. Written data is not shared but kept separately in each process, and pages are not all copied.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Does fork copy all of the parent&#39;s memory?</h3>
+  <p>Not on modern systems. Fork duplicates the page tables and shares physical pages marked read-only; a page is copied only when one of the processes first writes to it.</p>
+  <h3>What happens when a child process writes to memory after fork?</h3>
+  <p>The write triggers a page fault, the kernel copies that single page into a new frame and maps it writable for the child. The parent keeps the original, so neither process sees the other&#39;s change.</p>
+  <h3>Is copy-on-write the same as shared memory?</h3>
+  <p>No. Shared memory is deliberately visible to both processes after writes, whereas copy-on-write only shares pages until someone writes, at which point the writer gets a private copy.</p>
+</section>
 <section>
   <h2>Copy-on-write in the explanations</h2>
   <ul class="term-quotes"><li><p>With copy-on-write, both page tables point to the same physical pages marked read-only; when either side writes, a page fault occurs and the OS copies just that page.</p><a href="/en/q/os-hardware/os-hardware-017/">What is the advantage of using copy-on-write when duplicati…</a></li><li><p>Pages of writable data such as variables are kept separate per process, for example by copying a page when it is first written (copy-on-write).</p><a href="/en/q/linker-loader/linker-loader-037/">When 100 processes use the same shared library, how is phys…</a></li><li><p>Thrashing is constant replacement from memory shortage, and copy-on-write copies pages on write.</p><a href="/en/q/os-hardware/os-hardware-020/">With FIFO page replacement, adding physical pages can somet…</a></li><li><p>Cache misses and copy-on-write do not return control to the OS.</p><a href="/en/q/os-hardware/os-hardware-026/">What mechanism mainly lets the OS reclaim the CPU at regula…</a></li><li><p>Copy-on-write and demand paging are memory-management techniques.</p><a href="/en/q/os-hardware/os-hardware-037/">What is it called when a guest OS executes a privileged ins…</a></li></ul>

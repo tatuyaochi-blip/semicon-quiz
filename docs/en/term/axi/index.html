@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"AXI","item":"https://semiconroom.com/en/term/axi/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AXI","description":"An on-chip bus from Arm's AMBA specifications that connects blocks in an SoC, with five independent channels and a VALID/READY handshake. Variants include AXI4-Lite and AXI4-Stream.","url":"https://semiconroom.com/en/term/axi/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"AXI","item":"https://semiconroom.com/en/term/axi/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"AXI","description":"An on-chip bus from Arm's AMBA specifications that connects blocks in an SoC, with five independent channels and a VALID/READY handshake. Variants include AXI4-Lite and AXI4-Stream.","url":"https://semiconroom.com/en/term/axi/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between AXI4, AXI4-Lite and AXI4-Stream?","acceptedAnswer":{"@type":"Answer","text":"Full AXI4 supports bursts, IDs and multiple outstanding transactions for high-throughput memory traffic. AXI4-Lite handles one word per transaction for register access, and AXI4-Stream drops addresses entirely to carry continuous data flows."}},{"@type":"Question","name":"Can VALID depend on READY in AXI?","acceptedAnswer":{"@type":"Answer","text":"No. A sender must assert VALID when it has data, without waiting for READY, otherwise both sides could wait forever. A receiver is allowed to wait for VALID before asserting READY."}},{"@type":"Question","name":"What is the difference between AXI and APB?","acceptedAnswer":{"@type":"Answer","text":"AXI is a high-performance, pipelined interface with independent read and write channels and bursts. APB is a simple, low-speed bus for peripheral registers, usually connected to AXI through a bridge."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -63,7 +63,22 @@
   
   <p>Field: <a href="/en/c/io-interface/">I/O Interfaces &amp; Buses</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Channels and the handshake</h2>
+  <p>The Advanced eXtensible Interface (AXI) splits each connection into five one-directional channels: read address, read data, write address, write data and write response. Every channel transfers information with the same VALID/READY <a class="term-link" href="/en/term/handshake/">handshake</a>, completing a transfer on a clock edge where both signals are high. A sender must not wait for READY before asserting VALID, which avoids <a class="term-link" href="/en/term/deadlock/">deadlock</a>, while a receiver may hold READY low to apply backpressure. Because each channel is a simple handshake, pipeline register slices can be inserted on any of them to ease timing closure without changing behaviour.</p>
+</section>
+<section class="term-about">
+  <h2>Bursts and transactions</h2>
+  <p>A single address <a class="term-link" href="/en/term/handshake/">handshake</a> can start a burst of many data beats. The address channel carries the start address, burst length, beat size and burst type: fixed for a FIFO-like address, incrementing for ordinary memory blocks, or wrapping for cache-line fills that start at the critical word. In AXI4 an incrementing burst can be up to 256 beats, and a burst must not cross a 4 KB address boundary, so an interconnect never has to split one burst between two targets. Each read beat and each write burst returns a response code indicating success or an error.</p>
+</section>
+<section class="term-about">
+  <h2>IDs, outstanding requests and interconnects</h2>
+  <p>Each transaction carries an ID. A manager can issue many requests before earlier ones complete, keeping the bus busy through long memory latency. Transactions with the same ID must complete in order, while different IDs may complete out of order, so a fast peripheral need not wait behind slow DRAM. In an <a class="term-link" href="/en/term/soc/">SoC</a>, an interconnect or crossbar decodes addresses, arbitrates between managers such as CPUs and <a class="term-link" href="/en/term/dma/">DMA</a> engines, and routes requests to subordinates such as memory controllers, often adding width, clock-domain and protocol converters.</p>
+</section>
+<section class="term-about">
+  <h2>AXI4-Lite, AXI4-Stream and APB</h2>
+  <p>AXI4-Lite keeps the five channels but drops bursts and most transaction options, moving one data word per transaction; it suits control and status registers. AXI4-Stream has no addresses at all: a single TVALID/TREADY channel carries continuous data, with TLAST marking packet ends, and it suits video, signal-processing and network data paths. The Advanced Peripheral Bus (APB), another member of the Arm AMBA specifications, is simpler still and non-pipelined, typically used behind a bridge for slow peripherals. Coherent extensions of AXI add snooping for <a class="term-link" href="/en/term/cache-coherency/">cache coherency</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about AXI</h2>
   <article class="q-mini" data-qid="io-interface-028" data-cat="io-interface" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -77,7 +92,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. At a clock edge when both the sender&#39;s VALID and the receiver&#39;s READY are 1</p><p class="explanation">The sender raises VALID when it has valid data, and the receiver raises READY when it can accept it; a transfer happens at a clock edge where both are 1. A busy receiver can hold READY low to make the sender wait (backpressure), so blocks of different speeds can connect without losing data. The rule that the sender must not wait for READY before asserting VALID prevents the two sides from waiting on each other forever.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between AXI4, AXI4-Lite and AXI4-Stream?</h3>
+  <p>Full AXI4 supports bursts, IDs and multiple outstanding transactions for high-throughput memory traffic. AXI4-Lite handles one word per transaction for register access, and AXI4-Stream drops addresses entirely to carry continuous data flows.</p>
+  <h3>Can VALID depend on READY in AXI?</h3>
+  <p>No. A sender must assert VALID when it has data, without waiting for READY, otherwise both sides could wait forever. A receiver is allowed to wait for VALID before asserting READY.</p>
+  <h3>What is the difference between AXI and APB?</h3>
+  <p>AXI is a high-performance, pipelined interface with independent read and write channels and bursts. APB is a simple, low-speed bus for peripheral registers, usually connected to AXI through a bridge.</p>
+</section>
 <section>
   <h2>AXI in the explanations</h2>
   <ul class="term-quotes"><li><p>AXI has five channels: read address (AR), read data (R), write address (AW), write data (W) and write response (B).</p><a href="/en/q/io-interface/io-interface-028/">What is a characteristic of the AXI bus?</a></li><li><p>Data at consecutive addresses, such as a cache-line fill, is often handled together, so AXI can send just the starting address and a length and then stream the data as a burst.</p><a href="/en/q/io-interface/io-interface-030/">What is the advantage of burst transfers in AXI?</a></li><li><p>AXI tags requests with IDs and allows several to be outstanding, so data keeps returning during the latency and bandwidth is used well.</p><a href="/en/q/io-interface/io-interface-031/">In AXI, what is the advantage of issuing the next read requ…</a></li><li><p>AXI (Advanced eXtensible Interface) is part of Arm&#39;s publicly available AMBA family of specifications and is widely used as the bus connecting blocks inside a chip.</p><a href="/en/q/io-interface/io-interface-027/">Which bus from Arm&#39;s AMBA specifications is widely used to …</a></li><li><p>Fast, high-volume transfers instead use full AXI or AXI4-Stream, which has no addresses.</p><a href="/en/q/io-interface/io-interface-032/">What is AXI4-Lite mainly used for?</a></li></ul>
