@@ -532,7 +532,10 @@ function buildLang(L) {
     const src = read(`src/pages/${code}/${name}.html`);
     const m = src.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/);
     const alt = Object.fromEntries(langs.filter(x => pageNames(x.code).includes(name)).map(x => [x.code, pagePath(x, name)]));
-    page({ path: pagePath(L, name), alt, ...JSON.parse(fill(m[1], common)), content: fill(src.slice(m[0].length), common) });
+    // トップ: 検索結果のサイト名になる WebSite(各言語のサイト名を別名として添える)
+    const jsonld = name === 'index' ? { '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, url: abs(L.path),
+      alternateName: [...new Set(Object.values(config.siteName))].filter(x => x !== siteName), inLanguage: L.htmlLang } : null;
+    page({ path: pagePath(L, name), alt, jsonld, ...JSON.parse(fill(m[1], common)), content: fill(src.slice(m[0].length), common) });
   }
 
   // 分野ページ /c/{id}/
@@ -548,6 +551,7 @@ function buildLang(L) {
       title: t('category_title', { name: c.name }),
       description: c.description,
       noindex: !count,
+      jsonld: crumbs([S.nav_home, home], [c.name, `${home}c/${c.id}/`]),
       scripts: filter ? ['progress.js', 'level.js'] : ['progress.js'],
       content: fill(catTpl, {
         ...common,
@@ -604,6 +608,7 @@ function buildLang(L) {
         fallback: x => `${x.path}c/${c.id}/`,
         title: qTitle(c, q),
         description: qDescription(q),
+        jsonld: crumbs([S.nav_home, home], [c.name, `${home}c/${c.id}/`], [short(q.question, 60), `${base}${qUrl(c.id, q.id)}`]),
         scripts: ['answer.js'],
         content: fill(qTpl, {
           ...common,
