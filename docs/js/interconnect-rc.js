@@ -58,6 +58,6 @@ update();
 // グラフで見る: 配線の長さや幅、間隔、比誘電率を変えたときの遅延など
 import { initSweep } from './sweep.js';
 initSweep({
-  form, inputs: ['len', 'w', 's', 't', 'h', 'k', 'rhox', 'rdrv', 'cl'], outputs: ['total', 'wire', 'r', 'c', 'c-len', 'cc-share'], defaults: { x: 'len', y: 'total' },
+  form, inputs: ['len', 'w', 's', 't', 'h', 'k', 'rhox', 'rdrv', 'cl'], outputs: ['total', 'wire', 'r', 'c', 'c-len', 'cc-share'], defaults: { x: 'len', y: 'total' }, units: { r: 'Ω' },
   calc: v => (v.w > 0 && v.t > 0 && v.s > 0 && v.h > 0 && v.len >= 0 ? wire({ ...v, rhox: Math.max(v.rhox, 1), k: Math.max(v.k, 1), rdrv: Math.max(v.rdrv, 0), cl: Math.max(v.cl, 0) }) : {}),
 });

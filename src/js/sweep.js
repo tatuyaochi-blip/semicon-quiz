@@ -5,7 +5,7 @@ import { lineChart } from './chart.js';
 
 const text = sel => document.querySelector(sel)?.textContent.trim() ?? '';
 
-export function initSweep({ form, calc, inputs, outputs, defaults = {}, ranges = {} }) {
+export function initSweep({ form, calc, inputs, outputs, defaults = {}, ranges = {}, units = {} }) {
   const root = document.getElementById('sweep');
   if (!root) return () => {};
   const xSel = root.querySelector('[name="sweep-x"]'), ySel = root.querySelector('[name="sweep-y"]');
@@ -25,6 +25,15 @@ export function initSweep({ form, calc, inputs, outputs, defaults = {}, ranges =
       return [head, col].filter(Boolean).join(' – ');
     }
     return k;
+  };
+  // 結果の単位は units で指定したもの、なければ表示中の文字から取る(「479 fs」なら fs)。表示の数値が calc の値と合うときだけ使う
+  const outUnit = (k, value) => {
+    const m = document.querySelector(`[data-out="${k}"]`)?.textContent.trim().match(/^[−-]?[\d.,\s\u00a0\u202f]*\d(.*)$/);
+    const unit = m?.[1].trim();
+    if (!unit || unit === '×' || !Number.isFinite(value)) return '';
+    const num = m[0].slice(0, m[0].length - m[1].length).replace(/[\s\u00a0\u202f]/g, '').replace('−', '-');
+    const close = x => Math.abs(x - value) <= Math.abs(value) * 0.02 + 1e-12;
+    return [num.replace(/,/g, ''), num.replace(/\./g, '').replace(',', '.')].some(t => close(Number(t))) ? unit : '';
   };
   xSel.innerHTML = inputs.map(n => `<option value="${n}">${inLabel(n)}</option>`).join('');
   ySel.innerHTML = outputs.map(k => `<option value="${k}">${outLabel(k)}</option>`).join('');
@@ -52,7 +61,8 @@ export function initSweep({ form, calc, inputs, outputs, defaults = {}, ranges =
       if (Number.isFinite(r)) pts.push([xv, r]);
     }
     const now = calc(v)[y];
-    lineChart(svg, { xlabel: inLabel(x), ylabel: outLabel(y), series: [{ points: pts, cls: 'ac' }], marks: Number.isFinite(now) ? [[cur, now, '']] : [] });
+    const unit = units[y] ?? outUnit(y, now);
+    lineChart(svg, { xlabel: inLabel(x), ylabel: unit ? `${outLabel(y)} (${unit})` : outLabel(y), series: [{ points: pts, cls: 'ac' }], marks: Number.isFinite(now) ? [[cur, now, '']] : [] });
   }
   form.addEventListener('input', e => { if (!e.target.closest('#sweep')) draw(); });
   xSel.addEventListener('change', draw);

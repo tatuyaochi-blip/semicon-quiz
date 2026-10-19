@@ -25,7 +25,7 @@ update();
 // グラフで見る: 電源電圧や周波数を変えたときの電力
 import { initSweep } from './sweep.js';
 initSweep({
-  form, inputs: ['v', 'f', 'alpha', 'c', 'ileak'], outputs: ['total', 'dyn', 'stat', 'share'], defaults: { x: 'v', y: 'total' }, ranges: { v: [0.3, 1.5] },
+  form, inputs: ['v', 'f', 'alpha', 'c', 'ileak'], outputs: ['total', 'dyn', 'stat', 'share'], defaults: { x: 'v', y: 'total' }, ranges: { v: [0.3, 1.5] }, units: { total: 'W', dyn: 'W', stat: 'W' },
   calc: v => {
     const dyn = v.alpha * v.c * 1e-9 * v.v * v.v * v.f * 1e9, stat = v.ileak * 1e-3 * v.v;
     return { total: dyn + stat, dyn, stat, share: dyn + stat > 0 ? (stat / (dyn + stat)) * 100 : NaN };
