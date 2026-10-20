@@ -45,6 +45,7 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
   - 文字は日本語で書く。英語は `data/i18n/en/figures.json` に `{ 図ID: { "元の文字": "訳" } }` で書く。訳が足りない図はその言語では表示しない（Ec や VGS など、かな・漢字を含まない文字は訳さなくてよい）
   - 色はクラスで指定する（`ln` 線、`ac` 強調線、`n` / `p` / `ox` / `metal` 塗り、`text.sm` 小さい文字 など。一覧は `style.css` の「図」）。ダークモードでも色が切り替わる
   - `id` 属性は使わない（同じページに複数の図が並ぶため）
+- **操作できる図解**：`data/figures-live.json` に図IDごとの文言（言語ごと）・スライダー（`controls`）・対応する計算ツール（`tool`）を書き、描画を `src/js/fig-live.js` の `FIGS` に足すと、図ごとのページ `/figures/{図ID}/` ができる（静的な図と説明の下に操作できる版が出る。図解集・問題・用語・計算ツールからのリンクもそのページに向く）。訳のない言語ではページを作らない
 - **言語**：`config.json` の `languages` に1行足し（先頭が既定言語）、翻訳ファイルを置く：`src/i18n/{言語}.json`（UI文言。モード名は `mode_{モードID}_label` / `_desc` / `_empty`）、`src/pages/{言語}/`、`data/i18n/{言語}/`（categories・exams・glossary・questions）。翻訳のない問題はその言語では出題しない。欠落数は `npm run validate` で表示される
 - **ページ**：`src/pages/{言語}/xxx.html` を置くと `/xxx/`（英語は `/en/xxx/`）が生成される（先頭のコメントに title などを JSON で書く）
 - **計算ツール**：`data/tools/{ID}.json`（文言は言語ごとの `text`）と `src/js/{ID}.js` を置き、入力欄と結果の枠を `tools/build.js` の `toolBody` に足す。`terms`・`figures`（図ID）・`compares`（比較ページのslug）を書くと、ページ下部に関連リンクが出る。入力はURLのクエリに残り（`tool-share.js`）、お気に入りと最近使ったツールは `store.js` が保存する。URLに残さないツールは `"share": false`

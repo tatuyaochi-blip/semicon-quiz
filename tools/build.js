@@ -427,14 +427,17 @@ function buildLang(L) {
   <p><a class="btn btn-ghost" data-tool-link href="${home}tools/${tool.slug}/">${esc(x.tool_link)} →</a></p>` : ''}
 </section>`;
   };
-  // 図解集の中のその図への行き先
-  const figHref = id => `${home}figures/#fig-${id}`;
-  const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${home}figures/#fig-${id}">${esc(t('figure_open'))}</a></figcaption></figure>`;
+  // 操作できる版のある図は、図ごとのページ /figures/{図ID}/ を作る(この言語の訳があるものだけ)
+  const figPage = id => !!figLive[id]?.text[code] && figList.some(x => x.id === id);
+  const figPagePath = (id, l = L) => `${l.path}figures/${id}/`;
+  // その図への行き先: 図ごとのページがあればそこ、なければ図解集の中の位置
+  const figHref = id => (figPage(id) ? `${base}${figPagePath(id)}` : `${home}figures/#fig-${id}`);
+  const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${figHref(id)}">${esc(t(figPage(id) ? 'figure_try' : 'figure_open'))}</a></figcaption></figure>`;
   const figureGallery = `<div class="fig-grid">${figList.map(x => `
   <figure class="fig-item" id="fig-${x.id}">
     <img src="${base}img/${code}/${x.id}.svg" alt="${esc(x.title)}" width="${x.size[0]}" height="${x.size[1]}" loading="lazy">
-    <figcaption><strong>${esc(x.title)}</strong>${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
-  </figure>${figLiveHtml(x.id)}`).join('')}
+    <figcaption><strong>${figPage(x.id) ? `<a href="${figHref(x.id)}">${esc(x.title)}</a>` : esc(x.title)}</strong>${figPage(x.id) ? `<a class="fig-try" href="${figHref(x.id)}">${esc(t('figure_try'))} →</a>` : ''}${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
+  </figure>`).join('')}
 </div>`;
   const figureLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -446,7 +449,7 @@ function buildLang(L) {
     ...cmp.map(e => ({ t: 'c', n: e.title, u: `compare/${e.slug}/`, x: `${e.description} ${e.items.join(' ')}` })),
     ...terms.map(g => ({ t: 't', n: g.term, u: `term/${termSlug[g.key]}/`, x: `${g.desc} ${isDef ? '' : g.key}` })),
     ...live.map(c => ({ t: 'k', n: c.name, u: `c/${c.id}/`, x: c.description })),
-    ...figList.map(x => ({ t: 'f', n: x.title, u: `figures/#fig-${x.id}`, x: '' })),
+    ...figList.map(x => ({ t: 'f', n: x.title, u: figPage(x.id) ? `figures/${x.id}/` : `figures/#fig-${x.id}`, x: '' })),
     ...live.flatMap(c => qs[c.id].map(q => ({ t: 'q', n: q.question, u: `q/${c.id}/${q.id}/`, x: c.name }))),
   ];
   write(`data/${code}/search.json`, JSON.stringify({
@@ -1162,6 +1165,42 @@ ${toolsIn(code).length > 1 ? `<section>
 </section>
 <div class="mode-grid tool-all">${toolsIn(code).map(y => `<a class="mode-card" data-tool="${y.id}" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
 <div data-ad="tools"></div>`,
+    });
+  }
+
+  // 図ごとのページ /figures/{図ID}/: 静的な図と説明、その下に操作できる版、図を使う問題と関連する計算ツール
+  for (const x of figList.filter(f => figPage(f.id))) {
+    const ft = figLive[x.id].text[code];
+    const ftools = toolsIn(code).filter(y => (y.figures ?? []).includes(x.id));
+    const used = figUse[x.id] ?? [];
+    const url = `${base}${figPagePath(x.id)}`;
+    page({
+      path: figPagePath(x.id),
+      alt: Object.fromEntries(langs.filter(y => figLive[x.id].text[y.code] && localizeFigure(figs[x.id], y.code === defLang ? {} : readOpt(`data/i18n/${y.code}/figures.json`, {})[x.id], y.code === defLang)).map(y => [y.code, figPagePath(x.id, y)])),
+      fallback: y => `${y.path}figures/`,
+      title: ft.title,
+      description: ft.description,
+      scripts: ['fig-live.js'],
+      jsonld: [
+        crumbs([t('breadcrumb_top'), home], [S.figures_title, `${home}figures/`], [x.title, url]),
+        { '@context': 'https://schema.org', '@type': 'Article', headline: ft.title, description: ft.description, inLanguage: L.htmlLang, image: abs(`${base}img/${code}/${x.id}.svg`),
+          mainEntityOfPage: abs(url), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+      ],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}figures/">${esc(S.figures_title)}</a></nav>
+<h1>${esc(x.title)}</h1>
+<figure class="fig">${x.svg}</figure>
+${ft.about.map(para => `<p>${linked(para)}</p>`).join('\n')}
+${figLiveHtml(x.id)}
+<div data-ad="figures"></div>
+${ftools.length ? `<section>
+  <h2>${esc(t('figure_tools'))}</h2>
+  <div class="mode-grid compact">${ftools.map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+</section>` : ''}
+${used.length ? `<section>
+  <h2>${esc(t('figure_used_in'))}</h2>
+  ${qLinks(used.slice(0, 10))}
+</section>` : ''}
+<p><a class="btn btn-ghost" href="${home}figures/">${esc(t('figure_back'))}</a></p>`,
     });
   }
 
