@@ -60,6 +60,8 @@ const tools = exists('data/tools') ? fs.readdirSync(path.join(root, 'data/tools'
   .map(f => readJSON(`data/tools/${f}`)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
 const toolsIn = code => tools.filter(x => x.text[code]);
 const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
+// ニュースに出た用語(/news-terms/)。用語集の語に「なぜ今話題なのか」などを足す。訳は data/i18n/{言語}/news-terms.json
+const newsTerms = readOpt('data/news-terms.json', []);
 const figs = figures();
 // 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
 const siteCss = read('src/css/style.css');
@@ -136,6 +138,14 @@ function buildLang(L) {
   const catT = tr('categories');
   const gloT = tr('glossary');
   const figT = tr('figures');
+  // ニュース用語: 日付・問題・リンク先は既定言語のファイルのものを使い、文章だけ訳で置き換える(訳がなければその言語では出さない)
+  const nwT = tr('news-terms');
+  const news = newsTerms.filter(e => isDef || nwT[e.term]).map(e => {
+    const x = isDef ? {} : nwT[e.term];
+    return { ...e, label: x.label ?? e.label, short: x.short ?? e.short, background: x.background ?? e.background, diff: x.diff ?? e.diff,
+      why: e.why.map((w, i) => ({ ...w, text: isDef ? w.text : x.why?.[i] })) };
+  }).sort((a, b) => b.period[1].localeCompare(a.period[1]) || b.period[0].localeCompare(a.period[0]));
+  const newsOf = key => news.find(e => e.term === key);
   const home = base + L.path;
   const siteName = loc(config.siteName, code);
   // モード名: 翻訳ファイルの mode_{id}_label などがあればそれを、なければモードのファイルに書いたものを使う
@@ -241,6 +251,7 @@ function buildLang(L) {
     ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
     ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
     ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
+    ${news.length ? feature(`${home}news-terms/`, S.news_title, t('home_feat_news_desc'), 'home_feat_news') : ''}
   </div>
 </section>`;
   // 先頭の #topics はヘッダーの Topics と「分野から選ぶ」からのジャンプ先。大分類(試験の区分)ごとの目次を置く
@@ -452,6 +463,8 @@ function buildLang(L) {
     // トップ下部の「ほかの練習方法」(ランダム10問は上の入口にあるので除く)
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
     startPanel, startBack, homeFeatures,
+    // 用語集の上に出す、ニュース用語の一覧への案内
+    newsTermsLink: news.length ? `<p class="news-link"><a class="chip" href="${home}news-terms/">${esc(S.news_title)}</a> <span class="muted">${esc(t('glossary_news_link', { terms: news.slice(0, 3).map(e => e.label ?? terms.find(g => g.key === e.term).term).join(', ') }))}</span></p>` : '',
     // トップ下部の計算ツールの一覧(訳のあるツールだけ)
     toolList: toolsIn(code).length ? `<section>
   <h2><a href="${home}tools/">${esc(S.tools_title)}</a></h2>
@@ -1136,6 +1149,50 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
     }
   }
 
+  // ニュース用語の一覧 /news-terms/(新しい順)。各語のページは用語ページ(/term/{slug}/)に「なぜ今話題なのか」などを足したもの
+  const ym = /^\d{4}-(?:\d{2}(?:-\d{2})?|Q[1-4])$/;
+  for (const e of news) {
+    const where = `data/news-terms.json「${e.term}」`;
+    if (!glossary.some(g => g.term === e.term)) throw new Error(`${where}: 用語集にない語です(先に glossary.json に足してください)`);
+    if (e.period?.length !== 2 || e.period.some(d => !ym.test(d))) throw new Error(`${where}: period は ["YYYY-MM", "YYYY-MM"] にしてください`);
+    if (e.why.some(w => !ym.test(w.date) || !w.text)) throw new Error(`${where}(${code}): why の date(YYYY-MM-DD / YYYY-MM / YYYY-Qn)か本文がありません`);
+    if (!e.short || !e.diff) throw new Error(`${where}(${code}): short と diff は必須です`);
+    if (e.question && isDef && !qById.has(e.question)) throw new Error(`${where}: 存在しない問題 ${e.question}`);
+    for (const k of e.terms ?? []) if (!glossary.some(g => g.term === k)) throw new Error(`${where}: 用語集にない語 ${k}`);
+    for (const id of e.figures ?? []) if (!figs[id]) throw new Error(`${where}: 存在しない図 ${id}`);
+  }
+  const fmtDate = d => {
+    const [y, m, day] = d.split('-');
+    if (m.startsWith('Q')) return t('news_quarter', { y, q: m.slice(1) });
+    return new Intl.DateTimeFormat(L.locale, { year: 'numeric', month: 'long', ...(day ? { day: 'numeric' } : {}), timeZone: 'UTC' })
+      .format(new Date(Date.UTC(+y, +m - 1, +(day ?? 1))));
+  };
+  const newsPeriod = e => t('news_period', { from: fmtDate(e.period[0]), to: fmtDate(e.period[1]) });
+  const newsName = e => e.label ?? terms.find(g => g.key === e.term).term;
+  if (news.length) {
+    const newsUrl = `${home}news-terms/`;
+    page({
+      path: `${L.path}news-terms/`,
+      alt: Object.fromEntries(langs.filter(x => x.code === defLang || Object.keys(readOpt(`data/i18n/${x.code}/news-terms.json`, {})).length).map(x => [x.code, `${x.path}news-terms/`])),
+      title: S.news_title,
+      description: t('news_description', { terms: news.slice(0, 5).map(newsName).join(', ') }),
+      jsonld: [
+        crumbs([t('breadcrumb_top'), home], [S.nav_glossary, `${home}glossary/`], [S.news_title, newsUrl]),
+        { '@context': 'https://schema.org', '@type': 'ItemList', name: S.news_title,
+          itemListElement: news.map((e, i) => ({ '@type': 'ListItem', position: i + 1, name: newsName(e), url: abs(`${home}term/${termSlug[e.term]}/`) })) },
+      ],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a></nav>
+<h1>${esc(S.news_title)}</h1>
+<p class="lead">${esc(S.news_lead)}</p>
+<ul class="cmp-list news-list">${news.map(e => `
+  <li><a class="cmp-card" href="${home}term/${termSlug[e.term]}/"><strong>${esc(newsName(e))}</strong><span class="news-period">${esc(newsPeriod(e))}</span><span>${esc(e.short)}</span></a></li>`).join('')}
+</ul>
+<p class="muted">${esc(S.news_note)}</p>
+<div data-ad="glossary"></div>
+<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
+    });
+  }
+
   // 用語ページ /term/{slug}/ : 定義、その用語が出てくる問題(問題文・解説の自動リンクから逆引き)、関連する用語
   const termIds = text => linkTerms(text, matcher).filter(x => typeof x !== 'string').map(x => x.id);
   const termQs = new Map(terms.map(g => [g.key, []]));
@@ -1164,7 +1221,10 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
     const topCats = [...byCat].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => catOf(id).name);
     const termSummary = list.length ? `<p class="muted term-summary">${esc(t('term_summary', { term: g.term, n: list.length, k: byCat.size, topics: topCats.join(', ') }))}</p>` : '';
     const pickable = list.filter(q => !q.code);
-    const pick = (pickable.some(q => q.inQ) ? pickable.filter(q => q.inQ) : pickable).slice(0, 2);
+    // ニュース用語は、確認問題として指定した1問だけを出す
+    const nw = newsOf(g.key);
+    const nwQ = nw?.question && qById.get(nw.question);
+    const pick = nwQ ? [nwQ] : (pickable.some(q => q.inQ) ? pickable.filter(q => q.inQ) : pickable).slice(0, 2);
     const practiceHtml = pick.length ? `<section>
   <h2>${esc(t('term_practice', { term: g.term }))}</h2>${pick.map(q => `
   <article class="q-mini"${qData(q)}>
@@ -1188,6 +1248,25 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
   <h3>${esc(x.q)}</h3>
   <p>${esc(x.a)}</p>`).join('')}
 </section>` : '';
+    // ニュース用語: 「ひとことで言うと」「なぜ今話題なのか(日付つき)」を解説の前に、「既存技術との違い」を解説の後に置く
+    const termCmp = cmp.filter(e => (e.terms ?? []).includes(g.key) || termIds([e.title, ...(e.items ?? [])].join(' ')).includes(g.key));
+    const nwFigs = (nw?.figures ?? []).filter(id => id !== fig?.figureId).map(id => ({ id, svg: localizeFigure(figs[id], figT[id], isDef) })).filter(x => x.svg);
+    const newsHtml = nw ? `<section class="news-term">
+  <p class="news-badge"><a href="${home}news-terms/">${esc(S.news_title)}</a> · ${esc(t('news_period_label'))}: ${esc(newsPeriod(nw))}</p>
+  <h2>${esc(t('news_short'))}</h2>
+  <p>${linkedOther(nw.short)}</p>
+  <h2>${esc(t('news_why'))}</h2>
+  <ul class="news-why">${nw.why.map(w => `<li><time datetime="${/Q/.test(w.date) ? w.date.slice(0, 4) : w.date}">${esc(fmtDate(w.date))}</time> ${esc(w.text)}</li>`).join('')}</ul>
+  ${nw.background ? `<p>${linkedOther(nw.background)}</p>` : ''}
+  <details class="news-sources"><summary>${esc(t('news_sources'))}</summary><ul>${nw.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>${x.date ? ` (${esc(fmtDate(x.date))})` : ''}</li>`).join('')}</ul></details>
+</section>
+${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
+    const diffHtml = nw ? `<section>
+  <h2>${esc(t('news_diff'))}</h2>
+  <p>${linkedOther(nw.diff)}</p>
+  ${termCmp.length ? cmpCards(termCmp) : ''}
+</section>` : '';
+    if (nw) related.unshift(...(nw.terms ?? []).map(k => terms.find(x => x.key === k)).filter(x => x && !related.includes(x)));
     const termUrl = `${home}term/${termSlug[g.key]}/`;
     page({
       path: `${L.path}term/${termSlug[g.key]}/`,
@@ -1195,13 +1274,16 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
       title: t('term_title', { term: g.term }),
       description: termDescription(g.desc, list.length),
       scripts: ['answer.js'],
-      noindex: !list.length, // 問題に一度も出てこない用語のページは検索に出さない
+      noindex: !list.length && !nw, // 問題に一度も出てこない用語のページは検索に出さない(ニュース用語は出す)
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.nav_glossary, `${home}glossary/`], [g.term, termUrl]),
         { '@context': 'https://schema.org', '@type': 'DefinedTerm', name: g.term, description: g.desc, url: abs(termUrl), inLanguage: L.htmlLang,
           inDefinedTermSet: { '@type': 'DefinedTermSet', name: S.nav_glossary, url: abs(`${home}glossary/`) } },
         ...(faq.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage',
           mainEntity: faq.map(x => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) }] : []),
+        ...(nw ? [{ '@context': 'https://schema.org', '@type': 'Article', headline: t('term_title', { term: g.term }), description: nw.short, inLanguage: L.htmlLang,
+          datePublished: nw.added, dateModified: lastmodPrev[`${L.path}term/${termSlug[g.key]}/`]?.date ?? new Date().toLocaleDateString('sv-SE'),
+          mainEntityOfPage: abs(termUrl), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } }] : []),
       ],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
 <article class="term-page">
@@ -1213,8 +1295,8 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
   ${c ? `<p>${esc(t('term_category'))}: <a href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
 </article>
-${aboutHtml}
-${practiceHtml}
+${newsHtml ? `${newsHtml}\n` : ''}${aboutHtml}
+${diffHtml ? `${diffHtml}\n` : ''}${practiceHtml}
 ${faqHtml}
 ${quotes.length ? `<section>
   <h2>${esc(t('term_quotes', { term: g.term }))}</h2>
@@ -1226,16 +1308,16 @@ ${list.length ? `<section>
 </section>` : ''}
 ${c ? bookSection(c) : ''}
 <div data-ad="term"></div>
-${cmpSection(t('compare_in_term'), cmp.filter(e => (e.terms ?? []).includes(g.key) || termIds([e.title, ...(e.items ?? [])].join(' ')).includes(g.key)))}
+${nw ? '' : cmpSection(t('compare_in_term'), termCmp)}
 ${toolsIn(code).some(y => (y.terms ?? []).includes(g.key)) ? `<section>
   <h2>${esc(S.tools_title)}</h2>
   <div class="mode-grid compact">${toolsIn(code).filter(y => (y.terms ?? []).includes(g.key)).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
 </section>` : ''}
 ${related.length ? `<section>
   <h2>${esc(t('term_related'))}</h2>
-  <p class="term-chips">${related.map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
+  <p class="term-chips">${related.slice(0, 10).map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
 </section>` : ''}
-<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
+${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
   }
 }
