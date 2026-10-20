@@ -125,7 +125,19 @@ const pageNames = code => (exists(`src/pages/${code}`) ? fs.readdirSync(path.joi
 const pagePath = (L, name) => (name === 'index' ? L.path : `${L.path}${name}/`);
 
 const sitemap = [];
+// hreflang の後始末用: noindex のページと、hreflang を出したページ(出力先と相手のパス)
+const noindexPaths = new Set();
+const hreflangPages = [];
 for (const L of langs) buildLang(L);
+// hreflang の相手が noindex のページ(その言語では問題に出てこない用語など)なら、その相手を外す。
+// noindex のページを指す hreflang は検索エンジンに「戻りリンクがない」誤りとして扱われるため
+for (const { file, targets } of hreflangPages) {
+  const drop = targets.filter(x => noindexPaths.has(x));
+  if (!drop.length) continue;
+  let s = fs.readFileSync(path.join(out, file), 'utf8');
+  for (const x of drop) s = s.split('\n').filter(line => !(line.startsWith('<link rel="alternate" hreflang=') && line.endsWith(` href="${baseUrl}${x}">`))).join('\n');
+  fs.writeFileSync(path.join(out, file), s);
+}
 
 function buildLang(L) {
   const code = L.code;
@@ -325,7 +337,7 @@ function buildLang(L) {
   // 用語ページの説明文(検索結果に出る): 文の途中で「…」と切らず、収まる文までにする。
   // 余裕があれば練習問題の数を添える(検索から来た人に、解ける問題があることを伝える)
   const termDescription = (desc, n) => {
-    const sentences = desc.match(/[^。.!?！？]+(?:[。！？]|[.!?](?=\s|$))\s*/g) ?? [desc];
+    const sentences = desc.match(/(?:[^。.!?！？]|[.!?](?!\s|$))+(?:[。！？]|[.!?](?=\s|$)|$)\s*/g) ?? [desc];
     let text = '';
     for (const x of sentences) {
       if ((text + x).trim().length > 150) break;
@@ -508,6 +520,8 @@ function buildLang(L) {
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
     const alts = langs.filter(x => alt[x.code] != null);
+    if (noindex) noindexPaths.add(p);
+    else if (alts.length) hreflangPages.push({ file: file || `${p}index.html`, targets: alts.map(x => alt[x.code]) });
     const head = [
       noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${url}">`,
       ...(noindex ? [] : alts.map(x => `<link rel="alternate" hreflang="${x.htmlLang}" href="${baseUrl}${alt[x.code]}">`)),
@@ -518,6 +532,7 @@ function buildLang(L) {
       `<meta property="og:url" content="${url}">`,
       `<meta property="og:site_name" content="${esc(siteName)}">`,
       `<meta property="og:locale" content="${L.locale.replace('-', '_')}">`,
+      `<meta property="og:image" content="${baseUrl}icon-512.png">`, // SNS で共有したときの画像(サイトのアイコン)
       '<meta name="twitter:card" content="summary">',
       `<link rel="manifest" href="${home}manifest.json">`,
       `<link rel="icon" href="${base}icon-192.png" type="image/png">`,
@@ -627,7 +642,7 @@ function buildLang(L) {
     const joint = text => (/[。！？]$/.test(text) || (code !== 'ko' && cjk && /[?]$/.test(text)) ? '' : ' '); // 文と文の間の空白(日本語・中国語の句点のあとは入れない)
     const qDescription = q => {
       let text = q.question.trim();
-      for (const x of q.explanation.match(/[^。.!?！？]+(?:[。！？]|[.!?](?=\s|$))\s*/g) ?? []) {
+      for (const x of q.explanation.match(/(?:[^。.!?！？]|[.!?](?!\s|$))+(?:[。！？]|[.!?](?=\s|$)|$)\s*/g) ?? []) {
         if ((text + joint(text) + x).trim().length > descMax) break;
         text = (text + joint(text) + x).trim();
       }
@@ -1084,7 +1099,7 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
   </form>
   <section class="dy-out" id="qs-out" hidden aria-live="polite">
     <h2>${esc(x.result_heading)}</h2>
-    <p><input type="text" id="qs-url" class="qs-url" readonly></p>
+    <p><input type="text" id="qs-url" class="qs-url" readonly aria-label="${esc(x.result_heading)}"></p>
     <p><button type="button" class="btn btn-primary btn-small" id="qs-copy" data-done="${esc(x.copied)}">${esc(x.copy)}</button> <a class="btn btn-ghost btn-small" id="qs-open" href="#" target="_blank" rel="noopener">${esc(x.open)}</a></p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
