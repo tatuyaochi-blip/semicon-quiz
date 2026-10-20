@@ -27,6 +27,7 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
 | adsenseClient | AdSense のクライアントID（`ca-pub-…`）。設定すると広告スクリプト（クイズ画面以外）と `ads.txt` を出力し、プライバシーポリシーに説明を載せる。null なら何も出さない |
 | adsenseSlots | AdSense の広告ユニットID。`{ "default": "1234567890", "top": "…" }` のように、枠の名前（top / question / category / glossary / stats / compare / term / figures）ごと、または `default` で指定する。IDのない枠は何も出さない。null なら枠に広告を入れない |
 | amazonTag / amazonDomain | AmazonアソシエイトのトラッキングIDと販売ドメインを言語ごとに指定する（例: ja は `-22` + `www.amazon.co.jp`、en は `-20` + `www.amazon.com`）。タグのない言語では参考書リンクを出さない。検索キーワードは ja が `data/books.json`、他言語は `data/i18n/{言語}/books.json` |
+| operator | 運営者の情報。`name` を入れると「サイトについて」の最後に「運営者」の欄が出る（null なら出さない）。`name` は文字列か `{ "ja": "…", "en": "…" }`。`role`（肩書き・経歴の一行）と `profile`（紹介文。改行で段落を分ける）は文字列（全言語共通）か言語ごとのオブジェクト（訳のない言語では出さない）。`links` は `[{ "label": "X", "url": "https://…" }]` |
 | ga4Id | Google アナリティクス 4 の測定ID（`G-…`）。設定すると全ページに計測タグを出力し、プライバシーポリシーに説明を載せる。null なら何も出さない |
 
 ## PWA

@@ -472,6 +472,22 @@ function buildLang(L) {
 </section>` : '',
     questionTotal: Object.values(qs).reduce((s, x) => s + x.length, 0),
     categoryTotal: live.length,
+    // サイトについての「運営者」: config.operator の name があるときだけ出す。role・profile は文字列(全言語共通)か { 言語: 文 }(訳のない言語では出さない)
+    operatorInfo: (() => {
+      const o = config.operator;
+      const pick = v => (v && typeof v === 'object' ? v[code] : v);
+      const name = loc(o?.name, code);
+      if (!name) return '';
+      const role = pick(o.role), profile = pick(o.profile);
+      const links = (o.links ?? []).filter(x => x?.url).map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener me">${esc(loc(x.label, code) || x.url)}</a></li>`).join('');
+      return `<h2>${esc(S.operator_heading)}</h2>
+<dl class="operator">
+  <dt>${esc(S.operator_name)}</dt><dd>${esc(name)}</dd>
+  ${role ? `<dt>${esc(S.operator_role)}</dt><dd>${esc(role)}</dd>` : ''}
+  ${links ? `<dt>${esc(S.operator_links)}</dt><dd><ul>${links}</ul></dd>` : ''}
+</dl>
+${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n') : ''}`;
+    })(),
     // プライバシーポリシーの「広告・アクセス解析」: 使っているサービスの説明だけを出す
     adsPolicy: [config.adsenseClient && S.policy_adsense, S.policy_affiliate, config.ga4Id && S.policy_ga4].filter(Boolean).map(x => `<p>${x}</p>`).join('\n')
       || `<p>${S.policy_none}</p>`,
