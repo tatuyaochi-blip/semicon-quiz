@@ -18,7 +18,7 @@ export function lineChart(svg, { series, xlabel, ylabel, xlog = false, ylog = fa
   const X = v => L + ((tx(v) - x0) / (x1 - x0)) * (R - L);
   const Y = v => B - ((ty(v) - y0) / (y1 - y0)) * (B - T);
   const ticks = (a, b, log) => {
-    if (log) { const out = []; for (let e = Math.ceil(a); e <= Math.floor(b); e++) out.push(10 ** e); return out.length >= 2 ? out : [10 ** a, 10 ** b]; }
+    if (log) { const out = [], k = Math.max(1, Math.ceil((Math.floor(b) - Math.ceil(a)) / 7)); for (let e = Math.ceil(a); e <= Math.floor(b); e += k) out.push(10 ** e); return out.length >= 2 ? out : [10 ** a, 10 ** b]; }
     const step = 10 ** Math.floor(Math.log10((b - a) / 4)); const m = [1, 2, 5, 10].find(k => (b - a) / (step * k) <= 6) * step;
     const out = []; for (let v = Math.ceil(a / m) * m; v <= b + 1e-9; v += m) out.push(+v.toPrecision(12)); return out;
   };

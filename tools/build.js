@@ -63,6 +63,8 @@ const compares = readOpt('data/compare.json', []); // 用語の違い比較ペ�
 // ニュースに出た用語(/news-terms/)。用語集の語に「なぜ今話題なのか」などを足す。訳は data/i18n/{言語}/news-terms.json
 const newsTerms = readOpt('data/news-terms.json', []);
 const figs = figures();
+// 操作できる図解(図IDごと。動きは fig-live.js)。文言は言語ごとで、訳のある言語だけ出す
+const figLive = readOpt('data/figures-live.json', {});
 // 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
 const siteCss = read('src/css/style.css');
 const cssVars = block => [...block.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(m => `${m[1]}:${m[2].trim()}`).join(';');
@@ -432,11 +434,32 @@ function buildLang(L) {
   }
   figList.sort((a, b) => (categories.findIndex(c => c.id === figUse[a.id]?.[0]?.cat) + 1 || 999) - (categories.findIndex(c => c.id === figUse[b.id]?.[0]?.cat) + 1 || 999));
   for (const x of figList) write(`img/${code}/${x.id}.svg`, standaloneSvg(x.svg));
-  const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${home}figures/#fig-${id}">${esc(t('figure_open'))}</a></figcaption></figure>`;
+  // 操作できる図解の部分。JSが動くまでは隠しておく(静的な図と説明はその上に残る)
+  const figLiveHtml = id => {
+    const f = figLive[id], x = f?.text[code];
+    if (!x) return '';
+    const tool = tools.find(y => y.id === f.tool && y.text[code]);
+    return `<section class="fig-live" data-fig-live="${id}" data-text="${esc(JSON.stringify(x))}" hidden>
+  <h2>${esc(x.heading)}</h2>
+  <p>${esc(x.lead)}</p>
+  <div class="fig-live-ctl">${f.controls.map(c => `
+    <label class="dy-field"><span>${esc(x[`ctl_${c.name}`])}</span><input type="range" id="fl-${id}-${c.name}" name="${c.name}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}"><output for="fl-${id}-${c.name}"></output></label>`).join('')}
+  </div>
+  <div class="fig fig-live-svg"></div>
+  <p class="fig-live-state" aria-live="polite"></p>${tool ? `
+  <p><a class="btn btn-ghost" data-tool-link href="${home}tools/${tool.slug}/">${esc(x.tool_link)} →</a></p>` : ''}
+</section>`;
+  };
+  // 操作できる版のある図は、図ごとのページ /figures/{図ID}/ を作る(この言語の訳があるものだけ)
+  const figPage = id => !!figLive[id]?.text[code] && figList.some(x => x.id === id);
+  const figPagePath = (id, l = L) => `${l.path}figures/${id}/`;
+  // その図への行き先: 図ごとのページがあればそこ、なければ図解集の中の位置
+  const figHref = id => (figPage(id) ? `${base}${figPagePath(id)}` : `${home}figures/#fig-${id}`);
+  const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${figHref(id)}">${esc(t(figPage(id) ? 'figure_try' : 'figure_open'))}</a></figcaption></figure>`;
   const figureGallery = `<div class="fig-grid">${figList.map(x => `
   <figure class="fig-item" id="fig-${x.id}">
     <img src="${base}img/${code}/${x.id}.svg" alt="${esc(x.title)}" width="${x.size[0]}" height="${x.size[1]}" loading="lazy">
-    <figcaption><strong>${esc(x.title)}</strong>${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
+    <figcaption><strong>${figPage(x.id) ? `<a href="${figHref(x.id)}">${esc(x.title)}</a>` : esc(x.title)}</strong>${figPage(x.id) ? `<a class="fig-try" href="${figHref(x.id)}">${esc(t('figure_try'))} →</a>` : ''}${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
   </figure>`).join('')}
 </div>`;
   const figureLd = JSON.stringify({
@@ -449,7 +472,7 @@ function buildLang(L) {
     ...cmp.map(e => ({ t: 'c', n: e.title, u: `compare/${e.slug}/`, x: `${e.description} ${e.items.join(' ')}` })),
     ...terms.map(g => ({ t: 't', n: g.term, u: `term/${termSlug[g.key]}/`, x: `${g.desc} ${isDef ? '' : g.key}` })),
     ...live.map(c => ({ t: 'k', n: c.name, u: `c/${c.id}/`, x: c.description })),
-    ...figList.map(x => ({ t: 'f', n: x.title, u: `figures/#fig-${x.id}`, x: '' })),
+    ...figList.map(x => ({ t: 'f', n: x.title, u: figPage(x.id) ? `figures/${x.id}/` : `figures/#fig-${x.id}`, x: '' })),
     ...live.flatMap(c => qs[c.id].map(q => ({ t: 'q', n: q.question, u: `q/${c.id}/${q.id}/`, x: c.name }))),
   ];
   write(`data/${code}/search.json`, JSON.stringify({
@@ -1003,6 +1026,67 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <p class="muted">${esc(x.chart_note)}</p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    resistivity: x => `<form id="rs-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('type', x.type, [['n', x.type_n], ['p', x.type_p]], 'p')}
+    ${field('n', x.n, '1e15', 'min="0" step="any"')}
+    ${field('rho', x.rho, 13.5, 'min="0" step="any"')}
+    <p class="muted qs-wide">${esc(x.both)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p id="rs-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('n', x.o_n)}${stat('rho', x.o_rho)}${stat('mu', x.o_mu)}${stat('sigma', x.o_sigma)}</dl>
+    <svg id="rs-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'bandgap-wavelength': x => `<form id="bg-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('preset', x.preset, [['', x.custom], ...[['Si', 1.12, 0], ['Ge', 0.66, 0], ['GaAs', 1.42, 1], ['InP', 1.34, 1], ['In₀.₅₃Ga₀.₄₇As', 0.75, 1], ['GaP', 2.26, 0], ['4H-SiC', 3.26, 0], ['GaN', 3.4, 1], ['ZnO', 3.37, 1], [x.diamond, 5.47, 0], ['AlN', 6.2, 1]]
+      .map(([name, eg, direct]) => [String(eg), `${name} (${eg} eV, ${direct ? x.direct : x.indirect})`])], '1.42')}
+    ${field('eg', x.eg, 1.42, 'min="0" step="any"')}
+    ${field('lambda', x.lambda, 873.1, 'min="0" step="any"')}
+    <p class="muted qs-wide">${esc(x.both)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('lambda', x.o_lambda)}${stat('eg', x.o_eg)}${stat('um', x.o_um)}${stat('freq', x.o_freq)}${stat('wn', x.o_wn)}${stat('region', x.o_region)}</dl>
+    <p class="bg-color"><span id="bg-swatch" class="bg-swatch" hidden></span></p>
+    <svg id="bg-band" class="sta-chart" viewBox="0 0 600 92" role="img" aria-label="${esc(x.band_label)}"
+      data-labels="${esc(JSON.stringify({ uv: x.r_uv, violet: x.r_violet, blue: x.r_blue, green: x.r_green, yellow: x.r_yellow, orange: x.r_orange, red: x.r_red, nir: x.r_nir, ir: x.r_ir, ir_band: x.r_ir_band }))}"></svg>
+    <p class="muted">${esc(x.band_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'intrinsic-carrier': x => `<form id="ni-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('mat', x.mat, [['si', x.mat_si], ['ge', x.mat_ge], ['gaas', x.mat_gaas]], 'si')}
+    ${field('t', x.t, 300, 'min="50" max="1500" step="10"')}
+    ${field('dop', x.dop, '1e15', 'min="0" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p id="ni-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('ni', x.o_ni)}${stat('eg', x.o_eg)}${stat('kt', x.o_kt)}${stat('ratio', x.o_ratio)}${stat('maj', x.o_maj)}${stat('min', x.o_min)}${stat('ti', x.o_ti)}</dl>
+    <svg id="ni-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'mosfet-vth': x => `<form id="vt-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('type', x.type, [['nmos', x.type_n], ['pmos', x.type_p]], 'nmos')}
+    ${select('gate', x.gate, [['npoly', x.gate_npoly], ['ppoly', x.gate_ppoly], ['metal', x.gate_metal]], 'npoly')}
+    ${field('phim', x.phim, 4.6, 'min="3" max="6" step="0.05"')}
+    ${field('tox', x.tox, 5, 'min="0.5" step="0.5"')}
+    ${field('n', x.n, '5e17', 'min="0" step="any"')}
+    ${field('nf', x.nf, '1e10', 'min="0" step="any"')}
+    ${field('vsb', x.vsb, 0, 'min="0" step="0.1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('vth', x.o_vth)}${stat('vfb', x.o_vfb)}${stat('phims', x.o_phims)}${stat('phif', x.o_phif)}${stat('qd', x.o_qd)}${stat('cox', x.o_cox)}${stat('wd', x.o_wd)}${stat('gamma', x.o_gamma)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
     <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>
@@ -1015,7 +1099,7 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
   </form>
   <section class="dy-out" id="qs-out" hidden aria-live="polite">
     <h2>${esc(x.result_heading)}</h2>
-    <p><input type="text" id="qs-url" class="qs-url" readonly></p>
+    <p><input type="text" id="qs-url" class="qs-url" readonly aria-label="${esc(x.result_heading)}"></p>
     <p><button type="button" class="btn btn-primary btn-small" id="qs-copy" data-done="${esc(x.copied)}">${esc(x.copy)}</button> <a class="btn btn-ghost btn-small" id="qs-open" href="#" target="_blank" rel="noopener">${esc(x.open)}</a></p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
@@ -1026,13 +1110,16 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     const tq = (tool.questions ?? []).map(id => qById.get(id)).filter(Boolean);
     const tt = (tool.terms ?? []).map(k => terms.find(y => y.key === k)).filter(Boolean);
     const tc = catOf(tool.cat);
+    // 関連する図解と比較ページ(この言語で出せるものだけ)
+    const tf = (tool.figures ?? []).map(id => figList.find(f => f.id === id)).filter(Boolean);
+    const tcmp = (tool.compares ?? []).map(slug => cmp.find(e => e.slug === slug)).filter(Boolean);
     page({
       path: toolPath(tool, L),
       alt: Object.fromEntries(langs.filter(y => tool.text[y.code]).map(y => [y.code, toolPath(tool, y)])),
       fallback: y => `${y.path}tools/`,
       title: x.title,
       description: x.description,
-      scripts: [`${tool.id}.js`, 'answer.js'],
+      scripts: ['tool-share.js', `${tool.id}.js`, 'answer.js'],
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.tools_title, `${home}tools/`], [x.h1, toolPath(tool, L)]),
         { '@context': 'https://schema.org', '@type': 'WebApplication', name: x.h1, description: x.description, url: abs(toolPath(tool, L)), inLanguage: L.htmlLang,
@@ -1043,6 +1130,12 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}tools/">${esc(S.tools_title)}</a></nav>
 <h1>${esc(x.h1)}</h1>
 <p class="lead">${esc(x.lead)}</p>
+<div class="cmp-tools tool-actions" data-tool-id="${tool.id}"${tool.share === false ? '' : ' data-share'} hidden>
+  <button type="button" class="btn btn-ghost" data-fav data-off="${esc(t('tool_fav_add'))}" data-on="${esc(t('tool_fav_on'))}" aria-pressed="false">${esc(t('tool_fav_add'))}</button>${tool.share === false ? '' : `
+  <button type="button" class="btn btn-ghost" data-copy-result data-done="${esc(t('compare_copied'))}">${esc(t('tool_copy_result'))}</button>
+  <button type="button" class="btn btn-ghost" data-share data-done="${esc(t('compare_link_copied'))}">${esc(t('tool_share'))}</button>`}
+  <p class="muted tool-note">${esc(t(tool.share === false ? 'tool_note_local' : 'tool_note'))}</p>
+</div>
 <div class="dy">
   ${toolBody[tool.id](x)}
   <section class="dy-out" id="sweep" hidden>
@@ -1071,6 +1164,11 @@ ${tt.length ? `<section>
   <h2>${esc(x.related)}</h2>
   <p class="term-chips">${tt.map(y => `<a class="chip" href="${home}term/${termSlug[y.key]}/">${esc(y.term)}</a>`).join(' ')}</p>
 </section>` : ''}
+${tf.length ? `<section>
+  <h2>${esc(t('tool_rel_figures'))}</h2>
+  <ul class="tool-figs">${tf.map(f => `<li><a href="${figHref(f.id)}"><img src="${base}img/${code}/${f.id}.svg" alt="" width="${f.size[0]}" height="${f.size[1]}" loading="lazy"><span>${esc(f.title)}</span></a></li>`).join('')}</ul>
+</section>` : ''}
+${cmpSection(t('tool_rel_compare'), tcmp)}
 ${toolsIn(code).length > 1 ? `<section>
   <h2>${esc(S.tools_title)}</h2>
   <div class="mode-grid compact">${toolsIn(code).filter(y => y !== tool).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
@@ -1084,11 +1182,53 @@ ${toolsIn(code).length > 1 ? `<section>
       alt: Object.fromEntries(langs.filter(y => toolsIn(y.code).length).map(y => [y.code, `${y.path}tools/`])),
       title: S.tools_title,
       description: S.tools_lead,
+      scripts: ['tools-list.js'],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
 <h1>${esc(S.tools_title)}</h1>
 <p class="lead">${esc(S.tools_lead)}</p>
-<div class="mode-grid">${toolsIn(code).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+<section class="tool-mine" data-tool-mine hidden>
+  <div data-list="fav" hidden><h2>${esc(t('tools_fav'))}</h2><div class="mode-grid compact"></div></div>
+  <div data-list="recent" hidden><h2>${esc(t('tools_recent'))}</h2><div class="mode-grid compact"></div></div>
+  <p class="muted">${esc(t('tools_local_note'))}</p>
+</section>
+<div class="mode-grid tool-all">${toolsIn(code).map(y => `<a class="mode-card" data-tool="${y.id}" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
 <div data-ad="tools"></div>`,
+    });
+  }
+
+  // 図ごとのページ /figures/{図ID}/: 静的な図と説明、その下に操作できる版、図を使う問題と関連する計算ツール
+  for (const x of figList.filter(f => figPage(f.id))) {
+    const ft = figLive[x.id].text[code];
+    const ftools = toolsIn(code).filter(y => (y.figures ?? []).includes(x.id));
+    const used = figUse[x.id] ?? [];
+    const url = `${base}${figPagePath(x.id)}`;
+    page({
+      path: figPagePath(x.id),
+      alt: Object.fromEntries(langs.filter(y => figLive[x.id].text[y.code] && localizeFigure(figs[x.id], y.code === defLang ? {} : readOpt(`data/i18n/${y.code}/figures.json`, {})[x.id], y.code === defLang)).map(y => [y.code, figPagePath(x.id, y)])),
+      fallback: y => `${y.path}figures/`,
+      title: ft.title,
+      description: ft.description,
+      scripts: ['fig-live.js'],
+      jsonld: [
+        crumbs([t('breadcrumb_top'), home], [S.figures_title, `${home}figures/`], [x.title, url]),
+        { '@context': 'https://schema.org', '@type': 'Article', headline: ft.title, description: ft.description, inLanguage: L.htmlLang, image: abs(`${base}img/${code}/${x.id}.svg`),
+          mainEntityOfPage: abs(url), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+      ],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}figures/">${esc(S.figures_title)}</a></nav>
+<h1>${esc(x.title)}</h1>
+<figure class="fig">${x.svg}</figure>
+${ft.about.map(para => `<p>${linked(para)}</p>`).join('\n')}
+${figLiveHtml(x.id)}
+<div data-ad="figures"></div>
+${ftools.length ? `<section>
+  <h2>${esc(t('figure_tools'))}</h2>
+  <div class="mode-grid compact">${ftools.map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+</section>` : ''}
+${used.length ? `<section>
+  <h2>${esc(t('figure_used_in'))}</h2>
+  ${qLinks(used.slice(0, 10))}
+</section>` : ''}
+<p><a class="btn btn-ghost" href="${home}figures/">${esc(t('figure_back'))}</a></p>`,
     });
   }
 

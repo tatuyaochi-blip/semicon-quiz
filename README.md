@@ -45,6 +45,7 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
   - 文字は日本語で書く。英語は `data/i18n/en/figures.json` に `{ 図ID: { "元の文字": "訳" } }` で書く。訳が足りない図はその言語では表示しない（Ec や VGS など、かな・漢字を含まない文字は訳さなくてよい）
   - 色はクラスで指定する（`ln` 線、`ac` 強調線、`n` / `p` / `ox` / `metal` 塗り、`text.sm` 小さい文字 など。一覧は `style.css` の「図」）。ダークモードでも色が切り替わる
   - `id` 属性は使わない（同じページに複数の図が並ぶため）
+- **操作できる図解**：`data/figures-live.json` に図IDごとの文言（言語ごと）・スライダー（`controls`）・対応する計算ツール（`tool`）を書き、描画を `src/js/fig-live.js` の `FIGS` に足すと、図ごとのページ `/figures/{図ID}/` ができる（静的な図と説明の下に操作できる版が出る。図解集・問題・用語・計算ツールからのリンクもそのページに向く）。訳のない言語ではページを作らない
 - **言語**：`config.json` の `languages` に1行足し（先頭が既定言語）、翻訳ファイルを置く：`src/i18n/{言語}.json`（UI文言。モード名は `mode_{モードID}_label` / `_desc` / `_empty`）、`src/pages/{言語}/`、`data/i18n/{言語}/`（categories・exams・glossary・questions）。翻訳のない問題はその言語では出題しない。欠落数は `npm run validate` で表示される
 - **ニュースに出た用語**（一覧 `/news-terms/`）：`data/news-terms.json` に1語ずつ足す。ページは用語ページ `/term/{slug}/` をそのまま使い、「ひとことで言うと」「なぜ今話題なのか」「既存技術との違い」の節が加わる（一覧は `period` の終わりが新しい順）
   1. 用語集にその語があるか確かめる。なければ先に `data/glossary.json` に足す（`about`・`faq` を書き、英語の用語名から slug が作れないときは `"slug"` を書く）。同じ語のページは作らない
@@ -53,6 +54,7 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
   4. 訳は `data/i18n/{言語}/news-terms.json` に `{ 用語: { label?, short, why: [本文…（日本語と同じ順・同じ数）], background, diff } }`。日付・問題・リンク先は日本語のファイルのものを使う。訳のない言語では出さない
   5. 用語ページの比較・計算ツールへのリンクは、`data/compare.json` と `data/tools/*.json` の `terms` から自動で付く
 - **ページ**：`src/pages/{言語}/xxx.html` を置くと `/xxx/`（英語は `/en/xxx/`）が生成される（先頭のコメントに title などを JSON で書く）
+- **計算ツール**：`data/tools/{ID}.json`（文言は言語ごとの `text`）と `src/js/{ID}.js` を置き、入力欄と結果の枠を `tools/build.js` の `toolBody` に足す。`terms`・`figures`（図ID）・`compares`（比較ページのslug）を書くと、ページ下部に関連リンクが出る。入力はURLのクエリに残り（`tool-share.js`）、お気に入りと最近使ったツールは `store.js` が保存する。URLに残さないツールは `"share": false`
 - **クイズモード**：`src/js/modes/xxx.js` を置くと自動で登録される（`category.js` を参考に）
 - **広告**：`src/js/ads.js` の `slot()` を変更する。クイズ画面には読み込まれない
 - **保存処理**：localStorage の読み書きは `src/js/store.js` だけで行う

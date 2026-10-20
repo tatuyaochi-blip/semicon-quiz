@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-f39a36019b';
+const CACHE = 'sq-26ba355abb';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -429,6 +429,7 @@ const PRECACHE = [
   "/js/ads.js",
   "/js/amdahl.js",
   "/js/answer.js",
+  "/js/bandgap-wavelength.js",
   "/js/cache-calc.js",
   "/js/chart.js",
   "/js/cmos-power.js",
@@ -438,25 +439,31 @@ const PRECACHE = [
   "/js/die-yield-calc.js",
   "/js/die-yield.js",
   "/js/dom.js",
+  "/js/fig-live.js",
   "/js/glossary.js",
   "/js/interconnect-rc.js",
+  "/js/intrinsic-carrier.js",
   "/js/jitter.js",
   "/js/level.js",
   "/js/litho.js",
   "/js/mem-bw.js",
   "/js/mosfet-iv.js",
+  "/js/mosfet-vth.js",
   "/js/oxidation.js",
   "/js/pdn.js",
   "/js/pn-junction.js",
   "/js/progress.js",
   "/js/quiz-set.js",
   "/js/quiz.js",
+  "/js/resistivity.js",
   "/js/search.js",
   "/js/sta.js",
   "/js/stats.js",
   "/js/store.js",
   "/js/sweep.js",
   "/js/thermal.js",
+  "/js/tool-share.js",
+  "/js/tools-list.js",
   "/js/util.js",
   "/js/modes/category.js",
   "/js/modes/daily.js",
