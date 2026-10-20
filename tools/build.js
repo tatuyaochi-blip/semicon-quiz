@@ -409,6 +409,8 @@ function buildLang(L) {
   }
   figList.sort((a, b) => (categories.findIndex(c => c.id === figUse[a.id]?.[0]?.cat) + 1 || 999) - (categories.findIndex(c => c.id === figUse[b.id]?.[0]?.cat) + 1 || 999));
   for (const x of figList) write(`img/${code}/${x.id}.svg`, standaloneSvg(x.svg));
+  // 図解集の中のその図への行き先
+  const figHref = id => `${home}figures/#fig-${id}`;
   const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${home}figures/#fig-${id}">${esc(t('figure_open'))}</a></figcaption></figure>`;
   const figureGallery = `<div class="fig-grid">${figList.map(x => `
   <figure class="fig-item" id="fig-${x.id}">
@@ -998,13 +1000,16 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     const tq = (tool.questions ?? []).map(id => qById.get(id)).filter(Boolean);
     const tt = (tool.terms ?? []).map(k => terms.find(y => y.key === k)).filter(Boolean);
     const tc = catOf(tool.cat);
+    // 関連する図解と比較ページ(この言語で出せるものだけ)
+    const tf = (tool.figures ?? []).map(id => figList.find(f => f.id === id)).filter(Boolean);
+    const tcmp = (tool.compares ?? []).map(slug => cmp.find(e => e.slug === slug)).filter(Boolean);
     page({
       path: toolPath(tool, L),
       alt: Object.fromEntries(langs.filter(y => tool.text[y.code]).map(y => [y.code, toolPath(tool, y)])),
       fallback: y => `${y.path}tools/`,
       title: x.title,
       description: x.description,
-      scripts: [`${tool.id}.js`, 'answer.js'],
+      scripts: ['tool-share.js', `${tool.id}.js`, 'answer.js'],
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.tools_title, `${home}tools/`], [x.h1, toolPath(tool, L)]),
         { '@context': 'https://schema.org', '@type': 'WebApplication', name: x.h1, description: x.description, url: abs(toolPath(tool, L)), inLanguage: L.htmlLang,
@@ -1015,6 +1020,12 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}tools/">${esc(S.tools_title)}</a></nav>
 <h1>${esc(x.h1)}</h1>
 <p class="lead">${esc(x.lead)}</p>
+<div class="cmp-tools tool-actions" data-tool-id="${tool.id}"${tool.share === false ? '' : ' data-share'} hidden>
+  <button type="button" class="btn btn-ghost" data-fav data-off="${esc(t('tool_fav_add'))}" data-on="${esc(t('tool_fav_on'))}" aria-pressed="false">${esc(t('tool_fav_add'))}</button>${tool.share === false ? '' : `
+  <button type="button" class="btn btn-ghost" data-copy-result data-done="${esc(t('compare_copied'))}">${esc(t('tool_copy_result'))}</button>
+  <button type="button" class="btn btn-ghost" data-share data-done="${esc(t('compare_link_copied'))}">${esc(t('tool_share'))}</button>`}
+  <p class="muted tool-note">${esc(t(tool.share === false ? 'tool_note_local' : 'tool_note'))}</p>
+</div>
 <div class="dy">
   ${toolBody[tool.id](x)}
   <section class="dy-out" id="sweep" hidden>
@@ -1043,6 +1054,11 @@ ${tt.length ? `<section>
   <h2>${esc(x.related)}</h2>
   <p class="term-chips">${tt.map(y => `<a class="chip" href="${home}term/${termSlug[y.key]}/">${esc(y.term)}</a>`).join(' ')}</p>
 </section>` : ''}
+${tf.length ? `<section>
+  <h2>${esc(t('tool_rel_figures'))}</h2>
+  <ul class="tool-figs">${tf.map(f => `<li><a href="${figHref(f.id)}"><img src="${base}img/${code}/${f.id}.svg" alt="" width="${f.size[0]}" height="${f.size[1]}" loading="lazy"><span>${esc(f.title)}</span></a></li>`).join('')}</ul>
+</section>` : ''}
+${cmpSection(t('tool_rel_compare'), tcmp)}
 ${toolsIn(code).length > 1 ? `<section>
   <h2>${esc(S.tools_title)}</h2>
   <div class="mode-grid compact">${toolsIn(code).filter(y => y !== tool).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
@@ -1056,10 +1072,16 @@ ${toolsIn(code).length > 1 ? `<section>
       alt: Object.fromEntries(langs.filter(y => toolsIn(y.code).length).map(y => [y.code, `${y.path}tools/`])),
       title: S.tools_title,
       description: S.tools_lead,
+      scripts: ['tools-list.js'],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
 <h1>${esc(S.tools_title)}</h1>
 <p class="lead">${esc(S.tools_lead)}</p>
-<div class="mode-grid">${toolsIn(code).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+<section class="tool-mine" data-tool-mine hidden>
+  <div data-list="fav" hidden><h2>${esc(t('tools_fav'))}</h2><div class="mode-grid compact"></div></div>
+  <div data-list="recent" hidden><h2>${esc(t('tools_recent'))}</h2><div class="mode-grid compact"></div></div>
+  <p class="muted">${esc(t('tools_local_note'))}</p>
+</section>
+<div class="mode-grid tool-all">${toolsIn(code).map(y => `<a class="mode-card" data-tool="${y.id}" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
 <div data-ad="tools"></div>`,
     });
   }

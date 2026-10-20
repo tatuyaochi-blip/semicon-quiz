@@ -19,8 +19,9 @@ function flash(btn) {
 }
 const table = document.querySelector('table.compare');
 document.querySelector('[data-copy-table]')?.addEventListener('click', async e => {
+  const btn = e.currentTarget; // await のあとは currentTarget が null になる
   const rows = [...table.rows].map(r => [...r.cells].map(c => c.textContent.trim().replace(/\s+/g, ' ')).join('\t')).join('\n');
-  if (await copy(rows)) flash(e.currentTarget);
+  if (await copy(rows)) flash(btn);
 });
 document.querySelector('[data-share]')?.addEventListener('click', async e => {
   const btn = e.currentTarget;

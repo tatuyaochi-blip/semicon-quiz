@@ -141,3 +141,39 @@ export function importData(json) {
   save();
   return true;
 }
+
+// 計算ツールのお気に入りと最近使ったツール(ツールIDの配列)。解答記録とは別のキーに保存する
+const TOOLS_KEY = 'sq:tools';
+let tools = loadTools();
+
+function loadTools() {
+  try {
+    const d = JSON.parse(localStorage.getItem(TOOLS_KEY));
+    if (isObj(d) && Array.isArray(d.fav) && Array.isArray(d.recent)) return { fav: d.fav.filter(x => typeof x === 'string'), recent: d.recent.filter(x => typeof x === 'string') };
+  } catch {}
+  return { fav: [], recent: [] };
+}
+
+function saveTools() {
+  try {
+    localStorage.setItem(TOOLS_KEY, JSON.stringify(tools));
+  } catch {}
+}
+
+export const toolFavs = () => tools.fav;
+export const recentTools = () => tools.recent;
+export const isToolFav = id => tools.fav.includes(id);
+
+// お気に入りの登録と解除。登録したら true を返す
+export function toggleToolFav(id) {
+  const on = !isToolFav(id);
+  tools.fav = on ? [...tools.fav, id] : tools.fav.filter(x => x !== id);
+  saveTools();
+  return on;
+}
+
+// ツールのページを開いたとき。新しい順に6件まで
+export function useTool(id) {
+  tools.recent = [id, ...tools.recent.filter(x => x !== id)].slice(0, 6);
+  saveTools();
+}

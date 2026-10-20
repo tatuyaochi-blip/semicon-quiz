@@ -47,6 +47,7 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
   - `id` 属性は使わない（同じページに複数の図が並ぶため）
 - **言語**：`config.json` の `languages` に1行足し（先頭が既定言語）、翻訳ファイルを置く：`src/i18n/{言語}.json`（UI文言。モード名は `mode_{モードID}_label` / `_desc` / `_empty`）、`src/pages/{言語}/`、`data/i18n/{言語}/`（categories・exams・glossary・questions）。翻訳のない問題はその言語では出題しない。欠落数は `npm run validate` で表示される
 - **ページ**：`src/pages/{言語}/xxx.html` を置くと `/xxx/`（英語は `/en/xxx/`）が生成される（先頭のコメントに title などを JSON で書く）
+- **計算ツール**：`data/tools/{ID}.json`（文言は言語ごとの `text`）と `src/js/{ID}.js` を置き、入力欄と結果の枠を `tools/build.js` の `toolBody` に足す。`terms`・`figures`（図ID）・`compares`（比較ページのslug）を書くと、ページ下部に関連リンクが出る。入力はURLのクエリに残り（`tool-share.js`）、お気に入りと最近使ったツールは `store.js` が保存する。URLに残さないツールは `"share": false`
 - **クイズモード**：`src/js/modes/xxx.js` を置くと自動で登録される（`category.js` を参考に）
 - **広告**：`src/js/ads.js` の `slot()` を変更する。クイズ画面には読み込まれない
 - **保存処理**：localStorage の読み書きは `src/js/store.js` だけで行う
