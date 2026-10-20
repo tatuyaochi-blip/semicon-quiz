@@ -26,8 +26,9 @@ function sync() {
   document.querySelectorAll('.lang-switch a').forEach(a => { a.search = query; });
 }
 if (fields.length) {
-  form.addEventListener('input', sync);
-  form.addEventListener('change', sync);
+  // 各ツールが入力に合わせてほかの欄を書き換えることがあるので、それが済んでから書き換える
+  form.addEventListener('input', () => setTimeout(sync));
+  form.addEventListener('change', () => setTimeout(sync));
   sync();
 }
 

@@ -61,6 +61,8 @@ const tools = exists('data/tools') ? fs.readdirSync(path.join(root, 'data/tools'
 const toolsIn = code => tools.filter(x => x.text[code]);
 const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 const figs = figures();
+// 操作できる図解(図IDごと。動きは fig-live.js)。文言は言語ごとで、訳のある言語だけ出す
+const figLive = readOpt('data/figures-live.json', {});
 // 図を単独のSVGファイルとして出す(画像検索用)ときのスタイル。サイトのCSSの色と、`.fig` の規則から作る
 const siteCss = read('src/css/style.css');
 const cssVars = block => [...block.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(m => `${m[1]}:${m[2].trim()}`).join(';');
@@ -409,6 +411,22 @@ function buildLang(L) {
   }
   figList.sort((a, b) => (categories.findIndex(c => c.id === figUse[a.id]?.[0]?.cat) + 1 || 999) - (categories.findIndex(c => c.id === figUse[b.id]?.[0]?.cat) + 1 || 999));
   for (const x of figList) write(`img/${code}/${x.id}.svg`, standaloneSvg(x.svg));
+  // 操作できる図解の部分。JSが動くまでは隠しておく(静的な図と説明はその上に残る)
+  const figLiveHtml = id => {
+    const f = figLive[id], x = f?.text[code];
+    if (!x) return '';
+    const tool = tools.find(y => y.id === f.tool && y.text[code]);
+    return `<section class="fig-live" data-fig-live="${id}" data-text="${esc(JSON.stringify(x))}" hidden>
+  <h2>${esc(x.heading)}</h2>
+  <p>${esc(x.lead)}</p>
+  <div class="fig-live-ctl">${f.controls.map(c => `
+    <label class="dy-field"><span>${esc(x[`ctl_${c.name}`])}</span><input type="range" id="fl-${id}-${c.name}" name="${c.name}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}"><output for="fl-${id}-${c.name}"></output></label>`).join('')}
+  </div>
+  <div class="fig fig-live-svg"></div>
+  <p class="fig-live-state" aria-live="polite"></p>${tool ? `
+  <p><a class="btn btn-ghost" data-tool-link href="${home}tools/${tool.slug}/">${esc(x.tool_link)} →</a></p>` : ''}
+</section>`;
+  };
   // 図解集の中のその図への行き先
   const figHref = id => `${home}figures/#fig-${id}`;
   const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${home}figures/#fig-${id}">${esc(t('figure_open'))}</a></figcaption></figure>`;
@@ -416,7 +434,7 @@ function buildLang(L) {
   <figure class="fig-item" id="fig-${x.id}">
     <img src="${base}img/${code}/${x.id}.svg" alt="${esc(x.title)}" width="${x.size[0]}" height="${x.size[1]}" loading="lazy">
     <figcaption><strong>${esc(x.title)}</strong>${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
-  </figure>`).join('')}
+  </figure>${figLiveHtml(x.id)}`).join('')}
 </div>`;
   const figureLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -975,6 +993,67 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <p id="pdn-warn" class="muted" hidden>${esc(x.warn)}</p>
     <svg id="pdn-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
     <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    resistivity: x => `<form id="rs-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('type', x.type, [['n', x.type_n], ['p', x.type_p]], 'p')}
+    ${field('n', x.n, '1e15', 'min="0" step="any"')}
+    ${field('rho', x.rho, 13.5, 'min="0" step="any"')}
+    <p class="muted qs-wide">${esc(x.both)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p id="rs-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('n', x.o_n)}${stat('rho', x.o_rho)}${stat('mu', x.o_mu)}${stat('sigma', x.o_sigma)}</dl>
+    <svg id="rs-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'bandgap-wavelength': x => `<form id="bg-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('preset', x.preset, [['', x.custom], ...[['Si', 1.12, 0], ['Ge', 0.66, 0], ['GaAs', 1.42, 1], ['InP', 1.34, 1], ['In₀.₅₃Ga₀.₄₇As', 0.75, 1], ['GaP', 2.26, 0], ['4H-SiC', 3.26, 0], ['GaN', 3.4, 1], ['ZnO', 3.37, 1], [x.diamond, 5.47, 0], ['AlN', 6.2, 1]]
+      .map(([name, eg, direct]) => [String(eg), `${name} (${eg} eV, ${direct ? x.direct : x.indirect})`])], '1.42')}
+    ${field('eg', x.eg, 1.42, 'min="0" step="any"')}
+    ${field('lambda', x.lambda, 873.1, 'min="0" step="any"')}
+    <p class="muted qs-wide">${esc(x.both)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('lambda', x.o_lambda)}${stat('eg', x.o_eg)}${stat('um', x.o_um)}${stat('freq', x.o_freq)}${stat('wn', x.o_wn)}${stat('region', x.o_region)}</dl>
+    <p class="bg-color"><span id="bg-swatch" class="bg-swatch" hidden></span></p>
+    <svg id="bg-band" class="sta-chart" viewBox="0 0 600 92" role="img" aria-label="${esc(x.band_label)}"
+      data-labels="${esc(JSON.stringify({ uv: x.r_uv, violet: x.r_violet, blue: x.r_blue, green: x.r_green, yellow: x.r_yellow, orange: x.r_orange, red: x.r_red, nir: x.r_nir, ir: x.r_ir, ir_band: x.r_ir_band }))}"></svg>
+    <p class="muted">${esc(x.band_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'intrinsic-carrier': x => `<form id="ni-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('mat', x.mat, [['si', x.mat_si], ['ge', x.mat_ge], ['gaas', x.mat_gaas]], 'si')}
+    ${field('t', x.t, 300, 'min="50" max="1500" step="10"')}
+    ${field('dop', x.dop, '1e15', 'min="0" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p id="ni-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <dl class="dy-stats">${stat('ni', x.o_ni)}${stat('eg', x.o_eg)}${stat('kt', x.o_kt)}${stat('ratio', x.o_ratio)}${stat('maj', x.o_maj)}${stat('min', x.o_min)}${stat('ti', x.o_ti)}</dl>
+    <svg id="ni-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'mosfet-vth': x => `<form id="vt-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('type', x.type, [['nmos', x.type_n], ['pmos', x.type_p]], 'nmos')}
+    ${select('gate', x.gate, [['npoly', x.gate_npoly], ['ppoly', x.gate_ppoly], ['metal', x.gate_metal]], 'npoly')}
+    ${field('phim', x.phim, 4.6, 'min="3" max="6" step="0.05"')}
+    ${field('tox', x.tox, 5, 'min="0.5" step="0.5"')}
+    ${field('n', x.n, '5e17', 'min="0" step="any"')}
+    ${field('nf', x.nf, '1e10', 'min="0" step="any"')}
+    ${field('vsb', x.vsb, 0, 'min="0" step="0.1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('vth', x.o_vth)}${stat('vfb', x.o_vfb)}${stat('phims', x.o_phims)}${stat('phif', x.o_phif)}${stat('qd', x.o_qd)}${stat('cox', x.o_cox)}${stat('wd', x.o_wd)}${stat('gamma', x.o_gamma)}</dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
