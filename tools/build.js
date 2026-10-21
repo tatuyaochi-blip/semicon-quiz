@@ -270,11 +270,12 @@ function buildLang(L) {
   // 検索結果用のタイトル・説明文(title・description)も言語ごと。書いてある語だけ、決まった形の代わりに使う
   // 別表記(aliases)も言語ごと。問題文が「CMOSイメージセンサ」のように別の書き方をしていても用語ページにつなぐ
   const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, aliases, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description, aliases } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
-  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key], ...(g.aliases?.length ? { aliases: g.aliases } : {}), ...(g.noLinkIn ? { noLinkIn: g.noLinkIn } : {}) }));
+  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key], ...(g.aliases?.length ? { aliases: g.aliases } : {}), ...(g.noLinkIn ? { noLinkIn: g.noLinkIn } : {}), ...(g.linkOnlyIn ? { linkOnlyIn: g.linkOnlyIn } : {}) }));
   const matcher = termMatcher(glossaryIndex);
   // 別の意味で使う分野ではリンクしない用語(用語集の noLinkIn。例: 回路のハンドシェイクを、ネットワークの問題ではリンクしない)
   const skipCache = new Map();
-  const skipIn = cat => cat && (skipCache.get(cat) ?? skipCache.set(cat, new Set(terms.filter(g => g.noLinkIn?.includes(cat)).map(g => g.key))).get(cat));
+  // linkOnlyIn: その分野の問題でだけリンクする(ほかの言語ではふつうの語になる用語。言語ごとの訳で上書きできる)
+  const skipIn = cat => cat && (skipCache.get(cat) ?? skipCache.set(cat, new Set(terms.filter(g => g.noLinkIn?.includes(cat) || (g.linkOnlyIn && !g.linkOnlyIn.includes(cat))).map(g => g.key))).get(cat));
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
     locale: L.locale,
