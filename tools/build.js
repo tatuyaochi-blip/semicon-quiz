@@ -1981,6 +1981,23 @@ ${x.faq?.length ? `<section class="faq">
     <p class="notice" id="cm-warn" hidden>${esc(x.warn)}</p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    convnet: x => `<form id="cn-form" class="dy-form cn-form" data-text="${esc(JSON.stringify({ examples: x.examples, bad_input: x.bad_input, bad_line: x.bad_line, empty: x.empty, after_fc: x.after_fc, too_small: x.too_small, op_conv: x.op_conv, op_pool: x.op_pool, op_fc: x.op_fc, op_flatten: x.op_flatten, input: x.input, col_layer: x.col_layer, col_shape: x.col_shape, col_params: x.col_params, col_macs: x.col_macs }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${field('h', x.h, 32, 'min="1" step="1"')}
+    ${field('w', x.w, 32, 'min="1" step="1"')}
+    ${field('c', x.c, 1, 'min="1" step="1"')}
+    <label class="dy-field cn-wide"><span>${esc(x.layers)}</span><textarea name="layers" rows="8" spellcheck="false" autocomplete="off"></textarea></label>
+    <p class="muted cn-wide">${esc(x.syntax)}</p>
+    <label class="cn-check cn-wide"><input type="checkbox" name="bias" checked> ${esc(x.bias)}</label>
+    <p class="notice cn-wide" id="cn-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('out', x.out)}${stat('params', x.params)}${stat('macs', x.macs)}</dl>
+    <div class="table-wrap" id="cn-table"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
