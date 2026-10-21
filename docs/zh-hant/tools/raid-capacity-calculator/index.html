@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAID 容量計算工具（RAID 0、1、5、6、10 的有效容量與容錯能力） | 半導體教室</title>
+<meta name="description" content="輸入磁碟數量、每台容量與年故障率，計算 RAID 0、RAID 1、RAID 5、RAID 6、RAID 10 的有效容量、容量效率、最多幾台故障仍不會遺失資料，以及一年內遺失資料機率的參考值。也以圖示顯示資料與同位元的配置。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/tools/raid-capacity-calculator/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/tools/raid-capacity-calculator/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/tools/raid-capacity-calculator/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/tools/raid-capacity-calculator/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/tools/raid-capacity-calculator/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAID 容量計算工具（RAID 0、1、5、6、10 的有效容量與容錯能力） | 半導體教室">
+<meta property="og:description" content="輸入磁碟數量、每台容量與年故障率，計算 RAID 0、RAID 1、RAID 5、RAID 6、RAID 10 的有效容量、容量效率、最多幾台故障仍不會遺失資料，以及一年內遺失資料機率的參考值。也以圖示顯示資料與同位元的配置。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/tools/raid-capacity-calculator/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"半導體、電子電路與資訊計算工具","item":"https://semiconroom.com/zh-hant/tools/"},{"@type":"ListItem","position":3,"name":"RAID 容量計算工具","item":"https://semiconroom.com/zh-hant/tools/raid-capacity-calculator/"}]},{"@context":"https://schema.org","@type":"WebApplication","name":"RAID 容量計算工具","description":"輸入磁碟數量、每台容量與年故障率，計算 RAID 0、RAID 1、RAID 5、RAID 6、RAID 10 的有效容量、容量效率、最多幾台故障仍不會遺失資料，以及一年內遺失資料機率的參考值。也以圖示顯示資料與同位元的配置。","url":"https://semiconroom.com/zh-hant/tools/raid-capacity-calculator/","inLanguage":"zh-Hant","applicationCategory":"EducationalApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"用 4 台 4 TB 的磁碟組成 RAID 5，容量是多少？","acceptedAnswer":{"@type":"Answer","text":"一台的容量用於同位元，因此為（4 − 1）× 4 TB = 12 TB，容量效率為 75%。"}},{"@type":"Question","name":"RAID 10 和 RAID 5 哪個比較好？","acceptedAnswer":{"@type":"Answer","text":"RAID 10 寫入快、重建時間短，但容量減半。RAID 5 容量效率高，但每次寫入都要計算同位元，寫入往往較慢，重建期間的風險也較大。資料庫等寫入頻繁的用途常使用 RAID 10。"}},{"@type":"Question","name":"有了 RAID 就不需要備份嗎？","acceptedAnswer":{"@type":"Answer","text":"仍然需要。RAID 能提高對磁碟故障的承受力，但對誤刪、軟體錯誤、勒索軟體加密或火災等無能為力，需要備份到其他裝置或地點。"}},{"@type":"Question","name":"考試會怎麼出題？","acceptedAnswer":{"@type":"Answer","text":"在日本的基本資訊技術人員考試等資訊類證照考試中，常出現各 RAID 等級的特徵（條帶化、鏡像、同位元）、由磁碟數量與容量求有效容量，以及可承受幾台故障的題目。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/tools/raid-capacity-calculator/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/tools/raid-capacity-calculator/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/tools/raid-capacity-calculator/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/tools/" lang="ko" data-lang="ko">한국어</a><a href="/de/tools/" lang="de" data-lang="de">Deutsch</a><a href="/nl/tools/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/tools/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/tools/">半導體、電子電路與資訊計算工具</a></nav>
+<h1>RAID 容量計算工具</h1>
+<p class="lead">計算把多台磁碟當作一台使用的 RAID 可用的容量，以及磁碟故障時的承受能力。切換 RAID 等級，即可比較容量效率與可靠度之間的取捨，也能以圖示確認資料與同位元放在哪台磁碟上。</p>
+<div class="cmp-tools tool-actions" data-tool-id="raid" hidden>
+  <button type="button" class="btn btn-ghost" data-fav data-off="☆ 加入收藏" data-on="★ 已加入收藏" aria-pressed="false">☆ 加入收藏</button>
+  <p class="muted tool-note">收藏與最近使用的工具只儲存在這個瀏覽器（localStorage）中。</p>
+</div>
+<div class="dy">
+  <form id="rd-form" class="dy-form" data-text="{&quot;invalid&quot;:{&quot;0&quot;:&quot;磁碟數量請設為 1～64 台。&quot;,&quot;1&quot;:&quot;RAID 1 需要 2 台以上的磁碟。&quot;,&quot;5&quot;:&quot;RAID 5 需要 3 台以上的磁碟。&quot;,&quot;6&quot;:&quot;RAID 6 需要 4 台以上的磁碟。&quot;,&quot;10&quot;:&quot;RAID 10 需要 4 台以上且為偶數的磁碟。&quot;},&quot;unit&quot;:&quot;TB&quot;,&quot;disk&quot;:&quot;磁碟 {i}&quot;,&quot;tol_n&quot;:&quot;最多 {a} 台&quot;,&quot;tol_range&quot;:&quot;至少 {a} 台，依組合最多 {b} 台&quot;,&quot;na&quot;:&quot;此台數無法組成&quot;,&quot;col_level&quot;:&quot;等級&quot;,&quot;col_usable&quot;:&quot;有效容量&quot;,&quot;col_eff&quot;:&quot;容量效率&quot;,&quot;col_tol&quot;:&quot;可承受故障台數&quot;,&quot;col_lose&quot;:&quot;遺失資料的機率&quot;}">
+    <h2>磁碟組態</h2>
+    <label class="dy-field"><span>RAID 等級</span><select name="level"><option value="0">RAID 0</option><option value="1">RAID 1</option><option value="5" selected>RAID 5</option><option value="6">RAID 6</option><option value="10">RAID 10</option></select></label>
+    <label class="dy-field"><span>磁碟數量</span><input name="n" type="number" inputmode="decimal" value="6" min="1" max="64" step="1"></label>
+    <label class="dy-field"><span>每台容量（TB）</span><input name="size" type="number" inputmode="decimal" value="4" min="0" step="any"></label>
+    <label class="dy-field"><span>每台年故障率（%）</span><input name="afr" type="number" inputmode="decimal" value="2" min="0" max="100" step="any"></label>
+    <p class="notice" id="rd-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>結果</h2>
+    <dl class="dy-stats"><div><dt>有效容量</dt><dd data-out="usable">–</dd></div><div><dt>容量效率（有效容量 ÷ 總容量）</dt><dd data-out="eff">–</dd></div><div><dt>可承受的故障台數</dt><dd data-out="tol">–</dd></div><div><dt>一年內遺失資料的機率（參考）</dt><dd data-out="lose">–</dd></div></dl>
+    <div id="rd-fig"></div>
+    <p class="muted">D 為資料，M 為鏡像（相同資料的副本），P 與 Q 為同位元。RAID 5、6 會依條帶輪流改變放置同位元的磁碟（圖中顯示 4 個條帶，最多顯示 12 台）。</p>
+    <h3>各等級的比較</h3>
+    <div class="table-wrap" id="rd-cmp"></div>
+    <p class="muted">遺失資料的機率，是假設各磁碟在一年內獨立故障、且故障磁碟不更換也不重建的悲觀簡易模型的參考值。實際上會立即更換故障磁碟並重建，因此機率小得多，但在重建期間仍有另一台故障或出現無法讀取磁區（URE）而失敗的風險。RAID 無法取代備份。</p>
+  </section>
+  <section class="dy-out" id="sweep" hidden>
+    <h2>以圖表檢視</h2>
+    <div class="sweep-pick">
+      <label class="dy-field"><span>橫軸的輸入</span><select name="sweep-x"></select></label>
+      <label class="dy-field"><span>縱軸的結果</span><select name="sweep-y"></select></label>
+    </div>
+    <svg class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="以圖表檢視"></svg>
+    <p class="muted">其他輸入維持目前的值，只讓選擇的輸入在目前值的 1/4 到 4 倍之間變化時的結果。紅點是目前的值。</p>
+  </section>
+</div>
+<section class="term-about">
+  <h2>什麼是 RAID</h2>
+  <p><a class="term-link" href="/zh-hant/term/raid/">RAID</a>（Redundant Arrays of Inexpensive / Independent Disks）是組合多台磁碟，當作一台磁碟使用的技術。把資料分散寫到多台磁碟（條帶化）可以提高速度；把相同資料或可用於復原的資訊（同位元）放在其他磁碟（冗餘化），則能在磁碟故障時不遺失資料。不同等級在可用容量、速度與可靠度之間的平衡各不相同。</p>
+</section>
+<section class="term-about">
+  <h2>RAID 0、1、10</h2>
+  <p><a class="term-link" href="/zh-hant/term/raid/">RAID</a> 0 只是把資料分散寫到所有磁碟，容量可全部使用且速度快，但只要有一台故障就會遺失所有資料。RAID 1 把相同資料寫到多台磁碟（鏡像），只能使用一台的容量，但只要還剩一台，資料就安全。RAID 10 先兩台兩台組成鏡像，再在其上做條帶化，容量減半，但兼顧速度與可靠度。只要同一組鏡像的兩台沒有同時故障，即使多台故障也能承受。</p>
+</section>
+<section class="term-about">
+  <h2>RAID 5、6 與同位元</h2>
+  <p><a class="term-link" href="/zh-hant/term/raid/">RAID</a> 5 在寫入資料的同時寫入同位元（例如資料的 XOR），並以一台的容量存放同位元。無論哪一台故障，都能由其餘磁碟的資料與同位元計算出故障磁碟的內容。同位元的位置會在各磁碟間輪替，避免寫入集中在特定磁碟。RAID 6 有兩種同位元，雖然用掉兩台的容量，但能承受兩台同時故障。6 台（每台 4 TB）時，RAID 5 的有效容量為 20 TB，RAID 6 為 16 TB。</p>
+</section>
+<section class="term-about">
+  <h2>重建與備份</h2>
+  <p>磁碟故障時，要更換新磁碟，再從其他磁碟重新建立內容（重建）。大容量磁碟的重建可能需要數小時到數天，在此期間若另一台故障或發現無法讀取的部分，<a class="term-link" href="/zh-hant/term/raid/">RAID</a> 5 就會遺失資料。因此大容量磁碟越來越常選用 RAID 6。此外，RAID 對誤刪資料或遭病毒竄改無能為力，因此要搭配異地備份使用。</p>
+</section>
+<p><a class="btn btn-primary" href="/zh-hant/quiz/?mode=category&amp;c=system-architecture&amp;n=10" rel="nofollow">練習相關題目</a></p>
+<section>
+  <article class="q-mini" data-qid="system-architecture-018" data-cat="system-architecture" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/system-architecture/system-architecture-018/">關於 RAID 1 的說明，下列何者適當？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">將資料分散寫入多台磁碟（等量分割，striping），加快讀寫速度，但沒有冗餘</span></li><li><span class="choice-mark">B</span><span class="choice-text">將相同的資料寫入2台磁碟（鏡像，mirroring），即使1台故障也不會失去資料</span></li><li><span class="choice-mark">C</span><span class="choice-text">將資料與用於錯誤更正的同位元（parity）分散寫入多台磁碟，即使1台故障也能復原資料</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 將相同的資料寫入2台磁碟（鏡像，mirroring），即使1台故障也不會失去資料</p><p class="explanation"><a class="term-link" href="/zh-hant/term/raid/">RAID</a> 1 是將相同的資料寫入2台磁碟的鏡像，即使1台故障，也能以另1台的資料繼續處理。可記錄資料的容量為2台磁碟合計的一半。只有等量分割而沒有冗餘的是 RAID 0，分散寫入同位元的是 RAID 5。另外，RAID 是防備磁碟故障的機制，誤刪的資料或遭<a class="term-link" href="/zh-hant/term/ransomware/">勒索軟體</a>加密的資料會同時反映到兩台磁碟，因此無法取代備份。</p></details>
+  </article>
+  <article class="q-mini" data-qid="system-architecture-019" data-cat="system-architecture" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/system-architecture/system-architecture-019/">以4台容量為4 TB的磁碟組成 RAID 5。可記錄資料的容量為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">8 TB</span></li><li><span class="choice-mark">B</span><span class="choice-text">12 TB</span></li><li><span class="choice-mark">C</span><span class="choice-text">16 TB</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 12 TB</p><p class="explanation"><a class="term-link" href="/zh-hant/term/raid/">RAID</a> 5 將資料與同位元分散寫入所有磁碟，並以1台磁碟份的容量作為同位元使用。因此可記錄資料的容量為 (4 − 1) × 4 TB = 12 TB，即使1台故障，也能從其餘磁碟的資料與同位元復原遺失的資料。8 TB 是容量減半的 RAID 1 或 RAID 10 的容量，16 TB 則是沒有冗餘的 RAID 0 的容量。</p></details>
+  </article>
+  <article class="q-mini" data-qid="system-architecture-020" data-cat="system-architecture" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/system-architecture/system-architecture-020/">以6台容量為8 TB的磁碟組成 RAID 6。可記錄資料的容量，與不失去資料而能承受同時故障的磁碟台數之組合，下列何者正確？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">32 TB，最多2台</span></li><li><span class="choice-mark">B</span><span class="choice-text">40 TB，最多1台</span></li><li><span class="choice-mark">C</span><span class="choice-text">48 TB，最多2台</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 32 TB，最多2台</p><p class="explanation"><a class="term-link" href="/zh-hant/term/raid/">RAID</a> 6 是分散寫入2種同位元的方式，以2台磁碟份的容量作為同位元使用。可記錄資料的容量為 (6 − 2) × 8 TB = 32 TB，即使同時有最多2台故障也不會失去資料。磁碟容量越大，從1台故障復原（重建，rebuild）所需的時間越長，期間另1台故障的風險也越高，因此常選擇 RAID 6 而非 RAID 5。</p></details>
+  </article>
+  <article class="q-mini" data-qid="system-architecture-021" data-cat="system-architecture" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/system-architecture/system-architecture-021/">在以4台磁碟組成的 RAID 10（每2台組成1組鏡像，共2組，再對這2組做等量分割）中，4台裡有2台同時故障。若哪2台故障的機率都相等，資料遺失的機率為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">1/6</span></li><li><span class="choice-mark">B</span><span class="choice-text">1/3</span></li><li><span class="choice-mark">C</span><span class="choice-text">2/3</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 1/3</p><p class="explanation">從4台中選出故障的2台，共有 C(4, 2) = 6 種組合。資料遺失發生在同一組鏡像的2台同時故障時，鏡像共有2組，因此有2種。所以資料遺失的機率為 2 ÷ 6 = 1/3。其餘4種組合中，每組鏡像各留下1台，因此資料不會遺失；<a class="term-link" href="/zh-hant/term/raid/">RAID</a> 10 視組合可承受2台故障，但與任何2台故障都能承受的 RAID 6 不同。</p></details>
+  </article>
+  <article class="q-mini" data-qid="system-architecture-022" data-cat="system-architecture" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/system-architecture/system-architecture-022/">以4台每台每秒可進行200次隨機輸入輸出（IOPS）的磁碟組成 RAID 5。每進行1次小資料的隨機寫入，需要讀取舊資料與舊同位元、寫入新資料與新同位元，合計4次輸入輸出，且不考慮快取的效果。只進行寫入時，整個 RAID 5 能處理的寫入次數為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">每秒200次</span></li><li><span class="choice-mark">B</span><span class="choice-text">每秒400次</span></li><li><span class="choice-mark">C</span><span class="choice-text">每秒800次</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 每秒200次</p><p class="explanation">4台磁碟整體能處理的輸入輸出為 4 × 200 = 每秒800次。<a class="term-link" href="/zh-hant/term/raid/">RAID</a> 5 每次寫入需要4次輸入輸出，因此寫入次數為 800 ÷ 4 = 每秒200次。這種每次寫入所需輸入輸出次數的增加稱為「寫入懲罰」（write penalty），鏡像的 RAID 10 為2次，因此是每秒400次。在寫入較多的用途中，選擇 RAID 等級時不僅要考慮容量效率，也要考慮這種效能差異。</p></details>
+  </article></section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>用 4 台 4 TB 的磁碟組成 RAID 5，容量是多少？</h3>
+  <p>一台的容量用於同位元，因此為（4 − 1）× 4 TB = 12 TB，容量效率為 75%。</p>
+  <h3>RAID 10 和 RAID 5 哪個比較好？</h3>
+  <p>RAID 10 寫入快、重建時間短，但容量減半。RAID 5 容量效率高，但每次寫入都要計算同位元，寫入往往較慢，重建期間的風險也較大。資料庫等寫入頻繁的用途常使用 RAID 10。</p>
+  <h3>有了 RAID 就不需要備份嗎？</h3>
+  <p>仍然需要。RAID 能提高對磁碟故障的承受力，但對誤刪、軟體錯誤、勒索軟體加密或火災等無能為力，需要備份到其他裝置或地點。</p>
+  <h3>考試會怎麼出題？</h3>
+  <p>在日本的基本資訊技術人員考試等資訊類證照考試中，常出現各 RAID 等級的特徵（條帶化、鏡像、同位元）、由磁碟數量與容量求有效容量，以及可承受幾台故障的題目。</p>
+</section>
+<div data-ad="tool"></div>
+<section>
+  <h2>相關用語</h2>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/raid/">磁碟陣列（RAID）</a></p>
+</section>
+
+
+<section>
+  <h2>相關計算工具</h2>
+  <div class="mode-grid compact"><a class="mode-card" href="/zh-hant/tools/availability-calculator/"><strong>可用率計算工具</strong><span>由 MTBF 與 MTTR 求出可用率，並計算串聯、並聯與 n 中取 k 組合系統的可用率與每年停機時間</span></a></div>
+  <p><a class="btn btn-ghost" href="/zh-hant/tools/">半導體、電子電路與資訊計算工具 →</a></p>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/tool-share.js"></script>
+<script type="module" src="/js/raid.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
