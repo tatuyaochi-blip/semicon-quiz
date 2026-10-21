@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-588f192172';
+const CACHE = 'sq-098fbfd939';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -63,6 +63,7 @@ const PRECACHE = [
   "/data/ja/q/power.json",
   "/data/ja/q/process-materials.json",
   "/data/ja/q/reliability.json",
+  "/data/ja/q/security.json",
   "/data/ja/q/sram-flash.json",
   "/data/ja/q/sta-cdc.json",
   "/data/ja/q/test.json",
@@ -126,6 +127,7 @@ const PRECACHE = [
   "/data/en/q/power.json",
   "/data/en/q/process-materials.json",
   "/data/en/q/reliability.json",
+  "/data/en/q/security.json",
   "/data/en/q/sram-flash.json",
   "/data/en/q/sta-cdc.json",
   "/data/en/q/test.json",
@@ -189,6 +191,7 @@ const PRECACHE = [
   "/data/zh-hant/q/power.json",
   "/data/zh-hant/q/process-materials.json",
   "/data/zh-hant/q/reliability.json",
+  "/data/zh-hant/q/security.json",
   "/data/zh-hant/q/sram-flash.json",
   "/data/zh-hant/q/sta-cdc.json",
   "/data/zh-hant/q/test.json",
@@ -251,6 +254,7 @@ const PRECACHE = [
   "/data/ko/q/power.json",
   "/data/ko/q/process-materials.json",
   "/data/ko/q/reliability.json",
+  "/data/ko/q/security.json",
   "/data/ko/q/sram-flash.json",
   "/data/ko/q/sta-cdc.json",
   "/data/ko/q/test.json",
@@ -313,6 +317,7 @@ const PRECACHE = [
   "/data/de/q/power.json",
   "/data/de/q/process-materials.json",
   "/data/de/q/reliability.json",
+  "/data/de/q/security.json",
   "/data/de/q/sram-flash.json",
   "/data/de/q/sta-cdc.json",
   "/data/de/q/test.json",
@@ -375,6 +380,7 @@ const PRECACHE = [
   "/data/nl/q/power.json",
   "/data/nl/q/process-materials.json",
   "/data/nl/q/reliability.json",
+  "/data/nl/q/security.json",
   "/data/nl/q/sram-flash.json",
   "/data/nl/q/sta-cdc.json",
   "/data/nl/q/test.json",
@@ -437,6 +443,7 @@ const PRECACHE = [
   "/data/fr/q/power.json",
   "/data/fr/q/process-materials.json",
   "/data/fr/q/reliability.json",
+  "/data/fr/q/security.json",
   "/data/fr/q/sram-flash.json",
   "/data/fr/q/sta-cdc.json",
   "/data/fr/q/test.json",

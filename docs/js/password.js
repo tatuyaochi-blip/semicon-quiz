@@ -9,7 +9,7 @@ const SETS = { lower: 26, upper: 26, digit: 10, symbol: 32 };
 // 大きな数を「1.23×10^45」のように(BigInt を使わず、桁は対数で扱う)
 const sci = log10 => {
   if (!Number.isFinite(log10)) return '–';
-  if (log10 < 15) return Math.round(10 ** log10).toString();
+  if (log10 < 9) return Math.round(10 ** log10).toString();
   const e = Math.floor(log10);
   return `${(10 ** (log10 - e)).toFixed(2)}×10^${e}`;
 };
@@ -20,7 +20,7 @@ function duration(log10s) {
   let [base, name] = units[0];
   for (const u of units) if (log10s >= u[0]) [base, name] = u;
   const v = log10s - base;
-  if (name === T.u_y && v >= 6) return `${sci(v)} ${name}`;
+  if (name === T.u_y && v >= 9) return `${sci(v)} ${name}`;
   return `${Number((10 ** v).toPrecision(3))} ${name}`;
 }
 function update() {
