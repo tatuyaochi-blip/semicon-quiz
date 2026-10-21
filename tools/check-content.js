@@ -80,7 +80,8 @@ export function checkContent() {
           const ja = new Set(numbers([q.question, ...q.choices, q.explanation, ...(q.choiceNotes ?? [])].join('\n')));
           for (const m of all.matchAll(/(?<![\d.,])[1-9]\d{0,2},\d{3}(?![\d,])/g)) {
             const asInt = Number(m[0].replace(',', '')), asDec = Number(m[0].replace(',', '.'));
-            if (ja.has(asInt) && !ja.has(asDec)) warnings.push(`${q.id} [${l}]: 「${m[0]}」は ${asDec} と読めます(日本語では ${asInt})`);
+            // 日本語に小数として出てこない「n,nnn」は、整数を桁区切りで書いた疑い(日本語が「10万」のように書いているときも見つける)
+            if (!ja.has(asDec)) warnings.push(`${q.id} [${l}]: 「${m[0]}」は ${asDec} と読めます(整数の ${asInt} なら桁区切りを外してください)`);
           }
           // 逆向きの書き間違い: 単位の付いた小数を「0.1 nm」のように点で書いている(この言語では「0,1 nm」)。版番号(PCIe 4.0 など)は単位が付かないので対象外
           // 単位のない小数(「0.35/BW」「−6.25」)も調べる。版番号・規格名(PCIe 3.0、2.5D)、指数表記(1.0e16)、
