@@ -14,6 +14,7 @@ function bitsOf(x, f) {
   if (f === 'single') { dv.setFloat32(0, x); return BigInt(dv.getUint32(0)); }
   return BigInt(toHalf(x));
 }
+const minus = v => String(v).replace(/-/g, '−');
 const roundEven = x => { const r = Math.round(x); return r - x === 0.5 && r % 2 ? r - 1 : r; };
 function toHalf(x) {
   const s = x < 0 || Object.is(x, -0) ? 0x8000 : 0;
@@ -51,7 +52,7 @@ function sci(num, den) {
   if (p >= 0 ? a < den * 10n ** BigInt(p) : a * 10n ** BigInt(-p) < den) p--;
   const m = p >= 2 ? a / (den * 10n ** BigInt(p - 2)) : a * 10n ** BigInt(2 - p) / den;
   const s = m.toString().padEnd(3, '0');
-  return `${neg ? '−' : ''}${s[0]}.${s.slice(1, 3)}×10^${p}`;
+  return `${neg ? '−' : ''}${s[0]}.${s.slice(1, 3)}×10^${minus(p)}`;
 }
 
 function show(bits, f, input) {
@@ -66,7 +67,7 @@ function show(bits, f, input) {
   out('sign').textContent = `${sign} (${sign ? '−' : '+'})`;
   const kind = ev === 2 ** eb - 1 ? (mv ? 'nan' : 'inf') : ev === 0 ? (mv ? 'sub' : 'zero') : 'normal';
   out('kind').textContent = T.kinds[kind];
-  out('exp').textContent = kind === 'normal' ? `${ev} − ${bias} = ${ev - bias}` : kind === 'sub' ? `${ev} → ${1 - bias} (${T.kinds.sub})` : String(ev);
+  out('exp').textContent = kind === 'normal' ? `${ev} − ${bias} = ${minus(ev - bias)}` : kind === 'sub' ? `${ev} → ${minus(1 - bias)} (${T.kinds.sub})` : String(ev);
   out('man').textContent = kind === 'normal' ? `1.${mbits.replace(/0+$/, '') || '0'} (2)` : `0.${mbits.replace(/0+$/, '') || '0'} (2)`;
   // 記憶される値を正確な10進数で: 値 = M × 2^E(M は整数)
   let exact = '–', err = '–';
@@ -123,11 +124,11 @@ function fromHex() {
 function info(f) {
   const { e, m } = FMT[f];
   const bias = 2 ** (e - 1) - 1;
-  out('prec').textContent = `${m + 1} bit (≈ ${((m + 1) * Math.log10(2)).toFixed(1)} ${T.digits})`;
-  out('eps').textContent = `2^−${m} ≈ ${(2 ** -m).toPrecision(4)}`;
+  out('prec').textContent = `${m + 1} bit / ≈ ${((m + 1) * Math.log10(2)).toFixed(1)} ${T.digits}`;
+  out('eps').textContent = `2^−${m} ≈ ${minus((2 ** -m).toPrecision(4))}`;
   out('max').textContent = ((2 - 2 ** -m) * 2 ** bias).toPrecision(6);
-  out('minn').textContent = `2^${1 - bias} ≈ ${(2 ** (1 - bias)).toPrecision(4)}`;
-  out('mins').textContent = `2^${1 - bias - m} ≈ ${(2 ** (1 - bias - m)).toPrecision(4)}`;
+  out('minn').textContent = `2^${minus(1 - bias)} ≈ ${minus((2 ** (1 - bias)).toPrecision(4))}`;
+  out('mins').textContent = `2^${minus(1 - bias - m)} ≈ ${minus((2 ** (1 - bias - m)).toPrecision(4))}`;
 }
 form.addEventListener('input', e => (e.target.name === 'hex' ? fromHex : fromValue)());
 form.addEventListener('submit', e => e.preventDefault());
