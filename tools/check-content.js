@@ -91,7 +91,7 @@ export function checkContent() {
           const thousands = n => /^[1-9]\d{0,2}\.\d{3}$/.test(n) && ja.has(Number(n.replace('.', '')));
           const seen = new Set();
           // 版番号: 規格名のすぐ後ろの数、または規格の話をしている文の「n.0」
-          const version = (i, n = all.slice(i).match(/\d+\.\d+/)?.[0] ?? '') => /(?:PCIe|PCI Express|USB|UCIe|CXL|TPM|IEEE|TLS|SSL|HTTP|[Vv]ersion|Gen)[\s-]*$/.test(all.slice(Math.max(0, i - 16), i))
+          const version = (i, n = all.slice(i).match(/\d+\.\d+/)?.[0] ?? '') => /(?:PCIe|PCI Express|USB|UCIe|CXL|TPM|IEEE|TLS|SSL|HTTP|OAuth|[Vv]ersion|Gen)[\s-]*$/.test(all.slice(Math.max(0, i - 16), i))
             || /\.0$/.test(n) && /PCIe|PCI Express|USB|UCIe|CXL|GT\/s/.test(all);
           for (const m of all.matchAll(DOT_DECIMAL)) {
             // 「1.000 µA」のように点が桁区切り(日本語では 1000)なら正しい。「0.001」は桁区切りではない
