@@ -1341,6 +1341,38 @@ ${x.faq?.length ? `<section class="faq">
     <dl class="dy-stats">${stat('vth', x.o_vth)}${stat('vfb', x.o_vfb)}${stat('phims', x.o_phims)}${stat('phif', x.o_phif)}${stat('qd', x.o_qd)}${stat('cox', x.o_cox)}${stat('wd', x.o_wd)}${stat('gamma', x.o_gamma)}</dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    'base-convert': x => `<form id="bc-form" class="dy-form" data-text="${esc(JSON.stringify({ invalid: x.invalid, overflow: x.overflow }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    <label class="dy-field"><span>${esc(x.value)}</span><input name="value" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="-5"></label>
+    ${select('base', x.base, ['2', '8', '10', '16'].map(b => [b, x.bases[b]]), '10')}
+    ${select('bits', x.bits, ['8', '16', '32', '64'].map(b => [b, `${b} bit`]), '8')}
+    <p class="notice" id="bc-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats bc-stats">${stat('bin', x.bin)}${stat('hex', x.hex)}${stat('oct', x.oct)}${stat('dec_u', x.dec_u)}${stat('dec_s', x.dec_s)}</dl>
+    <h3>${esc(x.neg_heading)}</h3>
+    <dl class="dy-stats bc-stats">${stat('inv', x.inv)}${stat('neg', x.neg)}</dl>
+    <h3>${esc(x.range_heading)}</h3>
+    <dl class="dy-stats">${stat('range_u', x.range_u)}${stat('range_s', x.range_s)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    ieee754: x => `<form id="fp-form" class="dy-form" data-text="${esc(JSON.stringify({ sign: x.sign, exp: x.exp, man: x.man, kinds: x.kinds, exact: x.exact_ok, digits: x.digits }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    <label class="dy-field"><span>${esc(x.value)}</span><input name="value" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0.1"></label>
+    ${select('fmt', x.fmt, ['half', 'single', 'double'].map(f => [f, x.fmts[f]]), 'single')}
+    <label class="dy-field"><span>${esc(x.hexin)}</span><input name="hex" type="text" autocomplete="off" spellcheck="false" value=""></label>
+    <p class="notice" id="fp-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p class="fp-bits" data-out="bits" aria-label="${esc(x.bits)}"></p>
+    <p class="fp-legend"><span class="fp-s">${esc(x.sign)}</span> <span class="fp-e">${esc(x.exp)}</span> <span class="fp-m">${esc(x.man)}</span></p>
+    <dl class="dy-stats bc-stats">${stat('hex', x.hex)}${stat('kind', x.kind)}${stat('sign', x.sign)}${stat('exp', x.exp)}${stat('man', x.man)}${stat('exact', x.exact)}${stat('err', x.err)}</dl>
+    <h3>${esc(x.props_heading)}</h3>
+    <dl class="dy-stats">${stat('prec', x.prec)}${stat('eps', x.eps)}${stat('max', x.max)}${stat('minn', x.minn)}${stat('mins', x.mins)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
