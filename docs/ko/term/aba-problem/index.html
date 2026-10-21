@@ -81,15 +81,15 @@
 </article>
 <section class="term-about">
   <h2>ABA 문제가 발생하는 과정</h2>
-  <p><a class="term-link" href="/ko/term/compare-and-swap/">compare-and-swap</a>(CAS)은 어떤 위치가 여전히 기댓값을 가지고 있을 때만 새 값을 쓰며, 이력이 아니라 값을 비교합니다. head가 노드 A를 가리키고 A의 next 포인터가 B를 가리키는 <a class="term-link" href="/ko/term/lock-free-algorithm/">락 프리</a> 스택을 생각해 봅시다. 스레드 1이 head = A, next = B를 읽은 뒤 선점됩니다. 스레드 2는 A를 팝하고, B를 팝한 다음, A를 다시 푸시하거나 우연히 A의 주소를 재사용하는 새 노드를 푸시합니다. 스레드 1이 재개되면 head가 여전히 A이므로 CAS(head, A, B)가 성공하고, head는 이제 더 이상 스택에 없는 노드 B를 가리키게 됩니다.</p>
+  <p><a class="term-link" href="/ko/term/compare-and-swap/">compare-and-swap</a>(CAS)은 어떤 위치가 여전히 기댓값을 가지고 있을 때만 새 값을 쓰며, 이력이 아니라 값을 비교합니다. head가 노드 A를 가리키고 A의 next <a class="term-link" href="/ko/term/pointer/">포인터</a>가 B를 가리키는 <a class="term-link" href="/ko/term/lock-free-algorithm/">락 프리</a> 스택을 생각해 봅시다. 스레드 1이 head = A, next = B를 읽은 뒤 선점됩니다. 스레드 2는 A를 팝하고, B를 팝한 다음, A를 다시 푸시하거나 우연히 A의 주소를 재사용하는 새 노드를 푸시합니다. 스레드 1이 재개되면 head가 여전히 A이므로 CAS(head, A, B)가 성공하고, head는 이제 더 이상 스택에 없는 노드 B를 가리키게 됩니다.</p>
 </section>
 <section class="term-about">
   <h2>메모리 재사용이 문제를 키우는 이유</h2>
-  <p>이 문제는 수동 메모리 관리를 하는 언어에서 가장 흔합니다. 노드가 해제되면 할당자는 다음 할당에 같은 주소를 쉽게 내주므로, 포인터 값이 다른 노드를 가리키면서도 A로 돌아올 수 있습니다. 가비지 컬렉션 언어에서는 스레드가 아직 참조를 가지고 있는 노드를 회수할 수 없으므로 주소 재사용 형태의 ABA는 대부분 사라지지만, 같은 노드를 의도적으로 다시 삽입하면 논리적 형태의 ABA는 여전히 발생할 수 있습니다.</p>
+  <p>이 문제는 수동 메모리 관리를 하는 언어에서 가장 흔합니다. 노드가 해제되면 할당자는 다음 할당에 같은 주소를 쉽게 내주므로, <a class="term-link" href="/ko/term/pointer/">포인터</a> 값이 다른 노드를 가리키면서도 A로 돌아올 수 있습니다. 가비지 컬렉션 언어에서는 스레드가 아직 참조를 가지고 있는 노드를 회수할 수 없으므로 주소 재사용 형태의 ABA는 대부분 사라지지만, 같은 노드를 의도적으로 다시 삽입하면 논리적 형태의 ABA는 여전히 발생할 수 있습니다.</p>
 </section>
 <section class="term-about">
   <h2>표준적인 대책</h2>
-  <p>전통적인 해결책은 포인터에 수정 카운터를 짝지어 두 값을 하나의 원자적 연산으로 비교하는 것으로, 더블 폭 CAS나 포인터의 남는 비트를 이용합니다. 갱신할 때마다 카운터가 증가하므로 태그 5인 A와 태그 7인 A는 서로 다르게 취급됩니다. load-linked/store-conditional(LL/SC, RISC-V에서는 <a class="term-link" href="/ko/term/load-reserved-store-conditional/">LR/SC</a>)은 로드 이후 그 위치에 쓰기가 한 번이라도 있었으면 값이 같더라도 실패합니다. 해저드 포인터나 에포크 기반 회수 같은 안전한 메모리 회수 기법은 어떤 스레드가 아직 접근할 수 있는 동안에는 노드가 해제·재사용되지 않도록 막습니다.</p>
+  <p>전통적인 해결책은 <a class="term-link" href="/ko/term/pointer/">포인터</a>에 수정 카운터를 짝지어 두 값을 하나의 원자적 연산으로 비교하는 것으로, 더블 폭 CAS나 포인터의 남는 비트를 이용합니다. 갱신할 때마다 카운터가 증가하므로 태그 5인 A와 태그 7인 A는 서로 다르게 취급됩니다. load-linked/store-conditional(LL/SC, RISC-V에서는 <a class="term-link" href="/ko/term/load-reserved-store-conditional/">LR/SC</a>)은 로드 이후 그 위치에 쓰기가 한 번이라도 있었으면 값이 같더라도 실패합니다. 해저드 포인터나 에포크 기반 회수 같은 안전한 메모리 회수 기법은 어떤 스레드가 아직 접근할 수 있는 동안에는 노드가 해제·재사용되지 않도록 막습니다.</p>
 </section>
 <section class="term-about">
   <h2>ABA와 락 프리 진행 보장</h2>
@@ -100,7 +100,7 @@
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 B예요.">
     <h3><a href="/ko/q/multicore-sync/multicore-sync-018/">CAS를 사용한 락프리 자료 구조에서 문제가 되는 ABA 문제에 대한 설명으로 올바른 것은 무엇입니까?</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">A와 B 두 스레드가 번갈아서만 실행될 수 있게 되는 것</span></li><li><span class="choice-mark">B</span><span class="choice-text">값이 A에서 B로 바뀌었다가 다시 A로 돌아왔을 때, CAS가 변화를 알아차리지 못하고 성공해 버리는 것</span></li><li><span class="choice-mark">C</span><span class="choice-text">A와 B 두 락을 반대 순서로 획득해 버리는 것</span></li></ol>
-    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: B. 값이 A에서 B로 바뀌었다가 다시 A로 돌아왔을 때, CAS가 변화를 알아차리지 못하고 성공해 버리는 것</p><p class="explanation"><a class="term-link" href="/ko/term/linked-list/">연결 리스트</a>의 선두 포인터가 A일 때, 어떤 스레드가 A를 읽고 CAS를 준비하는 사이에 다른 스레드가 A를 제거하고 B에 대한 조작을 한 뒤, 다시 같은 주소 A의 노드를 넣는 경우가 있습니다. CAS는 값이 A 그대로이므로 성공하지만 리스트의 내용은 이미 바뀌어 있어 구조가 망가집니다. 포인터에 갱신 횟수를 붙여 함께 비교하는 방법이나 <a class="term-link" href="/ko/term/load-reserved-store-conditional/">LR/SC</a>를 사용하는 방법으로 방지합니다.</p></details>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: B. 값이 A에서 B로 바뀌었다가 다시 A로 돌아왔을 때, CAS가 변화를 알아차리지 못하고 성공해 버리는 것</p><p class="explanation"><a class="term-link" href="/ko/term/linked-list/">연결 리스트</a>의 선두 <a class="term-link" href="/ko/term/pointer/">포인터</a>가 A일 때, 어떤 스레드가 A를 읽고 CAS를 준비하는 사이에 다른 스레드가 A를 제거하고 B에 대한 조작을 한 뒤, 다시 같은 주소 A의 노드를 넣는 경우가 있습니다. CAS는 값이 A 그대로이므로 성공하지만 리스트의 내용은 이미 바뀌어 있어 구조가 망가집니다. 포인터에 갱신 횟수를 붙여 함께 비교하는 방법이나 <a class="term-link" href="/ko/term/load-reserved-store-conditional/">LR/SC</a>를 사용하는 방법으로 방지합니다.</p></details>
   </article>
 </section>
 <section class="faq">
@@ -128,7 +128,7 @@
 
 <section>
   <h2>관련 용어</h2>
-  <p class="term-chips"><a class="chip" href="/ko/term/linked-list/">연결 리스트(Linked List)</a> <a class="chip" href="/ko/term/load-reserved-store-conditional/">LR/SC</a> <a class="chip" href="/ko/term/lock-free-algorithm/">락 프리(Lock-free)</a> <a class="chip" href="/ko/term/interrupt/">인터럽트(Interrupt)</a> <a class="chip" href="/ko/term/false-sharing/">거짓 공유(False Sharing)</a> <a class="chip" href="/ko/term/deadlock/">데드락(Deadlock)</a> <a class="chip" href="/ko/term/data-race/">데이터 레이스(Data Race)</a> <a class="chip" href="/ko/term/directory-based-coherence/">디렉터리 방식(Directory-based Coherence)</a> <a class="chip" href="/ko/term/memory-barrier/">메모리 배리어(Memory Barrier)</a> <a class="chip" href="/ko/term/memory-consistency-model/">메모리 일관성 모델(Memory Consistency Model)</a></p>
+  <p class="term-chips"><a class="chip" href="/ko/term/linked-list/">연결 리스트(Linked List)</a> <a class="chip" href="/ko/term/pointer/">포인터(Pointer)</a> <a class="chip" href="/ko/term/load-reserved-store-conditional/">LR/SC</a> <a class="chip" href="/ko/term/lock-free-algorithm/">락 프리(Lock-free)</a> <a class="chip" href="/ko/term/interrupt/">인터럽트(Interrupt)</a> <a class="chip" href="/ko/term/false-sharing/">거짓 공유(False Sharing)</a> <a class="chip" href="/ko/term/deadlock/">데드락(Deadlock)</a> <a class="chip" href="/ko/term/data-race/">데이터 레이스(Data Race)</a> <a class="chip" href="/ko/term/directory-based-coherence/">디렉터리 방식(Directory-based Coherence)</a> <a class="chip" href="/ko/term/memory-barrier/">메모리 배리어(Memory Barrier)</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/ko/glossary/">용어집으로 돌아가기</a></p>
 </main>
