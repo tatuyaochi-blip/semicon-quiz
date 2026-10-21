@@ -7,4 +7,5 @@ import m5 from './review.js';
 import m6 from './diagnosis.js';
 import m7 from './numbers.js';
 import m8 from './set.js';
-export default [m0, m1, m2, m3, m4, m5, m6, m7, m8];
+import m9 from './terms.js';
+export default [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9];

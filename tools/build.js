@@ -83,6 +83,15 @@ const interviewText = {
   'zh-hant': { h1: 'IC 設計與硬體面試常見問題', nav: '面試題', card: '依主題整理的面試常見題目與解答', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
     lead: '依主題整理 IC 設計與硬體工程師面試常見的基礎題目，每個主題{k}題。可展開解答確認，點選題目則可查看完整解析。想一次練習整個主題時，請使用「整組作答」。', solve: '整組作答', answer: '顯示解答', course: '用硬體技術面試課程依領域練習', link: 'IC 設計與硬體面試常見問題' },
 };
+// 用語の対訳クイズ(モード terms)の文言と、出題する言語の組(対訳表のある言語だけ)
+const termQuizText = {
+  ja: { question: '「{term}」は{lang}で何と言いますか?', answer: '「{a}」は{lang}で「{b}」です。', langs: { ja: '日本語', en: '英語', 'zh-hant': '中国語(繁体字)' },
+    pairs: [['ja', 'en'], ['en', 'ja'], ['ja', 'zh-hant']], heading: '対訳クイズで確かめる', lead: '対訳表の語から10問を出題します。同じ分野の語がまぎらわしい選択肢になります。', arrow: '{from} → {to}' },
+  en: { question: 'What is “{term}” in {lang}?', answer: '“{a}” in {lang} is “{b}”. ', langs: { en: 'English', ja: 'Japanese', 'zh-hant': 'Chinese (Traditional)' },
+    pairs: [['en', 'zh-hant'], ['en', 'ja'], ['zh-hant', 'en']], heading: 'Test yourself with a translation quiz', lead: 'Ten questions drawn from the terms on this page, with look-alike terms from the same field as distractors.', arrow: '{from} → {to}' },
+  'zh-hant': { question: '「{term}」的{lang}是什麼？', answer: '「{a}」的{lang}是「{b}」。', langs: { 'zh-hant': '中文', en: '英文', ja: '日文' },
+    pairs: [['en', 'zh-hant'], ['zh-hant', 'en'], ['zh-hant', 'ja']], heading: '用對照測驗確認', lead: '從對照表的術語中出10題，以同一領域的術語作為容易混淆的選項。', arrow: '{from} → {to}' },
+};
 // 職種ガイド(/careers/ と /careers/{id}/)。仕事の内容と、身につけたい分野・コース・用語。訳は data/i18n/{言語}/careers.json(訳のある言語だけ作る)
 const careers = readOpt('data/careers.json', []);
 const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
@@ -265,7 +274,13 @@ function buildLang(L) {
     numbersQ,
     modes: Object.fromEntries(modes.map(m => [m.id, { label: modeText(m, 'label'), empty: modeText(m, 'empty') ?? null }])),
     reportFormUrl: config.reportFormUrl ?? null,
+    termQuiz: dictLangs.includes(code) ? termQuizText[code] : null,
   }));
+  // 用語の対訳クイズのデータ: 用語ごとに3言語の名前と、この言語での短い説明
+  if (dictLangs.includes(code)) {
+    write(`data/${code}/terms.json`, JSON.stringify(terms.filter(g => dictLangs.every(x => x === defLang || gloByLang[x][g.key]))
+      .map(g => ({ k: g.key, c: g.cat, n: Object.fromEntries(dictLangs.map(x => [x, x === defLang ? g.key : gloByLang[x][g.key].term])), d: g.desc }))));
+  }
   // PWA のマニフェスト(言語ごと。ホーム画面から開くとその言語のトップになる)
   write(`${L.path}manifest.json`, JSON.stringify({
     name: siteName,
@@ -862,6 +877,11 @@ ${groups.map(gr => `<section class="glossary-group">
     </table></div>
   </section>`).join('')}
 </section>`).join('\n')}
+<section>
+  <h2>${esc(termQuizText[code].heading)}</h2>
+  <p class="muted">${esc(termQuizText[code].lead)}</p>
+  <p>${termQuizText[code].pairs.map(([f, to]) => `<a class="btn btn-ghost btn-small" href="${home}quiz/?mode=terms&amp;from=${f}&amp;to=${to}" rel="nofollow">${esc(termQuizText[code].arrow.replace('{from}', termQuizText[code].langs[f]).replace('{to}', termQuizText[code].langs[to]))}</a>`).join(' ')}</p>
+</section>
 <div data-ad="glossary"></div>
 <p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
@@ -1331,7 +1351,7 @@ ${x.faq?.length ? `<section class="faq">
     ${select('d2', x.d2, opts(digits), 'black')}
     <div data-band3 hidden>${select('d3', x.d3, opts(digits), 'black')}</div>
     ${select('mul', x.mul, opts([...digits, 'gold', 'silver']), 'red')}
-    ${select('tol', x.tol, opts(['brown', 'red', 'green', 'blue', 'violet', 'grey', 'gold', 'silver']), 'gold')}
+    ${select('tol', x.tol, opts(['brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'grey', 'gold', 'silver']), 'gold')}
     ${field('target', x.target, 4700, 'min="0" step="any"')}
   </form>
   <section class="dy-out" aria-live="polite">

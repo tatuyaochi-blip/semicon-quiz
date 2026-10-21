@@ -10,7 +10,7 @@ try { names = JSON.parse(form.dataset.colors); } catch {}
 
 const DIGIT = { black: 0, brown: 1, red: 2, orange: 3, yellow: 4, green: 5, blue: 6, violet: 7, grey: 8, white: 9 };
 const MULT = { ...Object.fromEntries(Object.entries(DIGIT).map(([c, d]) => [c, 10 ** d])), gold: 0.1, silver: 0.01 };
-const TOL = { brown: 1, red: 2, green: 0.5, blue: 0.25, violet: 0.1, grey: 0.05, gold: 5, silver: 10 };
+const TOL = { brown: 1, red: 2, orange: 0.05, yellow: 0.02, green: 0.5, blue: 0.25, violet: 0.1, grey: 0.01, gold: 5, silver: 10 };
 const HEX = { black: '#1b1b1b', brown: '#7b4a2a', red: '#d32f2f', orange: '#f57c00', yellow: '#fdd835', green: '#388e3c', blue: '#1e63d6', violet: '#7e3fbf', grey: '#8d8d8d', white: '#f5f5f5', gold: '#c9a227', silver: '#b8bcc2' };
 const byDigit = Object.fromEntries(Object.entries(DIGIT).map(([c, d]) => [d, c]));
 const byExp = Object.fromEntries(Object.entries(MULT).map(([c, m]) => [Math.round(Math.log10(m)), c]));

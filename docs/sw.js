@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-7365f806e1';
+const CACHE = 'sq-6275996490';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -10,6 +10,7 @@ const PRECACHE = [
   "/stats/",
   "/manifest.json",
   "/data/ja/index.json",
+  "/data/ja/terms.json",
   "/data/ja/q/adc-dac.json",
   "/data/ja/q/advanced-packaging.json",
   "/data/ja/q/ai-stack.json",
@@ -70,6 +71,7 @@ const PRECACHE = [
   "/en/stats/",
   "/en/manifest.json",
   "/data/en/index.json",
+  "/data/en/terms.json",
   "/data/en/q/adc-dac.json",
   "/data/en/q/advanced-packaging.json",
   "/data/en/q/ai-stack.json",
@@ -130,6 +132,7 @@ const PRECACHE = [
   "/zh-hant/stats/",
   "/zh-hant/manifest.json",
   "/data/zh-hant/index.json",
+  "/data/zh-hant/terms.json",
   "/data/zh-hant/q/adc-dac.json",
   "/data/zh-hant/q/advanced-packaging.json",
   "/data/zh-hant/q/ai-stack.json",
@@ -480,6 +483,7 @@ const PRECACHE = [
   "/js/modes/random.js",
   "/js/modes/review.js",
   "/js/modes/set.js",
+  "/js/modes/terms.js",
   "/js/modes/weak.js",
   "/css/style.css",
   "/icon-192.png",
