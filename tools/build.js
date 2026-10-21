@@ -49,6 +49,17 @@ const glossary = readJSON('data/glossary.json');
 const gloEn = readOpt('data/i18n/en/glossary.json', {});
 const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
+// 用語ページは、訳のある言語でだけ作る(訳のない語を日本語のまま出さない)
+const gloByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/glossary.json`, {})]));
+const termLangs = key => langs.filter(x => x.code === defLang || gloByLang[x.code][key]);
+// 英語の用語名の短い形(タイトル用)。「DRAM (dynamic …)」は DRAM、「Address space … (ASLR)」は ASLR、「Silane (SiH4)」は Silane
+const enLabel = key => {
+  const en = gloEn[key]?.term;
+  const m = en?.match(/^(.*?)\s*\((.+?)\)/);
+  if (!m) return en;
+  const acr = s => /^[A-Z0-9][A-Z0-9\-/]+$/.test(s);
+  return acr(m[1]) || !acr(m[2]) ? m[1] : m[2];
+};
 const courses = readOpt('data/courses.json', []);
 const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
 // 「Numbers Every Chip Engineer Should Know」(英語のみ。/en/numbers/)。各数値に根拠の問題IDを付ける
@@ -190,7 +201,8 @@ function buildLang(L) {
   const live = cats.filter(c => qs[c.id].length);
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
   // 詳しい解説(about)とよくある質問(faq)は言語ごとに持つ。既定言語の分がほかの言語のページに混ざらないよう外す
-  const terms = glossary.map(({ about, faq, ...g }) => ({ ...g, ...(isDef ? { about, faq } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
+  // 検索結果用のタイトル・説明文(title・description)も言語ごと。書いてある語だけ、決まった形の代わりに使う
+  const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
   const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key] }));
   const matcher = termMatcher(glossaryIndex);
   write(`data/${code}/index.json`, JSON.stringify({
@@ -1423,11 +1435,15 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
 </section>` : '';
     if (nw) related.unshift(...(nw.terms ?? []).map(k => terms.find(x => x.key === k)).filter(x => x && !related.includes(x)));
     const termUrl = `${home}term/${termSlug[g.key]}/`;
+    // 英語名を添える言語(繁体字など。英語の用語名に「中文」「是什麼」を付けて調べる人が多い)では、用語名に英語名が含まれていなければ添える
+    // 用語名にもうカッコ(略語や別名)があるときは、カッコが重なるので添えない
+    const en = !isDef && code !== 'en' && S.term_title_en && enLabel(g.key);
+    const withEn = en && !g.term.toLowerCase().includes(en.toLowerCase()) && !/[()（）]/.test(g.term);
     page({
       path: `${L.path}term/${termSlug[g.key]}/`,
-      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
-      title: t('term_title', { term: g.term }),
-      description: termDescription(g.desc, list.length),
+      alt: Object.fromEntries(termLangs(g.key).map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
+      title: g.title ?? (withEn ? t('term_title_en', { term: g.term, en }) : t('term_title', { term: g.term })),
+      description: g.description ?? termDescription(g.desc, list.length),
       scripts: ['answer.js'],
       noindex: !list.length && !nw, // 問題に一度も出てこない用語のページは検索に出さない(ニュース用語は出す)
       jsonld: [

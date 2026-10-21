@@ -47,6 +47,9 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
   - `id` 属性は使わない（同じページに複数の図が並ぶため）
 - **操作できる図解**：`data/figures-live.json` に図IDごとの文言（言語ごと）・スライダー（`controls`）・対応する計算ツール（`tool`）を書き、描画を `src/js/fig-live.js` の `FIGS` に足すと、図ごとのページ `/figures/{図ID}/` ができる（静的な図と説明の下に操作できる版が出る。図解集・問題・用語・計算ツールからのリンクもそのページに向く）。訳のない言語ではページを作らない
 - **言語**：`config.json` の `languages` に1行足し（先頭が既定言語）、翻訳ファイルを置く：`src/i18n/{言語}.json`（UI文言。モード名は `mode_{モードID}_label` / `_desc` / `_empty`）、`src/pages/{言語}/`、`data/i18n/{言語}/`（categories・exams・glossary・questions）。翻訳のない問題はその言語では出題しない。欠落数は `npm run validate` で表示される
+- **用語**：`data/glossary.json` に `{ term, reading, desc, cat, about?, faq? }` を足し、訳を `data/i18n/{言語}/glossary.json` に `{ 用語: { term, desc, about?, faq? } }` で書く。用語ページ `/term/{slug}/` は訳のある言語でだけ作る（訳のない語を日本語のまま出さない）。どの問題文・解説にも出てこない語のページは noindex になる
+  - 検索結果のタイトルと説明文は決まった形で作る。検索でよく表示される語は、`title`・`description` を書くとそちらを使う（言語ごと。例: 英語版の `"title": "ABA Problem in Lock-Free Programming: Cause and Fixes"`）
+  - UI文言に `term_title_en` がある言語（今は繁体字）では、用語名に英語名が含まれていなければ「網表(Netlist)是什麼？」のように英語名を添える（英語の用語名で調べる人が多いため）
 - **ニュースに出た用語**（一覧 `/news-terms/`）：`data/news-terms.json` に1語ずつ足す。ページは用語ページ `/term/{slug}/` をそのまま使い、「ひとことで言うと」「なぜ今話題なのか」「既存技術との違い」の節が加わる（一覧は `period` の終わりが新しい順）
   1. 用語集にその語があるか確かめる。なければ先に `data/glossary.json` に足す（`about`・`faq` を書き、英語の用語名から slug が作れないときは `"slug"` を書く）。同じ語のページは作らない
   2. 項目：`term`（用語集の語）、`label`（一覧での表示名。省略すると用語名）、`period`（話題になった時期 `["YYYY-MM", "YYYY-MM"]`）、`added`（載せた日）、`short`（2〜3文）、`why`（`[{ "date": "YYYY-MM-DD / YYYY-MM / YYYY-Qn", "text": … }]`）、`background`、`diff`、`question`（確認問題にする既存の問題ID）、`figures`（図ID）、`terms`（関連用語）、`sources`（`[{ name, date?, url }]`）
