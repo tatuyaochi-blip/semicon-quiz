@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-94b736dbab';
+const CACHE = 'sq-5926a426cc';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -18,6 +18,7 @@ const PRECACHE = [
   "/data/ja/q/analog.json",
   "/data/ja/q/automotive.json",
   "/data/ja/q/bjt.json",
+  "/data/ja/q/c-language.json",
   "/data/ja/q/circuits.json",
   "/data/ja/q/cleanroom.json",
   "/data/ja/q/cmp-cleaning.json",
@@ -94,6 +95,7 @@ const PRECACHE = [
   "/data/en/q/analog.json",
   "/data/en/q/automotive.json",
   "/data/en/q/bjt.json",
+  "/data/en/q/c-language.json",
   "/data/en/q/circuits.json",
   "/data/en/q/cleanroom.json",
   "/data/en/q/cmp-cleaning.json",
@@ -170,6 +172,7 @@ const PRECACHE = [
   "/data/zh-hant/q/analog.json",
   "/data/zh-hant/q/automotive.json",
   "/data/zh-hant/q/bjt.json",
+  "/data/zh-hant/q/c-language.json",
   "/data/zh-hant/q/circuits.json",
   "/data/zh-hant/q/cleanroom.json",
   "/data/zh-hant/q/cmp-cleaning.json",
@@ -245,6 +248,7 @@ const PRECACHE = [
   "/data/ko/q/analog.json",
   "/data/ko/q/automotive.json",
   "/data/ko/q/bjt.json",
+  "/data/ko/q/c-language.json",
   "/data/ko/q/circuits.json",
   "/data/ko/q/cleanroom.json",
   "/data/ko/q/cmp-cleaning.json",
@@ -320,6 +324,7 @@ const PRECACHE = [
   "/data/de/q/analog.json",
   "/data/de/q/automotive.json",
   "/data/de/q/bjt.json",
+  "/data/de/q/c-language.json",
   "/data/de/q/circuits.json",
   "/data/de/q/cleanroom.json",
   "/data/de/q/cmp-cleaning.json",
@@ -395,6 +400,7 @@ const PRECACHE = [
   "/data/nl/q/analog.json",
   "/data/nl/q/automotive.json",
   "/data/nl/q/bjt.json",
+  "/data/nl/q/c-language.json",
   "/data/nl/q/circuits.json",
   "/data/nl/q/cleanroom.json",
   "/data/nl/q/cmp-cleaning.json",
@@ -470,6 +476,7 @@ const PRECACHE = [
   "/data/fr/q/analog.json",
   "/data/fr/q/automotive.json",
   "/data/fr/q/bjt.json",
+  "/data/fr/q/c-language.json",
   "/data/fr/q/circuits.json",
   "/data/fr/q/cleanroom.json",
   "/data/fr/q/cmp-cleaning.json",
