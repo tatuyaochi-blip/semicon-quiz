@@ -1598,6 +1598,55 @@ ${x.faq?.length ? `<section class="faq">
     <div id="sql-schema" class="sql-schema"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    sort: x => `<form id="so-form" class="dy-form" data-text="${esc(JSON.stringify({ play: x.play, pause: x.pause, ev: x.ev, algos: x.algos, stable_yes: x.stable_yes, stable_no: x.stable_no, finished: x.finished }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('algo', x.algo, Object.entries(x.algos), 'quick')}
+    ${select('kind', x.kind, Object.entries(x.kinds), 'random')}
+    <label class="dy-field"><span>${esc(x.n)} <output data-out="nv">16</output></span><input name="n" type="range" min="4" max="64" step="1" value="16"></label>
+    <label class="dy-field"><span>${esc(x.speed)}</span><input name="speed" type="range" min="1" max="10" step="1" value="5"></label>
+  </form>
+  <section class="dy-out so" aria-live="off">
+    <h2>${esc(x.out_heading)}</h2>
+    <div class="ls-bar">
+      <button type="button" class="btn btn-primary btn-small" id="so-play">${esc(x.play)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="so-step">${esc(x.step)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="so-restart">${esc(x.restart)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="so-new">${esc(x.shuffle)}</button>
+    </div>
+    <svg id="so-bars" class="so-bars" role="img" aria-label="${esc(x.out_heading)}"></svg>
+    <p class="so-ev" id="so-ev">&nbsp;</p>
+    <dl class="dy-stats">${stat('cmps', x.cmps)}${stat('writes', x.writes)}${stat('progress', x.progress)}</dl>
+    <p class="so-legend"><span class="so-key cmp"></span>${esc(x.lg_cmp)} <span class="so-key write"></span>${esc(x.lg_write)} <span class="so-key done"></span>${esc(x.lg_done)}</p>
+    <h3>${esc(x.cmp_heading)}</h3>
+    <p class="muted">${esc(x.cmp_hint)}</p>
+    <div class="table-wrap"><table class="sp-pairs so-table"><thead><tr><th>${esc(x.col_algo)}</th><th>${esc(x.cmps)}</th><th>${esc(x.writes)}</th><th>${esc(x.col_order)}</th><th>${esc(x.col_stable)}</th></tr></thead><tbody id="so-all"></tbody></table></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    fsm: x => `<form id="fsm-form" class="dy-form fsm-form" data-text="${esc(JSON.stringify({ col_state: x.col_state, col_next0: x.col_next0, col_next1: x.col_next1, col_out: x.col_out, col_out0: x.col_out0, col_out1: x.col_out1, col_t: x.col_t, col_in: x.col_in, col_nextstate: x.col_nextstate, col_output: x.col_output, outseq: x.outseq, time: x.time, min_result: x.min_result, min_unreachable: x.min_unreachable, min_groups: x.min_groups, min_none: x.min_none, examples_desc: x.examples_desc }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, [['', x.example_none], ...Object.entries(x.examples)], 'ones')}
+    <p class="muted fsm-exdesc" id="fsm-exdesc"></p>
+    ${select('type', x.type, Object.entries(x.types), 'moore')}
+    ${select('count', x.count, [1, 2, 3, 4, 5, 6, 7, 8].map(n => [String(n), String(n)]), '3')}
+    <div class="table-wrap fsm-tablewrap" id="fsm-table"></div>
+    <label class="dy-field fsm-wide"><span>${esc(x.input)}</span><input name="input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="64" value=""></label>
+    <p class="notice fsm-wide" id="fsm-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out fsm" aria-live="off">
+    <h2>${esc(x.out_heading)}</h2>
+    <svg id="fsm-svg" class="fsm-svg" role="img" aria-label="${esc(x.out_heading)}"></svg>
+    <div class="ls-bar fsm-timebar">
+      <button type="button" class="btn btn-ghost btn-small" id="fsm-prev" aria-label="${esc(x.prev)}">◀</button>
+      <input type="range" id="fsm-time" min="0" max="0" value="0" aria-label="${esc(x.prev)} / ${esc(x.next)}">
+      <button type="button" class="btn btn-ghost btn-small" id="fsm-next" aria-label="${esc(x.next)}">▶</button>
+      <span id="fsm-tlabel"></span>
+    </div>
+    <p class="fsm-outseq" id="fsm-outseq"></p>
+    <div class="table-wrap" id="fsm-trace"></div>
+    <h3>${esc(x.min_heading)}</h3>
+    <div id="fsm-min"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
