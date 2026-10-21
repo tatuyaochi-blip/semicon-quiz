@@ -8,6 +8,7 @@ HTML/CSS/JavaScript だけで作った学習サイト。`src/` と `data/` か�
 npm run validate   # 問題データの検査
 npm run build      # docs/ を生成（validate も自動で実行）
 npm run serve      # http://localhost:8080/ で確認
+npm run check:site # ビルド後の docs/ を点検する(内部リンク切れ・構造化データ・title と description の重複や長さ)
 npm run check:ui   # 各言語のクイズ画面に「undefined」などが出ていないかをブラウザで検査(Playwright が必要)
 npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必要な言語と問題IDを一覧にする
 node tools/x-post.js --preview 14  # X に投稿する「今日の半導体クイズ」の予定を表示する(投稿はしない)
