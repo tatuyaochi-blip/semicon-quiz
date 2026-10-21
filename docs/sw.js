@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-07a9d2a4ee';
+const CACHE = 'sq-d73c43983f';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -30,6 +30,7 @@ const PRECACHE = [
   "/data/ja/q/datasheet.json",
   "/data/ja/q/deposition.json",
   "/data/ja/q/dram.json",
+  "/data/ja/q/dsp.json",
   "/data/ja/q/eda.json",
   "/data/ja/q/ehs.json",
   "/data/ja/q/embedded.json",
@@ -108,6 +109,7 @@ const PRECACHE = [
   "/data/en/q/datasheet.json",
   "/data/en/q/deposition.json",
   "/data/en/q/dram.json",
+  "/data/en/q/dsp.json",
   "/data/en/q/eda.json",
   "/data/en/q/ehs.json",
   "/data/en/q/embedded.json",
@@ -186,6 +188,7 @@ const PRECACHE = [
   "/data/zh-hant/q/datasheet.json",
   "/data/zh-hant/q/deposition.json",
   "/data/zh-hant/q/dram.json",
+  "/data/zh-hant/q/dsp.json",
   "/data/zh-hant/q/eda.json",
   "/data/zh-hant/q/ehs.json",
   "/data/zh-hant/q/embedded.json",
@@ -263,6 +266,7 @@ const PRECACHE = [
   "/data/ko/q/datasheet.json",
   "/data/ko/q/deposition.json",
   "/data/ko/q/dram.json",
+  "/data/ko/q/dsp.json",
   "/data/ko/q/eda.json",
   "/data/ko/q/ehs.json",
   "/data/ko/q/embedded.json",
@@ -340,6 +344,7 @@ const PRECACHE = [
   "/data/de/q/datasheet.json",
   "/data/de/q/deposition.json",
   "/data/de/q/dram.json",
+  "/data/de/q/dsp.json",
   "/data/de/q/eda.json",
   "/data/de/q/ehs.json",
   "/data/de/q/embedded.json",
@@ -417,6 +422,7 @@ const PRECACHE = [
   "/data/nl/q/datasheet.json",
   "/data/nl/q/deposition.json",
   "/data/nl/q/dram.json",
+  "/data/nl/q/dsp.json",
   "/data/nl/q/eda.json",
   "/data/nl/q/ehs.json",
   "/data/nl/q/embedded.json",
@@ -494,6 +500,7 @@ const PRECACHE = [
   "/data/fr/q/datasheet.json",
   "/data/fr/q/deposition.json",
   "/data/fr/q/dram.json",
+  "/data/fr/q/dsp.json",
   "/data/fr/q/eda.json",
   "/data/fr/q/ehs.json",
   "/data/fr/q/embedded.json",
