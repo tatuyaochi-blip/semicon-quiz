@@ -121,8 +121,9 @@ function show() {
       h('button', { class: 'quiz-quit', type: 'button', onclick: quit }, t('quit'))),
     h('div', { class: 'progress' }, h('div', { class: 'progress-bar', style: `width:${(i / qs.length) * 100}%` })),
     h('p', { class: 'q-cat' }, catName(q.cat)),
+    q.codeFirst ? codeBlock(q) : '',
     h('h1', { class: 'q-text' }, q.question),
-    codeBlock(q),
+    q.codeFirst ? '' : codeBlock(q),
     h('div', { class: 'choices' }, buttons),
     h('div', { class: 'feedback', hidden: true }));
   window.scrollTo(0, 0);
