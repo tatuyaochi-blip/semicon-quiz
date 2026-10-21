@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-d07d4d52cc';
+const CACHE = 'sq-ddc50e50c4';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -494,6 +494,7 @@ const PRECACHE = [
   "/js/bigo.js",
   "/js/bintree-core.js",
   "/js/bintree.js",
+  "/js/bitops.js",
   "/js/breakeven.js",
   "/js/cache-calc.js",
   "/js/chart.js",

@@ -1950,6 +1950,20 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" id="rd-cmp"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    bitops: x => `<form id="bo2-form" class="dy-form" data-text="${esc(JSON.stringify({ col_bits: x.col_bits, col_dec: x.col_dec, col_hex: x.col_hex, logic: x.logic, shifts: x.shifts, logical: x.logical, arith: x.arith, rotl: x.rotl, rotr: x.rotr }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    <label class="dy-field"><span>${esc(x.a)}</span><input name="a" type="text" autocomplete="off" spellcheck="false" value="0b10110100"></label>
+    <label class="dy-field"><span>${esc(x.b)}</span><input name="b" type="text" autocomplete="off" spellcheck="false" value="0x0F"></label>
+    ${select('w', x.w, [['8', '8'], ['16', '16'], ['32', '32'], ['64', '64']], '8')}
+    ${field('k', x.k, 2, 'min="0" max="64" step="1"')}
+    <p class="muted" style="grid-column: 1 / -1; margin: 0">${esc(x.hint)}</p>
+    <p class="notice" id="bo2-error" hidden style="grid-column: 1 / -1">${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <div class="table-wrap" id="bo2-table"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
