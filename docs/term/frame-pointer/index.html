@@ -80,15 +80,15 @@
 </article>
 <section class="term-about">
   <h2>フレームポインタの役割</h2>
-  <p>関数が呼ばれると、スタック上に戻りアドレスや保存したレジスタ、局所変数を置く領域(<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>)が確保されます。<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>(sp)は関数の中でも、可変長の配列の確保や引数の積み込みで動くことがありますが、フレームポインタ(fp)は関数に入った時点で決めた位置を指したまま、関数を抜けるまで動きません。そのため局所変数や引数を「fpから何バイト」という固定の距離で指定できます。RISC-Vではs0(x8)がfpを兼ね、x86-64ではrbp、AArch64ではx29がフレームポインタとして使われます。</p>
+  <p>関数が呼ばれると、<a class="term-link" href="/term/stack/">スタック</a>上に戻りアドレスや保存したレジスタ、局所変数を置く領域(<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>)が確保されます。<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>(sp)は関数の中でも、可変長の配列の確保や引数の積み込みで動くことがありますが、フレームポインタ(fp)は関数に入った時点で決めた位置を指したまま、関数を抜けるまで動きません。そのため局所変数や引数を「fpから何バイト」という固定の距離で指定できます。RISC-Vではs0(x8)がfpを兼ね、x86-64ではrbp、AArch64ではx29がフレームポインタとして使われます。</p>
 </section>
 <section class="term-about">
   <h2>プロローグとエピローグ</h2>
-  <p>関数の最初の部分(プロローグ)では、spを下げてフレームを確保し、戻りアドレスと呼び出し元のfpをフレームに保存してから、fpに新しい値を設定します。RISC-Vの64ビットの典型的な例では、spから16バイトを確保し、raとs0を保存したあと、s0に関数に入った時点のspの値を入れます。関数の最後の部分(エピローグ)では逆に、保存したraとs0を読み戻し、spを元に戻してから呼び出し元に戻ります。x86-64では、rbpをスタックに積んでから、rspの値をrbpにコピーする2命令で同じことを行います。</p>
+  <p>関数の最初の部分(プロローグ)では、spを下げてフレームを確保し、戻りアドレスと呼び出し元のfpをフレームに保存してから、fpに新しい値を設定します。RISC-Vの64ビットの典型的な例では、spから16バイトを確保し、raとs0を保存したあと、s0に関数に入った時点のspの値を入れます。関数の最後の部分(エピローグ)では逆に、保存したraとs0を読み戻し、spを元に戻してから呼び出し元に戻ります。x86-64では、rbpを<a class="term-link" href="/term/stack/">スタック</a>に積んでから、rspの値をrbpにコピーする2命令で同じことを行います。</p>
 </section>
 <section class="term-about">
   <h2>呼び出しの連なりをたどる</h2>
-  <p>各フレームに呼び出し元のfpと戻りアドレスを保存しておくと、フレームは連結リストのようにつながります。現在のfpから保存されたfpを順にたどれば、どの関数がどの関数を呼んだか(バックトレース)を、デバッグ情報がなくても速く求められます。デバッガでのスタックの表示、クラッシュしたときのログ、実行中のプログラムを一定の間隔で止めて呼び出し元を記録する<a class="term-link" href="/term/profiler/">プロファイラ</a>などで、この方法が使われます。たどる処理が単純で速いため、カーネルの中や、本番の環境で常に動かすプロファイラでも扱いやすいのが利点です。</p>
+  <p>各フレームに呼び出し元のfpと戻りアドレスを保存しておくと、フレームは<a class="term-link" href="/term/linked-list/">連結リスト</a>のようにつながります。現在のfpから保存されたfpを順にたどれば、どの関数がどの関数を呼んだか(バックトレース)を、デバッグ情報がなくても速く求められます。デバッガでの<a class="term-link" href="/term/stack/">スタック</a>の表示、クラッシュしたときのログ、実行中のプログラムを一定の間隔で止めて呼び出し元を記録する<a class="term-link" href="/term/profiler/">プロファイラ</a>などで、この方法が使われます。たどる処理が単純で速いため、カーネルの中や、本番の環境で常に動かすプロファイラでも扱いやすいのが利点です。</p>
 </section>
 <section class="term-about">
   <h2>フレームポインタの省略</h2>
@@ -99,7 +99,7 @@
   <article class="q-mini" data-qid="isa-assembly-036" data-cat="isa-assembly" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
     <h3><a href="/q/isa-assembly/isa-assembly-036/">関数の中でフレームポインタ(RISC-Vではs0/fp)を使う利点として正しいものはどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">レジスタを1本余分に使わずに済むので、性能が必ず上がる</span></li><li><span class="choice-mark">B</span><span class="choice-text">関数の途中でspが動いても、局所変数や引数を固定の距離で指定でき、デバッガも呼び出しの連なりをたどりやすい</span></li><li><span class="choice-mark">C</span><span class="choice-text">スタックの領域が自動で大きくなり、あふれなくなる</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 関数の途中でspが動いても、局所変数や引数を固定の距離で指定でき、デバッガも呼び出しの連なりをたどりやすい</p><p class="explanation"><a class="term-link" href="/term/frame-pointer/">フレームポインタ</a>は、関数に入った時点のスタックの位置を指したまま動かないレジスタです。可変長の配列などでspが途中で変わっても、局所変数を「fpから何バイト」で指定できます。また、各フレームに前のfpを保存しておけば、たどることで呼び出しの連なり(バックトレース)を得られます。ただしレジスタを1本占めるので、最適化では省略されることも多いです。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 関数の途中でspが動いても、局所変数や引数を固定の距離で指定でき、デバッガも呼び出しの連なりをたどりやすい</p><p class="explanation"><a class="term-link" href="/term/frame-pointer/">フレームポインタ</a>は、関数に入った時点の<a class="term-link" href="/term/stack/">スタック</a>の位置を指したまま動かないレジスタです。可変長の配列などでspが途中で変わっても、局所変数を「fpから何バイト」で指定できます。また、各フレームに前のfpを保存しておけば、たどることで呼び出しの連なり(バックトレース)を得られます。ただしレジスタを1本占めるので、最適化では省略されることも多いです。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -130,7 +130,7 @@
 
 <section>
   <h2>関連する用語</h2>
-  <p class="term-chips"><a class="chip" href="/term/assembler/">アセンブラ</a> <a class="chip" href="/term/compressed-instruction/">圧縮命令</a> <a class="chip" href="/term/addressing-mode/">アドレッシングモード</a> <a class="chip" href="/term/application-binary-interface/">ABI(アプリケーションバイナリインターフェース)</a> <a class="chip" href="/term/pseudo-instruction/">疑似命令</a> <a class="chip" href="/term/condition-code/">条件コード</a> <a class="chip" href="/term/stack-frame/">スタックフレーム</a> <a class="chip" href="/term/stack-pointer/">スタックポインタ</a> <a class="chip" href="/term/immediate-operand/">即値</a> <a class="chip" href="/term/leaf-function/">葉関数</a></p>
+  <p class="term-chips"><a class="chip" href="/term/stack/">スタック</a> <a class="chip" href="/term/assembler/">アセンブラ</a> <a class="chip" href="/term/compressed-instruction/">圧縮命令</a> <a class="chip" href="/term/addressing-mode/">アドレッシングモード</a> <a class="chip" href="/term/application-binary-interface/">ABI(アプリケーションバイナリインターフェース)</a> <a class="chip" href="/term/pseudo-instruction/">疑似命令</a> <a class="chip" href="/term/condition-code/">条件コード</a> <a class="chip" href="/term/stack-frame/">スタックフレーム</a> <a class="chip" href="/term/stack-pointer/">スタックポインタ</a> <a class="chip" href="/term/immediate-operand/">即値</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/glossary/">用語集の一覧へ</a></p>
 </main>

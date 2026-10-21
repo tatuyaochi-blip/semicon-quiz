@@ -80,26 +80,26 @@
 </article>
 <section class="term-about">
   <h2>呼叫時如何保存返回位址</h2>
-  <p>函式呼叫必須記錄執行應從哪裡恢復，也就是呼叫指令之後那一道指令的位址。在 RISC-V 中，jal（jump and link）會把 PC + 4 寫入暫存器（慣例上為 ra，即 x1）並跳躍；返回則是 ret，它是 jalr x0, 0(ra) 的<a class="term-link" href="/zh-hant/term/pseudo-instruction/">虛擬指令</a>。透過函式指標、虛擬函式與<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>跳板（stub）的呼叫，則使用以暫存器為目標的 jalr。在 x86 中，call 把返回位址推入堆疊，ret 再把它彈出到指令指標，因此返回位址一定存放在堆疊上。</p>
+  <p>函式呼叫必須記錄執行應從哪裡恢復，也就是呼叫指令之後那一道指令的位址。在 RISC-V 中，jal（jump and link）會把 PC + 4 寫入暫存器（慣例上為 ra，即 x1）並跳躍；返回則是 ret，它是 jalr x0, 0(ra) 的<a class="term-link" href="/zh-hant/term/pseudo-instruction/">虛擬指令</a>。透過函式指標、虛擬函式與<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>跳板（stub）的呼叫，則使用以暫存器為目標的 jalr。在 x86 中，call 把返回位址推入<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>，ret 再把它彈出到指令指標，因此返回位址一定存放在堆疊上。</p>
 </section>
 <section class="term-about">
   <h2>葉函式與非葉函式</h2>
-  <p>由於每次 jal 都會覆寫 ra，會呼叫其他函式的 RISC-V 函式必須先保存自己的返回位址。典型的開頭程式碼（prologue）是 addi sp, sp, -16，在往下成長的堆疊上配置一個框架，接著以 sw ra, 12(sp) 與 sw s0, 8(sp) 保存 ra 與一個被呼叫者保存的暫存器。結尾程式碼（epilogue）重新載入它們、恢復 sp 並執行 ret。不呼叫任何函式的<a class="term-link" href="/zh-hant/term/leaf-function/">葉函式</a>可以把 ra 留在暫存器中，甚至可能完全不需要<a class="term-link" href="/zh-hant/term/stack-frame/">堆疊框</a>架，使小型函式的成本很低。</p>
+  <p>由於每次 jal 都會覆寫 ra，會呼叫其他函式的 RISC-V 函式必須先保存自己的返回位址。典型的開頭程式碼（prologue）是 addi sp, sp, -16，在往下成長的<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>上配置一個框架，接著以 sw ra, 12(sp) 與 sw s0, 8(sp) 保存 ra 與一個被呼叫者保存的暫存器。結尾程式碼（epilogue）重新載入它們、恢復 sp 並執行 ret。不呼叫任何函式的<a class="term-link" href="/zh-hant/term/leaf-function/">葉函式</a>可以把 ra 留在暫存器中，甚至可能完全不需要<a class="term-link" href="/zh-hant/term/stack-frame/">堆疊框</a>架，使小型函式的成本很低。</p>
 </section>
 <section class="term-about">
   <h2>攻擊者為何以它為目標</h2>
-  <p>存放在堆疊上的返回位址緊鄰區域緩衝區，因此緩衝區溢位可以覆寫它，在函式返回時改變執行流程。傳統的攻擊會把機器碼寫到堆疊上再跳過去執行；搭配分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>不可執行位元的 W^X 政策可以阻擋這種攻擊。於是攻擊者轉向返回導向程式設計（ROP），把既有的程式碼片段串接起來。進一步的防禦包括在返回前檢查的堆疊金絲雀（stack canary）、<a class="term-link" href="/zh-hant/term/address-space-layout-randomization/">位址空間配置隨機化</a>，以及為每個返回位址保存一份受保護副本的硬體影子堆疊。</p>
+  <p>存放在<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>上的返回位址緊鄰區域緩衝區，因此緩衝區溢位可以覆寫它，在函式返回時改變執行流程。傳統的攻擊會把機器碼寫到堆疊上再跳過去執行；搭配分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>不可執行位元的 W^X 政策可以阻擋這種攻擊。於是攻擊者轉向返回導向程式設計（ROP），把既有的程式碼片段串接起來。進一步的防禦包括在返回前檢查的堆疊金絲雀（stack canary）、<a class="term-link" href="/zh-hant/term/address-space-layout-randomization/">位址空間配置隨機化</a>，以及為每個返回位址保存一份受保護副本的硬體影子堆疊。</p>
 </section>
 <section class="term-about">
   <h2>硬體中的返回位址</h2>
-  <p><a class="term-link" href="/zh-hant/term/out-of-order-execution/">亂序執行</a> CPU 會在讀取 ra 或堆疊之前很久，就預測返回會跳到哪裡。<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>器中的返回位址堆疊（RAS）在每次呼叫時推入下一道指令的位址，在每次返回時彈出，對巢狀結構良好的程式碼能做出非常準確的預測。例外與<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>則不同：CPU 會把被中斷的 PC 保存在專用暫存器中（例如 RISC-V 的 mepc 或 sepc），連同先前的<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>一起保存，並以 mret 或 sret 一次全部恢復，而不是使用一般的 ret。</p>
+  <p><a class="term-link" href="/zh-hant/term/out-of-order-execution/">亂序執行</a> CPU 會在讀取 ra 或<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>之前很久，就預測返回會跳到哪裡。<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>器中的返回位址堆疊（RAS）在每次呼叫時推入下一道指令的位址，在每次返回時彈出，對巢狀結構良好的程式碼能做出非常準確的預測。例外與<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>則不同：CPU 會把被中斷的 PC 保存在專用暫存器中（例如 RISC-V 的 mepc 或 sepc），連同先前的<a class="term-link" href="/zh-hant/term/privileged-mode/">特權模式</a>一起保存，並以 mret 或 sret 一次全部恢復，而不是使用一般的 ret。</p>
 </section>
 <section>
   <h2>練習返回位址的題目</h2>
   <article class="q-mini" data-qid="cpu-045" data-cat="cpu" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
     <h3><a href="/zh-hant/q/cpu/cpu-045/">在程式中呼叫副程式（函式）時，一般用來暫時保存返回位址等的區域是下列何者？</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">堆疊（stack）</span></li><li><span class="choice-mark">B</span><span class="choice-text">快取的標籤（tag）</span></li><li><span class="choice-mark">C</span><span class="choice-text">ROM 的固定區域</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 堆疊（stack）</p><p class="explanation">呼叫副程式時，<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>、應保存的暫存器值、區域變數等會被推入堆疊。堆疊是後放入的先取出（LIFO）的結構，即使呼叫形成巢狀或遞迴，也能依正確的順序返回。頂端位置由<a class="term-link" href="/zh-hant/term/stack-pointer/">堆疊指標</a>指示。遞迴過深而用盡區域時會發生堆疊溢位，也有藉由陣列越界改寫返回位址的攻擊。</p></details>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 堆疊（stack）</p><p class="explanation">呼叫副程式時，<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>、應保存的暫存器值、區域變數等會被推入<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>。堆疊是後放入的先取出（LIFO）的結構，即使呼叫形成巢狀或<a class="term-link" href="/zh-hant/term/recursion/">遞迴</a>，也能依正確的順序返回。頂端位置由<a class="term-link" href="/zh-hant/term/stack-pointer/">堆疊指標</a>指示。遞迴過深而用盡區域時會發生堆疊溢位，也有藉由陣列越界改寫返回位址的攻擊。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -134,7 +134,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/stack-frame/">堆疊框</a> <a class="chip" href="/zh-hant/term/callee-saved-register/">被呼叫者保存暫存器</a> <a class="chip" href="/zh-hant/term/stack-pointer/">堆疊指標</a> <a class="chip" href="/zh-hant/term/interrupt/">中斷</a> <a class="chip" href="/zh-hant/term/calling-convention/">呼叫慣例</a> <a class="chip" href="/zh-hant/term/pseudo-instruction/">虛擬指令(Pseudo-instruction)</a> <a class="chip" href="/zh-hant/term/leaf-function/">葉函式</a> <a class="chip" href="/zh-hant/term/instruction-set-architecture/">指令集架構(ISA)</a> <a class="chip" href="/zh-hant/term/shared-library/">共享函式庫（Shared library）</a> <a class="chip" href="/zh-hant/term/branch-prediction/">分支預測</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/stack/">堆疊</a> <a class="chip" href="/zh-hant/term/stack-frame/">堆疊框</a> <a class="chip" href="/zh-hant/term/callee-saved-register/">被呼叫者保存暫存器</a> <a class="chip" href="/zh-hant/term/recursion/">遞迴</a> <a class="chip" href="/zh-hant/term/stack-pointer/">堆疊指標</a> <a class="chip" href="/zh-hant/term/interrupt/">中斷</a> <a class="chip" href="/zh-hant/term/calling-convention/">呼叫慣例</a> <a class="chip" href="/zh-hant/term/pseudo-instruction/">虛擬指令(Pseudo-instruction)</a> <a class="chip" href="/zh-hant/term/leaf-function/">葉函式</a> <a class="chip" href="/zh-hant/term/instruction-set-architecture/">指令集架構(ISA)</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>
