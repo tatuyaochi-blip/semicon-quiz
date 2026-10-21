@@ -1896,6 +1896,24 @@ ${x.faq?.length ? `<section class="faq">
     </div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    breakeven: x => `<form id="be-form" class="dy-form be-form" data-text="${esc(JSON.stringify({ examples: x.examples, units: x.units, lg_sales: x.lg_sales, lg_cost: x.lg_cost, lg_fixed: x.lg_fixed, lg_bep: x.lg_bep, lg_now: x.lg_now }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${field('sales', x.sales, 1000, 'min="0" step="any"')}
+    ${field('vc', x.vc, 600, 'min="0" step="any"')}
+    ${field('fc', x.fc, 300, 'min="0" step="any"')}
+    ${field('target', x.target, 100, 'min="0" step="any"')}
+    <h3 class="be-wide">${esc(x.unit_heading)}</h3>
+    ${field('price', x.price, 0, 'min="0" step="any"')}
+    ${field('uvc', x.uvc, 0, 'min="0" step="any"')}
+    <p class="notice be-wide" id="be-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('bep', x.bep)}${stat('profit', x.profit)}${stat('vr', x.vr)}${stat('mr', x.mr)}${stat('ratio', x.ratio)}${stat('safety', x.safety)}${stat('need', x.need)}${stat('qty', x.qty)}</dl>
+    <svg id="be-chart" class="sta-chart be-chart" viewBox="0 0 600 300" role="img" aria-label="${esc(x.chart)}"></svg>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
