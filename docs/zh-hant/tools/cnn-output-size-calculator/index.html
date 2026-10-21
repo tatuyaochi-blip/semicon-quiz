@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CNN 輸出尺寸與參數數量計算工具（卷積、池化、全連接） | 半導體教室</title>
+<meta name="description" content="輸入圖像的高、寬、通道數，再逐行輸入卷積層（核大小、步幅、填充、輸出通道）、池化層與全連接層，即可計算各層的輸出形狀、參數數量（權重與偏差）、乘積累加運算（MAC）次數及合計。附 LeNet-5 等範例。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/tools/cnn-output-size-calculator/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/tools/cnn-output-size-calculator/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/tools/cnn-output-size-calculator/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/tools/cnn-output-size-calculator/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/tools/cnn-output-size-calculator/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CNN 輸出尺寸與參數數量計算工具（卷積、池化、全連接） | 半導體教室">
+<meta property="og:description" content="輸入圖像的高、寬、通道數，再逐行輸入卷積層（核大小、步幅、填充、輸出通道）、池化層與全連接層，即可計算各層的輸出形狀、參數數量（權重與偏差）、乘積累加運算（MAC）次數及合計。附 LeNet-5 等範例。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/tools/cnn-output-size-calculator/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"半導體、電子電路與資訊計算工具","item":"https://semiconroom.com/zh-hant/tools/"},{"@type":"ListItem","position":3,"name":"CNN 輸出尺寸計算工具","item":"https://semiconroom.com/zh-hant/tools/cnn-output-size-calculator/"}]},{"@context":"https://schema.org","@type":"WebApplication","name":"CNN 輸出尺寸計算工具","description":"輸入圖像的高、寬、通道數，再逐行輸入卷積層（核大小、步幅、填充、輸出通道）、池化層與全連接層，即可計算各層的輸出形狀、參數數量（權重與偏差）、乘積累加運算（MAC）次數及合計。附 LeNet-5 等範例。","url":"https://semiconroom.com/zh-hant/tools/cnn-output-size-calculator/","inLanguage":"zh-Hant","applicationCategory":"EducationalApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"填充與步幅的用途是什麼？","acceptedAnswer":{"@type":"Answer","text":"填充是在輸入周圍補上 0 等值，避免輸出縮得太快，並讓邊緣的像素和中央一樣被使用。步幅是核移動的間隔，設為 2 時高與寬約減半，可代替池化用來降低解析度。"}},{"@type":"Question","name":"除不盡時會怎樣？","acceptedAnswer":{"@type":"Answer","text":"公式中除法的小數部分無條件捨去。例如對高 7 做核 2、步幅 2 的池化，(7 − 2) ÷ 2 + 1 = 3.5，輸出為 3，最後一列不會被使用。有些框架也提供無條件進位的設定，或自動填充使輸出等於輸入 ÷ 步幅的設定（same）。"}},{"@type":"Question","name":"從乘積累加次數能知道推論時間嗎？","acceptedAnswer":{"@type":"Answer","text":"可以當作參考。一次乘積累加常算成兩次運算（FLOP），19 億次乘積累加約為 3.9 GFLOP。不過實際時間會因從記憶體讀寫權重與中間結果的量，以及硬體的平行度而有很大差異。"}},{"@type":"Question","name":"考試與課程中會怎麼出題？","acceptedAnswer":{"@type":"Answer","text":"深度學習的課程、面試與證照考試常要求由輸入大小、核、步幅、填充求出輸出大小，或計算卷積層與全連接層的參數數量。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/tools/cnn-output-size-calculator/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/tools/cnn-output-size-calculator/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/tools/cnn-output-size-calculator/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/tools/" lang="ko" data-lang="ko">한국어</a><a href="/de/tools/" lang="de" data-lang="de">Deutsch</a><a href="/nl/tools/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/tools/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/tools/">半導體、電子電路與資訊計算工具</a></nav>
+<h1>CNN 輸出尺寸計算工具</h1>
+<p class="lead">排列卷積神經網路（CNN）的各層，計算每一層輸出的大小、需要學習的參數數量，以及推論所需的乘積累加運算次數。可以用範例確認輸出尺寸的公式與參數的算法。</p>
+<div class="cmp-tools tool-actions" data-tool-id="convnet" hidden>
+  <button type="button" class="btn btn-ghost" data-fav data-off="☆ 加入收藏" data-on="★ 已加入收藏" aria-pressed="false">☆ 加入收藏</button>
+  <p class="muted tool-note">收藏與最近使用的工具只儲存在這個瀏覽器（localStorage）中。</p>
+</div>
+<div class="dy">
+  <form id="cn-form" class="dy-form cn-form" data-text="{&quot;examples&quot;:[{&quot;label&quot;:&quot;LeNet-5（32×32 灰階圖像、手寫數字）&quot;,&quot;input&quot;:[32,32,1],&quot;layers&quot;:&quot;conv 5 1 0 6\npool 2 2\nconv 5 1 0 16\npool 2 2\nflatten\nfc 120\nfc 84\nfc 10&quot;},{&quot;label&quot;:&quot;對 28×28 圖像做 5×5 卷積與 2×2 池化&quot;,&quot;input&quot;:[28,28,1],&quot;layers&quot;:&quot;conv 5 1 0 8\npool 2 2&quot;},{&quot;label&quot;:&quot;VGG 的第一個區塊（224×224 彩色圖像）&quot;,&quot;input&quot;:[224,224,3],&quot;layers&quot;:&quot;conv 3 1 1 64\nconv 3 1 1 64\npool 2 2&quot;},{&quot;label&quot;:&quot;以步幅 2 縮小（有填充）&quot;,&quot;input&quot;:[64,64,3],&quot;layers&quot;:&quot;conv 3 2 1 32\nconv 3 2 1 64\nconv 3 2 1 128\nflatten\nfc 10&quot;}],&quot;bad_input&quot;:&quot;輸入的高、寬與通道數請設為 1 以上的整數。&quot;,&quot;bad_line&quot;:&quot;第 {n} 行的寫法不正確。&quot;,&quot;empty&quot;:&quot;請至少輸入一層。&quot;,&quot;after_fc&quot;:&quot;全連接層或 flatten 之後不能再放卷積層或池化層。&quot;,&quot;too_small&quot;:&quot;第 {n} 層的輸出高或寬會小於 1。請縮小核的大小或增加填充。&quot;,&quot;op_conv&quot;:&quot;卷積&quot;,&quot;op_pool&quot;:&quot;池化&quot;,&quot;op_fc&quot;:&quot;全連接&quot;,&quot;op_flatten&quot;:&quot;flatten&quot;,&quot;input&quot;:&quot;輸入&quot;,&quot;col_layer&quot;:&quot;層&quot;,&quot;col_shape&quot;:&quot;輸出（高 × 寬 × 通道）&quot;,&quot;col_params&quot;:&quot;參數數量&quot;,&quot;col_macs&quot;:&quot;乘積累加次數&quot;}">
+    <h2>輸入與各層</h2>
+    <label class="dy-field"><span>範例</span><select name="example"><option value="0" selected>LeNet-5（32×32 灰階圖像、手寫數字）</option><option value="1">對 28×28 圖像做 5×5 卷積與 2×2 池化</option><option value="2">VGG 的第一個區塊（224×224 彩色圖像）</option><option value="3">以步幅 2 縮小（有填充）</option></select></label>
+    <label class="dy-field"><span>輸入的高（像素）</span><input name="h" type="number" inputmode="decimal" value="32" min="1" step="1"></label>
+    <label class="dy-field"><span>輸入的寬（像素）</span><input name="w" type="number" inputmode="decimal" value="32" min="1" step="1"></label>
+    <label class="dy-field"><span>輸入的通道數（灰階 1、彩色 3）</span><input name="c" type="number" inputmode="decimal" value="1" min="1" step="1"></label>
+    <label class="dy-field cn-wide"><span>各層（每行一層）</span><textarea name="layers" rows="8" spellcheck="false" autocomplete="off"></textarea></label>
+    <p class="muted cn-wide">conv K S P C＝卷積（K×K 核、步幅 S、填充 P、輸出通道 C）／pool K S＝最大值或平均池化（K×K、步幅 S）／flatten＝攤平成一列／fc N＝全連接（輸出 N）。# 之後為註解。</p>
+    <label class="cn-check cn-wide"><input type="checkbox" name="bias" checked> 把偏差也算入參數</label>
+    <p class="notice cn-wide" id="cn-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>計算結果</h2>
+    <dl class="dy-stats"><div><dt>最後一層的輸出</dt><dd data-out="out">–</dd></div><div><dt>參數數量合計</dt><dd data-out="params">–</dd></div><div><dt>乘積累加運算次數合計</dt><dd data-out="macs">–</dd></div></dl>
+    <div class="table-wrap" id="cn-table"></div>
+    <p class="muted">高與寬的小數部分無條件捨去。乘積累加運算次數是推論一筆輸入時乘法與加法成組的次數，不含偏差的加法、啟動函數與池化的計算。</p>
+  </section>
+  <section class="dy-out" id="sweep" hidden>
+    <h2>以圖表檢視</h2>
+    <div class="sweep-pick">
+      <label class="dy-field"><span>橫軸的輸入</span><select name="sweep-x"></select></label>
+      <label class="dy-field"><span>縱軸的結果</span><select name="sweep-y"></select></label>
+    </div>
+    <svg class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="以圖表檢視"></svg>
+    <p class="muted">其他輸入維持目前的值，只讓選擇的輸入在目前值的 1/4 到 4 倍之間變化時的結果。紅點是目前的值。</p>
+  </section>
+</div>
+<section class="term-about">
+  <h2>輸出尺寸的公式</h2>
+  <p>卷積或池化輸出的高（寬也相同）為 ⌊(輸入 + 2 × 填充 − 核) ÷ 步幅⌋ + 1。它計算的是把核以步幅為單位在輸入上滑動時，不超出邊界能放置的位置數。在範例「對 28×28 圖像做 5×5 卷積與 2×2 池化」中，(28 − 5) ÷ 1 + 1 = 24，得到 24×24，接著步幅 2 的 2×2 池化為 (24 − 2) ÷ 2 + 1 = 12，因此是 12×12。若使用 3×3 核、填充 1、步幅 1，高與寬保持不變。</p>
+</section>
+<section class="term-about">
+  <h2>參數數量的算法</h2>
+  <p>卷積層的權重，每個輸出通道有「核 × 核 × 輸入通道」個，另外每個輸出通道各有一個偏差。範例「LeNet-5」的第一層是 5 × 5 × 1 × 6 + 6 = 156 個。全連接層為「輸入數 × 輸出數 + 輸出數」，把 16 × 5 × 5 = 400 個值連到 120 個的層有 400 × 120 + 120 = 48,120 個。池化層與 flatten 沒有參數。LeNet-5 整體共有 61,706 個。</p>
+</section>
+<section class="term-about">
+  <h2>乘積累加次數與計算量</h2>
+  <p>卷積層中，求出一個輸出值需要「核 × 核 × 輸入通道」次乘積累加，並對輸出的高 × 寬 × 通道數重複。在範例「VGG 的第一個區塊」中，只是對 224×224 圖像做兩次 3×3、64 通道的卷積，就需要約 19 億次乘積累加。參數多集中在全連接層，計算量則多集中在解析度較高的前段卷積層，這是 <a class="term-link" href="/zh-hant/term/convolutional-neural-network/">CNN</a> 的典型樣貌。</p>
+</section>
+<section class="term-about">
+  <h2>卷積比全連接需要更少參數的原因</h2>
+  <p>全連接層把所有輸入值與所有輸出值相連，若把 32×32 圖像以全連接接到 6 個 28×28 的輸出，約需 480 萬個權重。卷積層在圖像的每個位置都使用同一個小核（權重共享），只需 156 個。觀察鄰近像素之間關係的局部性，以及位置偏移也能找到相同特徵的性質，是 <a class="term-link" href="/zh-hant/term/convolutional-neural-network/">CNN</a> 適合處理圖像的原因。</p>
+</section>
+<p><a class="btn btn-primary" href="/zh-hant/quiz/?mode=category&amp;c=machine-learning&amp;n=10" rel="nofollow">練習相關題目</a></p>
+<section>
+  <article class="q-mini" data-qid="machine-learning-032" data-cat="machine-learning" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
+    <h3><a href="/zh-hant/q/machine-learning/machine-learning-032/">輸入為64個、輸出為32個的全連接層（每個輸出各有1個偏差），可訓練的參數數量為何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">96</span></li><li><span class="choice-mark">B</span><span class="choice-text">2048</span></li><li><span class="choice-mark">C</span><span class="choice-text">2080</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 2080</p><p class="explanation">全連接層中，每一組輸入與輸出都有一個權重，因此權重為 64 × 32 = 2048個。再加上每個輸出各1個、共32個偏差，參數為 2048 + 32 = 2080個。一般而言，輸入n個、輸出m個的全連接層，參數為 (n + 1) × m 個。卷積層在整張影像上重複使用相同的濾波器，因此即使輸入大小相同，參數也比全連接層少得多。</p></details>
+  </article>
+  <article class="q-mini" data-qid="machine-learning-033" data-cat="machine-learning" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/machine-learning/machine-learning-033/">對28×28的單通道影像，以5×5的濾波器進行卷積（步幅1、不填充），接著進行2×2的最大池化（步幅2）。輸出的高與寬為何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">12×12</span></li><li><span class="choice-mark">B</span><span class="choice-text">14×14</span></li><li><span class="choice-mark">C</span><span class="choice-text">24×24</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 12×12</p><p class="explanation">卷積輸出的大小，以輸入大小為N、濾波器大小為F、填充為P、步幅為S，可由 (N + 2P − F) ÷ S + 1 求得。(28 + 0 − 5) ÷ 1 + 1 = 24，因此卷積後為24×24。以步幅2進行2×2的最大池化時，每個2×2區域只保留一個最大值，因此高與寬減半，成為12×12。池化沒有可訓練的參數，具有縮小資料以減少計算量，並使網路不易受位置微小偏移影響的作用。</p></details>
+  </article></section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>填充與步幅的用途是什麼？</h3>
+  <p>填充是在輸入周圍補上 0 等值，避免輸出縮得太快，並讓邊緣的像素和中央一樣被使用。步幅是核移動的間隔，設為 2 時高與寬約減半，可代替池化用來降低解析度。</p>
+  <h3>除不盡時會怎樣？</h3>
+  <p>公式中除法的小數部分無條件捨去。例如對高 7 做核 2、步幅 2 的池化，(7 − 2) ÷ 2 + 1 = 3.5，輸出為 3，最後一列不會被使用。有些框架也提供無條件進位的設定，或自動填充使輸出等於輸入 ÷ 步幅的設定（same）。</p>
+  <h3>從乘積累加次數能知道推論時間嗎？</h3>
+  <p>可以當作參考。一次乘積累加常算成兩次運算（FLOP），19 億次乘積累加約為 3.9 GFLOP。不過實際時間會因從記憶體讀寫權重與中間結果的量，以及硬體的平行度而有很大差異。</p>
+  <h3>考試與課程中會怎麼出題？</h3>
+  <p>深度學習的課程、面試與證照考試常要求由輸入大小、核、步幅、填充求出輸出大小，或計算卷積層與全連接層的參數數量。</p>
+</section>
+<div data-ad="tool"></div>
+<section>
+  <h2>相關用語</h2>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/convolutional-neural-network/">卷積神經網路（CNN）</a> <a class="chip" href="/zh-hant/term/activation-function/">啟動函數（Activation function）</a></p>
+</section>
+
+
+<section>
+  <h2>相關計算工具</h2>
+  <div class="mode-grid compact"><a class="mode-card" href="/zh-hant/tools/confusion-matrix-calculator/"><strong>混淆矩陣計算工具</strong><span>由 TP、FN、FP、TN 計算準確率、精確率、召回率、F1 分數、特異度、MCC 等評估指標</span></a><a class="mode-card" href="/zh-hant/tools/ieee754-floating-point-converter/"><strong>浮點數（IEEE 754）轉換工具</strong><span>將十進位數轉換為半精度、單精度、雙精度的位元串，並顯示實際儲存的值與誤差</span></a></div>
+  <p><a class="btn btn-ghost" href="/zh-hant/tools/">半導體、電子電路與資訊計算工具 →</a></p>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/tool-share.js"></script>
+<script type="module" src="/js/convnet.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
