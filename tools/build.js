@@ -1998,6 +1998,19 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" id="cn-table"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    cvss: x => `<form id="cv-form" class="dy-form cv-form" data-text="${esc(JSON.stringify({ examples: x.examples, sev: x.sev }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    <label class="dy-field cv-wide"><span>${esc(x.vec)}</span><input name="vec" type="text" autocomplete="off" spellcheck="false" class="cv-vec"></label>
+    <p class="notice cv-wide" id="cv-error" hidden>${esc(x.invalid)}</p>
+    ${['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'].map(k => select(k, x.metrics[k].label, Object.entries(x.metrics[k].opts), Object.keys(x.metrics[k].opts)[0])).join('\n    ')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('base', x.base)}${stat('severity', x.severity)}${stat('impact', x.impact)}${stat('expl', x.expl)}</dl>
+    <p class="cv-vector"><span>${esc(x.vector_out)}</span> <code data-out="vector"></code></p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
