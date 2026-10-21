@@ -84,6 +84,13 @@ const interviewText = {
   'zh-hant': { h1: 'IC 設計與硬體面試常見問題', nav: '面試題', card: '依主題整理的面試常見題目與解答', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
     lead: '依主題整理 IC 設計與硬體工程師面試常見的基礎題目，每個主題{k}題。可展開解答確認，點選題目則可查看完整解析。想一次練習整個主題時，請使用「整組作答」。', solve: '整組作答', answer: '顯示解答', course: '用硬體技術面試課程依領域練習', link: 'IC 設計與硬體面試常見問題' },
 };
+// 「微細化の先へ」(src/pages/{言語}/beyond-scaling.html)へのリンクの文言。関係する分野のページからもリンクする
+const beyondText = {
+  ja: { nav: '微細化の先へ', card: 'GAA・3D実装・光・新材料など、これからの技術の方向', link: '微細化の先へ: これからの半導体技術' },
+  en: { nav: 'Beyond scaling', card: 'GAA, 3D packaging, photonics, new materials and what comes next', link: 'Beyond scaling: where semiconductor technology goes next' },
+  'zh-hant': { nav: '微縮之後', card: 'GAA、3D封裝、光、新材料等技術的下一步', link: '微縮之後：半導體技術的下一步' },
+};
+const beyondCats = ['finfet', 'lithography', 'interconnect', 'advanced-packaging', 'package', 'photonics', 'power', 'compound', 'emerging-memory'];
 // 用語の対訳クイズ(モード terms)の文言と、出題する言語の組(対訳表のある言語だけ)
 const termQuizText = {
   ja: { question: '「{term}」は{lang}で何と言いますか?', answer: '「{a}」は{lang}で「{b}」です。', langs: { ja: '日本語', en: '英語', 'zh-hant': '中国語(繁体字)' },
@@ -343,6 +350,7 @@ function buildLang(L) {
     ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].nav, dictText[code].card, 'home_feat_dict') : ''}
     ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].nav, careerText[code].card, 'home_feat_careers') : ''}
     ${interviewText[code] ? feature(`${home}interview-questions/`, interviewText[code].nav, interviewText[code].card, 'home_feat_interview') : ''}
+    ${beyondText[code] && pageNames(code).includes('beyond-scaling') ? feature(`${home}beyond-scaling/`, beyondText[code].nav, beyondText[code].card, 'home_feat_beyond') : ''}
     ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
     ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
     ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
@@ -706,6 +714,7 @@ function buildLang(L) {
     <strong>${esc(t('practice_10'))}</strong><span>${esc(t('practice_10_desc'))}</span>
   </a>`) + toolsIn(code).filter(x => x.cats.includes(c.id))
           .map(x => `\n<p><a class="btn btn-ghost" href="${home}tools/${x.slug}/">${esc(x.text[code].nav)} →</a></p>`).join('')
+          + (beyondCats.includes(c.id) && beyondText[code] && pageNames(code).includes('beyond-scaling') ? `\n<p><a class="btn btn-ghost" href="${home}beyond-scaling/">${esc(beyondText[code].link)} →</a></p>` : '')
           : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
         compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id)),
