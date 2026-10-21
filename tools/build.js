@@ -1794,6 +1794,21 @@ ${x.faq?.length ? `<section class="faq">
     <svg id="bo-chart" class="sta-chart bo-chart" viewBox="0 0 600 280" role="img" aria-label="${esc(x.chart_heading)}"></svg>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    cpm: x => `<form id="cp-form" class="dy-form cp-form" data-text="${esc(JSON.stringify({ examples: x.examples, err: x.err, unit: x.unit, or: x.or, col_task: x.col_task, col_d: x.col_d, col_pre: x.col_pre, col_es: x.col_es, col_ef: x.col_ef, col_ls: x.col_ls, col_lf: x.col_lf, col_tf: x.col_tf, col_ff: x.col_ff }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    <label class="dy-field cp-wide"><span>${esc(x.tasks)}</span><textarea name="tasks" rows="8" spellcheck="false" autocomplete="off" autocapitalize="off" class="dj-edges"></textarea></label>
+    <p class="muted cp-wide">${esc(x.tasks_hint)}</p>
+    <p class="notice cp-wide" id="cp-error" hidden></p>
+  </form>
+  <section class="dy-out cp" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('total', x.total)}${stat('path', x.path)}</dl>
+    <svg id="cp-gantt" class="cp-gantt" role="img" aria-label="${esc(x.gantt)}"></svg>
+    <p class="so-legend"><span class="so-key cp-crit"></span>${esc(x.lg_crit)} <span class="so-key cp-task"></span>${esc(x.lg_task)} <span class="so-key cp-slack"></span>${esc(x.lg_slack)}</p>
+    <div class="table-wrap" id="cp-table"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
