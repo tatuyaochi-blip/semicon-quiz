@@ -1,6 +1,6 @@
 // サイト全体の点検。ビルドした docs/ のページをすべて読み、次を調べる:
 //   誤り(終了コード1): 内部リンク切れ、構造化データ(JSON-LD)が読めない、検索に出すページの title・description がない
-//   注意(表示だけ): 検索に出すページどうしの title・description の重複、長すぎる title・description
+//   注意(表示だけ): 検索に出すページどうしの title・description の重複、長すぎる title・description、容量(公開サイトの大きさとサイトマップのURL数)
 // 実行: npm run build のあと node tools/check-site.js(注意の一覧も全部見るときは --all)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -105,5 +105,14 @@ for (const x of longTitles) byKind.set(kind(x), (byKind.get(kind(x)) ?? 0) + 1);
 list(`注意: 長い title(サイト名を除いて半角${TITLE_MAX}超。種類ごとの件数)`, [...byKind].sort((a, b) => b[1] - a[1]), ([k, n]) => `${k}: ${n}`);
 if (showAll) list('長い title の一覧', longTitles);
 list(`注意: 長い description(半角${DESC_MAX}超)`, longDescs);
+// 容量: GitHub Pages の公開サイトは 1 GB まで、サイトマップは1ファイル5万URLまで。8割を超えたら注意を出す
+let bytes = 0;
+const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else bytes += fs.statSync(p).size; } };
+walk(out);
+const urls = (fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8').match(/<loc>/g) ?? []).length;
+const mb = bytes / 2 ** 20;
+console.log(`\n容量: 公開するファイル ${mb.toFixed(0)} MB / 1024 MB(${(mb / 1024 * 100).toFixed(0)}%)、サイトマップ ${urls} / 50000 URL(${(urls / 50000 * 100).toFixed(0)}%)`);
+if (mb > 1024 * 0.8) console.log('注意: 公開するファイルが 1 GB の8割を超えました。大きなファイルや言語ごとのページ数を見直してください');
+if (urls > 50000 * 0.8) console.log('注意: サイトマップが5万URLの8割を超えました。サイトマップを言語ごとに分けてください');
 if (errors.length) process.exit(1);
 console.log('\nOK: 誤りはありません');
