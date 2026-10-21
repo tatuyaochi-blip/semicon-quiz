@@ -1869,6 +1869,33 @@ ${x.faq?.length ? `<section class="faq">
     <p class="tf-steps" id="md-steps"></p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    pseudo: x => `<form id="ps-form" class="dy-form ps-form" data-text="${esc(JSON.stringify({ examples: x.examples, err: x.err, pos: x.pos, line: x.line, in_fn: x.in_fn, cond: x.cond, ret: x.ret, out: x.out_note, call: x.call, calls: x.calls, col_var: x.col_var, col_val: x.col_val, no_vars: x.no_vars, no_output: x.no_output }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    <label class="dy-field ps-wide"><span>${esc(x.code)}</span><textarea name="code" rows="14" spellcheck="false" autocomplete="off" autocapitalize="off" class="sql-input ps-code"></textarea></label>
+    <div class="ls-bar ps-wide"><button type="button" class="btn btn-primary btn-small" id="ps-run">${esc(x.run)}</button></div>
+    <details class="ps-wide ps-help"><summary>${esc(x.help_summary)}</summary><pre>${esc(x.help)}</pre></details>
+    <p class="notice ps-wide" id="ps-error" hidden></p>
+  </form>
+  <section class="dy-out ps" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <pre class="ps-output" id="ps-output"></pre>
+    <p class="muted" id="ps-calls"></p>
+    <h3>${esc(x.trace_heading)}</h3>
+    <div class="ls-bar ps-bar">
+      <button type="button" class="btn btn-ghost btn-small" id="ps-prev" aria-label="${esc(x.prev)}">◀</button>
+      <input type="range" id="ps-step" min="0" max="0" value="0" aria-label="${esc(x.trace_heading)}">
+      <button type="button" class="btn btn-ghost btn-small" id="ps-next" aria-label="${esc(x.next)}">▶</button>
+      <button type="button" class="btn btn-ghost btn-small" id="ps-end">${esc(x.to_end)}</button>
+      <span id="ps-pos" class="muted"></span>
+    </div>
+    <p class="ps-note" id="ps-note"></p>
+    <div class="ps-grid">
+      <div class="ps-listing" id="ps-listing"></div>
+      <div class="table-wrap" id="ps-vars"></div>
+    </div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
