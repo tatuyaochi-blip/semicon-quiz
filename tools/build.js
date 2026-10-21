@@ -1557,6 +1557,23 @@ ${x.faq?.length ? `<section class="faq">
     <p class="muted">${esc(x.note)}</p>
   </section>`;
     },
+    password: x => `<form id="pw-form" class="dy-form" data-text="${esc(JSON.stringify({ u_s: x.u_s, u_min: x.u_min, u_h: x.u_h, u_d: x.u_d, u_y: x.u_y, instant: x.instant }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    <label class="dy-field crc-data"><span>${esc(x.sample)}</span><input name="sample" type="text" autocomplete="off" spellcheck="false" placeholder="${esc(x.sample_ph)}"></label>
+    <p class="muted crc-data">${esc(x.sample_note)}</p>
+    <label class="crc-check"><input name="lower" type="checkbox" checked> ${esc(x.lower)}</label>
+    <label class="crc-check"><input name="upper" type="checkbox" checked> ${esc(x.upper)}</label>
+    <label class="crc-check"><input name="digit" type="checkbox" checked> ${esc(x.digit)}</label>
+    <label class="crc-check"><input name="symbol" type="checkbox"> ${esc(x.symbol)}</label>
+    ${field('len', x.len, 8, 'min="1" max="128" step="1"')}
+    ${select('rate', x.rate, Object.entries(x.rates), '1e10')}
+    <p class="notice" id="pw-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats bc-stats">${stat('n', x.n)}${stat('space', x.space)}${stat('bits', x.bits)}${stat('all', x.all)}${stat('avg', x.avg)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
