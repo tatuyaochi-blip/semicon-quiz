@@ -1964,6 +1964,23 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" id="bo2-table"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    cmatrix: x => `<form id="cm-form" class="dy-form cm-form" data-text="${esc(JSON.stringify({ examples: x.examples, pred: x.pred, actual: x.actual, pos: x.pos, neg: x.neg, c_tp: x.c_tp, c_fn: x.c_fn, c_fp: x.c_fp, c_tn: x.c_tn }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${field('tp', x.tp, 40, 'min="0" step="1"')}
+    ${field('fn', x.fn, 10, 'min="0" step="1"')}
+    ${field('fp', x.fp, 20, 'min="0" step="1"')}
+    ${field('tn', x.tn, 130, 'min="0" step="1"')}
+    ${field('beta', x.beta, 1, 'min="0.1" step="any"')}
+    <p class="notice cm-wide" id="cm-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <div class="table-wrap" id="cm-matrix"></div>
+    <dl class="dy-stats">${stat('accuracy', x.accuracy)}${stat('precision', x.precision)}${stat('recall', x.recall)}${stat('f1', x.f1)}${stat('fbeta', x.fbeta_out)}${stat('specificity', x.specificity)}${stat('fpr', x.fpr)}${stat('npv', x.npv)}${stat('balanced', x.balanced)}${stat('mcc', x.mcc)}${stat('prevalence', x.prevalence)}${stat('n', x.n)}</dl>
+    <p class="notice" id="cm-warn" hidden>${esc(x.warn)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
