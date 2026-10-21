@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-d0c93c937e';
+const CACHE = 'sq-94b736dbab';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -78,6 +78,7 @@ const PRECACHE = [
   "/data/ja/q/system-architecture.json",
   "/data/ja/q/test.json",
   "/data/ja/q/wafer.json",
+  "/data/ja/q/web-tech.json",
   "/data/ja/q/wireless.json",
   "/data/ja/q/yield.json",
   "/en/",
@@ -153,6 +154,7 @@ const PRECACHE = [
   "/data/en/q/system-architecture.json",
   "/data/en/q/test.json",
   "/data/en/q/wafer.json",
+  "/data/en/q/web-tech.json",
   "/data/en/q/wireless.json",
   "/data/en/q/yield.json",
   "/zh-hant/",
@@ -228,6 +230,7 @@ const PRECACHE = [
   "/data/zh-hant/q/system-architecture.json",
   "/data/zh-hant/q/test.json",
   "/data/zh-hant/q/wafer.json",
+  "/data/zh-hant/q/web-tech.json",
   "/data/zh-hant/q/wireless.json",
   "/data/zh-hant/q/yield.json",
   "/ko/",
@@ -302,6 +305,7 @@ const PRECACHE = [
   "/data/ko/q/system-architecture.json",
   "/data/ko/q/test.json",
   "/data/ko/q/wafer.json",
+  "/data/ko/q/web-tech.json",
   "/data/ko/q/wireless.json",
   "/data/ko/q/yield.json",
   "/de/",
@@ -376,6 +380,7 @@ const PRECACHE = [
   "/data/de/q/system-architecture.json",
   "/data/de/q/test.json",
   "/data/de/q/wafer.json",
+  "/data/de/q/web-tech.json",
   "/data/de/q/wireless.json",
   "/data/de/q/yield.json",
   "/nl/",
@@ -450,6 +455,7 @@ const PRECACHE = [
   "/data/nl/q/system-architecture.json",
   "/data/nl/q/test.json",
   "/data/nl/q/wafer.json",
+  "/data/nl/q/web-tech.json",
   "/data/nl/q/wireless.json",
   "/data/nl/q/yield.json",
   "/fr/",
@@ -524,6 +530,7 @@ const PRECACHE = [
   "/data/fr/q/system-architecture.json",
   "/data/fr/q/test.json",
   "/data/fr/q/wafer.json",
+  "/data/fr/q/web-tech.json",
   "/data/fr/q/wireless.json",
   "/data/fr/q/yield.json",
   "/js/adc-snr.js",
