@@ -1307,6 +1307,82 @@ ${x.faq?.length ? `<section class="faq">
     <dl class="dy-stats">${stat('vth', x.o_vth)}${stat('vfb', x.o_vfb)}${stat('phims', x.o_phims)}${stat('phif', x.o_phif)}${stat('qd', x.o_qd)}${stat('cox', x.o_cox)}${stat('wd', x.o_wd)}${stat('gamma', x.o_gamma)}</dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    dbm: x => `<form id="db-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('dbm', x.dbm, 0, 'step="0.1"')}
+    ${field('mw', x.mw, 1, 'min="0" step="any"')}
+    ${field('r', x.r, 50, 'min="0" step="any"')}
+    ${field('db', x.db, 3, 'step="0.1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('w', x.w)}${stat('dbw', x.dbw)}${stat('vrms', x.vrms)}${stat('vpp', x.vpp)}${stat('dbuv', x.dbuv)}</dl>
+    <h3>${esc(x.ratio_heading)}</h3>
+    <dl class="dy-stats">${stat('pr', x.pr)}${stat('vr', x.vr)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'resistor-color': x => {
+      const digits = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'grey', 'white'];
+      const opts = list => list.map(c => [c, x.colors[c]]);
+      return `<form id="rcc-form" class="dy-form" data-colors="${esc(JSON.stringify(x.colors))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('bands', x.bands, [['4', x.bands4], ['5', x.bands5]], '4')}
+    ${select('d1', x.d1, opts(digits), 'brown')}
+    ${select('d2', x.d2, opts(digits), 'black')}
+    <div data-band3 hidden>${select('d3', x.d3, opts(digits), 'black')}</div>
+    ${select('mul', x.mul, opts([...digits, 'gold', 'silver']), 'red')}
+    ${select('tol', x.tol, opts(['brown', 'red', 'green', 'blue', 'violet', 'grey', 'gold', 'silver']), 'gold')}
+    ${field('target', x.target, 4700, 'min="0" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <svg id="rcc-body" class="resistor-art" viewBox="0 0 300 100" role="img" aria-label="${esc(x.art_label)}"></svg>
+    <dl class="dy-stats">${stat('value', x.value)}${stat('tol', x.tol_out)}${stat('range', x.range)}</dl>
+    <h3>${esc(x.rev_heading)}</h3>
+    <dl class="dy-stats">${stat('code4', x.code4)}${stat('code5', x.code5)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`;
+    },
+    divider: x => `<form id="dv-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('vin', x.vin, 5, 'step="any"')}
+    ${field('r1', x.r1, 10, 'min="0" step="any"')}
+    ${field('r2', x.r2, 10, 'min="0" step="any"')}
+    ${field('rl', x.rl, 0, 'min="0" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('vout', x.vout)}${stat('ratio', x.ratio)}${stat('vload', x.vload)}${stat('i', x.i)}${stat('p1', x.p1)}${stat('p2', x.p2)}${stat('rth', x.rth)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'led-resistor': x => `<form id="led-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('vs', x.vs, 5, 'step="any"')}
+    ${field('vf', x.vf, 2, 'min="0" step="0.1"')}
+    ${field('ma', x.ma, 10, 'min="0" step="any"')}
+    ${field('n', x.n, 1, 'min="1" step="1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('r', x.r)}${stat('re', x.re)}${stat('ie', x.ie)}${stat('pr', x.pr)}${stat('rating', x.rating)}${stat('pled', x.pled)}</dl>
+    <p id="led-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    rc: x => `<form id="rc-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('r', x.r, 10, 'min="0" step="any"')}
+    ${select('ru', x.unit, [[1, 'Ω'], [1e3, 'kΩ'], [1e6, 'MΩ']], 1e3)}
+    ${field('c', x.c, 100, 'min="0" step="any"')}
+    ${select('cu', x.unit, [[1e-12, 'pF'], [1e-9, 'nF'], [1e-6, 'µF']], 1e-9)}
+    ${field('t', x.t, 1, 'min="0" step="any"')}
+    ${select('tu', x.unit, [[1e-6, 'µs'], [1e-3, 'ms'], [1, 's']], 1e-3)}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('tau', x.tau)}${stat('fc', x.fc)}${stat('t5', x.t5)}${stat('charge', x.charge)}${stat('discharge', x.discharge)}</dl>
+    <svg id="rc-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
     <label class="dy-field qs-wide"><span>${esc(x.name_label)}</span><input name="t" type="text" maxlength="80" placeholder="${esc(x.name_ph)}"></label>
