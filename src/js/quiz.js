@@ -75,11 +75,15 @@ async function start(retry) {
   if (retry) qs = shuffle(retry).map(shuffleChoices);
   else {
     const known = new Set(index.categories.map(c => c.id));
-    const ids = (mode.cats ? mode.cats(params, index) : [...known]).filter(id => known.has(id));
+    const ids = mode.load ? [] : (mode.cats ? mode.cats(params, index) : [...known]).filter(id => known.has(id));
     try {
-      const pool = (await Promise.all(ids.map(id =>
-        getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
-      qs = mode.pick(pool, params, { store, index }).map(shuffleChoices);
+      // 問題を自分で作るモード(load。用語の対訳クイズなど)と、分野の問題から選ぶモード(pick)
+      if (mode.load) qs = (await mode.load({ params, index, getData })).map(shuffleChoices);
+      else {
+        const pool = (await Promise.all(ids.map(id =>
+          getData(`q/${id}.json`).then(list => list.map(q => ({ ...q, cat: id })))))).flat();
+        qs = mode.pick(pool, params, { store, index }).map(shuffleChoices);
+      }
     } catch {
       qs = []; // 問題データを読めない(オフラインで未保存など)
       loadError = true;
@@ -127,7 +131,7 @@ function answer(n) {
   done = true;
   const q = qs[i];
   const ok = n === q.answer;
-  store.record(q.id, q.cat, ok);
+  if (mode.record !== false) store.record(q.id, q.cat, ok); // 分野の問題でないモードは、分野ごとの記録に入れない
   answers.push({ q, choice: n, ok });
   track('answer', { source: 'quiz', first: answers.length === 1, ok });
 

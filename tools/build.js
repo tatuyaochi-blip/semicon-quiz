@@ -83,6 +83,15 @@ const interviewText = {
   'zh-hant': { h1: 'IC 設計與硬體面試常見問題', nav: '面試題', card: '依主題整理的面試常見題目與解答', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
     lead: '依主題整理 IC 設計與硬體工程師面試常見的基礎題目，每個主題{k}題。可展開解答確認，點選題目則可查看完整解析。想一次練習整個主題時，請使用「整組作答」。', solve: '整組作答', answer: '顯示解答', course: '用硬體技術面試課程依領域練習', link: 'IC 設計與硬體面試常見問題' },
 };
+// 用語の対訳クイズ(モード terms)の文言と、出題する言語の組(対訳表のある言語だけ)
+const termQuizText = {
+  ja: { question: '「{term}」は{lang}で何と言いますか?', answer: '「{a}」は{lang}で「{b}」です。', langs: { ja: '日本語', en: '英語', 'zh-hant': '中国語(繁体字)' },
+    pairs: [['ja', 'en'], ['en', 'ja'], ['ja', 'zh-hant']], heading: '対訳クイズで確かめる', lead: '対訳表の語から10問を出題します。同じ分野の語がまぎらわしい選択肢になります。', arrow: '{from} → {to}' },
+  en: { question: 'What is “{term}” in {lang}?', answer: '“{a}” in {lang} is “{b}”. ', langs: { en: 'English', ja: 'Japanese', 'zh-hant': 'Chinese (Traditional)' },
+    pairs: [['en', 'zh-hant'], ['en', 'ja'], ['zh-hant', 'en']], heading: 'Test yourself with a translation quiz', lead: 'Ten questions drawn from the terms on this page, with look-alike terms from the same field as distractors.', arrow: '{from} → {to}' },
+  'zh-hant': { question: '「{term}」的{lang}是什麼？', answer: '「{a}」的{lang}是「{b}」。', langs: { 'zh-hant': '中文', en: '英文', ja: '日文' },
+    pairs: [['en', 'zh-hant'], ['zh-hant', 'en'], ['zh-hant', 'ja']], heading: '用對照測驗確認', lead: '從對照表的術語中出10題，以同一領域的術語作為容易混淆的選項。', arrow: '{from} → {to}' },
+};
 // 職種ガイド(/careers/ と /careers/{id}/)。仕事の内容と、身につけたい分野・コース・用語。訳は data/i18n/{言語}/careers.json(訳のある言語だけ作る)
 const careers = readOpt('data/careers.json', []);
 const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
@@ -265,7 +274,13 @@ function buildLang(L) {
     numbersQ,
     modes: Object.fromEntries(modes.map(m => [m.id, { label: modeText(m, 'label'), empty: modeText(m, 'empty') ?? null }])),
     reportFormUrl: config.reportFormUrl ?? null,
+    termQuiz: dictLangs.includes(code) ? termQuizText[code] : null,
   }));
+  // 用語の対訳クイズのデータ: 用語ごとに3言語の名前と、この言語での短い説明
+  if (dictLangs.includes(code)) {
+    write(`data/${code}/terms.json`, JSON.stringify(terms.filter(g => dictLangs.every(x => x === defLang || gloByLang[x][g.key]))
+      .map(g => ({ k: g.key, c: g.cat, n: Object.fromEntries(dictLangs.map(x => [x, x === defLang ? g.key : gloByLang[x][g.key].term])), d: g.desc }))));
+  }
   // PWA のマニフェスト(言語ごと。ホーム画面から開くとその言語のトップになる)
   write(`${L.path}manifest.json`, JSON.stringify({
     name: siteName,
@@ -862,6 +877,11 @@ ${groups.map(gr => `<section class="glossary-group">
     </table></div>
   </section>`).join('')}
 </section>`).join('\n')}
+<section>
+  <h2>${esc(termQuizText[code].heading)}</h2>
+  <p class="muted">${esc(termQuizText[code].lead)}</p>
+  <p>${termQuizText[code].pairs.map(([f, to]) => `<a class="btn btn-ghost btn-small" href="${home}quiz/?mode=terms&amp;from=${f}&amp;to=${to}" rel="nofollow">${esc(termQuizText[code].arrow.replace('{from}', termQuizText[code].langs[f]).replace('{to}', termQuizText[code].langs[to]))}</a>`).join(' ')}</p>
+</section>
 <div data-ad="glossary"></div>
 <p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
@@ -1306,6 +1326,82 @@ ${x.faq?.length ? `<section class="faq">
     <h2>${esc(x.out_heading)}</h2>
     <dl class="dy-stats">${stat('vth', x.o_vth)}${stat('vfb', x.o_vfb)}${stat('phims', x.o_phims)}${stat('phif', x.o_phif)}${stat('qd', x.o_qd)}${stat('cox', x.o_cox)}${stat('wd', x.o_wd)}${stat('gamma', x.o_gamma)}</dl>
     <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    dbm: x => `<form id="db-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('dbm', x.dbm, 0, 'step="0.1"')}
+    ${field('mw', x.mw, 1, 'min="0" step="any"')}
+    ${field('r', x.r, 50, 'min="0" step="any"')}
+    ${field('db', x.db, 3, 'step="0.1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('w', x.w)}${stat('dbw', x.dbw)}${stat('vrms', x.vrms)}${stat('vpp', x.vpp)}${stat('dbuv', x.dbuv)}</dl>
+    <h3>${esc(x.ratio_heading)}</h3>
+    <dl class="dy-stats">${stat('pr', x.pr)}${stat('vr', x.vr)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'resistor-color': x => {
+      const digits = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'grey', 'white'];
+      const opts = list => list.map(c => [c, x.colors[c]]);
+      return `<form id="rcc-form" class="dy-form" data-colors="${esc(JSON.stringify(x.colors))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('bands', x.bands, [['4', x.bands4], ['5', x.bands5]], '4')}
+    ${select('d1', x.d1, opts(digits), 'brown')}
+    ${select('d2', x.d2, opts(digits), 'black')}
+    <div data-band3 hidden>${select('d3', x.d3, opts(digits), 'black')}</div>
+    ${select('mul', x.mul, opts([...digits, 'gold', 'silver']), 'red')}
+    ${select('tol', x.tol, opts(['brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'grey', 'gold', 'silver']), 'gold')}
+    ${field('target', x.target, 4700, 'min="0" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <svg id="rcc-body" class="resistor-art" viewBox="0 0 300 100" role="img" aria-label="${esc(x.art_label)}"></svg>
+    <dl class="dy-stats">${stat('value', x.value)}${stat('tol', x.tol_out)}${stat('range', x.range)}</dl>
+    <h3>${esc(x.rev_heading)}</h3>
+    <dl class="dy-stats">${stat('code4', x.code4)}${stat('code5', x.code5)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`;
+    },
+    divider: x => `<form id="dv-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('vin', x.vin, 5, 'step="any"')}
+    ${field('r1', x.r1, 10, 'min="0" step="any"')}
+    ${field('r2', x.r2, 10, 'min="0" step="any"')}
+    ${field('rl', x.rl, 0, 'min="0" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('vout', x.vout)}${stat('ratio', x.ratio)}${stat('vload', x.vload)}${stat('i', x.i)}${stat('p1', x.p1)}${stat('p2', x.p2)}${stat('rth', x.rth)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'led-resistor': x => `<form id="led-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('vs', x.vs, 5, 'step="any"')}
+    ${field('vf', x.vf, 2, 'min="0" step="0.1"')}
+    ${field('ma', x.ma, 10, 'min="0" step="any"')}
+    ${field('n', x.n, 1, 'min="1" step="1"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('r', x.r)}${stat('re', x.re)}${stat('ie', x.ie)}${stat('pr', x.pr)}${stat('rating', x.rating)}${stat('pled', x.pled)}</dl>
+    <p id="led-warn" class="muted" hidden>${esc(x.warn)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    rc: x => `<form id="rc-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('r', x.r, 10, 'min="0" step="any"')}
+    ${select('ru', x.unit, [[1, 'Ω'], [1e3, 'kΩ'], [1e6, 'MΩ']], 1e3)}
+    ${field('c', x.c, 100, 'min="0" step="any"')}
+    ${select('cu', x.unit, [[1e-12, 'pF'], [1e-9, 'nF'], [1e-6, 'µF']], 1e-9)}
+    ${field('t', x.t, 1, 'min="0" step="any"')}
+    ${select('tu', x.unit, [[1e-6, 'µs'], [1e-3, 'ms'], [1, 's']], 1e-3)}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('tau', x.tau)}${stat('fc', x.fc)}${stat('t5', x.t5)}${stat('charge', x.charge)}${stat('discharge', x.discharge)}</dl>
+    <svg id="rc-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}" data-labels="${esc(JSON.stringify({ x: x.x_label, y: x.y_label }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
   </section>`,
     'quiz-set': x => `<form id="qs-form" class="dy-form qs-form">
     <h2>${esc(x.in_heading)}</h2>
