@@ -1828,6 +1828,24 @@ ${x.faq?.length ? `<section class="faq">
     <svg id="ev-chart" class="sta-chart ev-chart" viewBox="0 0 600 240" role="img" aria-label="${esc(x.chart)}"></svg>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    transfer: x => `<form id="tf-form" class="dy-form tf-form" data-text="${esc(JSON.stringify({ examples: x.examples, steps: x.steps, u_s: x.u_s, u_min: x.u_min, u_h: x.u_h }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${field('size', x.size, 1, 'min="0" step="any"')}
+    ${select('sunit', x.sunit, ['B', 'kB', 'MB', 'GB', 'TB', 'KiB', 'MiB', 'GiB', 'TiB'].map(u => [u, u]), 'GB')}
+    ${field('rate', x.rate, 100, 'min="0" step="any"')}
+    ${select('runit', x.runit, ['bps', 'kbps', 'Mbps', 'Gbps'].map(u => [u, u]), 'Mbps')}
+    ${field('eff', x.eff, 80, 'min="0" max="100" step="any"')}
+    ${field('target', x.target, 60, 'min="0" step="any"')}
+    <p class="muted tf-wide">${esc(x.unit_hint)}</p>
+    <p class="notice tf-wide" id="tf-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('time', x.time)}${stat('bits', x.bits)}${stat('erate', x.erate)}${stat('need', x.need)}</dl>
+    <p class="tf-steps" id="tf-steps"></p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
