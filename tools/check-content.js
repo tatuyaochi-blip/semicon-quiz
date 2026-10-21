@@ -83,11 +83,23 @@ export function checkContent() {
             if (ja.has(asInt) && !ja.has(asDec)) warnings.push(`${q.id} [${l}]: 「${m[0]}」は ${asDec} と読めます(日本語では ${asInt})`);
           }
           // 逆向きの書き間違い: 単位の付いた小数を「0.1 nm」のように点で書いている(この言語では「0,1 nm」)。版番号(PCIe 4.0 など)は単位が付かないので対象外
+          // 単位のない小数(「0.35/BW」「−6.25」)も調べる。版番号・規格名(PCIe 3.0、2.5D)、指数表記(1.0e16)、
+          // プログラムのコードとして書いた式は対象外で、コードの式は data/qa-ignore.json に check: "dot-decimal" で登録する
+          const thousands = n => /^[1-9]\d{0,2}\.\d{3}$/.test(n) && ja.has(Number(n.replace('.', '')));
+          const seen = new Set();
+          // 版番号: 規格名のすぐ後ろの数、または規格の話をしている文の「n.0」
+          const version = (i, n = all.slice(i).match(/\d+\.\d+/)?.[0] ?? '') => /(?:PCIe|PCI Express|USB|UCIe|CXL|TPM|IEEE|[Vv]ersion|Gen)[\s-]*$/.test(all.slice(Math.max(0, i - 16), i))
+            || /\.0$/.test(n) && /PCIe|PCI Express|USB|UCIe|CXL|GT\/s/.test(all);
           for (const m of all.matchAll(DOT_DECIMAL)) {
-            // 「1.000 µA」のように点が桁区切り(日本語では 1000)なら正しい
+            // 「1.000 µA」のように点が桁区切り(日本語では 1000)なら正しい。「0.001」は桁区切りではない
             const n = m[0].match(/\d+\.\d+/)[0];
-            if (/\.\d{3}$/.test(n) && ja.has(Number(n.replace('.', '')))) continue;
+            seen.add(m.index + m[0].indexOf(n));
+            if (thousands(n) || version(m.index)) continue;
             warnings.push(`${q.id} [${l}]: 「${m[0].trim()}」は小数点をコンマにしてください`);
+          }
+          if (!ignored(q.id, 'dot-decimal', l)) for (const m of all.matchAll(/(?<![\w.,\/])\d+\.\d+(?![\d.]|e[+-]?\d|D\b)/g)) {
+            if (seen.has(m.index) || thousands(m[0]) || version(m.index, m[0])) continue;
+            warnings.push(`${q.id} [${l}]: 「${m[0]}」は小数点をコンマにしてください(コードや版番号なら qa-ignore に登録)`);
           }
         }
       }
