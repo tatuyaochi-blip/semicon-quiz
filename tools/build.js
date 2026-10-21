@@ -1537,6 +1537,26 @@ ${x.faq?.length ? `<section class="faq">
     <svg id="qu-chart" class="sta-chart qu-chart" viewBox="0 0 600 260" role="img" aria-label="${esc(x.chart_heading)}"></svg>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    availability: x => {
+      const rows = [['90', 2, 1], ['95', 1, 1], ['', 1, 1], ['', 1, 1], ['', 1, 1]];
+      return `<form id="av-form" class="dy-form" data-text="${esc(JSON.stringify({ h: x.h, min: x.min, sec: x.sec, per_year: x.per_year, times: x.times }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('mtbf', x.mtbf, 480, 'min="0" step="any"')}
+    ${field('mttr', x.mttr, 20, 'min="0" step="any"')}
+    <dl class="dy-stats av-wide">${stat('a1', x.a1)}${stat('down1', x.down1)}${stat('fail1', x.fail1)}</dl>
+    <fieldset class="sp-values av-sys"><legend>${esc(x.sys_heading)}</legend>
+      <p class="muted av-wide">${esc(x.sys_hint)}</p>
+      <div class="av-row av-head"><span>${esc(x.col_a)}</span><span>${esc(x.col_n)}</span><span>${esc(x.col_k)}</span><span>${esc(x.col_g)}</span></div>
+      ${rows.map(([a, n, k], i) => `<div class="av-row"><input name="a${i}" type="number" inputmode="decimal" min="0" max="100" step="any" value="${a}" aria-label="${esc(x.col_a)} ${i + 1}"><input name="n${i}" type="number" inputmode="numeric" min="1" max="50" step="1" value="${n}" aria-label="${esc(x.col_n)} ${i + 1}"><input name="k${i}" type="number" inputmode="numeric" min="1" max="50" step="1" value="${k}" aria-label="${esc(x.col_k)} ${i + 1}"><output data-out="g${i}"></output></div>`).join('')}
+    </fieldset>
+    <p class="notice" id="av-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('total', x.total)}${stat('down', x.down)}${stat('nines', x.nines)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`;
+    },
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
