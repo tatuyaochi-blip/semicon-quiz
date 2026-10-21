@@ -1846,6 +1846,29 @@ ${x.faq?.length ? `<section class="faq">
     <p class="tf-steps" id="tf-steps"></p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    media: x => `<form id="md-form" class="dy-form md-form" data-text="${esc(JSON.stringify({ examples: x.examples, sec: x.sec_unit, steps_image: x.steps_image, steps_audio: x.steps_audio, steps_video: x.steps_video }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${select('kind', x.kind, Object.entries(x.kinds), 'image')}
+    <div data-kind="image video">${field('w', x.w, 1920, 'min="1" step="1"')}</div>
+    <div data-kind="image video">${field('h', x.h, 1080, 'min="1" step="1"')}</div>
+    <div data-kind="image video">${field('bpp', x.bpp, 24, 'min="1" step="1"')}</div>
+    <div data-kind="video">${field('fps', x.fps, 30, 'min="0" step="any"')}</div>
+    <div data-kind="video" class="md-wide"><label class="crc-check"><input type="checkbox" name="audio"> ${esc(x.audio)}</label></div>
+    <div data-kind="audio video">${field('fs', x.fs, 44.1, 'min="0" step="any"')}</div>
+    <div data-kind="audio video">${field('qbits', x.qbits, 16, 'min="1" step="1"')}</div>
+    <div data-kind="audio video">${field('ch', x.ch, 2, 'min="1" step="1"')}</div>
+    <div data-kind="audio video">${field('sec', x.secs, 60, 'min="0" step="any"')}</div>
+    ${field('ratio', x.ratio, 1, 'min="0" step="any"')}
+    ${field('line', x.line, 100, 'min="0" step="any"')}
+    <p class="notice md-wide" id="md-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('raw', x.raw)}${stat('comp', x.comp)}${stat('rate', x.rate)}${stat('time', x.time)}</dl>
+    <p class="tf-steps" id="md-steps"></p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
