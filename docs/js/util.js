@@ -19,11 +19,19 @@ export const reportUrl = (tpl, id, lang) =>
 // 「SiC(炭化ケイ素)」は「SiC(炭化ケイ素)」「SiC」「炭化ケイ素」のどれにも一致させる
 export function termMatcher(terms) {
   const keys = new Map();
+  // 大文字だけの略語(FIT、CMOS など)は大文字のときだけ一致させる(英語の動詞 fit などに一致させない)
+  const exact = new Map();
   for (const { id, term, aliases = [] } of terms) {
     const m = term.match(/^(.*?)\s*[(（](.+?)[)）]/);
-    for (const k of [term, ...(m ? [m[1], m[2]] : []), ...aliases]) {
-      const key = k.trim().toLowerCase();
-      if (key.length >= 2 && !keys.has(key)) keys.set(key, id);
+    for (const k0 of [term, ...(m ? [m[1], m[2]] : []), ...aliases]) {
+      // 英数字と漢字・かなの間の空白はあってもなくても一致させる(「功率 MOSFET」と「功率MOSFET」)
+      const k1 = k0.trim();
+      for (const k of new Set([k1, k1.replace(/(?<=[A-Za-z0-9])\s+(?=[^\x00-\x7F])|(?<=[^\x00-\x7F])\s+(?=[A-Za-z0-9])/g, '')])) {
+        const key = k.toLowerCase();
+        if (key.length < 2 || keys.has(key)) continue;
+        keys.set(key, id);
+        if (/^[A-Z0-9][A-Z0-9-]*$/.test(k) && /[A-Z]/.test(k)) exact.set(key, k);
+      }
     }
   }
   // カタカナだけの語は、長いカタカナ語の一部には一致させない(「ジクロロシラン」の中の「シラン」など)
@@ -34,7 +42,7 @@ export function termMatcher(terms) {
     });
   // 英字・数字の境界(「CMOS」を「CMOSFET」の中で一致させない)は、語の端が英数字のときだけ linkTerms で確かめる。
   // 正規表現の各語に境界を付けると100倍以上遅くなるため。日本語の語は「投影飛程Rp」「理想係数n」のように英字が続いても一致させる
-  return { keys, re: new RegExp(`(${words.join('|')})`, 'gi') };
+  return { keys, exact, re: new RegExp(`(${words.join('|')})`, 'gi') };
 }
 
 const ALNUM = /[A-Za-z0-9]/;
@@ -45,7 +53,7 @@ const bounded = (text, start, end) => !(ALNUM.test(text[start] ?? '') && ALNUM.t
 const OTHER_MEANING = /^\s*[(（]\s*(人体|人體|인체|human body|modèle du corps)/i;
 
 // 文章を [文字列 | { text, id }] に分ける。各用語は最初の1回だけ
-export function linkTerms(text, { keys, re }) {
+export function linkTerms(text, { keys, exact, re }) {
   const parts = [];
   const used = new Set();
   let last = 0;
@@ -53,6 +61,7 @@ export function linkTerms(text, { keys, re }) {
   for (let m; (m = re.exec(text));) {
     // 英数字の途中で切れている一致は捨て、次の文字から探し直す
     if (!bounded(text, m.index, m.index + m[0].length)) { re.lastIndex = m.index + 1; continue; }
+    if (exact?.has(m[0].toLowerCase()) && exact.get(m[0].toLowerCase()) !== m[0]) continue;
     const id = keys.get(m[0].toLowerCase());
     // ハイフンでつながった別の略語の一部(「ICP-MS」の中の「ICP」など)はリンクしない。「SiC-based」「GPIO-Pins」「MEMS-Gyroskop」は対象
     const end = m.index + m[0].length;
