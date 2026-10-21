@@ -81,31 +81,31 @@
 </article>
 <section class="term-about">
   <h2>一致性為何以快取行而非變數為單位</h2>
-  <p>MESI（Modified、Exclusive、Shared、Invalid）等<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a>協定追蹤的是整條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>（通常為 64 位元組）的所有權，而非個別變數。核心在寫入之前必須獨占該行，這會使其他所有核心的副本失效。若核心 0 不斷寫入變數 a，核心 1 不斷寫入同一行中的變數 b，每次寫入都會迫使該行在兩個快取之間移動。兩個執行緒都不讀取對方的資料，因此結果仍然正確，但原本只需數個週期的 L1 命中，會變成緩慢的跨核心傳輸。</p>
+  <p>MESI（Modified、Exclusive、Shared、Invalid）等<a class="term-link" href="/zh-hant/term/cache-coherency/">快取一致性</a>協定追蹤的是整條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>（通常為 64 位元組）的所有權，而非個別<a class="term-link" href="/zh-hant/term/variable/">變數</a>。核心在寫入之前必須獨占該行，這會使其他所有核心的副本失效。若核心 0 不斷寫入變數 a，核心 1 不斷寫入同一行中的變數 b，每次寫入都會迫使該行在兩個快取之間移動。兩個執行緒都不讀取對方的資料，因此結果仍然正確，但原本只需數個週期的 L1 命中，會變成緩慢的跨核心傳輸。</p>
 </section>
 <section class="term-about">
   <h2>偽共享與真共享的差異</h2>
-  <p>真共享是指執行緒確實存取同一個變數，例如全域計數器或鎖的字組；這種競爭是本質性的，只能透過改變演算法來消除，例如將計數器拆分。偽共享則是指資料在邏輯上互相獨立，只是剛好在記憶體中相鄰，因此解法是改變資料配置。兩者會產生相同的症狀：少數<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>上出現大量一致性通訊。唯讀共享則不會造成任何問題，因為許多快取可同時以 Shared 狀態持有同一行；只有寫入才會迫使失效。</p>
+  <p>真共享是指執行緒確實存取同一個<a class="term-link" href="/zh-hant/term/variable/">變數</a>，例如全域計數器或鎖的字組；這種競爭是本質性的，只能透過改變演算法來消除，例如將計數器拆分。偽共享則是指資料在邏輯上互相獨立，只是剛好在記憶體中相鄰，因此解法是改變資料配置。兩者會產生相同的症狀：少數<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>上出現大量一致性通訊。唯讀共享則不會造成任何問題，因為許多快取可同時以 Shared 狀態持有同一行；只有寫入才會迫使失效。</p>
 </section>
 <section class="term-about">
   <h2>典型的元凶</h2>
-  <p>典型案例是每個執行緒各一個計數器的陣列：元素為 8 位元組時，一條 64 位元組的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>可容納 8 個，因此最多會有 8 個執行緒爭奪同一行。其他常見來源包括欄位由不同執行緒更新的結構、與受另一個鎖保護的資料放在同一行的鎖，以及由生產者與消費者分別寫入的頭尾索引相鄰的工作<a class="term-link" href="/zh-hant/term/queue/">佇列</a>。常見的徵兆是：雖然每個執行緒看似只存取自己的資料，但隨著執行緒增加，程式的<a class="term-link" href="/zh-hant/term/speedup/">加速比</a>卻趨於平緩甚至下降。</p>
+  <p>典型案例是每個執行緒各一個計數器的<a class="term-link" href="/zh-hant/term/array/">陣列</a>：元素為 8 位元組時，一條 64 位元組的<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>可容納 8 個，因此最多會有 8 個執行緒爭奪同一行。其他常見來源包括欄位由不同執行緒更新的結構、與受另一個鎖保護的資料放在同一行的鎖，以及由生產者與消費者分別寫入的頭尾索引相鄰的工作<a class="term-link" href="/zh-hant/term/queue/">佇列</a>。常見的徵兆是：雖然每個執行緒看似只存取自己的資料，但隨著執行緒增加，程式的<a class="term-link" href="/zh-hant/term/speedup/">加速比</a>卻趨於平緩甚至下降。</p>
 </section>
 <section class="term-about">
   <h2>如何修正與找出偽共享</h2>
-  <p>將每個獨立寫入的項目填充或對齊到<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>大小，例如在 C 或 C++ 中使用 alignas(64)，讓每個執行緒擁有自己的快取行。有些處理器會成對擷取相鄰的快取行，這就是有時會使用 128 位元組間隔的原因。更好的做法是讓每個執行緒在區域變數或暫存器中累加，最後只寫入共享位置一次。硬體<a class="term-link" href="/zh-hant/term/performance-counter/">效能計數器</a>可以揭露此問題；在 Linux 上，perf c2c 工具會回報經常被某個核心修改、隨後又被另一個核心存取的快取行。</p>
+  <p>將每個獨立寫入的項目填充或對齊到<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>大小，例如在 C 或 C++ 中使用 alignas(64)，讓每個執行緒擁有自己的快取行。有些處理器會成對擷取相鄰的快取行，這就是有時會使用 128 位元組間隔的原因。更好的做法是讓每個執行緒在區域<a class="term-link" href="/zh-hant/term/variable/">變數</a>或暫存器中累加，最後只寫入共享位置一次。硬體<a class="term-link" href="/zh-hant/term/performance-counter/">效能計數器</a>可以揭露此問題；在 Linux 上，perf c2c 工具會回報經常被某個核心修改、隨後又被另一個核心存取的快取行。</p>
 </section>
 <section>
   <h2>練習偽共享（False sharing）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
     <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-010/">關於多執行緒程式中發生的偽共享（false sharing），下列說明何者正確？</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">不同的執行緒雖然改寫不同的變數，但因為這些變數位於同一條快取列，使快取列在核心之間來回移動而變慢</span></li><li><span class="choice-mark">B</span><span class="choice-text">兩個執行緒未經同步就改寫同一個變數，導致值被破壞</span></li><li><span class="choice-mark">C</span><span class="choice-text">執行緒彼此等待對方的鎖而停住</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 不同的執行緒雖然改寫不同的變數，但因為這些變數位於同一條快取列，使快取列在核心之間來回移動而變慢</p><p class="explanation">一致性是以快取列（一般為64位元組）為單位管理的。即使核心0只是改寫變數a、核心1只是改寫變數b，若a與b位於同一條快取列，每次寫入都會使對方的副本失效，快取列就會在兩個核心之間來回移動。明明結果正確，效能卻大幅下降，這就是<a class="term-link" href="/zh-hant/term/false-sharing/">偽共享</a>。這是在每個執行緒各自的彙總用陣列等情況中容易發生的問題。</p></details>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 不同的執行緒雖然改寫不同的變數，但因為這些變數位於同一條快取列，使快取列在核心之間來回移動而變慢</p><p class="explanation">一致性是以快取列（一般為64位元組）為單位管理的。即使核心0只是改寫<a class="term-link" href="/zh-hant/term/variable/">變數</a>a、核心1只是改寫變數b，若a與b位於同一條快取列，每次寫入都會使對方的副本失效，快取列就會在兩個核心之間來回移動。明明結果正確，效能卻大幅下降，這就是<a class="term-link" href="/zh-hant/term/false-sharing/">偽共享</a>。這是在每個執行緒各自的彙總用<a class="term-link" href="/zh-hant/term/array/">陣列</a>等情況中容易發生的問題。</p></details>
   </article>
   <article class="q-mini" data-qid="multicore-sync-011" data-cat="multicore-sync" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
     <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-011/">像「long cnt[8];」這樣排列每個執行緒的計數器陣列，發生了偽共享。下列何者是最適當的對策？</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">把計數器的型別從long改為int，縮小陣列</span></li><li><span class="choice-mark">B</span><span class="choice-text">在各計數器之間加入填充或進行對齊，使它們放在不同的快取列</span></li><li><span class="choice-mark">C</span><span class="choice-text">增加執行緒的數量，分散等待時間</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 在各計數器之間加入填充或進行對齊，使它們放在不同的快取列</p><p class="explanation">若long為8位元組，8個計數器就會收進64位元組的一條快取列，所有執行緒都會爭奪同一條快取列。只要加入填充使各計數器每隔64位元組放置，或將結構對齊到快取列的大小，每個執行緒就能使用各自不同的快取列。此外，讓各執行緒以區域變數計數，最後只加總到共用位置一次，也是有效的方法。</p></details>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 在各計數器之間加入填充或進行對齊，使它們放在不同的快取列</p><p class="explanation">若long為8位元組，8個計數器就會收進64位元組的一條快取列，所有執行緒都會爭奪同一條快取列。只要加入填充使各計數器每隔64位元組放置，或將結構對齊到快取列的大小，每個執行緒就能使用各自不同的快取列。此外，讓各執行緒以區域<a class="term-link" href="/zh-hant/term/variable/">變數</a>計數，最後只加總到共用位置一次，也是有效的方法。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -135,7 +135,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/spatial-locality/">空間局部性</a> <a class="chip" href="/zh-hant/term/dram/">DRAM(動態隨機存取記憶體)</a> <a class="chip" href="/zh-hant/term/amdahl-s-law/">阿姆達爾定律</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/variable/">變數</a> <a class="chip" href="/zh-hant/term/array/">陣列</a> <a class="chip" href="/zh-hant/term/spatial-locality/">空間局部性</a> <a class="chip" href="/zh-hant/term/dram/">DRAM(動態隨機存取記憶體)</a> <a class="chip" href="/zh-hant/term/amdahl-s-law/">阿姆達爾定律</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>

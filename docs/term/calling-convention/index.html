@@ -81,31 +81,31 @@
 </article>
 <section class="term-about">
   <h2>呼び出し規約で決めること</h2>
-  <p>呼び出し規約は、関数呼び出しの低レベルの細部を決めます。どのレジスタで引数を渡すか、戻り値をどこに置くか、戻りアドレスをどう保存するか、呼ばれた関数がどのレジスタを上書きしてよいか、<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>をどう配置し境界をそろえるか、といった点です。呼び出し側と呼ばれる側は別々にコンパイルされることが多く、異なるコンパイラで作られたり、アセンブリで手書きされたりすることもあるため、互いの作り方は見えません。両方が同じ規約に従ってさえいれば、C言語の関数がライブラリのルーチンやアセンブリの関数を呼んでも、値は期待どおりの場所に届きます。</p>
+  <p>呼び出し規約は、関数呼び出しの低レベルの細部を決めます。どのレジスタで<a class="term-link" href="/term/argument/">引数</a>を渡すか、<a class="term-link" href="/term/return-value/">戻り値</a>をどこに置くか、戻りアドレスをどう保存するか、呼ばれた関数がどのレジスタを上書きしてよいか、<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>をどう配置し境界をそろえるか、といった点です。呼び出し側と呼ばれる側は別々にコンパイルされることが多く、異なるコンパイラで作られたり、アセンブリで手書きされたりすることもあるため、互いの作り方は見えません。両方が同じ規約に従ってさえいれば、C言語の関数がライブラリのルーチンやアセンブリの関数を呼んでも、値は期待どおりの場所に届きます。</p>
 </section>
 <section class="term-about">
   <h2>RISC-Vの呼び出し規約</h2>
-  <p>RISC-Vにはx0〜x31の32本の整数レジスタがあり、呼び出し規約によって役割を表す名前が付けられています。整数の引数は8個までa0〜a7(x10〜x17)で渡し、9個目や10個目の引数はspから決まったオフセットにある<a class="term-link" href="/term/stack/">スタック</a>上に置きます。結果はa0で返し、RV32で64ビットの値を返す場合はa0とa1を使います。浮動小数点の引数にはfa0〜fa7を使います。呼び出しは jal ra, func で行い、戻りアドレスがra(x1)に書き込まれます。関数に入るとき<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>は16バイトの倍数でなければならないので、フレームは16バイト単位で確保します。</p>
+  <p>RISC-Vにはx0〜x31の32本の整数レジスタがあり、呼び出し規約によって役割を表す名前が付けられています。整数の<a class="term-link" href="/term/argument/">引数</a>は8個までa0〜a7(x10〜x17)で渡し、9個目や10個目の引数はspから決まったオフセットにある<a class="term-link" href="/term/stack/">スタック</a>上に置きます。結果はa0で返し、RV32で64ビットの値を返す場合はa0とa1を使います。浮動小数点の引数にはfa0〜fa7を使います。呼び出しは jal ra, func で行い、戻りアドレスがra(x1)に書き込まれます。関数に入るとき<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>は16バイトの倍数でなければならないので、フレームは16バイト単位で確保します。</p>
 </section>
 <section class="term-about">
   <h2>呼び出し側保存と呼び出され側保存</h2>
-  <p>レジスタは2つのグループに分かれます。呼び出し側保存(caller-saved)のレジスタは、RISC-Vでは一時レジスタt0〜t6と引数レジスタで、呼ばれた関数が自由に上書きできます。そのため、呼び出し後もその値が必要な呼び出し側は、先に保存しておかなければなりません。呼び出され側保存(callee-saved)のレジスタs0〜s11は、呼び出しから戻ったときに変わっていないように見える必要があるため、これを使いたい関数はプロローグで保存し、エピローグで復元します。この区分により、短いリーフ関数は一時レジスタだけで保存なしに動け、ループカウンタのように長く使う値はsレジスタに安全に置けます。</p>
+  <p>レジスタは2つのグループに分かれます。呼び出し側保存(caller-saved)のレジスタは、RISC-Vでは一時レジスタt0〜t6と<a class="term-link" href="/term/argument/">引数</a>レジスタで、呼ばれた関数が自由に上書きできます。そのため、呼び出し後もその値が必要な呼び出し側は、先に保存しておかなければなりません。呼び出され側保存(callee-saved)のレジスタs0〜s11は、呼び出しから戻ったときに変わっていないように見える必要があるため、これを使いたい関数はプロローグで保存し、エピローグで復元します。この区分により、短いリーフ関数は一時レジスタだけで保存なしに動け、ループカウンタのように長く使う値はsレジスタに安全に置けます。</p>
 </section>
 <section class="term-about">
   <h2>呼び出し規約とABI・APIの違い</h2>
-  <p>呼び出し規約は、<a class="term-link" href="/term/application-binary-interface/">アプリケーションバイナリインターフェース</a>(ABI)の一部です。ABIはほかにも、データ型のサイズとアラインメント、構造体のレイアウト、<a class="term-link" href="/term/system-call/">システムコール</a>の呼び出し方などを定めます。これに対してAPIは、ソースコードのレベルで関数をどう使うかを記述したものです。APIが同じでもABIが異なればバイナリレベルの互換性はなく、ライブラリを再コンパイルする必要があります。同じ命令セットの系列でも、プラットフォームごとに規約が異なります。x86-64では、Linuxが最初の6個の整数引数をレジスタで渡すのに対し、Windowsは4個です。</p>
+  <p>呼び出し規約は、<a class="term-link" href="/term/application-binary-interface/">アプリケーションバイナリインターフェース</a>(ABI)の一部です。ABIはほかにも、データ型のサイズとアラインメント、構造体のレイアウト、<a class="term-link" href="/term/system-call/">システムコール</a>の呼び出し方などを定めます。これに対してAPIは、ソースコードのレベルで関数をどう使うかを記述したものです。APIが同じでもABIが異なればバイナリレベルの互換性はなく、ライブラリを再コンパイルする必要があります。同じ命令セットの系列でも、プラットフォームごとに規約が異なります。x86-64では、Linuxが最初の6個の整数<a class="term-link" href="/term/argument/">引数</a>をレジスタで渡すのに対し、Windowsは4個です。</p>
 </section>
 <section>
   <h2>呼び出し規約の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-027" data-cat="isa-assembly" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
     <h3><a href="/q/isa-assembly/isa-assembly-027/">呼び出し規約(コーリングコンベンション)が決められている主な目的はどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">関数の名前の付け方をそろえ、プログラムを読みやすくする</span></li><li><span class="choice-mark">B</span><span class="choice-text">別々にコンパイルした関数やライブラリ同士が、引数や戻り値を正しく受け渡せるようにする</span></li><li><span class="choice-mark">C</span><span class="choice-text">関数を呼ぶたびにOSの許可を得るようにする</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 別々にコンパイルした関数やライブラリ同士が、引数や戻り値を正しく受け渡せるようにする</p><p class="explanation"><a class="term-link" href="/term/calling-convention/">呼び出し規約</a>は、引数をどのレジスタに入れるか、戻り値はどこに返すか、どのレジスタを呼ばれた側が壊してよいか、<a class="term-link" href="/term/stack/">スタック</a>をどう使うかを定めます。この約束があるので、違うコンパイラで作ったライブラリや、アセンブリで書いた関数とC言語の関数を組み合わせても正しく動きます。呼び出し規約は<a class="term-link" href="/term/application-binary-interface/">ABI(アプリケーションバイナリインターフェース)</a>の重要な一部です。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 別々にコンパイルした関数やライブラリ同士が、引数や戻り値を正しく受け渡せるようにする</p><p class="explanation"><a class="term-link" href="/term/calling-convention/">呼び出し規約</a>は、<a class="term-link" href="/term/argument/">引数</a>をどのレジスタに入れるか、<a class="term-link" href="/term/return-value/">戻り値</a>はどこに返すか、どのレジスタを呼ばれた側が壊してよいか、<a class="term-link" href="/term/stack/">スタック</a>をどう使うかを定めます。この約束があるので、違うコンパイラで作ったライブラリや、アセンブリで書いた関数とC言語の関数を組み合わせても正しく動きます。呼び出し規約は<a class="term-link" href="/term/application-binary-interface/">ABI(アプリケーションバイナリインターフェース)</a>の重要な一部です。</p></details>
   </article>
   <article class="q-mini" data-qid="isa-assembly-028" data-cat="isa-assembly" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
     <h3><a href="/q/isa-assembly/isa-assembly-028/">RISC-Vの標準の呼び出し規約で、整数の引数と戻り値の受け渡しに使うレジスタとして正しいものはどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">引数はs0〜s7、戻り値はra</span></li><li><span class="choice-mark">B</span><span class="choice-text">引数はa0〜a7、戻り値はa0(とa1)</span></li><li><span class="choice-mark">C</span><span class="choice-text">引数はすべてスタック、戻り値はsp</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 引数はa0〜a7、戻り値はa0(とa1)</p><p class="explanation">RISC-Vの標準の<a class="term-link" href="/term/calling-convention/">呼び出し規約</a>では、整数の引数を最大8個までa0〜a7(x10〜x17)に入れて渡し、戻り値はa0に、RV32での64ビットの値などはa0とa1の2つに入れて返します。メモリより速いレジスタで受け渡すので、関数呼び出しの手間が小さくなります。8個を超える引数は<a class="term-link" href="/term/stack/">スタック</a>に置きます。浮動小数点の引数はfa0〜fa7を使います。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 引数はa0〜a7、戻り値はa0(とa1)</p><p class="explanation">RISC-Vの標準の<a class="term-link" href="/term/calling-convention/">呼び出し規約</a>では、整数の<a class="term-link" href="/term/argument/">引数</a>を最大8個までa0〜a7(x10〜x17)に入れて渡し、<a class="term-link" href="/term/return-value/">戻り値</a>はa0に、RV32での64ビットの値などはa0とa1の2つに入れて返します。メモリより速いレジスタで受け渡すので、関数呼び出しの手間が小さくなります。8個を超える引数は<a class="term-link" href="/term/stack/">スタック</a>に置きます。浮動小数点の引数はfa0〜fa7を使います。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -144,7 +144,7 @@
 
 <section>
   <h2>関連する用語</h2>
-  <p class="term-chips"><a class="chip" href="/term/stack/">スタック</a> <a class="chip" href="/term/application-binary-interface/">ABI(アプリケーションバイナリインターフェース)</a> <a class="chip" href="/term/stack-pointer/">スタックポインタ</a> <a class="chip" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a> <a class="chip" href="/term/caller-saved-register/">呼び出し元保存レジスタ</a> <a class="chip" href="/term/return-address/">リターンアドレス</a> <a class="chip" href="/term/pseudo-instruction/">疑似命令</a> <a class="chip" href="/term/system-call/">システムコール</a> <a class="chip" href="/term/instruction-set-architecture/">命令セットアーキテクチャ(ISA)</a> <a class="chip" href="/term/assembler/">アセンブラ</a></p>
+  <p class="term-chips"><a class="chip" href="/term/stack/">スタック</a> <a class="chip" href="/term/argument/">引数</a> <a class="chip" href="/term/return-value/">戻り値</a> <a class="chip" href="/term/application-binary-interface/">ABI(アプリケーションバイナリインターフェース)</a> <a class="chip" href="/term/stack-pointer/">スタックポインタ</a> <a class="chip" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a> <a class="chip" href="/term/variable/">変数</a> <a class="chip" href="/term/caller-saved-register/">呼び出し元保存レジスタ</a> <a class="chip" href="/term/return-address/">リターンアドレス</a> <a class="chip" href="/term/pseudo-instruction/">疑似命令</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/glossary/">用語集の一覧へ</a></p>
 </main>

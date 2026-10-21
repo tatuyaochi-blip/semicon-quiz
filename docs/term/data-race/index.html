@@ -89,18 +89,18 @@
 </section>
 <section class="term-about">
   <h2>対策:ロックとアトミック操作</h2>
-  <p>対策は、衝突するアクセスに順序をつけることです。ロック(<a class="term-link" href="/term/mutex/">ミューテックス</a>)を使うと、更新は一度に1つのスレッドしか実行できない<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>になります。クリティカルセクションを短く保てば、待ち時間を抑えられます。単純な操作には<a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>のほうが高速です。x86のlock xaddやRISC-Vのamoadd.wのようなフェッチアンドアッドは、読み込み、加算、書き込みを分割できない1つの操作として行い、古い値を返すので、再試行の必要がありません。より複雑な更新にはコンペアアンドスワップのループを使います。C言語やC++で変数をvolatileと宣言しても、スレッド間のアトミック性も順序も保証されないため、データ競合は防げません。</p>
+  <p>対策は、衝突するアクセスに順序をつけることです。ロック(<a class="term-link" href="/term/mutex/">ミューテックス</a>)を使うと、更新は一度に1つのスレッドしか実行できない<a class="term-link" href="/term/critical-section/">クリティカルセクション</a>になります。クリティカルセクションを短く保てば、待ち時間を抑えられます。単純な操作には<a class="term-link" href="/term/atomic-instruction/">アトミック命令</a>のほうが高速です。x86のlock xaddやRISC-Vのamoadd.wのようなフェッチアンドアッドは、読み込み、加算、書き込みを分割できない1つの操作として行い、古い値を返すので、再試行の必要がありません。より複雑な更新にはコンペアアンドスワップのループを使います。C言語やC++で<a class="term-link" href="/term/variable/">変数</a>をvolatileと宣言しても、スレッド間のアトミック性も順序も保証されないため、データ競合は防げません。</p>
 </section>
 <section class="term-about">
   <h2>コンパイラとハードウェアが競合を悪化させる理由</h2>
-  <p>C言語やC++はプログラムにデータ競合がないことを前提としているため、コンパイラは共有変数をレジスタに保持したり、ロードをループの外へ出したり、ストアをまとめたりしてもかまいません。そのため、別のスレッドが同期なしに書き込むフラグをループで待つスレッドは、変化に永遠に気づかないことがあります。ハードウェアも、<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>やキャッシュによって独自に順序を入れ替えます。ロックの獲得や、適切なメモリオーダーを指定したアトミック操作などの同期操作こそが、どこで順序を守るべきかをコンパイラとハードウェアの両方に伝えます。ThreadSanitizerのような動的な競合検出ツールは、テストだけではめったに表に出ない競合を見つけるのに役立ちます。</p>
+  <p>C言語やC++はプログラムにデータ競合がないことを前提としているため、コンパイラは共有<a class="term-link" href="/term/variable/">変数</a>をレジスタに保持したり、ロードをループの外へ出したり、ストアをまとめたりしてもかまいません。そのため、別のスレッドが同期なしに書き込むフラグをループで待つスレッドは、変化に永遠に気づかないことがあります。ハードウェアも、<a class="term-link" href="/term/store-buffer/">ストアバッファ</a>やキャッシュによって独自に順序を入れ替えます。ロックの獲得や、適切なメモリオーダーを指定したアトミック操作などの同期操作こそが、どこで順序を守るべきかをコンパイラとハードウェアの両方に伝えます。ThreadSanitizerのような動的な競合検出ツールは、テストだけではめったに表に出ない競合を見つけるのに役立ちます。</p>
 </section>
 <section>
   <h2>データ競合の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-012" data-cat="multicore-sync" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
     <h3><a href="/q/multicore-sync/multicore-sync-012/">データ競合(データレース)の説明として正しいものはどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">複数のスレッドが同じ変数を同時に読むだけの状態</span></li><li><span class="choice-mark">B</span><span class="choice-text">1つのスレッドが同じ変数に続けて2回書き込む状態</span></li><li><span class="choice-mark">C</span><span class="choice-text">複数のスレッドが同じ変数に同期なしで同時にアクセスし、少なくとも1つが書き込みである状態</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 複数のスレッドが同じ変数に同期なしで同時にアクセスし、少なくとも1つが書き込みである状態</p><p class="explanation"><a class="term-link" href="/term/data-race/">データ競合</a>は、同じ場所への読み書きの順番が同期によって決められていないために、どの順番で実行されたかで結果が変わってしまう状態です。タイミングによって起きたり起きなかったりするので、テストで見つけにくい不具合になります。C言語やC++では、データ競合のあるプログラムの動作は未定義とされます。ロックやアトミック変数で順番を決める必要があります。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 複数のスレッドが同じ変数に同期なしで同時にアクセスし、少なくとも1つが書き込みである状態</p><p class="explanation"><a class="term-link" href="/term/data-race/">データ競合</a>は、同じ場所への読み書きの順番が同期によって決められていないために、どの順番で実行されたかで結果が変わってしまう状態です。タイミングによって起きたり起きなかったりするので、テストで見つけにくい不具合になります。C言語やC++では、データ競合のあるプログラムの動作は未定義とされます。ロックやアトミック<a class="term-link" href="/term/variable/">変数</a>で順番を決める必要があります。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -136,7 +136,7 @@
 
 <section>
   <h2>関連する用語</h2>
-  <p class="term-chips"><a class="chip" href="/term/critical-section/">クリティカルセクション</a> <a class="chip" href="/term/real-time-operating-system/">RTOS(リアルタイムOS)</a> <a class="chip" href="/term/queue/">キュー</a> <a class="chip" href="/term/performance-counter/">性能カウンタ</a> <a class="chip" href="/term/acquire-release-semantics/">アクワイア・リリース</a> <a class="chip" href="/term/atomic-instruction/">アトミック命令</a> <a class="chip" href="/term/aba-problem/">ABA問題</a> <a class="chip" href="/term/load-reserved-store-conditional/">LR/SC</a> <a class="chip" href="/term/compare-and-swap/">コンペア・アンド・スワップ</a> <a class="chip" href="/term/condition-variable/">条件変数</a></p>
+  <p class="term-chips"><a class="chip" href="/term/variable/">変数</a> <a class="chip" href="/term/critical-section/">クリティカルセクション</a> <a class="chip" href="/term/real-time-operating-system/">RTOS(リアルタイムOS)</a> <a class="chip" href="/term/queue/">キュー</a> <a class="chip" href="/term/performance-counter/">性能カウンタ</a> <a class="chip" href="/term/acquire-release-semantics/">アクワイア・リリース</a> <a class="chip" href="/term/atomic-instruction/">アトミック命令</a> <a class="chip" href="/term/aba-problem/">ABA問題</a> <a class="chip" href="/term/load-reserved-store-conditional/">LR/SC</a> <a class="chip" href="/term/compare-and-swap/">コンペア・アンド・スワップ</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/glossary/">用語集の一覧へ</a></p>
 </main>
