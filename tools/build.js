@@ -62,6 +62,19 @@ const enLabel = key => {
 };
 const courses = readOpt('data/courses.json', []);
 const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
+// 日英中の用語対訳表(/glossary/trilingual/)を作る言語と、その文言
+const dictLangs = ['ja', 'en', 'zh-hant'];
+const dictText = {
+  ja: { h1: '半導体用語 日英中対訳表', title: '半導体用語の日英中対訳表({n}語):英語・繁体字中国語', description: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾)の対訳表にまとめました。分野ごとに並べ、キーワードで絞り込めます。各用語は解説ページにリンクしています。',
+    lead: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾で使われる表記)で並べました。英語の資料を読むときや、台湾の技術者とやりとりするときに使えます。用語を押すと、その言語の解説ページに移ります。', search: '用語を検索(日本語・英語・中国語)',
+    cols: { ja: '日本語', en: '英語', 'zh-hant': '繁体字中国語' } },
+  en: { h1: 'Semiconductor Terms in English, Japanese and Chinese', title: 'Semiconductor Terms in English, Japanese and Chinese ({n} terms)', description: '{n} semiconductor terms side by side in English, Japanese and Traditional Chinese (Taiwan), grouped by field and searchable. Each term links to an explanation.',
+    lead: '{n} semiconductor terms in English, Japanese and Traditional Chinese as used in Taiwan, grouped by field. Useful when reading Japanese or Taiwanese documents or working with colleagues there. Click a term to open its explanation in that language.', search: 'Search terms (English, Japanese or Chinese)',
+    cols: { en: 'English', ja: 'Japanese', 'zh-hant': 'Chinese (Traditional)' } },
+  'zh-hant': { h1: '半導體術語 中英日對照表', title: '半導體術語中英日對照表（{n}詞）', description: '將{n}個半導體術語整理成繁體中文、英文、日文對照表，依領域分類並可搜尋。每個術語都連到解說頁面。',
+    lead: '將{n}個半導體術語以繁體中文、英文、日文並列，並依領域分類。閱讀英文或日文資料，或與日本工程師溝通時可以使用。點選術語即可開啟該語言的解說頁面。', search: '搜尋術語（中文、英文、日文）',
+    cols: { 'zh-hant': '繁體中文', en: '英文', ja: '日文' } },
+};
 // 「Numbers Every Chip Engineer Should Know」(英語のみ。/en/numbers/)。各数値に根拠の問題IDを付ける
 const numbers = readOpt('data/numbers.json', []);
 const numbersLang = 'en';
@@ -511,6 +524,7 @@ function buildLang(L) {
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
     startPanel, startBack, homeFeatures,
     // 用語集の上に出す、ニュース用語の一覧への案内
+    dictLink: dictLangs.includes(code) ? `<p class="news-link"><a class="chip" href="${home}glossary/trilingual/">${esc(dictText[code].h1)}</a></p>` : '',
     newsTermsLink: news.length ? `<p class="news-link"><a class="chip" href="${home}news-terms/">${esc(S.news_title)}</a> <span class="muted">${esc(t('glossary_news_link', { terms: news.slice(0, 3).map(e => e.label ?? terms.find(g => g.key === e.term).term).join(', ') }))}</span></p>` : '',
     // トップ下部の計算ツールの一覧(訳のあるツールだけ)
     toolList: toolsIn(code).length ? `<section>
@@ -764,6 +778,52 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
 </section>`).join('\n')}
 <p class="muted">Every value on this page also appears in at least one question on this site. Found an error? Let us know via the <a href="${home}contact/">contact page</a>.</p>
 <div data-ad="numbers"></div>`,
+    });
+  }
+
+  // 日英中の用語対訳表 /glossary/trilingual/(日本語・英語・繁体字だけ)。3言語の訳がそろった語を分野ごとに表にする。絞り込みは glossary.js
+  if (dictLangs.includes(code)) {
+    const D = dictText[code];
+    const cols = Object.keys(D.cols); // 列の順(その言語 → 見出しの順)
+    const nameIn = (g, x) => (x === defLang ? g.key : gloByLang[x][g.key].term);
+    const has = g => dictLangs.every(x => x === defLang || gloByLang[x][g.key]);
+    const groups = gloGroups.map(gr => ({ ...gr, cats: gr.cats.map(({ c, list }) => ({ c, list: list.filter(has) })).filter(x => x.list.length) })).filter(gr => gr.cats.length);
+    const n = groups.reduce((s, gr) => s + gr.cats.reduce((k, x) => k + x.list.length, 0), 0);
+    const cell = (g, x) => {
+      const l = langs.find(y => y.code === x);
+      const reading = x === defLang ? glossary.find(y => y.term === g.key).reading : '';
+      return `<td lang="${l.htmlLang}"><a href="${base}${l.path}term/${termSlug[g.key]}/">${esc(nameIn(g, x))}</a>${reading ? `<small>${esc(reading)}</small>` : ''}</td>`;
+    };
+    page({
+      path: `${L.path}glossary/trilingual/`,
+      alt: Object.fromEntries(langs.filter(x => dictLangs.includes(x.code)).map(x => [x.code, `${x.path}glossary/trilingual/`])),
+      title: D.title.replace('{n}', n),
+      description: D.description.replace('{n}', n),
+      scripts: ['glossary.js'],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a></nav>
+<h1>${esc(D.h1)}</h1>
+<p class="lead">${esc(D.lead.replace('{n}', n))}</p>
+<div class="search">
+  <input id="glossary-q" type="search" placeholder="${esc(D.search)}" aria-label="${esc(D.search)}">
+  <span id="glossary-count" class="muted" data-label="${esc(t('glossary_count'))}"></span>
+</div>
+<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}">${groups.map(gr => `
+  <p><b>${esc(gr.name)}</b>${gr.cats.map(({ c, list }) => ` <a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join('')}</p>`).join('')}
+</nav>
+${groups.map(gr => `<section class="glossary-group">
+  <h2>${esc(gr.name)}</h2>${gr.cats.map(({ c, list }) => `
+  <section class="glossary-cat" id="cat-${c.id}">
+    <h3>${esc(c.name)}</h3>
+    <div class="table-wrap"><table class="numbers dict">
+      <thead><tr>${cols.map(x => `<th scope="col">${esc(D.cols[x])}</th>`).join('')}</tr></thead>
+      <tbody>${list.map(g => `
+        <tr class="term">${cols.map(x => cell(g, x)).join('')}</tr>`).join('')}
+      </tbody>
+    </table></div>
+  </section>`).join('')}
+</section>`).join('\n')}
+<div data-ad="glossary"></div>
+<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
   }
 
