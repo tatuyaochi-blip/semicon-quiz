@@ -193,6 +193,8 @@ const loc = (v, code) => (v && typeof v === 'object' ? v[code] ?? v[defLang] : v
 fs.rmSync(out, { recursive: true, force: true });
 fs.cpSync(path.join(root, 'src/css'), path.join(out, 'css'), { recursive: true });
 fs.cpSync(path.join(root, 'src/js'), path.join(out, 'js'), { recursive: true });
+// 外部のライブラリ(SQL 練習ツールの sql.js など)。大きいので Service Worker の事前保存(js/)には入れない
+if (exists('src/vendor')) fs.cpSync(path.join(root, 'src/vendor'), path.join(out, 'vendor'), { recursive: true });
 write('js/modes/index.js',
   modes.map((m, i) => `import m${i} from './${m.file}';`).join('\n') +
   `\nexport default [${modes.map((_, i) => `m${i}`).join(', ')}];\n`);
@@ -1574,6 +1576,75 @@ ${x.faq?.length ? `<section class="faq">
   <section class="dy-out" aria-live="polite">
     <h2>${esc(x.out_heading)}</h2>
     <dl class="dy-stats bc-stats">${stat('n', x.n)}${stat('space', x.space)}${stat('bits', x.bits)}${stat('all', x.all)}${stat('avg', x.avg)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'sql-practice': x => `<section class="dy-out sql" id="sql" data-vendor="${base}vendor/sqljs/" data-text="${esc(JSON.stringify({ schema: x.schema, exercises: x.exercises, rows: x.rows, empty: x.empty, loading: x.loading, ready: x.ready, ok_rows: x.ok_rows, ok_done: x.ok_done, error: x.error, correct: x.correct, wrong: x.wrong, reset_done: x.reset_done, load_error: x.load_error }))}">
+    <h2>${esc(x.ex_heading)}</h2>
+    <label class="dy-field"><span>${esc(x.ex_label)}</span><select id="sql-ex">${x.exercises.map((e, i) => `<option value="${i}">${i + 1}. ${esc(e.q.length > 40 ? `${e.q.slice(0, 40)}…` : e.q)}</option>`).join('')}</select></label>
+    <p class="sql-ex-q" id="sql-ex-q"></p>
+    <label class="dy-field"><span>${esc(x.editor)}</span><textarea id="sql-input" class="sql-input" rows="5" spellcheck="false" autocomplete="off" autocapitalize="off">${esc(x.default_sql)}</textarea></label>
+    <div class="ls-bar">
+      <button type="button" class="btn btn-primary btn-small" id="sql-run">${esc(x.run)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="sql-check">${esc(x.check)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="sql-show">${esc(x.show)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="sql-reset">${esc(x.reset)}</button>
+    </div>
+    <p class="sql-judge" id="sql-judge" hidden></p>
+    <pre class="sql-answer" id="sql-answer" hidden></pre>
+    <h3>${esc(x.result_heading)}</h3>
+    <p class="sql-status" id="sql-status" aria-live="polite"></p>
+    <div id="sql-result"></div>
+    <h3>${esc(x.schema_heading)}</h3>
+    <div id="sql-schema" class="sql-schema"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    sort: x => `<form id="so-form" class="dy-form" data-text="${esc(JSON.stringify({ play: x.play, pause: x.pause, ev: x.ev, algos: x.algos, stable_yes: x.stable_yes, stable_no: x.stable_no, finished: x.finished }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('algo', x.algo, Object.entries(x.algos), 'quick')}
+    ${select('kind', x.kind, Object.entries(x.kinds), 'random')}
+    <label class="dy-field"><span>${esc(x.n)} <output data-out="nv">16</output></span><input name="n" type="range" min="4" max="64" step="1" value="16"></label>
+    <label class="dy-field"><span>${esc(x.speed)}</span><input name="speed" type="range" min="1" max="10" step="1" value="5"></label>
+  </form>
+  <section class="dy-out so" aria-live="off">
+    <h2>${esc(x.out_heading)}</h2>
+    <div class="ls-bar">
+      <button type="button" class="btn btn-primary btn-small" id="so-play">${esc(x.play)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="so-step">${esc(x.step)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="so-restart">${esc(x.restart)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="so-new">${esc(x.shuffle)}</button>
+    </div>
+    <svg id="so-bars" class="so-bars" role="img" aria-label="${esc(x.out_heading)}"></svg>
+    <p class="so-ev" id="so-ev">&nbsp;</p>
+    <dl class="dy-stats">${stat('cmps', x.cmps)}${stat('writes', x.writes)}${stat('progress', x.progress)}</dl>
+    <p class="so-legend"><span class="so-key cmp"></span>${esc(x.lg_cmp)} <span class="so-key write"></span>${esc(x.lg_write)} <span class="so-key done"></span>${esc(x.lg_done)}</p>
+    <h3>${esc(x.cmp_heading)}</h3>
+    <p class="muted">${esc(x.cmp_hint)}</p>
+    <div class="table-wrap"><table class="sp-pairs so-table"><thead><tr><th>${esc(x.col_algo)}</th><th>${esc(x.cmps)}</th><th>${esc(x.writes)}</th><th>${esc(x.col_order)}</th><th>${esc(x.col_stable)}</th></tr></thead><tbody id="so-all"></tbody></table></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    fsm: x => `<form id="fsm-form" class="dy-form fsm-form" data-text="${esc(JSON.stringify({ col_state: x.col_state, col_next0: x.col_next0, col_next1: x.col_next1, col_out: x.col_out, col_out0: x.col_out0, col_out1: x.col_out1, col_t: x.col_t, col_in: x.col_in, col_nextstate: x.col_nextstate, col_output: x.col_output, outseq: x.outseq, time: x.time, min_result: x.min_result, min_unreachable: x.min_unreachable, min_groups: x.min_groups, min_none: x.min_none, examples_desc: x.examples_desc }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, [['', x.example_none], ...Object.entries(x.examples)], 'ones')}
+    <p class="muted fsm-exdesc" id="fsm-exdesc"></p>
+    ${select('type', x.type, Object.entries(x.types), 'moore')}
+    ${select('count', x.count, [1, 2, 3, 4, 5, 6, 7, 8].map(n => [String(n), String(n)]), '3')}
+    <div class="table-wrap fsm-tablewrap" id="fsm-table"></div>
+    <label class="dy-field fsm-wide"><span>${esc(x.input)}</span><input name="input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="64" value=""></label>
+    <p class="notice fsm-wide" id="fsm-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out fsm" aria-live="off">
+    <h2>${esc(x.out_heading)}</h2>
+    <svg id="fsm-svg" class="fsm-svg" role="img" aria-label="${esc(x.out_heading)}"></svg>
+    <div class="ls-bar fsm-timebar">
+      <button type="button" class="btn btn-ghost btn-small" id="fsm-prev" aria-label="${esc(x.prev)}">◀</button>
+      <input type="range" id="fsm-time" min="0" max="0" value="0" aria-label="${esc(x.prev)} / ${esc(x.next)}">
+      <button type="button" class="btn btn-ghost btn-small" id="fsm-next" aria-label="${esc(x.next)}">▶</button>
+      <span id="fsm-tlabel"></span>
+    </div>
+    <p class="fsm-outseq" id="fsm-outseq"></p>
+    <div class="table-wrap" id="fsm-trace"></div>
+    <h3>${esc(x.min_heading)}</h3>
+    <div id="fsm-min"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
