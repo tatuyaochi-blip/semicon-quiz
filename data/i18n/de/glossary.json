@@ -8568,7 +8568,7 @@
    },
    {
     "h": "Was eine Schleife vektorisierbar macht",
-    "p": "Compiler vektorisieren Schleifen automatisch, die auf jedes Arrayelement dieselbe Operation anwenden. Die wichtigste Bedingung ist das Fehlen einer schleifenübergreifenden Abhängigkeit: Bei a[i] = a[i-1] + b[i] benötigt jedes Element das vorherige Ergebnis, sodass die Lanes nicht gleichzeitig laufen können. Die Daten sollten zusammenhängend liegen, und mögliche Zeigerüberlappung (Aliasing) kann den Compiler zum Aufgeben bringen. Eine zur Übersetzungszeit unbekannte Iterationszahl ist kein Hindernis; die Vektorschleife bearbeitet volle Blöcke, und eine kurze Restschleife erledigt den Rest. Medien-Code nutzt zudem Sättigungsarithmetik, bei der die vorzeichenbehaftete 8-Bit-Rechnung 127 + 1 auf 127 begrenzt wird, statt auf −128 überzulaufen."
+    "p": "Compiler vektorisieren Schleifen automatisch, die auf jedes Arrayelement dieselbe Operation anwenden. Die wichtigste Bedingung ist das Fehlen einer schleifenübergreifenden Abhängigkeit: Bei a[i] = a[i-1] + b[i] benötigt jedes Element das vorherige Ergebnis, sodass die Lanes nicht gleichzeitig laufen können. Die Daten sollten zusammenhängend liegen, und eine mögliche Überlappung von Zeigern (Aliasing) kann den Compiler zum Aufgeben bringen. Eine zur Übersetzungszeit unbekannte Iterationszahl ist kein Hindernis; die Vektorschleife bearbeitet volle Blöcke, und eine kurze Restschleife erledigt den Rest. Medien-Code nutzt zudem Sättigungsarithmetik, bei der die vorzeichenbehaftete 8-Bit-Rechnung 127 + 1 auf 127 begrenzt wird, statt auf −128 überzulaufen."
    },
    {
     "h": "Datenlayout: AoS und SoA",
@@ -16507,7 +16507,7 @@
    },
    {
     "h": "Prolog und Epilog",
-    "p": "Nach der üblichen Konvention wächst der Stack zu niedrigeren Adressen hin, daher belegt eine Funktion ihren Frame, indem sie vom Stack-Pointer subtrahiert. Ein typischer RISC-V-Prolog ist addi sp, sp, -16, gefolgt von sw ra, 12(sp) und sw s0, 8(sp). Der passende Epilog lädt s0 und ra zurück, führt addi sp, sp, 16 aus und kehrt mit ret zurück. Die Standard-Aufrufkonvention von RISC-V hält sp an 16 Byte ausgerichtet, weshalb kleine Frames auf 16 aufgerundet werden. Belegung und Freigabe kosten nur eine Addition, weshalb Stack-Speicher weit günstiger ist als eine Heap-Allokation."
+    "p": "Nach der üblichen Konvention wächst der Stack zu niedrigeren Adressen hin, daher belegt eine Funktion ihren Frame, indem sie vom Stackpointer subtrahiert. Ein typischer RISC-V-Prolog ist addi sp, sp, -16, gefolgt von sw ra, 12(sp) und sw s0, 8(sp). Der passende Epilog lädt s0 und ra zurück, führt addi sp, sp, 16 aus und kehrt mit ret zurück. Die Standard-Aufrufkonvention von RISC-V hält sp an 16 Byte ausgerichtet, weshalb kleine Frames auf 16 aufgerundet werden. Belegung und Freigabe kosten nur eine Addition, weshalb Stack-Speicher weit günstiger ist als eine Heap-Allokation."
    },
    {
     "h": "Blattfunktionen und ISA-Unterschiede",
@@ -24714,6 +24714,245 @@
    "serverseitigen Rendering",
    "serverseitige Rendering",
    "Server-Side Rendering"
+  ]
+ },
+ "ポインタ": {
+  "term": "Zeiger (Pointer)",
+  "desc": "Variable, deren Wert die Speicheradresse einer Variablen, eines Array-Elements, einer Funktion o. Ä. ist. In C wird ein Zeiger etwa als int *p deklariert; &x liefert die Adresse von x, und *p liest oder schreibt den Wert, auf den p zeigt. Addiert man eine Ganzzahl zu einem Zeiger, bewegt er sich in Einheiten der Größe des Typs, auf den er zeigt. Der Name eines Arrays wird in den meisten Ausdrücken in einen Zeiger auf das erste Element umgewandelt, und a[i] bedeutet dasselbe wie *(a + i). Der Wert, der für „zeigt auf nichts“ steht, heißt NULL-Zeiger.",
+  "about": [
+   {
+    "h": "Deklaration und Grundoperationen",
+    "p": "int *p; deklariert p als „Zeiger auf int“. Speichert man mit p = &x; die Adresse der Variablen x, schreibt *p = 5; den Wert 5 in x. Ein Argument wird an eine Funktion als Wert übergeben; soll eine Funktion eine Variable des Aufrufers ändern, übergibt man deren Adresse als Zeiger. Um über einen Zeiger auf eine Struktur (struct) auf einen Member zuzugreifen, schreibt man statt (*p).m kurz p->m."
+   },
+   {
+    "h": "Zeigerarithmetik und Arrays",
+    "p": "Addiert man 1 zu einem Zeiger p auf int, rückt die Adresse nicht um 1 Byte, sondern um sizeof(int) Byte vor (in den meisten Umgebungen 4 Byte). Der Name eines Arrays wird, außer etwa als Operand von sizeof oder &, in einen Zeiger auf das erste Element umgewandelt. Übergibt man ein Array als Argument an eine Funktion, wird daher in Wirklichkeit nur die Adresse des ersten Elements übergeben, und sizeof liefert in der Funktion nicht die Größe des gesamten Arrays."
+   },
+   {
+    "h": "Verwendung in Embedded-Systemen und Vorsicht",
+    "p": "Auf einem Mikrocontroller wandelt man die Adresse eines Peripherieregisters aus einer Ganzzahl in einen Zeiger um, etwa (volatile uint32_t *)0x40020014, und liest oder schreibt darüber. Lesen oder Schreiben über einen nicht initialisierten Zeiger, einen NULL-Zeiger oder einen Dangling Pointer, der auf einen freigegebenen Bereich zeigt, ist undefiniertes Verhalten; in Umgebungen ohne Betriebssystem kann es unbemerkt andere Daten zerstören."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Wie groß ist ein Zeiger?",
+    "a": "In den meisten 64-Bit-Umgebungen 8 Byte, auf 32-Bit-Mikrocontrollern 4 Byte. Ob er auf char oder double zeigt, ein Zeiger auf Daten ist im Allgemeinen gleich groß. Da ein Zeiger nicht unbedingt so groß wie int ist, verwendet man uintptr_t aus stdint.h, wenn eine Adresse in einer Ganzzahl gespeichert werden soll."
+   },
+   {
+    "q": "Was ist der Unterschied zwischen const char *p und char *const p?",
+    "a": "const char *p ist ein „Zeiger auf const char“: Über p können keine Zeichen geändert werden, p selbst kann aber auf eine andere Adresse gesetzt werden. char *const p ist ein „konstanter Zeiger“: p kann nicht geändert werden, das Ziel aber schon. Merkregel: Steht const links vom *, ist das Ziel festgelegt, steht es rechts davon, der Zeiger selbst."
+   }
+  ],
+  "aliases": [
+   "Zeigern",
+   "Zeigers"
+  ]
+ },
+ "構造体": {
+  "term": "Struct (C-Struktur)",
+  "desc": "Mechanismus in C, der mehrere Werte unterschiedlichen Typs (Member) zusammenfasst und als einen Typ behandelt. Definiert wird sie etwa als struct sensor { int id; float value; };; die Member einer Variablen s werden mit s.id angesprochen, über einen Zeiger p auf die Struktur mit p->id. Die Member liegen in der Reihenfolge ihrer Deklaration im Speicher, doch wegen der Ausrichtung (Alignment) können Füllbytes (Padding) dazwischen liegen, sodass die Gesamtgröße die Summe der Membergrößen übersteigen kann.",
+  "about": [
+   {
+    "h": "Definition und Verwendung",
+    "p": "Nach der Definition struct point { int x; int y; }; lässt sich eine Variable mit struct point p = {1, 2}; anlegen, und die Member werden mit p.x und p.y angesprochen. Vergibt man mit typedef einen Alias wie typedef struct { … } Point;, kann man ohne struct einfach Point p; deklarieren. Strukturen lassen sich mit = als Ganzes zuweisen und als Argument oder Rückgabewert einer Funktion verwenden; große Strukturen übergibt man jedoch üblicherweise über einen Zeiger."
+   },
+   {
+    "h": "Anordnung im Speicher",
+    "p": "Die Member werden in der Reihenfolge ihrer Deklaration ab der kleineren Adresse abgelegt. Vor einem Typ wie int, der an einer 4-Byte-Grenze ausgerichtet sein muss, werden Füllbytes (Padding) eingefügt, und auch die Gesamtgröße der Struktur wird auf ein Vielfaches des strengsten Alignments aufgerundet. Eine Struktur aus char, int und char in dieser Reihenfolge belegt daher in einer üblichen Umgebung mit 4-Byte-int 12 Byte; steht int zuerst, sind es nur 8 Byte."
+   },
+   {
+    "h": "Vorsicht in Embedded-Systemen und bei Kommunikation",
+    "p": "Es ist üblich, die Anordnung der Peripherieregister mit einer Struktur abzubilden, doch Padding und die Reihenfolge von Bitfeldern dürfen je nach Implementierung verschieden sein; wer das nicht prüft, erhält verschobene Adressen. Behandelt man Kommunikationsdaten oder Dateiformate direkt als Speicherinhalt einer Struktur, gehen durch Unterschiede bei Padding und Endianness die Kompatibilität zu anderen Umgebungen verloren; daher setzt man solche Daten häufig Byte für Byte zusammen."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Was ist der Unterschied zwischen einer Struktur und einem Array?",
+    "a": "Ein Array reiht Elemente desselben Typs aneinander, und Elemente werden über einen Index ausgewählt. Eine Struktur fasst Member unterschiedlichen Typs zusammen, und Member werden über ihren Namen ausgewählt. Beides lässt sich kombinieren, etwa als Array von Strukturen oder als Struktur mit einem Array als Member."
+   },
+   {
+    "q": "Warum sollte man die Größe einer Struktur mit sizeof ermitteln?",
+    "a": "Wie viel Padding zwischen den Membern und am Ende eingefügt wird, hängt von den Typgrößen und den Alignment-Regeln (ABI) ab; die Summe der Membergrößen ergibt daher nicht die richtige Größe. Wird Speicher für eine Struktur mit malloc reserviert oder eine Struktur in eine Datei geschrieben, ermittelt man die tatsächliche Größe mit sizeof(struct Name)."
+   }
+  ],
+  "aliases": [
+   "Structs"
+  ],
+  "noLinkIn": [
+   "mems-sensor",
+   "deposition",
+   "process-materials",
+   "hdl-verification"
+  ]
+ },
+ "共用体": {
+  "term": "Union",
+  "desc": "Typ in C, dessen Member überlappend ab derselben Adresse liegen. Deklariert wird sie etwa als union { uint32_t w; uint8_t b[4]; } u;, und ihre Größe entspricht der des größten Members (aufgerundet auf ein Vielfaches des Alignments). Einen sinnvollen Wert hat jeweils nur ein Member; verwendet wird sie, um denselben Speicher als anderen Typ zu betrachten oder um Speicher zu sparen, wenn Daten in einer von mehreren Formen vorliegen. Was man liest, wenn man u.w schreibt und u.b[0] liest, hängt von der Endianness ab."
+ },
+ "マクロ": {
+  "term": "Makro",
+  "desc": "Mit #define benannte Textersetzung in C. Es gibt Namen für Konstanten wie #define BUF_SIZE 64 und funktionsartige Makros mit Argumenten wie #define SQUARE(x) ((x) * (x)); expandiert werden sie vor der Kompilierung durch den Präprozessor. Da die Expansion nur eine Textersetzung ist, ergibt sich ohne Klammern um die Argumente und den gesamten Ausdruck wegen der Operatorpriorität ein anderer Ausdruck als beabsichtigt, und Argumente mit Nebeneffekten wie SQUARE(i++) werden mehrfach ausgewertet.",
+  "aliases": [
+   "Makros"
+  ]
+ },
+ "プリプロセッサ": {
+  "term": "Präprozessor",
+  "desc": "Verarbeitungsschritt (bzw. Programm), der C-Quelldateien vor der Kompilierung auf Textebene bearbeitet. Zeilen, die mit # beginnen, gelten als Anweisungen: #include übernimmt den Inhalt einer Header-Datei, #define-Makros werden expandiert, und #if, #ifdef und #ifndef entfernen Teile, deren Bedingung nicht erfüllt ist (bedingte Kompilierung). Auch der Include-Guard, der das doppelte Einbinden eines Headers verhindert, ist eine Kombination aus #ifndef und #define. Mit der Option -E zeigt gcc den Quelltext nach der Verarbeitung.",
+  "aliases": [
+   "Präprozessors"
+  ]
+ },
+ "未定義動作": {
+  "term": "Undefiniertes Verhalten (Undefined Behavior)",
+  "desc": "Verhalten, für dessen Ergebnis der Standard von C bzw. C++ keinerlei Anforderungen stellt. Dazu gehören der Überlauf vorzeichenbehafteter Ganzzahlen, Lese- und Schreibzugriffe außerhalb der Grenzen eines Arrays, die Dereferenzierung eines NULL-Zeigers, die Verwendung eines freigegebenen Bereichs und der Linksshift negativer Werte. Da der Compiler beim Optimieren annehmen darf, dass in einem korrekten Programm kein undefiniertes Verhalten auftritt, kann ein Programm zufällig wie erwartet funktionieren oder aber unerwartete Ergebnisse liefern, etwa weil je nach Optimierungseinstellung eine Prüfung verschwindet. Zu unterscheiden ist es vom implementierungsdefinierten Verhalten, das die Implementierung festlegt und dokumentiert.",
+  "about": [
+   {
+    "h": "Typische Beispiele",
+    "p": "Dazu gehören der Überlauf bei Operationen mit vorzeichenbehafteten Ganzzahlen (etwa INT_MAX + 1), Lese- und Schreibzugriffe auf ein Array außerhalb seiner Grenzen, die Verwendung des Werts einer nicht initialisierten automatischen Variable, Lesen oder Schreiben über einen NULL-Zeiger oder einen Dangling Pointer, die doppelte Freigabe desselben Bereichs, eine ganzzahlige Division durch 0 sowie Shifts um die Typbreite oder mehr und der Linksshift negativer Werte. Der Überlauf vorzeichenloser Ganzzahlen ist kein undefiniertes Verhalten; für ihn ist festgelegt, dass das Ergebnis auf den Rest der Division durch eine Zweierpotenz zurückfällt."
+   },
+   {
+    "h": "Zusammenhang mit der Compiler-Optimierung",
+    "p": "Weil der Compiler annehmen darf, dass „kein undefiniertes Verhalten auftritt“, behandelt er x + 1 > x mitunter als stets wahr oder entfernt eine Prüfung p == NULL, die nach dem Lesen von *p steht. Ein Programm, das mit -O0 wie erwartet lief, kann daher nach dem Wechsel zu -O2 oder einer neueren Compilerversion nicht mehr funktionieren. Die Ursache ist dann kein Compilerfehler, sondern ein Programm, das die Voraussetzungen des Standards verletzt."
+   },
+   {
+    "h": "Finden und Vermeiden",
+    "p": "Bei gcc und clang erkennt -fsanitize=undefined (UBSan) zur Laufzeit etwa Überläufe vorzeichenbehafteter Ganzzahlen und -fsanitize=address (ASan) Zugriffe außerhalb der Grenzen sowie Zugriffe nach der Freigabe. Auch die Warnungen von -Wall und -Wextra, Werkzeuge zur statischen Analyse und Programmierrichtlinien wie MISRA C helfen, undefiniertes Verhalten zu reduzieren."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Was ist der Unterschied zwischen undefiniertem und implementierungsdefiniertem Verhalten?",
+    "a": "Beim implementierungsdefinierten Verhalten wählt die Implementierung ein bestimmtes Verhalten und dokumentiert es, etwa die Größe von int, ob char ein Vorzeichen hat oder das Ergebnis eines Rechtsshifts negativer Werte. Beim undefinierten Verhalten stellt der Standard keinerlei Anforderungen; das Ergebnis darf sich selbst bei derselben Implementierung je nach Situation unterscheiden. Portable Programme kennzeichnen die Stellen, die sich auf implementierungsdefiniertes Verhalten stützen, und lösen kein undefiniertes Verhalten aus."
+   },
+   {
+    "q": "Ist undefiniertes Verhalten unproblematisch, solange das Programm funktioniert?",
+    "a": "Nein. Auch wenn es in der aktuellen Umgebung zufällig wie erwartet funktioniert, kann sich das Ergebnis schon ändern, wenn sich Optimierungseinstellungen, die Compilerversion oder der umgebende Code ändern. Auch aus Sicht der Sicherheit kann undefiniertes Verhalten wie ein Schreibzugriff außerhalb der Grenzen für Angriffe missbraucht werden."
+   }
+  ],
+  "aliases": [
+   "undefinierte Verhalten",
+   "undefinierten Verhalten",
+   "undefiniertem Verhalten"
+  ]
+ },
+ "メモリリーク": {
+  "term": "Speicherleck (Memory Leak)",
+  "desc": "Fehler, bei dem mit malloc o. Ä. reservierter Speicher nach der Verwendung nicht mit free freigegeben wird und auch der Zeiger auf den Bereich verloren geht, sodass der verfügbare Speicher schrumpft. Häufig wird die Freigabe auf einem Pfad vergessen, auf dem die Funktion wegen eines Fehlers vorzeitig zurückkehrt. Bei kurzen Programmen fällt das kaum auf, weil das Betriebssystem den Speicher beim Programmende zurückholt; bei lange laufenden Servern und Embedded-Geräten schrumpft der freie Speicher jedoch allmählich, bis eine Reservierung schließlich fehlschlägt. Erkennen lässt es sich etwa mit Valgrind oder AddressSanitizer (LeakSanitizer).",
+  "aliases": [
+   "Speicherlecks",
+   "Memory Leaks"
+  ]
+ },
+ "ダングリングポインタ": {
+  "term": "Dangling Pointer (hängender Zeiger)",
+  "desc": "Zeiger, der weiterhin auf einen Bereich zeigt, dessen Lebensdauer abgelaufen ist. Typisch sind ein Zeiger nach der Freigabe mit free und ein Zeiger auf die Adresse einer lokalen Variablen nach der Rückkehr aus der Funktion. Lesen oder Schreiben über ihn (Use-after-free) oder ein erneutes free (doppelte Freigabe) ist undefiniertes Verhalten; das Programm kann eine Zeit lang korrekt zu laufen scheinen und dann an anderer Stelle Fehler verursachen, deren Ursache schwer zu finden ist. Vorbeugen lässt sich etwa, indem man nach free NULL zuweist und keine Adressen lokaler Variablen aus der Funktion zurückgibt.",
+  "aliases": [
+   "Dangling Pointers",
+   "hängenden Zeiger",
+   "hängende Zeiger"
+  ]
+ },
+ "volatile(型修飾子)": {
+  "term": "volatile (Typqualifizierer)",
+  "desc": "Typqualifizierer in C, der dem Compiler mitteilt, dass sich der Wert einer Variablen außerhalb des sichtbaren Programms ändern kann (durch Peripherie, Interrupt-Handler usw.) oder dass schon das Lesen und Schreiben selbst eine Bedeutung hat. Zugriffe auf Objekte mit volatile werden weder weggelassen noch zusammengefasst, sondern in der geschriebenen Anzahl und Reihenfolge ausgeführt. Verwendet wird es für Register bei Memory-mapped I/O und für Flags, die mit einem Interrupt-Handler geteilt werden. Operationen atomar zu machen oder die Reihenfolge gegenüber anderen Kernen zu garantieren, leistet es nicht.",
+  "about": [
+   {
+    "h": "Was ohne volatile passiert",
+    "p": "Ändert in einer Schleife wie while (flag == 0) { } nur ein Interrupt-Handler den Wert von flag, schließt der Compiler mitunter, dass sich flag in der Schleife nicht ändert, liest es nur einmal und macht daraus eine Endlosschleife. Dasselbe kann in einer Schleife passieren, die auf ein Statusregister der Peripherie wartet, und aufeinanderfolgende Schreibzugriffe auf dasselbe Register können zu einem zusammengefasst werden. Mit volatile wird so oft tatsächlich gelesen und geschrieben, wie es im Code steht."
+   },
+   {
+    "h": "Deklarationen lesen",
+    "p": "volatile uint32_t *p ist ein „Zeiger auf volatile uint32_t“; Zugriffe auf *p werden nicht mehr weggelassen. Mit volatile uint32_t *const p kommt hinzu, dass der Zeiger selbst nicht geändert werden kann (er zeigt immer auf dasselbe Register). Häufig ist auch ein Makro, das eine Adresse in einen Zeiger umwandelt und dereferenziert, etwa #define REG (*(volatile uint32_t *)0x40020014)."
+   },
+   {
+    "h": "Was volatile nicht leistet",
+    "p": "volatile macht ein Read-Modify-Write nicht atomar; tritt mitten in *reg |= mask; ein Interrupt auf, kann die Änderung eines anderen Bits verloren gehen. Werte, die sich nicht in einem Zugriff lesen oder schreiben lassen, etwa eine 32-Bit-Variable auf einem 8-Bit-Mikrocontroller, können bei einer Unterbrechung teilweise schon den neuen Wert zeigen. Für die Synchronisierung zwischen Threads verwendet man Mechanismen, die Atomarität und Reihenfolge garantieren, etwa _Atomic aus C11 oder Sperren."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Kann man const und volatile gleichzeitig angeben?",
+    "a": "Ja. const volatile bedeutet „das Programm schreibt nicht hinein, aber der Wert ändert sich durch äußere Einflüsse und wird daher jedes Mal neu gelesen“ und wird etwa für schreibgeschützte Statusregister verwendet."
+   },
+   {
+    "q": "Wird ein Programm durch volatile langsamer?",
+    "a": "Für die betreffende Variable ist die Optimierung, ihren Wert in einem Register zu halten, nicht mehr möglich; die Zahl der Zugriffe steigt, und es kann langsamer werden. Deshalb versieht man nicht alle Variablen damit, sondern nur die nötigen, etwa Peripherieregister und Variablen, die mit einem Interrupt-Handler geteilt werden."
+   }
+  ]
+ },
+ "整数拡張": {
+  "term": "Integer-Promotion",
+  "desc": "Regel in C, nach der Werte von Ganzzahltypen, die kleiner als int sind (char, short, Bitfelder usw.), vor einer Operation in int umgewandelt werden (bzw. in unsigned int, wenn int den Wert nicht darstellen kann). Deshalb wird auch eine Addition zweier 8-Bit-Werte vom Typ uint8_t mit der Breite von int berechnet, und das Ergebnis von ~ hat auch in den oberen Bits Einsen. Bei der Zuweisung des Ergebnisses an eine Variable eines kleineren Typs wird es auf dessen Breite zurückgeführt. Zusammen mit den „üblichen arithmetischen Konvertierungen“, die bei Operationen mit vorzeichenbehafteten und vorzeichenlosen Werten die Typen angleichen, beeinflusst sie die Ergebnisse von Vergleichen und Bitoperationen."
+ },
+ "動的メモリ確保": {
+  "term": "Dynamische Speicherreservierung",
+  "desc": "Reservieren von Speicher in der benötigten Größe während der Programmausführung und Freigeben nach der Verwendung. In C reserviert malloc(Größe) den Speicher und liefert die Anfangsadresse, free(Adresse) gibt ihn frei. calloc liefert einen mit 0 initialisierten Bereich, realloc einen Bereich mit geänderter Größe. Schlägt die Reservierung fehl, wird NULL zurückgegeben, was geprüft werden muss. Der Bereich liegt auf dem Heap und bleibt bis zur Freigabe auch nach der Rückkehr aus der Funktion bestehen. Auf kleinen Mikrocontrollern wird sie oft vermieden, weil Fragmentierung und die Dauer der Reservierung schwer vorherzusagen sind.",
+  "aliases": [
+   "malloc",
+   "dynamischen Speicherreservierung",
+   "dynamische Speicherverwaltung",
+   "dynamischen Speicherverwaltung"
+  ]
+ },
+ "関数ポインタ": {
+  "term": "Funktionszeiger",
+  "desc": "Zeiger, dessen Wert die Adresse einer Funktion ist. Deklariert wird er einschließlich der Typen von Argumenten und Rückgabewert, etwa int (*fp)(int, int) = add;, und fp(1, 2) oder (*fp)(1, 2) ruft die Funktion auf, auf die er zeigt. Mit einem Array von Funktionszeigern lässt sich eine Tabelle bauen, die je nach Nummer zwischen Verarbeitungen umschaltet. Verwendet wird er für Callbacks wie die Vergleichsfunktion für qsort, für Interrupt-Vektortabellen und für die Verarbeitung der einzelnen Zustände eines Zustandsautomaten. Im Maschinencode wird daraus ein indirekter Aufruf, der die Adresse in ein Register lädt und dorthin springt.",
+  "aliases": [
+   "Funktionszeigern",
+   "Funktionszeigers"
+  ]
+ },
+ "ビットフィールド": {
+  "term": "Bitfeld",
+  "desc": "Mechanismus in C, mit dem ein Member einer Struktur als Feld mit einer angegebenen Bitzahl deklariert wird, etwa unsigned int x : 3;. Da sich kleine Werte dicht gepackt halten lassen, fasst man damit Flags und Einstellwerte zusammen. Ein Wert, der nicht in ein vorzeichenloses Feld passt, wird zum Rest der Division durch 2 hoch Bitzahl. Ob die Felder vom oberen oder unteren Ende eines Worts an angeordnet werden und ob ein Feld eine Grenze überschreiten darf, kann je nach Implementierung verschieden sein; für Peripherieregister und Kommunikationsformate schreibt man daher oft Masken und Shifts.",
+  "aliases": [
+   "Bitfelder",
+   "Bitfeldern",
+   "Bitfelds",
+   "Bitfeldes"
+  ]
+ },
+ "アライメントとパディング": {
+  "term": "Ausrichtung und Auffüllung (Alignment und Padding)",
+  "desc": "Das Ablegen von Daten an Adressen, die ein Vielfaches einer typabhängigen Zahl sind (Alignment), und die dafür zwischen oder hinter den Daten eingefügten ungenutzten Bytes (Padding, Füllbytes). In einer Umgebung, in der int an 4-Byte-Grenzen ausgerichtet wird, folgen in struct { char c; int i; char d; } auf c 3 Byte und auf d 3 Byte, sodass die Größe 12 Byte beträgt. Zugriffe auf nicht ausgerichtete Adressen sind je nach CPU langsamer oder lösen eine Ausnahme aus. Ordnet man die Member vom größten Typ abwärts an, lässt sich das Padding verringern.",
+  "aliases": [
+   "Padding"
+  ]
+ },
+ "バッファオーバーフロー": {
+  "term": "Pufferüberlauf (Buffer Overflow)",
+  "desc": "Schreiben von mehr Daten in einen Bereich wie ein Array (Puffer), als dessen Größe zulässt, wodurch benachbarter Speicher zerstört wird. In C passiert das leicht mit strcpy oder gets, die die Größe des Ziels nicht kennen, oder mit Schleifen, die Indizes ohne Bereichsprüfung verwenden, und es ist undefiniertes Verhalten. Läuft ein Puffer auf dem Stack über, werden lokale Variablen und die Rücksprungadresse der Funktion überschrieben, was für Angriffe missbraucht werden kann, bei denen eine Eingabe von außen beliebigen Code ausführen lässt. Abhilfe schaffen Funktionen mit Größenangabe und Bereichsprüfungen.",
+  "about": [
+   {
+    "h": "Häufige Ursachen",
+    "p": "Typische Fehler sind: das abschließende '\\0' nicht mitzuzählen und 8 Zeichen per strcpy in char name[8] zu kopieren, Eingaben ohne Längenprüfung mit gets oder scanf(\"%s\") einzulesen oder wie in for (i = 0; i <= N; i++) ein Element zu viel zu schreiben. Bei Funktionen, die die Größe des Ziels nicht erhalten, bestimmen die Eingabedaten, wie viel geschrieben wird."
+   },
+   {
+    "h": "Missbrauch für Angriffe und Schutzmechanismen",
+    "p": "In der Nähe eines Puffers auf dem Stack ist die Rücksprungadresse der Funktion gespeichert. Ein Angreifer überschreibt sie mit einer langen Eingabe und lenkt die Ausführung auf vorbereiteten Code oder auf Bibliotheksfunktionen um. Betriebssysteme und Compiler erschweren den Missbrauch durch Stack-Schutz (Canary), der einen vor der Rücksprungadresse abgelegten Wert auf Änderungen prüft, durch die Trennung von Schreiben und Ausführen (W^X) und durch die Randomisierung von Adressen (ASLR)."
+   },
+   {
+    "h": "Vorbeugung im Programm",
+    "p": "Statt strcpy verwendet man Funktionen wie snprintf, denen man die zu schreibende Größe angeben kann, und prüft Eingabelängen und Indexbereiche stets. Während der Entwicklung erkennt -fsanitize=address (AddressSanitizer) Schreibzugriffe außerhalb der Grenzen zur Laufzeit. Auf einem Mikrocontroller ohne MMU hält ein Überlauf nicht sofort an, sondern zerstört benachbarte Daten; hier ist besondere Vorsicht geboten."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Hält ein Pufferüberlauf das Programm immer an?",
+    "a": "Nicht unbedingt. Trifft der überzählige Schreibzugriff einen ungenutzten Bereich, scheint nichts zu passieren; zerstört er eine andere Variable, entstehen an ganz anderer Stelle falsche Ergebnisse. Mitunter bricht das Programm erst ab, wenn die Rücksprungadresse zerstört wurde oder der Stack-Schutz greift."
+   },
+   {
+    "q": "Ist strncpy sicher?",
+    "a": "strncpy kopiert höchstens die angegebene Zahl von Zeichen, hängt aber bei einer zu langen Quelle kein abschließendes '\\0' an, sodass nachfolgende Verarbeitung außerhalb der Grenzen lesen kann. Besser ist snprintf, das mit Größenangabe arbeitet und stets terminiert, oder man schreibt nach strncpy selbst einen Abschluss."
+   }
+  ],
+  "aliases": [
+   "Pufferüberläufe",
+   "Pufferüberläufen",
+   "Pufferüberlaufs",
+   "Buffer Overflows",
+   "Buffer Overrun"
   ]
  }
 }
