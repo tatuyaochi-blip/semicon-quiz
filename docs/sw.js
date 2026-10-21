@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-33b587580e';
+const CACHE = 'sq-f06e602b2b';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -64,6 +64,7 @@ const PRECACHE = [
   "/data/ja/q/power-management.json",
   "/data/ja/q/power.json",
   "/data/ja/q/process-materials.json",
+  "/data/ja/q/quantum.json",
   "/data/ja/q/reliability.json",
   "/data/ja/q/security.json",
   "/data/ja/q/sram-flash.json",
@@ -130,6 +131,7 @@ const PRECACHE = [
   "/data/en/q/power-management.json",
   "/data/en/q/power.json",
   "/data/en/q/process-materials.json",
+  "/data/en/q/quantum.json",
   "/data/en/q/reliability.json",
   "/data/en/q/security.json",
   "/data/en/q/sram-flash.json",
@@ -196,6 +198,7 @@ const PRECACHE = [
   "/data/zh-hant/q/power-management.json",
   "/data/zh-hant/q/power.json",
   "/data/zh-hant/q/process-materials.json",
+  "/data/zh-hant/q/quantum.json",
   "/data/zh-hant/q/reliability.json",
   "/data/zh-hant/q/security.json",
   "/data/zh-hant/q/sram-flash.json",
@@ -261,6 +264,7 @@ const PRECACHE = [
   "/data/ko/q/power-management.json",
   "/data/ko/q/power.json",
   "/data/ko/q/process-materials.json",
+  "/data/ko/q/quantum.json",
   "/data/ko/q/reliability.json",
   "/data/ko/q/security.json",
   "/data/ko/q/sram-flash.json",
@@ -326,6 +330,7 @@ const PRECACHE = [
   "/data/de/q/power-management.json",
   "/data/de/q/power.json",
   "/data/de/q/process-materials.json",
+  "/data/de/q/quantum.json",
   "/data/de/q/reliability.json",
   "/data/de/q/security.json",
   "/data/de/q/sram-flash.json",
@@ -391,6 +396,7 @@ const PRECACHE = [
   "/data/nl/q/power-management.json",
   "/data/nl/q/power.json",
   "/data/nl/q/process-materials.json",
+  "/data/nl/q/quantum.json",
   "/data/nl/q/reliability.json",
   "/data/nl/q/security.json",
   "/data/nl/q/sram-flash.json",
@@ -456,6 +462,7 @@ const PRECACHE = [
   "/data/fr/q/power-management.json",
   "/data/fr/q/power.json",
   "/data/fr/q/process-materials.json",
+  "/data/fr/q/quantum.json",
   "/data/fr/q/reliability.json",
   "/data/fr/q/security.json",
   "/data/fr/q/sram-flash.json",
