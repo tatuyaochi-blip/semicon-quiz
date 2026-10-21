@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-c858572ade';
+const CACHE = 'sq-5978958899';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -44,6 +44,7 @@ const PRECACHE = [
   "/data/ja/q/hw-security.json",
   "/data/ja/q/image-sensor.json",
   "/data/ja/q/industry.json",
+  "/data/ja/q/info-theory.json",
   "/data/ja/q/interconnect.json",
   "/data/ja/q/io-interface.json",
   "/data/ja/q/ion-implant.json",
@@ -124,6 +125,7 @@ const PRECACHE = [
   "/data/en/q/hw-security.json",
   "/data/en/q/image-sensor.json",
   "/data/en/q/industry.json",
+  "/data/en/q/info-theory.json",
   "/data/en/q/interconnect.json",
   "/data/en/q/io-interface.json",
   "/data/en/q/ion-implant.json",
@@ -204,6 +206,7 @@ const PRECACHE = [
   "/data/zh-hant/q/hw-security.json",
   "/data/zh-hant/q/image-sensor.json",
   "/data/zh-hant/q/industry.json",
+  "/data/zh-hant/q/info-theory.json",
   "/data/zh-hant/q/interconnect.json",
   "/data/zh-hant/q/io-interface.json",
   "/data/zh-hant/q/ion-implant.json",
@@ -283,6 +286,7 @@ const PRECACHE = [
   "/data/ko/q/hw-security.json",
   "/data/ko/q/image-sensor.json",
   "/data/ko/q/industry.json",
+  "/data/ko/q/info-theory.json",
   "/data/ko/q/interconnect.json",
   "/data/ko/q/io-interface.json",
   "/data/ko/q/ion-implant.json",
@@ -362,6 +366,7 @@ const PRECACHE = [
   "/data/de/q/hw-security.json",
   "/data/de/q/image-sensor.json",
   "/data/de/q/industry.json",
+  "/data/de/q/info-theory.json",
   "/data/de/q/interconnect.json",
   "/data/de/q/io-interface.json",
   "/data/de/q/ion-implant.json",
@@ -441,6 +446,7 @@ const PRECACHE = [
   "/data/nl/q/hw-security.json",
   "/data/nl/q/image-sensor.json",
   "/data/nl/q/industry.json",
+  "/data/nl/q/info-theory.json",
   "/data/nl/q/interconnect.json",
   "/data/nl/q/io-interface.json",
   "/data/nl/q/ion-implant.json",
@@ -520,6 +526,7 @@ const PRECACHE = [
   "/data/fr/q/hw-security.json",
   "/data/fr/q/image-sensor.json",
   "/data/fr/q/industry.json",
+  "/data/fr/q/info-theory.json",
   "/data/fr/q/interconnect.json",
   "/data/fr/q/io-interface.json",
   "/data/fr/q/ion-implant.json",
