@@ -15,6 +15,7 @@ const exists = p => fs.existsSync(path.join(root, p));
 
 // 「万・億」や million / Milliarden などの単位語も数に直す(billion は言語で大きさが違う)
 const MULT = { 万: 1e4, 億: 1e8, 兆: 1e12, 萬: 1e4, 만: 1e4, 억: 1e8, 조: 1e12, million: 1e6, millions: 1e6, millionen: 1e6, miljoen: 1e6, miljard: 1e9, milliarde: 1e9, milliarden: 1e9, milliard: 1e9, milliards: 1e9, biljoen: 1e12, trillion: 1e12 };
+const DOT_DECIMAL = /(?<![\w.,/])\d+\.\d+(?:\s?(?:%|°|℃|λ|×|wt%|at%|ppm|dB[a-zµ]*|[pnµumkMGT]?(?:m|V|A|Ω|eV|Hz|W|F|H|s|Pa|J|g|K|bit|B)(?![A-Za-z]))|-?[Ff]ach|\s(?:bis|à|tot|und|et|en|oder|ou|of|fois|keer|mal)\s)/g;
 const BILLION = { en: 1e9, de: 1e12, fr: 1e12 };
 
 // 文字列から数値を取り出す。decimalComma の言語では「,」が小数点、「.」と空白が桁区切り
@@ -80,6 +81,13 @@ export function checkContent() {
           for (const m of all.matchAll(/(?<![\d.,])[1-9]\d{0,2},\d{3}(?![\d,])/g)) {
             const asInt = Number(m[0].replace(',', '')), asDec = Number(m[0].replace(',', '.'));
             if (ja.has(asInt) && !ja.has(asDec)) warnings.push(`${q.id} [${l}]: 「${m[0]}」は ${asDec} と読めます(日本語では ${asInt})`);
+          }
+          // 逆向きの書き間違い: 単位の付いた小数を「0.1 nm」のように点で書いている(この言語では「0,1 nm」)。版番号(PCIe 4.0 など)は単位が付かないので対象外
+          for (const m of all.matchAll(DOT_DECIMAL)) {
+            // 「1.000 µA」のように点が桁区切り(日本語では 1000)なら正しい
+            const n = m[0].match(/\d+\.\d+/)[0];
+            if (/\.\d{3}$/.test(n) && ja.has(Number(n.replace('.', '')))) continue;
+            warnings.push(`${q.id} [${l}]: 「${m[0].trim()}」は小数点をコンマにしてください`);
           }
         }
       }
