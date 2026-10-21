@@ -1675,6 +1675,10 @@ ${x.faq?.length ? `<section class="faq">
   </section>`,
   };
   const toolPath = (tool, x) => `${x.path}tools/${tool.slug}/`;
+  // ツールのページの下に出す関連ツール: 分野が重なる数の多い順に6つまで(足りなければ同じグループの順)
+  const relatedTools = tool => toolsIn(code).filter(y => y !== tool)
+    .map(y => ({ y, n: (y.cats ?? []).filter(c => (tool.cats ?? []).includes(c)).length + (y.cat === tool.cat ? 1 : 0) }))
+    .filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, 6).map(x => x.y);
   for (const tool of toolsIn(code)) {
     const x = tool.text[code];
     const tq = (tool.questions ?? []).map(id => qById.get(id)).filter(Boolean);
@@ -1740,11 +1744,25 @@ ${tf.length ? `<section>
 </section>` : ''}
 ${cmpSection(t('tool_rel_compare'), tcmp)}
 ${toolsIn(code).length > 1 ? `<section>
-  <h2>${esc(S.tools_title)}</h2>
-  <div class="mode-grid compact">${toolsIn(code).filter(y => y !== tool).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+  <h2>${esc(t('figure_tools'))}</h2>
+  <div class="mode-grid compact">${relatedTools(tool).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+  <p><a class="btn btn-ghost" href="${home}tools/">${esc(S.tools_title)} →</a></p>
 </section>` : ''}`,
     });
   }
+  // 計算ツールを分野のグループ(基礎・デバイス・前工程…・システム)ごとにまとめる。グループの順は試験区分の定義の順
+  const toolGroups = () => {
+    const gs = [];
+    for (const y of toolsIn(code)) {
+      const c = catOf(y.cat);
+      const name = c ? groupOf(c).name : '';
+      const order = c ? (exams.find(e => e.id === c.exam)?.groups.findIndex(g => g.id === c.group) ?? 99) : 99;
+      let g = gs.find(x => x.name === name);
+      if (!g) gs.push(g = { name, order, items: [] });
+      g.items.push(y);
+    }
+    return gs.sort((a, b) => a.order - b.order);
+  };
   // 計算ツールの一覧 /tools/
   if (toolsIn(code).length) {
     page({
@@ -1761,7 +1779,10 @@ ${toolsIn(code).length > 1 ? `<section>
   <div data-list="recent" hidden><h2>${esc(t('tools_recent'))}</h2><div class="mode-grid compact"></div></div>
   <p class="muted">${esc(t('tools_local_note'))}</p>
 </section>
-<div class="mode-grid tool-all">${toolsIn(code).map(y => `<a class="mode-card" data-tool="${y.id}" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+${toolGroups().map(g => `<section>
+  <h2>${esc(g.name)}</h2>
+  <div class="mode-grid tool-all">${g.items.map(y => `<a class="mode-card" data-tool="${y.id}" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+</section>`).join('\n')}
 <div data-ad="tools"></div>`,
     });
   }
