@@ -1,0 +1,393 @@
+{
+ "c-language-001": {
+  "question": "Que fixe la norme du langage C au sujet de la taille du type int ?",
+  "choices": [
+   "Elle est fixée à 32 bits quelle que soit l'implémentation",
+   "Elle fixe seulement un minimum de 16 bits ; la taille réelle est choisie par l'implémentation",
+   "Elle doit être égale à la largeur des adresses du processeur, soit 64 bits sur un processeur 64 bits"
+  ],
+  "explanation": "La norme du C exige seulement qu'un int puisse représenter au moins −32767 à 32767 (soit 16 bits ou plus) ; la taille réelle est choisie par l'implémentation (la combinaison du compilateur et du processeur cible). Avec un compilateur pour microcontrôleur 16 bits, int peut faire 16 bits, alors qu'il fait 32 bits sur la plupart des PC et des microcontrôleurs 32 bits. Même sous Linux et Windows 64 bits, int reste en général sur 32 bits, et ce sont les pointeurs qui passent à 64 bits. Lorsqu'un entier de taille déterminée est nécessaire, on utilise int32_t et les types semblables de stdint.h."
+ },
+ "c-language-002": {
+  "question": "Dans les programmes embarqués, une variable qui reçoit la valeur d'un registre de périphérique de 32 bits est souvent déclarée avec le type uint32_t de stdint.h plutôt qu'avec unsigned int. Quelle en est la raison principale ?",
+  "choices": [
+   "Parce qu'un uint32_t ne revient pas à 0 lorsqu'une valeur dépasse le maximum, mais reste bloqué au maximum (saturation)",
+   "Parce que les lectures et écritures d'une variable déclarée en uint32_t ne sont plus supprimées par l'optimisation du compilateur",
+   "Parce que la taille d'unsigned int varie selon l'implémentation, alors qu'uint32_t est défini comme un entier non signé d'exactement 32 bits"
+  ],
+  "explanation": "uint8_t, uint16_t, uint32_t, int32_t et les autres types de stdint.h sont des types entiers dont le nombre de bits est fixé par leur nom (types entiers de largeur fixe). unsigned int peut faire 16 ou 32 bits : employer un type de largeur fixe lorsque la largeur doit correspondre à celle d'un registre ou lorsqu'on définit le format des données d'une communication garantit que le sens ne change pas quand le code passe sur un autre processeur. Comme les autres types entiers non signés, uint32_t prend en cas de dépassement la valeur du reste de la division par 2³². Pour que les lectures et écritures ne soient pas supprimées, on ajoute volatile, indépendamment du type."
+ },
+ "c-language-003": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, qui contient une division entre entiers ?",
+  "code": "int a = 7, b = 2;\ndouble x = a / b;\ndouble y = (double)a / b;\nprintf(\"%.1f %.1f\\n\", x, y);",
+  "choices": [
+   "3.0 3.0",
+   "3.0 3.5",
+   "3.5 3.5"
+  ],
+  "explanation": "a / b divise un int par un int : c'est donc une division entre entiers, qui donne 3 en supprimant la partie fractionnaire. Placer ce 3 dans le double x donne seulement 3,0 ; le 0,5 supprimé ne revient pas. Pour y, a est d'abord converti en double (conversion explicite, ou cast), si bien que b est lui aussi converti en double, et la division se fait en virgule flottante : le résultat est 3,5. La manière de calculer dépend du type des opérandes, et non du type de la destination de l'affectation."
+ },
+ "c-language-004": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, qui utilise ++ en préfixe et en suffixe ?",
+  "code": "int i = 5;\nint a = i++;\nint b = ++i;\nprintf(\"%d %d %d\\n\", a, b, i);",
+  "choices": [
+   "5 6 6",
+   "5 7 7",
+   "6 7 7"
+  ],
+  "explanation": "En suffixe, i++ donne comme valeur de l'expression la valeur d'avant l'incrémentation, puis augmente i de 1. a reçoit donc 5 et i passe à 6. En préfixe, ++i augmente d'abord i de 1, puis prend la nouvelle valeur comme valeur de l'expression : i passe à 7 et b reçoit aussi 7. La sortie est « 5 7 7 »."
+ },
+ "c-language-005": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, où = est écrit dans la condition d'une instruction if ?",
+  "code": "int x = 5;\nif (x = 0)\n    printf(\"zero \");\nelse\n    printf(\"nonzero \");\nprintf(\"%d\\n\", x);",
+  "choices": [
+   "zero 0",
+   "nonzero 5",
+   "nonzero 0"
+  ],
+  "explanation": "x = 0 dans la condition du if est une affectation, et non la comparaison ==. x reçoit 0 et la valeur de l'expression d'affectation est elle aussi 0 : la condition est jugée fausse, et c'est « nonzero », dans la branche else, qui est affiché. Le printf suivant affiche x, que l'affectation a mis à 0. Avec gcc, l'option -Wall produit un avertissement pour cette écriture : garder les avertissements activés aide à repérer l'erreur."
+ },
+ "c-language-006": {
+  "question": "Le code ci-dessus a été écrit pour tester si le bit 2 de la valeur de registre reg vaut 1. Quel est le résultat de son exécution ?",
+  "code": "unsigned int reg = 0x04;\nif (reg & 0x04 == 0x04)\n    printf(\"ON\\n\");\nelse\n    printf(\"OFF\\n\");",
+  "choices": [
+   "ON est affiché",
+   "OFF est affiché",
+   "Une erreur de compilation se produit, car & et == ne peuvent pas être écrits à la suite"
+  ],
+  "explanation": "En C, la comparaison == a une priorité plus élevée que le ET bit à bit &. La condition est donc interprétée comme reg & (0x04 == 0x04) ; comme 0x04 == 0x04 vaut 1, on obtient 0x04 & 1 = 0, ce qui est faux, et OFF est affiché. Pour obtenir le sens voulu, on ajoute des parenthèses, comme dans (reg & 0x04) == 0x04. L'écriture est grammaticalement correcte et ne provoque pas d'erreur, mais l'option -Wall de gcc donne un avertissement."
+ },
+ "c-language-007": {
+  "question": "uint8_t est un type entier non signé de 8 bits. Quelle est la sortie obtenue en exécutant le code ci-dessus ?",
+  "code": "uint8_t r = 0x5A;\nr |= 0x01;\nr &= ~0x10;\nr ^= 0x0F;\nprintf(\"0x%02X\\n\", r);",
+  "choices": [
+   "0x44",
+   "0x4F",
+   "0x54"
+  ],
+  "explanation": "0x5A s'écrit 0101 1010 en binaire. |= 0x01 met le bit 0 à 1 et donne 0101 1011 (0x5B), puis &= ~0x10 met le bit 4 à 0 et donne 0100 1011 (0x4B). Le dernier ^= 0x0F inverse les 4 bits de poids faible et donne 0100 0100, soit 0x44. | met des bits à 1, & combiné à ~ met des bits à 0, et ^ inverse des bits."
+ },
+ "c-language-008": {
+  "question": "uint8_t est un type entier non signé de 8 bits. Quelle est la sortie obtenue en exécutant le code ci-dessus, qui incrémente x 10 fois ?",
+  "code": "uint8_t x = 250;\nfor (int i = 0; i < 10; i++)\n    x++;\nprintf(\"%d\\n\", x);",
+  "choices": [
+   "4",
+   "255",
+   "260"
+  ],
+  "explanation": "uint8_t peut représenter de 0 à 255. La norme prévoit qu'une valeur qui ne tient pas dans un type entier non signé devient le reste de sa division par 2⁸ = 256 : en comptant de 1 en 1 à partir de 250, la valeur qui suit 255 revient à 0. Après 10 incrémentations, on obtient le reste de la division de 250 + 10 = 260 par 256, soit 4. En revanche, le dépassement de capacité dans un calcul sur un type entier signé est un comportement indéfini."
+ },
+ "c-language-009": {
+  "question": "unsigned char fait 8 bits et int fait 32 bits. Quelle est la sortie obtenue en exécutant le code ci-dessus ?",
+  "code": "unsigned char a = 200, b = 100;\nint s = a + b;\nunsigned char c = a + b;\nprintf(\"%d %d\\n\", s, c);",
+  "choices": [
+   "44 44",
+   "300 44",
+   "300 300"
+  ],
+  "explanation": "En C, les valeurs des types plus petits qu'int (comme char et short) sont converties en int avant tout calcul (promotion entière). a + b n'est donc pas calculé sur 8 bits mais en int, ce qui donne 300, et s, de type int, reçoit 300 tel quel. Lors de l'affectation à c, qui fait 8 bits, la valeur est convertie en 44, le reste de la division de 300 par 256. Même sur un microcontrôleur 8 bits, la norme veut que les calculs intermédiaires d'une expression se fassent sur la largeur d'un int."
+ },
+ "c-language-010": {
+  "question": "uint8_t est un type entier non signé de 8 bits et int fait 32 bits. Quel est le résultat de l'exécution du code ci-dessus ?",
+  "code": "uint8_t a = 0x0F;\nif (~a == 0xF0)\n    printf(\"equal\\n\");\nelse\n    printf(\"not equal\\n\");",
+  "choices": [
+   "equal est affiché",
+   "Une erreur de compilation se produit, car ~ ne peut pas s'appliquer à une valeur uint8_t",
+   "not equal est affiché"
+  ],
+  "explanation": "Avant le calcul de ~a, a est converti par promotion entière en l'int 0x0000000F. ~a ne vaut donc pas 0xF0 sur 8 bits, mais 0xFFFFFFF0 sur 32 bits (−16 en tant qu'int), qui n'est pas égal à 0xF0 (240). Pour comparer sur 8 bits, on revient d'abord à un type de 8 bits, comme dans (uint8_t)~a == 0xF0. C'est une erreur fréquente lorsqu'on inverse une valeur de registre pour la comparer."
+ },
+ "c-language-011": {
+  "question": "int et unsigned int font 32 bits. Quel est le résultat de l'exécution du code ci-dessus ?",
+  "code": "int a = -1;\nunsigned int b = 1;\nif (a < b)\n    printf(\"a < b\\n\");\nelse\n    printf(\"a >= b\\n\");",
+  "choices": [
+   "a < b est affiché",
+   "a >= b est affiché",
+   "Une erreur de compilation se produit, car une valeur signée et une valeur non signée ne peuvent pas être comparées"
+  ],
+  "explanation": "Pour comparer un int et un unsigned int, les deux valeurs sont d'abord converties en unsigned int (conversions arithmétiques usuelles). En unsigned int, −1 devient 2³² − 1 = 4294967295, qui est supérieur à 1 : a < b est faux. C'est donc « a >= b » qui est affiché. Avec gcc, l'option -Wextra (ou -Wsign-compare) donne un avertissement pour les comparaisons qui mélangent valeurs signées et non signées."
+ },
+ "c-language-012": {
+  "question": "unsigned int fait 32 bits. Quel est le comportement du code ci-dessus à l'exécution ?",
+  "code": "unsigned int i;\nfor (i = 3; i >= 0; i--)\n    printf(\"%u \", i);",
+  "choices": [
+   "Il affiche 3 2 1 0 et se termine",
+   "Il affiche 3 2 1 et se termine",
+   "Après avoir affiché 3 2 1 0, il ne se termine pas et continue d'afficher des valeurs décroissantes à partir de 4294967295"
+  ],
+  "explanation": "i est non signé : il ne peut jamais devenir négatif, et la condition i >= 0 est toujours vraie. Exécuter i-- quand i vaut 0 le fait revenir à 2³² − 1 = 4294967295, et la boucle ne se termine pas : elle continue d'afficher 4294967294, 4294967293, etc. Pour compter à rebours jusqu'à 0, on utilise un int, ou on change l'écriture de la boucle, comme dans for (i = 4; i-- > 0; ). Avec gcc, l'option -Wextra avertit que cette comparaison est toujours vraie."
+ },
+ "c-language-013": {
+  "question": "Un programme qui exécute « char c = 200; » puis affiche c avec %d dans printf affiche −56 lorsqu'il est compilé et exécuté avec gcc pour Linux sur x86-64, et 200 avec gcc pour Linux sur Arm. Quelle est la raison de cette différence ?",
+  "choices": [
+   "Arm est gros-boutiste (big-endian), si bien que les octets sont lus dans l'ordre inverse",
+   "Le fait qu'un char écrit sans signed ni unsigned soit signé ou non est choisi par l'implémentation : il est signé sur x86-64 et non signé sur Arm",
+   "Sur x86-64, char fait 16 bits et son bit de poids fort est traité comme le signe"
+  ],
+  "explanation": "La norme ne fixe pas si un char écrit sans signed ni unsigned est signé ou non signé : elle laisse ce choix à l'implémentation (comportement défini par l'implémentation). Sous Linux sur x86-64, char est signé et ne peut représenter que −128 à 127 : y placer 200 donne 200 − 256 = −56. Sous Linux sur Arm ou RISC-V, char est non signé et 200 est stocké tel quel. Pour manipuler des octets de données, on utilise unsigned char ou uint8_t afin de rendre le traitement du signe explicite."
+ },
+ "c-language-014": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, où b++ est écrit à droite de && et de || ?",
+  "code": "int a = 0, b = 0;\nif (a++ && b++) { }\nif (a++ || b++) { }\nprintf(\"%d %d\\n\", a, b);",
+  "choices": [
+   "2 0",
+   "2 1",
+   "2 2"
+  ],
+  "explanation": "&& n'évalue pas son côté droit si le côté gauche est faux, et || ne l'évalue pas si le côté gauche est vrai (évaluation en court-circuit). Dans le premier if, la valeur de a++ est 0, la valeur d'avant l'incrémentation, donc fausse : b++ n'est pas exécuté et seul a passe à 1. Dans le second if, la valeur de a++ est 1, donc vraie : là encore b++ n'est pas exécuté, et a passe à 2. Lorsque le côté droit contient une expression à effet de bord, comme ++ ou un appel de fonction, son exécution dépend de la valeur du côté gauche : il faut y prendre garde."
+ },
+ "c-language-015": {
+  "question": "Quelle est la sortie obtenue en exécutant l'instruction switch ci-dessus, qui contient un case sans break ?",
+  "code": "int n = 2, c = 0;\nswitch (n) {\ncase 1: c += 1;\ncase 2: c += 10;\ncase 3: c += 100; break;\ndefault: c += 1000;\n}\nprintf(\"%d\\n\", c);",
+  "choices": [
+   "10",
+   "110",
+   "1110"
+  ],
+  "explanation": "Une instruction switch saute à l'étiquette case qui correspond à la valeur de n, puis exécute aussi les instructions des case suivants jusqu'à rencontrer un break (fall-through). n vaut 2 : l'exécution commence à case 2, et après c += 10 elle exécute aussi le c += 100 de case 3, puis sort du switch au break. c vaut 10 + 100 = 110. Lorsque cet enchaînement est voulu, l'indiquer dans un commentaire permet de le distinguer facilement d'un break oublié."
+ },
+ "c-language-016": {
+  "question": "Quelle est la sortie obtenue en exécutant le programme ci-dessus ?",
+  "code": "void f(int x) { x = 10; }\nvoid g(int *p) { *p = 20; }\nint main(void) {\n    int a = 1, b = 1;\n    f(a);\n    g(&b);\n    printf(\"%d %d\\n\", a, b);\n    return 0;\n}",
+  "choices": [
+   "1 20",
+   "10 1",
+   "10 20"
+  ],
+  "explanation": "En C, les arguments des fonctions sont passés par valeur : l'appel f(a) copie la valeur 1 de a dans x. Mettre x à 10 dans f ne modifie que cette copie, et le a de l'appelant reste à 1. g(&b) passe l'adresse de b : *p = 20 dans g écrit donc dans b lui-même, et b passe à 20. Pour modifier une variable de l'appelant à l'intérieur d'une fonction appelée, on passe ainsi un pointeur."
+ },
+ "c-language-017": {
+  "question": "Lorsque la fonction f ci-dessus est appelée trois fois de suite, quelle est la valeur de retour du troisième appel ?",
+  "code": "int f(void) {\n    static int s = 0;\n    int a = 0;\n    s++;\n    a++;\n    return s * 10 + a;\n}",
+  "choices": [
+   "11",
+   "13",
+   "31"
+  ],
+  "explanation": "La variable locale s, déclarée static, n'est initialisée à 0 qu'une seule fois, avant le début du programme, et garde sa valeur après le retour de la fonction. s prend donc les valeurs 1, 2 et 3 au fil des appels. a, sans static, est créée à nouveau à chaque appel et part de 0 : elle vaut 1 à chaque fois. La valeur de retour du troisième appel est 3 × 10 + 1 = 31."
+ },
+ "c-language-018": {
+  "question": "En C, quelle association des durées de vie de (1) une variable locale déclarée sans static dans une fonction, (2) une zone allouée par malloc et (3) une variable déclarée hors de toute fonction est correcte ?",
+  "choices": [
+   "(1) jusqu'à la fin du programme, (2) jusqu'au retour de la fonction qui l'a allouée, (3) jusqu'à la fin du programme",
+   "(1) jusqu'à la sortie du bloc où elle est déclarée, (2) jusqu'à sa libération par free, (3) jusqu'à la fin du programme",
+   "(1) jusqu'à la sortie du bloc où elle est déclarée, (2) jusqu'à la fin du programme (elle ne peut pas être libérée avant), (3) jusqu'au retour de la première fonction qui l'a utilisée"
+  ],
+  "explanation": "La variable automatique (1) est en général placée sur la pile : elle est créée à l'entrée dans le bloc où elle est déclarée et disparaît à la sortie de ce bloc. La zone allouée par malloc (2) se trouve dans le tas : elle survit aux retours de fonction et reste utilisable jusqu'à sa libération par free. La variable (3), déclarée hors de toute fonction (comme toute variable déclarée static), existe pendant toute l'exécution du programme et se trouve dans une zone statique comme .data ou .bss. Utiliser un pointeur vers une zone dont la durée de vie est terminée, ou oublier free et laisser des zones s'accumuler, sont des causes d'erreurs fréquentes."
+ },
+ "c-language-019": {
+  "question": "int fait 32 bits (valeur maximale 2147483647). Quelle est la plus grande valeur de n pour laquelle la fonction fact(n) ci-dessus renvoie correctement la factorielle de n, sans dépassement de capacité ?",
+  "code": "int fact(int n) {\n    if (n <= 1)\n        return 1;\n    return n * fact(n - 1);\n}",
+  "choices": [
+   "12",
+   "13",
+   "20"
+  ],
+  "explanation": "fact s'appelle elle-même sous la forme n × fact(n − 1) et renvoie 1 lorsque n vaut 1 ou moins : c'est une fonction qui utilise la récursivité. 12! = 479001600 est inférieur à la valeur maximale d'un int, 2147483647, et se calcule correctement, mais 13! = 6227020800 dépasse ce maximum. Dans fact(13), la dernière multiplication, 13 × 479001600, provoque un dépassement de capacité d'entier signé, ce qui est un comportement indéfini. Par exemple, gcc sur x86-64 sans optimisation renvoie 1932053504, le reste de la division de 6227020800 par 2³², mais ce résultat n'est pas garanti. Pour des n plus grands, on utilise par exemple le type long long de 64 bits (jusqu'à n = 20)."
+ },
+ "c-language-020": {
+  "question": "int fait 4 octets et un pointeur 8 octets. Si la valeur (l'adresse) d'un pointeur sur int p est 0x1000, quelle est la valeur de p + 3 ?",
+  "choices": [
+   "0x100C",
+   "0x1012",
+   "0x1018"
+  ],
+  "explanation": "Ajouter un entier à un pointeur le fait avancer par pas égaux à la taille du type pointé. int fait 4 octets : p + 3 pointe donc 3 × 4 = 12 octets plus loin, soit sur 0x1000 + 0xC = 0x100C. p + 3 est l'adresse de l'élément de tableau p[3], et *(p + 3) a le même sens que p[3]. Un pointeur sur char avance d'un octet à la fois, et un pointeur sur double (8 octets) de 8 octets à la fois."
+ },
+ "c-language-021": {
+  "question": "int fait 4 octets et un pointeur 8 octets. Quelle est la sortie obtenue en exécutant le programme ci-dessus ?",
+  "code": "void f(int a[10]) {\n    printf(\"%zu\\n\", sizeof a);\n}\nint main(void) {\n    int b[10] = {0};\n    printf(\"%zu \", sizeof b);\n    f(b);\n    return 0;\n}",
+  "choices": [
+   "10 10",
+   "40 8",
+   "40 40"
+  ],
+  "explanation": "Dans main, b est un tableau de 10 int : sizeof b vaut 10 × 4 = 40 octets. Même si le paramètre de la fonction est écrit int a[10], il n'est pas traité comme un tableau mais comme un pointeur sur int (int *a), et f(b) ne transmet que l'adresse du premier élément. sizeof a dans f vaut donc 8, la taille d'un pointeur. L'option -Wall de gcc donne un avertissement pour ce sizeof. Lorsqu'une fonction a besoin du nombre d'éléments d'un tableau, on le lui passe comme argument séparé."
+ },
+ "c-language-022": {
+  "question": "int fait 4 octets. Quelle est la sortie obtenue en exécutant le code ci-dessus ?",
+  "code": "int m[3][4];\nprintf(\"%td\\n\", (char *)&m[2][1] - (char *)&m[0][0]);",
+  "choices": [
+   "9",
+   "20",
+   "36"
+  ],
+  "explanation": "En C, un tableau à deux dimensions est rangé ligne par ligne (row-major) : m[3][4] est disposé dans l'ordre m[0][0] à m[0][3], m[1][0] à m[1][3], puis m[2][0] à m[2][3]. Avant m[2][1], il y a les 2 × 4 = 8 éléments des deux premières lignes et 1 élément de la même ligne, soit 9 éléments au total. Chaque élément fait 4 octets : la distance depuis le début est de 9 × 4 = 36 octets. La soustraction se fait après conversion en char *, si bien que la différence est exprimée en octets."
+ },
+ "c-language-023": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, qui porte sur un tableau de char contenant une chaîne ?",
+  "code": "char s[10] = \"hello\";\nprintf(\"%zu %zu\\n\", strlen(s), sizeof s);",
+  "choices": [
+   "5 10",
+   "6 10",
+   "10 10"
+  ],
+  "explanation": "En C, une chaîne est une suite de caractères suivie du caractère de fin '\\0'. strlen compte les caractères depuis le début jusqu'au '\\0' exclu : il donne 5 pour \"hello\". sizeof s est la taille du tableau s tout entier, soit les 10 octets déclarés (les éléments restants contiennent 0). Si l'on omet le nombre d'éléments, comme dans char s[] = \"hello\";, on obtient un tableau de 6 octets, '\\0' compris."
+ },
+ "c-language-024": {
+  "question": "Après les déclarations ci-dessus, on écrit l'une des instructions A « p = t; », B « *p = 'x'; », C « q = t; » ou D « *q = 'x'; ». Quelle combinaison indique celles qui provoquent une erreur de compilation ?",
+  "code": "char s[] = \"abc\", t[] = \"xyz\";\nconst char *p = s;\nchar *const q = s;",
+  "choices": [
+   "A et D",
+   "B et C",
+   "B et D"
+  ],
+  "explanation": "const char *p est un « pointeur sur un char const » : on ne peut pas modifier par p le caractère pointé, mais on peut faire pointer p lui-même vers une autre adresse. char *const q est un « pointeur const » : on ne peut pas modifier q, mais on peut modifier ce que q pointe. B (affectation à *p) et C (affectation à q) provoquent donc une erreur. Règle de lecture : const à gauche de * fige ce qui est pointé, const à droite de * fige le pointeur lui-même."
+ },
+ "c-language-025": {
+  "question": "Quelle est la sortie obtenue en exécutant le programme ci-dessus, qui utilise un tableau de pointeurs de fonction ?",
+  "code": "int add(int a, int b) { return a + b; }\nint mul(int a, int b) { return a * b; }\nint main(void) {\n    int (*op[2])(int, int) = {add, mul};\n    int r = 1;\n    for (int i = 0; i < 2; i++)\n        r = op[i](r, 3);\n    printf(\"%d\\n\", r);\n    return 0;\n}",
+  "choices": [
+   "3",
+   "6",
+   "12"
+  ],
+  "explanation": "op est un tableau de deux pointeurs sur des fonctions qui prennent deux int et renvoient un int ; op[0] contient l'adresse de add et op[1] celle de mul. op[i](r, 3) appelle la fonction pointée. Pour i = 0, r = add(1, 3) = 4, puis pour i = 1, r = mul(4, 3) = 12. Les pointeurs de fonction servent aux tables d'aiguillage des traitements, aux vecteurs d'interruption, aux fonctions de rappel (callbacks), etc."
+ },
+ "c-language-026": {
+  "question": "fill et use sont des fonctions définies ailleurs. Quel est le problème de la fonction ci-dessus ?",
+  "code": "int process(int n) {\n    int *buf = malloc(n * sizeof(int));\n    if (buf == NULL) return -1;\n    if (fill(buf, n) != 0)\n        return -2;\n    use(buf, n);\n    free(buf);\n    return 0;\n}",
+  "choices": [
+   "Lorsque fill renvoie une valeur non nulle, la fonction retourne sans libérer buf, si bien que la zone allouée n'est jamais libérée",
+   "La valeur de retour de malloc n'est pas vérifiée, si bien qu'un pointeur NULL est déréférencé en cas d'échec de l'allocation",
+   "buf est utilisé après free, si bien qu'une zone libérée est accédée"
+  ],
+  "explanation": "Une zone allouée par malloc subsiste jusqu'à sa libération par free. Sur le chemin où fill échoue et où la fonction sort par return -2, free n'est pas appelé et la valeur (l'adresse) de buf est perdue : cette zone ne pourra plus jamais être libérée. C'est ce qu'on appelle une fuite de mémoire ; si la fonction est appelée de façon répétée, la mémoire utilisable ne cesse de diminuer, ce qui pose surtout problème pour les équipements embarqués et les serveurs qui fonctionnent longtemps. On appelle free(buf) avant de retourner, ou on regroupe la libération en un seul endroit, à la fin de la fonction."
+ },
+ "c-language-027": {
+  "question": "Quelle affirmation sur le pointeur renvoyé par la fonction make ci-dessus est correcte ?",
+  "code": "int *make(void) {\n    int x = 42;\n    return &x;\n}",
+  "choices": [
+   "x reste au même endroit jusqu'à la fin du programme : on peut toujours lire 42 sans risque par le pointeur renvoyé",
+   "x est déplacé dans le tas au retour : l'appelant doit le libérer par free après usage",
+   "La durée de vie de x se termine au retour de la fonction : le pointeur renvoyé désigne un emplacement invalide, et l'utiliser est un comportement indéfini"
+  ],
+  "explanation": "x est une variable locale sans static (une variable automatique) : sa durée de vie se termine au retour de la fonction, et l'emplacement qu'elle occupait sur la pile est réutilisé par d'autres appels de fonction. Un pointeur qui désigne une zone dont la durée de vie est terminée s'appelle un pointeur pendant, et lire ou écrire à travers lui est un comportement indéfini. gcc donne un avertissement pour ce code et peut même générer un code qui renvoie NULL. On renvoie plutôt la valeur elle-même, ou l'on utilise une zone préparée par l'appelant ou allouée par malloc."
+ },
+ "c-language-028": {
+  "question": "En C, quelle est la raison la plus appropriée pour laquelle il est recommandé d'écrire p = NULL; juste après free(p); ?",
+  "choices": [
+   "Sans l'affectation de NULL, la zone libérée ne redevient pas disponible, ce qui provoque une fuite de mémoire",
+   "p continue de désigner la zone libérée : cela évite les doubles libérations et les utilisations après libération, et les rend plus faciles à détecter",
+   "free met automatiquement p à NULL, mais on réécrit la même valeur par précaution, pour vérifier"
+  ],
+  "explanation": "free(p) libère la zone que désignait p, mais la valeur (l'adresse) de la variable p reste inchangée. Lire ou écrire *p ensuite est une utilisation après libération (use after free), et rappeler free(p) est une double libération (double free) ; les deux sont des comportements indéfinis, qui peuvent corrompre les informations de gestion du tas et faire apparaître une anomalie loin de la cause. Si p reçoit NULL, la double libération est sans danger, puisque free(NULL) est défini comme ne faisant rien, et une vérification de NULL avant usage révèle aussi l'erreur. Les autres pointeurs qui désignent la même zone demandent toutefois une attention séparée."
+ },
+ "c-language-029": {
+  "question": "La chaîne de 8 caractères \"ABCDEFGH\" est passée à la fonction save ci-dessus. Que se passe-t-il ?",
+  "code": "void save(const char *input) {\n    char name[8];\n    strcpy(name, input);\n    printf(\"%s\\n\", name);\n}",
+  "choices": [
+   "9 octets sont écrits, '\\0' de fin compris, ce qui écrase 1 octet hors de name (comportement indéfini)",
+   "Elle fait exactement 8 caractères : elle tient dans name et ABCDEFGH s'affiche correctement",
+   "strcpy tronque la chaîne à 7 caractères pour l'adapter à la taille de name et place le '\\0' de fin dans le dernier élément"
+  ],
+  "explanation": "La chaîne \"ABCDEFGH\" fait 9 octets en comptant le '\\0' de fin. strcpy ne connaît pas la taille de la destination et copie tout jusqu'au '\\0' : elle écrit 1 octet au-delà de la fin de name, qui fait 8 octets (débordement de tampon). Ce dépassement peut écraser d'autres variables sur la pile ou l'adresse de retour, et il est aussi exploité par des attaques qui fournissent une longue entrée pour faire exécuter du code arbitraire. On l'évite en utilisant une fonction qui prend la taille à écrire, comme snprintf(name, sizeof name, \"%s\", input)."
+ },
+ "c-language-030": {
+  "question": "En C, quelle description de ce qui se passe lorsqu'un pointeur NULL est déréférencé (lecture de *p alors que p vaut NULL) est correcte ?",
+  "choices": [
+   "La norme exige qu'il soit toujours détecté comme une erreur d'exécution : dans tout environnement, le programme affiche un message d'erreur et s'arrête",
+   "NULL est défini comme désignant l'adresse 0 : dans tout environnement, le contenu de l'adresse 0 est lu et le traitement continue",
+   "C'est un comportement indéfini : sous un système d'exploitation, le programme s'arrête en général anormalement, mais sur un microcontrôleur sans MMU l'adresse 0 peut être lisible et l'erreur passer inaperçue"
+  ],
+  "explanation": "Déréférencer un pointeur NULL est un comportement indéfini : la norme ne dit pas ce qui se passe. Linux et Windows n'attribuent aucune page autour de l'adresse 0 : un déréférencement provoque un défaut de page, et le programme se termine en général anormalement (par une erreur de segmentation sous Linux, par exemple). Sur un petit microcontrôleur sans MMU, l'adresse 0 peut contenir de la mémoire flash ou les vecteurs d'interruption et être lisible : l'erreur peut alors provoquer des dysfonctionnements sans jamais se manifester. Il est important de vérifier qu'un pointeur n'est pas NULL avant de l'utiliser."
+ },
+ "c-language-031": {
+  "question": "On considère un environnement courant où char fait 1 octet et int 4 octets, et où les int sont placés à des adresses multiples de 4. Quelle est la sortie obtenue en exécutant le code ci-dessus ?",
+  "code": "struct S { char c; int i; char d; };\nstruct T { int i; char c; char d; };\nprintf(\"%zu %zu\\n\", sizeof(struct S), sizeof(struct T));",
+  "choices": [
+   "6 6",
+   "9 6",
+   "12 8"
+  ],
+  "explanation": "Un int est placé à une adresse multiple de 4 : dans struct S, 3 octets de remplissage (padding) sont insérés après c, i est placé au décalage 4 et d au décalage 8. De plus, la taille de la struct entière est arrondie au multiple de 4 supérieur pour que i reste aligné dans chaque élément d'un tableau de structs : 3 octets sont ajoutés après les 9 octets, ce qui donne 12 octets. Dans struct T, c et d suivent i, soit 6 octets, arrondis à 8 octets. Ranger les membres du type le plus grand au plus petit réduit le padding."
+ },
+ "c-language-032": {
+  "question": "uint32_t et uint8_t sont des types entiers non signés de 32 bits et de 8 bits, et l'environnement est petit-boutiste (little-endian). Quelle est la sortie obtenue en exécutant le code ci-dessus ?",
+  "code": "union { uint32_t w; uint8_t b[4]; } u;\nu.w = 0x12345678;\nprintf(\"%02X %02X\\n\", u.b[0], u.b[1]);",
+  "choices": [
+   "12 34",
+   "78 56",
+   "87 65"
+  ],
+  "explanation": "Les membres d'une union se superposent à partir de la même adresse : u.b[0] à u.b[3] représentent chacun l'un des 4 octets de u.w. En petit-boutiste, l'octet de poids faible est placé à l'adresse la plus basse : 0x12345678 est donc rangé dans l'ordre 78, 56, 34, 12 à partir de l'adresse la plus basse. u.b[0] vaut ainsi 0x78 et u.b[1] vaut 0x56. Lire un membre autre que celui qui a été écrit permet ainsi d'examiner l'ordre des octets, mais le résultat dépend de l'endianness."
+ },
+ "c-language-033": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, qui stocke 9 dans un champ de bits de 3 bits ?",
+  "code": "struct { unsigned int x : 3; } s;\nint v = 9;\ns.x = v;\nprintf(\"%d\\n\", s.x);",
+  "choices": [
+   "1",
+   "7",
+   "9"
+  ],
+  "explanation": "x est un champ de bits non signé de 3 bits : il ne peut représenter que 0 à 7. Stocker une valeur qui ne tient pas dans un type non signé donne le reste de sa division par 2³ = 8 : 9 devient donc 1. Les champs de bits servent à regrouper de petites valeurs, comme les champs de configuration d'un registre ou les indicateurs d'une communication, mais des détails comme l'ordre des bits des champs varient selon l'implémentation. Avec gcc, affecter directement la constante 9 à s.x donne un avertissement."
+ },
+ "c-language-034": {
+  "question": "Quelle est la sortie obtenue en exécutant le code ci-dessus, qui utilise la macro SQUARE définie par #define ?",
+  "code": "#define SQUARE(x) x * x\nint a = 3;\nprintf(\"%d\\n\", SQUARE(a + 1));",
+  "choices": [
+   "7",
+   "10",
+   "16"
+  ],
+  "explanation": "Une macro n'est qu'un remplacement de texte effectué par le préprocesseur. SQUARE(a + 1) est développé en a + 1 * a + 1, et la multiplication est calculée en premier : on obtient 3 + 3 + 1 = 7. Pour obtenir comme prévu le carré de (a + 1), soit 16, on entoure de parenthèses l'argument et le corps entier, comme dans #define SQUARE(x) ((x) * (x)). Même ainsi, avec un argument à effet de bord comme SQUARE(i++), i++ est évalué deux fois, ce qui est un comportement indéfini ; on peut alors utiliser une fonction inline à la place."
+ },
+ "c-language-035": {
+  "question": "Le fichier d'en-tête sensor.h est écrit comme ci-dessus. Quel est le rôle des trois lignes #ifndef, #define et #endif ?",
+  "code": "#ifndef SENSOR_H\n#define SENSOR_H\ntypedef struct { int id; int value; } Sensor;\nint sensor_read(Sensor *s);\n#endif",
+  "choices": [
+   "Enregistrer dans un fichier le résultat de la compilation de l'en-tête, pour accélérer la compilation des autres fichiers source qui utilisent le même en-tête",
+   "Réserver l'usage de cet en-tête aux seuls fichiers source qui définissent SENSOR_H",
+   "N'intégrer le contenu qu'une seule fois même si le même en-tête est inclus plusieurs fois dans un fichier source, et éviter ainsi les erreurs de double définition"
+  ],
+  "explanation": "Si a.h et b.h incluent tous deux sensor.h et qu'un fichier source inclut a.h et b.h, le contenu de sensor.h est intégré deux fois. SENSOR_H est défini la première fois : la seconde fois, la condition #ifndef SENSOR_H est fausse et tout ce qui précède #endif est sauté. Sans ce mécanisme, la struct Sensor serait définie deux fois, ce qui provoquerait une erreur de compilation. Cette construction s'appelle une garde d'inclusion (include guard), et avec de nombreux compilateurs, #pragma once peut servir au même but."
+ },
+ "c-language-036": {
+  "question": "Quelle est la sortie obtenue lorsque le code ci-dessus est écrit dans la fonction main et exécuté ?",
+  "code": "#define DEBUG 0\n#ifdef DEBUG\n    printf(\"A\\n\");\n#endif\n#if DEBUG\n    printf(\"B\\n\");\n#endif",
+  "choices": [
+   "Seul A est affiché",
+   "Rien n'est affiché",
+   "A et B sont affichés"
+  ],
+  "explanation": "#ifdef DEBUG vérifie seulement si une macro nommée DEBUG est définie, sans regarder sa valeur. DEBUG est défini avec la valeur 0 : la condition est vraie et l'instruction qui affiche A est compilée. #if DEBUG examine la valeur, qui est 0 : la condition est fausse et l'instruction qui affiche B est supprimée. Pour activer ou désactiver du code de débogage, ce genre d'incohérence se produit si l'on ne choisit pas une fois pour toutes entre #ifdef et #if pour le test."
+ },
+ "c-language-037": {
+  "question": "Un registre de sortie de microcontrôleur est déclaré et utilisé comme ci-dessus. Quelle description de cette déclaration est correcte ?",
+  "code": "#define GPIO_BASE 0x40020000u\nvolatile uint32_t *const odr =\n    (volatile uint32_t *)(GPIO_BASE + 0x14);\n*odr |= 1u << 5;",
+  "choices": [
+   "La valeur de *odr ne peut pas être modifiée, alors qu'odr lui-même peut être modifié par des interruptions : il est donc relu à chaque utilisation",
+   "Grâce à volatile, la lecture-modification-écriture de *odr |= 1u << 5 devient une opération d'un seul tenant qui ne peut pas être interrompue",
+   "L'adresse désignée par odr ne peut pas être changée, et les lectures et écritures à travers odr ne sont pas supprimées, mais effectuées exactement autant de fois qu'elles sont écrites"
+  ],
+  "explanation": "const est à droite de * : le pointeur odr lui-même ne peut pas être modifié et désigne toujours l'adresse du même registre. Le uint32_t pointé est volatile : le compilateur ne supprime ni ne fusionne les lectures et écritures de *odr, et effectue autant d'accès qu'il y en a d'écrits. En revanche, volatile ne rend pas les opérations atomiques : une interruption peut survenir entre la lecture et l'écriture de *odr |= …. Si un gestionnaire d'interruption manipule aussi le même registre, on désactive les interruptions pendant ce temps, ou l'on utilise un registre dédié à la mise à 1 de bits."
+ },
+ "c-language-038": {
+  "question": "Quelle description du comportement indéfini, au sens de la norme du langage C, est correcte ?",
+  "choices": [
+   "Un comportement sur lequel la norme n'impose rien ; le compilateur peut optimiser en supposant qu'il ne se produit jamais, et le résultat peut être inattendu",
+   "Un comportement dont chaque implémentation fixe le résultat, avec l'obligation de le documenter",
+   "Un comportement toujours détecté à l'exécution, qui affiche un message d'erreur et arrête le programme"
+  ],
+  "explanation": "Un comportement indéfini est un comportement sur lequel la norme n'impose aucune exigence, comme le dépassement de capacité d'un entier signé, l'accès hors des bornes d'un tableau, le déréférencement d'un pointeur NULL ou l'utilisation après libération. Il peut arriver qu'il fonctionne comme prévu, mais comme le compilateur peut optimiser en supposant qu'il « ne se produit pas dans un programme correct », il suffit de changer les options d'optimisation ou la version du compilateur pour que le résultat change. En revanche, ce que l'implémentation choisit et doit documenter, comme la taille d'un int ou le fait que char soit signé ou non, s'appelle un comportement défini par l'implémentation. Avec gcc et clang, l'option -fsanitize=undefined détecte une partie des comportements indéfinis à l'exécution."
+ },
+ "c-language-039": {
+  "question": "int et unsigned int font 32 bits. Laquelle des opérations suivantes est un comportement indéfini selon la norme du langage C ?",
+  "choices": [
+   "Ajouter 1 à une variable unsigned int dont la valeur est le maximum, 4294967295",
+   "Décaler vers la droite de 1 bit, avec >>, une valeur int négative",
+   "Ajouter 1 à une variable int dont la valeur est le maximum, 2147483647"
+  ],
+  "explanation": "Une opération sur des entiers signés dont le résultat sort de la plage représentable, comme 2147483647 + 1 en int, est un comportement indéfini. L'arithmétique des entiers non signés est définie comme revenant au reste de la division par 2³² : 4294967295 + 1 donne 0, et ce n'est pas un comportement indéfini. Le décalage à droite d'une valeur négative est un comportement défini par l'implémentation, qui choisit entre décalage arithmétique et décalage logique ; gcc effectue un décalage arithmétique. En revanche, le décalage à gauche d'une valeur négative est un comportement indéfini."
+ },
+ "c-language-040": {
+  "question": "Lorsque la fonction ci-dessus est compilée avec gcc en activant l'optimisation, le test if (p == NULL) peut être supprimé. Quelle en est la raison ?",
+  "code": "int get(int *p) {\n    int v = *p;\n    if (p == NULL)\n        return -1;\n    return v;\n}",
+  "choices": [
+   "*p est lu d'abord, et si p valait NULL, ce serait déjà un comportement indéfini : le compilateur peut donc supposer que p n'est pas NULL",
+   "La norme prévoit qu'une comparaison avec NULL est toujours fausse",
+   "Avec l'optimisation, les instructions if qui vérifient les arguments d'une fonction sont considérées comme relevant de l'appelant, et peuvent toutes être supprimées"
+  ],
+  "explanation": "Si p vaut NULL, int v = *p;, exécuté en premier, déréférence un pointeur NULL et constitue dès ce moment un comportement indéfini. Le compilateur pouvant supposer qu'aucun comportement indéfini ne se produit, il conclut que p n'est pas NULL puisque *p a été lu, et supprime le test p == NULL ainsi que le return -1. Avec gcc 13 pour x86-64 et l'option -O2, la fonction devient un code qui se contente de lire *p et de le renvoyer, alors qu'à -O0 le test est conservé. Pour que le test soit vraiment efficace, on vérifie p avant de lire *p."
+ }
+}
