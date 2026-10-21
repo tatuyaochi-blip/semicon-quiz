@@ -162,6 +162,7 @@ const catTpl = read('src/templates/category.html');
 const qTpl = read('src/templates/question.html');
 
 const questions = {};
+const CODE_ABOVE = /(?<!以)上の/;
 for (const c of categories) {
   const qs = readOpt(`data/questions/${c.id}.json`, []);
   questions[c.id] = qs.filter(q => q.reviewed || !config.onlyReviewed);
@@ -261,7 +262,9 @@ function buildLang(L) {
     // 図(figure)は、この言語の文字にした SVG を figureSvg として渡す(訳が足りなければ出さない)
     qs[c.id] = questions[c.id].filter(q => isDef || tq[q.id]).map(({ reviewed, source, choiceNotes, figure, ...q }) => {
       const figureSvg = figure ? localizeFigure(figs[figure], figT[figure], isDef) : null;
-      return { ...q, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg, figureId: figure } : {}) };
+      // 問題文が「上のコード」と書いている問題は、コードを問題文の前に出す(既定言語の問題文で判定し、すべての言語で同じにする)
+      const codeFirst = q.code && CODE_ABOVE.test(q.question) ? { codeFirst: true } : {};
+      return { ...q, ...codeFirst, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg, figureId: figure } : {}) };
     });
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
@@ -783,7 +786,8 @@ function buildLang(L) {
           qData: qData({ ...q, cat: c.id }),
           continueUrl: `${home}quiz/?mode=category&amp;c=${c.id}&amp;n=9&amp;skip=${q.id}`,
           continueLabel: esc(t('q_continue', { name: c.name })),
-          code: q.code ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
+          code: q.code && !q.codeFirst ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
+          codeBefore: q.code && q.codeFirst ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
           explanation: linked(q.explanation, c.id),
