@@ -1458,6 +1458,25 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" data-show="inv noninv diff"><table class="sp-pairs"><thead><tr><th>Rf</th><th>${esc(x.rin)} / ${esc(x.rg)} / ${esc(x.r1)}</th><th>${esc(x.gain)}</th><th>±</th></tr></thead><tbody id="oa-pairs"></tbody></table></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    crc: x => `<form id="crc-form" class="dy-form" data-text="${esc(JSON.stringify({ remainder: x.remainder, div_none: x.div_none }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('preset', x.preset, [['', x.custom], ['crc-8', 'CRC-8'], ['crc-8-maxim', 'CRC-8/MAXIM (1-Wire)'], ['crc-16-ccitt-false', 'CRC-16/CCITT-FALSE'], ['crc-16-xmodem', 'CRC-16/XMODEM'], ['crc-16-kermit', 'CRC-16/KERMIT'], ['crc-16-modbus', 'CRC-16/MODBUS'], ['crc-16-arc', 'CRC-16/ARC'], ['crc-32', 'CRC-32 (Ethernet, ZIP)'], ['crc-32c', 'CRC-32C (Castagnoli)'], ['crc-32-mpeg2', 'CRC-32/MPEG-2']], 'crc-32')}
+    ${select('mode', x.mode, [['text', x.modes.text], ['hex', x.modes.hex]], 'text')}
+    <label class="dy-field crc-data"><span>${esc(x.data)}</span><input name="data" type="text" autocomplete="off" spellcheck="false" value="123456789"></label>
+    ${select('w', x.w, [3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 21, 24, 30, 31, 32, 40, 64].map(v => [String(v), String(v)]), '32')}
+    <label class="dy-field"><span>${esc(x.poly)}</span><input name="poly" type="text" autocomplete="off" spellcheck="false" value="0x04C11DB7"></label>
+    <label class="dy-field"><span>${esc(x.init)}</span><input name="init" type="text" autocomplete="off" spellcheck="false" value="0xFFFFFFFF"></label>
+    <label class="dy-field"><span>${esc(x.xorout)}</span><input name="xorout" type="text" autocomplete="off" spellcheck="false" value="0xFFFFFFFF"></label>
+    <label class="crc-check"><input name="refin" type="checkbox" checked> ${esc(x.refin)}</label>
+    <label class="crc-check"><input name="refout" type="checkbox" checked> ${esc(x.refout)}</label>
+    <p class="notice" id="crc-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats bc-stats">${stat('hex', x.hex)}${stat('bin', x.bin)}${stat('dec', x.dec)}${stat('bytes', x.bytes)}${stat('check', x.check)}${stat('poly', x.polyx)}</dl>
+    <div id="crc-div"><h3>${esc(x.div_heading)}</h3><pre class="crc-div"></pre><p class="muted" data-rem></p></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
