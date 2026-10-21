@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-e5af66a044';
+const CACHE = 'sq-c7daaf9cd1';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -69,6 +69,7 @@ const PRECACHE = [
   "/data/ja/q/quantum.json",
   "/data/ja/q/reliability.json",
   "/data/ja/q/security.json",
+  "/data/ja/q/service-management.json",
   "/data/ja/q/software-dev.json",
   "/data/ja/q/sram-flash.json",
   "/data/ja/q/sta-cdc.json",
@@ -142,6 +143,7 @@ const PRECACHE = [
   "/data/en/q/quantum.json",
   "/data/en/q/reliability.json",
   "/data/en/q/security.json",
+  "/data/en/q/service-management.json",
   "/data/en/q/software-dev.json",
   "/data/en/q/sram-flash.json",
   "/data/en/q/sta-cdc.json",
@@ -215,6 +217,7 @@ const PRECACHE = [
   "/data/zh-hant/q/quantum.json",
   "/data/zh-hant/q/reliability.json",
   "/data/zh-hant/q/security.json",
+  "/data/zh-hant/q/service-management.json",
   "/data/zh-hant/q/software-dev.json",
   "/data/zh-hant/q/sram-flash.json",
   "/data/zh-hant/q/sta-cdc.json",
@@ -287,6 +290,7 @@ const PRECACHE = [
   "/data/ko/q/quantum.json",
   "/data/ko/q/reliability.json",
   "/data/ko/q/security.json",
+  "/data/ko/q/service-management.json",
   "/data/ko/q/software-dev.json",
   "/data/ko/q/sram-flash.json",
   "/data/ko/q/sta-cdc.json",
@@ -359,6 +363,7 @@ const PRECACHE = [
   "/data/de/q/quantum.json",
   "/data/de/q/reliability.json",
   "/data/de/q/security.json",
+  "/data/de/q/service-management.json",
   "/data/de/q/software-dev.json",
   "/data/de/q/sram-flash.json",
   "/data/de/q/sta-cdc.json",
@@ -431,6 +436,7 @@ const PRECACHE = [
   "/data/nl/q/quantum.json",
   "/data/nl/q/reliability.json",
   "/data/nl/q/security.json",
+  "/data/nl/q/service-management.json",
   "/data/nl/q/software-dev.json",
   "/data/nl/q/sram-flash.json",
   "/data/nl/q/sta-cdc.json",
@@ -503,6 +509,7 @@ const PRECACHE = [
   "/data/fr/q/quantum.json",
   "/data/fr/q/reliability.json",
   "/data/fr/q/security.json",
+  "/data/fr/q/service-management.json",
   "/data/fr/q/software-dev.json",
   "/data/fr/q/sram-flash.json",
   "/data/fr/q/sta-cdc.json",
