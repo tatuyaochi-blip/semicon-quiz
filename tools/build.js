@@ -1266,6 +1266,10 @@ ${x.faq?.length ? `<section class="faq">
     <p><input type="text" id="qs-url" class="qs-url" readonly aria-label="${esc(x.result_heading)}"></p>
     <p><button type="button" class="btn btn-primary btn-small" id="qs-copy" data-done="${esc(x.copied)}">${esc(x.copy)}</button> <a class="btn btn-ghost btn-small" id="qs-open" href="#" target="_blank" rel="noopener">${esc(x.open)}</a></p>
     <p class="muted">${esc(x.note)}</p>
+    ${x.embed_heading ? `<h3>${esc(x.embed_heading)}</h3>
+    <p><textarea id="qs-embed" class="qs-url" rows="4" readonly aria-label="${esc(x.embed_heading)}" data-site="${esc(siteName)}"></textarea></p>
+    <p><button type="button" class="btn btn-ghost btn-small" id="qs-embed-copy" data-done="${esc(x.copied)}">${esc(x.embed_copy)}</button></p>
+    <p class="muted">${esc(x.embed_note)}</p>` : ''}
   </section>`,
   };
   const toolPath = (tool, x) => `${x.path}tools/${tool.slug}/`;

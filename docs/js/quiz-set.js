@@ -27,14 +27,24 @@ form.addEventListener('submit', async e => {
   const url = new URL(`${home}quiz/?mode=set&ids=${shuffle(ids).join(',')}${t ? `&t=${encodeURIComponent(t)}` : ''}`, location.href).href;
   urlBox.value = url;
   document.getElementById('qs-open').href = url;
+  // 埋め込みコード: ?embed=1 を付けた iframe と、サイトへのリンク(iframe を読めない環境でも出典がわかるように)
+  const embed = document.getElementById('qs-embed');
+  if (embed) {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const site = new URL(home, location.href).href;
+    embed.value = `<iframe src="${esc(`${url}&embed=1`)}" title="${esc(t || embed.dataset.site)}" width="100%" height="640" style="border:1px solid #ddd;border-radius:8px" loading="lazy"></iframe>\n<p><a href="${esc(site)}">${esc(embed.dataset.site)}</a></p>`;
+  }
   out.hidden = false;
   out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
-document.getElementById('qs-copy').addEventListener('click', async e => {
+// コピーボタン(URL と埋め込みコード)
+const copyFrom = box => async e => {
   const btn = e.currentTarget;
-  try { await navigator.clipboard.writeText(urlBox.value); } catch { urlBox.select(); document.execCommand?.('copy'); }
+  try { await navigator.clipboard.writeText(box.value); } catch { box.select(); document.execCommand?.('copy'); }
   const label = btn.textContent;
   btn.textContent = btn.dataset.done;
   setTimeout(() => (btn.textContent = label), 1500);
-});
+};
+document.getElementById('qs-embed-copy')?.addEventListener('click', copyFrom(document.getElementById('qs-embed')));
+document.getElementById('qs-copy').addEventListener('click', copyFrom(urlBox));
