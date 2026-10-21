@@ -73,6 +73,7 @@
 
 ## 済
 
+- 2026-10-21 新しい分野「情報理論と符号の基礎」(info-theory、40問・用語15語、日英繁。計算222項目を Python で検算)。学習コース it-exam に追加。ko・de は cloud-container まで全分野
 - 2026-10-21 新しい分野「クラウドとコンテナの基礎」(cloud-container、40問・用語15語、日英繁)。学習コース it-exam に追加。ko・de は dsp まで全分野、nl は linux-cli まで
 - 2026-10-21 新しい分野「デジタル信号処理の基礎」(dsp、40問・用語15語、日英繁。計算は numpy で検算)。MEMS・センサの点検。ko・de は linux-cli まで全分野。残り: dsp を ko/de/nl/fr に訳したら学習コース design(adc-dac の後)に入れる
 - 2026-10-21 新しい分野「Linuxとコマンドラインの基礎」(linux-cli、40問・用語15語、日英繁。コマンドは bash と GNU のツールで実行して検算)。de・nl に電気回路(de は全分野そろった)
