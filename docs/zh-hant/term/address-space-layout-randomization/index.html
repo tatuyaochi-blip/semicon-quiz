@@ -81,11 +81,11 @@
 </article>
 <section class="term-about">
   <h2>ASLR 如何移動行程</h2>
-  <p>程式啟動時，核心與動態<a class="term-link" href="/zh-hant/term/program-loader/">載入器</a>會為位址空間的每個主要區域選擇隨機且對齊分頁的基底偏移量：堆疊、堆積、映射<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>的 mmap 區域，以及建置為<a class="term-link" href="/zh-hant/term/position-independent-executable/">位置無關可執行檔</a>（PIE）時的可執行檔本身。各區域的相對順序維持慣常的樣子（text、data、BSS 與堆積在低位址，堆疊在頂端），但它們的絕對位址每次執行都不同。因此，位址空間配置隨機化（ASLR）改變的是東西放在哪裡，而不是程式做什麼。</p>
+  <p>程式啟動時，核心與動態<a class="term-link" href="/zh-hant/term/program-loader/">載入器</a>會為位址空間的每個主要區域選擇隨機且對齊分頁的基底偏移量：<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>、堆積、映射<a class="term-link" href="/zh-hant/term/shared-library/">共享函式庫</a>的 mmap 區域，以及建置為<a class="term-link" href="/zh-hant/term/position-independent-executable/">位置無關可執行檔</a>（PIE）時的可執行檔本身。各區域的相對順序維持慣常的樣子（text、data、BSS 與堆積在低位址，堆疊在頂端），但它們的絕對位址每次執行都不同。因此，位址空間配置隨機化（ASLR）改變的是東西放在哪裡，而不是程式做什麼。</p>
 </section>
 <section class="term-about">
   <h2>攻擊者為何需要位址</h2>
-  <p>堆疊緩衝區溢位等記憶體破壞攻擊，通常會以某個有用目標的位址覆寫<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>或函式指標：堆疊上的 shellcode、return-to-libc 攻擊中的 system() 等函式庫函式，或是返回導向程式設計（ROP）中的一連串指令片段。這些都需要精確的位址。有了 ASLR，攻擊者必須猜測位址，猜錯通常只會讓行程當掉，而不會交出控制權。這種保護是機率性的，因此其強度取決於可用的隨機位元數，而 32 位元位址空間的隨機位元遠比 64 位元少。</p>
+  <p><a class="term-link" href="/zh-hant/term/stack/">堆疊</a>緩衝區溢位等記憶體破壞攻擊，通常會以某個有用目標的位址覆寫<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>或函式指標：堆疊上的 shellcode、return-to-libc 攻擊中的 system() 等函式庫函式，或是返回導向程式設計（ROP）中的一連串指令片段。這些都需要精確的位址。有了 ASLR，攻擊者必須猜測位址，猜錯通常只會讓行程當掉，而不會交出控制權。這種保護是機率性的，因此其強度取決於可用的隨機位元數，而 32 位元位址空間的隨機位元遠比 64 位元少。</p>
 </section>
 <section class="term-about">
   <h2>PIE 與位置無關程式碼</h2>
@@ -93,14 +93,14 @@
 </section>
 <section class="term-about">
   <h2>限制與搭配的防禦機制</h2>
-  <p>隨機化是以區域為單位，因此只要洩漏函式庫中的一個指標，就會暴露整個函式庫的偏移量，進而得知其中每個函式的位置。由 fork() 建立的子行程會繼承父行程的配置，讓攻擊者可以反覆探測會 fork 的伺服器。因此 ASLR 會與不可執行的可寫記憶體（W^X 或 NX）、堆疊保護值（stack canary）以及控制流程保護搭配使用。作業系統核心也可以隨機化，稱為 KASLR。在 Linux 上，此設定可從 /proc/sys/kernel/randomize_va_space 查看。</p>
+  <p>隨機化是以區域為單位，因此只要洩漏函式庫中的一個指標，就會暴露整個函式庫的偏移量，進而得知其中每個函式的位置。由 fork() 建立的子行程會繼承父行程的配置，讓攻擊者可以反覆探測會 fork 的伺服器。因此 ASLR 會與不可執行的可寫記憶體（W^X 或 NX）、<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>保護值（stack canary）以及控制流程保護搭配使用。作業系統核心也可以隨機化，稱為 KASLR。在 Linux 上，此設定可從 /proc/sys/kernel/randomize_va_space 查看。</p>
 </section>
 <section>
   <h2>練習ASLR（位址空間配置隨機化）的題目</h2>
   <article class="q-mini" data-qid="linker-loader-028" data-cat="linker-loader" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
     <h3><a href="/zh-hant/q/linker-loader/linker-loader-028/">關於ASLR（位址空間配置隨機化）的目的，下列何者正確？</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">每次執行時改變堆疊、堆積、函式庫等的位址，使攻擊者難以預測所瞄準的位址</span></li><li><span class="choice-mark">B</span><span class="choice-text">隨機選擇記憶體位址，以提高快取命中率</span></li><li><span class="choice-mark">C</span><span class="choice-text">隨機釋放未使用的記憶體，以增加可用容量</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 每次執行時改變堆疊、堆積、函式庫等的位址，使攻擊者難以預測所瞄準的位址</p><p class="explanation">在利用緩衝區溢位等的攻擊中，知道函式庫函式與堆疊上資料的位址相當重要。<a class="term-link" href="/zh-hant/term/address-space-layout-randomization/">ASLR</a>會在每次啟動行程時，將堆疊、堆積、<a class="term-link" href="/zh-hant/term/shared-library/">共用函式庫</a>、執行檔的放置位址錯開，讓攻擊者無法預先鎖定位址。它單獨並不能完全防禦，需與寫入與執行分離等其他對策搭配使用。</p></details>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 每次執行時改變堆疊、堆積、函式庫等的位址，使攻擊者難以預測所瞄準的位址</p><p class="explanation">在利用緩衝區溢位等的攻擊中，知道函式庫函式與<a class="term-link" href="/zh-hant/term/stack/">堆疊</a>上資料的位址相當重要。<a class="term-link" href="/zh-hant/term/address-space-layout-randomization/">ASLR</a>會在每次啟動行程時，將堆疊、堆積、<a class="term-link" href="/zh-hant/term/shared-library/">共用函式庫</a>、執行檔的放置位址錯開，讓攻擊者無法預先鎖定位址。它單獨並不能完全防禦，需與寫入與執行分離等其他對策搭配使用。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -129,7 +129,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/shared-library/">共享函式庫（Shared library）</a> <a class="chip" href="/zh-hant/term/position-independent-executable/">PIE（位置無關可執行檔）</a> <a class="chip" href="/zh-hant/term/object-file/">目的檔（Object file）</a> <a class="chip" href="/zh-hant/term/name-mangling/">名稱修飾（Name mangling）</a> <a class="chip" href="/zh-hant/term/position-independent-code/">位置無關程式碼（Position-independent code）</a> <a class="chip" href="/zh-hant/term/relocation/">重定位（Relocation）</a> <a class="chip" href="/zh-hant/term/weak-symbol/">弱符號（Weak symbol）</a> <a class="chip" href="/zh-hant/term/memory-fragmentation/">記憶體碎裂（Memory fragmentation）</a> <a class="chip" href="/zh-hant/term/dynamic-linking/">動態連結（Dynamic linking）</a> <a class="chip" href="/zh-hant/term/dynamic-linker/">動態連結器（Dynamic linker）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/stack/">堆疊</a> <a class="chip" href="/zh-hant/term/shared-library/">共享函式庫（Shared library）</a> <a class="chip" href="/zh-hant/term/position-independent-executable/">PIE（位置無關可執行檔）</a> <a class="chip" href="/zh-hant/term/object-file/">目的檔（Object file）</a> <a class="chip" href="/zh-hant/term/name-mangling/">名稱修飾（Name mangling）</a> <a class="chip" href="/zh-hant/term/position-independent-code/">位置無關程式碼（Position-independent code）</a> <a class="chip" href="/zh-hant/term/relocation/">重定位（Relocation）</a> <a class="chip" href="/zh-hant/term/weak-symbol/">弱符號（Weak symbol）</a> <a class="chip" href="/zh-hant/term/memory-fragmentation/">記憶體碎裂（Memory fragmentation）</a> <a class="chip" href="/zh-hant/term/dynamic-linking/">動態連結（Dynamic linking）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>

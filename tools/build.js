@@ -1706,6 +1706,33 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" id="sc-cmp"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    dijkstra: x => `<form id="dj-form" class="dy-form dj-form" data-text="${esc(JSON.stringify({ examples: x.examples, step0: x.step0, stepmsg: x.stepmsg, updated: x.updated, no_update: x.no_update, unreachable: x.unreachable, col_round: x.col_round, col_fix: x.col_fix, err_line: x.err_line, err_many: x.err_many, err_empty: x.err_empty }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    <label class="dy-field dj-wide"><span>${esc(x.edges)}</span><textarea name="edges" rows="7" spellcheck="false" autocomplete="off" autocapitalize="off" class="dj-edges"></textarea></label>
+    <p class="muted dj-wide">${esc(x.edges_hint)}</p>
+    <label class="crc-check dj-wide"><input type="checkbox" name="directed"> ${esc(x.directed)}</label>
+    <label class="dy-field"><span>${esc(x.source)}</span><select name="source"></select></label>
+    <label class="dy-field"><span>${esc(x.target)}</span><select name="target"></select></label>
+    <p class="notice dj-wide" id="dj-error" hidden></p>
+  </form>
+  <section class="dy-out dj" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('dist', x.dist)}${stat('path', x.path)}</dl>
+    <svg id="dj-svg" class="dj-svg" role="img" aria-label="${esc(x.graph)}"></svg>
+    <div class="ls-bar dj-bar">
+      <button type="button" class="btn btn-ghost btn-small" id="dj-prev" aria-label="${esc(x.prev)}">◀</button>
+      <input type="range" id="dj-step" min="0" max="0" value="0" aria-label="${esc(x.col_round)}">
+      <button type="button" class="btn btn-ghost btn-small" id="dj-next" aria-label="${esc(x.next)}">▶</button>
+    </div>
+    <p class="dj-msg" id="dj-msg"></p>
+    <p class="so-legend"><span class="so-key dj-cur"></span>${esc(x.lg_cur)} <span class="so-key dj-done"></span>${esc(x.lg_done)} <span class="so-key write"></span>${esc(x.lg_relax)} <span class="so-key dj-path"></span>${esc(x.lg_path)}</p>
+    <h3>${esc(x.table_heading)}</h3>
+    <p class="muted">${esc(x.table_hint)}</p>
+    <div class="table-wrap" id="dj-table"></div>
+    <p class="dj-all"><strong>${esc(x.all)}</strong> <span id="dj-all"></span></p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
@@ -1873,7 +1900,7 @@ ${x.faq?.length ? `<section class="faq">
 </div>
 ${x.sections.map(sec => `<section class="term-about">
   <h2>${esc(sec.h)}</h2>
-  <p>${linked(sec.p)}</p>
+  <p>${linked(sec.p, tool.cat)}</p>
 </section>`).join('\n')}
 ${tc && qs[tc.id]?.length ? `<p><a class="btn btn-primary" href="${home}quiz/?mode=category&amp;c=${tc.id}&amp;n=10" rel="nofollow">${esc(x.practice)}</a></p>` : ''}
 ${tq.length ? `<section>${tq.map(miniQ).join('')}</section>` : ''}
@@ -2129,8 +2156,8 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
   </article>`).join('')}
 </section>` : '';
     // 詳しい解説(about: 見出しと段落)とよくある質問(faq)。用語集の訳にあるときだけ出す(今は表示回数の多い英語の用語)
-    // 段落の中の用語は、このページ自身の語を除いて用語ページにリンクする
-    const linkedOther = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? esc(p)
+    // 段落の中の用語は、このページ自身の語を除いて用語ページにリンクする。用語の分野で別の意味になる語(noLinkIn/linkOnlyIn)は除く
+    const linkedOther = text => linkTerms(text, matcher, skipIn(g.cat)).map(p => (typeof p === 'string' ? esc(p)
       : p.id === g.key ? esc(p.text) : `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`)).join('');
     const about = g.about ?? [];
     const faq = g.faq ?? [];

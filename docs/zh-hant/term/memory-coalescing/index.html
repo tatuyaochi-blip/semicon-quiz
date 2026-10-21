@@ -78,11 +78,11 @@
 </article>
 <section class="term-about">
   <h2>合併存取如何運作</h2>
-  <p><a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 的全域記憶體是以固定大小的區塊存取的，通常是 128 位元組<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>中的 32 位元組磁區（sector），而不是以個別字組存取。執行緒以稱為 warp 的群組執行，通常是 32 個執行緒一起發出同一條載入指令。當 warp 中第 i 個執行緒讀取位於 base + 4i 的 4 位元組元素時，這 32 個請求會落在連續的 128 位元組中，硬體便將它們合併成一次或少數幾次記憶體<a class="term-link" href="/zh-hant/term/transaction/">交易</a>。這種合併就是記憶體合併存取，它讓 GPU 能用到所搬移的幾乎所有位元組。</p>
+  <p><a class="term-link" href="/zh-hant/term/gpu/">GPU</a> 的全域記憶體是以固定大小的區塊存取的，通常是 128 位元組<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>中的 32 位元組磁區（sector），而不是以個別字組存取。執行緒以稱為 warp 的群組執行，通常是 32 個執行緒一起發出同一條載入指令。當 warp 中第 i 個執行緒讀取位於 base + 4i 的 4 位元組元素時，這 32 個請求會落在連續的 128 位元組中，硬體便將它們合併成一次或少數幾次記憶體交易。這種合併就是記憶體合併存取，它讓 GPU 能用到所搬移的幾乎所有位元組。</p>
 </section>
 <section class="term-about">
   <h2>什麼會破壞合併存取</h2>
-  <p>若執行緒以跨距存取位址，例如每隔 4 個元素存取一次，warp 就會觸及 4 倍數量的磁區，而每個擷取到的磁區大部分都被丟棄。隨機或間接存取可能需要為每個執行緒各發出一次<a class="term-link" href="/zh-hant/term/transaction/">交易</a>。起始位址未對齊時，可能多出一個區段。在這些情況下，有效頻寬都會降到峰值的一小部分；而由於許多 <a class="term-link" href="/zh-hant/term/gpu-kernel/">GPU 核心函式</a>受限於記憶體頻寬而非運算，未合併的存取常會讓核心函式大幅變慢。</p>
+  <p>若執行緒以跨距存取位址，例如每隔 4 個元素存取一次，warp 就會觸及 4 倍數量的磁區，而每個擷取到的磁區大部分都被丟棄。隨機或間接存取可能需要為每個執行緒各發出一次交易。起始位址未對齊時，可能多出一個區段。在這些情況下，有效頻寬都會降到峰值的一小部分；而由於許多 <a class="term-link" href="/zh-hant/term/gpu-kernel/">GPU 核心函式</a>受限於記憶體頻寬而非運算，未合併的存取常會讓核心函式大幅變慢。</p>
 </section>
 <section class="term-about">
   <h2>結構陣列與陣列結構</h2>
@@ -90,7 +90,7 @@
 </section>
 <section class="term-about">
   <h2>技巧與常見的混淆</h2>
-  <p>常見的修正方式包括：將變化最快的執行緒<a class="term-link" href="/zh-hant/term/database-index/">索引</a>（<a class="term-link" href="/zh-hant/term/cuda/">CUDA</a> 中的 threadIdx.x）對應到陣列的連續維度、將 AoS 資料轉換為 SoA，以及透過晶片上的<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>暫存資料，例如以合併的列讀取載入矩陣區塊，再轉置後寫出。合併存取關乎的是全域記憶體的<a class="term-link" href="/zh-hant/term/transaction/">交易</a>。它不應與共享記憶體的記憶庫衝突（<a class="term-link" href="/zh-hant/term/bank-conflict/">bank conflict</a>）混淆；後者是指 warp 中多個執行緒存取同一個共享記憶體記憶庫中的不同位址，導致其存取被序列化。</p>
+  <p>常見的修正方式包括：將變化最快的執行緒索引（<a class="term-link" href="/zh-hant/term/cuda/">CUDA</a> 中的 threadIdx.x）對應到陣列的連續維度、將 AoS 資料轉換為 SoA，以及透過晶片上的<a class="term-link" href="/zh-hant/term/gpu-shared-memory/">共享記憶體</a>暫存資料，例如以合併的列讀取載入矩陣區塊，再轉置後寫出。合併存取關乎的是全域記憶體的交易。它不應與共享記憶體的記憶庫衝突（<a class="term-link" href="/zh-hant/term/bank-conflict/">bank conflict</a>）混淆；後者是指 warp 中多個執行緒存取同一個共享記憶體記憶庫中的不同位址，導致其存取被序列化。</p>
 </section>
 <section>
   <h2>練習記憶體合併存取（Memory coalescing）的題目</h2>

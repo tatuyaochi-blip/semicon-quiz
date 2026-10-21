@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-6b600be044';
+const CACHE = 'sq-382c98853b';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -14,6 +14,7 @@ const PRECACHE = [
   "/data/ja/q/adc-dac.json",
   "/data/ja/q/advanced-packaging.json",
   "/data/ja/q/ai-stack.json",
+  "/data/ja/q/algorithms.json",
   "/data/ja/q/analog.json",
   "/data/ja/q/automotive.json",
   "/data/ja/q/bjt.json",
@@ -79,6 +80,7 @@ const PRECACHE = [
   "/data/en/q/adc-dac.json",
   "/data/en/q/advanced-packaging.json",
   "/data/en/q/ai-stack.json",
+  "/data/en/q/algorithms.json",
   "/data/en/q/analog.json",
   "/data/en/q/automotive.json",
   "/data/en/q/bjt.json",
@@ -144,6 +146,7 @@ const PRECACHE = [
   "/data/zh-hant/q/adc-dac.json",
   "/data/zh-hant/q/advanced-packaging.json",
   "/data/zh-hant/q/ai-stack.json",
+  "/data/zh-hant/q/algorithms.json",
   "/data/zh-hant/q/analog.json",
   "/data/zh-hant/q/automotive.json",
   "/data/zh-hant/q/bjt.json",
@@ -208,6 +211,7 @@ const PRECACHE = [
   "/data/ko/q/adc-dac.json",
   "/data/ko/q/advanced-packaging.json",
   "/data/ko/q/ai-stack.json",
+  "/data/ko/q/algorithms.json",
   "/data/ko/q/analog.json",
   "/data/ko/q/automotive.json",
   "/data/ko/q/bjt.json",
@@ -272,6 +276,7 @@ const PRECACHE = [
   "/data/de/q/adc-dac.json",
   "/data/de/q/advanced-packaging.json",
   "/data/de/q/ai-stack.json",
+  "/data/de/q/algorithms.json",
   "/data/de/q/analog.json",
   "/data/de/q/automotive.json",
   "/data/de/q/bjt.json",
@@ -336,6 +341,7 @@ const PRECACHE = [
   "/data/nl/q/adc-dac.json",
   "/data/nl/q/advanced-packaging.json",
   "/data/nl/q/ai-stack.json",
+  "/data/nl/q/algorithms.json",
   "/data/nl/q/analog.json",
   "/data/nl/q/automotive.json",
   "/data/nl/q/bjt.json",
@@ -400,6 +406,7 @@ const PRECACHE = [
   "/data/fr/q/adc-dac.json",
   "/data/fr/q/advanced-packaging.json",
   "/data/fr/q/ai-stack.json",
+  "/data/fr/q/algorithms.json",
   "/data/fr/q/analog.json",
   "/data/fr/q/automotive.json",
   "/data/fr/q/bjt.json",
@@ -463,6 +470,7 @@ const PRECACHE = [
   "/js/availability.js",
   "/js/bandgap-wavelength.js",
   "/js/base-convert.js",
+  "/js/bintree-core.js",
   "/js/cache-calc.js",
   "/js/chart.js",
   "/js/cmos-power.js",
@@ -473,6 +481,8 @@ const PRECACHE = [
   "/js/diagnosis.js",
   "/js/die-yield-calc.js",
   "/js/die-yield.js",
+  "/js/dijkstra-core.js",
+  "/js/dijkstra.js",
   "/js/divider.js",
   "/js/dom.js",
   "/js/eng.js",

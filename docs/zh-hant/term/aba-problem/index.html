@@ -89,18 +89,18 @@
 </section>
 <section class="term-about">
   <h2>標準對策</h2>
-  <p>經典的解法是將指標與修改計數器配對，以一次原子操作同時比較兩者，做法是使用雙倍寬度的 CAS 或利用指標中未使用的位元；每次<a class="term-link" href="/zh-hant/term/refresh/">更新</a>都會遞增計數器，因此標籤為 5 的 A 與標籤為 7 的 A 是不同的。load-linked/store-conditional（LL/SC，RISC-V 中稱為 <a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC</a>）只要該位置在載入後曾被寫入就會失敗，即使值相同也一樣。危險指標（hazard pointer）與基於世代的回收（epoch-based reclamation）等安全記憶體回收機制，則能防止節點在仍可能被任何執行緒存取時被釋放並重用。</p>
+  <p>經典的解法是將指標與修改計數器配對，以一次原子操作同時比較兩者，做法是使用雙倍寬度的 CAS 或利用指標中未使用的位元；每次更新都會遞增計數器，因此標籤為 5 的 A 與標籤為 7 的 A 是不同的。load-linked/store-conditional（LL/SC，RISC-V 中稱為 <a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC</a>）只要該位置在載入後曾被寫入就會失敗，即使值相同也一樣。危險指標（hazard pointer）與基於世代的回收（epoch-based reclamation）等安全記憶體回收機制，則能防止節點在仍可能被任何執行緒存取時被釋放並重用。</p>
 </section>
 <section class="term-about">
   <h2>ABA 與無鎖演算法的進展保證</h2>
-  <p><a class="term-link" href="/zh-hant/term/lock-free-algorithm/">無鎖演算法</a>保證即使其他執行緒停滯，總有某個執行緒能取得進展，因為 CAS 只有在另一個執行緒的<a class="term-link" href="/zh-hant/term/refresh/">更新</a>成功時才會失敗。然而這項進展保證與正確性無關，而 ABA 正是看似正確的 CAS 迴圈破壞資料結構的經典途徑。由於它需要特定的交錯順序再加上記憶體重用，在測試中很難抓到，因此無鎖程式碼從一開始就應以明確的 ABA 對策來設計。</p>
+  <p><a class="term-link" href="/zh-hant/term/lock-free-algorithm/">無鎖演算法</a>保證即使其他執行緒停滯，總有某個執行緒能取得進展，因為 CAS 只有在另一個執行緒的更新成功時才會失敗。然而這項進展保證與正確性無關，而 ABA 正是看似正確的 CAS 迴圈破壞資料結構的經典途徑。由於它需要特定的交錯順序再加上記憶體重用，在測試中很難抓到，因此無鎖程式碼從一開始就應以明確的 ABA 對策來設計。</p>
 </section>
 <section>
   <h2>練習ABA 問題（ABA problem）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-018" data-cat="multicore-sync" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
     <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-018/">關於使用CAS的無鎖資料結構中會出現的ABA問題，下列說明何者正確？</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">A與B兩個執行緒變得只能交替執行</span></li><li><span class="choice-mark">B</span><span class="choice-text">當值從A變成B、又變回A時，CAS沒有察覺變化而成功了</span></li><li><span class="choice-mark">C</span><span class="choice-text">以相反的順序取得A與B兩把鎖</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 當值從A變成B、又變回A時，CAS沒有察覺變化而成功了</p><p class="explanation">當鏈結串列開頭的指標為A時，在某個執行緒讀取A並準備CAS的期間，其他執行緒可能移除A、對B進行操作，再放入位址相同的A節點。CAS因為值仍是A而成功，但串列的內容已經改變，結構因而被破壞。可以用在指標上附加更新次數一起比較的方法，或使用<a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC</a>的方法來防止。</p></details>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 當值從A變成B、又變回A時，CAS沒有察覺變化而成功了</p><p class="explanation">當<a class="term-link" href="/zh-hant/term/linked-list/">鏈結串列</a>開頭的指標為A時，在某個執行緒讀取A並準備CAS的期間，其他執行緒可能移除A、對B進行操作，再放入位址相同的A節點。CAS因為值仍是A而成功，但串列的內容已經改變，結構因而被破壞。可以用在指標上附加更新次數一起比較的方法，或使用<a class="term-link" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC</a>的方法來防止。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -128,7 +128,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC（載入保留／條件式儲存）</a> <a class="chip" href="/zh-hant/term/interrupt/">中斷</a> <a class="chip" href="/zh-hant/term/lock-free-algorithm/">無鎖演算法（Lock-free algorithm）</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a> <a class="chip" href="/zh-hant/term/barrier-synchronization/">屏障同步（Barrier synchronization）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/linked-list/">鏈結串列</a> <a class="chip" href="/zh-hant/term/load-reserved-store-conditional/">LR/SC（載入保留／條件式儲存）</a> <a class="chip" href="/zh-hant/term/interrupt/">中斷</a> <a class="chip" href="/zh-hant/term/lock-free-algorithm/">無鎖演算法（Lock-free algorithm）</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>

@@ -80,26 +80,26 @@
 </article>
 <section class="term-about">
   <h2>関数呼び出しでの保存方法</h2>
-  <p>関数呼び出しでは、実行を再開する場所、つまり呼び出し命令の次の命令のアドレスを記録しておく必要があります。RISC-Vでは、jal(jump and link)がPC + 4をレジスタ(慣例ではra、すなわちx1)に書き込んでジャンプし、戻るときはjalr x0, 0(ra)の<a class="term-link" href="/term/pseudo-instruction/">疑似命令</a>であるretを使います。関数ポインタ、仮想関数、<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>のスタブを経由する呼び出しでは、飛び先をレジスタで指定するjalrを使います。x86では、callがリターンアドレスをスタックにプッシュし、retがそれをポップして命令ポインタに戻すため、リターンアドレスは常にスタック上にあります。</p>
+  <p>関数呼び出しでは、実行を再開する場所、つまり呼び出し命令の次の命令のアドレスを記録しておく必要があります。RISC-Vでは、jal(jump and link)がPC + 4をレジスタ(慣例ではra、すなわちx1)に書き込んでジャンプし、戻るときはjalr x0, 0(ra)の<a class="term-link" href="/term/pseudo-instruction/">疑似命令</a>であるretを使います。関数ポインタ、仮想関数、<a class="term-link" href="/term/shared-library/">共有ライブラリ</a>のスタブを経由する呼び出しでは、飛び先をレジスタで指定するjalrを使います。x86では、callがリターンアドレスを<a class="term-link" href="/term/stack/">スタック</a>にプッシュし、retがそれをポップして命令ポインタに戻すため、リターンアドレスは常にスタック上にあります。</p>
 </section>
 <section class="term-about">
   <h2>リーフ関数と非リーフ関数</h2>
-  <p>jalを実行するたびにraは上書きされるため、RISC-Vで他の関数を呼び出す関数は、先に自分のリターンアドレスを退避しておく必要があります。典型的なプロローグでは、addi sp, sp, -16で下位アドレスへ伸びるスタックにフレームを確保し、sw ra, 12(sp)とsw s0, 8(sp)でraと<a class="term-link" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a>を退避します。エピローグではこれらを読み戻してspを元に戻し、retを実行します。何も呼び出さないリーフ関数はraをレジスタに置いたままでよく、<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>がまったく要らない場合もあるため、小さな関数を低コストで実行できます。</p>
+  <p>jalを実行するたびにraは上書きされるため、RISC-Vで他の関数を呼び出す関数は、先に自分のリターンアドレスを退避しておく必要があります。典型的なプロローグでは、addi sp, sp, -16で下位アドレスへ伸びる<a class="term-link" href="/term/stack/">スタック</a>にフレームを確保し、sw ra, 12(sp)とsw s0, 8(sp)でraと<a class="term-link" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a>を退避します。エピローグではこれらを読み戻してspを元に戻し、retを実行します。何も呼び出さないリーフ関数はraをレジスタに置いたままでよく、<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>がまったく要らない場合もあるため、小さな関数を低コストで実行できます。</p>
 </section>
 <section class="term-about">
   <h2>攻撃の標的になる理由</h2>
-  <p>スタック上のリターンアドレスはローカルのバッファのすぐ隣にあるため、バッファオーバーフローで上書きされると、関数から戻るときに実行先を乗っ取られてしまいます。古典的な攻撃はスタックに機械語を書き込んでそこへジャンプさせるものでしたが、<a class="term-link" href="/term/page-table/">ページテーブル</a>の実行禁止ビットを使ったW^Xポリシーで防がれるようになりました。そこで攻撃者は、既存のコード断片をつなぎ合わせるリターン指向プログラミング(ROP)に移りました。さらなる対策として、戻る前に検査するスタックカナリア、アドレス空間配置のランダム化(<a class="term-link" href="/term/address-space-layout-randomization/">ASLR</a>)、各リターンアドレスの保護された複製を持つハードウェアのシャドウスタックがあります。</p>
+  <p><a class="term-link" href="/term/stack/">スタック</a>上のリターンアドレスはローカルのバッファのすぐ隣にあるため、バッファオーバーフローで上書きされると、関数から戻るときに実行先を乗っ取られてしまいます。古典的な攻撃はスタックに機械語を書き込んでそこへジャンプさせるものでしたが、<a class="term-link" href="/term/page-table/">ページテーブル</a>の実行禁止ビットを使ったW^Xポリシーで防がれるようになりました。そこで攻撃者は、既存のコード断片をつなぎ合わせるリターン指向プログラミング(ROP)に移りました。さらなる対策として、戻る前に検査するスタックカナリア、アドレス空間配置のランダム化(<a class="term-link" href="/term/address-space-layout-randomization/">ASLR</a>)、各リターンアドレスの保護された複製を持つハードウェアのシャドウスタックがあります。</p>
 </section>
 <section class="term-about">
   <h2>ハードウェアでの扱い</h2>
-  <p>アウトオブオーダ実行のCPUは、raやスタックを読み出すよりずっと前にリターンの飛び先を予測します。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器のリターンアドレススタック(RAS)は、呼び出しのたびに次の命令のアドレスをプッシュし、リターンのたびにポップするので、きれいに入れ子になったコードでは非常に正確に予測できます。例外や<a class="term-link" href="/term/interrupt/">割り込み</a>は扱いが異なり、CPUは中断したPCをRISC-Vのmepcやsepcのような専用レジスタに、直前の<a class="term-link" href="/term/privileged-mode/">特権モード</a>とともに保存します。復帰には通常のretではなくmretやsretを使い、これらをまとめて元に戻します。</p>
+  <p>アウトオブオーダ実行のCPUは、raや<a class="term-link" href="/term/stack/">スタック</a>を読み出すよりずっと前にリターンの飛び先を予測します。<a class="term-link" href="/term/branch-prediction/">分岐予測</a>器のリターンアドレススタック(RAS)は、呼び出しのたびに次の命令のアドレスをプッシュし、リターンのたびにポップするので、きれいに入れ子になったコードでは非常に正確に予測できます。例外や<a class="term-link" href="/term/interrupt/">割り込み</a>は扱いが異なり、CPUは中断したPCをRISC-Vのmepcやsepcのような専用レジスタに、直前の<a class="term-link" href="/term/privileged-mode/">特権モード</a>とともに保存します。復帰には通常のretではなくmretやsretを使い、これらをまとめて元に戻します。</p>
 </section>
 <section>
   <h2>リターンアドレスの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="cpu-045" data-cat="cpu" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
     <h3><a href="/q/cpu/cpu-045/">プログラムでサブルーチン(関数)を呼び出すとき、戻り先のアドレスなどを一時的に保存するために一般的に使われる領域はどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">スタック</span></li><li><span class="choice-mark">B</span><span class="choice-text">キャッシュのタグ</span></li><li><span class="choice-mark">C</span><span class="choice-text">ROMの固定領域</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. スタック</p><p class="explanation">サブルーチンを呼び出すと、<a class="term-link" href="/term/return-address/">戻り先</a>のアドレス、保存すべきレジスタの値、局所変数などがスタックに積まれます。スタックは後から入れたものを先に取り出す(LIFO)構造で、呼び出しが入れ子や再帰になっても正しい順で戻れます。先頭位置は<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>が示します。再帰が深すぎて領域を使い果たすとスタックオーバーフローになり、配列のはみ出しで戻り先を書き換える攻撃もあります。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. スタック</p><p class="explanation">サブルーチンを呼び出すと、<a class="term-link" href="/term/return-address/">戻り先</a>のアドレス、保存すべきレジスタの値、局所変数などが<a class="term-link" href="/term/stack/">スタック</a>に積まれます。スタックは後から入れたものを先に取り出す(LIFO)構造で、呼び出しが入れ子や<a class="term-link" href="/term/recursion/">再帰</a>になっても正しい順で戻れます。先頭位置は<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>が示します。再帰が深すぎて領域を使い果たすとスタックオーバーフローになり、配列のはみ出しで戻り先を書き換える攻撃もあります。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -139,7 +139,7 @@
 
 <section>
   <h2>関連する用語</h2>
-  <p class="term-chips"><a class="chip" href="/term/stack-frame/">スタックフレーム</a> <a class="chip" href="/term/interrupt/">割り込み</a> <a class="chip" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a> <a class="chip" href="/term/stack-pointer/">スタックポインタ</a> <a class="chip" href="/term/calling-convention/">呼び出し規約</a> <a class="chip" href="/term/pseudo-instruction/">疑似命令</a> <a class="chip" href="/term/leaf-function/">葉関数</a> <a class="chip" href="/term/instruction-set-architecture/">命令セットアーキテクチャ(ISA)</a> <a class="chip" href="/term/shared-library/">共有ライブラリ</a> <a class="chip" href="/term/page-table/">ページテーブル</a></p>
+  <p class="term-chips"><a class="chip" href="/term/stack/">スタック</a> <a class="chip" href="/term/stack-frame/">スタックフレーム</a> <a class="chip" href="/term/interrupt/">割り込み</a> <a class="chip" href="/term/callee-saved-register/">呼び出し先保存レジスタ</a> <a class="chip" href="/term/recursion/">再帰</a> <a class="chip" href="/term/stack-pointer/">スタックポインタ</a> <a class="chip" href="/term/calling-convention/">呼び出し規約</a> <a class="chip" href="/term/pseudo-instruction/">疑似命令</a> <a class="chip" href="/term/leaf-function/">葉関数</a> <a class="chip" href="/term/instruction-set-architecture/">命令セットアーキテクチャ(ISA)</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/glossary/">用語集の一覧へ</a></p>
 </main>
