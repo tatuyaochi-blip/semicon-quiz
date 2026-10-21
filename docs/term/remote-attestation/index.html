@@ -25,7 +25,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"リモートアテステーション","item":"https://semiconroom.com/term/remote-attestation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"リモートアテステーション","description":"機器が自分の中で動くソフトウェアの状態を、チップの中の鍵で署名して遠くのサーバに示し、信頼できるかを確かめてもらう仕組み。","url":"https://semiconroom.com/term/remote-attestation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"リモートアテステーション","item":"https://semiconroom.com/term/remote-attestation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"リモートアテステーション","description":"機器が自分の中で動くソフトウェアの状態を、チップの中の鍵で署名して遠くのサーバに示し、信頼できるかを確かめてもらう仕組み。","url":"https://semiconroom.com/term/remote-attestation/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"リモートアテステーションとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"機器が、自分の中で起動したソフトウェアの測定値を、チップの中の取り出せない鍵で署名して遠くのサーバに送り、信頼できる状態かを確かめてもらう仕組みです。サーバは検証に合格した機器にだけ、秘密のデータやサービス、ネットワークへのアクセスを渡します。"}},{"@type":"Question","name":"セキュアブートとの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"セキュアブートは、署名の確認に失敗したソフトウェアをその機器の中で起動させない仕組みです。リモートアテステーションは、何が起動したかの記録を外部に示し、判断を相手のサーバに任せる仕組みです。両者は組み合わせて使われます。"}},{"@type":"Question","name":"ノンスは何のために使いますか?","acceptedAnswer":{"@type":"Answer","text":"検証者が毎回新しい乱数を送り、機器がそれを含めて署名することで、その報告が今作られたものだと確かめられます。ノンスがないと、正常だったときの古い報告を記録しておいて再送する攻撃(リプレイ)を防げません。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>この用語の分野: <a href="/c/hw-security/">ハードウェアセキュリティ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>何を証明する仕組みか</h2>
+  <p>リモートアテステーションは、ネットワークの向こうにある機器が、どのハードウェアの上でどのソフトウェアを起動したかを、相手のサーバに信頼できる形で示す仕組みです。機器の中のソフトウェアが自分で「正常です」と答えるだけでは、乗っ取られたソフトウェアも同じ答えを返せます。そこで、起動時に記録した測定値(ソフトウェアのハッシュ値)に、チップの中から取り出せない鍵で署名して送ります。証拠を出す機器、証拠を確かめる検証者、その結果を使ってデータやサービスを渡すかを決める側に役割を分けて考えるのが一般的です。</p>
+</section>
+<section class="term-about">
+  <h2>TPMを使った手順</h2>
+  <p>PCなどでは、起動の各段階が次に実行するソフトウェアのハッシュ値を<a class="term-link" href="/term/trusted-platform-module/">TPM</a>のPCRに順に拡張していきます(メジャードブート)。検証するサーバは、使い回しを防ぐための新しい乱数(ノンス)を送り、TPMはPCRの値とノンスをまとめて、外に出せないアテステーション鍵で署名します(クォート)。機器はこれに起動の記録(イベントログ)を添えて返します。サーバは署名を確かめ、イベントログからPCRの値を計算し直して一致を確認し、各測定値を正しいとわかっている値と照合します。鍵が本物のTPMのものであることは、TPMのメーカーから続く証明書の連鎖で確かめます。</p>
+</section>
+<section class="term-about">
+  <h2>機密コンピューティングと組込み機器での利用</h2>
+  <p>クラウドの機密コンピューティングでは、AMD SEV-SNPやIntel TDXなどの機能で暗号化した仮想マシンの初期状態をCPUが測定し、CPUの中の鍵で署名したレポートを出します。利用者は、レポートを検証して期待どおりの仮想マシンだと確かめてから、データを復号する鍵を渡します。スマートフォンでは、鍵が安全なハードウェアの中で作られたことや、機器の起動状態を示すために使われます。小さな<a class="term-link" href="/term/microcontroller/">マイコン</a>では、TCGが定めたDICEのように、層ごとにその層の測定値から鍵を導き出す軽量な方式も使われます。企業のネットワークに接続する機器の健全性の確認にも使われます。</p>
+</section>
+<section class="term-about">
+  <h2>証明できることの限界</h2>
+  <p>アテステーションが示すのは、測定した時点で何が読み込まれたかです。起動後に実行中のソフトウェアがメモリ上で攻撃されても、起動時の測定値は変わらないことがあります。また、正しい値の一覧をソフトウェアの更新に合わせて管理しないと、正常な機器を拒否したり、古い脆弱な版を受け入れたりします。機器ごとの鍵は個体の追跡に使われうるため、プライバシーへの配慮も必要です。証明の信頼性は、鍵を守るハードウェアと、その製造者を信頼できることが前提になります。</p>
+</section>
 <section>
   <h2>リモートアテステーションの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hw-security-025" data-cat="hw-security" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 機器が、自分の中で動いているソフトウェアの状態を、チップの中の鍵で署名した形で遠くのサーバに示し、信頼できるかを確かめてもらう</p><p class="explanation"><a class="term-link" href="/term/remote-attestation/">リモートアテステーション</a>では、機器が<a class="term-link" href="/term/trusted-platform-module/">TPM</a>や<a class="term-link" href="/term/trusted-execution-environment/">TEE</a>に記録されたソフトウェアの測定値を、チップの中から取り出せない鍵で署名してサーバに送ります。サーバは署名と測定値を確かめ、決められたソフトウェアで動いている機器にだけ、秘密のデータやサービスを渡します。クラウドで機密の計算を任せるときや、企業のネットワークにつなぐ機器を確かめるときなどに使われます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>リモートアテステーションとは何ですか?</h3>
+  <p>機器が、自分の中で起動したソフトウェアの測定値を、チップの中の取り出せない鍵で署名して遠くのサーバに送り、信頼できる状態かを確かめてもらう仕組みです。サーバは検証に合格した機器にだけ、秘密のデータやサービス、ネットワークへのアクセスを渡します。</p>
+  <h3>セキュアブートとの違いは何ですか?</h3>
+  <p>セキュアブートは、署名の確認に失敗したソフトウェアをその機器の中で起動させない仕組みです。リモートアテステーションは、何が起動したかの記録を外部に示し、判断を相手のサーバに任せる仕組みです。両者は組み合わせて使われます。</p>
+  <h3>ノンスは何のために使いますか?</h3>
+  <p>検証者が毎回新しい乱数を送り、機器がそれを含めて署名することで、その報告が今作られたものだと確かめられます。ノンスがないと、正常だったときの古い報告を記録しておいて再送する攻撃(リプレイ)を防げません。</p>
+</section>
 <section>
   <h2>解説の中の「リモートアテステーション」</h2>
   <ul class="term-quotes"><li><p>リモートアテステーションでは、機器がTPMやTEEに記録されたソフトウェアの測定値を、チップの中から取り出せない鍵で署名してサーバに送ります。</p><a href="/q/hw-security/hw-security-025/">リモートアテステーション(遠隔証明)の説明として正しいものはどれか。</a></li><li><p>リモートアテステーションと組み合わせて使います。</p><a href="/q/hw-security/hw-security-029/">クラウドで使われる「機密コンピューティング」で、仮想マシンのメモリをCPUが暗号化する機能(AMD SEVやIntel…</a></li></ul>
