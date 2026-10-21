@@ -5,6 +5,8 @@ const out = k => document.querySelector(`[data-out="${k}"]`);
 let T = {};
 try { T = JSON.parse(form.dataset.text); } catch {}
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// 中国語は全角のかっことコロン
+const ZH = document.documentElement.lang.startsWith('zh');
 const fmt = v => String(Number(v.toFixed(2)));
 
 function update() {
@@ -25,7 +27,7 @@ function update() {
   const fk = form.elements.find.value.trim();
   const sk = fk === '' ? null : /^\d+$/.test(fk) && typeof uniq[0] === 'number' ? Number(fk) : fk;
   const s = sk === null ? null : search(r.table, sk, m, method);
-  out('search').textContent = s ? `${(s.found ? T.found : T.not_found).replace('{n}', s.probes)} (${T.pos}: ${s.seq.join(' → ')})` : '–';
+  out('search').textContent = s ? `${(s.found ? T.found : T.not_found).replace('{n}', s.probes)}${ZH ? '（' : ' ('}${T.pos}${ZH ? '：' : ': '}${s.seq.join(' → ')}${ZH ? '）' : ')'}` : '–';
   const hit = new Set(s ? s.seq : []);
   // 表の中身
   tbl.innerHTML = `<table class="hs-tbl"><tbody>${(method === 'chain' ? r.table : r.table.map(x => (x === null ? [] : [x]))).map((cell, i) =>

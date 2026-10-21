@@ -1775,6 +1775,25 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" id="hs-cmp"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    bigo: x => `<form id="bo-form" class="dy-form bo-form" data-text="${esc(JSON.stringify({ col_order: x.col_order, col_steps: x.col_steps, col_time: x.col_time, col_example: x.col_example, examples: x.order_examples, times: x.times, u_ns: x.u_ns, u_us: x.u_us, u_ms: x.u_ms, u_s: x.u_s, u_min: x.u_min, u_h: x.u_h, u_d: x.u_d, u_y: x.u_y }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('n', x.n, 1000, 'min="1" max="1000000000" step="1"')}
+    ${field('ops', x.ops, 100000000, 'min="1" step="any"')}
+    <p class="notice bo-wide" id="bo-error" hidden>${esc(x.invalid)}</p>
+    <h3 class="bo-wide">${esc(x.est_heading)}</h3>
+    ${select('order', x.order, ['1', 'log n', 'n', 'n log n', 'n²', 'n³', '2ⁿ', 'n!'].map((v, i) => [String(i), `O(${v})`]), '4')}
+    ${field('n1', x.n1, 1000, 'min="1" step="1"')}
+    ${field('t1', x.t1, 0.5, 'min="0" step="any"')}
+    ${field('n2', x.n2, 4000, 'min="1" step="1"')}
+    <dl class="dy-stats bo-wide">${stat('ratio', x.ratio)}${stat('t2', x.t2)}</dl>
+  </form>
+  <section class="dy-out bo" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <div class="table-wrap" id="bo-table"></div>
+    <h3>${esc(x.chart_heading)}</h3>
+    <svg id="bo-chart" class="sta-chart bo-chart" viewBox="0 0 600 280" role="img" aria-label="${esc(x.chart_heading)}"></svg>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">

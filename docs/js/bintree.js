@@ -6,6 +6,8 @@ let T = {};
 try { T = JSON.parse(form.dataset.text); } catch {}
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const svg = document.getElementById('bt-svg');
+// 中国語は全角のかっこ
+const ZH = document.documentElement.lang.startsWith('zh');
 
 // 木の図: 中間順で横の位置を、深さで縦の位置を決める。hl は強調する節のキー
 function draw(root, hl = [], miss = null, idx = false) {
@@ -60,7 +62,7 @@ function update() {
     if (find) {
       const s = B.bstSearch(root, conv(find));
       hl = s.path; miss = s.found ? null : true;
-      out('search').textContent = s.path.length || s.found ? `${s.path.join(' → ')}${s.found ? ` (${T.found.replace('{n}', s.path.length)})` : ` (${T.not_found.replace('{n}', s.path.length)})`}` : T.not_found.replace('{n}', 0);
+      out('search').textContent = s.path.length || s.found ? `${s.path.join(' → ')}${ZH ? '（' : ' ('}${(s.found ? T.found : T.not_found).replace('{n}', s.path.length)}${ZH ? '）' : ')'}` : T.not_found.replace('{n}', 0);
     } else out('search').textContent = '–';
     draw(root, hl, miss);
   } else {
