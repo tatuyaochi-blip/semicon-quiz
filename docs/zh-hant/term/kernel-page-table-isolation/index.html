@@ -25,7 +25,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"KPTI（核心分頁表隔離）","item":"https://semiconroom.com/zh-hant/term/kernel-page-table-isolation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KPTI（核心分頁表隔離）","description":"Kernel page-table isolation。在使用者程式執行期間，將大部分核心記憶體從分頁表中移除，以防止 Meltdown 的作業系統對策。","url":"https://semiconroom.com/zh-hant/term/kernel-page-table-isolation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"KPTI（核心分頁表隔離）","item":"https://semiconroom.com/zh-hant/term/kernel-page-table-isolation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"KPTI（核心分頁表隔離）","description":"Kernel page-table isolation。在使用者程式執行期間，將大部分核心記憶體從分頁表中移除，以防止 Meltdown 的作業系統對策。","url":"https://semiconroom.com/zh-hant/term/kernel-page-table-isolation/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"KPTI是什麼？","acceptedAnswer":{"@type":"Answer","text":"是核心分頁表隔離（Kernel Page-Table Isolation）的簡稱，在使用者程式執行期間，將大部分核心記憶體從分頁表中移除，以防止經由Meltdown讀取的作業系統對策。"}},{"@type":"Question","name":"為什麼KPTI會使效能下降？","acceptedAnswer":{"@type":"Answer","text":"因為每次因系統呼叫或中斷進出核心時都要切換分頁表，需要花費切換本身以及之後TLB未命中的時間。在可使用PCID的CPU上，不必清空TLB，可以減少損失。"}},{"@type":"Question","name":"可以停用KPTI嗎？","acceptedAnswer":{"@type":"Answer","text":"在不受Meltdown影響或已在硬體上修正的CPU上並不需要，作業系統一般也會自動停用。若在受影響的CPU上停用，核心記憶體仍有被讀取的風險。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hw-security/">硬體安全</a></p>
 </article>
-
+<section class="term-about">
+  <h2>需要KPTI的背景</h2>
+  <p>以往許多作業系統會在使用者行程的分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>中也放入核心區域，並在核心分頁標上「使用者無法存取」的標記。這樣一來，因<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>或<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>進入核心時不必切換分頁表，可以快速處理。然而2018年公布的<a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>顯示，在受影響的CPU上，核心的資料會在權限檢查完成之前被推測讀取，並可從殘留在快取中的痕跡推測出其值。KPTI（核心分頁表隔離）就是以分頁表的構成來阻止這類讀取的作業系統對策。</p>
+</section>
+<section class="term-about">
+  <h2>兩組分頁表</h2>
+  <p>KPTI為每個行程準備兩組分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>。核心執行時使用的那組，同時映射使用者與核心的區域。使用者程式執行時使用的那組，只映射使用者區域，以及<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>與<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>的進入處理所需的一小部分核心區域。沒有位址轉換，就連<a class="term-link" href="/zh-hant/term/speculative-execution/">推測執行</a>也讀不到核心的資料。進入核心時，由進入處理把分頁表切換為核心用，返回使用者模式時再切回使用者用。Linux於2018年初導入此機制，在研究階段稱為KAISER。</p>
+</section>
+<section class="term-about">
+  <h2>對效能的影響與PCID</h2>
+  <p>KPTI在每次<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>、<a class="term-link" href="/zh-hant/term/interrupt/">中斷</a>與例外時都要切換分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>，因此會多花時間。在無法使用PCID的CPU上，每次切換還會使<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>的內容失效，之後的TLB未命中也會降低效能。影響程度依處理內容而有很大差異：以計算為主的程式幾乎感覺不到，但系統呼叫頻繁的資料庫或大量輸入輸出的處理，影響往往較大。使用x86的PCID（行程上下文識別碼），可以為使用者用與核心用的分頁表分配不同的編號，切換時不必清空TLB，因此能減少損失。</p>
+</section>
+<section class="term-about">
+  <h2>不需要KPTI的情況</h2>
+  <p>KPTI是為受<a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>影響之CPU所設的對策，不受影響的CPU並不需要。Meltdown公布後設計的CPU，多數已在硬體上修正，使無權限的資料不會傳給後續指令；Linux會依據CPU回報的資訊等判斷是否受影響，不需要時便不啟用KPTI。也有像AMD的x86 CPU這樣，被認為原本就不受Meltdown影響的CPU。Windows則導入了稱為KVA Shadow的類似對策。另外，KPTI是針對Meltdown的對策，利用<a class="term-link" href="/zh-hant/term/branch-prediction/">分支預測</a>的<a class="term-link" href="/zh-hant/term/spectre/">Spectre</a>需要其他對策。</p>
+</section>
 <section>
   <h2>練習KPTI（核心分頁表隔離）的題目</h2>
   <article class="q-mini" data-qid="hw-security-009" data-cat="hw-security" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 在使用者程式執行期間，將核心記憶體的大部分從分頁表中移除，使其連推測也無法讀取</p><p class="explanation">以往的作業系統為了加快切換，會在使用者行程的分<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>中也放入核心記憶體（並標上禁止存取的標記）。在<a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>中，由於能在檢查該標記之前就推測讀取，<a class="term-link" href="/zh-hant/term/kernel-page-table-isolation/">KPTI</a>便在使用者程式執行期間，連核心分頁的對應本身都移除。位址無法轉換，就連推測也讀不到。不過，每次<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>都要切換分頁表，因此效能會下降。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>KPTI是什麼？</h3>
+  <p>是核心分頁表隔離（Kernel Page-Table Isolation）的簡稱，在使用者程式執行期間，將大部分核心記憶體從分頁表中移除，以防止經由Meltdown讀取的作業系統對策。</p>
+  <h3>為什麼KPTI會使效能下降？</h3>
+  <p>因為每次因系統呼叫或中斷進出核心時都要切換分頁表，需要花費切換本身以及之後TLB未命中的時間。在可使用PCID的CPU上，不必清空TLB，可以減少損失。</p>
+  <h3>可以停用KPTI嗎？</h3>
+  <p>在不受Meltdown影響或已在硬體上修正的CPU上並不需要，作業系統一般也會自動停用。若在受影響的CPU上停用，核心記憶體仍有被讀取的風險。</p>
+</section>
 <section>
   <h2>解析中的「KPTI（核心分頁表隔離）」</h2>
   <ul class="term-quotes"><li><p>在Meltdown中，由於能在檢查該標記之前就推測讀取，KPTI便在使用者程式執行期間，連核心分頁的對應本身都移除。</p><a href="/zh-hant/q/hw-security/hw-security-009/">下列關於作為Meltdown的軟體對策而導入的KPTI（核心分頁表隔離）的概念，何者正確？</a></li></ul>

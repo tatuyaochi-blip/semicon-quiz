@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Operator fusion","item":"https://semiconroom.com/en/term/operator-fusion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Operator fusion","description":"An optimization that combines several operations into one kernel, avoiding writing intermediate results to memory and reading them back.","url":"https://semiconroom.com/en/term/operator-fusion/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Operator fusion","item":"https://semiconroom.com/en/term/operator-fusion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Operator fusion","description":"An optimization that combines several operations into one kernel, avoiding writing intermediate results to memory and reading them back.","url":"https://semiconroom.com/en/term/operator-fusion/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is operator fusion?","acceptedAnswer":{"@type":"Answer","text":"It is an optimization that combines several operations into one kernel, avoiding writing intermediate results to memory and reading them back. For example, doing a matrix multiplication, bias addition and ReLU in one kernel means only the final result has to be written to memory."}},{"@type":"Question","name":"What does operator fusion reduce?","acceptedAnswer":{"@type":"Answer","text":"Mainly the amount of memory traffic and the number of kernel launches. The amount of computation, such as multiplications, is unchanged. Elementwise operations are often limited by memory bandwidth, so cutting reads and writes greatly shortens execution time."}},{"@type":"Question","name":"Who performs operator fusion?","acceptedAnswer":{"@type":"Answer","text":"Typically AI compilers and inference runtimes such as XLA, TVM, PyTorch's compilation feature and TensorRT do it automatically by analyzing the computation graph. For performance-critical parts, people also write fused kernels by hand, as with FlashAttention."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why fusion helps</h2>
+  <p>In neural-network computation, a matrix multiplication is often followed by elementwise operations such as adding a bias, an activation function and normalization. Running these as separate kernels means each kernel writes its intermediate result to memory such as <a class="term-link" href="/en/term/hbm/">HBM</a> and the next kernel reads it back. Elementwise operations do little computation per element and have low <a class="term-link" href="/en/term/arithmetic-intensity/">arithmetic intensity</a>, so most of their time goes to memory reads and writes. Operator fusion is the optimization that combines them into one kernel and keeps intermediate results in registers or on-chip memory while computation continues. The amount of computation is unchanged, but memory traffic and the number of kernel launches drop.</p>
+</section>
+<section class="term-about">
+  <h2>Common fusion patterns</h2>
+  <p>The most common pattern fuses chains of elementwise operations, processing a run of additions, multiplications and activation functions with a single read and write. Another typical pattern, epilogue fusion, applies the bias addition and activation function to the output of a matrix multiplication or convolution before it is written out. Operations that include reductions, computing sums or maxima, such as softmax and layer normalization, can also be packed into one kernel. <a class="term-link" href="/en/term/flashattention/">FlashAttention</a>, which fuses a matrix multiplication, softmax and a second matrix multiplication tile by tile in the attention computation so that the large attention matrix is never written to memory, is an example where fusion pays off strongly.</p>
+</section>
+<section class="term-about">
+  <h2>Automatic fusion by compilers</h2>
+  <p>Besides people writing dedicated kernels by hand, fusion is done automatically by AI compilers and inference runtimes. XLA, TVM, PyTorch&#39;s compilation feature and TensorRT analyze the model as a computation graph, find groups of operations that can be combined, and generate kernels suited to the target <a class="term-link" href="/en/term/gpu/">GPU</a> or <a class="term-link" href="/en/term/npu/">NPU</a>. Inference does not need to keep intermediate results for <a class="term-link" href="/en/term/backpropagation/">backpropagation</a> as training does, so it can fuse more aggressively. How far to fuse depends on tensor shapes, memory layout and the registers and on-chip memory of the target hardware, and the compiler estimates these to choose the scope of fusion.</p>
+</section>
+<section class="term-about">
+  <h2>Limits and caveats</h2>
+  <p>Fusion has its limits. Packing many operations into one kernel increases its use of registers and on-chip memory, which can reduce the number of threads that run concurrently and actually slow it down. Operations with different data layouts or parallelization schemes can be hard to combine efficiently. In training, intermediate results are needed for <a class="term-link" href="/en/term/backpropagation/">backpropagation</a>, so one must choose between keeping them in memory and recomputing them during the backward pass. And when fusion changes the order of computation or the number of roundings, floating-point results can differ slightly from the unfused version, which needs care when validating results against each other.</p>
+</section>
 <section>
   <h2>Try it: questions about Operator fusion</h2>
   <article class="q-mini" data-qid="ai-stack-018" data-cat="ai-stack" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. To combine several operations into one kernel, avoiding writing intermediate results to memory and reading them back</p><p class="explanation">A matrix product is often followed by element-wise operations such as adding a bias, an activation function and normalization. Doing each in a separate kernel means writing intermediate results to memory and reading them back every time, which takes longer than the computation. Combining them into one kernel lets the intermediate values stay in registers or on-chip memory throughout.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is operator fusion?</h3>
+  <p>It is an optimization that combines several operations into one kernel, avoiding writing intermediate results to memory and reading them back. For example, doing a matrix multiplication, bias addition and ReLU in one kernel means only the final result has to be written to memory.</p>
+  <h3>What does operator fusion reduce?</h3>
+  <p>Mainly the amount of memory traffic and the number of kernel launches. The amount of computation, such as multiplications, is unchanged. Elementwise operations are often limited by memory bandwidth, so cutting reads and writes greatly shortens execution time.</p>
+  <h3>Who performs operator fusion?</h3>
+  <p>Typically AI compilers and inference runtimes such as XLA, TVM, PyTorch&#39;s compilation feature and TensorRT do it automatically by analyzing the computation graph. For performance-critical parts, people also write fused kernels by hand, as with FlashAttention.</p>
+</section>
 <section>
   <h2>Operator fusion in the explanations</h2>
   <ul class="term-quotes"><li><p>Reusing data through blocking or operator fusion increases operations per byte (arithmetic intensity), moving the workload rightward and raising its ceiling.</p><a href="/en/q/performance/performance-036/">When the Roofline model shows a workload in the memory-band…</a></li></ul>

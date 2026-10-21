@@ -25,7 +25,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Kernel page-table isolation (KPTI)","item":"https://semiconroom.com/en/term/kernel-page-table-isolation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Kernel page-table isolation (KPTI)","description":"An OS countermeasure to Meltdown that removes most kernel memory from the page tables while user programs run.","url":"https://semiconroom.com/en/term/kernel-page-table-isolation/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Kernel page-table isolation (KPTI)","item":"https://semiconroom.com/en/term/kernel-page-table-isolation/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Kernel page-table isolation (KPTI)","description":"An OS countermeasure to Meltdown that removes most kernel memory from the page tables while user programs run.","url":"https://semiconroom.com/en/term/kernel-page-table-isolation/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is KPTI?","acceptedAnswer":{"@type":"Answer","text":"Short for kernel page-table isolation, it is an OS countermeasure that removes most kernel memory from the page tables while user programs run, preventing reads via Meltdown."}},{"@type":"Question","name":"Why does KPTI reduce performance?","acceptedAnswer":{"@type":"Answer","text":"Because the page tables are switched every time a system call or interrupt enters or leaves the kernel, time is spent on the switch and on the TLB misses that follow. On CPUs that can use PCID, the TLB need not be flushed, which reduces the loss."}},{"@type":"Question","name":"Is it safe to disable KPTI?","acceptedAnswer":{"@type":"Answer","text":"It is unnecessary on CPUs unaffected by Meltdown or fixed in hardware, and the OS generally disables it automatically on those. Disabling it on an affected CPU leaves kernel memory at risk of being read."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why KPTI became necessary</h2>
+  <p>Many operating systems used to map the kernel&#39;s region into each user process&#39;s page tables as well, marking kernel pages as inaccessible from user mode. This avoided switching page tables when entering the kernel for a <a class="term-link" href="/en/term/system-call/">system call</a> or <a class="term-link" href="/en/term/interrupt/">interrupt</a>, keeping those paths fast. But <a class="term-link" href="/en/term/meltdown/">Meltdown</a>, disclosed in 2018, showed that on affected CPUs kernel data could be read speculatively before this permission check completed, and its value inferred from traces left in the cache. Kernel page-table isolation (KPTI) is an OS countermeasure that blocks such reads through the way page tables are set up.</p>
+</section>
+<section class="term-about">
+  <h2>Two sets of page tables</h2>
+  <p>KPTI gives each process two sets of page tables. The one used while the kernel runs maps both user and kernel regions. The one used while a user program runs maps the user region plus only the small part of the kernel needed by the entry code for system calls and interrupts. Without an address translation, kernel data cannot be read even speculatively. On entering the kernel, the entry code switches to the kernel page tables, and it switches back to the user tables on returning to user mode. Linux adopted it in early 2018; in its research stage it was called KAISER.</p>
+</section>
+<section class="term-about">
+  <h2>Performance impact and PCID</h2>
+  <p>KPTI switches page tables on every <a class="term-link" href="/en/term/system-call/">system call</a>, <a class="term-link" href="/en/term/interrupt/">interrupt</a> and exception, which takes time. On CPUs that cannot use PCID, each switch also invalidates the <a class="term-link" href="/en/term/tlb/">TLB</a> contents, and the resulting TLB misses further reduce performance. The impact varies greatly with the workload: it is barely noticeable for compute-bound programs but tends to be large for databases with many system calls and I/O-heavy work. Using the x86 PCID (process-context identifier), the user and kernel page tables get different numbers and can be switched without flushing the TLB, which reduces the loss.</p>
+</section>
+<section class="term-about">
+  <h2>When KPTI is not needed</h2>
+  <p>KPTI is a countermeasure for CPUs affected by <a class="term-link" href="/en/term/meltdown/">Meltdown</a> and is unnecessary on unaffected CPUs. Many CPUs designed after Meltdown was disclosed are fixed in hardware so that unauthorized data is not passed to subsequent instructions, and Linux decides whether a CPU is affected from information the CPU reports, among other things, and does not enable KPTI when it is not needed. Some CPUs, such as AMD&#39;s x86 CPUs, are considered never to have been affected by Meltdown. Windows introduced a similar countermeasure called KVA Shadow. Note that KPTI targets Meltdown; <a class="term-link" href="/en/term/spectre/">Spectre</a>, which abuses <a class="term-link" href="/en/term/branch-prediction/">branch prediction</a>, requires different countermeasures.</p>
+</section>
 <section>
   <h2>Try it: questions about Kernel page-table isolation (KPTI)</h2>
   <article class="q-mini" data-qid="hw-security-009" data-cat="hw-security" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. While user programs run, most kernel memory is removed from the page tables so it cannot be read even speculatively</p><p class="explanation">For fast switching, traditional OSes mapped kernel memory into each user process&#39;s page tables, marked as inaccessible. <a class="term-link" href="/en/term/meltdown/">Meltdown</a> read it speculatively before that mark was checked, so <a class="term-link" href="/en/term/kernel-page-table-isolation/">KPTI</a> removes kernel pages from the mapping altogether while user code runs. Without an address translation, the data cannot be read even speculatively. Switching page tables on every <a class="term-link" href="/en/term/system-call/">system call</a>, however, costs performance.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is KPTI?</h3>
+  <p>Short for kernel page-table isolation, it is an OS countermeasure that removes most kernel memory from the page tables while user programs run, preventing reads via Meltdown.</p>
+  <h3>Why does KPTI reduce performance?</h3>
+  <p>Because the page tables are switched every time a system call or interrupt enters or leaves the kernel, time is spent on the switch and on the TLB misses that follow. On CPUs that can use PCID, the TLB need not be flushed, which reduces the loss.</p>
+  <h3>Is it safe to disable KPTI?</h3>
+  <p>It is unnecessary on CPUs unaffected by Meltdown or fixed in hardware, and the OS generally disables it automatically on those. Disabling it on an affected CPU leaves kernel memory at risk of being read.</p>
+</section>
 <section>
   <h2>Kernel page-table isolation (KPTI) in the explanations</h2>
   <ul class="term-quotes"><li><p>Meltdown read it speculatively before that mark was checked, so KPTI removes kernel pages from the mapping altogether while user code runs.</p><a href="/en/q/hw-security/hw-security-009/">What is the idea behind KPTI (kernel page-table isolation),…</a></li></ul>

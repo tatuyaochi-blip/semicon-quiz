@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"框指標","item":"https://semiconroom.com/zh-hant/term/frame-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"框指標","description":"持續指向進入函式時堆疊位置而不移動的暫存器。在RISC-V中是s0(fp)。可用固定距離指定區域變數，也容易追蹤呼叫的串連。","url":"https://semiconroom.com/zh-hant/term/frame-pointer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"框指標","item":"https://semiconroom.com/zh-hant/term/frame-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"框指標","description":"持續指向進入函式時堆疊位置而不移動的暫存器。在RISC-V中是s0(fp)。可用固定距離指定區域變數，也容易追蹤呼叫的串連。","url":"https://semiconroom.com/zh-hant/term/frame-pointer/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"框指標和堆疊指標有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"堆疊指標指向堆疊目前的頂端，每次存取值或配置堆疊框時都會移動。框指標則一直指向進入函式時的位置而不移動，因此能以固定距離指定區域變數，也是追蹤呼叫串連的起點。"}},{"@type":"Question","name":"框指標是必要的嗎？","acceptedAnswer":{"@type":"Answer","text":"並非必要。區域變數也可以用距sp的距離指定，所以最佳化時常被省略。不過，在因可變長度陣列等而使sp中途改變的函式中會使用框指標，想輕鬆取得回溯時保留框指標也很方便。"}},{"@type":"Question","name":"RISC-V的框指標是哪個暫存器？","acceptedAnswer":{"@type":"Answer","text":"是x8。由被呼叫端保存的暫存器s0兼作框指標，也可以用別名fp來寫。在不使用框指標的函式中，s0當作一般的保存暫存器使用。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/isa-assembly/">指令集與組合語言</a></p>
 </article>
-
+<section class="term-about">
+  <h2>框指標的作用</h2>
+  <p>呼叫函式時，會在堆疊上配置放置<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>、保存的暫存器與區域變數的區域（<a class="term-link" href="/zh-hant/term/stack-frame/">堆疊框</a>）。<a class="term-link" href="/zh-hant/term/stack-pointer/">堆疊指標</a>（sp）在函式中可能因為配置可變長度陣列或推入引數而移動，但框指標（fp）會一直指向進入函式時決定的位置，直到函式返回都不移動。因此區域變數與引數可以用「距fp多少位元組」的固定距離來指定。RISC-V以s0（x8）兼作fp，x86-64使用rbp、AArch64使用x29作為框指標。</p>
+</section>
+<section class="term-about">
+  <h2>序言與尾聲</h2>
+  <p>函式開頭的部分（序言，prologue）會降低sp以配置<a class="term-link" href="/zh-hant/term/stack-frame/">堆疊框</a>，把<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>與呼叫端的fp保存到框中，再為fp設定新的值。在典型的64位元RISC-V例子中，會從sp配置16位元組，保存ra與s0之後，把進入函式時的sp值放入s0。函式結尾的部分（尾聲，epilogue）則相反，讀回保存的ra與s0，還原sp之後返回呼叫端。在x86-64中，則以先把rbp推入堆疊、再把rsp的值複製到rbp的2個指令完成同樣的事。</p>
+</section>
+<section class="term-about">
+  <h2>追蹤呼叫的串連</h2>
+  <p>若在每個<a class="term-link" href="/zh-hant/term/stack-frame/">堆疊框</a>中保存呼叫端的fp與<a class="term-link" href="/zh-hant/term/return-address/">返回位址</a>，各框就會像鏈結串列一樣串連起來。從目前的fp依序追蹤保存的fp，即使沒有除錯資訊，也能快速得知哪個函式呼叫了哪個函式（回溯，backtrace）。除錯器顯示堆疊、當機時的紀錄，以及以固定間隔暫停執行中的程式並記錄呼叫來源的效能分析工具（<a class="term-link" href="/zh-hant/term/profiler/">profiler</a>），都會使用這種方法。由於追蹤的處理簡單又快速，在核心內部或在正式環境中持續執行的效能分析工具裡也容易使用，這是其優點。</p>
+</section>
+<section class="term-about">
+  <h2>省略框指標</h2>
+  <p>框指標會占用一個暫存器，序言與尾聲的指令也會增加，因此最佳化時常被省略。GCC與Clang在許多目標平台上，啟用最佳化後預設為-fomit-frame-pointer，區域變數改以距sp的距離來指定。即使省略，也能利用編譯器輸出的DWARF呼叫框資訊（CFI）求得回溯，但處理較耗時。近年來，為了方便效能分析，也開始有Linux發行版保留框指標來建置套件。</p>
+</section>
 <section>
   <h2>練習框指標的題目</h2>
   <article class="q-mini" data-qid="isa-assembly-036" data-cat="isa-assembly" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 即使函式途中sp有移動，也能以固定的距離指定區域變數或引數，除錯器也更容易追蹤呼叫的串連</p><p class="explanation"><a class="term-link" href="/zh-hant/term/frame-pointer/">框指標</a>是在進入函式的時間點，一直指向堆疊位置而不移動的暫存器。即使因為可變長度陣列等而使sp在途中改變，也能以「距fp多少位元組」來指定區域變數。此外，若在各個框中保存前一個fp，藉由追蹤就能得到呼叫的串連（回溯，backtrace）。不過因為會佔用一個暫存器，在最佳化時也常被省略。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>框指標和堆疊指標有什麼不同？</h3>
+  <p>堆疊指標指向堆疊目前的頂端，每次存取值或配置堆疊框時都會移動。框指標則一直指向進入函式時的位置而不移動，因此能以固定距離指定區域變數，也是追蹤呼叫串連的起點。</p>
+  <h3>框指標是必要的嗎？</h3>
+  <p>並非必要。區域變數也可以用距sp的距離指定，所以最佳化時常被省略。不過，在因可變長度陣列等而使sp中途改變的函式中會使用框指標，想輕鬆取得回溯時保留框指標也很方便。</p>
+  <h3>RISC-V的框指標是哪個暫存器？</h3>
+  <p>是x8。由被呼叫端保存的暫存器s0兼作框指標，也可以用別名fp來寫。在不使用框指標的函式中，s0當作一般的保存暫存器使用。</p>
+</section>
 <section>
   <h2>解析中的「框指標」</h2>
   <ul class="term-quotes"><li><p>框指標是在進入函式的時間點，一直指向堆疊位置而不移動的暫存器。</p><a href="/zh-hant/q/isa-assembly/isa-assembly-036/">下列何者是在函式中使用框指標（frame pointer，RISC-V中為s0/fp）的優點？</a></li></ul>

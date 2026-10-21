@@ -62,6 +62,27 @@ const enLabel = key => {
 };
 const courses = readOpt('data/courses.json', []);
 const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
+// 技術面接でよく問われる質問の一覧(/interview-questions/)。既存の問題から、トピックごとに基本の問題を集める(日本語・英語・繁体字)
+const interviewTopics = [
+  { id: 'logic', cats: ['logic', 'computer-arithmetic'], name: { ja: '論理回路と計算機算術', en: 'Digital logic and arithmetic', 'zh-hant': '邏輯電路與計算機算術' } },
+  { id: 'cmos', cats: ['mosfet', 'finfet'], name: { ja: 'CMOSとMOSFET', en: 'CMOS and MOSFETs', 'zh-hant': 'CMOS 與 MOSFET' } },
+  { id: 'sta', cats: ['sta-cdc'], name: { ja: 'タイミング解析とCDC', en: 'Static timing analysis and CDC', 'zh-hant': '時序分析與 CDC' } },
+  { id: 'hdl', cats: ['hdl-verification'], name: { ja: 'HDLと検証', en: 'Verilog, SystemVerilog and verification', 'zh-hant': 'HDL 與驗證' } },
+  { id: 'arch', cats: ['cpu', 'memory-hierarchy'], name: { ja: 'CPUとメモリ階層', en: 'Computer architecture and caches', 'zh-hant': 'CPU 與記憶體階層' } },
+  { id: 'memory', cats: ['dram', 'sram-flash'], name: { ja: 'メモリ(DRAM・SRAM・フラッシュ)', en: 'Memory: DRAM, SRAM and flash', 'zh-hant': '記憶體(DRAM、SRAM、快閃記憶體)' } },
+  { id: 'eda', cats: ['eda'], name: { ja: '設計フローとEDA', en: 'Design flow and EDA', 'zh-hant': '設計流程與 EDA' } },
+  { id: 'test', cats: ['test'], name: { ja: 'テストとDFT', en: 'Test and DFT', 'zh-hant': '測試與 DFT' } },
+  { id: 'analog', cats: ['analog'], name: { ja: 'アナログ回路', en: 'Analog circuits', 'zh-hant': '類比電路' } },
+];
+const interviewPer = 8;
+const interviewText = {
+  ja: { h1: '半導体・LSI設計の技術面接でよく問われる質問', title: '半導体・LSI設計の技術面接 よく問われる質問{n}問(答えと解説つき)', description: '論理回路、CMOS、タイミング解析、Verilogと検証、CPUとキャッシュ、メモリ、EDA、テスト、アナログ回路の基本を、技術面接でよく問われる形の{n}問にまとめました。答えと解説つきです。',
+    lead: 'ハードウェア・半導体の技術面接でよく問われる基本を、トピックごとに{k}問ずつ集めました。答えは開いて確かめられ、問題を押すと詳しい解説のページに移ります。まとめて解きたいときは、各トピックの「通して解く」から始めてください。', solve: '通して解く', answer: '答えを見る', course: '技術面接対策のコースで分野ごとに解く', link: '技術面接でよく問われる質問の一覧' },
+  en: { h1: 'VLSI and Hardware Interview Questions', title: 'VLSI Interview Questions and Answers: {n} Questions by Topic', description: '{n} VLSI and hardware interview questions with answers: digital logic, CMOS, STA and CDC, Verilog and verification, caches, DRAM/SRAM, EDA, DFT and analog.',
+    lead: 'Core questions that come up in VLSI, digital design and hardware engineering interviews, {k} per topic. Reveal each answer to check yourself, or open a question for the full explanation. To practice a whole topic, use "Take as a quiz".', solve: 'Take as a quiz', answer: 'Show answer', course: 'Work through the hardware interview prep course', link: 'VLSI and hardware interview questions' },
+  'zh-hant': { h1: 'IC 設計與硬體面試常見問題', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
+    lead: '依主題整理 IC 設計與硬體工程師面試常見的基礎題目，每個主題{k}題。可展開解答確認，點選題目則可查看完整解析。想一次練習整個主題時，請使用「整組作答」。', solve: '整組作答', answer: '顯示解答', course: '用硬體技術面試課程依領域練習', link: 'IC 設計與硬體面試常見問題' },
+};
 // 職種ガイド(/careers/ と /careers/{id}/)。仕事の内容と、身につけたい分野・コース・用語。訳は data/i18n/{言語}/careers.json(訳のある言語だけ作る)
 const careers = readOpt('data/careers.json', []);
 const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
@@ -760,7 +781,8 @@ function buildLang(L) {
     <span class="step-meta">${t('n_questions', { n: qs[c.id].length })} · ${esc(t('rate_label'))} <b data-rate="${c.id}">—</b> · ${esc(t('answered_label'))} <span data-answered="${c.id}">0</span></span>
   </li>`).join('')}
 </ol>
-<p class="muted">${esc(t('course_rule'))}</p>`,
+<p class="muted">${esc(t('course_rule'))}</p>${co.id === 'interview' && interviewText[code] ? `
+<p><a class="btn btn-ghost" href="${home}interview-questions/">${esc(interviewText[code].link)} →</a></p>` : ''}`,
     });
   }
 
@@ -841,6 +863,39 @@ ${groups.map(gr => `<section class="glossary-group">
 </section>`).join('\n')}
 <div data-ad="glossary"></div>
 <p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
+    });
+  }
+
+  // 技術面接の質問一覧 /interview-questions/: トピックごとに、分野の先頭(基本)の問題から interviewPer 問ずつ
+  if (interviewText[code]) {
+    const D = interviewText[code];
+    const topics = interviewTopics.map(tp => {
+      const pools = tp.cats.filter(id => qs[id]?.length).map(id => qs[id].filter(q => !q.figureSvg && !q.code).map(q => ({ ...q, cat: id })));
+      const list = [];
+      for (let i = 0; list.length < interviewPer && pools.some(p => p[i]); i++) for (const p of pools) if (p[i] && list.length < interviewPer) list.push(p[i]);
+      return { ...tp, list };
+    }).filter(tp => tp.list.length);
+    const n = topics.reduce((s, tp) => s + tp.list.length, 0);
+    page({
+      path: `${L.path}interview-questions/`,
+      alt: Object.fromEntries(langs.filter(x => interviewText[x.code]).map(x => [x.code, `${x.path}interview-questions/`])),
+      title: D.title.replace('{n}', n),
+      description: D.description.replace('{n}', n),
+      jsonld: [crumbs([t('breadcrumb_top'), home], [D.h1, `${home}interview-questions/`])],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(D.h1)}</h1>
+<p class="lead">${esc(D.lead.replace('{k}', interviewPer))}</p>
+<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}"><p>${topics.map(tp => `<a class="chip" href="#${tp.id}">${esc(tp.name[code])}</a>`).join(' ')}</p></nav>
+${topics.map(tp => `<section id="${tp.id}">
+  <h2>${esc(tp.name[code])}</h2>
+  <ol class="iq-list">${tp.list.map(q => `
+    <li><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a>
+      <details><summary>${esc(D.answer)}</summary><p><b>${esc(q.choices[q.answer])}</b></p><p class="muted">${esc(q.explanation)}</p></details></li>`).join('')}
+  </ol>
+  <p><a class="btn btn-ghost btn-small" href="${home}quiz/?mode=set&amp;ids=${tp.list.map(q => q.id).join(',')}&amp;t=${encodeURIComponent(tp.name[code])}" rel="nofollow">${esc(D.solve)} →</a></p>
+</section>`).join('\n')}
+${liveCourses.some(co => co.id === 'interview') ? `<p><a class="btn btn-primary" href="${home}course/interview/">${esc(D.course)}</a></p>` : ''}
+<div data-ad="compare"></div>`,
     });
   }
 

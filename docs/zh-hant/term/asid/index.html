@@ -25,7 +25,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"ASID(位址空間識別碼)","item":"https://semiconroom.com/zh-hant/term/asid/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ASID(位址空間識別碼)","description":"附加在TLB每個項目上，表示是哪個行程位址空間之轉換的編號。切換行程時不必清空整個TLB，可減少切換後的TLB失誤。","url":"https://semiconroom.com/zh-hant/term/asid/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"ASID(位址空間識別碼)","item":"https://semiconroom.com/zh-hant/term/asid/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ASID(位址空間識別碼)","description":"附加在TLB每個項目上，表示是哪個行程位址空間之轉換的編號。切換行程時不必清空整個TLB，可減少切換後的TLB失誤。","url":"https://semiconroom.com/zh-hant/term/asid/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASID是什麼？","acceptedAnswer":{"@type":"Answer","text":"它是附加在TLB每個項目上、表示該轉換屬於哪個行程之位址空間的編號。CPU只使用與目前ASID一致的項目，因此可以在TLB中保留多個行程之轉換的情況下切換行程。"}},{"@type":"Question","name":"沒有ASID會怎樣？","acceptedAnswer":{"@type":"Answer","text":"由於同一個虛擬位址在不同行程中指向不同的實體位址，每次切換行程都必須清空TLB。切換後TLB未命中會持續發生，需要花時間重新走訪頁表。核心這類所有行程共用的部分，有時可藉由全域標記保留在TLB中。"}},{"@type":"Question","name":"ASID和PCID有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"概念相同。x86把位址空間識別碼稱為PCID（行程上下文識別碼），以CR3暫存器的低12位元指定。RISC-V與Arm則稱為ASID，分別放在satp暫存器與TTBR暫存器中。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/os-hardware/">作業系統與硬體</a></p>
 </article>
-
+<section class="term-about">
+  <h2>TLB需要ASID的原因</h2>
+  <p>每個行程都有自己的虛擬位址空間，同一個虛擬位址在不同行程中會指向不同的實體位址。若只以虛擬位址查詢<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>項目，切換行程時可能誤用前一個行程的轉換，因此沒有ASID的CPU每次切換都必須清空TLB。如此一來，切換之後TLB未命中會持續發生，必須一再走訪<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>。ASID是在TLB的每個項目加上表示屬於哪個位址空間之轉換的編號，只有與目前編號一致的項目才算命中，使多個行程的轉換能同時保留在TLB中的機制。</p>
+</section>
+<section class="term-about">
+  <h2>作業系統如何使用ASID</h2>
+  <p>作業系統為每個行程（位址空間）分配ASID，並在<a class="term-link" href="/zh-hant/term/context-switch/">環境切換</a>時，把目前的ASID連同<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>的位置一起設定到CPU的暫存器。RISC-V在satp暫存器中有ASID欄位，Arm的AArch64放在TTBR暫存器，x86則以PCID（行程上下文識別碼）的形式放在CR3暫存器的低位元。對於核心區域這類所有行程共用的轉換，有時會加上全域（global）標記，使其不受ASID影響而可共用。變更頁表時，也可以使用只使特定ASID的項目失效的指令。</p>
+</section>
+<section class="term-about">
+  <h2>ASID的位元數與重複使用</h2>
+  <p>ASID的位元數有限：x86的PCID為12位元，RISC-V在64位元的組態中最多16位元，AArch64為8位元或16位元，有些實作支援的位元數更少。由於行程數可能超過ASID的數量，作業系統會重複使用ASID。把編號重新分配給其他行程時，為了不留下前一個擁有者的舊轉換，要清除該ASID的項目，或在編號用完時清空整個<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>並重新分配。Linux的Arm實作以世代編號來管理這件事，x86則在每個CPU上把少數幾個PCID分配給最近執行過的行程。</p>
+</section>
+<section class="term-about">
+  <h2>與KPTI及虛擬化的關係</h2>
+  <p>ASID不僅有助於效能，也有助於減少安全對策造成的損失。作為<a class="term-link" href="/zh-hant/term/meltdown/">Meltdown</a>對策的<a class="term-link" href="/zh-hant/term/kernel-page-table-isolation/">KPTI</a>，讓使用者程式與核心使用不同的<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>，因此每次<a class="term-link" href="/zh-hant/term/system-call/">系統呼叫</a>都要切換頁表。使用x86的PCID，可以為使用者用與核心用的頁表分配不同的編號，切換時不必清空<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>。此外，在虛擬化中，為了區分各虛擬機器的轉換，也會使用VMID（Arm、RISC-V）、VPID（Intel）、ASID（AMD的SVM）等另外的識別碼，切換虛擬機器時也不必清空整個TLB。</p>
+</section>
 <section>
   <h2>練習ASID(位址空間識別碼)的題目</h2>
   <article class="q-mini" data-qid="os-hardware-025" data-cat="os-hardware" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 切換時不必清空整個TLB，就能區分各自的轉換</p><p class="explanation">若沒有<a class="term-link" href="/zh-hant/term/asid/">ASID</a>，同一個虛擬位址在不同行程會指向不同的實體位址，因此每次切換行程都必須清空<a class="term-link" href="/zh-hant/term/tlb/">TLB</a>，切換後TLB未命中會持續發生。若在每個項目加上ASID，就能區分是哪個行程的轉換，TLB便可保留不清除，回到原本的行程時也能重複使用。虛擬位址的範圍不會改變，而且對於放不進TLB的轉換，仍然需要<a class="term-link" href="/zh-hant/term/page-table/">頁表</a>。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>ASID是什麼？</h3>
+  <p>它是附加在TLB每個項目上、表示該轉換屬於哪個行程之位址空間的編號。CPU只使用與目前ASID一致的項目，因此可以在TLB中保留多個行程之轉換的情況下切換行程。</p>
+  <h3>沒有ASID會怎樣？</h3>
+  <p>由於同一個虛擬位址在不同行程中指向不同的實體位址，每次切換行程都必須清空TLB。切換後TLB未命中會持續發生，需要花時間重新走訪頁表。核心這類所有行程共用的部分，有時可藉由全域標記保留在TLB中。</p>
+  <h3>ASID和PCID有什麼不同？</h3>
+  <p>概念相同。x86把位址空間識別碼稱為PCID（行程上下文識別碼），以CR3暫存器的低12位元指定。RISC-V與Arm則稱為ASID，分別放在satp暫存器與TTBR暫存器中。</p>
+</section>
 <section>
   <h2>解析中的「ASID(位址空間識別碼)」</h2>
   <ul class="term-quotes"><li><p>若沒有ASID，同一個虛擬位址在不同行程會指向不同的實體位址，因此每次切換行程都必須清空TLB，切換後TLB未命中會持續發生。</p><a href="/zh-hant/q/os-hardware/os-hardware-025/">在TLB的每個項目加上ASID（位址空間識別碼）的優點，下列何者正確？</a></li><li><p>在沒有ASID的CPU上，切換位址空間時還必須清空TLB。</p><a href="/zh-hant/q/os-hardware/os-hardware-024/">行程的環境切換有時造成的效能下降，實際上比儲存與還原暫存器所花的時間更大，其主要理由為何？</a></li></ul>
