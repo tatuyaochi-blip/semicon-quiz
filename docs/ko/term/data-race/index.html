@@ -89,18 +89,18 @@
 </section>
 <section class="term-about">
   <h2>해결책: 락과 원자적 연산</h2>
-  <p>해결책은 충돌하는 접근에 순서를 부여하는 것입니다. 락(<a class="term-link" href="/ko/term/mutex/">뮤텍스</a>)은 갱신을 한 번에 한 스레드만 실행하는 <a class="term-link" href="/ko/term/critical-section/">임계 구역</a>으로 만들며, 임계 구역을 짧게 유지하면 대기가 줄어듭니다. 단순한 연산에는 원자적 명령이 더 빠릅니다. x86의 lock xadd나 RISC-V의 amoadd.w 같은 fetch-and-add는 읽기, 덧셈, 쓰기를 분할 불가능하게 수행하고 이전 값을 반환하므로 재시도가 필요 없습니다. 더 복잡한 갱신에는 <a class="term-link" href="/ko/term/compare-and-swap/">compare-and-swap</a> 루프를 사용합니다. C나 C++에서 변수를 volatile로 선언해도 원자성이나 스레드 간 순서를 제공하지 않으므로 데이터 레이스를 막지 못합니다.</p>
+  <p>해결책은 충돌하는 접근에 순서를 부여하는 것입니다. 락(<a class="term-link" href="/ko/term/mutex/">뮤텍스</a>)은 갱신을 한 번에 한 스레드만 실행하는 <a class="term-link" href="/ko/term/critical-section/">임계 구역</a>으로 만들며, 임계 구역을 짧게 유지하면 대기가 줄어듭니다. 단순한 연산에는 원자적 명령이 더 빠릅니다. x86의 lock xadd나 RISC-V의 amoadd.w 같은 fetch-and-add는 읽기, 덧셈, 쓰기를 분할 불가능하게 수행하고 이전 값을 반환하므로 재시도가 필요 없습니다. 더 복잡한 갱신에는 <a class="term-link" href="/ko/term/compare-and-swap/">compare-and-swap</a> 루프를 사용합니다. C나 C++에서 <a class="term-link" href="/ko/term/variable/">변수</a>를 volatile로 선언해도 원자성이나 스레드 간 순서를 제공하지 않으므로 데이터 레이스를 막지 못합니다.</p>
 </section>
 <section class="term-about">
   <h2>컴파일러와 하드웨어가 레이스를 악화시키는 이유</h2>
-  <p>C와 C++는 레이스가 없는 프로그램을 전제로 하므로, 컴파일러는 공유 변수를 레지스터에 유지하거나, 로드를 루프 밖으로 끌어내거나, 저장을 병합하는 것이 합법적으로 허용됩니다. 그래서 다른 스레드가 동기화 없이 쓰는 플래그를 기다리며 스핀하는 스레드는 그 변화를 영영 보지 못할 수도 있습니다. 하드웨어도 <a class="term-link" href="/ko/term/store-buffer/">스토어 버퍼</a>와 캐시를 통해 자체적으로 순서를 바꿉니다. 락 획득이나 적절한 메모리 오더를 지정한 원자적 연산 같은 동기화 연산이 컴파일러와 하드웨어 양쪽에 순서를 지켜야 할 지점을 알려 줍니다. ThreadSanitizer 같은 동적 레이스 검출기는 테스트만으로는 좀처럼 드러나지 않는 레이스를 찾는 데 도움이 됩니다.</p>
+  <p>C와 C++는 레이스가 없는 프로그램을 전제로 하므로, 컴파일러는 공유 <a class="term-link" href="/ko/term/variable/">변수</a>를 레지스터에 유지하거나, 로드를 루프 밖으로 끌어내거나, 저장을 병합하는 것이 합법적으로 허용됩니다. 그래서 다른 스레드가 동기화 없이 쓰는 플래그를 기다리며 스핀하는 스레드는 그 변화를 영영 보지 못할 수도 있습니다. 하드웨어도 <a class="term-link" href="/ko/term/store-buffer/">스토어 버퍼</a>와 캐시를 통해 자체적으로 순서를 바꿉니다. 락 획득이나 적절한 메모리 오더를 지정한 원자적 연산 같은 동기화 연산이 컴파일러와 하드웨어 양쪽에 순서를 지켜야 할 지점을 알려 줍니다. ThreadSanitizer 같은 동적 레이스 검출기는 테스트만으로는 좀처럼 드러나지 않는 레이스를 찾는 데 도움이 됩니다.</p>
 </section>
 <section>
   <h2>도전해 보기: 데이터 레이스(Data Race) 관련 문제</h2>
   <article class="q-mini" data-qid="multicore-sync-012" data-cat="multicore-sync" data-answer="2" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 C예요.">
     <h3><a href="/ko/q/multicore-sync/multicore-sync-012/">데이터 경쟁(데이터 레이스)에 대한 설명으로 올바른 것은 무엇입니까?</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">여러 스레드가 같은 변수를 동시에 읽기만 하는 상태</span></li><li><span class="choice-mark">B</span><span class="choice-text">하나의 스레드가 같은 변수에 연속해서 두 번 쓰는 상태</span></li><li><span class="choice-mark">C</span><span class="choice-text">여러 스레드가 같은 변수에 동기화 없이 동시에 접근하고, 적어도 하나가 쓰기인 상태</span></li></ol>
-    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 여러 스레드가 같은 변수에 동기화 없이 동시에 접근하고, 적어도 하나가 쓰기인 상태</p><p class="explanation">데이터 경쟁은 같은 위치에 대한 읽기와 쓰기의 순서가 동기화로 정해져 있지 않아, 어떤 순서로 실행되었는지에 따라 결과가 달라지는 상태입니다. 타이밍에 따라 발생하기도 하고 하지 않기도 하므로 테스트에서 찾기 어려운 버그가 됩니다. C 언어나 C++에서는 데이터 경쟁이 있는 프로그램의 동작은 미정의로 간주됩니다. 락이나 원자적(atomic) 변수로 순서를 정해야 합니다.</p></details>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: C. 여러 스레드가 같은 변수에 동기화 없이 동시에 접근하고, 적어도 하나가 쓰기인 상태</p><p class="explanation">데이터 경쟁은 같은 위치에 대한 읽기와 쓰기의 순서가 동기화로 정해져 있지 않아, 어떤 순서로 실행되었는지에 따라 결과가 달라지는 상태입니다. 타이밍에 따라 발생하기도 하고 하지 않기도 하므로 테스트에서 찾기 어려운 버그가 됩니다. C 언어나 C++에서는 데이터 경쟁이 있는 프로그램의 동작은 미정의로 간주됩니다. 락이나 원자적(atomic) <a class="term-link" href="/ko/term/variable/">변수</a>로 순서를 정해야 합니다.</p></details>
   </article>
 </section>
 <section class="faq">
@@ -124,7 +124,7 @@
 
 <section>
   <h2>관련 용어</h2>
-  <p class="term-chips"><a class="chip" href="/ko/term/false-sharing/">거짓 공유(False Sharing)</a> <a class="chip" href="/ko/term/deadlock/">데드락(Deadlock)</a> <a class="chip" href="/ko/term/directory-based-coherence/">디렉터리 방식(Directory-based Coherence)</a> <a class="chip" href="/ko/term/lock-free-algorithm/">락 프리(Lock-free)</a> <a class="chip" href="/ko/term/memory-barrier/">메모리 배리어(Memory Barrier)</a> <a class="chip" href="/ko/term/memory-consistency-model/">메모리 일관성 모델(Memory Consistency Model)</a> <a class="chip" href="/ko/term/mutex/">뮤텍스(Mutex)</a> <a class="chip" href="/ko/term/barrier-synchronization/">배리어 동기화(Barrier Synchronization)</a> <a class="chip" href="/ko/term/semaphore/">세마포어(Semaphore)</a> <a class="chip" href="/ko/term/sequential-consistency/">순차 일관성(sequential consistency)</a></p>
+  <p class="term-chips"><a class="chip" href="/ko/term/variable/">변수(Variable)</a> <a class="chip" href="/ko/term/false-sharing/">거짓 공유(False Sharing)</a> <a class="chip" href="/ko/term/deadlock/">데드락(Deadlock)</a> <a class="chip" href="/ko/term/directory-based-coherence/">디렉터리 방식(Directory-based Coherence)</a> <a class="chip" href="/ko/term/lock-free-algorithm/">락 프리(Lock-free)</a> <a class="chip" href="/ko/term/memory-barrier/">메모리 배리어(Memory Barrier)</a> <a class="chip" href="/ko/term/memory-consistency-model/">메모리 일관성 모델(Memory Consistency Model)</a> <a class="chip" href="/ko/term/mutex/">뮤텍스(Mutex)</a> <a class="chip" href="/ko/term/barrier-synchronization/">배리어 동기화(Barrier Synchronization)</a> <a class="chip" href="/ko/term/semaphore/">세마포어(Semaphore)</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/ko/glossary/">용어집으로 돌아가기</a></p>
 </main>
