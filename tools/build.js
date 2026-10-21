@@ -743,6 +743,19 @@ function buildLang(L) {
       if (text === q.question.trim()) text = short(`${text}${joint(text)}${q.explanation.trim()}`, descMax);
       return short(text, descMax + 5);
     };
+    const termByKey = new Map(terms.map(y => [y.key, y]));
+    // 問題ページから計算ツールへ: その問題を載せているツール、分野が主のツール、分野に関わるツールの順に2つまで
+    const qToolLinks = (q, c) => {
+      // 同じ順位なら、ツールの関連用語が問題文・解説に出てくるものを先に
+      const text = `${q.question} ${q.explanation}`;
+      const mentions = y => (y.terms ?? []).some(k => { const n = termByKey.get(k)?.term.replace(/\s*[(（].*$/, ''); return n && n.length > 1 && text.includes(n); });
+      const rank = y => ((y.questions ?? []).includes(q.id) ? 0 : y.cat === c.id ? 2 : 4) - (mentions(y) ? 1 : 0);
+      const ts = toolsIn(code).filter(y => (y.questions ?? []).includes(q.id) || (y.cats ?? []).includes(c.id)).sort((a, b) => rank(a) - rank(b)).slice(0, 2);
+      return ts.length ? `<section>
+  <h2>${esc(t('figure_tools'))}</h2>
+  <div class="mode-grid compact">${ts.map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+</section>` : '';
+    };
     pqs.forEach((q, n) => {
       // 関連問題: 同じ分野で後ろに続く5問(末尾の次は先頭)
       const related = [...new Set([1, 2, 3, 4, 5].map(k => pqs[(n + k) % pqs.length]))].filter(r => r !== q);
@@ -775,6 +788,7 @@ function buildLang(L) {
           toCategory: esc(t('to_category')),
           nextQ: pqs.length > 1 ? `<nav class="q-nav"><a class="btn btn-ghost" href="${base}${qUrl(c.id, pqs[(n + pqs.length - 1) % pqs.length].id)}" rel="prev">${esc(t('q_prev'))}</a><a class="btn btn-primary" href="${base}${qUrl(c.id, pqs[(n + 1) % pqs.length].id)}" rel="next">${esc(t('q_next'))}</a></nav>` : '',
           compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id).slice(0, 3)),
+          toolLinks: qToolLinks(q, c),
           books: bookSection(c),
           related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
         }),
