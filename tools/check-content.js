@@ -96,6 +96,25 @@ export function checkContent() {
     if (n >= 20 && max / n > 0.5) warnings.push(`${cat}: 正解の位置が偏っています(${pos.join(' / ')})`);
   }
 
+  // 用語集・比較ページなど問題以外の訳も、小数点がコンマの言語で点を使っていないか確かめる。
+  // 「1.000 °C」のような3桁の桁区切りと、版番号(PCIe などの規格の話で「4.0 à 16 GT/s」のように並ぶもの)は対象外
+  for (const l of commaLangs) {
+    for (const f of ['glossary', 'compare', 'news-terms', 'careers', 'categories']) {
+      const file = `data/i18n/${l}/${f}.json`;
+      if (!exists(file)) continue;
+      const walk = (v, where) => {
+        if (typeof v === 'string') {
+          for (const m of v.matchAll(DOT_DECIMAL)) {
+            const n = m[0].match(/\d+\.\d+/)[0];
+            if (/\.\d{3}$/.test(n) || /\.0$/.test(n) && /PCIe|PCI Express|USB|UCIe|CXL|[Vv]ersion|GT\/s/.test(v)) continue;
+            warnings.push(`${file} ${where}: 「${m[0].trim()}」は小数点をコンマにしてください`);
+          }
+        } else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, where ? `${where}/${k}` : k);
+      };
+      walk(readJSON(file), '');
+    }
+  }
+
   // 修正の記録: { "問題ID": [{ "date": "YYYY-MM-DD", "type": "fix|verify", "summary": "...", "sources": [...] }] }
   if (exists('data/audit-log.json')) {
     const log = readJSON('data/audit-log.json');
