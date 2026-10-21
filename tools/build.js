@@ -62,6 +62,21 @@ const enLabel = key => {
 };
 const courses = readOpt('data/courses.json', []);
 const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
+// 職種ガイド(/careers/ と /careers/{id}/)。仕事の内容と、身につけたい分野・コース・用語。訳は data/i18n/{言語}/careers.json(訳のある言語だけ作る)
+const careers = readOpt('data/careers.json', []);
+const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
+const carLangs = id => langs.filter(x => careerText[x.code] && (x.code === defLang || carByLang[x.code][id]));
+const careerText = {
+  ja: { index: '半導体業界の職種ガイド', indexTitle: '半導体業界の職種ガイド:仕事内容と学んでおきたい分野', indexDesc: 'プロセス・装置・設計・品質・テストなど、半導体業界の主な職種{n}つについて、仕事の内容と、学んでおきたい分野・用語・練習問題をまとめました。',
+    indexLead: '半導体の会社には、製造・開発・設計・品質など、さまざまな仕事があります。職種ごとに、どんな仕事か、どの分野を学んでおくとよいかをまとめました。就職・転職の準備や、配属先の勉強に使えます。',
+    title: '{name}の仕事内容と学んでおきたい分野', fields: '学んでおきたい分野', courses: 'おすすめの学習コース', terms: 'よく出てくる用語', quiz: 'この職種の基礎10問', quizDesc: '学んでおきたい分野から、基本の問題を10問選びました', all: '職種ガイドの一覧へ', qn: '{n}問' },
+  en: { index: 'Semiconductor Careers Guide', indexTitle: 'Semiconductor Careers Guide: Roles and What to Learn', indexDesc: 'What process, equipment, design, quality, test and other semiconductor engineers do, and which fields, terms and practice questions to study for {n} roles.',
+    indexLead: 'Chip companies hire for many roles across manufacturing, development, design and quality. For each role, this guide explains the work and the fields worth learning, whether you are preparing for a job search or a new assignment.',
+    title: 'What Does a {name} Do? Role and Skills to Learn', fields: 'Fields to learn', courses: 'Recommended courses', terms: 'Key terms', quiz: '10 starter questions for this role', quizDesc: 'Ten basic questions from the fields this role uses', all: 'All roles', qn: '{n} questions' },
+  'zh-hant': { index: '半導體產業職務指南', indexTitle: '半導體產業職務指南：工作內容與應學習的領域', indexDesc: '整理製程、設備、設計、品質、測試等{n}種半導體主要職務的工作內容，以及應學習的領域、術語與練習題。',
+    indexLead: '半導體公司有製造、開發、設計、品質等各種工作。本指南依職務整理工作內容與值得先學習的領域，可用於求職、轉職或新職務的準備。',
+    title: '{name}在做什麼？工作內容與應學習的領域', fields: '應學習的領域', courses: '推薦課程', terms: '常見術語', quiz: '這個職務的基礎10題', quizDesc: '從應學習的領域中選出10道基本題', all: '所有職務', qn: '{n}題' },
+};
 // 日英中の用語対訳表(/glossary/trilingual/)を作る言語と、その文言
 const dictLangs = ['ja', 'en', 'zh-hant'];
 const dictText = {
@@ -825,6 +840,81 @@ ${groups.map(gr => `<section class="glossary-group">
 <div data-ad="glossary"></div>
 <p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
+  }
+
+  // 職種ガイド: 一覧 /careers/ と職種ごとのページ /careers/{id}/
+  const carT = tr('careers');
+  const carList = careers.filter(x => careerText[code] && (isDef || carT[x.id])).map(x => ({ ...x, ...(isDef ? {} : carT[x.id]) }));
+  if (carList.length) {
+    const C = careerText[code];
+    const carPath = (l, id = '') => `${l.path}careers/${id ? `${id}/` : ''}`;
+    page({
+      path: carPath(L),
+      alt: Object.fromEntries(langs.filter(x => careerText[x.code] && (x.code === defLang || Object.keys(carByLang[x.code]).length)).map(x => [x.code, carPath(x)])),
+      title: C.indexTitle,
+      description: C.indexDesc.replace('{n}', carList.length),
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(C.index)}</h1>
+<p class="lead">${esc(C.indexLead)}</p>
+<ul class="cmp-list">${carList.map(x => `
+  <li><a class="cmp-card" href="${home}careers/${x.id}/"><strong>${esc(x.name)}</strong><span>${esc(x.short)}</span></a></li>`).join('')}
+</ul>
+<div data-ad="compare"></div>`,
+    });
+    for (const x of carList) {
+      const fields = x.fields.map(catOf).filter(c => c && qs[c.id]?.length);
+      // 基礎10問: 分野を順にめぐって、易しい問題から選ぶ(並びは問題IDで固定)
+      const pools = fields.map(c => [...qs[c.id]].sort((a, b) => (a.level ?? 2) - (b.level ?? 2) || (a.id < b.id ? -1 : 1)));
+      const picked = [];
+      for (let i = 0; picked.length < 10 && pools.some(p => p.length > i); i++) for (const p of pools) if (p[i] && picked.length < 10) picked.push(p[i].id);
+      const relTerms = (x.terms ?? []).map(k => terms.find(g => g.key === k)).filter(Boolean);
+      const relCourses = (x.courses ?? []).map(id => liveCourses.find(co => co.id === id)).filter(Boolean);
+      const url = `${home}careers/${x.id}/`;
+      page({
+        path: carPath(L, x.id),
+        alt: Object.fromEntries(carLangs(x.id).map(l => [l.code, carPath(l, x.id)])),
+        title: C.title.replace('{name}', x.name),
+        description: x.description,
+        jsonld: [
+          crumbs([t('breadcrumb_top'), home], [C.index, `${home}careers/`], [x.name, url]),
+          ...(x.faq?.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage',
+            mainEntity: x.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) }] : []),
+        ],
+        content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}careers/">${esc(C.index)}</a></nav>
+<article class="term-page">
+  <h1>${esc(x.name)}</h1>
+  <p class="lead">${esc(x.short)}</p>
+</article>
+${x.sections.map(sec => `<section class="term-about">
+  <h2>${esc(sec.h)}</h2>
+  <p>${linked(sec.p)}</p>
+</section>`).join('\n')}
+<section>
+  <h2>${esc(C.fields)}</h2>
+  <p>${fields.map(c => `<a class="chip" href="${home}c/${c.id}/">${esc(c.name)} <small>${esc(C.qn.replace('{n}', qs[c.id].length))}</small></a>`).join(' ')}</p>
+</section>
+${picked.length ? `<section>
+  <h2>${esc(C.quiz)}</h2>
+  <p class="muted">${esc(C.quizDesc)}</p>
+  <p><a class="btn btn-primary" href="${home}quiz/?mode=set&amp;ids=${picked.join(',')}&amp;t=${encodeURIComponent(x.name)}" rel="nofollow">${esc(C.quiz)} →</a></p>
+</section>` : ''}
+${relCourses.length ? `<section>
+  <h2>${esc(C.courses)}</h2>
+  <div class="mode-grid compact">${relCourses.map(co => `<a class="mode-card" href="${home}course/${co.id}/"><strong>${esc(loc(co.name, code))}</strong><span>${esc(loc(co.desc, code))}</span></a>`).join('')}</div>
+</section>` : ''}
+${relTerms.length ? `<section>
+  <h2>${esc(C.terms)}</h2>
+  <p>${relTerms.map(g => `<a class="chip" href="${home}term/${termSlug[g.key]}/">${esc(g.term)}</a>`).join(' ')}</p>
+</section>` : ''}
+${x.faq?.length ? `<section class="faq">
+  <h2>${esc(t('compare_faq'))}</h2>${x.faq.map(f => `
+  <h3>${esc(f.q)}</h3>
+  <p>${esc(f.a)}</p>`).join('')}
+</section>` : ''}
+<div data-ad="compare"></div>
+<p><a class="btn btn-ghost" href="${home}careers/">${esc(C.all)}</a></p>`,
+      });
+    }
   }
 
   // 計算ツール。計算はブラウザ側の {id}.js で行い、HTMLには入力欄・結果の枠・解説を置く。
