@@ -19,6 +19,8 @@ const title = params.t ? params.t.slice(0, 80) : label + (cat ? ` : ${cat.name}`
 const homeUrl = cat ? `${home}c/${cat.id}/` : home;
 const matcher = termMatcher(index.glossary);
 const slugOf = new Map(index.glossary.map(g => [g.id, g.slug]));
+// 別の意味で使う分野ではリンクしない用語(用語集の noLinkIn)
+const skipIn = cat => new Set(index.glossary.filter(g => g.noLinkIn?.includes(cat)).map(g => g.id));
 
 // コード(問題文の下に表示する短いプログラム)。言語名は見出しとして小さく出す。
 // コードがない問題では '' を返す(replaceChildren に undefined を渡すと「undefined」と表示されるため)
@@ -33,16 +35,16 @@ const figure = svg => {
 
 // 解説の1文目(結論)を要点として太字にする。文の区切りが見つからない・長すぎるときは分けない
 const FIRST = /^(.{12,320}?(?:[。！？]|(?<!\b\w)(?<!\bca)(?<!\bbzw)(?<!\be\.g)(?<!\bi\.e)(?<!\bvs)(?<!\bapprox)(?<!\bFig)[.!?](?=\s+\S)))\s*(\S[\s\S]*)$/;
-const linked = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? p
+const linked = (text, cat) => linkTerms(text, matcher, skipIn(cat)).map(p => (typeof p === 'string' ? p
   : h('a', { class: 'term-link', href: `${home}term/${slugOf.get(p.id)}/` }, p.text)));
-const explanationText = text => {
+const explanationText = (text, cat) => {
   const m = text.match(FIRST);
-  return m ? [h('strong', { class: 'key-point' }, linked(m[1])), ' ', linked(m[2])] : linked(text);
+  return m ? [h('strong', { class: 'key-point' }, linked(m[1], cat)), ' ', linked(m[2], cat)] : linked(text, cat);
 };
 
 // 解説文(用語集の語にリンク)、図、選択肢ごとの補足(choiceNotes)、誤り報告リンク
 const explain = q => h('div', {},
-  h('p', { class: 'explanation' }, explanationText(q.explanation)),
+  h('p', { class: 'explanation' }, explanationText(q.explanation, q.cat)),
   q.figureSvg && figure(q.figureSvg),
   q.choiceNotes && h('ul', { class: 'choice-notes' }, q.choiceNotes.map((note, n) =>
     note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
