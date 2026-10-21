@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-ddc50e50c4';
+const CACHE = 'sq-bbba9f89cf';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -71,6 +71,7 @@ const PRECACHE = [
   "/data/ja/q/software-dev.json",
   "/data/ja/q/sram-flash.json",
   "/data/ja/q/sta-cdc.json",
+  "/data/ja/q/strategy.json",
   "/data/ja/q/test.json",
   "/data/ja/q/wafer.json",
   "/data/ja/q/yield.json",
@@ -140,6 +141,7 @@ const PRECACHE = [
   "/data/en/q/software-dev.json",
   "/data/en/q/sram-flash.json",
   "/data/en/q/sta-cdc.json",
+  "/data/en/q/strategy.json",
   "/data/en/q/test.json",
   "/data/en/q/wafer.json",
   "/data/en/q/yield.json",
@@ -209,6 +211,7 @@ const PRECACHE = [
   "/data/zh-hant/q/software-dev.json",
   "/data/zh-hant/q/sram-flash.json",
   "/data/zh-hant/q/sta-cdc.json",
+  "/data/zh-hant/q/strategy.json",
   "/data/zh-hant/q/test.json",
   "/data/zh-hant/q/wafer.json",
   "/data/zh-hant/q/yield.json",
@@ -277,6 +280,7 @@ const PRECACHE = [
   "/data/ko/q/software-dev.json",
   "/data/ko/q/sram-flash.json",
   "/data/ko/q/sta-cdc.json",
+  "/data/ko/q/strategy.json",
   "/data/ko/q/test.json",
   "/data/ko/q/wafer.json",
   "/data/ko/q/yield.json",
@@ -345,6 +349,7 @@ const PRECACHE = [
   "/data/de/q/software-dev.json",
   "/data/de/q/sram-flash.json",
   "/data/de/q/sta-cdc.json",
+  "/data/de/q/strategy.json",
   "/data/de/q/test.json",
   "/data/de/q/wafer.json",
   "/data/de/q/yield.json",
@@ -413,6 +418,7 @@ const PRECACHE = [
   "/data/nl/q/software-dev.json",
   "/data/nl/q/sram-flash.json",
   "/data/nl/q/sta-cdc.json",
+  "/data/nl/q/strategy.json",
   "/data/nl/q/test.json",
   "/data/nl/q/wafer.json",
   "/data/nl/q/yield.json",
@@ -481,6 +487,7 @@ const PRECACHE = [
   "/data/fr/q/software-dev.json",
   "/data/fr/q/sram-flash.json",
   "/data/fr/q/sta-cdc.json",
+  "/data/fr/q/strategy.json",
   "/data/fr/q/test.json",
   "/data/fr/q/wafer.json",
   "/data/fr/q/yield.json",
