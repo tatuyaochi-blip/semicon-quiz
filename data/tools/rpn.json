@@ -1,0 +1,423 @@
+{
+  "id": "rpn",
+  "order": 46,
+  "slug": "reverse-polish-notation-converter",
+  "share": false,
+  "cats": [
+    "compiler"
+  ],
+  "cat": "compiler",
+  "terms": [
+    "構文解析",
+    "抽象構文木(AST)",
+    "スタックポインタ"
+  ],
+  "questions": [
+    "compiler-035",
+    "compiler-004",
+    "compiler-002"
+  ],
+  "figures": [],
+  "compares": [],
+  "text": {
+    "ja": {
+      "nav": "逆ポーランド記法の変換ツール",
+      "card": "中置記法の式を逆ポーランド記法(後置記法)とポーランド記法(前置記法)に変換。スタックの動き・構文木・計算の途中も表示",
+      "title": "逆ポーランド記法の変換ツール(中置記法⇄後置記法、スタックの動きと構文木を表示)",
+      "description": "(A + B) × (C − D) のような中置記法の式を、逆ポーランド記法(後置記法)とポーランド記法(前置記法)に変換します。操車場アルゴリズムのスタックの動き、構文木、スタックを使った計算の途中を1行ずつ表示し、逆ポーランド記法から中置記法にも戻せます。",
+      "h1": "逆ポーランド記法の変換ツール",
+      "lead": "中置記法の式を逆ポーランド記法(後置記法)に変換し、演算子をいつスタックに積み、いつ取り出すのかを1字句ずつ表で示します。ポーランド記法(前置記法)と構文木も表示し、変数に値を入れるとスタックを使った計算の様子も確かめられます。逆ポーランド記法の式から、かっこを最小限にした中置記法に戻すこともできます。",
+      "practice": "コンパイラの問題を解く",
+      "related": "関連する用語",
+      "in_heading": "式",
+      "example": "例",
+      "example_none": "(自分で入力)",
+      "examples": [
+        {
+          "mode": "infix",
+          "expr": "(A + B) * (C - D)",
+          "label": "(A + B) × (C − D)"
+        },
+        {
+          "mode": "infix",
+          "expr": "A + B * C - D / E",
+          "label": "A + B × C − D ÷ E"
+        },
+        {
+          "mode": "infix",
+          "expr": "A * (B + C) / D",
+          "label": "A × (B + C) ÷ D"
+        },
+        {
+          "mode": "infix",
+          "expr": "A - B - C",
+          "label": "A − B − C(左から計算)"
+        },
+        {
+          "mode": "infix",
+          "expr": "2 ^ 3 ^ 2",
+          "label": "2 ^ 3 ^ 2(べき乗は右から計算)"
+        },
+        {
+          "mode": "infix",
+          "expr": "3 + 4 * 2 / (1 - 5) ^ 2",
+          "label": "3 + 4 × 2 ÷ (1 − 5) ^ 2"
+        },
+        {
+          "mode": "postfix",
+          "expr": "A B C * + D -",
+          "label": "逆ポーランド記法から: A B C × + D −"
+        },
+        {
+          "mode": "postfix",
+          "expr": "5 1 2 + 4 * + 3 -",
+          "label": "逆ポーランド記法から: 5 1 2 + 4 × + 3 −"
+        }
+      ],
+      "mode": "入力する式の書き方",
+      "modes": {
+        "infix": "中置記法(ふつうの式)",
+        "postfix": "逆ポーランド記法(後置記法、空白で区切る)"
+      },
+      "expr": "式",
+      "expr_hint": "使える記号: + − × ÷(* / でも可)、^(べき乗)、かっこ。数と英字の変数(A、B、x1 など)を使えます。",
+      "vars_hint": "変数に値を入れると、計算の結果と途中のスタックを表示します。",
+      "err": {
+        "char": "使えない文字があります。数・英字の変数・+ − × ÷ ^ とかっこだけを使ってください。",
+        "missing_op": "「{t}」の前に演算子がありません。",
+        "missing_operand": "演算子「{t}」の前後に数や変数がありません。",
+        "unary": "「{t}」を符号として使う書き方(単項演算子)には対応していません。−A は (0 − A) のように書いてください。",
+        "paren": "かっこの数が合っていません。",
+        "empty": "式を入力してください。",
+        "rpn_short": "逆ポーランド記法で、演算子「{t}」の前にある数や変数が2つに足りません。",
+        "rpn_extra": "逆ポーランド記法で、演算子が足りず、数や変数が余っています。",
+        "rpn_paren": "逆ポーランド記法では、かっこは使いません。"
+      },
+      "out_heading": "変換の結果",
+      "postfix": "逆ポーランド記法(後置記法)",
+      "prefix": "ポーランド記法(前置記法)",
+      "infix": "中置記法(かっこは最小限)",
+      "value": "計算の結果",
+      "tree_heading": "構文木",
+      "steps_heading": "変換の途中(操車場アルゴリズム)",
+      "eval_heading": "スタックを使った計算",
+      "col_token": "字句",
+      "col_action": "動作",
+      "col_stack": "スタック(右が上)",
+      "col_output": "出力",
+      "col_calc": "計算",
+      "col_stack_after": "計算後のスタック(右が上)",
+      "act_output": "数・変数はそのまま出力",
+      "act_push": "スタックに積む",
+      "act_pop_push": "優先順位が同じか高い {p} を取り出して出力し、スタックに積む",
+      "act_paren": "( までを取り除く",
+      "act_paren_pop": "( の上の {p} を取り出して出力し、( を取り除く",
+      "act_end": "式の終わり: 残りの {p} を取り出して出力",
+      "act_pushval": "値をスタックに積む",
+      "need_values": "式に変数があります。上の欄にすべての変数の値を入れると、計算の途中を表示します。",
+      "note": "演算子の優先順位は、^ が最も高く、次に × ÷、最も低いのが + − です。同じ順位の + − × ÷ は左から、^ は右から計算します。÷ は割り切れないときも小数で計算します。",
+      "sections": [
+        {
+          "h": "逆ポーランド記法とは",
+          "p": "ふだん書く A + B のように、演算子を2つの値の間に置く書き方を中置記法といいます。これに対して、A B + のように演算子を値の後ろに置くのが逆ポーランド記法(後置記法)、+ A B のように前に置くのがポーランド記法(前置記法)です。逆ポーランド記法では、演算子の優先順位やかっこがなくても計算の順番が一通りに決まります。たとえば (A + B) × (C − D) は A B + C D − × となり、かっこが消えます。この性質から、電卓やプログラミング言語の処理系、スタックマシンの命令列などで使われています。"
+        },
+        {
+          "h": "スタックで計算する",
+          "p": "逆ポーランド記法の式は、左から順に読みながらスタックを1つ使うだけで計算できます。数や変数ならスタックに積み、演算子なら上から2つの値を取り出して計算し、結果を積みます。取り出した2つのうち、先に取り出した(上にあった)ほうが右側の値になることに注意します。5 1 2 + 4 × + 3 − では、1 + 2 = 3、3 × 4 = 12、5 + 12 = 17、17 − 3 = 14 の順に計算され、最後にスタックに残った14が答えです。例を選び、計算の表でスタックの変化を確かめてみてください。"
+        },
+        {
+          "h": "中置記法から変換する: 操車場アルゴリズム",
+          "p": "中置記法の式を逆ポーランド記法に直すには、ダイクストラが考えた操車場アルゴリズムを使います。式を左から読み、数や変数はそのまま出力します。演算子は、スタックの上に優先順位が同じか高い演算子があればそれを出力してから積みます(べき乗のような右結合の演算子では、より高いものだけを出力します)。開きかっこは積み、閉じかっこが来たら開きかっこまでの演算子をすべて出力します。最後にスタックに残った演算子を出力すれば完成です。A + B × C では × のほうが優先順位が高いので + の上に積まれ、A B C × + となります。"
+        },
+        {
+          "h": "構文木との関係",
+          "p": "式は、演算子を節、数や変数を葉とする構文木(二分木)で表せます。この木を「左の子、右の子、節」の順にたどる(後行順、帰りがけ順)と逆ポーランド記法、「節、左の子、右の子」の順(先行順、行きがけ順)だとポーランド記法、「左の子、節、右の子」の順(中間順、通りがけ順)だと中置記法になります。コンパイラは、ソースコードの式を構文解析して抽象構文木を作り、それをたどってスタックマシンの命令や機械語を出力します。試験では、式や木から逆ポーランド記法を答える問題や、木のたどり方の名前を問う問題がよく出ます。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "A − B − C の逆ポーランド記法は何ですか?",
+          "a": "A B − C − です。− は左から計算する(左結合の)演算子なので、(A − B) − C と同じ意味になります。A − (B − C) なら A B C − − で、結果が変わります。"
+        },
+        {
+          "q": "逆ポーランド記法にかっこが要らないのはなぜですか?",
+          "a": "演算子が来た時点で、直前の2つの値(またはそれまでの計算結果)に必ず適用されるので、どの値どうしを計算するかが書かれた順番だけで決まるからです。中置記法では、同じ並びでも優先順位やかっこによって計算の順番が変わります。"
+        },
+        {
+          "q": "−A のような符号の付いた式は変換できますか?",
+          "a": "このツールは2つの値をとる演算子(二項演算子)だけに対応しています。符号のマイナスは (0 − A) のように書いてください。実際の処理系では、単項マイナスを別の演算子として扱います。"
+        },
+        {
+          "q": "試験ではどのように問われますか?",
+          "a": "基本情報技術者試験などでは、中置記法の式を逆ポーランド記法で表したものを選ぶ問題、逆ポーランド記法の式の値を求める問題、構文木のたどり方の問題がよく出ます。例を選んで、表の動きを自分の手順と比べてみてください。"
+        }
+      ]
+    },
+    "en": {
+      "nav": "Reverse Polish notation converter",
+      "card": "Convert infix expressions to Reverse Polish notation (postfix) and Polish notation (prefix), with the stack steps, the syntax tree and step-by-step evaluation",
+      "title": "Reverse Polish Notation Converter (Infix ⇄ Postfix, with Stack Steps and Syntax Tree)",
+      "description": "Convert infix expressions such as (A + B) × (C − D) to Reverse Polish notation (postfix) and Polish notation (prefix). See the stack in the shunting-yard algorithm, the syntax tree and stack-based evaluation line by line, and convert postfix back to infix.",
+      "h1": "Reverse Polish notation converter",
+      "lead": "Convert an infix expression to Reverse Polish notation (postfix), with a table showing token by token when each operator is pushed onto the stack and when it is popped. The tool also shows Polish notation (prefix) and the syntax tree, and if you give the variables values, you can watch the expression being evaluated with a stack. You can also convert a postfix expression back to infix with the fewest parentheses needed.",
+      "practice": "Practice compiler questions",
+      "related": "Related terms",
+      "in_heading": "Expression",
+      "example": "Example",
+      "example_none": "(Custom)",
+      "examples": [
+        {
+          "mode": "infix",
+          "expr": "(A + B) * (C - D)",
+          "label": "(A + B) × (C − D)"
+        },
+        {
+          "mode": "infix",
+          "expr": "A + B * C - D / E",
+          "label": "A + B × C − D ÷ E"
+        },
+        {
+          "mode": "infix",
+          "expr": "A * (B + C) / D",
+          "label": "A × (B + C) ÷ D"
+        },
+        {
+          "mode": "infix",
+          "expr": "A - B - C",
+          "label": "A − B − C (evaluated left to right)"
+        },
+        {
+          "mode": "infix",
+          "expr": "2 ^ 3 ^ 2",
+          "label": "2 ^ 3 ^ 2 (exponentiation is evaluated right to left)"
+        },
+        {
+          "mode": "infix",
+          "expr": "3 + 4 * 2 / (1 - 5) ^ 2",
+          "label": "3 + 4 × 2 ÷ (1 − 5) ^ 2"
+        },
+        {
+          "mode": "postfix",
+          "expr": "A B C * + D -",
+          "label": "From postfix: A B C × + D −"
+        },
+        {
+          "mode": "postfix",
+          "expr": "5 1 2 + 4 * + 3 -",
+          "label": "From postfix: 5 1 2 + 4 × + 3 −"
+        }
+      ],
+      "mode": "Input notation",
+      "modes": {
+        "infix": "Infix (ordinary expression)",
+        "postfix": "Reverse Polish notation (postfix, separated by spaces)"
+      },
+      "expr": "Expression",
+      "expr_hint": "Allowed symbols: + − × ÷ (or * /), ^ (exponentiation) and parentheses. You can use numbers and letter variables (A, B, x1, etc.).",
+      "vars_hint": "Give the variables values to see the result and the stack at each step.",
+      "err": {
+        "char": "The expression contains characters that cannot be used. Use only numbers, letter variables, + − × ÷ ^ and parentheses.",
+        "missing_op": "There is no operator before “{t}”.",
+        "missing_operand": "The operator “{t}” is missing a number or variable on one side.",
+        "unary": "Using “{t}” as a sign (a unary operator) is not supported. Write −A as (0 − A).",
+        "paren": "The parentheses do not match.",
+        "empty": "Enter an expression.",
+        "rpn_short": "In the postfix expression, there are fewer than two numbers or variables before the operator “{t}”.",
+        "rpn_extra": "In the postfix expression, there are too few operators and numbers or variables are left over.",
+        "rpn_paren": "Parentheses are not used in Reverse Polish notation."
+      },
+      "out_heading": "Result",
+      "postfix": "Reverse Polish notation (postfix)",
+      "prefix": "Polish notation (prefix)",
+      "infix": "Infix (fewest parentheses)",
+      "value": "Value",
+      "tree_heading": "Syntax tree",
+      "steps_heading": "Conversion steps (shunting-yard algorithm)",
+      "eval_heading": "Evaluation with a stack",
+      "col_token": "Token",
+      "col_action": "Action",
+      "col_stack": "Stack (top on the right)",
+      "col_output": "Output",
+      "col_calc": "Calculation",
+      "col_stack_after": "Stack after the step (top on the right)",
+      "act_output": "Numbers and variables go straight to the output",
+      "act_push": "Push onto the stack",
+      "act_pop_push": "Pop {p}, which has equal or higher precedence, to the output, then push",
+      "act_paren": "Remove the matching (",
+      "act_paren_pop": "Pop {p} above the ( to the output, then remove the (",
+      "act_end": "End of expression: pop the remaining {p} to the output",
+      "act_pushval": "Push the value onto the stack",
+      "need_values": "The expression contains variables. Enter values for all variables above to see the evaluation steps.",
+      "note": "^ has the highest precedence, followed by × ÷, with + − the lowest. + − × ÷ of equal precedence are evaluated left to right, and ^ right to left. ÷ gives a decimal result even when the division is not exact.",
+      "sections": [
+        {
+          "h": "What Reverse Polish notation is",
+          "p": "The usual way of writing A + B, with the operator between its two operands, is called infix notation. Writing the operator after its operands, as in A B +, is Reverse Polish notation (postfix), and writing it before them, as in + A B, is Polish notation (prefix). In Reverse Polish notation the order of evaluation is uniquely determined without operator precedence or parentheses. For example, (A + B) × (C − D) becomes A B + C D − ×, and the parentheses disappear. Because of this property, it is used in calculators, programming language implementations and the instruction sequences of stack machines."
+        },
+        {
+          "h": "Evaluating with a stack",
+          "p": "A Reverse Polish expression can be evaluated by reading it from left to right with just one stack. A number or variable is pushed onto the stack; an operator pops the top two values, computes the result and pushes it. Note that of the two values popped, the one popped first (the one that was on top) is the right operand. For 5 1 2 + 4 × + 3 −, the calculations are 1 + 2 = 3, 3 × 4 = 12, 5 + 12 = 17 and 17 − 3 = 14, and the 14 left on the stack is the answer. Choose an example and follow the changes to the stack in the evaluation table."
+        },
+        {
+          "h": "Converting from infix: the shunting-yard algorithm",
+          "p": "To convert an infix expression to Reverse Polish notation, use the shunting-yard algorithm devised by Dijkstra. Read the expression from left to right and send numbers and variables straight to the output. For an operator, first output any operators on top of the stack with equal or higher precedence, then push it (for right-associative operators such as exponentiation, output only those with higher precedence). Push an opening parenthesis, and when a closing parenthesis arrives, output all operators down to the opening parenthesis. Finally, output the operators left on the stack. In A + B × C, × has higher precedence, so it is pushed on top of +, giving A B C × +."
+        },
+        {
+          "h": "Relation to the syntax tree",
+          "p": "An expression can be represented as a syntax tree (a binary tree) whose nodes are operators and whose leaves are numbers and variables. Traversing this tree in the order left child, right child, node (post-order) gives Reverse Polish notation; node, left child, right child (pre-order) gives Polish notation; and left child, node, right child (in-order) gives infix notation. A compiler parses the expressions in source code into an abstract syntax tree and walks it to emit stack machine instructions or machine code. Exams often ask you to give the Reverse Polish form of an expression or tree, or to name a tree traversal order."
+        }
+      ],
+      "faq": [
+        {
+          "q": "What is A − B − C in Reverse Polish notation?",
+          "a": "A B − C −. The − operator is evaluated left to right (it is left-associative), so the expression means (A − B) − C. A − (B − C) would be A B C − −, which gives a different result."
+        },
+        {
+          "q": "Why does Reverse Polish notation need no parentheses?",
+          "a": "Each operator always applies to the two values just before it (or to the results computed so far), so which values are combined is determined by the written order alone. In infix notation, the same sequence can be evaluated in different orders depending on precedence and parentheses."
+        },
+        {
+          "q": "Can expressions with a sign, such as −A, be converted?",
+          "a": "This tool supports only operators that take two values (binary operators). Write a minus sign as (0 − A). Real language implementations treat unary minus as a separate operator."
+        },
+        {
+          "q": "How is this tested in exams?",
+          "a": "IT certification exams such as Japan's Fundamental Information Technology Engineer Examination often ask you to choose the Reverse Polish form of an infix expression, to compute the value of a Reverse Polish expression, or to answer questions about syntax tree traversal. Choose an example and compare the steps in the table with your own."
+        }
+      ]
+    },
+    "zh-hant": {
+      "nav": "逆波蘭表示法轉換工具",
+      "card": "將中序式轉換為逆波蘭表示法（後序式）與波蘭表示法（前序式），並顯示堆疊的動作、語法樹與計算過程",
+      "title": "逆波蘭表示法轉換工具（中序式⇄後序式，顯示堆疊動作與語法樹）",
+      "description": "將 (A + B) × (C − D) 這類中序式，轉換為逆波蘭表示法（後序式）與波蘭表示法（前序式）。逐行顯示調度場演算法的堆疊動作、語法樹，以及使用堆疊的計算過程，也能從逆波蘭表示法轉回中序式。",
+      "h1": "逆波蘭表示法轉換工具",
+      "lead": "將中序式轉換為逆波蘭表示法（後序式），並以表格逐一字符顯示運算子何時推入堆疊、何時取出。同時顯示波蘭表示法（前序式）與語法樹，若替變數指定數值，還能確認使用堆疊計算的過程。也可以從逆波蘭表示法的式子，轉回括號最少的中序式。",
+      "practice": "練習編譯器題目",
+      "related": "相關術語",
+      "in_heading": "算式",
+      "example": "範例",
+      "example_none": "（自行輸入）",
+      "examples": [
+        {
+          "mode": "infix",
+          "expr": "(A + B) * (C - D)",
+          "label": "(A + B) × (C − D)"
+        },
+        {
+          "mode": "infix",
+          "expr": "A + B * C - D / E",
+          "label": "A + B × C − D ÷ E"
+        },
+        {
+          "mode": "infix",
+          "expr": "A * (B + C) / D",
+          "label": "A × (B + C) ÷ D"
+        },
+        {
+          "mode": "infix",
+          "expr": "A - B - C",
+          "label": "A − B − C（由左往右計算）"
+        },
+        {
+          "mode": "infix",
+          "expr": "2 ^ 3 ^ 2",
+          "label": "2 ^ 3 ^ 2（次方由右往左計算）"
+        },
+        {
+          "mode": "infix",
+          "expr": "3 + 4 * 2 / (1 - 5) ^ 2",
+          "label": "3 + 4 × 2 ÷ (1 − 5) ^ 2"
+        },
+        {
+          "mode": "postfix",
+          "expr": "A B C * + D -",
+          "label": "從逆波蘭表示法轉換：A B C × + D −"
+        },
+        {
+          "mode": "postfix",
+          "expr": "5 1 2 + 4 * + 3 -",
+          "label": "從逆波蘭表示法轉換：5 1 2 + 4 × + 3 −"
+        }
+      ],
+      "mode": "輸入算式的寫法",
+      "modes": {
+        "infix": "中序式（一般的算式）",
+        "postfix": "逆波蘭表示法（後序式，以空白分隔）"
+      },
+      "expr": "算式",
+      "expr_hint": "可使用的符號：+ − × ÷（也可用 * /）、^（次方）與括號。可使用數字與英文字母變數（A、B、x1 等）。",
+      "vars_hint": "替變數指定數值後，會顯示計算結果與過程中的堆疊。",
+      "err": {
+        "char": "含有無法使用的字元。請只使用數字、英文字母變數、+ − × ÷ ^ 與括號。",
+        "missing_op": "「{t}」之前沒有運算子。",
+        "missing_operand": "運算子「{t}」的前後沒有數字或變數。",
+        "unary": "不支援將「{t}」當作正負號使用的寫法（單元運算子）。−A 請寫成 (0 − A)。",
+        "paren": "括號的數量不一致。",
+        "empty": "請輸入算式。",
+        "rpn_short": "在逆波蘭表示法中，運算子「{t}」之前的數字或變數不足 2 個。",
+        "rpn_extra": "在逆波蘭表示法中，運算子不足，有多餘的數字或變數。",
+        "rpn_paren": "逆波蘭表示法不使用括號。"
+      },
+      "out_heading": "轉換結果",
+      "postfix": "逆波蘭表示法（後序式）",
+      "prefix": "波蘭表示法（前序式）",
+      "infix": "中序式（括號最少）",
+      "value": "計算結果",
+      "tree_heading": "語法樹",
+      "steps_heading": "轉換過程（調度場演算法）",
+      "eval_heading": "使用堆疊計算",
+      "col_token": "字符",
+      "col_action": "動作",
+      "col_stack": "堆疊（右側為頂端）",
+      "col_output": "輸出",
+      "col_calc": "計算",
+      "col_stack_after": "計算後的堆疊（右側為頂端）",
+      "act_output": "數字與變數直接輸出",
+      "act_push": "推入堆疊",
+      "act_pop_push": "取出優先順序相同或較高的 {p} 並輸出，再推入堆疊",
+      "act_paren": "移除到 ( 為止",
+      "act_paren_pop": "取出 ( 上方的 {p} 並輸出，再移除 (",
+      "act_end": "算式結束：取出剩餘的 {p} 並輸出",
+      "act_pushval": "將數值推入堆疊",
+      "need_values": "算式中含有變數。在上方欄位輸入所有變數的值後，會顯示計算過程。",
+      "note": "運算子的優先順序以 ^ 最高，其次是 × ÷，最低是 + −。同順位的 + − × ÷ 由左往右計算，^ 則由右往左計算。÷ 在除不盡時也會以小數計算。",
+      "sections": [
+        {
+          "h": "什麼是逆波蘭表示法",
+          "p": "像平常寫的 A + B 這樣，把運算子放在兩個值之間的寫法稱為中序式。相對地，像 A B + 這樣把運算子放在值後面的是逆波蘭表示法（後序式），像 + A B 這樣放在前面的是波蘭表示法（前序式）。在逆波蘭表示法中，即使沒有運算子的優先順序與括號，計算順序也只有一種。例如 (A + B) × (C − D) 會變成 A B + C D − ×，括號就消失了。由於這個性質，它被用於計算機、程式語言的處理系統，以及堆疊機器的指令序列等。"
+        },
+        {
+          "h": "以堆疊計算",
+          "p": "逆波蘭表示法的算式，只要由左往右依序讀取，並使用一個堆疊就能計算。遇到數字或變數就推入堆疊；遇到運算子就從頂端取出 2 個值計算，再把結果推入。要注意取出的 2 個值中，先取出的（原本在上方的）是右側的值。以 5 1 2 + 4 × + 3 − 為例，會依序計算 1 + 2 = 3、3 × 4 = 12、5 + 12 = 17、17 − 3 = 14，最後留在堆疊中的 14 就是答案。請選擇範例，在計算表中確認堆疊的變化。"
+        },
+        {
+          "h": "從中序式轉換：調度場演算法",
+          "p": "要把中序式改寫成逆波蘭表示法，可使用戴克斯特拉（Dijkstra）提出的調度場演算法。由左往右讀取算式，數字與變數直接輸出。遇到運算子時，若堆疊頂端有優先順序相同或較高的運算子，就先將其輸出再推入（像次方這種右結合的運算子，只輸出優先順序較高者）。左括號推入堆疊，遇到右括號時，把到左括號為止的運算子全部輸出。最後把堆疊中剩下的運算子輸出就完成了。在 A + B × C 中，× 的優先順序較高，因此會疊在 + 之上，結果為 A B C × +。"
+        },
+        {
+          "h": "與語法樹的關係",
+          "p": "算式可以表示成以運算子為節點、以數字或變數為樹葉的語法樹（二元樹）。依「左子節點、右子節點、節點」的順序走訪這棵樹（後序走訪）就得到逆波蘭表示法，依「節點、左子節點、右子節點」的順序（前序走訪）得到波蘭表示法，依「左子節點、節點、右子節點」的順序（中序走訪）則得到中序式。編譯器會剖析原始碼中的算式並建立抽象語法樹，再走訪它來輸出堆疊機器的指令或機器碼。考試中常見的題型有：由算式或樹寫出逆波蘭表示法，或是問樹的走訪方式名稱。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "A − B − C 的逆波蘭表示法是什麼？",
+          "a": "是 A B − C −。− 是由左往右計算的（左結合）運算子，因此意思與 (A − B) − C 相同。若是 A − (B − C)，則為 A B C − −，結果會不同。"
+        },
+        {
+          "q": "為什麼逆波蘭表示法不需要括號？",
+          "a": "因為運算子出現時，一定會套用到它前面的 2 個值（或到目前為止的計算結果），所以哪些值彼此計算，只由書寫的順序就能決定。在中序式中，即使排列相同，計算順序也會因優先順序與括號而改變。"
+        },
+        {
+          "q": "像 −A 這樣帶正負號的算式可以轉換嗎？",
+          "a": "本工具只支援取 2 個值的運算子（二元運算子）。負號請寫成 (0 − A)。實際的處理系統會把單元負號當作另一個運算子處理。"
+        },
+        {
+          "q": "考試中會怎麼出題？",
+          "a": "在日本的基本資訊技術士考試等資訊類證照考試中，常見的題型有：選出中序式對應的逆波蘭表示法、求逆波蘭表示法算式的值，以及語法樹的走訪方式。請選擇範例，把表格中的動作與自己的步驟相互比較。"
+        }
+      ]
+    }
+  }
+}

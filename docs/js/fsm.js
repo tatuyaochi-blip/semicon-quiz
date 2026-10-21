@@ -11,6 +11,8 @@ const timeInput = document.getElementById('fsm-time');
 let m = null, steps = [];
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// 見出しと値の区切り(中国語は全角のコロン)
+const COLON = document.documentElement.lang.startsWith('zh') ? '：' : ': ';
 const DEFAULT_NAMES = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'];
 
 // 表の入力欄を、状態の数と型に合わせて作り直す(今の値はできるだけ残す)
@@ -114,7 +116,7 @@ function update(keepTime) {
   const name = i => esc(m.states[i].name);
   document.getElementById('fsm-trace').innerHTML = steps.length ? `<table class="sp-pairs"><thead><tr><th>${esc(T.col_t)}</th><th>${esc(T.col_state)}</th><th>${esc(T.col_in)}</th><th>${esc(T.col_nextstate)}</th><th>${esc(T.col_output)}</th></tr></thead><tbody>${
     steps.map((s, i) => `<tr><td>${i + 1}</td><td>${name(s.from)}</td><td>${s.x}</td><td>${name(s.to)}</td><td>${esc(s.out)}</td></tr>`).join('')}</tbody></table>` : '';
-  document.getElementById('fsm-outseq').textContent = steps.length ? `${T.outseq}: ${steps.map(s => s.out).join(' ')}` : '';
+  document.getElementById('fsm-outseq').textContent = steps.length ? `${T.outseq}${COLON}${steps.map(s => s.out).join(' ')}` : '';
   timeInput.max = String(steps.length);
   if (!keepTime || Number(timeInput.value) > steps.length) timeInput.value = String(steps.length);
   showTime();
@@ -123,9 +125,9 @@ function update(keepTime) {
   const box = document.getElementById('fsm-min');
   const merged = mn.groups.filter(g => g.length > 1);
   let html = `<p>${esc(T.min_result.replace('{a}', m.states.length).replace('{b}', mn.groups.length))}</p>`;
-  if (mn.unreachable.length) html += `<p>${esc(T.min_unreachable)}: ${mn.unreachable.map(name).join(', ')}</p>`;
+  if (mn.unreachable.length) html += `<p>${esc(T.min_unreachable)}${COLON}${mn.unreachable.map(name).join(', ')}</p>`;
   if (merged.length) {
-    html += `<p>${esc(T.min_groups)}: ${merged.map(g => `{${g.map(name).join(', ')}}`).join(' ')}</p>`;
+    html += `<p>${esc(T.min_groups)}${COLON}${merged.map(g => `{${g.map(name).join(', ')}}`).join(' ')}</p>`;
     const r = reduced(m);
     html += `<div class="table-wrap"><table class="sp-pairs"><thead><tr><th>${esc(T.col_state)}</th><th>${esc(T.col_next0)}</th><th>${esc(T.col_next1)}</th>${m.type === 'mealy' ? `<th>${esc(T.col_out0)}</th><th>${esc(T.col_out1)}</th>` : `<th>${esc(T.col_out)}</th>`}</tr></thead><tbody>${
       r.states.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(r.states[s.next[0]].name)}</td><td>${esc(r.states[s.next[1]].name)}</td>${m.type === 'mealy' ? `<td>${esc(s.out[0])}</td><td>${esc(s.out[1])}</td>` : `<td>${esc(s.out)}</td>`}</tr>`).join('')}</tbody></table></div>`;
