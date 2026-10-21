@@ -76,11 +76,11 @@ const interviewTopics = [
 ];
 const interviewPer = 8;
 const interviewText = {
-  ja: { h1: '半導体・LSI設計の技術面接でよく問われる質問', title: '半導体・LSI設計の技術面接 よく問われる質問{n}問(答えと解説つき)', description: '論理回路、CMOS、タイミング解析、Verilogと検証、CPUとキャッシュ、メモリ、EDA、テスト、アナログ回路の基本を、技術面接でよく問われる形の{n}問にまとめました。答えと解説つきです。',
+  ja: { h1: '半導体・LSI設計の技術面接でよく問われる質問', nav: '技術面接の質問集', card: '面接でよく問われる基本を、トピック別に答えつきで', title: '半導体・LSI設計の技術面接 よく問われる質問{n}問(答えと解説つき)', description: '論理回路、CMOS、タイミング解析、Verilogと検証、CPUとキャッシュ、メモリ、EDA、テスト、アナログ回路の基本を、技術面接でよく問われる形の{n}問にまとめました。答えと解説つきです。',
     lead: 'ハードウェア・半導体の技術面接でよく問われる基本を、トピックごとに{k}問ずつ集めました。答えは開いて確かめられ、問題を押すと詳しい解説のページに移ります。まとめて解きたいときは、各トピックの「通して解く」から始めてください。', solve: '通して解く', answer: '答えを見る', course: '技術面接対策のコースで分野ごとに解く', link: '技術面接でよく問われる質問の一覧' },
-  en: { h1: 'VLSI and Hardware Interview Questions', title: 'VLSI Interview Questions and Answers: {n} Questions by Topic', description: '{n} VLSI and hardware interview questions with answers: digital logic, CMOS, STA and CDC, Verilog and verification, caches, DRAM/SRAM, EDA, DFT and analog.',
+  en: { h1: 'VLSI and Hardware Interview Questions', nav: 'Interview questions', card: 'Common interview questions by topic, with answers', title: 'VLSI Interview Questions and Answers: {n} Questions by Topic', description: '{n} VLSI and hardware interview questions with answers: digital logic, CMOS, STA and CDC, Verilog and verification, caches, DRAM/SRAM, EDA, DFT and analog.',
     lead: 'Core questions that come up in VLSI, digital design and hardware engineering interviews, {k} per topic. Reveal each answer to check yourself, or open a question for the full explanation. To practice a whole topic, use "Take as a quiz".', solve: 'Take as a quiz', answer: 'Show answer', course: 'Work through the hardware interview prep course', link: 'VLSI and hardware interview questions' },
-  'zh-hant': { h1: 'IC 設計與硬體面試常見問題', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
+  'zh-hant': { h1: 'IC 設計與硬體面試常見問題', nav: '面試題', card: '依主題整理的面試常見題目與解答', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
     lead: '依主題整理 IC 設計與硬體工程師面試常見的基礎題目，每個主題{k}題。可展開解答確認，點選題目則可查看完整解析。想一次練習整個主題時，請使用「整組作答」。', solve: '整組作答', answer: '顯示解答', course: '用硬體技術面試課程依領域練習', link: 'IC 設計與硬體面試常見問題' },
 };
 // 職種ガイド(/careers/ と /careers/{id}/)。仕事の内容と、身につけたい分野・コース・用語。訳は data/i18n/{言語}/careers.json(訳のある言語だけ作る)
@@ -88,26 +88,26 @@ const careers = readOpt('data/careers.json', []);
 const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
 const carLangs = id => langs.filter(x => careerText[x.code] && (x.code === defLang || carByLang[x.code][id]));
 const careerText = {
-  ja: { index: '半導体業界の職種ガイド', card: '職種ごとの仕事内容と、学んでおきたい分野', indexTitle: '半導体業界の職種ガイド:仕事内容と学んでおきたい分野', indexDesc: 'プロセス・装置・設計・品質・テストなど、半導体業界の主な職種{n}つについて、仕事の内容と、学んでおきたい分野・用語・練習問題をまとめました。',
+  ja: { index: '半導体業界の職種ガイド', nav: '職種ガイド', card: '職種ごとの仕事内容と、学んでおきたい分野', indexTitle: '半導体業界の職種ガイド:仕事内容と学んでおきたい分野', indexDesc: 'プロセス・装置・設計・品質・テストなど、半導体業界の主な職種{n}つについて、仕事の内容と、学んでおきたい分野・用語・練習問題をまとめました。',
     indexLead: '半導体の会社には、製造・開発・設計・品質など、さまざまな仕事があります。職種ごとに、どんな仕事か、どの分野を学んでおくとよいかをまとめました。就職・転職の準備や、配属先の勉強に使えます。',
     title: '{name}の仕事内容と学んでおきたい分野', fields: '学んでおきたい分野', courses: 'おすすめの学習コース', terms: 'よく出てくる用語', quiz: 'この職種の基礎10問', quizDesc: '学んでおきたい分野から、基本の問題を10問選びました', all: '職種ガイドの一覧へ', qn: '{n}問' },
-  en: { index: 'Semiconductor Careers Guide', card: 'What each role does and what to learn for it', indexTitle: 'Semiconductor Careers Guide: Roles and What to Learn', indexDesc: 'What process, equipment, design, quality, test and other semiconductor engineers do, and which fields, terms and practice questions to study for {n} roles.',
+  en: { index: 'Semiconductor Careers Guide', nav: 'Careers guide', card: 'What each role does and what to learn for it', indexTitle: 'Semiconductor Careers Guide: Roles and What to Learn', indexDesc: 'What process, equipment, design, quality, test and other semiconductor engineers do, and which fields, terms and practice questions to study for {n} roles.',
     indexLead: 'Chip companies hire for many roles across manufacturing, development, design and quality. For each role, this guide explains the work and the fields worth learning, whether you are preparing for a job search or a new assignment.',
     title: '{name}: What the Job Involves and What to Learn', fields: 'Fields to learn', courses: 'Recommended courses', terms: 'Key terms', quiz: '10 starter questions for this role', quizDesc: 'Ten basic questions from the fields this role uses', all: 'All roles', qn: '{n} questions' },
-  'zh-hant': { index: '半導體產業職務指南', card: '各職務的工作內容與應學習的領域', indexTitle: '半導體產業職務指南：工作內容與應學習的領域', indexDesc: '整理製程、設備、設計、品質、測試等{n}種半導體主要職務的工作內容，以及應學習的領域、術語與練習題。',
+  'zh-hant': { index: '半導體產業職務指南', nav: '職務指南', card: '各職務的工作內容與應學習的領域', indexTitle: '半導體產業職務指南：工作內容與應學習的領域', indexDesc: '整理製程、設備、設計、品質、測試等{n}種半導體主要職務的工作內容，以及應學習的領域、術語與練習題。',
     indexLead: '半導體公司有製造、開發、設計、品質等各種工作。本指南依職務整理工作內容與值得先學習的領域，可用於求職、轉職或新職務的準備。',
     title: '{name}在做什麼？工作內容與應學習的領域', fields: '應學習的領域', courses: '推薦課程', terms: '常見術語', quiz: '這個職務的基礎10題', quizDesc: '從應學習的領域中選出10道基本題', all: '所有職務', qn: '{n}題' },
 };
 // 日英中の用語対訳表(/glossary/trilingual/)を作る言語と、その文言
 const dictLangs = ['ja', 'en', 'zh-hant'];
 const dictText = {
-  ja: { h1: '半導体用語 日英中対訳表', card: '用語を日本語・英語・繁体字中国語で引ける対訳表', title: '半導体用語の日英中対訳表({n}語):英語・繁体字中国語', description: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾)の対訳表にまとめました。分野ごとに並べ、キーワードで絞り込めます。各用語は解説ページにリンクしています。',
+  ja: { h1: '半導体用語 日英中対訳表', nav: '日英中対訳表', card: '用語を日本語・英語・繁体字中国語で引ける対訳表', title: '半導体用語の日英中対訳表({n}語):英語・繁体字中国語', description: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾)の対訳表にまとめました。分野ごとに並べ、キーワードで絞り込めます。各用語は解説ページにリンクしています。',
     lead: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾で使われる表記)で並べました。英語の資料を読むときや、台湾の技術者とやりとりするときに使えます。用語を押すと、その言語の解説ページに移ります。', search: '用語を検索(日本語・英語・中国語)',
     cols: { ja: '日本語', en: '英語', 'zh-hant': '繁体字中国語' } },
-  en: { h1: 'Semiconductor Terms in English, Japanese and Chinese', card: 'Look up chip terms in English, Japanese and Chinese', title: 'Semiconductor Terms in English, Japanese and Chinese ({n} terms)', description: '{n} semiconductor terms side by side in English, Japanese and Traditional Chinese (Taiwan), grouped by field and searchable. Each term links to an explanation.',
+  en: { h1: 'Semiconductor Terms in English, Japanese and Chinese', nav: 'Trilingual glossary', card: 'Look up chip terms in English, Japanese and Chinese', title: 'Semiconductor Terms in English, Japanese and Chinese ({n} terms)', description: '{n} semiconductor terms side by side in English, Japanese and Traditional Chinese (Taiwan), grouped by field and searchable. Each term links to an explanation.',
     lead: '{n} semiconductor terms in English, Japanese and Traditional Chinese as used in Taiwan, grouped by field. Useful when reading Japanese or Taiwanese documents or working with colleagues there. Click a term to open its explanation in that language.', search: 'Search terms (English, Japanese or Chinese)',
     cols: { en: 'English', ja: 'Japanese', 'zh-hant': 'Chinese (Traditional)' } },
-  'zh-hant': { h1: '半導體術語 中英日對照表', card: '以中文、英文、日文查詢半導體術語', title: '半導體術語中英日對照表（{n}詞）', description: '將{n}個半導體術語整理成繁體中文、英文、日文對照表，依領域分類並可搜尋。每個術語都連到解說頁面。',
+  'zh-hant': { h1: '半導體術語 中英日對照表', nav: '中英日對照表', card: '以中文、英文、日文查詢半導體術語', title: '半導體術語中英日對照表（{n}詞）', description: '將{n}個半導體術語整理成繁體中文、英文、日文對照表，依領域分類並可搜尋。每個術語都連到解說頁面。',
     lead: '將{n}個半導體術語以繁體中文、英文、日文並列，並依領域分類。閱讀英文或日文資料，或與日本工程師溝通時可以使用。點選術語即可開啟該語言的解說頁面。', search: '搜尋術語（中文、英文、日文）',
     cols: { 'zh-hant': '繁體中文', en: '英文', ja: '日文' } },
 };
@@ -323,8 +323,9 @@ function buildLang(L) {
     ${feature('#topics', S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics')}
     ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses') : ''}
     ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary')}
-    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].h1, dictText[code].card, 'home_feat_dict') : ''}
-    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].index, careerText[code].card, 'home_feat_careers') : ''}
+    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].nav, dictText[code].card, 'home_feat_dict') : ''}
+    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].nav, careerText[code].card, 'home_feat_careers') : ''}
+    ${interviewText[code] ? feature(`${home}interview-questions/`, interviewText[code].nav, interviewText[code].card, 'home_feat_interview') : ''}
     ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
     ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
     ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
