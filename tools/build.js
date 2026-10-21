@@ -443,7 +443,8 @@ function buildLang(L) {
 
   // 学習コース: トップの一覧と /course/{id}/ のページ(進み具合の表示は course.js)
   // コースの分野のうち、問題がまだない分野は準備ができるまで外す
-  const liveCourses = courses.map(co => ({ ...co, steps: co.steps.filter(id => qs[id]?.length) })).filter(co => co.steps.length);
+  // 名前の訳がない言語(新しい内容を日英繁だけで足したコースなど)では、そのコースを出さない
+  const liveCourses = courses.filter(co => typeof co.name !== 'object' || co.name[code]).map(co => ({ ...co, steps: co.steps.filter(id => qs[id]?.length) })).filter(co => co.steps.length);
   const courseList = liveCourses.length ? `<section id="courses">
   <h2>${esc(t('course_heading'))}</h2>
   <p class="muted">${esc(t('course_lead'))}</p>
@@ -805,7 +806,7 @@ function buildLang(L) {
     const name = loc(co.name, code);
     page({
       path: `${L.path}course/${co.id}/`,
-      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}course/${co.id}/`])),
+      alt: Object.fromEntries(langs.filter(x => typeof co.name !== 'object' || co.name[x.code]).map(x => [x.code, `${x.path}course/${co.id}/`])),
       title: t('course_title', { name }),
       description: loc(co.desc, code),
       scripts: ['course.js'],
