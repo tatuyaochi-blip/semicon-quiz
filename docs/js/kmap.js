@@ -82,6 +82,35 @@ function sum(t) { // 0 の側の項を否定して和にする(ド・モルガ�
 }
 const gateInputs = (terms, k) => terms.filter(t => k(t) > 1).reduce((a, t) => a + k(t), 0) + (terms.length > 1 ? terms.length : 0);
 
+// ---- 論理回路シミュレーターで開く ----
+// 積和形を 2入力の AND・OR と NOT で組み、シミュレーターの形式(#c=…)にする。項が5つ以上なら画面に収まらないので作らない
+const SIM_TYPES = ['in', 'out', 'clk', 'and', 'or', 'not', 'nand', 'nor', 'xor', 'xnor', 'dff'];
+function simHash(terms) {
+  if (!terms.length || terms.length > 4 || terms.some(t => t.m === (1 << n) - 1)) return null;
+  const p = [], w = [];
+  const add = (type, x, y) => p.push([SIM_TYPES.indexOf(type), x, y, 0]) - 1;
+  const ins = [...Array(n)].map((_, j) => add('in', 20, 40 + j * 90));
+  const nots = new Map();
+  const src = (j, neg) => {
+    if (!neg) return ins[j];
+    if (!nots.has(j)) { const k = add('not', 100, 85 + j * 90); w.push([ins[j], k, 0]); nots.set(j, k); }
+    return nots.get(j);
+  };
+  const outs = terms.map((t, k) => {
+    const y = 40 + k * 95;
+    const lits = [];
+    for (let j = 0; j < n; j++) { const b = 1 << (n - 1 - j); if (!(t.m & b)) lits.push(src(j, !(t.v & b))); }
+    let cur = lits[0];
+    lits.slice(1).forEach((l, i) => { const g = add('and', 220 + i * 80, y); w.push([cur, g, 0], [l, g, 1]); cur = g; });
+    return cur;
+  });
+  let cur = outs[0];
+  outs.slice(1).forEach((o, i) => { const g = add('or', 480 + i * 80, 40 + (i + 1) * 95); w.push([cur, g, 0], [o, g, 1]); cur = g; });
+  const out = add('out', 740, outs.length > 1 ? 40 + (outs.length - 1) * 95 + 5 : 45);
+  w.push([cur, out, 0]);
+  return btoa(JSON.stringify({ p, w })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 // ---- 表示 ----
 const gray = b => (b === 1 ? [0, 1] : [0, 1, 3, 2]);
 const bits = (x, w) => x.toString(2).padStart(w, '0');
@@ -117,6 +146,10 @@ function render() {
   document.getElementById('km-alt-pos').hidden = !rp.alt;
   document.getElementById('km-primes').innerHTML = r.primes.length
     ? r.primes.map(t => `<li>${product(t)}${r.ess.has(`${t.v}/${t.m}`) ? ` <span class="km-badge">${T.essential}</span>` : ''}</li>`).join('') : '<li>–</li>';
+  const sim = document.getElementById('km-sim');
+  const h = simHash(r.terms);
+  sim.hidden = !h;
+  if (h) sim.href = `${sim.dataset.base}#c=${h}`;
   document.getElementById('km-gates').textContent = `SOP ${gateInputs(r.terms, lits)} / POS ${gateInputs(rp.terms, lits)}`;
   form.elements.m.value = on.join(',');
   form.elements.d.value = dc.join(',');

@@ -1410,6 +1410,7 @@ ${x.faq?.length ? `<section class="faq">
       <h3>${esc(x.primes)}</h3>
       <ul class="km-primes" id="km-primes"></ul>
       <dl class="dy-stats"><div><dt>${esc(x.gates)}</dt><dd id="km-gates">–</dd></div></dl>
+      <p><a class="btn btn-ghost" id="km-sim" data-base="${home}tools/logic-circuit-simulator/" href="${home}tools/logic-circuit-simulator/" hidden>${esc(x.to_sim)} →</a></p>
       <p class="muted">${esc(x.note)}</p>
     </section>
     </div>
