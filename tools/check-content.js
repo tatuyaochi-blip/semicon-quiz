@@ -26,7 +26,9 @@ export function numbers(text, lang = 'ja') {
     .replace(/(\d+(?:\.\d+)?)億(?:(\d+(?:,\d{3})*)万)?(\d+(?:,\d{3})*)?(?![\d万])/g, (_, a, b = '0', c = '0') => String(a * 1e8 + b.replace(/,/g, '') * 1e4 + +c.replace(/,/g, '')))
     .replace(/(\d+(?:\.\d+)?)\s*[万萬만]\s*(\d+)\s*[千천]/g, (_, a, b) => String(a * 1e4 + b * 1e3))
     .replace(/(\d+(?:\.\d+)?)万(\d+(?:,\d{3})*)(?![\d万億])/g, (_, a, b) => String(a * 1e4 + +b.replace(/,/g, '')))
-    .replace(/(\d+(?:\.\d+)?)百万/g, (_, a) => String(a * 1e6));
+    .replace(/(\d+(?:\.\d+)?)百万/g, (_, a) => String(a * 1e6))
+    // IPv4 のアドレスとマスク(192.168.1.10)は数ではない。点を桁区切りとする言語で別の数に読めてしまうため、どの言語でも除く
+    .replace(/(?<![\d.])\d{1,3}(?:\.\d{1,3}){3}(?![\d.])/g, ' ');
   const out = [];
   for (const m of s.matchAll(/(\d+(?:[.,\u202f\u00a0 ]\d+)*)\s*(万|億|兆|萬|만|억|조|[A-Za-z]+)?/g)) {
     let t = m[1];
@@ -89,7 +91,7 @@ export function checkContent() {
           const thousands = n => /^[1-9]\d{0,2}\.\d{3}$/.test(n) && ja.has(Number(n.replace('.', '')));
           const seen = new Set();
           // 版番号: 規格名のすぐ後ろの数、または規格の話をしている文の「n.0」
-          const version = (i, n = all.slice(i).match(/\d+\.\d+/)?.[0] ?? '') => /(?:PCIe|PCI Express|USB|UCIe|CXL|TPM|IEEE|[Vv]ersion|Gen)[\s-]*$/.test(all.slice(Math.max(0, i - 16), i))
+          const version = (i, n = all.slice(i).match(/\d+\.\d+/)?.[0] ?? '') => /(?:PCIe|PCI Express|USB|UCIe|CXL|TPM|IEEE|TLS|SSL|HTTP|[Vv]ersion|Gen)[\s-]*$/.test(all.slice(Math.max(0, i - 16), i))
             || /\.0$/.test(n) && /PCIe|PCI Express|USB|UCIe|CXL|GT\/s/.test(all);
           for (const m of all.matchAll(DOT_DECIMAL)) {
             // 「1.000 µA」のように点が桁区切り(日本語では 1000)なら正しい。「0.001」は桁区切りではない
