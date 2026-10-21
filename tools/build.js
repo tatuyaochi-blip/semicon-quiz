@@ -1477,6 +1477,26 @@ ${x.faq?.length ? `<section class="faq">
     <div id="crc-div"><h3>${esc(x.div_heading)}</h3><pre class="crc-div"></pre><p class="muted" data-rem></p></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    hamming: x => `<form id="hm-form" class="dy-form" data-text="${esc(JSON.stringify({ info: x.info, st_ok: x.st_ok, st_fixed: x.st_fixed, st_double: x.st_double, st_invalid: x.st_invalid, miscorrect: x.miscorrect }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('k', x.k, [4, 8, 11, 16, 26, 32, 57, 64].map(v => [String(v), String(v)]), '4')}
+    <label class="dy-field crc-data"><span>${esc(x.data)}</span><input name="data" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" value="1011"></label>
+    <label class="crc-check"><input name="secded" type="checkbox"> ${esc(x.secded)}</label>
+    <p class="notice" id="hm-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.code_heading)}</h2>
+    <p class="muted" id="hm-info"></p>
+    <div class="hm-code" id="hm-code"></div>
+    <p class="hm-legend"><span class="hm-key p"></span>${esc(x.legend_p)} <span class="hm-key d"></span>${esc(x.legend_d)} <span class="hm-key all"></span>${esc(x.legend_all)}</p>
+    <p><button type="button" class="btn btn-ghost btn-small" id="hm-reset">${esc(x.reset)}</button></p>
+    <h3>${esc(x.checks_heading)}</h3>
+    <div class="table-wrap"><table class="sp-pairs hm-checks"><thead><tr><th>${esc(x.col_p)}</th><th>${esc(x.col_cover)}</th><th>${esc(x.col_x)}</th></tr></thead><tbody id="hm-checks"></tbody></table></div>
+    <h3>${esc(x.out_heading)}</h3>
+    <p class="hm-status" id="hm-status"></p>
+    <dl class="dy-stats bc-stats"><div><dt>${esc(x.syn)}</dt><dd id="hm-syn">–</dd></div><div><dt>${esc(x.flips)}</dt><dd id="hm-flips">0</dd></div><div><dt>${esc(x.out)}</dt><dd id="hm-out">–</dd></div></dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
