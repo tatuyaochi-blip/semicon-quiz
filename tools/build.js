@@ -1733,6 +1733,48 @@ ${x.faq?.length ? `<section class="faq">
     <p class="dj-all"><strong>${esc(x.all)}</strong> <span id="dj-all"></span></p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    bintree: x => `<form id="bt-form" class="dy-form bt-form" data-text="${esc(JSON.stringify({ examples: x.examples, dup: x.dup, del_missing: x.del_missing, del_two: x.del_two, del_ok: x.del_ok, found: x.found, not_found: x.not_found, swaps: x.swaps }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${select('mode', x.mode, Object.entries(x.modes), 'bst')}
+    <label class="dy-field bt-wide"><span>${esc(x.keys)}</span><input name="keys" type="text" autocomplete="off" spellcheck="false"></label>
+    <label class="dy-field bt-bst"><span>${esc(x.del)}</span><input name="del" type="text" autocomplete="off" spellcheck="false"></label>
+    <label class="dy-field bt-bst"><span>${esc(x.find)}</span><input name="find" type="text" autocomplete="off" spellcheck="false" maxlength="6"></label>
+    <label class="dy-field bt-heap" hidden><span>${esc(x.pops)}</span><input name="pops" type="number" inputmode="numeric" min="0" max="40" step="1" value="0"></label>
+    <p class="muted bt-wide">${esc(x.keys_hint)}</p>
+    <p class="notice bt-wide" id="bt-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out bt" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <svg id="bt-svg" class="bt-svg" role="img" aria-label="${esc(x.out_heading)}"></svg>
+    <ul class="bt-notes" id="bt-notes"></ul>
+    <dl class="dy-stats bt-stats">${stat('pre', x.pre)}${stat('in', x.in)}${stat('post', x.post)}${stat('level', x.level)}${stat('height', x.height)}${stat('size', x.size)}</dl>
+    <dl class="dy-stats bt-stats bt-bst">${stat('search', x.search)}</dl>
+    <dl class="dy-stats bt-stats bt-heap" hidden>${stat('array', x.array)}${stat('popped', x.popped)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    hash: x => `<form id="hs-form" class="dy-form hs-form" data-text="${esc(JSON.stringify({ examples: x.examples, methods: x.methods, found: x.found, not_found: x.not_found, pos: x.pos, empty: x.empty, full: x.full, dup: x.dup, h2_note: x.h2_note, col_key: x.col_key, col_code: x.col_code, col_seq: x.col_seq, col_pos: x.col_pos, col_probes: x.col_probes, col_method: x.col_method, col_coll: x.col_coll, col_avg: x.col_avg, col_max: x.col_max, col_fail: x.col_fail }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    <label class="dy-field hs-wide"><span>${esc(x.keys)}</span><input name="keys" type="text" autocomplete="off" spellcheck="false"></label>
+    ${field('m', x.m, 7, 'min="2" max="64" step="1"')}
+    ${select('method', x.method, Object.entries(x.methods), 'linear')}
+    <label class="dy-field"><span>${esc(x.find)}</span><input name="find" type="text" autocomplete="off" spellcheck="false" maxlength="8"></label>
+    <p class="muted hs-wide">${esc(x.keys_hint)}</p>
+    <p class="notice hs-wide" id="hs-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out hs" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('load', x.load)}${stat('coll', x.coll)}${stat('avg', x.avg)}</dl>
+    <p class="hs-search"><strong>${esc(x.search)}</strong> <span data-out="search">–</span></p>
+    <div class="table-wrap" id="hs-table"></div>
+    <p class="muted" id="hs-h2"></p>
+    <h3>${esc(x.recs_heading)}</h3>
+    <div class="table-wrap" id="hs-recs"></div>
+    <h3>${esc(x.cmp_heading)}</h3>
+    <div class="table-wrap" id="hs-cmp"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
