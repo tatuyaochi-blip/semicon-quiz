@@ -801,7 +801,8 @@ function buildLang(L) {
   </li>`).join('')}
 </ol>
 <p class="muted">${esc(t('course_rule'))}</p>${co.id === 'interview' && interviewText[code] ? `
-<p><a class="btn btn-ghost" href="${home}interview-questions/">${esc(interviewText[code].link)} →</a></p>` : ''}`,
+<p><a class="btn btn-ghost" href="${home}interview-questions/">${esc(interviewText[code].link)} →</a></p>` : ''}${co.id === 'transistor-to-software' && pageNames(code).includes('it-exam-guide') ? `
+<p><a class="btn btn-ghost" href="${home}it-exam-guide/">基本情報・応用情報技術者試験のテクノロジ系をこのサイトで学ぶ →</a></p>` : ''}`,
     });
   }
 
