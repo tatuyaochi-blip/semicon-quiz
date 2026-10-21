@@ -88,7 +88,7 @@ function needUpdate() {
   const el = out('need');
   if (!(h >= 1)) { el.textContent = '–'; return; }
   let n = 32;
-  while (n > 0 && usable(n) < h) n--;
+  while (n > 1 && usable(n) < h) n--;
   el.textContent = usable(n) >= h ? T.need_result.replace('{h}', h).replace('{n}', n).replace('{m}', usable(n)) : T.need_too_many;
 }
 // 分割の選択肢は、今のプレフィックス長より長いものだけを使える
