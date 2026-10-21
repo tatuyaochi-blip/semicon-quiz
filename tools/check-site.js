@@ -59,6 +59,10 @@ for (const file of files) {
     }
     if (url.startsWith(base) && !hasTarget(url) && !broken.has(url)) broken.set(url, rel);
   }
+  // テンプレートに渡し忘れた文言が、要素や属性の中身まるごと「undefined」「[object Object]」になっていないか(script の中は除く。「undefined behavior」のような本文は対象外)
+  const visible = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  const leak = visible.match(/(?:>\s*|=")(undefined|\[object Object\])(?:\s*<|")/);
+  if (leak) errors.push(`${rel}: 文言の渡し忘れ「${leak[1]}」があります`);
   for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
     try { JSON.parse(m[1]); } catch (e) { errors.push(`${rel}: JSON-LD が読めません(${e.message})`); }
   }

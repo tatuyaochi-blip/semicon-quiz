@@ -1411,7 +1411,7 @@ ${x.faq?.length ? `<section class="faq">
       ${rows.map(([v, u], i) => `<div class="sp-row"><span class="muted">${i + 1}</span><input name="v${i}" type="number" inputmode="decimal" min="0" step="any" value="${v}" aria-label="${esc(x.value)} ${i + 1}">${unitSel(`u${i}`, u)}</div>`).join('')}
     </fieldset>
     <fieldset class="sp-values"><legend>${esc(x.target_heading)}</legend>
-      <div class="sp-row"><span class="muted">${esc(x.target)}</span><input name="t" type="number" inputmode="decimal" min="0" step="any" value="1.5" aria-label="${esc(x.target)}">${unitSel('tu', '1e3')}</div>
+      <div class="sp-row"><span class="muted">${esc(x.target)}</span><input name="t" type="number" inputmode="decimal" min="0" step="any" value="1.4" aria-label="${esc(x.target)}">${unitSel('tu', '1e3')}</div>
     </fieldset>
   </form>
   <section class="dy-out" aria-live="polite">
@@ -1439,8 +1439,8 @@ ${x.faq?.length ? `<section class="faq">
     <h2>${esc(x.out_heading)}</h2>
     <dl class="dy-stats">${stat('gain', x.gain)}${stat('gain_db', x.gain_db)}${stat('vout', x.vout)}${stat('zin', x.zin)}</dl>
     <p class="notice" id="oa-sat" hidden>${esc(x.sat)}</p>
-    <h3>${esc(x.target_heading)}</h3>
-    <div class="table-wrap"><table class="sp-pairs"><thead><tr><th>Rf</th><th>${esc(x.rin)} / ${esc(x.rg)} / ${esc(x.r1)}</th><th>${esc(x.gain)}</th><th>±</th></tr></thead><tbody id="oa-pairs"></tbody></table></div>
+    <h3 data-show="inv noninv diff">${esc(x.target_heading)}</h3>
+    <div class="table-wrap" data-show="inv noninv diff"><table class="sp-pairs"><thead><tr><th>Rf</th><th>${esc(x.rin)} / ${esc(x.rg)} / ${esc(x.r1)}</th><th>${esc(x.gain)}</th><th>±</th></tr></thead><tbody id="oa-pairs"></tbody></table></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">

@@ -10,7 +10,7 @@ try { T = JSON.parse(form.dataset.text); } catch {}
 
 function show() {
   const c = form.elements.circuit.value;
-  form.querySelectorAll('[data-show]').forEach(el => { el.hidden = !el.dataset.show.split(' ').includes(c); });
+  document.querySelectorAll('[data-show]').forEach(el => { el.hidden = !el.dataset.show.split(' ').includes(c); });
 }
 function update() {
   const c = form.elements.circuit.value;
@@ -35,9 +35,9 @@ function update() {
   const want = c === 'inv' ? -Math.abs(t) : t;
   const cands = rins.map(r => { const f = eNear(ratio * r); return { f, r, g: gainOf(f, r) }; })
     .filter(x => x.f >= 100 && x.f <= 1e7)
-    .sort((a, b) => Math.abs(a.g / want - 1) - Math.abs(b.g / want - 1) || a.r - b.r);
-  const seen = new Set();
-  box.innerHTML = cands.filter(x => { const k = num(x.g, 6); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3)
+    // 誤差の小さい順、同じなら Rin が 10 kΩ に近いもの(電流が大きすぎず、雑音も増えにくい)を先に
+    .sort((a, b) => Math.abs(a.g / want - 1) - Math.abs(b.g / want - 1) || Math.abs(Math.log10(a.r / 1e4)) - Math.abs(Math.log10(b.r / 1e4)));
+  box.innerHTML = cands.slice(0, 3)
     .map(x => `<tr><td>${si(x.f, 'Ω')}</td><td>${si(x.r, 'Ω')}</td><td>${num(x.g, 4)}×</td><td>${(x.g / want - 1) >= 0 ? '+' : '−'}${num(Math.abs(x.g / want - 1) * 100, 2)}%</td></tr>`).join('');
 }
 form.elements.circuit.addEventListener('change', () => { show(); update(); });
