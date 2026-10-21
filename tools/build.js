@@ -1400,6 +1400,49 @@ ${x.faq?.length ? `<section class="faq">
     </section>
     </div>
   </form>`,
+    'series-parallel': x => {
+      const units = ['1e-12', '1e-9', '1e-6', '1e-3', '1', '1e3', '1e6'];
+      const unitSel = (name, value) => `<select name="${name}" data-unit aria-label="${esc(x.unit)}">${units.map(u => `<option value="${u}"${u === value ? ' selected' : ''}>${u}</option>`).join('')}</select>`;
+      const rows = [['1', '1e3'], ['2.2', '1e3'], ['', '1e3'], ['', '1e3'], ['', '1e3'], ['', '1e3'], ['', '1e3'], ['', '1e3']];
+      return `<form id="sp-form" class="dy-form" data-text="${esc(JSON.stringify({ none: x.none, pair_series: x.pair_series, pair_parallel: x.pair_parallel }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('kind', x.kind, [['r', x.kinds.r], ['c', x.kinds.c], ['l', x.kinds.l]], 'r')}
+    <fieldset class="sp-values"><legend>${esc(x.values_heading)}</legend>
+      ${rows.map(([v, u], i) => `<div class="sp-row"><span class="muted">${i + 1}</span><input name="v${i}" type="number" inputmode="decimal" min="0" step="any" value="${v}" aria-label="${esc(x.value)} ${i + 1}">${unitSel(`u${i}`, u)}</div>`).join('')}
+    </fieldset>
+    <fieldset class="sp-values"><legend>${esc(x.target_heading)}</legend>
+      <div class="sp-row"><span class="muted">${esc(x.target)}</span><input name="t" type="number" inputmode="decimal" min="0" step="any" value="1.4" aria-label="${esc(x.target)}">${unitSel('tu', '1e3')}</div>
+    </fieldset>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('series', x.series)}${stat('parallel', x.parallel)}${stat('count', x.count)}</dl>
+    <h3>${esc(x.target_heading)}</h3>
+    <dl class="dy-stats">${stat('single', x.single)}</dl>
+    <div class="table-wrap"><table class="sp-pairs"><thead><tr><th></th><th>E24</th><th>=</th><th>${esc(x.error)}</th></tr></thead><tbody id="sp-pairs"></tbody></table></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`;
+    },
+    opamp: x => `<form id="oa-form" class="dy-form" data-text="${esc(JSON.stringify({ zin_high: x.zin_high }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('circuit', x.circuit, Object.entries(x.circuits), 'inv')}
+    <div data-show="inv noninv diff">${field('rf', `${x.rf} (kΩ)`, 100, 'min="0" step="any"')}</div>
+    <label class="dy-field" data-show="inv noninv diff"><span><span data-show="inv">${esc(x.rin)}</span><span data-show="noninv">${esc(x.rg)}</span><span data-show="diff">${esc(x.r1)}</span> (kΩ)</span><input name="rin" type="number" inputmode="decimal" value="10" min="0" step="any"></label>
+    <div data-show="inv noninv follower">${field('vin', `${x.vin} (V)`, 0.5, 'step="any"')}</div>
+    <div data-show="diff">${field('v1', `${x.v1} (V)`, 1, 'step="any"')}</div>
+    <div data-show="diff">${field('v2', `${x.v2} (V)`, 1.2, 'step="any"')}</div>
+    ${field('vpos', `${x.vpos} (V)`, 15, 'step="any"')}
+    ${field('vneg', `${x.vneg} (V)`, -15, 'step="any"')}
+    <div data-show="inv noninv diff">${field('t', x.target, 10, 'step="any"')}</div>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('gain', x.gain)}${stat('gain_db', x.gain_db)}${stat('vout', x.vout)}${stat('zin', x.zin)}</dl>
+    <p class="notice" id="oa-sat" hidden>${esc(x.sat)}</p>
+    <h3 data-show="inv noninv diff">${esc(x.target_heading)}</h3>
+    <div class="table-wrap" data-show="inv noninv diff"><table class="sp-pairs"><thead><tr><th>Rf</th><th>${esc(x.rin)} / ${esc(x.rg)} / ${esc(x.r1)}</th><th>${esc(x.gain)}</th><th>±</th></tr></thead><tbody id="oa-pairs"></tbody></table></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
