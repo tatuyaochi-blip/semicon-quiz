@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-5a9199b57d';
+const CACHE = 'sq-e91497ef24';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -47,6 +47,7 @@ const PRECACHE = [
   "/data/ja/q/ion-implant.json",
   "/data/ja/q/isa-assembly.json",
   "/data/ja/q/linker-loader.json",
+  "/data/ja/q/linux-cli.json",
   "/data/ja/q/lithography.json",
   "/data/ja/q/logic.json",
   "/data/ja/q/machine-learning.json",
@@ -124,6 +125,7 @@ const PRECACHE = [
   "/data/en/q/ion-implant.json",
   "/data/en/q/isa-assembly.json",
   "/data/en/q/linker-loader.json",
+  "/data/en/q/linux-cli.json",
   "/data/en/q/lithography.json",
   "/data/en/q/logic.json",
   "/data/en/q/machine-learning.json",
@@ -201,6 +203,7 @@ const PRECACHE = [
   "/data/zh-hant/q/ion-implant.json",
   "/data/zh-hant/q/isa-assembly.json",
   "/data/zh-hant/q/linker-loader.json",
+  "/data/zh-hant/q/linux-cli.json",
   "/data/zh-hant/q/lithography.json",
   "/data/zh-hant/q/logic.json",
   "/data/zh-hant/q/machine-learning.json",
@@ -277,6 +280,7 @@ const PRECACHE = [
   "/data/ko/q/ion-implant.json",
   "/data/ko/q/isa-assembly.json",
   "/data/ko/q/linker-loader.json",
+  "/data/ko/q/linux-cli.json",
   "/data/ko/q/lithography.json",
   "/data/ko/q/logic.json",
   "/data/ko/q/machine-learning.json",
@@ -353,6 +357,7 @@ const PRECACHE = [
   "/data/de/q/ion-implant.json",
   "/data/de/q/isa-assembly.json",
   "/data/de/q/linker-loader.json",
+  "/data/de/q/linux-cli.json",
   "/data/de/q/lithography.json",
   "/data/de/q/logic.json",
   "/data/de/q/machine-learning.json",
@@ -429,6 +434,7 @@ const PRECACHE = [
   "/data/nl/q/ion-implant.json",
   "/data/nl/q/isa-assembly.json",
   "/data/nl/q/linker-loader.json",
+  "/data/nl/q/linux-cli.json",
   "/data/nl/q/lithography.json",
   "/data/nl/q/logic.json",
   "/data/nl/q/machine-learning.json",
@@ -505,6 +511,7 @@ const PRECACHE = [
   "/data/fr/q/ion-implant.json",
   "/data/fr/q/isa-assembly.json",
   "/data/fr/q/linker-loader.json",
+  "/data/fr/q/linux-cli.json",
   "/data/fr/q/lithography.json",
   "/data/fr/q/logic.json",
   "/data/fr/q/machine-learning.json",
