@@ -25,7 +25,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Measured boot","item":"https://semiconroom.com/en/term/measured-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Measured boot","description":"A mechanism that cumulatively records hashes of each boot stage's software in a TPM or similar so the boot state can be verified later.","url":"https://semiconroom.com/en/term/measured-boot/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Measured boot","item":"https://semiconroom.com/en/term/measured-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Measured boot","description":"A mechanism that cumulatively records hashes of each boot stage's software in a TPM or similar so the boot state can be verified later.","url":"https://semiconroom.com/en/term/measured-boot/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is measured boot?","acceptedAnswer":{"@type":"Answer","text":"It is a mechanism that computes the hash of the software to run next at each boot stage and records it cumulatively in a TPM or similar. It does not stop the boot, but the records let you later confirm which software started, or prove it to a remote server."}},{"@type":"Question","name":"What is the difference between secure boot and measured boot?","acceptedAnswer":{"@type":"Answer","text":"Secure boot verifies signatures and stops incorrect software from starting. Measured boot does not stop the boot; it records hashes of the software that started in a tamper-evident way. Secure boot prevents, measured boot proves, and in many cases they are used together."}},{"@type":"Question","name":"Does measured boot require a TPM?","acceptedAnswer":{"@type":"Answer","text":"Measurements are generally recorded in a TPM's PCRs. Besides a discrete chip, a TPM can be implemented as firmware inside a CPU or SoC. Microcontrollers and other devices without a TPM can serve the same purpose with schemes such as DICE that derive keys from measurements."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How measured boot works</h2>
+  <p>In measured boot, a small piece of code that runs first at startup and serves as the <a class="term-link" href="/en/term/root-of-trust/">root of trust</a> computes (measures) the hash of the firmware to be run next, records it in the <a class="term-link" href="/en/term/trusted-platform-module/">TPM</a> and only then hands over control. Each subsequent stage, such as the <a class="term-link" href="/en/term/bootloader/">bootloader</a> and then the OS kernel, continues the measurement chain in the same way. The records go into the TPM&#39;s PCRs (platform configuration registers), where each new value is computed as the hash of the previous PCR value concatenated with the new hash (an extend operation). The PCRs that hold boot measurements cannot be reset without a reboot, so the record cannot later be rewritten to a convenient value.</p>
+</section>
+<section class="term-about">
+  <h2>Measured boot vs. secure boot</h2>
+  <p><a class="term-link" href="/en/term/secure-boot/">Secure boot</a> verifies the signature of the software to be started next and halts the boot if it is not properly signed. Measured boot, by contrast, does not stop the boot but records what started in a tamper-evident way. Secure boot only tells you whether something was signed with a trusted key, so it cannot distinguish an old, correctly signed but vulnerable version, or a configuration change. Measured boot keeps the values of what actually ran. The two are not in conflict and are used together: secure boot prevents unauthorized boot, and measured boot proves the boot state.</p>
+</section>
+<section class="term-about">
+  <h2>How the recorded values are used</h2>
+  <p>PCR values are used in two main ways. One is <a class="term-link" href="/en/term/remote-attestation/">remote attestation</a>: the device sends a server the PCR values signed with a key inside the <a class="term-link" href="/en/term/trusted-platform-module/">TPM</a> (a quote) along with the record of each stage (the event log). The server checks that the PCR values computed from the event log match, and grants access only to devices that booted the expected software. The other is sealing: secrets such as disk-encryption keys are made releasable by the TPM only when the PCRs hold specific values. If any part of the boot is altered, the key cannot be released, protecting the data.</p>
+</section>
+<section class="term-about">
+  <h2>Limitations and related technologies</h2>
+  <p>Measured boot only records, so it does not prevent malicious code from running, and it is meaningful only once someone checks the records. It also assumes that the code doing the first measurement is trustworthy; if that is compromised, the whole record becomes unreliable. Updating software changes the expected PCR values, so reference values must be managed too. Related technologies include the dynamic <a class="term-link" href="/en/term/root-of-trust/">root of trust</a> for measurement (DRTM), which restarts measurement from a trusted state partway through boot, and DICE, which derives keys from a hardware secret and measurements for small devices without a <a class="term-link" href="/en/term/trusted-platform-module/">TPM</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Measured boot</h2>
   <article class="q-mini" data-qid="hw-security-024" data-cat="hw-security" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Secure boot stops incorrect software from starting; measured boot records hashes of booted software in a TPM or similar so the state can be checked later</p><p class="explanation">In <a class="term-link" href="/en/term/measured-boot/">measured boot</a>, each stage hashes the next piece of software and records it cumulatively in <a class="term-link" href="/en/term/trusted-platform-module/">TPM</a> registers (PCRs). A PCR can only be updated by combining its previous value with a new hash, so records cannot be forged. Boot itself is not stopped, but the recorded values let one later confirm which software started, or prove it to a remote server.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is measured boot?</h3>
+  <p>It is a mechanism that computes the hash of the software to run next at each boot stage and records it cumulatively in a TPM or similar. It does not stop the boot, but the records let you later confirm which software started, or prove it to a remote server.</p>
+  <h3>What is the difference between secure boot and measured boot?</h3>
+  <p>Secure boot verifies signatures and stops incorrect software from starting. Measured boot does not stop the boot; it records hashes of the software that started in a tamper-evident way. Secure boot prevents, measured boot proves, and in many cases they are used together.</p>
+  <h3>Does measured boot require a TPM?</h3>
+  <p>Measurements are generally recorded in a TPM&#39;s PCRs. Besides a discrete chip, a TPM can be implemented as firmware inside a CPU or SoC. Microcontrollers and other devices without a TPM can serve the same purpose with schemes such as DICE that derive keys from measurements.</p>
+</section>
 <section>
   <h2>Measured boot in the explanations</h2>
   <ul class="term-quotes"><li><p>In measured boot, each stage hashes the next piece of software and records it cumulatively in TPM registers (PCRs).</p><a href="/en/q/hw-security/hw-security-024/">What is the difference between secure boot and measured boo…</a></li></ul>

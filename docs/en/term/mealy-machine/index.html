@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Mealy machine","item":"https://semiconroom.com/en/term/mealy-machine/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Mealy machine","description":"A state machine whose outputs depend on both the current state and the inputs. Input changes reach outputs within the same cycle, but so can input glitches. A Moore machine's outputs depend only on state.","url":"https://semiconroom.com/en/term/mealy-machine/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Mealy machine","item":"https://semiconroom.com/en/term/mealy-machine/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Mealy machine","description":"A state machine whose outputs depend on both the current state and the inputs. Input changes reach outputs within the same cycle, but so can input glitches. A Moore machine's outputs depend only on state.","url":"https://semiconroom.com/en/term/mealy-machine/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a Mealy machine and a Moore machine?","acceptedAnswer":{"@type":"Answer","text":"A Mealy machine's outputs depend on both the current state and the inputs, while a Moore machine's depend only on the current state. A Mealy machine can respond to inputs in the same cycle and often needs fewer states, but input noise passes to its outputs more easily."}},{"@type":"Question","name":"Which should I use, Mealy or Moore?","acceptedAnswer":{"@type":"Answer","text":"Mealy suits cases where response speed or fewer states matter; Moore suits cases where output stability and predictable timing matter. Real designs choose per output or combine both."}},{"@type":"Question","name":"Can a Mealy machine be converted to a Moore machine?","acceptedAnswer":{"@type":"Answer","text":"Yes. Splitting each Mealy state according to the output of the transitions entering it into separate Moore states gives the same input-output relationship. The number of states may increase, however, and the outputs appear one clock later."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/hdl-verification/">HDL &amp; Verification</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Definition and structure of a Mealy machine</h2>
+  <p>In a Mealy state machine, outputs depend on both the current state and the current inputs. Like a Moore machine, it consists of a state register, combinational logic for the next state and combinational logic for the outputs, but the inputs connect directly to the output logic. In a state diagram, outputs are written on the transition arrows as input/output rather than inside the states. Because outputs change as soon as inputs change, without waiting for the next clock, a Mealy machine can react one cycle sooner than a Moore machine and often implements the same function with fewer states.</p>
+</section>
+<section class="term-about">
+  <h2>Mealy vs. Moore</h2>
+  <p>In a Moore machine, outputs depend only on the current state and are written inside the states in a state diagram. An input change reaches the outputs only after the clock changes the state, so the response is a cycle later, but input noise does not pass to the outputs and timing is easier to predict. Encoding the states so that outputs come directly from state-register bits also eliminates output glitches. In a Mealy machine, a combinational path runs from inputs to outputs, so input glitches appear at the outputs and timing paths that include the surrounding logic become longer.</p>
+</section>
+<section class="term-about">
+  <h2>Example: a sequence detector</h2>
+  <p>Consider an overlapping sequence detector that outputs 1 when it finds 101 in an input bit stream. A Mealy machine needs only three states: nothing matched, matched 1, and matched 10. In the matched-10 state, the output goes to 1 as soon as a 1 arrives, and the machine moves to matched 1, treating that 1 as the start of the next candidate. A Moore machine needs an extra detected-101 state to represent output 1, giving four states, and its output becomes 1 only after the clock that captures the final 1. The Mealy machine thus uses fewer states and responds faster, while the Moore machine has the edge in output stability.</p>
+</section>
+<section class="term-about">
+  <h2>Design tips in HDL</h2>
+  <p>In <a class="term-link" href="/en/term/verilog/">Verilog</a> or VHDL it is common to write a sequential block that updates the state register separately from a combinational block that determines the next state and outputs; if the output expressions include inputs, the machine is a Mealy machine. Using asynchronous inputs directly disturbs the outputs, so inputs should be synchronized first. Connecting a Mealy output to the input of another Mealy machine can create a <a class="term-link" href="/en/term/combinational-loop/">combinational loop</a>, so care is needed. Registering the outputs through flip-flops removes glitches, but the timing then lags by one cycle, just like a Moore machine.</p>
+</section>
 <section>
   <h2>Try it: questions about Mealy machine</h2>
   <article class="q-mini" data-qid="logic-018" data-cat="logic" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -91,7 +106,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Outputs depend on both current state and inputs, so input changes appear at the output within the same cycle</p><p class="explanation">In a <a class="term-link" href="/en/term/mealy-machine/">Mealy machine</a> the output logic looks at inputs as well as the current state, so outputs change with inputs without waiting for a clock, reacting one cycle sooner. It may also need fewer states. But a combinational path runs from inputs to outputs, so input glitches can appear at outputs and timing paths get longer. Outputs are sometimes re-registered through flip-flops.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a Mealy machine and a Moore machine?</h3>
+  <p>A Mealy machine&#39;s outputs depend on both the current state and the inputs, while a Moore machine&#39;s depend only on the current state. A Mealy machine can respond to inputs in the same cycle and often needs fewer states, but input noise passes to its outputs more easily.</p>
+  <h3>Which should I use, Mealy or Moore?</h3>
+  <p>Mealy suits cases where response speed or fewer states matter; Moore suits cases where output stability and predictable timing matter. Real designs choose per output or combine both.</p>
+  <h3>Can a Mealy machine be converted to a Moore machine?</h3>
+  <p>Yes. Splitting each Mealy state according to the output of the transitions entering it into separate Moore states gives the same input-output relationship. The number of states may increase, however, and the outputs appear one clock later.</p>
+</section>
 <section>
   <h2>Mealy machine in the explanations</h2>
   <ul class="term-quotes"><li><p>In a Moore machine, outputs depend only on the current state; in a Mealy machine, they depend on both state and inputs.</p><a href="/en/q/logic/logic-018/">Which type of sequential circuit (state machine) has output…</a></li><li><p>In a Mealy machine the output logic looks at inputs as well as the current state, so outputs change with inputs without waiting for a clock, reacting one cycle sooner.</p><a href="/en/q/hdl-verification/hdl-verification-022/">What characterizes a Mealy state machine?</a></li></ul>

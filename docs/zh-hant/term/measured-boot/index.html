@@ -25,7 +25,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"量測開機（Measured boot）","item":"https://semiconroom.com/zh-hant/term/measured-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"量測開機（Measured boot）","description":"在開機的每個階段，將下一個軟體的雜湊值累積記錄到 TPM 等中，使事後能確認開機狀態的機制。","url":"https://semiconroom.com/zh-hant/term/measured-boot/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"量測開機（Measured boot）","item":"https://semiconroom.com/zh-hant/term/measured-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"量測開機（Measured boot）","description":"在開機的每個階段，將下一個軟體的雜湊值累積記錄到 TPM 等中，使事後能確認開機狀態的機制。","url":"https://semiconroom.com/zh-hant/term/measured-boot/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"量測開機是什麼？","acceptedAnswer":{"@type":"Answer","text":"是在開機的每個階段計算接下來要執行之軟體的雜湊值，並累積記錄到TPM等處的機制。它不會停止開機，但透過記錄可以事後確認啟動了哪些軟體，或向遠端伺服器證明。"}},{"@type":"Question","name":"安全開機和量測開機有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"安全開機驗證簽章，阻止不正確的軟體啟動。量測開機不會停止開機，而是以無法竄改的形式記錄已啟動軟體的雜湊值。安全開機負責防止、量測開機負責證明，多數情況下會組合使用。"}},{"@type":"Question","name":"量測開機需要TPM嗎？","acceptedAnswer":{"@type":"Answer","text":"一般會記錄在TPM的PCR中。TPM除了獨立晶片之外，也可能以CPU或SoC內部的韌體形式實作。沒有TPM的微控制器等裝置，則可以透過DICE這類由量測值導出金鑰的機制達到類似目的。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hw-security/">硬體安全</a></p>
 </article>
-
+<section class="term-about">
+  <h2>量測開機的運作方式</h2>
+  <p>在量測開機（measured boot，也稱度量啟動）中，開機時最先執行、作為<a class="term-link" href="/zh-hant/term/root-of-trust/">信任根</a>的一小段程式碼，會計算（量測）接下來要執行之韌體的雜湊值並記錄到<a class="term-link" href="/zh-hant/term/trusted-platform-module/">TPM</a>，之後才交出控制權。後續的各階段，例如開機載入程式、作業系統核心，也以同樣方式依序接續量測。記錄位置是TPM的PCR（平台組態暫存器），新值以「先前的PCR值與新雜湊值串接後的雜湊」計算（擴充，extend）。記錄開機量測的PCR除非重新開機否則無法重設，因此記錄無法事後改寫成有利的值。</p>
+</section>
+<section class="term-about">
+  <h2>與安全開機的差異</h2>
+  <p><a class="term-link" href="/zh-hant/term/secure-boot/">安全開機（secure boot）</a>會驗證接下來要啟動之軟體的簽章，若簽章不正確就停止開機。相對地，量測開機不會停止開機，而是以無法竄改的形式記錄啟動了什麼。安全開機只能知道「是否以可信任的金鑰簽章」，無法區分簽章正確但有漏洞的舊版本，或是設定的變更；量測開機則會留下實際啟動之內容的值。兩者並不衝突，常以安全開機防止不正當的啟動、以量測開機證明開機狀態的方式組合使用。</p>
+</section>
+<section class="term-about">
+  <h2>記錄值的用途</h2>
+  <p>PCR的值主要有兩種用法。一是<a class="term-link" href="/zh-hant/term/remote-attestation/">遠端證明</a>：裝置將以<a class="term-link" href="/zh-hant/term/trusted-platform-module/">TPM</a>內部金鑰對PCR值簽章後的資料（quote）與各階段的記錄清單（事件日誌）送給伺服器。伺服器確認由事件日誌計算出的PCR值是否一致，只允許以預期軟體開機的裝置存取。另一種是密封（sealing）：讓TPM只有在PCR為特定值時才能取出磁碟加密金鑰等機密。若開機過程中的某部分遭到改寫，就無法取出金鑰，從而保護資料。</p>
+</section>
+<section class="term-about">
+  <h2>限制與相關技術</h2>
+  <p>量測開機只負責記錄，無法阻止惡意程式碼本身的執行，必須有人檢查記錄才有意義。此外，它的前提是最先進行量測的程式碼值得信任，一旦這部分被攻破，整個記錄就不再可信。<a class="term-link" href="/zh-hant/term/refresh/">更新</a>軟體後PCR的預期值也會改變，因此還需要管理正確的參考值。相關技術有在開機途中重新從可信狀態開始量測的動態量測<a class="term-link" href="/zh-hant/term/root-of-trust/">信任根</a>（DRTM），以及針對沒有<a class="term-link" href="/zh-hant/term/trusted-platform-module/">TPM</a>的小型裝置、由硬體機密與量測值導出金鑰的DICE。</p>
+</section>
 <section>
   <h2>練習量測開機（Measured boot）的題目</h2>
   <article class="q-mini" data-qid="hw-security-024" data-cat="hw-security" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 安全啟動會阻止不正確的軟體啟動，度量啟動則是把已啟動軟體的雜湊值記錄在TPM等處，以便日後確認狀態</p><p class="explanation">在度量啟動中，於啟動的每個階段計算下一個軟體的雜湊值，以逐次堆疊的方式記錄到<a class="term-link" href="/zh-hant/term/trusted-platform-module/">TPM</a>的暫存器（PCR）。PCR只能藉由將先前的值與新的雜湊值組合來<a class="term-link" href="/zh-hant/term/refresh/">更新</a>，因此記錄無法被偽造。雖然不會阻止啟動本身，但只要查看所記錄的值，就能事後確認啟動了哪些軟體，或向遠端的伺服器證明。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>量測開機是什麼？</h3>
+  <p>是在開機的每個階段計算接下來要執行之軟體的雜湊值，並累積記錄到TPM等處的機制。它不會停止開機，但透過記錄可以事後確認啟動了哪些軟體，或向遠端伺服器證明。</p>
+  <h3>安全開機和量測開機有什麼不同？</h3>
+  <p>安全開機驗證簽章，阻止不正確的軟體啟動。量測開機不會停止開機，而是以無法竄改的形式記錄已啟動軟體的雜湊值。安全開機負責防止、量測開機負責證明，多數情況下會組合使用。</p>
+  <h3>量測開機需要TPM嗎？</h3>
+  <p>一般會記錄在TPM的PCR中。TPM除了獨立晶片之外，也可能以CPU或SoC內部的韌體形式實作。沒有TPM的微控制器等裝置，則可以透過DICE這類由量測值導出金鑰的機制達到類似目的。</p>
+</section>
 
 <section>
   <h2>出現「量測開機（Measured boot）」的題目（1題）</h2>

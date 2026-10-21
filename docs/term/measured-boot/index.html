@@ -25,7 +25,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"測定ブート","item":"https://semiconroom.com/term/measured-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"測定ブート","description":"起動の各段階で次のソフトウェアのハッシュ値をTPMなどに積み重ねて記録し、後から起動の状態を確かめられるようにする仕組み。メジャードブート。","url":"https://semiconroom.com/term/measured-boot/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"測定ブート","item":"https://semiconroom.com/term/measured-boot/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"測定ブート","description":"起動の各段階で次のソフトウェアのハッシュ値をTPMなどに積み重ねて記録し、後から起動の状態を確かめられるようにする仕組み。メジャードブート。","url":"https://semiconroom.com/term/measured-boot/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"測定ブートとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"起動の各段階で次に実行するソフトウェアのハッシュ値を計算し、TPMなどに積み重ねて記録する仕組みです。起動そのものは止めませんが、記録を見れば、どのソフトウェアが起動したかをあとから確かめたり、遠くのサーバに証明したりできます。"}},{"@type":"Question","name":"セキュアブートと測定ブートの違いは何ですか?","acceptedAnswer":{"@type":"Answer","text":"セキュアブートは署名を検証して、正しくないソフトウェアの起動を止めます。測定ブートは起動を止めず、起動したソフトウェアのハッシュ値を改ざんできない形で記録します。防ぐのがセキュアブート、証明するのが測定ブートで、多くの場合は組み合わせて使います。"}},{"@type":"Question","name":"測定ブートにはTPMが必要ですか?","acceptedAnswer":{"@type":"Answer","text":"一般にはTPMのPCRに記録します。TPMは独立したチップのほか、CPUやSoCの中のファームウェアとして実装されることもあります。TPMを持たないマイコンなどでは、DICEのように測定値から鍵を導き出す仕組みで、同様の目的を果たします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>この用語の分野: <a href="/c/hw-security/">ハードウェアセキュリティ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>測定ブートのしくみ</h2>
+  <p>測定ブート(メジャードブート)では、起動の最初に動く、信頼の基点となる小さなコードが、次に実行するファームウェアのハッシュ値を計算(測定)して<a class="term-link" href="/term/trusted-platform-module/">TPM</a>に記録し、それから制御を渡します。次の段階も同じように、<a class="term-link" href="/term/bootloader/">ブートローダ</a>、OSのカーネルと順に測定を引き継ぎます。記録先はTPMのPCR(プラットフォーム構成レジスタ)で、新しい値は「それまでのPCRの値と新しいハッシュ値をつないだもののハッシュ」として計算されます(拡張、extend)。起動の測定を記録するPCRは再起動しない限りリセットできないので、記録をあとから都合のよい値に書き換えることはできません。</p>
+</section>
+<section class="term-about">
+  <h2>セキュアブートとの違い</h2>
+  <p><a class="term-link" href="/term/secure-boot/">セキュアブート</a>は、次に起動するソフトウェアの署名を検証し、正しく署名されていなければ起動を止める仕組みです。これに対し測定ブートは、起動を止めずに、何が起動したかを改ざんできない形で記録します。セキュアブートでは「信頼できる鍵で署名されているか」しか分からないため、署名は正しいが脆弱性のある古い版や、設定の変更は区別できません。測定ブートでは、実際に起動したものの値が残ります。両者は対立するものではなく、セキュアブートで不正な起動を防ぎ、測定ブートで起動の状態を証明する形で組み合わせて使われます。</p>
+</section>
+<section class="term-about">
+  <h2>記録した値の使い道</h2>
+  <p>PCRの値は、主に二つの方法で使われます。一つは<a class="term-link" href="/term/remote-attestation/">リモートアテステーション</a>で、機器がPCRの値に<a class="term-link" href="/term/trusted-platform-module/">TPM</a>の中の鍵で署名したもの(クォート)と、各段階の記録の一覧(イベントログ)をサーバに送ります。サーバはイベントログから計算したPCRの値が一致するかを確かめ、期待どおりのソフトウェアで起動した機器にだけアクセスを許します。もう一つはシーリングで、ディスク暗号化の鍵などを、PCRが特定の値のときだけTPMが取り出せるようにします。起動の途中が書き換えられると鍵が取り出せず、データを守れます。</p>
+</section>
+<section class="term-about">
+  <h2>限界と関連する技術</h2>
+  <p>測定ブートは記録するだけなので、不正なコードの実行そのものは防げず、記録を誰かが確かめて初めて意味をもちます。また、最初に測定を行うコードが信頼できることが前提で、ここが破られると記録全体が信用できなくなります。ソフトウェアを更新するとPCRの期待値も変わるため、正しい値の管理も必要です。関連する技術として、起動の途中から改めて信頼できる状態で測定を始める動的な信頼の基点(DRTM)や、<a class="term-link" href="/term/trusted-platform-module/">TPM</a>を持たない小型の機器向けに、ハードウェアの秘密と測定値から鍵を導き出すDICEがあります。</p>
+</section>
 <section>
   <h2>測定ブートの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="hw-security-024" data-cat="hw-security" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. セキュアブートは正しくないソフトウェアの起動を止め、測定ブートは起動したソフトウェアのハッシュ値をTPMなどに記録して、後で状態を確かめられるようにする</p><p class="explanation"><a class="term-link" href="/term/measured-boot/">測定ブート</a>では、起動の各段階で次のソフトウェアのハッシュ値を計算し、<a class="term-link" href="/term/trusted-platform-module/">TPM</a>のレジスタ(PCR)に積み重ねるように記録します。PCRは前の値と新しいハッシュ値を組み合わせてしか更新できないので、記録を偽れません。起動そのものは止めませんが、記録された値を見れば、どのソフトウェアが起動したかを後から確かめたり、遠くのサーバに証明したりできます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>測定ブートとは何ですか?</h3>
+  <p>起動の各段階で次に実行するソフトウェアのハッシュ値を計算し、TPMなどに積み重ねて記録する仕組みです。起動そのものは止めませんが、記録を見れば、どのソフトウェアが起動したかをあとから確かめたり、遠くのサーバに証明したりできます。</p>
+  <h3>セキュアブートと測定ブートの違いは何ですか?</h3>
+  <p>セキュアブートは署名を検証して、正しくないソフトウェアの起動を止めます。測定ブートは起動を止めず、起動したソフトウェアのハッシュ値を改ざんできない形で記録します。防ぐのがセキュアブート、証明するのが測定ブートで、多くの場合は組み合わせて使います。</p>
+  <h3>測定ブートにはTPMが必要ですか?</h3>
+  <p>一般にはTPMのPCRに記録します。TPMは独立したチップのほか、CPUやSoCの中のファームウェアとして実装されることもあります。TPMを持たないマイコンなどでは、DICEのように測定値から鍵を導き出す仕組みで、同様の目的を果たします。</p>
+</section>
 <section>
   <h2>解説の中の「測定ブート」</h2>
   <ul class="term-quotes"><li><p>測定ブートでは、起動の各段階で次のソフトウェアのハッシュ値を計算し、TPMのレジスタ(PCR)に積み重ねるように記録します。</p><a href="/q/hw-security/hw-security-024/">セキュアブートと測定ブート(メジャードブート)の違いとして正しいものはどれか。</a></li></ul>
