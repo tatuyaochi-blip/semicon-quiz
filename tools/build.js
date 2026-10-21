@@ -1647,6 +1647,65 @@ ${x.faq?.length ? `<section class="faq">
     <div id="fsm-min"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    rpn: x => `<form id="rpn-form" class="dy-form rpn-form" data-text="${esc(JSON.stringify({ err: x.err, col_token: x.col_token, col_action: x.col_action, col_stack: x.col_stack, col_output: x.col_output, col_calc: x.col_calc, col_stack_after: x.col_stack_after, act_output: x.act_output, act_push: x.act_push, act_pop_push: x.act_pop_push, act_paren: x.act_paren, act_paren_pop: x.act_paren_pop, act_end: x.act_end, act_pushval: x.act_pushval, need_values: x.need_values }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, [['', x.example_none], ...x.examples.map(e => [`${e.mode}|${e.expr}`, e.label])], '')}
+    ${select('mode', x.mode, Object.entries(x.modes), 'infix')}
+    <label class="dy-field rpn-wide"><span>${esc(x.expr)}</span><input name="expr" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" value="(A + B) * (C - D)" class="rpn-expr"></label>
+    <p class="muted rpn-wide">${esc(x.expr_hint)}</p>
+    <p class="muted rpn-wide" id="rpn-vars-hint" hidden>${esc(x.vars_hint)}</p>
+    <div class="rpn-vars rpn-wide" id="rpn-vars" hidden></div>
+    <p class="notice rpn-wide" id="rpn-error" hidden></p>
+  </form>
+  <section class="dy-out rpn" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats rpn-results">${stat('postfix', x.postfix)}${stat('prefix', x.prefix)}${stat('infix', x.infix)}${stat('value', x.value)}</dl>
+    <h3>${esc(x.tree_heading)}</h3>
+    <svg id="rpn-tree" class="rpn-tree" role="img" aria-label="${esc(x.tree_heading)}"></svg>
+    <h3 id="rpn-steps-h">${esc(x.steps_heading)}</h3>
+    <div class="table-wrap" id="rpn-steps"></div>
+    <h3>${esc(x.eval_heading)}</h3>
+    <div class="table-wrap" id="rpn-eval"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    paging: x => `<form id="pg-form" class="dy-form pg-form" data-text="${esc(JSON.stringify({ row_ref: x.row_ref, row_frame: x.row_frame, row_fault: x.row_fault, row_victim: x.row_victim, col_algo: x.col_algo, algos: x.algos }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, [['', x.example_none], ...x.examples.map(e => [`${e.refs}|${e.frames}`, e.label])], '')}
+    <label class="dy-field pg-wide"><span>${esc(x.refs)}</span><input name="refs" type="text" autocomplete="off" spellcheck="false" value="7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1"></label>
+    ${field('frames', x.frames, 3, 'min="1" max="8" step="1"')}
+    ${select('algo', x.algo, Object.entries(x.algos), 'lru')}
+    <p class="notice pg-wide" id="pg-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out pg" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('faults', x.faults)}${stat('hits', x.hits)}${stat('rate', x.rate)}</dl>
+    <div class="table-wrap" id="pg-grid"></div>
+    <p class="muted">${esc(x.grid_hint)}</p>
+    <h3>${esc(x.cmp_heading)}</h3>
+    <p class="muted">${esc(x.cmp_hint)}</p>
+    <div class="table-wrap" id="pg-cmp"></div>
+    <p class="notice" id="pg-belady" hidden>${esc(x.belady)}</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    sched: x => `<form id="sc-form" class="dy-form sc-form" data-text="${esc(JSON.stringify({ examples: x.examples, algos: x.algos, idle: x.idle, col_name: x.col_name, col_arrival: x.col_arrival, col_burst: x.col_burst, col_prio: x.col_prio, col_end: x.col_end, col_tat: x.col_tat, col_wait: x.col_wait, col_resp: x.col_resp, col_algo: x.col_algo, avg_tat: x.avg_tat, avg_wait: x.avg_wait, avg_resp: x.avg_resp, col_switch: x.col_switch }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${select('algo', x.algo, Object.entries(x.algos), 'fcfs')}
+    <div id="sc-q">${field('q', x.q, 2, 'min="1" max="50" step="1"')}</div>
+    <div class="table-wrap sc-wide"><table class="sc-edit"><thead><tr><th>${esc(x.col_name)}</th><th>${esc(x.col_arrival)}</th><th>${esc(x.col_burst)}</th><th>${esc(x.col_prio)}</th></tr></thead><tbody>${
+      Array.from({ length: 8 }, (_, i) => `<tr><td><input name="n${i}" maxlength="6" aria-label="${esc(x.col_name)} ${i + 1}"></td><td><input name="a${i}" type="number" inputmode="numeric" min="0" max="999" step="1" aria-label="${esc(x.col_arrival)} ${i + 1}"></td><td><input name="b${i}" type="number" inputmode="numeric" min="1" max="99" step="1" aria-label="${esc(x.col_burst)} ${i + 1}"></td><td><input name="p${i}" type="number" inputmode="numeric" step="1" aria-label="${esc(x.col_prio)} ${i + 1}"></td></tr>`).join('')}</tbody></table></div>
+    <p class="muted sc-wide">${esc(x.table_hint)}</p>
+    <p class="notice sc-wide" id="sc-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out sc" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <svg id="sc-gantt" class="sc-gantt" role="img" aria-label="${esc(x.gantt)}"></svg>
+    <dl class="dy-stats">${stat('tat', x.avg_tat)}${stat('wait', x.avg_wait)}${stat('resp', x.avg_resp)}${stat('end', x.makespan)}</dl>
+    <div class="table-wrap" id="sc-rows"></div>
+    <h3>${esc(x.cmp_heading)}</h3>
+    <div class="table-wrap" id="sc-cmp"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
