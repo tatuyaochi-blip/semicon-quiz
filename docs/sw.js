@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-376d06f9c1';
+const CACHE = 'sq-7dbdae2340';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -48,6 +48,7 @@ const PRECACHE = [
   "/data/ja/q/linker-loader.json",
   "/data/ja/q/lithography.json",
   "/data/ja/q/logic.json",
+  "/data/ja/q/machine-learning.json",
   "/data/ja/q/memory-hierarchy.json",
   "/data/ja/q/mems-sensor.json",
   "/data/ja/q/metrology.json",
@@ -120,6 +121,7 @@ const PRECACHE = [
   "/data/en/q/linker-loader.json",
   "/data/en/q/lithography.json",
   "/data/en/q/logic.json",
+  "/data/en/q/machine-learning.json",
   "/data/en/q/memory-hierarchy.json",
   "/data/en/q/mems-sensor.json",
   "/data/en/q/metrology.json",
@@ -192,6 +194,7 @@ const PRECACHE = [
   "/data/zh-hant/q/linker-loader.json",
   "/data/zh-hant/q/lithography.json",
   "/data/zh-hant/q/logic.json",
+  "/data/zh-hant/q/machine-learning.json",
   "/data/zh-hant/q/memory-hierarchy.json",
   "/data/zh-hant/q/mems-sensor.json",
   "/data/zh-hant/q/metrology.json",
@@ -263,6 +266,7 @@ const PRECACHE = [
   "/data/ko/q/linker-loader.json",
   "/data/ko/q/lithography.json",
   "/data/ko/q/logic.json",
+  "/data/ko/q/machine-learning.json",
   "/data/ko/q/memory-hierarchy.json",
   "/data/ko/q/mems-sensor.json",
   "/data/ko/q/metrology.json",
@@ -334,6 +338,7 @@ const PRECACHE = [
   "/data/de/q/linker-loader.json",
   "/data/de/q/lithography.json",
   "/data/de/q/logic.json",
+  "/data/de/q/machine-learning.json",
   "/data/de/q/memory-hierarchy.json",
   "/data/de/q/mems-sensor.json",
   "/data/de/q/metrology.json",
@@ -405,6 +410,7 @@ const PRECACHE = [
   "/data/nl/q/linker-loader.json",
   "/data/nl/q/lithography.json",
   "/data/nl/q/logic.json",
+  "/data/nl/q/machine-learning.json",
   "/data/nl/q/memory-hierarchy.json",
   "/data/nl/q/mems-sensor.json",
   "/data/nl/q/metrology.json",
@@ -476,6 +482,7 @@ const PRECACHE = [
   "/data/fr/q/linker-loader.json",
   "/data/fr/q/lithography.json",
   "/data/fr/q/logic.json",
+  "/data/fr/q/machine-learning.json",
   "/data/fr/q/memory-hierarchy.json",
   "/data/fr/q/mems-sensor.json",
   "/data/fr/q/metrology.json",
