@@ -25,7 +25,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"GPIO","item":"https://semiconroom.com/term/gpio/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"GPIO","description":"汎用入出力(General Purpose Input/Output)の端子。ソフトウェアで入力にも出力にも設定でき、スイッチの読み取りやLEDの点灯などに使う。","url":"https://semiconroom.com/term/gpio/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"GPIO","item":"https://semiconroom.com/term/gpio/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"GPIO","description":"汎用入出力(General Purpose Input/Output)の端子。ソフトウェアで入力にも出力にも設定でき、スイッチの読み取りやLEDの点灯などに使う。","url":"https://semiconroom.com/term/gpio/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"GPIOとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"General Purpose Input/Output(汎用入出力)の略で、ソフトウェアで入力にも出力にも設定できる端子です。スイッチの状態を読む、LEDを点灯させる、ほかのICにリセットや選択の信号を出すなど、決まった用途をもたない信号に広く使われます。"}},{"@type":"Question","name":"GPIOコントローラとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"GPIOの端子をまとめて制御する回路で、端子ごとの方向、出力の値、入力の値、プルアップやプルダウン、割り込みの条件などをレジスタで設定します。CPUはこれらのレジスタを読み書きして端子を操作します。I2CやSPIで外付けするGPIOエキスパンダも、GPIOコントローラの一種として扱われます。"}},{"@type":"Question","name":"GPIOの端子で直接モーターを動かせますか?","acceptedAnswer":{"@type":"Answer","text":"一般には動かせません。GPIOの端子で流せる電流は小さく、モーターには大きな電流が必要なうえ、止めるときに逆起電力が生じて端子を壊すおそれがあるからです。トランジスタやモータードライバICを介して駆動し、必要に応じて保護用のダイオードを付けます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>この用語の分野: <a href="/c/embedded/">組込み・ファームウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>GPIOコントローラのレジスタ</h2>
+  <p>GPIOの端子は、<a class="term-link" href="/term/microcontroller/">マイコン</a>や<a class="term-link" href="/term/soc/">SoC</a>の中のGPIOコントローラが制御します。基本になるのは、端子ごとに入力か出力かを決める方向のレジスタ、出力する値を書き込む出力データのレジスタ、端子の電圧を読む入力データのレジスタです。ほかに、内蔵のプルアップやプルダウンの選択、出力の形式(プッシュプルか<a class="term-link" href="/term/open-drain-output/">オープンドレイン</a>か)、出力の駆動能力や変化の速さを設定するレジスタがあります。多くのマイコンでは、端子をGPIOとして使うか、<a class="term-link" href="/term/uart/">UART</a>や<a class="term-link" href="/term/spi/">SPI</a>などほかの周辺回路の端子として使うかも選べます。特定のビットだけを1や0にするセット・リセット用のレジスタをもつものもあり、ほかのビットを読み直さずに安全に書き換えられます。</p>
+</section>
+<section class="term-about">
+  <h2>入力として使うとき</h2>
+  <p>入力の端子には、ノイズに強い<a class="term-link" href="/term/schmitt-trigger/">シュミットトリガ</a>が使われることが多く、コントローラの中でクロックに同期させてから値を読み取ります。何もつながっていない端子は電位が定まらず、値が不規則に変わったり<a class="term-link" href="/term/short-circuit-current/">貫通電流</a>が流れたりするため、プルアップやプルダウンで電位を固定します。機械的なスイッチは接点が跳ねて0と1が何度も入れ替わる(<a class="term-link" href="/term/contact-bounce/">チャタリング</a>)ため、ソフトウェアで一定時間待つか、フィルタで取り除きます。多くのGPIOコントローラは、立ち上がりや立ち下がり、レベルによって<a class="term-link" href="/term/interrupt/">割り込み</a>を発生させられ、低消費電力の状態からの復帰にも使えます。</p>
+</section>
+<section class="term-about">
+  <h2>出力として使うときの制約</h2>
+  <p>プッシュプル出力は端子を電源側にもグラウンド側にも能動的に駆動し、<a class="term-link" href="/term/open-drain-output/">オープンドレイン</a>出力はLowだけを駆動してHighは<a class="term-link" href="/term/pull-up-resistor/">プルアップ抵抗</a>でつくります。GPIOの端子で流せる電流は小さく、端子1本あたりと全端子の合計の上限がデータシートで決められています。LEDは直列の抵抗で電流を制限してつなぎます。モーターやリレーのように大きな電流が必要な負荷や、コイルのような誘導性の負荷は、トランジスタやドライバICを介して駆動し、逆起電力から守るダイオードを付けます。電源電圧を超える電圧を端子に加えると、保護用のダイオードを通して電流が流れ込み、誤動作や破損の原因になります。</p>
+</section>
+<section class="term-about">
+  <h2>OSから使うGPIO</h2>
+  <p>Linuxなどを動かす<a class="term-link" href="/term/soc/">SoC</a>では、端子の機能の割り当てをピンコントローラが、GPIOとしての入出力をGPIOコントローラのドライバが担当し、どの端子を何に使うかはデバイスツリーなどで記述します。Linuxのアプリケーションからは、GPIOのキャラクタデバイスを扱うlibgpiodなどのライブラリを使うのが現在の標準的な方法で、以前のsysfsのインターフェースは非推奨になっています。端子が足りないときは、<a class="term-link" href="/term/i2c/">I2C</a>や<a class="term-link" href="/term/spi/">SPI</a>でつなぐGPIOエキスパンダで増やせます。OSを通すと応答に時間がかかるため、正確なタイミングが必要な信号は、専用の周辺回路で作るのが一般的です。</p>
+</section>
 <section>
   <h2>GPIOの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="embedded-008" data-cat="embedded" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. その端子を入力として使うか、出力として使うか(方向)</p><p class="explanation"><a class="term-link" href="/term/gpio/">GPIO</a>の端子は、ソフトウェアで入力にも出力にも使えます。方向を決めるレジスタで出力にすると、出力用のレジスタに書いた値が端子の電圧になり、入力にすると、端子の電圧を入力用のレジスタから読めます。多くの<a class="term-link" href="/term/microcontroller/">マイコン</a>では、そのほかにプルアップの有無や出力の形式(プッシュプルか<a class="term-link" href="/term/open-drain-output/">オープンドレイン</a>か)、別の周辺回路の端子として使うかどうかも設定します。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>GPIOとは何ですか?</h3>
+  <p>General Purpose Input/Output(汎用入出力)の略で、ソフトウェアで入力にも出力にも設定できる端子です。スイッチの状態を読む、LEDを点灯させる、ほかのICにリセットや選択の信号を出すなど、決まった用途をもたない信号に広く使われます。</p>
+  <h3>GPIOコントローラとは何ですか?</h3>
+  <p>GPIOの端子をまとめて制御する回路で、端子ごとの方向、出力の値、入力の値、プルアップやプルダウン、割り込みの条件などをレジスタで設定します。CPUはこれらのレジスタを読み書きして端子を操作します。I2CやSPIで外付けするGPIOエキスパンダも、GPIOコントローラの一種として扱われます。</p>
+  <h3>GPIOの端子で直接モーターを動かせますか?</h3>
+  <p>一般には動かせません。GPIOの端子で流せる電流は小さく、モーターには大きな電流が必要なうえ、止めるときに逆起電力が生じて端子を壊すおそれがあるからです。トランジスタやモータードライバICを介して駆動し、必要に応じて保護用のダイオードを付けます。</p>
+</section>
 <section>
   <h2>解説の中の「GPIO」</h2>
   <ul class="term-quotes"><li><p>GPIOの端子は、ソフトウェアで入力にも出力にも使えます。</p><a href="/q/embedded/embedded-008/">マイコンのGPIO(汎用入出力)の端子を使うときに、最初に設定する必要があることとして正しいものはどれか。</a></li></ul>

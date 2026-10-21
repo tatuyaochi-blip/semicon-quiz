@@ -49,8 +49,68 @@ const glossary = readJSON('data/glossary.json');
 const gloEn = readOpt('data/i18n/en/glossary.json', {});
 const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
+// 用語ページは、訳のある言語でだけ作る(訳のない語を日本語のまま出さない)
+const gloByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/glossary.json`, {})]));
+const termLangs = key => langs.filter(x => x.code === defLang || gloByLang[x.code][key]);
+// 英語の用語名の短い形(タイトル用)。「DRAM (dynamic …)」は DRAM、「Address space … (ASLR)」は ASLR、「Silane (SiH4)」は Silane
+const enLabel = key => {
+  const en = gloEn[key]?.term;
+  const m = en?.match(/^(.*?)\s*\((.+?)\)/);
+  if (!m) return en;
+  const acr = s => /^[A-Z0-9][A-Z0-9\-/]+$/.test(s);
+  return acr(m[1]) || !acr(m[2]) ? m[1] : m[2];
+};
 const courses = readOpt('data/courses.json', []);
 const lastmodPrev = readOpt('data/lastmod.json', {}); // 前回までの更新日(構造化データの dateModified に使う)
+// 技術面接でよく問われる質問の一覧(/interview-questions/)。既存の問題から、トピックごとに基本の問題を集める(日本語・英語・繁体字)
+const interviewTopics = [
+  { id: 'logic', cats: ['logic', 'computer-arithmetic'], name: { ja: '論理回路と計算機算術', en: 'Digital logic and arithmetic', 'zh-hant': '邏輯電路與計算機算術' } },
+  { id: 'cmos', cats: ['mosfet', 'finfet'], name: { ja: 'CMOSとMOSFET', en: 'CMOS and MOSFETs', 'zh-hant': 'CMOS 與 MOSFET' } },
+  { id: 'sta', cats: ['sta-cdc'], name: { ja: 'タイミング解析とCDC', en: 'Static timing analysis and CDC', 'zh-hant': '時序分析與 CDC' } },
+  { id: 'hdl', cats: ['hdl-verification'], name: { ja: 'HDLと検証', en: 'Verilog, SystemVerilog and verification', 'zh-hant': 'HDL 與驗證' } },
+  { id: 'arch', cats: ['cpu', 'memory-hierarchy'], name: { ja: 'CPUとメモリ階層', en: 'Computer architecture and caches', 'zh-hant': 'CPU 與記憶體階層' } },
+  { id: 'memory', cats: ['dram', 'sram-flash'], name: { ja: 'メモリ(DRAM・SRAM・フラッシュ)', en: 'Memory: DRAM, SRAM and flash', 'zh-hant': '記憶體(DRAM、SRAM、快閃記憶體)' } },
+  { id: 'eda', cats: ['eda'], name: { ja: '設計フローとEDA', en: 'Design flow and EDA', 'zh-hant': '設計流程與 EDA' } },
+  { id: 'test', cats: ['test'], name: { ja: 'テストとDFT', en: 'Test and DFT', 'zh-hant': '測試與 DFT' } },
+  { id: 'analog', cats: ['analog'], name: { ja: 'アナログ回路', en: 'Analog circuits', 'zh-hant': '類比電路' } },
+];
+const interviewPer = 8;
+const interviewText = {
+  ja: { h1: '半導体・LSI設計の技術面接でよく問われる質問', nav: '技術面接の質問集', card: '面接でよく問われる基本を、トピック別に答えつきで', title: '半導体・LSI設計の技術面接 よく問われる質問{n}問(答えと解説つき)', description: '論理回路、CMOS、タイミング解析、Verilogと検証、CPUとキャッシュ、メモリ、EDA、テスト、アナログ回路の基本を、技術面接でよく問われる形の{n}問にまとめました。答えと解説つきです。',
+    lead: 'ハードウェア・半導体の技術面接でよく問われる基本を、トピックごとに{k}問ずつ集めました。答えは開いて確かめられ、問題を押すと詳しい解説のページに移ります。まとめて解きたいときは、各トピックの「通して解く」から始めてください。', solve: '通して解く', answer: '答えを見る', course: '技術面接対策のコースで分野ごとに解く', link: '技術面接でよく問われる質問の一覧' },
+  en: { h1: 'VLSI and Hardware Interview Questions', nav: 'Interview questions', card: 'Common interview questions by topic, with answers', title: 'VLSI Interview Questions and Answers: {n} Questions by Topic', description: '{n} VLSI and hardware interview questions with answers: digital logic, CMOS, STA and CDC, Verilog and verification, caches, DRAM/SRAM, EDA, DFT and analog.',
+    lead: 'Core questions that come up in VLSI, digital design and hardware engineering interviews, {k} per topic. Reveal each answer to check yourself, or open a question for the full explanation. To practice a whole topic, use "Take as a quiz".', solve: 'Take as a quiz', answer: 'Show answer', course: 'Work through the hardware interview prep course', link: 'VLSI and hardware interview questions' },
+  'zh-hant': { h1: 'IC 設計與硬體面試常見問題', nav: '面試題', card: '依主題整理的面試常見題目與解答', title: 'IC 設計面試題與解答：依主題整理{n}題', description: '整理邏輯電路、CMOS、時序分析與 CDC、Verilog 與驗證、快取、記憶體、EDA、DFT、類比電路等{n}道面試常見題目，附解答與解析。',
+    lead: '依主題整理 IC 設計與硬體工程師面試常見的基礎題目，每個主題{k}題。可展開解答確認，點選題目則可查看完整解析。想一次練習整個主題時，請使用「整組作答」。', solve: '整組作答', answer: '顯示解答', course: '用硬體技術面試課程依領域練習', link: 'IC 設計與硬體面試常見問題' },
+};
+// 職種ガイド(/careers/ と /careers/{id}/)。仕事の内容と、身につけたい分野・コース・用語。訳は data/i18n/{言語}/careers.json(訳のある言語だけ作る)
+const careers = readOpt('data/careers.json', []);
+const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
+const carLangs = id => langs.filter(x => careerText[x.code] && (x.code === defLang || carByLang[x.code][id]));
+const careerText = {
+  ja: { index: '半導体業界の職種ガイド', nav: '職種ガイド', card: '職種ごとの仕事内容と、学んでおきたい分野', indexTitle: '半導体業界の職種ガイド:仕事内容と学んでおきたい分野', indexDesc: 'プロセス・装置・設計・品質・テストなど、半導体業界の主な職種{n}つについて、仕事の内容と、学んでおきたい分野・用語・練習問題をまとめました。',
+    indexLead: '半導体の会社には、製造・開発・設計・品質など、さまざまな仕事があります。職種ごとに、どんな仕事か、どの分野を学んでおくとよいかをまとめました。就職・転職の準備や、配属先の勉強に使えます。',
+    title: '{name}の仕事内容と学んでおきたい分野', fields: '学んでおきたい分野', courses: 'おすすめの学習コース', terms: 'よく出てくる用語', quiz: 'この職種の基礎10問', quizDesc: '学んでおきたい分野から、基本の問題を10問選びました', all: '職種ガイドの一覧へ', qn: '{n}問' },
+  en: { index: 'Semiconductor Careers Guide', nav: 'Careers guide', card: 'What each role does and what to learn for it', indexTitle: 'Semiconductor Careers Guide: Roles and What to Learn', indexDesc: 'What process, equipment, design, quality, test and other semiconductor engineers do, and which fields, terms and practice questions to study for {n} roles.',
+    indexLead: 'Chip companies hire for many roles across manufacturing, development, design and quality. For each role, this guide explains the work and the fields worth learning, whether you are preparing for a job search or a new assignment.',
+    title: '{name}: What the Job Involves and What to Learn', fields: 'Fields to learn', courses: 'Recommended courses', terms: 'Key terms', quiz: '10 starter questions for this role', quizDesc: 'Ten basic questions from the fields this role uses', all: 'All roles', qn: '{n} questions' },
+  'zh-hant': { index: '半導體產業職務指南', nav: '職務指南', card: '各職務的工作內容與應學習的領域', indexTitle: '半導體產業職務指南：工作內容與應學習的領域', indexDesc: '整理製程、設備、設計、品質、測試等{n}種半導體主要職務的工作內容，以及應學習的領域、術語與練習題。',
+    indexLead: '半導體公司有製造、開發、設計、品質等各種工作。本指南依職務整理工作內容與值得先學習的領域，可用於求職、轉職或新職務的準備。',
+    title: '{name}在做什麼？工作內容與應學習的領域', fields: '應學習的領域', courses: '推薦課程', terms: '常見術語', quiz: '這個職務的基礎10題', quizDesc: '從應學習的領域中選出10道基本題', all: '所有職務', qn: '{n}題' },
+};
+// 日英中の用語対訳表(/glossary/trilingual/)を作る言語と、その文言
+const dictLangs = ['ja', 'en', 'zh-hant'];
+const dictText = {
+  ja: { h1: '半導体用語 日英中対訳表', nav: '日英中対訳表', card: '用語を日本語・英語・繁体字中国語で引ける対訳表', title: '半導体用語の日英中対訳表({n}語):英語・繁体字中国語', description: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾)の対訳表にまとめました。分野ごとに並べ、キーワードで絞り込めます。各用語は解説ページにリンクしています。',
+    lead: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾で使われる表記)で並べました。英語の資料を読むときや、台湾の技術者とやりとりするときに使えます。用語を押すと、その言語の解説ページに移ります。', search: '用語を検索(日本語・英語・中国語)',
+    cols: { ja: '日本語', en: '英語', 'zh-hant': '繁体字中国語' } },
+  en: { h1: 'Semiconductor Terms in English, Japanese and Chinese', nav: 'Trilingual glossary', card: 'Look up chip terms in English, Japanese and Chinese', title: 'Semiconductor Terms in English, Japanese and Chinese ({n} terms)', description: '{n} semiconductor terms side by side in English, Japanese and Traditional Chinese (Taiwan), grouped by field and searchable. Each term links to an explanation.',
+    lead: '{n} semiconductor terms in English, Japanese and Traditional Chinese as used in Taiwan, grouped by field. Useful when reading Japanese or Taiwanese documents or working with colleagues there. Click a term to open its explanation in that language.', search: 'Search terms (English, Japanese or Chinese)',
+    cols: { en: 'English', ja: 'Japanese', 'zh-hant': 'Chinese (Traditional)' } },
+  'zh-hant': { h1: '半導體術語 中英日對照表', nav: '中英日對照表', card: '以中文、英文、日文查詢半導體術語', title: '半導體術語中英日對照表（{n}詞）', description: '將{n}個半導體術語整理成繁體中文、英文、日文對照表，依領域分類並可搜尋。每個術語都連到解說頁面。',
+    lead: '將{n}個半導體術語以繁體中文、英文、日文並列，並依領域分類。閱讀英文或日文資料，或與日本工程師溝通時可以使用。點選術語即可開啟該語言的解說頁面。', search: '搜尋術語（中文、英文、日文）',
+    cols: { 'zh-hant': '繁體中文', en: '英文', ja: '日文' } },
+};
 // 「Numbers Every Chip Engineer Should Know」(英語のみ。/en/numbers/)。各数値に根拠の問題IDを付ける
 const numbers = readOpt('data/numbers.json', []);
 const numbersLang = 'en';
@@ -190,7 +250,8 @@ function buildLang(L) {
   const live = cats.filter(c => qs[c.id].length);
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
   // 詳しい解説(about)とよくある質問(faq)は言語ごとに持つ。既定言語の分がほかの言語のページに混ざらないよう外す
-  const terms = glossary.map(({ about, faq, ...g }) => ({ ...g, ...(isDef ? { about, faq } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
+  // 検索結果用のタイトル・説明文(title・description)も言語ごと。書いてある語だけ、決まった形の代わりに使う
+  const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
   const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key] }));
   const matcher = termMatcher(glossaryIndex);
   write(`data/${code}/index.json`, JSON.stringify({
@@ -262,6 +323,9 @@ function buildLang(L) {
     ${feature('#topics', S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics')}
     ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses') : ''}
     ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary')}
+    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].nav, dictText[code].card, 'home_feat_dict') : ''}
+    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].nav, careerText[code].card, 'home_feat_careers') : ''}
+    ${interviewText[code] ? feature(`${home}interview-questions/`, interviewText[code].nav, interviewText[code].card, 'home_feat_interview') : ''}
     ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
     ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
     ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
@@ -499,6 +563,7 @@ function buildLang(L) {
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
     startPanel, startBack, homeFeatures,
     // 用語集の上に出す、ニュース用語の一覧への案内
+    dictLink: dictLangs.includes(code) ? `<p class="news-link"><a class="chip" href="${home}glossary/trilingual/">${esc(dictText[code].h1)}</a></p>` : '',
     newsTermsLink: news.length ? `<p class="news-link"><a class="chip" href="${home}news-terms/">${esc(S.news_title)}</a> <span class="muted">${esc(t('glossary_news_link', { terms: news.slice(0, 3).map(e => e.label ?? terms.find(g => g.key === e.term).term).join(', ') }))}</span></p>` : '',
     // トップ下部の計算ツールの一覧(訳のあるツールだけ)
     toolList: toolsIn(code).length ? `<section>
@@ -717,7 +782,8 @@ function buildLang(L) {
     <span class="step-meta">${t('n_questions', { n: qs[c.id].length })} · ${esc(t('rate_label'))} <b data-rate="${c.id}">—</b> · ${esc(t('answered_label'))} <span data-answered="${c.id}">0</span></span>
   </li>`).join('')}
 </ol>
-<p class="muted">${esc(t('course_rule'))}</p>`,
+<p class="muted">${esc(t('course_rule'))}</p>${co.id === 'interview' && interviewText[code] ? `
+<p><a class="btn btn-ghost" href="${home}interview-questions/">${esc(interviewText[code].link)} →</a></p>` : ''}`,
     });
   }
 
@@ -753,6 +819,160 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
 <p class="muted">Every value on this page also appears in at least one question on this site. Found an error? Let us know via the <a href="${home}contact/">contact page</a>.</p>
 <div data-ad="numbers"></div>`,
     });
+  }
+
+  // 日英中の用語対訳表 /glossary/trilingual/(日本語・英語・繁体字だけ)。3言語の訳がそろった語を分野ごとに表にする。絞り込みは glossary.js
+  if (dictLangs.includes(code)) {
+    const D = dictText[code];
+    const cols = Object.keys(D.cols); // 列の順(その言語 → 見出しの順)
+    const nameIn = (g, x) => (x === defLang ? g.key : gloByLang[x][g.key].term);
+    const has = g => dictLangs.every(x => x === defLang || gloByLang[x][g.key]);
+    const groups = gloGroups.map(gr => ({ ...gr, cats: gr.cats.map(({ c, list }) => ({ c, list: list.filter(has) })).filter(x => x.list.length) })).filter(gr => gr.cats.length);
+    const n = groups.reduce((s, gr) => s + gr.cats.reduce((k, x) => k + x.list.length, 0), 0);
+    const cell = (g, x) => {
+      const l = langs.find(y => y.code === x);
+      const reading = x === defLang ? glossary.find(y => y.term === g.key).reading : '';
+      return `<td lang="${l.htmlLang}"><a href="${base}${l.path}term/${termSlug[g.key]}/">${esc(nameIn(g, x))}</a>${reading ? `<small>${esc(reading)}</small>` : ''}</td>`;
+    };
+    page({
+      path: `${L.path}glossary/trilingual/`,
+      alt: Object.fromEntries(langs.filter(x => dictLangs.includes(x.code)).map(x => [x.code, `${x.path}glossary/trilingual/`])),
+      title: D.title.replace('{n}', n),
+      description: D.description.replace('{n}', n),
+      scripts: ['glossary.js'],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a></nav>
+<h1>${esc(D.h1)}</h1>
+<p class="lead">${esc(D.lead.replace('{n}', n))}</p>
+<div class="search">
+  <input id="glossary-q" type="search" placeholder="${esc(D.search)}" aria-label="${esc(D.search)}">
+  <span id="glossary-count" class="muted" data-label="${esc(t('glossary_count'))}"></span>
+</div>
+<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}">${groups.map(gr => `
+  <p><b>${esc(gr.name)}</b>${gr.cats.map(({ c, list }) => ` <a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join('')}</p>`).join('')}
+</nav>
+${groups.map(gr => `<section class="glossary-group">
+  <h2>${esc(gr.name)}</h2>${gr.cats.map(({ c, list }) => `
+  <section class="glossary-cat" id="cat-${c.id}">
+    <h3>${esc(c.name)}</h3>
+    <div class="table-wrap"><table class="numbers dict">
+      <thead><tr>${cols.map(x => `<th scope="col">${esc(D.cols[x])}</th>`).join('')}</tr></thead>
+      <tbody>${list.map(g => `
+        <tr class="term">${cols.map(x => cell(g, x)).join('')}</tr>`).join('')}
+      </tbody>
+    </table></div>
+  </section>`).join('')}
+</section>`).join('\n')}
+<div data-ad="glossary"></div>
+<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
+    });
+  }
+
+  // 技術面接の質問一覧 /interview-questions/: トピックごとに、分野の先頭(基本)の問題から interviewPer 問ずつ
+  if (interviewText[code]) {
+    const D = interviewText[code];
+    const topics = interviewTopics.map(tp => {
+      const pools = tp.cats.filter(id => qs[id]?.length).map(id => qs[id].filter(q => !q.figureSvg && !q.code).map(q => ({ ...q, cat: id })));
+      const list = [];
+      for (let i = 0; list.length < interviewPer && pools.some(p => p[i]); i++) for (const p of pools) if (p[i] && list.length < interviewPer) list.push(p[i]);
+      return { ...tp, list };
+    }).filter(tp => tp.list.length);
+    const n = topics.reduce((s, tp) => s + tp.list.length, 0);
+    page({
+      path: `${L.path}interview-questions/`,
+      alt: Object.fromEntries(langs.filter(x => interviewText[x.code]).map(x => [x.code, `${x.path}interview-questions/`])),
+      title: D.title.replace('{n}', n),
+      description: D.description.replace('{n}', n),
+      jsonld: [crumbs([t('breadcrumb_top'), home], [D.h1, `${home}interview-questions/`])],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(D.h1)}</h1>
+<p class="lead">${esc(D.lead.replace('{k}', interviewPer))}</p>
+<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}"><p>${topics.map(tp => `<a class="chip" href="#${tp.id}">${esc(tp.name[code])}</a>`).join(' ')}</p></nav>
+${topics.map(tp => `<section id="${tp.id}">
+  <h2>${esc(tp.name[code])}</h2>
+  <ol class="iq-list">${tp.list.map(q => `
+    <li><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a>
+      <details><summary>${esc(D.answer)}</summary><p><b>${esc(q.choices[q.answer])}</b></p><p class="muted">${esc(q.explanation)}</p></details></li>`).join('')}
+  </ol>
+  <p><a class="btn btn-ghost btn-small" href="${home}quiz/?mode=set&amp;ids=${tp.list.map(q => q.id).join(',')}&amp;t=${encodeURIComponent(tp.name[code])}" rel="nofollow">${esc(D.solve)} →</a></p>
+</section>`).join('\n')}
+${liveCourses.some(co => co.id === 'interview') ? `<p><a class="btn btn-primary" href="${home}course/interview/">${esc(D.course)}</a></p>` : ''}
+<div data-ad="compare"></div>`,
+    });
+  }
+
+  // 職種ガイド: 一覧 /careers/ と職種ごとのページ /careers/{id}/
+  const carT = tr('careers');
+  const carList = careers.filter(x => careerText[code] && (isDef || carT[x.id])).map(x => ({ ...x, ...(isDef ? {} : carT[x.id]) }));
+  if (carList.length) {
+    const C = careerText[code];
+    const carPath = (l, id = '') => `${l.path}careers/${id ? `${id}/` : ''}`;
+    page({
+      path: carPath(L),
+      alt: Object.fromEntries(langs.filter(x => careerText[x.code] && (x.code === defLang || Object.keys(carByLang[x.code]).length)).map(x => [x.code, carPath(x)])),
+      title: C.indexTitle,
+      description: C.indexDesc.replace('{n}', carList.length),
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(C.index)}</h1>
+<p class="lead">${esc(C.indexLead)}</p>
+<ul class="cmp-list">${carList.map(x => `
+  <li><a class="cmp-card" href="${home}careers/${x.id}/"><strong>${esc(x.name)}</strong><span>${esc(x.short)}</span></a></li>`).join('')}
+</ul>
+<div data-ad="compare"></div>`,
+    });
+    for (const x of carList) {
+      const fields = x.fields.map(catOf).filter(c => c && qs[c.id]?.length);
+      // 基礎10問: 分野を順にめぐって、易しい問題から選ぶ(並びは問題IDで固定)
+      const pools = fields.map(c => [...qs[c.id]].sort((a, b) => (a.level ?? 2) - (b.level ?? 2) || (a.id < b.id ? -1 : 1)));
+      const picked = [];
+      for (let i = 0; picked.length < 10 && pools.some(p => p.length > i); i++) for (const p of pools) if (p[i] && picked.length < 10) picked.push(p[i].id);
+      const relTerms = (x.terms ?? []).map(k => terms.find(g => g.key === k)).filter(Boolean);
+      const relCourses = (x.courses ?? []).map(id => liveCourses.find(co => co.id === id)).filter(Boolean);
+      const url = `${home}careers/${x.id}/`;
+      page({
+        path: carPath(L, x.id),
+        alt: Object.fromEntries(carLangs(x.id).map(l => [l.code, carPath(l, x.id)])),
+        title: C.title.replace('{name}', x.name),
+        description: x.description,
+        jsonld: [
+          crumbs([t('breadcrumb_top'), home], [C.index, `${home}careers/`], [x.name, url]),
+          ...(x.faq?.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage',
+            mainEntity: x.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) }] : []),
+        ],
+        content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}careers/">${esc(C.index)}</a></nav>
+<article class="term-page">
+  <h1>${esc(x.name)}</h1>
+  <p class="lead">${esc(x.short)}</p>
+</article>
+${x.sections.map(sec => `<section class="term-about">
+  <h2>${esc(sec.h)}</h2>
+  <p>${linked(sec.p)}</p>
+</section>`).join('\n')}
+<section>
+  <h2>${esc(C.fields)}</h2>
+  <p>${fields.map(c => `<a class="chip" href="${home}c/${c.id}/">${esc(c.name)} <small>${esc(C.qn.replace('{n}', qs[c.id].length))}</small></a>`).join(' ')}</p>
+</section>
+${picked.length ? `<section>
+  <h2>${esc(C.quiz)}</h2>
+  <p class="muted">${esc(C.quizDesc)}</p>
+  <p><a class="btn btn-primary" href="${home}quiz/?mode=set&amp;ids=${picked.join(',')}&amp;t=${encodeURIComponent(x.name)}" rel="nofollow">${esc(C.quiz)} →</a></p>
+</section>` : ''}
+${relCourses.length ? `<section>
+  <h2>${esc(C.courses)}</h2>
+  <div class="mode-grid compact">${relCourses.map(co => `<a class="mode-card" href="${home}course/${co.id}/"><strong>${esc(loc(co.name, code))}</strong><span>${esc(loc(co.desc, code))}</span></a>`).join('')}</div>
+</section>` : ''}
+${relTerms.length ? `<section>
+  <h2>${esc(C.terms)}</h2>
+  <p>${relTerms.map(g => `<a class="chip" href="${home}term/${termSlug[g.key]}/">${esc(g.term)}</a>`).join(' ')}</p>
+</section>` : ''}
+${x.faq?.length ? `<section class="faq">
+  <h2>${esc(t('compare_faq'))}</h2>${x.faq.map(f => `
+  <h3>${esc(f.q)}</h3>
+  <p>${esc(f.a)}</p>`).join('')}
+</section>` : ''}
+<div data-ad="compare"></div>
+<p><a class="btn btn-ghost" href="${home}careers/">${esc(C.all)}</a></p>`,
+      });
+    }
   }
 
   // 計算ツール。計算はブラウザ側の {id}.js で行い、HTMLには入力欄・結果の枠・解説を置く。
@@ -1102,6 +1322,10 @@ ${numbers.map((g, i) => `<section id="n${i + 1}">
     <p><input type="text" id="qs-url" class="qs-url" readonly aria-label="${esc(x.result_heading)}"></p>
     <p><button type="button" class="btn btn-primary btn-small" id="qs-copy" data-done="${esc(x.copied)}">${esc(x.copy)}</button> <a class="btn btn-ghost btn-small" id="qs-open" href="#" target="_blank" rel="noopener">${esc(x.open)}</a></p>
     <p class="muted">${esc(x.note)}</p>
+    ${x.embed_heading ? `<h3>${esc(x.embed_heading)}</h3>
+    <p><textarea id="qs-embed" class="qs-url" rows="4" readonly aria-label="${esc(x.embed_heading)}" data-site="${esc(siteName)}"></textarea></p>
+    <p><button type="button" class="btn btn-ghost btn-small" id="qs-embed-copy" data-done="${esc(x.copied)}">${esc(x.embed_copy)}</button></p>
+    <p class="muted">${esc(x.embed_note)}</p>` : ''}
   </section>`,
   };
   const toolPath = (tool, x) => `${x.path}tools/${tool.slug}/`;
@@ -1423,11 +1647,15 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
 </section>` : '';
     if (nw) related.unshift(...(nw.terms ?? []).map(k => terms.find(x => x.key === k)).filter(x => x && !related.includes(x)));
     const termUrl = `${home}term/${termSlug[g.key]}/`;
+    // 英語名を添える言語(繁体字など。英語の用語名に「中文」「是什麼」を付けて調べる人が多い)では、用語名に英語名が含まれていなければ添える
+    // 用語名にもうカッコ(略語や別名)があるときは、カッコが重なるので添えない
+    const en = !isDef && code !== 'en' && S.term_title_en && enLabel(g.key);
+    const withEn = en && !g.term.toLowerCase().includes(en.toLowerCase()) && !/[()（）]/.test(g.term);
     page({
       path: `${L.path}term/${termSlug[g.key]}/`,
-      alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
-      title: t('term_title', { term: g.term }),
-      description: termDescription(g.desc, list.length),
+      alt: Object.fromEntries(termLangs(g.key).map(x => [x.code, `${x.path}term/${termSlug[g.key]}/`])),
+      title: g.title ?? (withEn ? t('term_title_en', { term: g.term, en }) : t('term_title', { term: g.term })),
+      description: g.description ?? termDescription(g.desc, list.length),
       scripts: ['answer.js'],
       noindex: !list.length && !nw, // 問題に一度も出てこない用語のページは検索に出さない(ニュース用語は出す)
       jsonld: [

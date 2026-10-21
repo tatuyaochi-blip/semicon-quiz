@@ -24,7 +24,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"運算融合（Operator fusion）","item":"https://semiconroom.com/zh-hant/term/operator-fusion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"運算融合（Operator fusion）","description":"將多個運算合併成一個核心函式，省去把中間結果寫入記憶體再讀回的開銷的最佳化。","url":"https://semiconroom.com/zh-hant/term/operator-fusion/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"運算融合（Operator fusion）","item":"https://semiconroom.com/zh-hant/term/operator-fusion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"運算融合（Operator fusion）","description":"將多個運算合併成一個核心函式，省去把中間結果寫入記憶體再讀回的開銷的最佳化。","url":"https://semiconroom.com/zh-hant/term/operator-fusion/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"運算融合（operator fusion）是什麼？","acceptedAnswer":{"@type":"Answer","text":"是把多個運算合併為一個核心函式，省去把中間結果寫入記憶體再讀回之負擔的最佳化。例如在一個核心函式中完成矩陣相乘、偏差相加與ReLU，就只需把最終結果寫入記憶體。"}},{"@type":"Question","name":"運算融合減少了什麼？","acceptedAnswer":{"@type":"Answer","text":"主要是記憶體的讀寫量與核心函式的啟動次數。乘法等計算量不變。逐元素運算的速度多半由記憶體頻寬決定，因此減少讀寫可以大幅縮短執行時間。"}},{"@type":"Question","name":"運算融合由誰來做？","acceptedAnswer":{"@type":"Answer","text":"一般由XLA、TVM、PyTorch的編譯功能、TensorRT等AI編譯器或推論執行環境分析計算圖後自動進行。在效能特別重要的部分，也會像FlashAttention那樣由人撰寫融合後的核心函式。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>融合有效的原因</h2>
+  <p>在神經網路的計算中，矩陣相乘之後經常接著加上偏差、啟動函數、正規化等逐元素運算。若以不同的核心函式（kernel）分別執行，每個核心函式都要把中間結果寫入<a class="term-link" href="/zh-hant/term/hbm/">HBM</a>等記憶體，再由下一個核心函式讀回。逐元素運算每個元素的計算量少、<a class="term-link" href="/zh-hant/term/arithmetic-intensity/">運算強度</a>低，因此大部分時間都花在記憶體讀寫上。運算融合（operator fusion）就是把這些運算合併為一個核心函式，讓中間結果留在暫存器或晶片上的記憶體中繼續計算的最佳化。計算量不變，但記憶體讀寫量與核心函式的啟動次數會減少。</p>
+</section>
+<section class="term-about">
+  <h2>代表性的融合模式</h2>
+  <p>常見的是逐元素運算之間的融合，把一連串的加法、乘法、啟動函數等以一次讀寫處理完畢。在寫出矩陣相乘或卷積的結果之前，先完成偏差相加與啟動函數的融合（epilogue融合）也很具代表性。此外，像softmax或層正規化這類包含求總和或最大值之歸約的運算，也能合併為一個核心函式。在Attention的計算中，把矩陣相乘、softmax與另一個矩陣相乘逐圖塊融合，使大型注意力矩陣不必寫入記憶體的<a class="term-link" href="/zh-hant/term/flashattention/">FlashAttention</a>，就是融合效果很大的例子。</p>
+</section>
+<section class="term-about">
+  <h2>由編譯器自動融合</h2>
+  <p>融合除了由人撰寫專用的核心函式之外，也由AI編譯器或<a class="term-link" href="/zh-hant/term/inference-runtime/">推論執行環境</a>自動進行。XLA、TVM、PyTorch的編譯功能、TensorRT等，會把模型當作<a class="term-link" href="/zh-hant/term/computational-graph/">計算圖</a>加以分析，找出可以合併的運算組合，並產生適合目標<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>或<a class="term-link" href="/zh-hant/term/npu/">NPU</a>的核心函式。推論不像訓練那樣需要為<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>保留中間結果，因此可以更積極地融合。要合併到什麼程度，取決於張量的形狀、記憶體的排列方式，以及目標硬體的暫存器與晶片上記憶體的容量，編譯器會估算這些因素來選擇融合的範圍。</p>
+</section>
+<section class="term-about">
+  <h2>融合的限制與注意事項</h2>
+  <p>融合也有其限制。在一個核心函式中塞入太多運算，會使用更多暫存器與晶片上的記憶體，能同時執行的執行緒減少，反而可能變慢。資料排列方式或平行化方法不同的運算，也可能難以有效率地合併。在訓練中，<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>需要中間結果，因此必須在保留於記憶體與在反向傳播時重新計算之間做選擇。此外，若融合改變了計算順序或捨入次數，浮點數的結果可能與融合前略有不同，在比對結果進行驗證時需要注意。</p>
+</section>
 <section>
   <h2>練習運算融合（Operator fusion）的題目</h2>
   <article class="q-mini" data-qid="ai-stack-018" data-cat="ai-stack" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 將多個運算合併為一個kernel，省去把中間結果寫入記憶體再重讀的負擔</p><p class="explanation">矩陣相乘之後，經常接著加上偏差、啟動函數、正規化等逐元素運算。若以不同的kernel分別進行，每次都要把中間結果寫入記憶體，再由下一個kernel重讀，因此花在記憶體讀寫上的時間比計算還多。若合併為一個kernel，就能把中間結果留在暫存器或晶片上的記憶體中繼續計算。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>運算融合（operator fusion）是什麼？</h3>
+  <p>是把多個運算合併為一個核心函式，省去把中間結果寫入記憶體再讀回之負擔的最佳化。例如在一個核心函式中完成矩陣相乘、偏差相加與ReLU，就只需把最終結果寫入記憶體。</p>
+  <h3>運算融合減少了什麼？</h3>
+  <p>主要是記憶體的讀寫量與核心函式的啟動次數。乘法等計算量不變。逐元素運算的速度多半由記憶體頻寬決定，因此減少讀寫可以大幅縮短執行時間。</p>
+  <h3>運算融合由誰來做？</h3>
+  <p>一般由XLA、TVM、PyTorch的編譯功能、TensorRT等AI編譯器或推論執行環境分析計算圖後自動進行。在效能特別重要的部分，也會像FlashAttention那樣由人撰寫融合後的核心函式。</p>
+</section>
 <section>
   <h2>解析中的「運算融合（Operator fusion）」</h2>
   <ul class="term-quotes"><li><p>藉由分塊或運算融合（fusion）反覆使用資料，增加每位元組的運算數（運算強度），處理就會往圖的右方移動，上限也隨之提高。</p><a href="/zh-hant/q/performance/performance-036/">在屋頂線模型（Roofline model）中，得知某處理位於受記憶體頻寬限制的區域時，提升效能的方向下列何者正確？</a></li></ul>

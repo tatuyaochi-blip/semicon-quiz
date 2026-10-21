@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"演算の融合","item":"https://semiconroom.com/term/operator-fusion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"演算の融合","description":"複数の演算を1つのカーネルにまとめ、途中の結果をメモリに書いて読み直す手間を省く最適化。オペレータフュージョン。","url":"https://semiconroom.com/term/operator-fusion/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"演算の融合","item":"https://semiconroom.com/term/operator-fusion/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"演算の融合","description":"複数の演算を1つのカーネルにまとめ、途中の結果をメモリに書いて読み直す手間を省く最適化。オペレータフュージョン。","url":"https://semiconroom.com/term/operator-fusion/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"演算の融合(オペレータフュージョン)とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"複数の演算を1つのカーネルにまとめ、途中の結果をメモリに書いて読み直す手間を省く最適化です。例えば行列の積、バイアスの加算、ReLUを1つのカーネルで行えば、最終結果だけをメモリに書けばよくなります。"}},{"@type":"Question","name":"演算の融合で何が減るのですか?","acceptedAnswer":{"@type":"Answer","text":"主にメモリの読み書きの量とカーネルの起動の回数が減ります。掛け算などの計算の量は変わりません。要素ごとの演算はメモリ帯域で速さが決まることが多いため、読み書きが減ると実行時間が大きく短くなります。"}},{"@type":"Question","name":"演算の融合は誰が行うのですか?","acceptedAnswer":{"@type":"Answer","text":"XLA、TVM、PyTorchのコンパイル機能、TensorRTのようなAIコンパイラや推論ランタイムが、計算グラフを解析して自動で行うのが一般的です。性能が特に重要な部分では、FlashAttentionのように人が融合したカーネルを書くこともあります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>融合が効く理由</h2>
+  <p>ニューラルネットワークの計算では、行列の積の後に、バイアスの加算、活性化関数、正規化などの要素ごとの演算が続くことがよくあります。これらを別々のカーネルで実行すると、各カーネルが途中の結果を<a class="term-link" href="/term/hbm/">HBM</a>などのメモリに書き、次のカーネルがそれを読み直します。要素ごとの演算は1要素あたりの計算が少なく<a class="term-link" href="/term/arithmetic-intensity/">演算強度</a>が低いため、時間の大部分がメモリの読み書きに費やされます。演算の融合(オペレータフュージョン)は、これらを1つのカーネルにまとめ、途中の結果をレジスタやチップ上のメモリに置いたまま計算を続ける最適化です。計算の量は変わらず、メモリの読み書きとカーネルの起動の回数が減ります。</p>
+</section>
+<section class="term-about">
+  <h2>融合の代表的なパターン</h2>
+  <p>よく使われるのは、要素ごとの演算どうしの融合で、加算、乗算、活性化関数などが続く部分を1回の読み書きで処理します。行列の積や畳み込みの結果を書き出す前に、バイアスの加算や活性化関数を済ませる融合(エピローグ融合)も代表的です。さらに、ソフトマックスやレイヤー正規化のように、合計や最大値を求める縮約を含む演算も1つのカーネルにまとめられます。Attentionの計算で、行列の積、ソフトマックス、もう1つの行列の積をタイルごとに融合し、大きな注意の行列をメモリに書かずに済ませる<a class="term-link" href="/term/flashattention/">FlashAttention</a>は、融合の効果が大きい例です。</p>
+</section>
+<section class="term-about">
+  <h2>コンパイラによる自動の融合</h2>
+  <p>融合は、人が専用のカーネルを書いて行うほか、<a class="term-link" href="/term/ai-compiler/">AIコンパイラ</a>や<a class="term-link" href="/term/inference-runtime/">推論ランタイム</a>が自動で行います。XLA、TVM、PyTorchのコンパイル機能、TensorRTなどは、モデルを<a class="term-link" href="/term/computational-graph/">計算グラフ</a>として解析し、まとめられる演算の組み合わせを見つけて、対象の<a class="term-link" href="/term/gpu/">GPU</a>や<a class="term-link" href="/term/npu/">NPU</a>に合ったカーネルを生成します。<a class="term-link" href="/term/ai-inference/">推論</a>では、学習のように<a class="term-link" href="/term/backpropagation/">逆伝播</a>のための途中の結果を残す必要がないため、より積極的に融合できます。どこまでまとめるかは、テンソルの形、メモリの並べ方、対象のハードウェアのレジスタやチップ上のメモリの量によって変わり、コンパイラはこれらを見積もって融合の範囲を選びます。</p>
+</section>
+<section class="term-about">
+  <h2>融合の限界と注意点</h2>
+  <p>融合にも限界があります。1つのカーネルに多くの演算を詰め込むと、使うレジスタやチップ上のメモリが増え、同時に動かせるスレッドが減って、かえって遅くなることがあります。データの並べ方や並列化の方法が違う演算どうしは、効率よくまとめにくいこともあります。学習では、<a class="term-link" href="/term/backpropagation/">逆伝播</a>に途中の結果が必要なため、それをメモリに残すか、逆伝播のときに計算し直すかを選ぶ必要があります。また、融合で計算の順番や丸めの回数が変わると、浮動小数点の結果が融合の前とわずかに異なることがあり、結果を比べて検証するときには注意が必要です。</p>
+</section>
 <section>
   <h2>演算の融合の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-018" data-cat="ai-stack" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 複数の演算を1つのカーネルにまとめ、途中の結果をメモリに書いて読み直す手間を省く</p><p class="explanation">行列の積の後に、バイアスの足し算、活性化関数、正規化などの要素ごとの演算が続くことがよくあります。これらを別々のカーネルで行うと、毎回途中の結果をメモリに書いて次のカーネルで読み直すので、計算よりメモリの読み書きに時間がかかります。1つのカーネルにまとめれば、途中の結果をレジスタやチップ上のメモリに置いたまま続けて計算できます。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>演算の融合(オペレータフュージョン)とは何ですか?</h3>
+  <p>複数の演算を1つのカーネルにまとめ、途中の結果をメモリに書いて読み直す手間を省く最適化です。例えば行列の積、バイアスの加算、ReLUを1つのカーネルで行えば、最終結果だけをメモリに書けばよくなります。</p>
+  <h3>演算の融合で何が減るのですか?</h3>
+  <p>主にメモリの読み書きの量とカーネルの起動の回数が減ります。掛け算などの計算の量は変わりません。要素ごとの演算はメモリ帯域で速さが決まることが多いため、読み書きが減ると実行時間が大きく短くなります。</p>
+  <h3>演算の融合は誰が行うのですか?</h3>
+  <p>XLA、TVM、PyTorchのコンパイル機能、TensorRTのようなAIコンパイラや推論ランタイムが、計算グラフを解析して自動で行うのが一般的です。性能が特に重要な部分では、FlashAttentionのように人が融合したカーネルを書くこともあります。</p>
+</section>
 <section>
   <h2>解説の中の「演算の融合」</h2>
   <ul class="term-quotes"><li><p>AIコンパイラは、モデルを演算とデータの流れの計算グラフとして受け取り、まとめられる演算の融合、不要な計算の削除、メモリの並べ方の選択、タイルの大きさの調整などを行い、GPUやNPUなどの対象に合ったカーネルを作ります。</p><a href="/q/ai-stack/ai-stack-020/">XLAやTVM、PyTorchのコンパイル機能のようなAIコンパイラが行う主な処理として正しいものはどれか。</a></li><li><p>ブロッキングや演算の融合でデータを何度も使い、1バイトあたりの演算の数(演算強度)を増やせば、処理は図の右へ移り、上限が上がります。</p><a href="/q/performance/performance-036/">Rooflineモデルで、ある処理がメモリ帯域で制限される領域にあると分かったとき、性能を上げる方向として正しいものは…</a></li></ul>

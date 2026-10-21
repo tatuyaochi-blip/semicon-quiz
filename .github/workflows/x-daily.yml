@@ -1,0 +1,47 @@
+# 「今日の半導体クイズ」を毎朝 X に投稿する(tools/x-post.js)。
+# 準備:
+#   1. X の開発者サイトでアプリを作り、読み書きの権限で API キーとアクセストークンを発行する
+#   2. リポジトリの Settings → Secrets and variables → Actions の Secrets に
+#      X_API_KEY・X_API_SECRET・X_ACCESS_TOKEN・X_ACCESS_TOKEN_SECRET を登録する
+#   3. 手動実行(Run workflow)で mode を preview にして投稿予定を確かめ、post で1回試しに投稿する
+#   4. 毎朝の自動投稿を始めるときは、同じ画面の Variables に X_POST_ENABLED = true を登録する(消すと止まる)
+# X_POST_ENABLED がない間は、毎朝の実行は投稿せずに予定を表示するだけ
+name: X daily quiz
+
+on:
+  schedule:
+    - cron: '17 22 * * *' # 毎朝 7:17(日本時間)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'preview: 投稿予定を表示するだけ / post: 今日の問題を投稿する'
+        type: choice
+        options: [preview, post]
+        default: preview
+
+permissions:
+  contents: read
+
+concurrency:
+  group: x-daily
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Post to X
+        if: (github.event_name == 'workflow_dispatch' && inputs.mode == 'post') || (github.event_name == 'schedule' && vars.X_POST_ENABLED == 'true')
+        run: node tools/x-post.js --post
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      - name: Preview
+        if: ${{ !((github.event_name == 'workflow_dispatch' && inputs.mode == 'post') || (github.event_name == 'schedule' && vars.X_POST_ENABLED == 'true')) }}
+        run: node tools/x-post.js --preview 14

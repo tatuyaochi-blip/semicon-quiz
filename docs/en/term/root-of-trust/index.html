@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Root of trust","item":"https://semiconroom.com/en/term/root-of-trust/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Root of trust","description":"The component unconditionally trusted as the starting point of security checks, such as immutable ROM boot code and a public key inside the chip.","url":"https://semiconroom.com/en/term/root-of-trust/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Root of trust","item":"https://semiconroom.com/en/term/root-of-trust/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Root of trust","description":"The component unconditionally trusted as the starting point of security checks, such as immutable ROM boot code and a public key inside the chip.","url":"https://semiconroom.com/en/term/root-of-trust/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a root of trust?","acceptedAnswer":{"@type":"Answer","text":"It is the part trusted without verification as the starting point of security checks. Unchangeable ROM boot code, the public key used to check signatures and device-unique keys are placed in the chip, and the chain of trust is built from there."}},{"@type":"Question","name":"Why must it be in hardware?","acceptedAnswer":{"@type":"Answer","text":"A starting point built only in software could be rewritten by an attacker who has taken over the OS or firmware. Using hardware properties such as ROM and eFuses fixed at manufacture and key storage that cannot be read from outside keeps the starting point safe even if software is compromised."}},{"@type":"Question","name":"Is a TPM a root of trust?","acceptedAnswer":{"@type":"Answer","text":"A TPM serves as the root for storing keys and measurements and the root for signing and reporting measurements. However, the software being booted is usually first measured by the CPU or the first part of the firmware, so a TPM alone does not provide every root of trust."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/hw-security/">Hardware Security</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why a starting point of trust is needed</h2>
+  <p>In <a class="term-link" href="/en/term/secure-boot/">secure boot</a>, each stage verifies the signature of the next software before starting it, building a chain of trust. But the very first checker cannot be checked by anything else. This starting point, which must be trusted without verification, is the root of trust. If it is tampered with, every later check becomes meaningless. A root of trust is therefore kept as small and simple as possible to minimize bugs, placed where it cannot be rewritten, and protected from being read or written from outside.</p>
+</section>
+<section class="term-about">
+  <h2>Implementation in silicon</h2>
+  <p>A typical setup is boot code in mask ROM, fixed at manufacture and unchangeable, plus the public key used to verify signatures. To save space, the key&#39;s hash is often stored in one-time-programmable eFuses. Per-device secret keys are written into eFuses or OTP memory, or derived from manufacturing variation using a <a class="term-link" href="/en/term/physically-unclonable-function/">PUF</a>. High-end SoCs increasingly include a security subsystem combining a dedicated processor, crypto engines, a <a class="term-link" href="/en/term/true-random-number-generator/">true random number generator</a> and key storage, which boots before the main CPU and verifies the startup of everything else. Open designs such as OpenTitan and Caliptra also exist.</p>
+</section>
+<section class="term-about">
+  <h2>Classification by role</h2>
+  <p>Roots of trust are sometimes divided by the role they play. The TCG (Trusted Computing Group) distinguishes the root of trust for measurement (RTM), which first measures the software being booted; the root of trust for storage (RTS), which keeps keys and measurements safe; and the root of trust for reporting (RTR), which signs measurements and reports them externally. There is also a root of trust for verification, which checks signatures in <a class="term-link" href="/en/term/secure-boot/">secure boot</a>. On PCs, the CPU or the first part of the firmware typically serves as the measurement root, while the <a class="term-link" href="/en/term/trusted-platform-module/">TPM</a> serves as the storage and reporting root. A single chip does not necessarily fill every role.</p>
+</section>
+<section class="term-about">
+  <h2>Weaknesses and protections</h2>
+  <p>Boot ROM&#39;s strength is that it cannot be rewritten, but if a vulnerability is found there, shipped products cannot be fixed. ROM code is therefore kept small and verified thoroughly. Against fault-injection attacks, which apply momentary glitches to the supply voltage or clock to skip the signature check, designs perform checks twice or add <a class="term-link" href="/en/term/glitch/">glitch</a>-detection circuits. These are combined with disabling debug ports such as <a class="term-link" href="/en/term/jtag/">JTAG</a> before shipment, preventing rollback to older versions, and storing hashes of several keys in eFuses so that a leaked key can be revoked.</p>
+</section>
 <section>
   <h2>Try it: questions about Root of trust</h2>
   <article class="q-mini" data-qid="hw-security-020" data-cat="hw-security" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. Immutable ROM boot code and the public key (or its hash) used to verify signatures</p><p class="explanation">The chain of trust assumes the component performing the first check is correct. So the <a class="term-link" href="/en/term/root-of-trust/">root of trust</a> is boot code in mask ROM, written at manufacture and unchangeable afterward, together with the public key used to verify signatures (often stored as a hash in eFuses to save space). If this could be rewritten, every later check would be meaningless.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a root of trust?</h3>
+  <p>It is the part trusted without verification as the starting point of security checks. Unchangeable ROM boot code, the public key used to check signatures and device-unique keys are placed in the chip, and the chain of trust is built from there.</p>
+  <h3>Why must it be in hardware?</h3>
+  <p>A starting point built only in software could be rewritten by an attacker who has taken over the OS or firmware. Using hardware properties such as ROM and eFuses fixed at manufacture and key storage that cannot be read from outside keeps the starting point safe even if software is compromised.</p>
+  <h3>Is a TPM a root of trust?</h3>
+  <p>A TPM serves as the root for storing keys and measurements and the root for signing and reporting measurements. However, the software being booted is usually first measured by the CPU or the first part of the firmware, so a TPM alone does not provide every root of trust.</p>
+</section>
 <section>
   <h2>Root of trust in the explanations</h2>
   <ul class="term-quotes"><li><p>So the root of trust is boot code in mask ROM, written at manufacture and unchangeable afterward, together with the public key used to verify signatures (often stored as a hash in eFuses to save space).</p><a href="/en/q/hw-security/hw-security-020/">What is the most suitable thing placed inside the chip as t…</a></li></ul>

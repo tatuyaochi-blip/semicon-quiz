@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>What is TLB shootdown? Meaning explained | Semiconductor Room</title>
-<meta name="description" content="On a multiprocessor, the procedure for making other cores discard stale translations from their TLBs after a page table is modified.">
+<title>TLB Shootdown: How Multicore CPUs Keep TLBs Coherent | Semiconductor Room</title>
+<meta name="description" content="After a page-table change, other cores must drop stale TLB entries. How shootdowns use inter-processor interrupts or broadcast invalidation, and their cost.">
 <link rel="canonical" href="https://semiconroom.com/en/term/tlb-shootdown/">
 <link rel="alternate" hreflang="ja" href="https://semiconroom.com/term/tlb-shootdown/">
 <link rel="alternate" hreflang="en" href="https://semiconroom.com/en/term/tlb-shootdown/">
@@ -14,8 +14,8 @@
 <link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/term/tlb-shootdown/">
 <link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/term/tlb-shootdown/">
 <meta property="og:type" content="article">
-<meta property="og:title" content="What is TLB shootdown? Meaning explained | Semiconductor Room">
-<meta property="og:description" content="On a multiprocessor, the procedure for making other cores discard stale translations from their TLBs after a page table is modified.">
+<meta property="og:title" content="TLB Shootdown: How Multicore CPUs Keep TLBs Coherent | Semiconductor Room">
+<meta property="og:description" content="After a page-table change, other cores must drop stale TLB entries. How shootdowns use inter-processor interrupts or broadcast invalidation, and their cost.">
 <meta property="og:url" content="https://semiconroom.com/en/term/tlb-shootdown/">
 <meta property="og:site_name" content="Semiconductor Room">
 <meta property="og:locale" content="en_US">
@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"TLB shootdown","item":"https://semiconroom.com/en/term/tlb-shootdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLB shootdown","description":"On a multiprocessor, the procedure for making other cores discard stale translations from their TLBs after a page table is modified. It uses inter-processor interrupts or instructions that broadcast the invalidation to all cores, and is costly.","url":"https://semiconroom.com/en/term/tlb-shootdown/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"TLB shootdown","item":"https://semiconroom.com/en/term/tlb-shootdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLB shootdown","description":"On a multiprocessor, the procedure for making other cores discard stale translations from their TLBs after a page table is modified. It uses inter-processor interrupts or instructions that broadcast the invalidation to all cores, and is costly.","url":"https://semiconroom.com/en/term/tlb-shootdown/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a TLB shootdown?","acceptedAnswer":{"@type":"Answer","text":"On a multiprocessor system, it is the procedure for making other cores discard stale address translations left in their TLBs after the page tables are modified. It is done either by asking each core with inter-processor interrupts or by using instructions that broadcast the invalidation to all cores."}},{"@type":"Question","name":"Why aren't TLBs kept coherent by hardware like data caches?","acceptedAnswer":{"@type":"Answer","text":"Monitoring every write to the page tables and updating every core's TLB would cost circuitry and inter-core communication. Many instruction sets are instead designed so that the OS explicitly specifies when and which translations to invalidate, and some, such as Arm, assist only by broadcasting the invalidation in hardware."}},{"@type":"Question","name":"When do TLB shootdowns hurt performance?","acceptedAnswer":{"@type":"Answer","text":"When memory is allocated and freed frequently, when many threads share the same address space, or when there is a lot of page migration or reclamation. The more cores there are, the more responses must be awaited and the larger the impact."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/os-hardware/">OS &amp; Hardware</a></p>
 </article>
-
+<section class="term-about">
+  <h2>Why a shootdown is needed</h2>
+  <p>A <a class="term-link" href="/en/term/tlb/">TLB</a> is a cache in which each core keeps virtual-to-physical address translations close at hand. On many CPUs, unlike data caches, TLB contents are not kept coherent with the page tables by hardware. Even after the OS revokes a mapping or removes write permission, the old translation can remain in other cores&#39; TLBs, letting those cores write to a physical page that should already have been freed. So when the page tables change, for example through munmap, mprotect, page migration or eviction, the OS has the other cores discard their stale entries and confirms that all of them have finished before reusing the page.</p>
+</section>
+<section class="term-about">
+  <h2>The inter-processor interrupt procedure</h2>
+  <p>A typical x86 procedure goes as follows. The OS first updates the page-table entry and removes the entry from its own <a class="term-link" href="/en/term/tlb/">TLB</a> with an instruction such as INVLPG. It then sends inter-processor interrupts (IPIs) to the cores that may be using the address space. Each receiving core, in its <a class="term-link" href="/en/term/interrupt-handler/">interrupt handler</a>, removes the relevant entry or flushes its whole TLB and reports completion. The initiating core waits for every response before continuing. Because this requires sending and receiving interrupts, interrupting running work and waiting for acknowledgments, it becomes a major source of slowdown on systems with many cores and in programs that free memory frequently.</p>
+</section>
+<section class="term-about">
+  <h2>Hardware broadcast methods</h2>
+  <p>Some instruction sets have instructions that propagate <a class="term-link" href="/en/term/tlb/">TLB</a> invalidation to other cores. In the Arm architecture, issuing the form of the TLBI instruction that broadcasts to all cores in the shareability domain (the Inner Shareable variants) and waiting with a DSB instruction performs a shootdown without IPIs. Some AMD x86 CPUs have also added an INVLPGB instruction that broadcasts invalidation to all cores and a TLBSYNC instruction that waits for it to complete. RISC-V&#39;s SFENCE.VMA, by contrast, affects only the executing core, so other cores are asked through IPIs (such as SBI remote fence calls).</p>
+</section>
+<section class="term-about">
+  <h2>Reducing the cost</h2>
+  <p>Operating systems try to reduce the number and scope of shootdowns: batching changes to several pages into one shootdown, sending requests only to cores that have actually used the address space, and flushing the entire <a class="term-link" href="/en/term/tlb/">TLB</a> instead of page by page when many pages change. Changes that only widen permissions, such as allowing writes, can sometimes skip the shootdown, because a fault caused by the stale entry can simply be handled later. In virtual machines, IPIs sent by the guest OS are expensive, so paravirtualized methods in which the <a class="term-link" href="/en/term/hypervisor/">hypervisor</a> performs the invalidation on the guest&#39;s behalf are also used.</p>
+</section>
 <section>
   <h2>Try it: questions about TLB shootdown</h2>
   <article class="q-mini" data-qid="os-hardware-047" data-cat="os-hardware" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Making sure the stale translation is removed from other cores&#39; TLBs too</p><p class="explanation">On many CPUs, unlike caches, TLBs are not kept coherent by hardware, so other cores&#39; TLBs may still hold the translation from before the <a class="term-link" href="/en/term/page-table/">page table</a> was changed. Left alone, other cores could still access the revoked page. The OS therefore removes the stale entry from other cores, either by sending inter-processor interrupts or by using instructions that broadcast the invalidation, and waits for completion. This is a <a class="term-link" href="/en/term/tlb-shootdown/">TLB shootdown</a>, and it gets more expensive as core counts rise.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is a TLB shootdown?</h3>
+  <p>On a multiprocessor system, it is the procedure for making other cores discard stale address translations left in their TLBs after the page tables are modified. It is done either by asking each core with inter-processor interrupts or by using instructions that broadcast the invalidation to all cores.</p>
+  <h3>Why aren&#39;t TLBs kept coherent by hardware like data caches?</h3>
+  <p>Monitoring every write to the page tables and updating every core&#39;s TLB would cost circuitry and inter-core communication. Many instruction sets are instead designed so that the OS explicitly specifies when and which translations to invalidate, and some, such as Arm, assist only by broadcasting the invalidation in hardware.</p>
+  <h3>When do TLB shootdowns hurt performance?</h3>
+  <p>When memory is allocated and freed frequently, when many threads share the same address space, or when there is a lot of page migration or reclamation. The more cores there are, the more responses must be awaited and the larger the impact.</p>
+</section>
 <section>
   <h2>TLB shootdown in the explanations</h2>
   <ul class="term-quotes"><li><p>This is a TLB shootdown, and it gets more expensive as core counts rise.</p><a href="/en/q/os-hardware/os-hardware-047/">On a multicore system, when the OS modifies a page-table en…</a></li></ul>

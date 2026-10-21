@@ -25,7 +25,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ASID(アドレス空間識別子)","item":"https://semiconroom.com/term/asid/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ASID(アドレス空間識別子)","description":"TLBの各項目に付ける、どのプロセスのアドレス空間の変換かを示す番号。プロセスを切り替えてもTLBを全部消さずに済み、切り替え後のTLBミスを減らせる。","url":"https://semiconroom.com/term/asid/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"ASID(アドレス空間識別子)","item":"https://semiconroom.com/term/asid/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"ASID(アドレス空間識別子)","description":"TLBの各項目に付ける、どのプロセスのアドレス空間の変換かを示す番号。プロセスを切り替えてもTLBを全部消さずに済み、切り替え後のTLBミスを減らせる。","url":"https://semiconroom.com/term/asid/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASIDとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"TLBの各項目に付ける、どのプロセスのアドレス空間の変換かを示す番号です。CPUは現在のASIDと一致する項目だけを使うので、複数のプロセスの変換をTLBに残したままプロセスを切り替えられます。"}},{"@type":"Question","name":"ASIDがないとどうなりますか?","acceptedAnswer":{"@type":"Answer","text":"同じ仮想アドレスがプロセスごとに別の物理アドレスを指すため、プロセスを切り替えるたびにTLBを空にしなければなりません。切り替え後はTLBミスが続き、ページテーブルをたどり直す時間がかかります。カーネルのように全プロセスで共通の部分は、グローバルの印でTLBに残せる場合があります。"}},{"@type":"Question","name":"ASIDとPCIDの違いは?","acceptedAnswer":{"@type":"Answer","text":"考え方は同じです。x86ではアドレス空間の識別子をPCID(プロセスコンテキスト識別子)と呼び、CR3レジスタの下位12ビットで指定します。RISC-VやArmではASIDと呼び、それぞれsatpレジスタやTTBRレジスタに置きます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>TLBにASIDを付ける理由</h2>
+  <p>各プロセスは独自の仮想アドレス空間をもつため、同じ仮想アドレスでもプロセスごとに別の物理アドレスを指します。<a class="term-link" href="/term/tlb/">TLB</a>の項目を仮想アドレスだけで引くと、プロセスを切り替えたときに前のプロセスの変換を誤って使ってしまうので、ASIDのないCPUでは切り替えのたびにTLBを空にする必要があります。すると切り替えの直後はTLBミスが続き、<a class="term-link" href="/term/page-table/">ページテーブル</a>を何度もたどることになります。ASIDは、TLBの各項目にどのアドレス空間の変換かを示す番号を付け、現在の番号と一致する項目だけをヒットとして扱うことで、複数のプロセスの変換をTLBに同時に残せるようにする仕組みです。</p>
+</section>
+<section class="term-about">
+  <h2>OSから見たASIDの使い方</h2>
+  <p>OSはプロセス(アドレス空間)ごとにASIDを割り当て、<a class="term-link" href="/term/context-switch/">コンテキストスイッチ</a>のときに、<a class="term-link" href="/term/page-table/">ページテーブル</a>の場所と一緒に現在のASIDをCPUのレジスタに設定します。RISC-VではsatpレジスタにASIDのフィールドがあり、ArmのAArch64ではTTBRレジスタに、x86ではCR3レジスタの下位ビットにPCID(プロセスコンテキスト識別子)として置かれます。カーネルの領域のように全プロセスで共通の変換には、グローバルの印を付けてASIDに関係なく使えるようにすることがあります。ページテーブルを変更したときは、そのASIDの項目だけを無効にする命令も使えます。</p>
+</section>
+<section class="term-about">
+  <h2>ASIDのビット数と使い回し</h2>
+  <p>ASIDのビット数には限りがあります。x86のPCIDは12ビット、RISC-Vの64ビットの構成では最大16ビット、AArch64では8ビットか16ビットで、実装によってはさらに少ないこともあります。存在するプロセスの数がASIDの数を超えることもあるため、OSはASIDを使い回します。番号を別のプロセスに割り当て直すときは、前の持ち主の古い変換が残らないように、そのASIDの項目を消すか、番号を使い切ったところで<a class="term-link" href="/term/tlb/">TLB</a>全体を消して割り当てをやり直します。LinuxのArm向けの実装は世代番号を使ってこれを管理し、x86ではCPUごとに少数のPCIDを最近動いたプロセスに割り当てています。</p>
+</section>
+<section class="term-about">
+  <h2>KPTIや仮想化との関係</h2>
+  <p>ASIDは性能だけでなく、セキュリティ対策の損失を減らすのにも役立っています。<a class="term-link" href="/term/meltdown/">Meltdown</a>への対策の<a class="term-link" href="/term/kernel-page-table-isolation/">KPTI</a>では、ユーザのプログラムとカーネルで別の<a class="term-link" href="/term/page-table/">ページテーブル</a>を使うため、<a class="term-link" href="/term/system-call/">システムコール</a>のたびにページテーブルを切り替えます。x86のPCIDを使うと、ユーザ用とカーネル用に別の番号を付けて、<a class="term-link" href="/term/tlb/">TLB</a>を空にせずに切り替えられます。また仮想化では、仮想マシンごとの変換を区別するために、VMID(Arm、RISC-V)やVPID(Intel)、ASID(AMDのSVM)といった別の識別子が使われ、仮想マシンを切り替えてもTLBを全部消さずに済みます。</p>
+</section>
 <section>
   <h2>ASID(アドレス空間識別子)の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-025" data-cat="os-hardware" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 切り替え時にTLBを全部消さずに、変換を区別できる</p><p class="explanation"><a class="term-link" href="/term/asid/">ASID</a>がないと、プロセスごとに同じ仮想アドレスが別の物理アドレスを指すため、プロセスを切り替えるたびに<a class="term-link" href="/term/tlb/">TLB</a>を空にしなければならず、切り替え後にTLBミスが続きます。各項目にASIDを付ければ、どのプロセスの変換かを区別できるので、TLBを消さずに残しておけ、元のプロセスに戻ったときにも再利用できます。仮想アドレスの範囲は変わらず、TLBに入りきらない変換のために<a class="term-link" href="/term/page-table/">ページテーブル</a>は引き続き必要です。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>ASIDとは何ですか?</h3>
+  <p>TLBの各項目に付ける、どのプロセスのアドレス空間の変換かを示す番号です。CPUは現在のASIDと一致する項目だけを使うので、複数のプロセスの変換をTLBに残したままプロセスを切り替えられます。</p>
+  <h3>ASIDがないとどうなりますか?</h3>
+  <p>同じ仮想アドレスがプロセスごとに別の物理アドレスを指すため、プロセスを切り替えるたびにTLBを空にしなければなりません。切り替え後はTLBミスが続き、ページテーブルをたどり直す時間がかかります。カーネルのように全プロセスで共通の部分は、グローバルの印でTLBに残せる場合があります。</p>
+  <h3>ASIDとPCIDの違いは?</h3>
+  <p>考え方は同じです。x86ではアドレス空間の識別子をPCID(プロセスコンテキスト識別子)と呼び、CR3レジスタの下位12ビットで指定します。RISC-VやArmではASIDと呼び、それぞれsatpレジスタやTTBRレジスタに置きます。</p>
+</section>
 <section>
   <h2>解説の中の「ASID(アドレス空間識別子)」</h2>
   <ul class="term-quotes"><li><p>ASIDがないと、プロセスごとに同じ仮想アドレスが別の物理アドレスを指すため、プロセスを切り替えるたびにTLBを空にしなければならず、切り替え後にTLBミスが続きます。</p><a href="/q/os-hardware/os-hardware-025/">TLBの各項目にASID(アドレス空間識別子)を付ける利点として正しいものはどれか。</a></li><li><p>ASIDのないCPUでは、アドレス空間を切り替えるときにTLBを空にする必要もあります。</p><a href="/q/os-hardware/os-hardware-024/">プロセスのコンテキストスイッチが、レジスタの保存と復元にかかる時間よりも、実際には大きな性能の低下を招くことがある主な…</a></li></ul>

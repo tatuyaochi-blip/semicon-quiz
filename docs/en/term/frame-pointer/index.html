@@ -24,7 +24,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Frame pointer","item":"https://semiconroom.com/en/term/frame-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Frame pointer","description":"A register that keeps pointing at the stack position on function entry; s0 (fp) in RISC-V. Locals can be addressed at fixed offsets, and the call chain is easy to walk.","url":"https://semiconroom.com/en/term/frame-pointer/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Frame pointer","item":"https://semiconroom.com/en/term/frame-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Frame pointer","description":"A register that keeps pointing at the stack position on function entry; s0 (fp) in RISC-V. Locals can be addressed at fixed offsets, and the call chain is easy to walk.","url":"https://semiconroom.com/en/term/frame-pointer/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between a frame pointer and a stack pointer?","acceptedAnswer":{"@type":"Answer","text":"The stack pointer points at the current top of the stack and moves whenever values are pushed or popped or a frame is allocated. The frame pointer keeps pointing at the position from function entry and does not move, so local variables can be addressed at fixed offsets, and it serves as the starting point for walking the call chain."}},{"@type":"Question","name":"Is a frame pointer necessary?","acceptedAnswer":{"@type":"Answer","text":"No. Local variables can also be addressed relative to sp, so optimized code often omits it. However, functions in which sp changes partway through, for example because of variable-length arrays, use a frame pointer, and keeping one is also handy when you want backtraces easily."}},{"@type":"Question","name":"Which register is the frame pointer in RISC-V?","acceptedAnswer":{"@type":"Answer","text":"x8. The callee-saved register s0 doubles as the frame pointer and can also be written under the alias fp. In functions that do not use a frame pointer, s0 serves as an ordinary saved register."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -77,7 +77,22 @@
   
   <p>Field: <a href="/en/c/isa-assembly/">ISA &amp; Assembly</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What a frame pointer does</h2>
+  <p>When a function is called, an area on the stack called the <a class="term-link" href="/en/term/stack-frame/">stack frame</a> is set aside for the <a class="term-link" href="/en/term/return-address/">return address</a>, saved registers and local variables. The <a class="term-link" href="/en/term/stack-pointer/">stack pointer</a> (sp) may move inside the function, for example when allocating a variable-length array or pushing arguments, but the frame pointer (fp) keeps pointing at a position fixed on function entry and does not move until the function returns. Local variables and arguments can therefore be addressed at fixed offsets, as in so many bytes from fp. In RISC-V, s0 (x8) doubles as fp; x86-64 uses rbp and AArch64 uses x29 as the frame pointer.</p>
+</section>
+<section class="term-about">
+  <h2>Prologue and epilogue</h2>
+  <p>The opening part of a function, the prologue, lowers sp to allocate the frame, saves the <a class="term-link" href="/en/term/return-address/">return address</a> and the caller&#39;s fp in the frame, and then sets fp to its new value. In a typical 64-bit RISC-V example, the function allocates 16 bytes from sp, saves ra and s0, and then loads s0 with the value sp had on entry. The closing part, the epilogue, does the reverse: it reloads the saved ra and s0, restores sp and returns to the caller. On x86-64 the same thing takes two instructions: push rbp onto the stack, then copy rsp into rbp.</p>
+</section>
+<section class="term-about">
+  <h2>Walking the call chain</h2>
+  <p>If each frame saves the caller&#39;s fp and the <a class="term-link" href="/en/term/return-address/">return address</a>, the frames link together like a linked list. Following the saved fp values from the current fp reveals which function called which, a backtrace, quickly and without debug information. Debuggers use this to display the stack, as do crash logs and profilers that periodically stop a running program and record its callers. Because the walk is simple and fast, it is easy to use inside the kernel and in profilers that run continuously in production.</p>
+</section>
+<section class="term-about">
+  <h2>Omitting the frame pointer</h2>
+  <p>A frame pointer ties up one register and adds instructions to the prologue and epilogue, so optimizing compilers often omit it. With optimization enabled, GCC and Clang default to -fomit-frame-pointer on many targets, and local variables are addressed relative to sp. Even then, a backtrace can be obtained from the DWARF call frame information (CFI) the compiler emits, but this is more expensive. Recently, to make profiling easier, some Linux distributions have started building their packages with frame pointers kept.</p>
+</section>
 <section>
   <h2>Try it: questions about Frame pointer</h2>
   <article class="q-mini" data-qid="isa-assembly-036" data-cat="isa-assembly" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -86,7 +101,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Locals and arguments can be addressed at fixed offsets even if sp moves, and debuggers can walk the call chain easily</p><p class="explanation">A <a class="term-link" href="/en/term/frame-pointer/">frame pointer</a> is a register that keeps pointing at the stack position on function entry and does not move. Even if sp changes partway, for example with variable-length arrays, locals can be addressed as &quot;so many bytes from fp&quot;. And if each frame stores the previous fp, following them yields the call chain (a backtrace). It does occupy one register, though, so optimized code often omits it.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between a frame pointer and a stack pointer?</h3>
+  <p>The stack pointer points at the current top of the stack and moves whenever values are pushed or popped or a frame is allocated. The frame pointer keeps pointing at the position from function entry and does not move, so local variables can be addressed at fixed offsets, and it serves as the starting point for walking the call chain.</p>
+  <h3>Is a frame pointer necessary?</h3>
+  <p>No. Local variables can also be addressed relative to sp, so optimized code often omits it. However, functions in which sp changes partway through, for example because of variable-length arrays, use a frame pointer, and keeping one is also handy when you want backtraces easily.</p>
+  <h3>Which register is the frame pointer in RISC-V?</h3>
+  <p>x8. The callee-saved register s0 doubles as the frame pointer and can also be written under the alias fp. In functions that do not use a frame pointer, s0 serves as an ordinary saved register.</p>
+</section>
 <section>
   <h2>Frame pointer in the explanations</h2>
   <ul class="term-quotes"><li><p>A frame pointer is a register that keeps pointing at the stack position on function entry and does not move.</p><a href="/en/q/isa-assembly/isa-assembly-036/">What is an advantage of using a frame pointer (s0/fp in RIS…</a></li></ul>

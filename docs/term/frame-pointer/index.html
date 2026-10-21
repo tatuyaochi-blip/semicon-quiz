@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"フレームポインタ","item":"https://semiconroom.com/term/frame-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"フレームポインタ","description":"関数に入った時点のスタックの位置を指したまま動かないレジスタ。RISC-Vではs0(fp)。局所変数を固定の距離で指定でき、呼び出しの連なりもたどりやすい。","url":"https://semiconroom.com/term/frame-pointer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"フレームポインタ","item":"https://semiconroom.com/term/frame-pointer/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"フレームポインタ","description":"関数に入った時点のスタックの位置を指したまま動かないレジスタ。RISC-Vではs0(fp)。局所変数を固定の距離で指定でき、呼び出しの連なりもたどりやすい。","url":"https://semiconroom.com/term/frame-pointer/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"フレームポインタとスタックポインタの違いは?","acceptedAnswer":{"@type":"Answer","text":"スタックポインタはスタックの現在の先頭を指し、値の出し入れやフレームの確保のたびに動きます。フレームポインタは関数に入った時点の位置を指したまま動かないため、局所変数を固定の距離で指定でき、呼び出しの連なりをたどる起点にもなります。"}},{"@type":"Question","name":"フレームポインタは必要ですか?","acceptedAnswer":{"@type":"Answer","text":"必須ではありません。局所変数はspからの距離でも指定できるので、最適化では省略されることが多くあります。ただし可変長の配列などでspが途中で変わる関数ではフレームポインタが使われ、バックトレースを手軽に得たい場合にも残しておくと便利です。"}},{"@type":"Question","name":"RISC-Vのフレームポインタはどのレジスタですか?","acceptedAnswer":{"@type":"Answer","text":"x8です。呼び出された側が保存するレジスタs0がフレームポインタを兼ね、fpという別名でも書けます。フレームポインタを使わない関数では、s0は普通の保存レジスタとして使われます。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/isa-assembly/">命令セット・アセンブリ</a></p>
 </article>
-
+<section class="term-about">
+  <h2>フレームポインタの役割</h2>
+  <p>関数が呼ばれると、スタック上に戻りアドレスや保存したレジスタ、局所変数を置く領域(<a class="term-link" href="/term/stack-frame/">スタックフレーム</a>)が確保されます。<a class="term-link" href="/term/stack-pointer/">スタックポインタ</a>(sp)は関数の中でも、可変長の配列の確保や引数の積み込みで動くことがありますが、フレームポインタ(fp)は関数に入った時点で決めた位置を指したまま、関数を抜けるまで動きません。そのため局所変数や引数を「fpから何バイト」という固定の距離で指定できます。RISC-Vではs0(x8)がfpを兼ね、x86-64ではrbp、AArch64ではx29がフレームポインタとして使われます。</p>
+</section>
+<section class="term-about">
+  <h2>プロローグとエピローグ</h2>
+  <p>関数の最初の部分(プロローグ)では、spを下げてフレームを確保し、戻りアドレスと呼び出し元のfpをフレームに保存してから、fpに新しい値を設定します。RISC-Vの64ビットの典型的な例では、spから16バイトを確保し、raとs0を保存したあと、s0に関数に入った時点のspの値を入れます。関数の最後の部分(エピローグ)では逆に、保存したraとs0を読み戻し、spを元に戻してから呼び出し元に戻ります。x86-64では、rbpをスタックに積んでから、rspの値をrbpにコピーする2命令で同じことを行います。</p>
+</section>
+<section class="term-about">
+  <h2>呼び出しの連なりをたどる</h2>
+  <p>各フレームに呼び出し元のfpと戻りアドレスを保存しておくと、フレームは連結リストのようにつながります。現在のfpから保存されたfpを順にたどれば、どの関数がどの関数を呼んだか(バックトレース)を、デバッグ情報がなくても速く求められます。デバッガでのスタックの表示、クラッシュしたときのログ、実行中のプログラムを一定の間隔で止めて呼び出し元を記録する<a class="term-link" href="/term/profiler/">プロファイラ</a>などで、この方法が使われます。たどる処理が単純で速いため、カーネルの中や、本番の環境で常に動かすプロファイラでも扱いやすいのが利点です。</p>
+</section>
+<section class="term-about">
+  <h2>フレームポインタの省略</h2>
+  <p>フレームポインタはレジスタを1本占め、プロローグとエピローグに命令も増えるため、最適化ではよく省略されます。GCCやClangでは、多くのターゲットで最適化を有効にすると-fomit-frame-pointerが既定になり、局所変数はspからの距離で指定されます。省略した場合でも、コンパイラが出力するDWARFの呼び出しフレーム情報(CFI)を使えばバックトレースを求められますが、処理は重くなります。近年は、プロファイリングのしやすさを重視して、フレームポインタを残してパッケージをビルドするLinuxディストリビューションも出てきています。</p>
+</section>
 <section>
   <h2>フレームポインタの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="isa-assembly-036" data-cat="isa-assembly" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 関数の途中でspが動いても、局所変数や引数を固定の距離で指定でき、デバッガも呼び出しの連なりをたどりやすい</p><p class="explanation"><a class="term-link" href="/term/frame-pointer/">フレームポインタ</a>は、関数に入った時点のスタックの位置を指したまま動かないレジスタです。可変長の配列などでspが途中で変わっても、局所変数を「fpから何バイト」で指定できます。また、各フレームに前のfpを保存しておけば、たどることで呼び出しの連なり(バックトレース)を得られます。ただしレジスタを1本占めるので、最適化では省略されることも多いです。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>フレームポインタとスタックポインタの違いは?</h3>
+  <p>スタックポインタはスタックの現在の先頭を指し、値の出し入れやフレームの確保のたびに動きます。フレームポインタは関数に入った時点の位置を指したまま動かないため、局所変数を固定の距離で指定でき、呼び出しの連なりをたどる起点にもなります。</p>
+  <h3>フレームポインタは必要ですか?</h3>
+  <p>必須ではありません。局所変数はspからの距離でも指定できるので、最適化では省略されることが多くあります。ただし可変長の配列などでspが途中で変わる関数ではフレームポインタが使われ、バックトレースを手軽に得たい場合にも残しておくと便利です。</p>
+  <h3>RISC-Vのフレームポインタはどのレジスタですか?</h3>
+  <p>x8です。呼び出された側が保存するレジスタs0がフレームポインタを兼ね、fpという別名でも書けます。フレームポインタを使わない関数では、s0は普通の保存レジスタとして使われます。</p>
+</section>
 <section>
   <h2>解説の中の「フレームポインタ」</h2>
   <ul class="term-quotes"><li><p>フレームポインタは、関数に入った時点のスタックの位置を指したまま動かないレジスタです。</p><a href="/q/isa-assembly/isa-assembly-036/">関数の中でフレームポインタ(RISC-Vではs0/fp)を使う利点として正しいものはどれか。</a></li></ul>

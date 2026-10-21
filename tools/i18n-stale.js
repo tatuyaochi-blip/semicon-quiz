@@ -43,10 +43,18 @@ if (args[0] === '--update') {
   process.exit(0);
 }
 
+// まだ訳していない問題(その言語では出題しない)は、古い訳ではなく欠落なので数えない(欠落は validate.js が表示する)
+const translated = l => {
+  const dir = path.join(root, `data/i18n/${l}/questions`);
+  if (!fs.existsSync(dir)) return new Set();
+  return new Set(fs.readdirSync(dir).filter(f => f.endsWith('.json')).flatMap(f => Object.keys(readJSON(`data/i18n/${l}/questions/${f}`))));
+};
+
 let stale = 0;
 for (const l of langs) {
   const known = saved[l] ?? {};
-  const ids = Object.keys(current).filter(id => known[id] !== current[id]);
+  const has = translated(l);
+  const ids = Object.keys(current).filter(id => has.has(id) && known[id] !== current[id]);
   if (!ids.length) continue;
   stale += ids.length;
   console.log(`[${l}] 訳し直しが必要な問題 ${ids.length} 問: ${ids.slice(0, 20).join(' ')}${ids.length > 20 ? ' …' : ''}`);

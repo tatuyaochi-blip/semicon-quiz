@@ -24,7 +24,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"TLBシュートダウン","item":"https://semiconroom.com/term/tlb-shootdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLBシュートダウン","description":"マルチプロセッサで、ページテーブルを書き換えたときに、ほかのコアのTLBに残った古い変換を消させる処理。プロセッサ間割り込みで各コアに依頼する方式や、無効化を全コアに伝える命令を使う方式があり、時間がかかる。","url":"https://semiconroom.com/term/tlb-shootdown/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"TLBシュートダウン","item":"https://semiconroom.com/term/tlb-shootdown/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TLBシュートダウン","description":"マルチプロセッサで、ページテーブルを書き換えたときに、ほかのコアのTLBに残った古い変換を消させる処理。プロセッサ間割り込みで各コアに依頼する方式や、無効化を全コアに伝える命令を使う方式があり、時間がかかる。","url":"https://semiconroom.com/term/tlb-shootdown/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TLBシュートダウンとは何ですか?","acceptedAnswer":{"@type":"Answer","text":"マルチプロセッサのシステムで、ページテーブルを書き換えたあと、ほかのコアのTLBに残っている古いアドレス変換を消させる処理です。プロセッサ間割り込みで各コアに依頼する方式や、無効化を全コアに伝える命令を使う方式があります。"}},{"@type":"Question","name":"なぜTLBはデータキャッシュのようにハードウェアで一貫性が保たれないのですか?","acceptedAnswer":{"@type":"Answer","text":"ページテーブルへのすべての書き込みを監視して各コアのTLBを更新するには、回路とコア間の通信のコストがかかるためです。多くの命令セットでは、いつどの変換を無効化するかをOSが明示的に指示する設計になっており、Armのように無効化のブロードキャストだけをハードウェアで支援するものもあります。"}},{"@type":"Question","name":"TLBシュートダウンが性能に影響するのはどんなときですか?","acceptedAnswer":{"@type":"Answer","text":"メモリの割り当てと解放を頻繁に繰り返す、多数のスレッドで同じアドレス空間を共有する、ページの移動や回収が多い、といった場合です。コア数が多いほど応答を待つ相手が増え、影響が大きくなります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>この用語の分野: <a href="/c/os-hardware/">OSとハードウェア</a></p>
 </article>
-
+<section class="term-about">
+  <h2>なぜシュートダウンが必要か</h2>
+  <p><a class="term-link" href="/term/tlb/">TLB</a>は、仮想アドレスから物理アドレスへの変換を各コアが手元に保持するキャッシュです。多くのCPUでは、データキャッシュと違ってTLBの内容はハードウェアで<a class="term-link" href="/term/page-table/">ページテーブル</a>との一貫性が保たれません。OSがページの対応を取り消したり書き込みを禁止したりしても、ほかのコアのTLBには古い変換が残り、そのコアが解放したはずの物理ページに書き込めてしまいます。そこで、munmapやmprotect、ページの移動や追い出しなどでページテーブルを書き換えたときは、ほかのコアにも古い項目を消させ、全コアの完了を確かめてからページを再利用します。</p>
+</section>
+<section class="term-about">
+  <h2>プロセッサ間割り込みによる手順</h2>
+  <p>x86での典型的な手順は次のとおりです。まずOSは<a class="term-link" href="/term/page-table/">ページテーブル</a>の項目を書き換え、自分のコアの<a class="term-link" href="/term/tlb/">TLB</a>の項目をINVLPG命令などで消します。次に、そのアドレス空間を使っている可能性のあるコアにプロセッサ間<a class="term-link" href="/term/interrupt/">割り込み</a>(IPI)を送ります。受け取ったコアは割り込み処理の中で該当する項目かTLB全体を消し、完了を知らせます。依頼したコアは全員の応答を待ってから先へ進みます。割り込みの送受信、実行中の処理の中断、応答待ちが必要なため、コアが多いシステムや、メモリを頻繁に解放するプログラムでは、性能を下げる大きな原因になります。</p>
+</section>
+<section class="term-about">
+  <h2>ハードウェアでブロードキャストする方式</h2>
+  <p>命令セットによっては、<a class="term-link" href="/term/tlb/">TLB</a>の無効化をほかのコアに伝える命令があります。Armアーキテクチャでは、共有ドメイン内の全コアに無効化を伝える形式のTLBI命令(Inner Shareableを指定するもの)を発行し、DSB命令で完了を待てば、IPIを使わずにシュートダウンを行えます。AMDの一部のx86 CPUにも、無効化を全コアに伝えるINVLPGB命令と、その完了を待つTLBSYNC命令が追加されています。一方、RISC-VのSFENCE.VMA命令は実行したコアにしか効かないため、ほかのコアにはIPI(SBIのリモートフェンスの呼び出しなど)で依頼します。</p>
+</section>
+<section class="term-about">
+  <h2>コストを減らす工夫</h2>
+  <p>OSは、シュートダウンの回数と範囲を減らす工夫をしています。複数のページの変更をまとめて1回のシュートダウンで処理する、そのアドレス空間を実際に使ったコアだけに依頼する、変更するページが多いときはページごとではなく<a class="term-link" href="/term/tlb/">TLB</a>全体を消す、といった方法です。書き込みを許可するなど権限を広げるだけの変更では、古い項目で起きたフォルトをあとで処理すれば済むため、シュートダウンを省けることがあります。仮想マシンでは、ゲストOSが送るIPIのコストが大きいため、<a class="term-link" href="/term/hypervisor/">ハイパーバイザ</a>が代わりに無効化を行う準仮想化の方法も使われます。</p>
+</section>
 <section>
   <h2>TLBシュートダウンの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="os-hardware-047" data-cat="os-hardware" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. ほかのコアのTLBからも、古い変換を確実に消す処理を行う</p><p class="explanation">多くのCPUでは、<a class="term-link" href="/term/tlb/">TLB</a>はキャッシュと違ってハードウェアで一貫性が保たれず、ほかのコアのTLBには<a class="term-link" href="/term/page-table/">ページテーブル</a>を書き換える前の古い変換が残っている可能性があります。そのままだと、取り消したはずのページにほかのコアがアクセスできてしまいます。そこでOSは、ほかのコアにプロセッサ間<a class="term-link" href="/term/interrupt/">割り込み</a>を送るか、無効化を全コアに伝える命令を使って古い項目を消させ、完了を待ちます。これを<a class="term-link" href="/term/tlb-shootdown/">TLBシュートダウン</a>といい、コア数が多いほど時間がかかります。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>TLBシュートダウンとは何ですか?</h3>
+  <p>マルチプロセッサのシステムで、ページテーブルを書き換えたあと、ほかのコアのTLBに残っている古いアドレス変換を消させる処理です。プロセッサ間割り込みで各コアに依頼する方式や、無効化を全コアに伝える命令を使う方式があります。</p>
+  <h3>なぜTLBはデータキャッシュのようにハードウェアで一貫性が保たれないのですか?</h3>
+  <p>ページテーブルへのすべての書き込みを監視して各コアのTLBを更新するには、回路とコア間の通信のコストがかかるためです。多くの命令セットでは、いつどの変換を無効化するかをOSが明示的に指示する設計になっており、Armのように無効化のブロードキャストだけをハードウェアで支援するものもあります。</p>
+  <h3>TLBシュートダウンが性能に影響するのはどんなときですか?</h3>
+  <p>メモリの割り当てと解放を頻繁に繰り返す、多数のスレッドで同じアドレス空間を共有する、ページの移動や回収が多い、といった場合です。コア数が多いほど応答を待つ相手が増え、影響が大きくなります。</p>
+</section>
 <section>
   <h2>解説の中の「TLBシュートダウン」</h2>
   <ul class="term-quotes"><li><p>これをTLBシュートダウンといい、コア数が多いほど時間がかかります。</p><a href="/q/os-hardware/os-hardware-047/">複数のコアをもつシステムで、OSがあるページのページテーブルの項目を書き換えて対応を取り消したとき、必要になる処理とし…</a></li></ul>
