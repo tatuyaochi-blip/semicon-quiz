@@ -67,26 +67,26 @@ const careers = readOpt('data/careers.json', []);
 const carByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/careers.json`, {})]));
 const carLangs = id => langs.filter(x => careerText[x.code] && (x.code === defLang || carByLang[x.code][id]));
 const careerText = {
-  ja: { index: '半導体業界の職種ガイド', indexTitle: '半導体業界の職種ガイド:仕事内容と学んでおきたい分野', indexDesc: 'プロセス・装置・設計・品質・テストなど、半導体業界の主な職種{n}つについて、仕事の内容と、学んでおきたい分野・用語・練習問題をまとめました。',
+  ja: { index: '半導体業界の職種ガイド', card: '職種ごとの仕事内容と、学んでおきたい分野', indexTitle: '半導体業界の職種ガイド:仕事内容と学んでおきたい分野', indexDesc: 'プロセス・装置・設計・品質・テストなど、半導体業界の主な職種{n}つについて、仕事の内容と、学んでおきたい分野・用語・練習問題をまとめました。',
     indexLead: '半導体の会社には、製造・開発・設計・品質など、さまざまな仕事があります。職種ごとに、どんな仕事か、どの分野を学んでおくとよいかをまとめました。就職・転職の準備や、配属先の勉強に使えます。',
     title: '{name}の仕事内容と学んでおきたい分野', fields: '学んでおきたい分野', courses: 'おすすめの学習コース', terms: 'よく出てくる用語', quiz: 'この職種の基礎10問', quizDesc: '学んでおきたい分野から、基本の問題を10問選びました', all: '職種ガイドの一覧へ', qn: '{n}問' },
-  en: { index: 'Semiconductor Careers Guide', indexTitle: 'Semiconductor Careers Guide: Roles and What to Learn', indexDesc: 'What process, equipment, design, quality, test and other semiconductor engineers do, and which fields, terms and practice questions to study for {n} roles.',
+  en: { index: 'Semiconductor Careers Guide', card: 'What each role does and what to learn for it', indexTitle: 'Semiconductor Careers Guide: Roles and What to Learn', indexDesc: 'What process, equipment, design, quality, test and other semiconductor engineers do, and which fields, terms and practice questions to study for {n} roles.',
     indexLead: 'Chip companies hire for many roles across manufacturing, development, design and quality. For each role, this guide explains the work and the fields worth learning, whether you are preparing for a job search or a new assignment.',
     title: 'What Does a {name} Do? Role and Skills to Learn', fields: 'Fields to learn', courses: 'Recommended courses', terms: 'Key terms', quiz: '10 starter questions for this role', quizDesc: 'Ten basic questions from the fields this role uses', all: 'All roles', qn: '{n} questions' },
-  'zh-hant': { index: '半導體產業職務指南', indexTitle: '半導體產業職務指南：工作內容與應學習的領域', indexDesc: '整理製程、設備、設計、品質、測試等{n}種半導體主要職務的工作內容，以及應學習的領域、術語與練習題。',
+  'zh-hant': { index: '半導體產業職務指南', card: '各職務的工作內容與應學習的領域', indexTitle: '半導體產業職務指南：工作內容與應學習的領域', indexDesc: '整理製程、設備、設計、品質、測試等{n}種半導體主要職務的工作內容，以及應學習的領域、術語與練習題。',
     indexLead: '半導體公司有製造、開發、設計、品質等各種工作。本指南依職務整理工作內容與值得先學習的領域，可用於求職、轉職或新職務的準備。',
     title: '{name}在做什麼？工作內容與應學習的領域', fields: '應學習的領域', courses: '推薦課程', terms: '常見術語', quiz: '這個職務的基礎10題', quizDesc: '從應學習的領域中選出10道基本題', all: '所有職務', qn: '{n}題' },
 };
 // 日英中の用語対訳表(/glossary/trilingual/)を作る言語と、その文言
 const dictLangs = ['ja', 'en', 'zh-hant'];
 const dictText = {
-  ja: { h1: '半導体用語 日英中対訳表', title: '半導体用語の日英中対訳表({n}語):英語・繁体字中国語', description: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾)の対訳表にまとめました。分野ごとに並べ、キーワードで絞り込めます。各用語は解説ページにリンクしています。',
+  ja: { h1: '半導体用語 日英中対訳表', card: '用語を日本語・英語・繁体字中国語で引ける対訳表', title: '半導体用語の日英中対訳表({n}語):英語・繁体字中国語', description: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾)の対訳表にまとめました。分野ごとに並べ、キーワードで絞り込めます。各用語は解説ページにリンクしています。',
     lead: '半導体の用語{n}語を、日本語・英語・繁体字中国語(台湾で使われる表記)で並べました。英語の資料を読むときや、台湾の技術者とやりとりするときに使えます。用語を押すと、その言語の解説ページに移ります。', search: '用語を検索(日本語・英語・中国語)',
     cols: { ja: '日本語', en: '英語', 'zh-hant': '繁体字中国語' } },
-  en: { h1: 'Semiconductor Terms in English, Japanese and Chinese', title: 'Semiconductor Terms in English, Japanese and Chinese ({n} terms)', description: '{n} semiconductor terms side by side in English, Japanese and Traditional Chinese (Taiwan), grouped by field and searchable. Each term links to an explanation.',
+  en: { h1: 'Semiconductor Terms in English, Japanese and Chinese', card: 'Look up chip terms in English, Japanese and Chinese', title: 'Semiconductor Terms in English, Japanese and Chinese ({n} terms)', description: '{n} semiconductor terms side by side in English, Japanese and Traditional Chinese (Taiwan), grouped by field and searchable. Each term links to an explanation.',
     lead: '{n} semiconductor terms in English, Japanese and Traditional Chinese as used in Taiwan, grouped by field. Useful when reading Japanese or Taiwanese documents or working with colleagues there. Click a term to open its explanation in that language.', search: 'Search terms (English, Japanese or Chinese)',
     cols: { en: 'English', ja: 'Japanese', 'zh-hant': 'Chinese (Traditional)' } },
-  'zh-hant': { h1: '半導體術語 中英日對照表', title: '半導體術語中英日對照表（{n}詞）', description: '將{n}個半導體術語整理成繁體中文、英文、日文對照表，依領域分類並可搜尋。每個術語都連到解說頁面。',
+  'zh-hant': { h1: '半導體術語 中英日對照表', card: '以中文、英文、日文查詢半導體術語', title: '半導體術語中英日對照表（{n}詞）', description: '將{n}個半導體術語整理成繁體中文、英文、日文對照表，依領域分類並可搜尋。每個術語都連到解說頁面。',
     lead: '將{n}個半導體術語以繁體中文、英文、日文並列，並依領域分類。閱讀英文或日文資料，或與日本工程師溝通時可以使用。點選術語即可開啟該語言的解說頁面。', search: '搜尋術語（中文、英文、日文）',
     cols: { 'zh-hant': '繁體中文', en: '英文', ja: '日文' } },
 };
@@ -302,6 +302,8 @@ function buildLang(L) {
     ${feature('#topics', S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics')}
     ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses') : ''}
     ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary')}
+    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].h1, dictText[code].card, 'home_feat_dict') : ''}
+    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].index, careerText[code].card, 'home_feat_careers') : ''}
     ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
     ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
     ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
