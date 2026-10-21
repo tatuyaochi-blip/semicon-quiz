@@ -1373,6 +1373,33 @@ ${x.faq?.length ? `<section class="faq">
     <dl class="dy-stats">${stat('prec', x.prec)}${stat('eps', x.eps)}${stat('max', x.max)}${stat('minn', x.minn)}${stat('mins', x.mins)}</dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    kmap: x => `<form id="km-form" class="dy-out km" data-text="${esc(JSON.stringify({ essential: x.essential }))}">
+    <div class="km-controls">
+      ${select('n', x.vars, [['2', '2 (A, B)'], ['3', '3 (A, B, C)'], ['4', '4 (A, B, C, D)']], '4')}
+      <label class="dy-field"><span>${esc(x.examples)}</span><select id="km-example"><option value="">–</option>${Object.entries(x.ex).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+      <label class="dy-field"><span>${esc(x.minterms)}</span><input name="m" type="text" inputmode="numeric" autocomplete="off"></label>
+      <label class="dy-field"><span>${esc(x.dontcares)}</span><input name="d" type="text" inputmode="numeric" autocomplete="off"></label>
+      <div class="km-btns"><button type="button" class="btn btn-ghost btn-small" id="km-apply">${esc(x.apply)}</button> <button type="button" class="btn btn-ghost btn-small" id="km-clear">${esc(x.clear)}</button></div>
+    </div>
+    <p class="muted">${esc(x.cell_hint)}</p>
+    <div class="km-views">
+      <div class="km-a-map"><h2>${esc(x.view_map)}</h2><div id="km-map" class="km-scroll"></div></div>
+      <div class="km-a-tt"><h2>${esc(x.view_table)}</h2><div id="km-tt" class="km-scroll km-ttwrap"></div></div>
+    <section class="km-a-res" aria-live="polite">
+      <h2>${esc(x.out_heading)}</h2>
+      <h3>${esc(x.sop)}</h3>
+      <p class="km-expr" id="km-sop"></p>
+      <p class="muted" id="km-alt" hidden>${esc(x.alt)}</p>
+      <h3>${esc(x.pos)}</h3>
+      <p class="km-expr" id="km-pos"></p>
+      <p class="muted" id="km-alt-pos" hidden>${esc(x.alt)}</p>
+      <h3>${esc(x.primes)}</h3>
+      <ul class="km-primes" id="km-primes"></ul>
+      <dl class="dy-stats"><div><dt>${esc(x.gates)}</dt><dd id="km-gates">–</dd></div></dl>
+      <p class="muted">${esc(x.note)}</p>
+    </section>
+    </div>
+  </form>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
