@@ -1500,6 +1500,43 @@ ${x.faq?.length ? `<section class="faq">
     <dl class="dy-stats bc-stats"><div><dt>${esc(x.syn)}</dt><dd id="hm-syn">–</dd></div><div><dt>${esc(x.flips)}</dt><dd id="hm-flips">0</dd></div><div><dt>${esc(x.out)}</dt><dd id="hm-out">–</dd></div></dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    subnet: x => `<form id="sn-form" class="dy-form" data-text="${esc(JSON.stringify({ kinds: x.kinds, bin_ip: x.bin_ip, bin_mask: x.bin_mask, split_count: x.split_count, split_more: x.split_more, col_net: x.col_net, col_range: x.col_range, col_bc: x.col_bc, need_result: x.need_result, need_too_many: x.need_too_many }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    <label class="dy-field"><span>${esc(x.ip)}</span><input name="ip" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="192.168.10.77"></label>
+    <label class="dy-field"><span>${esc(x.prefix)}</span><input name="prefix" type="text" autocomplete="off" spellcheck="false" value="/27"></label>
+    ${select('split', x.split, [['0', x.split_none], ...Array.from({ length: 25 }, (_, i) => [String(i + 8), `/${i + 8}`])], '0')}
+    <label class="dy-field"><span>${esc(x.hosts_need)}</span><input name="need" type="number" inputmode="numeric" min="1" step="1" value="500"></label>
+    <p class="notice" id="sn-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats bc-stats">${stat('cidr', x.cidr)}${stat('network', x.network)}${stat('broadcast', x.broadcast)}${stat('first', x.first)}${stat('last', x.last)}${stat('hosts', x.hosts)}${stat('total', x.total)}${stat('mask', x.mask)}${stat('wildcard', x.wildcard)}${stat('kind', x.kind)}${stat('cls', x.cls)}</dl>
+    <p class="muted" id="sn-p31" hidden>${esc(x.p31)}</p>
+    <h3>${esc(x.bin_heading)}</h3>
+    <div class="sn-bin" id="sn-bin"></div>
+    <p class="hm-legend"><span class="hm-key sn-net"></span>${esc(x.legend_net)} <span class="hm-key sn-host"></span>${esc(x.legend_host)}</p>
+    <h3>${esc(x.split_heading)}</h3>
+    <div id="sn-split"></div>
+    <h3>${esc(x.need_heading)}</h3>
+    <p data-out="need">–</p>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    queue: x => `<form id="qu-form" class="dy-form" data-text="${esc(JSON.stringify({ chart_x: x.chart_x, chart_y: x.chart_y }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('unit', x.unit, Object.entries(x.units), 's')}
+    ${field('lambda', x.lambda, 0.05, 'min="0" step="any"')}
+    ${field('ts', x.ts, 10, 'min="0" step="any"')}
+    ${field('c', x.c, 1, 'min="1" max="200" step="1"')}
+    <p class="notice" id="qu-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p class="notice" id="qu-unstable" hidden>${esc(x.unstable)}</p>
+    <dl class="dy-stats">${stat('rho', x.rho)}${stat('mu', x.mu)}${stat('pw', x.pw)}${stat('lq', x.lq)}${stat('l', x.l)}${stat('wq', x.wq)}${stat('w', x.w)}</dl>
+    <h3>${esc(x.chart_heading)}</h3>
+    <svg id="qu-chart" class="sta-chart qu-chart" viewBox="0 0 600 260" role="img" aria-label="${esc(x.chart_heading)}"></svg>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
