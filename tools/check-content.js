@@ -15,7 +15,7 @@ const exists = p => fs.existsSync(path.join(root, p));
 
 // 「万・億」や million / Milliarden などの単位語も数に直す(billion は言語で大きさが違う)
 const MULT = { 万: 1e4, 億: 1e8, 兆: 1e12, 萬: 1e4, 만: 1e4, 억: 1e8, 조: 1e12, million: 1e6, millions: 1e6, millionen: 1e6, miljoen: 1e6, miljard: 1e9, milliarde: 1e9, milliarden: 1e9, milliard: 1e9, milliards: 1e9, biljoen: 1e12, trillion: 1e12 };
-const DOT_DECIMAL = /(?<![\w.,/])\d+\.\d+\s?(?:%|°|℃|λ|wt%|at%|ppm|dB[a-zµ]*|[pnµumkMGT]?(?:m|V|A|Ω|eV|Hz|W|F|H|s|Pa|J|g|K|bit|B)(?![A-Za-z]))/g;
+const DOT_DECIMAL = /(?<![\w.,/])\d+\.\d+(?:\s?(?:%|°|℃|λ|×|wt%|at%|ppm|dB[a-zµ]*|[pnµumkMGT]?(?:m|V|A|Ω|eV|Hz|W|F|H|s|Pa|J|g|K|bit|B)(?![A-Za-z]))|-?[Ff]ach|\s(?:bis|à|tot|und|et|en|oder|ou|of|fois|keer|mal)\s)/g;
 const BILLION = { en: 1e9, de: 1e12, fr: 1e12 };
 
 // 文字列から数値を取り出す。decimalComma の言語では「,」が小数点、「.」と空白が桁区切り
