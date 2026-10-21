@@ -270,8 +270,11 @@ function buildLang(L) {
   // 検索結果用のタイトル・説明文(title・description)も言語ごと。書いてある語だけ、決まった形の代わりに使う
   // 別表記(aliases)も言語ごと。問題文が「CMOSイメージセンサ」のように別の書き方をしていても用語ページにつなぐ
   const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, aliases, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description, aliases } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
-  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key], ...(g.aliases?.length ? { aliases: g.aliases } : {}) }));
+  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key], ...(g.aliases?.length ? { aliases: g.aliases } : {}), ...(g.noLinkIn ? { noLinkIn: g.noLinkIn } : {}) }));
   const matcher = termMatcher(glossaryIndex);
+  // 別の意味で使う分野ではリンクしない用語(用語集の noLinkIn。例: 回路のハンドシェイクを、ネットワークの問題ではリンクしない)
+  const skipCache = new Map();
+  const skipIn = cat => cat && (skipCache.get(cat) ?? skipCache.set(cat, new Set(terms.filter(g => g.noLinkIn?.includes(cat)).map(g => g.key))).get(cat));
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
     locale: L.locale,
@@ -407,7 +410,7 @@ function buildLang(L) {
     qTitles.add(title);
     return title;
   };
-  const linked = text => linkTerms(text, matcher).map(p => (typeof p === 'string' ? esc(p)
+  const linked = (text, cat) => linkTerms(text, matcher, skipIn(cat)).map(p => (typeof p === 'string' ? esc(p)
     : `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`)).join('');
   const reportLink = id => (config.reportFormUrl
     ? `<p class="q-report"><a class="report-link" href="${esc(reportUrl(config.reportFormUrl, id, code))}" target="_blank" rel="noopener nofollow">${esc(t('report_error'))}</a></p>`
@@ -779,7 +782,7 @@ function buildLang(L) {
           code: q.code ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
-          explanation: linked(q.explanation),
+          explanation: linked(q.explanation, c.id),
           figure: q.figureSvg ? figureHtml(q.figureSvg, q.figureId) : '',
           choiceNotes: choiceNotes(q),
           report: reportLink(q.id),
@@ -834,7 +837,7 @@ function buildLang(L) {
   <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
     <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
-    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation, q.cat)}</p></details>
   </article>`;
 
   // 数値のページ /en/numbers/(英語版のみ)。数値ごとに根拠の問題へリンクし、上部から10問のドリルへ
@@ -1859,11 +1862,11 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
   }
 
   // 用語ページ /term/{slug}/ : 定義、その用語が出てくる問題(問題文・解説の自動リンクから逆引き)、関連する用語
-  const termIds = text => linkTerms(text, matcher).filter(x => typeof x !== 'string').map(x => x.id);
+  const termIds = (text, cat) => linkTerms(text, matcher, skipIn(cat)).filter(x => typeof x !== 'string').map(x => x.id);
   const termQs = new Map(terms.map(g => [g.key, []]));
   for (const c of cats) for (const q of qs[c.id]) {
-    const inQ = new Set(termIds(q.question));
-    const ids = new Set([...inQ, ...termIds(q.explanation)]);
+    const inQ = new Set(termIds(q.question, c.id));
+    const ids = new Set([...inQ, ...termIds(q.explanation, c.id)]);
     for (const id of ids) termQs.get(id).push({ ...q, cat: c.id, ids, inQ: inQ.has(id) });
   }
   for (const g of terms) {
@@ -1895,7 +1898,7 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
   <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
     <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
-    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation)}</p></details>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation, q.cat)}</p></details>
   </article>`).join('')}
 </section>` : '';
     // 詳しい解説(about: 見出しと段落)とよくある質問(faq)。用語集の訳にあるときだけ出す(今は表示回数の多い英語の用語)

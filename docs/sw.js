@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-b40b3d5d08';
+const CACHE = 'sq-29c732d48c';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -51,6 +51,7 @@ const PRECACHE = [
   "/data/ja/q/metrology.json",
   "/data/ja/q/mosfet.json",
   "/data/ja/q/multicore-sync.json",
+  "/data/ja/q/network.json",
   "/data/ja/q/os-hardware.json",
   "/data/ja/q/oxidation.json",
   "/data/ja/q/package.json",
@@ -113,6 +114,7 @@ const PRECACHE = [
   "/data/en/q/metrology.json",
   "/data/en/q/mosfet.json",
   "/data/en/q/multicore-sync.json",
+  "/data/en/q/network.json",
   "/data/en/q/os-hardware.json",
   "/data/en/q/oxidation.json",
   "/data/en/q/package.json",
@@ -175,6 +177,7 @@ const PRECACHE = [
   "/data/zh-hant/q/metrology.json",
   "/data/zh-hant/q/mosfet.json",
   "/data/zh-hant/q/multicore-sync.json",
+  "/data/zh-hant/q/network.json",
   "/data/zh-hant/q/os-hardware.json",
   "/data/zh-hant/q/oxidation.json",
   "/data/zh-hant/q/package.json",
@@ -236,6 +239,7 @@ const PRECACHE = [
   "/data/ko/q/metrology.json",
   "/data/ko/q/mosfet.json",
   "/data/ko/q/multicore-sync.json",
+  "/data/ko/q/network.json",
   "/data/ko/q/os-hardware.json",
   "/data/ko/q/oxidation.json",
   "/data/ko/q/package.json",
@@ -297,6 +301,7 @@ const PRECACHE = [
   "/data/de/q/metrology.json",
   "/data/de/q/mosfet.json",
   "/data/de/q/multicore-sync.json",
+  "/data/de/q/network.json",
   "/data/de/q/os-hardware.json",
   "/data/de/q/oxidation.json",
   "/data/de/q/package.json",
@@ -358,6 +363,7 @@ const PRECACHE = [
   "/data/nl/q/metrology.json",
   "/data/nl/q/mosfet.json",
   "/data/nl/q/multicore-sync.json",
+  "/data/nl/q/network.json",
   "/data/nl/q/os-hardware.json",
   "/data/nl/q/oxidation.json",
   "/data/nl/q/package.json",
@@ -419,6 +425,7 @@ const PRECACHE = [
   "/data/fr/q/metrology.json",
   "/data/fr/q/mosfet.json",
   "/data/fr/q/multicore-sync.json",
+  "/data/fr/q/network.json",
   "/data/fr/q/os-hardware.json",
   "/data/fr/q/oxidation.json",
   "/data/fr/q/package.json",

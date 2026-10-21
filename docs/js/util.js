@@ -53,7 +53,8 @@ const bounded = (text, start, end) => !(ALNUM.test(text[start] ?? '') && ALNUM.t
 const OTHER_MEANING = /^\s*[(（]\s*(人体|人體|인체|human body|modèle du corps)/i;
 
 // 文章を [文字列 | { text, id }] に分ける。各用語は最初の1回だけ
-export function linkTerms(text, { keys, exact, re }) {
+// skip: リンクしない用語の id の集合(用語集の noLinkIn で、別の意味で使う分野の問題を除く)
+export function linkTerms(text, { keys, exact, re }, skip) {
   const parts = [];
   const used = new Set();
   let last = 0;
@@ -66,7 +67,7 @@ export function linkTerms(text, { keys, exact, re }) {
     // ハイフンでつながった別の略語の一部(「ICP-MS」の中の「ICP」など)はリンクしない。「SiC-based」「GPIO-Pins」「MEMS-Gyroskop」は対象
     const end = m.index + m[0].length;
     const acronym = /^[A-Z0-9]+$/.test(m[0]);
-    if (used.has(id) || (acronym && (/^-[A-Z0-9]{2,}(?![a-z])/.test(text.slice(end, end + 12))
+    if (used.has(id) || skip?.has(id) || (acronym && (/^-[A-Z0-9]{2,}(?![a-z])/.test(text.slice(end, end + 12))
       || /(?:^|[^A-Za-z0-9])[A-Z0-9]{2,}-$/.test(text.slice(Math.max(0, m.index - 12), m.index))
       || OTHER_MEANING.test(text.slice(end, end + 24))))) continue;
     used.add(id);
