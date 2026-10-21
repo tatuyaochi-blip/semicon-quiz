@@ -193,6 +193,8 @@ const loc = (v, code) => (v && typeof v === 'object' ? v[code] ?? v[defLang] : v
 fs.rmSync(out, { recursive: true, force: true });
 fs.cpSync(path.join(root, 'src/css'), path.join(out, 'css'), { recursive: true });
 fs.cpSync(path.join(root, 'src/js'), path.join(out, 'js'), { recursive: true });
+// 外部のライブラリ(SQL 練習ツールの sql.js など)。大きいので Service Worker の事前保存(js/)には入れない
+if (exists('src/vendor')) fs.cpSync(path.join(root, 'src/vendor'), path.join(out, 'vendor'), { recursive: true });
 write('js/modes/index.js',
   modes.map((m, i) => `import m${i} from './${m.file}';`).join('\n') +
   `\nexport default [${modes.map((_, i) => `m${i}`).join(', ')}];\n`);
@@ -1574,6 +1576,26 @@ ${x.faq?.length ? `<section class="faq">
   <section class="dy-out" aria-live="polite">
     <h2>${esc(x.out_heading)}</h2>
     <dl class="dy-stats bc-stats">${stat('n', x.n)}${stat('space', x.space)}${stat('bits', x.bits)}${stat('all', x.all)}${stat('avg', x.avg)}</dl>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
+    'sql-practice': x => `<section class="dy-out sql" id="sql" data-vendor="${base}vendor/sqljs/" data-text="${esc(JSON.stringify({ schema: x.schema, exercises: x.exercises, rows: x.rows, empty: x.empty, loading: x.loading, ready: x.ready, ok_rows: x.ok_rows, ok_done: x.ok_done, error: x.error, correct: x.correct, wrong: x.wrong, reset_done: x.reset_done, load_error: x.load_error }))}">
+    <h2>${esc(x.ex_heading)}</h2>
+    <label class="dy-field"><span>${esc(x.ex_label)}</span><select id="sql-ex">${x.exercises.map((e, i) => `<option value="${i}">${i + 1}. ${esc(e.q.length > 40 ? `${e.q.slice(0, 40)}…` : e.q)}</option>`).join('')}</select></label>
+    <p class="sql-ex-q" id="sql-ex-q"></p>
+    <label class="dy-field"><span>${esc(x.editor)}</span><textarea id="sql-input" class="sql-input" rows="5" spellcheck="false" autocomplete="off" autocapitalize="off">${esc(x.default_sql)}</textarea></label>
+    <div class="ls-bar">
+      <button type="button" class="btn btn-primary btn-small" id="sql-run">${esc(x.run)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="sql-check">${esc(x.check)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="sql-show">${esc(x.show)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="sql-reset">${esc(x.reset)}</button>
+    </div>
+    <p class="sql-judge" id="sql-judge" hidden></p>
+    <pre class="sql-answer" id="sql-answer" hidden></pre>
+    <h3>${esc(x.result_heading)}</h3>
+    <p class="sql-status" id="sql-status" aria-live="polite"></p>
+    <div id="sql-result"></div>
+    <h3>${esc(x.schema_heading)}</h3>
+    <div id="sql-schema" class="sql-schema"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
