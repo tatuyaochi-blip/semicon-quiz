@@ -81,31 +81,31 @@
 </article>
 <section class="term-about">
   <h2>コヒーレンスは変数単位ではなくライン単位</h2>
-  <p>MESI(Modified、Exclusive、Shared、Invalid)などのキャッシュコヒーレンスプロトコルは、個々の変数ではなく、通常64 バイトの<a class="term-link" href="/term/cache-line/">キャッシュライン</a>全体を単位として所有権を管理します。コアが書き込むには、そのラインを排他的に保持する必要があり、そのとき他のすべてのコアにあるコピーは無効化されます。同じライン上で、コア0が変数aを、コア1が変数bを書き換え続けると、書き込みのたびにラインが2つのキャッシュの間を移動します。どちらのスレッドも相手のデータは読まないので結果は正しいままですが、本来なら数サイクルで済むL1ヒットが、遅いコア間転送に変わってしまいます。</p>
+  <p>MESI(Modified、Exclusive、Shared、Invalid)などのキャッシュコヒーレンスプロトコルは、個々の<a class="term-link" href="/term/variable/">変数</a>ではなく、通常64 バイトの<a class="term-link" href="/term/cache-line/">キャッシュライン</a>全体を単位として所有権を管理します。コアが書き込むには、そのラインを排他的に保持する必要があり、そのとき他のすべてのコアにあるコピーは無効化されます。同じライン上で、コア0が変数aを、コア1が変数bを書き換え続けると、書き込みのたびにラインが2つのキャッシュの間を移動します。どちらのスレッドも相手のデータは読まないので結果は正しいままですが、本来なら数サイクルで済むL1ヒットが、遅いコア間転送に変わってしまいます。</p>
 </section>
 <section class="term-about">
   <h2>偽共有と真の共有の違い</h2>
-  <p>真の共有とは、グローバルなカウンタやロック変数のように、複数のスレッドが実際に同じ変数にアクセスすることです。この競合は本質的なもので、カウンタを分割するなどアルゴリズムを変えなければ解消できません。一方、偽共有ではデータは論理的に独立しており、たまたまメモリ上で隣り合っているだけなので、データ配置を変えれば解決します。どちらも、少数のラインにコヒーレンストラフィックが集中するという同じ症状を示します。読み出しだけの共有はどちらの問題も起こしません。多数のキャッシュが同時にラインをShared状態で保持でき、無効化を引き起こすのは書き込みだけだからです。</p>
+  <p>真の共有とは、グローバルなカウンタやロック<a class="term-link" href="/term/variable/">変数</a>のように、複数のスレッドが実際に同じ変数にアクセスすることです。この競合は本質的なもので、カウンタを分割するなどアルゴリズムを変えなければ解消できません。一方、偽共有ではデータは論理的に独立しており、たまたまメモリ上で隣り合っているだけなので、データ配置を変えれば解決します。どちらも、少数のラインにコヒーレンストラフィックが集中するという同じ症状を示します。読み出しだけの共有はどちらの問題も起こしません。多数のキャッシュが同時にラインをShared状態で保持でき、無効化を引き起こすのは書き込みだけだからです。</p>
 </section>
 <section class="term-about">
   <h2>よくある原因</h2>
-  <p>典型例は、スレッドごとのカウンタを並べた配列です。要素が8 バイトなら64 バイトのラインに8個入るため、最大8スレッドが1本のラインを奪い合います。ほかにも、異なるスレッドが別々のフィールドを更新する構造体、別のロックで保護されるデータと同じラインに置かれたロック、生産者と消費者がそれぞれ書き込むheadとtailのインデックスが隣り合ったワークキューなどがよく問題になります。各スレッドが自分のデータにしか触れていないように見えるのに、スレッドを増やしても速度向上が頭打ちになったり、かえって遅くなったりするのが典型的な兆候です。</p>
+  <p>典型例は、スレッドごとのカウンタを並べた<a class="term-link" href="/term/array/">配列</a>です。要素が8 バイトなら64 バイトのラインに8個入るため、最大8スレッドが1本のラインを奪い合います。ほかにも、異なるスレッドが別々のフィールドを更新する構造体、別のロックで保護されるデータと同じラインに置かれたロック、生産者と消費者がそれぞれ書き込むheadとtailのインデックスが隣り合ったワークキューなどがよく問題になります。各スレッドが自分のデータにしか触れていないように見えるのに、スレッドを増やしても速度向上が頭打ちになったり、かえって遅くなったりするのが典型的な兆候です。</p>
 </section>
 <section class="term-about">
   <h2>対策と検出方法</h2>
-  <p>独立して書き換えられるデータを、それぞれキャッシュラインサイズにパディングまたはアラインします。たとえばC/C++ではalignas(64)を使い、各スレッドが専用のラインを持つようにします。隣り合う2本のラインをまとめて取り込むプロセッサもあるため、128 バイト離す場合もあります。さらに良いのは、各スレッドがローカル変数やレジスタで集計し、最後に一度だけ共有領域へ書き込む方法です。問題の発見にはハードウェア<a class="term-link" href="/term/performance-counter/">性能カウンタ</a>が役立ちます。Linuxのperf c2cツールは、あるコアが頻繁に書き換え、別のコアがそれにアクセスしている<a class="term-link" href="/term/cache-line/">キャッシュライン</a>を報告します。</p>
+  <p>独立して書き換えられるデータを、それぞれキャッシュラインサイズにパディングまたはアラインします。たとえばC/C++ではalignas(64)を使い、各スレッドが専用のラインを持つようにします。隣り合う2本のラインをまとめて取り込むプロセッサもあるため、128 バイト離す場合もあります。さらに良いのは、各スレッドがローカル<a class="term-link" href="/term/variable/">変数</a>やレジスタで集計し、最後に一度だけ共有領域へ書き込む方法です。問題の発見にはハードウェア<a class="term-link" href="/term/performance-counter/">性能カウンタ</a>が役立ちます。Linuxのperf c2cツールは、あるコアが頻繁に書き換え、別のコアがそれにアクセスしている<a class="term-link" href="/term/cache-line/">キャッシュライン</a>を報告します。</p>
 </section>
 <section>
   <h2>偽共有の練習問題に挑戦</h2>
   <article class="q-mini" data-qid="multicore-sync-010" data-cat="multicore-sync" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
     <h3><a href="/q/multicore-sync/multicore-sync-010/">マルチスレッドのプログラムで起こる偽共有(フォールスシェアリング)の説明として正しいものはどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">別々のスレッドが別々の変数を書き換えているのに、それらが同じキャッシュラインにあるため、ラインがコア間を行き来して遅くなる</span></li><li><span class="choice-mark">B</span><span class="choice-text">2つのスレッドが同じ変数を同期せずに書き換えて、値が壊れる</span></li><li><span class="choice-mark">C</span><span class="choice-text">スレッドどうしが互いのロックを待ち合って、止まってしまう</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 別々のスレッドが別々の変数を書き換えているのに、それらが同じキャッシュラインにあるため、ラインがコア間を行き来して遅くなる</p><p class="explanation">コヒーレンシは<a class="term-link" href="/term/cache-line/">キャッシュライン</a>(一般に64バイト)の単位で管理されます。コア0が変数a、コア1が変数bを書き換えるだけでも、aとbが同じラインにあると、書き込むたびに相手のコピーが無効になり、ラインが2つのコアの間を行き来します。結果は正しいのに、性能が大きく落ちるのが<a class="term-link" href="/term/false-sharing/">偽共有</a>です。スレッドごとの集計用の配列などで起こりやすい問題です。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 別々のスレッドが別々の変数を書き換えているのに、それらが同じキャッシュラインにあるため、ラインがコア間を行き来して遅くなる</p><p class="explanation">コヒーレンシは<a class="term-link" href="/term/cache-line/">キャッシュライン</a>(一般に64バイト)の単位で管理されます。コア0が<a class="term-link" href="/term/variable/">変数</a>a、コア1が変数bを書き換えるだけでも、aとbが同じラインにあると、書き込むたびに相手のコピーが無効になり、ラインが2つのコアの間を行き来します。結果は正しいのに、性能が大きく落ちるのが<a class="term-link" href="/term/false-sharing/">偽共有</a>です。スレッドごとの集計用の<a class="term-link" href="/term/array/">配列</a>などで起こりやすい問題です。</p></details>
   </article>
   <article class="q-mini" data-qid="multicore-sync-011" data-cat="multicore-sync" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
     <h3><a href="/q/multicore-sync/multicore-sync-011/">スレッドごとのカウンタを「long cnt[8];」のように並べた配列で偽共有が起きている。対策として最も適切なものはどれか。</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">カウンタの型をlongからintに変えて、配列を小さくする</span></li><li><span class="choice-mark">B</span><span class="choice-text">各カウンタの間に詰め物を入れたり整列させたりして、別々のキャッシュラインに置く</span></li><li><span class="choice-mark">C</span><span class="choice-text">スレッドの数を増やして、待ち時間を分散させる</span></li></ol>
-    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 各カウンタの間に詰め物を入れたり整列させたりして、別々のキャッシュラインに置く</p><p class="explanation">longが8バイトなら、8個のカウンタは64バイトの1つのラインに収まり、全部のスレッドが同じラインを奪い合います。各カウンタを64バイトごとに置くように詰め物を入れるか、構造体を<a class="term-link" href="/term/cache-line/">キャッシュライン</a>の大きさに整列させれば、スレッドごとに別のラインを使えます。また、各スレッドは局所変数で数えて、最後に1回だけ共有の場所へ足す方法も効果的です。</p></details>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 各カウンタの間に詰め物を入れたり整列させたりして、別々のキャッシュラインに置く</p><p class="explanation">longが8バイトなら、8個のカウンタは64バイトの1つのラインに収まり、全部のスレッドが同じラインを奪い合います。各カウンタを64バイトごとに置くように詰め物を入れるか、構造体を<a class="term-link" href="/term/cache-line/">キャッシュライン</a>の大きさに整列させれば、スレッドごとに別のラインを使えます。また、各スレッドは局所<a class="term-link" href="/term/variable/">変数</a>で数えて、最後に1回だけ共有の場所へ足す方法も効果的です。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -139,7 +139,7 @@
 
 <section>
   <h2>関連する用語</h2>
-  <p class="term-chips"><a class="chip" href="/term/cache-line/">キャッシュライン</a> <a class="chip" href="/term/spatial-locality/">空間的局所性</a> <a class="chip" href="/term/dram/">DRAM(ダイナミックRAM)</a> <a class="chip" href="/term/amdahl-s-law/">アムダールの法則</a> <a class="chip" href="/term/acquire-release-semantics/">アクワイア・リリース</a> <a class="chip" href="/term/atomic-instruction/">アトミック命令</a> <a class="chip" href="/term/aba-problem/">ABA問題</a> <a class="chip" href="/term/load-reserved-store-conditional/">LR/SC</a> <a class="chip" href="/term/critical-section/">クリティカルセクション</a> <a class="chip" href="/term/compare-and-swap/">コンペア・アンド・スワップ</a></p>
+  <p class="term-chips"><a class="chip" href="/term/cache-line/">キャッシュライン</a> <a class="chip" href="/term/variable/">変数</a> <a class="chip" href="/term/array/">配列</a> <a class="chip" href="/term/spatial-locality/">空間的局所性</a> <a class="chip" href="/term/dram/">DRAM(ダイナミックRAM)</a> <a class="chip" href="/term/amdahl-s-law/">アムダールの法則</a> <a class="chip" href="/term/acquire-release-semantics/">アクワイア・リリース</a> <a class="chip" href="/term/atomic-instruction/">アトミック命令</a> <a class="chip" href="/term/aba-problem/">ABA問題</a> <a class="chip" href="/term/load-reserved-store-conditional/">LR/SC</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/glossary/">用語集の一覧へ</a></p>
 </main>

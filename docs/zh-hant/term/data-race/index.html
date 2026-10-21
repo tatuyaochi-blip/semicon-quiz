@@ -89,18 +89,18 @@
 </section>
 <section class="term-about">
   <h2>解決方法：鎖與原子操作</h2>
-  <p>解決之道是為相衝突的存取強加順序。鎖（<a class="term-link" href="/zh-hant/term/mutex/">mutex</a>）將更新變成一次只有一個執行緒能執行的<a class="term-link" href="/zh-hant/term/critical-section/">臨界區段</a>；讓臨界區段保持簡短可減少等待。對於簡單的操作，<a class="term-link" href="/zh-hant/term/atomic-instruction/">原子指令</a>更快：fetch-and-add（例如 x86 的 lock xadd 或 RISC-V 的 amoadd.w）以不可分割的方式完成讀取、相加與寫入並回傳舊值，因此永遠不需要重試。較複雜的更新則使用 <a class="term-link" href="/zh-hant/term/compare-and-swap/">compare-and-swap</a> 迴圈。在 C 或 C++ 中將變數宣告為 volatile 並不能防止資料競爭，因為它既不提供原子性，也不提供執行緒之間的順序保證。</p>
+  <p>解決之道是為相衝突的存取強加順序。鎖（<a class="term-link" href="/zh-hant/term/mutex/">mutex</a>）將更新變成一次只有一個執行緒能執行的<a class="term-link" href="/zh-hant/term/critical-section/">臨界區段</a>；讓臨界區段保持簡短可減少等待。對於簡單的操作，<a class="term-link" href="/zh-hant/term/atomic-instruction/">原子指令</a>更快：fetch-and-add（例如 x86 的 lock xadd 或 RISC-V 的 amoadd.w）以不可分割的方式完成讀取、相加與寫入並回傳舊值，因此永遠不需要重試。較複雜的更新則使用 <a class="term-link" href="/zh-hant/term/compare-and-swap/">compare-and-swap</a> 迴圈。在 C 或 C++ 中將<a class="term-link" href="/zh-hant/term/variable/">變數</a>宣告為 volatile 並不能防止資料競爭，因為它既不提供原子性，也不提供執行緒之間的順序保證。</p>
 </section>
 <section class="term-about">
   <h2>為何編譯器與硬體會讓競爭更糟</h2>
-  <p>由於 C 與 C++ 假設程式沒有競爭，編譯器可以合法地將共享變數保留在暫存器中、把載入移出迴圈，或合併多次儲存，因此一個執行緒若在未同步的情況下反覆檢查另一個執行緒寫入的旗標，可能永遠看不到變化。硬體也會透過<a class="term-link" href="/zh-hant/term/store-buffer/">儲存緩衝區</a>與快取產生自己的重新排序。同步操作，例如取得鎖以及具備適當記憶體順序的原子操作，正是告訴編譯器與硬體哪裡必須維持順序的手段。ThreadSanitizer 等動態競爭偵測工具，有助於找出單靠測試很少會暴露的競爭。</p>
+  <p>由於 C 與 C++ 假設程式沒有競爭，編譯器可以合法地將共享<a class="term-link" href="/zh-hant/term/variable/">變數</a>保留在暫存器中、把載入移出迴圈，或合併多次儲存，因此一個執行緒若在未同步的情況下反覆檢查另一個執行緒寫入的旗標，可能永遠看不到變化。硬體也會透過<a class="term-link" href="/zh-hant/term/store-buffer/">儲存緩衝區</a>與快取產生自己的重新排序。同步操作，例如取得鎖以及具備適當記憶體順序的原子操作，正是告訴編譯器與硬體哪裡必須維持順序的手段。ThreadSanitizer 等動態競爭偵測工具，有助於找出單靠測試很少會暴露的競爭。</p>
 </section>
 <section>
   <h2>練習資料競爭（Data race）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-012" data-cat="multicore-sync" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
     <h3><a href="/zh-hant/q/multicore-sync/multicore-sync-012/">關於資料競爭（data race），下列說明何者正確？</a></h3>
     <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">多個執行緒只是同時讀取同一個變數的狀態</span></li><li><span class="choice-mark">B</span><span class="choice-text">一個執行緒對同一個變數連續寫入兩次的狀態</span></li><li><span class="choice-mark">C</span><span class="choice-text">多個執行緒未經同步就同時存取同一個變數，且至少有一個是寫入的狀態</span></li></ol>
-    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 多個執行緒未經同步就同時存取同一個變數，且至少有一個是寫入的狀態</p><p class="explanation"><a class="term-link" href="/zh-hant/term/data-race/">資料競爭</a>是指，由於對同一位置的讀寫順序沒有經由同步來決定，使結果隨著執行順序而改變的狀態。因為會依時機點時而發生、時而不發生，所以是在測試中難以發現的缺陷。在C語言與C++中，含有資料競爭的程式其行為被視為未定義。必須以鎖或原子變數來決定順序。</p></details>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 多個執行緒未經同步就同時存取同一個變數，且至少有一個是寫入的狀態</p><p class="explanation"><a class="term-link" href="/zh-hant/term/data-race/">資料競爭</a>是指，由於對同一位置的讀寫順序沒有經由同步來決定，使結果隨著執行順序而改變的狀態。因為會依時機點時而發生、時而不發生，所以是在測試中難以發現的缺陷。在C語言與C++中，含有資料競爭的程式其行為被視為未定義。必須以鎖或原子<a class="term-link" href="/zh-hant/term/variable/">變數</a>來決定順序。</p></details>
   </article>
 </section>
 <section class="faq">
@@ -132,7 +132,7 @@
 
 <section>
   <h2>相關名詞</h2>
-  <p class="term-chips"><a class="chip" href="/zh-hant/term/critical-section/">臨界區段（Critical section）</a> <a class="chip" href="/zh-hant/term/real-time-operating-system/">RTOS（即時作業系統）</a> <a class="chip" href="/zh-hant/term/queue/">佇列</a> <a class="chip" href="/zh-hant/term/performance-counter/">效能計數器（Performance counter）</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a> <a class="chip" href="/zh-hant/term/spinlock/">自旋鎖（Spinlock）</a></p>
+  <p class="term-chips"><a class="chip" href="/zh-hant/term/variable/">變數</a> <a class="chip" href="/zh-hant/term/critical-section/">臨界區段（Critical section）</a> <a class="chip" href="/zh-hant/term/real-time-operating-system/">RTOS（即時作業系統）</a> <a class="chip" href="/zh-hant/term/queue/">佇列</a> <a class="chip" href="/zh-hant/term/performance-counter/">效能計數器（Performance counter）</a> <a class="chip" href="/zh-hant/term/mutex/">互斥鎖（Mutex）</a> <a class="chip" href="/zh-hant/term/compare-and-swap/">比較並交換（Compare-and-swap）</a> <a class="chip" href="/zh-hant/term/directory-based-coherence/">目錄式一致性（Directory-based coherence）</a> <a class="chip" href="/zh-hant/term/transactional-memory/">交易式記憶體（Transactional memory）</a> <a class="chip" href="/zh-hant/term/deadlock/">死結（Deadlock）</a></p>
 </section>
 <p><a class="btn btn-ghost" href="/zh-hant/glossary/">前往名詞解釋列表</a></p>
 </main>

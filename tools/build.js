@@ -1914,6 +1914,21 @@ ${x.faq?.length ? `<section class="faq">
     <svg id="be-chart" class="sta-chart be-chart" viewBox="0 0 600 300" role="img" aria-label="${esc(x.chart)}"></svg>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    npv: x => `<form id="nv-form" class="dy-form nv-form" data-text="${esc(JSON.stringify({ examples: x.examples, years: x.years, not_recovered: x.not_recovered, go: x.go, nogo: x.nogo, even: x.even, col_year: x.col_year, col_cf: x.col_cf, col_df: x.col_df, col_pv: x.col_pv, col_acc: x.col_acc, col_accpv: x.col_accpv }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${field('inv', x.inv, 1000, 'min="0" step="any"')}
+    ${field('rate', x.rate, 5, 'step="any"')}
+    <label class="dy-field nv-wide"><span>${esc(x.cfs)}</span><input name="cfs" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"></label>
+    <p class="notice nv-wide" id="nv-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p class="ev-verdict" data-out="verdict"></p>
+    <dl class="dy-stats">${stat('npv', x.npv)}${stat('irr', x.irr)}${stat('pi', x.pi)}${stat('payback', x.payback)}${stat('dpayback', x.dpayback)}</dl>
+    <div class="table-wrap" id="nv-table"></div>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">

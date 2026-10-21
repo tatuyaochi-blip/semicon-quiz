@@ -94,9 +94,23 @@ function parseExpr(toks, line) {
   return e;
 }
 
+// 英語・中国語の書き方を日本語の書き方に直す(文字列の中は変えない)
+//   integer / real / string / boolean(array)、for (i from A to B step S) / (i from A down to B step S)、length(a)、output
+//   整數型 / 實數型 / 字串型 / 邏輯型(陣列)、for (i 從 A 到 B 每次加 S / 每次減 S)、a的元素數、輸出
+export function normalize(src) {
+  return src.split('\n').map(line => line.split(/("[^"]*"|「[^」]*」)/).map((part, k) => (k % 2 ? part : part
+    .replace(/\b(integer|string) array\b/g, (_, t) => (t === 'integer' ? '整数型の配列' : '文字列型の配列'))
+    .replace(/(整數型|字串型)陣列/g, (_, t) => (t === '整數型' ? '整数型の配列' : '文字列型の配列'))
+    .replace(/\binteger\b|整數型/g, '整数型').replace(/\breal\b|實數型/g, '実数型').replace(/\bstring\b|字串型/g, '文字列型').replace(/\bboolean\b|邏輯型/g, '論理型')
+    .replace(/^(\s*)for\s*\(\s*([\p{L}\p{N}_]+)\s+from\s+(.+?)\s+(down to|to)\s+(.+?)\s+step\s+(.+?)\s*\)\s*$/u, (_, sp, v, a, d, b, st) => `${sp}for (${v} を ${a} から ${b} まで ${st} ずつ${d === 'to' ? '増やす' : '減らす'})`)
+    .replace(/^(\s*)for\s*\(\s*([\p{L}\p{N}_]+)\s*從\s*(.+?)\s*到\s*(.+?)\s*每次(加|減)\s*(.+?)\s*\)\s*$/u, (_, sp, v, a, b, d, st) => `${sp}for (${v} を ${a} から ${b} まで ${st} ずつ${d === '加' ? '増やす' : '減らす'})`)
+    .replace(/\blength\(\s*([\p{L}\p{N}_]+)\s*\)/gu, '$1の要素数').replace(/([\p{L}\p{N}_]+?)的元素數/gu, '$1の要素数')
+    .replace(/^(\s*)(output|輸出)(\s)/, '$1出力$3'))).join('')).join('\n');
+}
+
 // 行を読んで、ブロックの入れ子を組み立てる。関数・手続(○の行)の本体は、○の行より深く字下げした行
 export function parse(src) {
-  const all = src.split('\n').map((t, k) => ({ raw: t.replace(/\/\*.*?\*\/|\/\/.*$/g, '').replace(/\t/g, '    '), ln: k + 1 }));
+  const all = normalize(src).split('\n').map((t, k) => ({ raw: t.replace(/\/\*.*?\*\/|\/\/.*$/g, '').replace(/\t/g, '    '), ln: k + 1 }));
   const indent = l => /^ */.exec(l.raw.replace(/　/g, '  '))[0].length;
   const funcs = {};
   const main = [];
