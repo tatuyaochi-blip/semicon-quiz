@@ -1,0 +1,393 @@
+{
+ "c-language-001": {
+  "question": "Wat legt de C-standaard vast over de grootte van het type int?",
+  "choices": [
+   "Die is in elke implementatie vastgelegd op 32 bits",
+   "Alleen dat die minstens 16 bits is, ligt vast; de werkelijke grootte bepaalt de implementatie",
+   "Die is vastgelegd als gelijk aan de breedte van de adressen van de CPU, dus op een 64-bits CPU is die 64 bits"
+  ],
+  "explanation": "De C-standaard eist alleen dat int minstens −32767 tot 32767 kan weergeven (dus 16 bits of meer); de werkelijke grootte bepaalt de implementatie (de combinatie van compiler en doel-CPU). Bij compilers voor een 16-bits microcontroller kan int 16 bits zijn, terwijl het op de meeste pc's en 32-bits microcontrollers 32 bits is. Ook op 64-bits Linux en Windows blijft int in het algemeen 32 bits, en wordt een pointer 64 bits. Als een geheel getal van een vaste grootte nodig is, worden int32_t en vergelijkbare typen uit stdint.h gebruikt."
+ },
+ "c-language-002": {
+  "question": "In embedded programma's wordt een variabele die de waarde van een 32-bits randapparaatregister bevat, vaak gedeclareerd met uint32_t uit stdint.h in plaats van unsigned int. Wat is de belangrijkste reden?",
+  "choices": [
+   "uint32_t keert niet terug naar 0 als een waarde het maximum overschrijdt, maar blijft op het maximum staan (verzadigt)",
+   "Lees- en schrijfacties van een variabele die als uint32_t is gedeclareerd, worden niet meer door optimalisatie van de compiler weggelaten",
+   "De grootte van unsigned int verschilt per implementatie, terwijl uint32_t is vastgelegd als een geheel getal zonder teken van precies 32 bits"
+  ],
+  "explanation": "uint8_t, uint16_t, uint32_t, int32_t en dergelijke uit stdint.h zijn integertypen waarvan het aantal bits vastligt zoals de naam zegt (integertypen met vaste breedte). unsigned int kan 16 of 32 bits zijn, dus wie typen met vaste breedte gebruikt waar de breedte bij een register moet passen of waar een gegevensformaat voor communicatie wordt vastgelegd, behoudt de betekenis als de code naar een andere CPU wordt overgezet. Net als andere integertypen zonder teken krijgt uint32_t bij overloop de rest bij deling door 2³². Om te voorkomen dat lees- en schrijfacties worden weggelaten, wordt los van het type volatile toegevoegd."
+ },
+ "c-language-003": {
+  "question": "Wat is de uitvoer als de bovenstaande code, die een deling van gehele getallen bevat, wordt uitgevoerd?",
+  "code": "int a = 7, b = 2;\ndouble x = a / b;\ndouble y = (double)a / b;\nprintf(\"%.1f %.1f\\n\", x, y);",
+  "choices": [
+   "3.0 3.0",
+   "3.0 3.5",
+   "3.5 3.5"
+  ],
+  "explanation": "a / b deelt een int door een int, dus het is een deling van gehele getallen die 3 geeft, waarbij het deel achter de komma wordt weggelaten. Die 3 in de double x zetten maakt er alleen 3,0 van; de weggelaten 0,5 komt niet terug. Bij y wordt a eerst naar double omgezet (een cast), dus wordt ook b naar double omgezet, gebeurt de deling met drijvende komma en is het resultaat 3,5. Hoe de berekening wordt uitgevoerd, wordt bepaald door de typen van de operanden, niet door het type van het doel van de toekenning."
+ },
+ "c-language-004": {
+  "question": "Wat is de uitvoer als de bovenstaande code met prefix- en postfix-++ wordt uitgevoerd?",
+  "code": "int i = 5;\nint a = i++;\nint b = ++i;\nprintf(\"%d %d %d\\n\", a, b, i);",
+  "choices": [
+   "5 6 6",
+   "5 7 7",
+   "6 7 7"
+  ],
+  "explanation": "Postfix i++ gebruikt de waarde van vóór de verhoging als waarde van de expressie en verhoogt daarna i met 1. Dus a krijgt 5 en i wordt 6. Prefix ++i verhoogt eerst i met 1 en gebruikt daarna de nieuwe waarde als waarde van de expressie, dus i wordt 7 en ook b krijgt 7. De uitvoer is „5 7 7”."
+ },
+ "c-language-005": {
+  "question": "Wat is de uitvoer als de bovenstaande code, met = in de voorwaarde van een if-statement, wordt uitgevoerd?",
+  "code": "int x = 5;\nif (x = 0)\n    printf(\"zero \");\nelse\n    printf(\"nonzero \");\nprintf(\"%d\\n\", x);",
+  "choices": [
+   "zero 0",
+   "nonzero 5",
+   "nonzero 0"
+  ],
+  "explanation": "x = 0 in de voorwaarde van de if is een toekenning, niet de vergelijking ==. x wordt 0 en ook de waarde van de toekenningsexpressie is 0, dus de voorwaarde is onwaar en „nonzero” uit de else-tak wordt afgedrukt. De printf daarna drukt x af, dat door de toekenning 0 is geworden. Met -Wall geeft gcc een waarschuwing voor deze schrijfwijze, dus wie waarschuwingen ingeschakeld houdt, merkt de fout gemakkelijker op."
+ },
+ "c-language-006": {
+  "question": "De bovenstaande code is geschreven om te controleren of bit 2 van de registerwaarde reg 1 is. Wat is het resultaat als de code wordt uitgevoerd?",
+  "code": "unsigned int reg = 0x04;\nif (reg & 0x04 == 0x04)\n    printf(\"ON\\n\");\nelse\n    printf(\"OFF\\n\");",
+  "choices": [
+   "ON wordt afgedrukt",
+   "OFF wordt afgedrukt",
+   "Er ontstaat een compileerfout, omdat & en == niet achter elkaar mogen staan"
+  ],
+  "explanation": "In C heeft de vergelijking == een hogere voorrang dan de bitsgewijze EN &. De voorwaarde wordt dus gelezen als reg & (0x04 == 0x04); omdat 0x04 == 0x04 gelijk is aan 1, is het resultaat 0x04 & 1 = 0, wat onwaar is, en wordt OFF afgedrukt. Voor de bedoelde betekenis zijn haakjes nodig, zoals in (reg & 0x04) == 0x04. Grammaticaal is de code geldig, dus er ontstaat geen fout, maar gcc geeft met -Wall een waarschuwing."
+ },
+ "c-language-007": {
+  "question": "uint8_t is een 8-bits integertype zonder teken. Wat is de uitvoer als de bovenstaande code wordt uitgevoerd?",
+  "code": "uint8_t r = 0x5A;\nr |= 0x01;\nr &= ~0x10;\nr ^= 0x0F;\nprintf(\"0x%02X\\n\", r);",
+  "choices": [
+   "0x44",
+   "0x4F",
+   "0x54"
+  ],
+  "explanation": "0x5A is binair 0101 1010. |= 0x01 zet bit 0 op 1, wat 0101 1011 (0x5B) geeft, en &= ~0x10 zet bit 4 op 0, wat 0100 1011 (0x4B) geeft. De laatste ^= 0x0F inverteert de onderste 4 bits, wat 0100 0100 geeft, dus 0x44. | zet bits op 1, & in combinatie met ~ zet bits op 0, en ^ inverteert bits."
+ },
+ "c-language-008": {
+  "question": "uint8_t is een 8-bits integertype zonder teken. Wat is de uitvoer als de bovenstaande code, die x tien keer verhoogt, wordt uitgevoerd?",
+  "code": "uint8_t x = 250;\nfor (int i = 0; i < 10; i++)\n    x++;\nprintf(\"%d\\n\", x);",
+  "choices": [
+   "4",
+   "255",
+   "260"
+  ],
+  "explanation": "uint8_t kan 0 tot 255 weergeven. De standaard legt vast dat een waarde die niet in een integertype zonder teken past, de rest bij deling door 2⁸ = 256 wordt, dus bij optellen met 1 vanaf 250 komt na 255 weer 0. Na 10 verhogingen is het resultaat de rest van 250 + 10 = 260 bij deling door 256, dus 4. Daarentegen is overloop bij rekenen met integertypen met teken ongedefinieerd gedrag."
+ },
+ "c-language-009": {
+  "question": "unsigned char is 8 bits en int is 32 bits. Wat is de uitvoer als de bovenstaande code wordt uitgevoerd?",
+  "code": "unsigned char a = 200, b = 100;\nint s = a + b;\nunsigned char c = a + b;\nprintf(\"%d %d\\n\", s, c);",
+  "choices": [
+   "44 44",
+   "300 44",
+   "300 300"
+  ],
+  "explanation": "In C worden waarden van typen die kleiner zijn dan int (zoals char en short) vóór een berekening naar int omgezet (integerpromotie). Daarom wordt a + b niet in 8 bits maar als int berekend, wat 300 geeft, en krijgt de int s ongewijzigd 300. Bij toekenning aan de 8-bits c wordt de waarde omgezet naar de rest van 300 bij deling door 256, dus 44. Ook op een 8-bits microcontroller worden tussenresultaten in een expressie volgens de standaard met de breedte van int berekend."
+ },
+ "c-language-010": {
+  "question": "uint8_t is een 8-bits integertype zonder teken en int is 32 bits. Wat is het resultaat als de bovenstaande code wordt uitgevoerd?",
+  "code": "uint8_t a = 0x0F;\nif (~a == 0xF0)\n    printf(\"equal\\n\");\nelse\n    printf(\"not equal\\n\");",
+  "choices": [
+   "equal wordt afgedrukt",
+   "Er ontstaat een compileerfout, omdat ~ niet op een waarde van het type uint8_t mag worden toegepast",
+   "not equal wordt afgedrukt"
+  ],
+  "explanation": "Voordat ~a wordt berekend, wordt a door integerpromotie omgezet naar de int 0x0000000F. Daardoor is ~a niet de 8-bits waarde 0xF0, maar de 32-bits waarde 0xFFFFFFF0 (als int −16), en die is niet gelijk aan 0xF0 (240). Om in 8 bits te vergelijken, wordt eerst teruggezet naar een 8-bits type, zoals in (uint8_t)~a == 0xF0. Deze fout komt vaak voor bij het inverteren en vergelijken van registerwaarden."
+ },
+ "c-language-011": {
+  "question": "int en unsigned int zijn 32 bits. Wat is het resultaat als de bovenstaande code wordt uitgevoerd?",
+  "code": "int a = -1;\nunsigned int b = 1;\nif (a < b)\n    printf(\"a < b\\n\");\nelse\n    printf(\"a >= b\\n\");",
+  "choices": [
+   "a < b wordt afgedrukt",
+   "a >= b wordt afgedrukt",
+   "Er ontstaat een compileerfout, omdat waarden met en zonder teken niet kunnen worden vergeleken"
+  ],
+  "explanation": "Als een int en een unsigned int worden vergeleken, worden ze eerst allebei naar unsigned int omgezet (de gebruikelijke rekenkundige conversies). Als unsigned int wordt −1 gelijk aan 2³² − 1 = 4294967295, wat groter is dan 1, dus a < b is onwaar. Daarom wordt „a >= b” afgedrukt. Met -Wextra (of -Wsign-compare) geeft gcc een waarschuwing voor vergelijkingen die waarden met en zonder teken mengen."
+ },
+ "c-language-012": {
+  "question": "unsigned int is 32 bits. Welke beschrijving van het gedrag bij het uitvoeren van de bovenstaande code is juist?",
+  "code": "unsigned int i;\nfor (i = 3; i >= 0; i--)\n    printf(\"%u \", i);",
+  "choices": [
+   "Het programma drukt 3 2 1 0 af en stopt",
+   "Het programma drukt 3 2 1 af en stopt",
+   "Na het afdrukken van 3 2 1 0 stopt het programma niet, maar gaat het door met het afdrukken van afnemende waarden vanaf 4294967295"
+  ],
+  "explanation": "i is zonder teken en kan dus nooit negatief worden, en de voorwaarde i >= 0 is altijd waar. Als i-- wordt uitgevoerd terwijl i gelijk is aan 0, wordt i weer 2³² − 1 = 4294967295, en de lus stopt niet maar blijft 4294967294, 4294967293 enzovoort afdrukken. Om tot 0 af te tellen, gebruik je int of schrijf je de lus anders, zoals for (i = 4; i-- > 0; ). Met -Wextra geeft gcc een waarschuwing dat deze vergelijking altijd waar is."
+ },
+ "c-language-013": {
+  "question": "Een programma dat „char c = 200;” instelt en c met %d in printf afdrukt, gaf −56 na compileren en uitvoeren met gcc voor Linux op x86-64, en 200 met gcc voor Linux op Arm. Wat is de reden voor dit verschil?",
+  "choices": [
+   "Arm is big-endian, dus de bytes worden in omgekeerde volgorde gelezen",
+   "Of een char zonder signed of unsigned een type met of zonder teken is, bepaalt de implementatie; op x86-64 is het met teken en op Arm zonder teken",
+   "Op x86-64 heeft char 16 bits, en het bovenste bit wordt als teken behandeld"
+  ],
+  "explanation": "Of een char zonder signed of unsigned een type met of zonder teken is, legt de standaard niet vast, maar laat hij over aan de implementatie (door de implementatie bepaald gedrag, implementation-defined). Op Linux op x86-64 is char met teken en kan het alleen −128 tot 127 weergeven, dus het opslaan van 200 geeft 200 − 256 = −56. Op Linux op Arm en RISC-V is char zonder teken en wordt 200 ongewijzigd opgeslagen. Gebruik voor bytegegevens unsigned char of uint8_t, zodat duidelijk is hoe met het teken wordt omgegaan."
+ },
+ "c-language-014": {
+  "question": "Wat is de uitvoer als de bovenstaande code, met b++ aan de rechterkant van && en ||, wordt uitgevoerd?",
+  "code": "int a = 0, b = 0;\nif (a++ && b++) { }\nif (a++ || b++) { }\nprintf(\"%d %d\\n\", a, b);",
+  "choices": [
+   "2 0",
+   "2 1",
+   "2 2"
+  ],
+  "explanation": "&& evalueert de rechterkant niet als de linkerkant onwaar is, en || niet als de linkerkant waar is (kortsluitevaluatie). In de eerste if is de waarde van a++ de waarde van vóór de verhoging, 0, wat onwaar is, dus b++ wordt niet uitgevoerd en alleen a wordt 1. In de tweede if is de waarde van a++ 1, wat waar is, dus wordt b++ opnieuw niet uitgevoerd en wordt a 2. Let erop dat als de rechterkant een expressie met neveneffecten bevat, zoals ++ of een functieaanroep, het van de waarde van de linkerkant afhangt of die wordt uitgevoerd."
+ },
+ "c-language-015": {
+  "question": "Wat is de uitvoer als het bovenstaande switch-statement, met een case zonder break, wordt uitgevoerd?",
+  "code": "int n = 2, c = 0;\nswitch (n) {\ncase 1: c += 1;\ncase 2: c += 10;\ncase 3: c += 100; break;\ndefault: c += 1000;\n}\nprintf(\"%d\\n\", c);",
+  "choices": [
+   "10",
+   "110",
+   "1110"
+  ],
+  "explanation": "Een switch-statement springt naar het case-label dat bij de waarde van n past en voert vanaf daar ook de statements van de volgende cases uit tot het een break tegenkomt (fall-through). n is 2, dus de uitvoering begint bij case 2, en na c += 10 wordt ook c += 100 van case 3 uitgevoerd, waarna break de switch verlaat. c is 10 + 100 = 110. Als het doorlopen bedoeld is, maakt een vermelding daarvan in commentaar het gemakkelijk om het te onderscheiden van een vergeten break."
+ },
+ "c-language-016": {
+  "question": "Wat is de uitvoer als het bovenstaande programma wordt uitgevoerd?",
+  "code": "void f(int x) { x = 10; }\nvoid g(int *p) { *p = 20; }\nint main(void) {\n    int a = 1, b = 1;\n    f(a);\n    g(&b);\n    printf(\"%d %d\\n\", a, b);\n    return 0;\n}",
+  "choices": [
+   "1 20",
+   "10 1",
+   "10 20"
+  ],
+  "explanation": "In C worden de argumenten van een functie als waarde doorgegeven (call by value): de aanroep f(a) kopieert de waarde 1 van a naar x. Als x binnen f op 10 wordt gezet, verandert alleen de kopie, en de a van de aanroeper blijft 1. g(&b) geeft het adres van b door, dus *p = 20 binnen g schrijft naar b zelf, en b wordt 20. Om een variabele van de aanroeper binnen een aangeroepen functie te veranderen, wordt op deze manier een pointer doorgegeven."
+ },
+ "c-language-017": {
+  "question": "Wat is de retourwaarde van de derde aanroep als de bovenstaande functie f drie keer achter elkaar wordt aangeroepen?",
+  "code": "int f(void) {\n    static int s = 0;\n    int a = 0;\n    s++;\n    a++;\n    return s * 10 + a;\n}",
+  "choices": [
+   "11",
+   "13",
+   "31"
+  ],
+  "explanation": "De lokale variabele s met static wordt maar één keer, vóór de start van het programma, op 0 geïnitialiseerd en behoudt haar waarde nadat de functie is teruggekeerd. Daarom neemt s bij elke aanroep toe tot 1, 2 en 3. a, zonder static, wordt bij elke aanroep opnieuw aangemaakt en begint bij 0, dus die is elke keer 1. De retourwaarde van de derde aanroep is 3 × 10 + 1 = 31."
+ },
+ "c-language-018": {
+  "question": "Welke combinatie van de levensduur van (1) een lokale variabele die binnen een functie zonder static is gedeclareerd, (2) een met malloc gereserveerd gebied en (3) een variabele die buiten elke functie is gedeclareerd, is in C juist?",
+  "choices": [
+   "(1) tot het programma eindigt, (2) tot de functie die het heeft gereserveerd terugkeert, (3) tot het programma eindigt",
+   "(1) tot de uitvoering het blok verlaat waarin ze is gedeclareerd, (2) tot het met free wordt vrijgegeven, (3) tot het programma eindigt",
+   "(1) tot de uitvoering het blok verlaat waarin ze is gedeclareerd, (2) tot het programma eindigt (eerder vrijgeven is niet mogelijk), (3) tot de functie die haar als eerste gebruikte terugkeert"
+  ],
+  "explanation": "De automatische variabele in (1) staat in het algemeen op de stack; ze wordt aangemaakt bij het binnengaan van het blok waarin ze is gedeclareerd en verdwijnt als de uitvoering dat blok verlaat. Het met malloc gereserveerde gebied in (2) staat op de heap; het blijft bestaan na het terugkeren uit functies en kan worden gebruikt tot het met free wordt vrijgegeven. De variabele buiten elke functie in (3) (en elke variabele met static) bestaat gedurende de hele uitvoering van het programma en staat in een statisch gebied zoals .data of .bss. Een pointer gebruiken naar een gebied waarvan de levensduur is afgelopen, en free vergeten zodat gebieden zich blijven opstapelen, zijn veelvoorkomende oorzaken van bugs."
+ },
+ "c-language-019": {
+  "question": "int is 32 bits (maximum 2147483647). Wat is de grootste n waarvoor de bovenstaande functie fact(n) de faculteit van n correct en zonder overloop teruggeeft?",
+  "code": "int fact(int n) {\n    if (n <= 1)\n        return 1;\n    return n * fact(n - 1);\n}",
+  "choices": [
+   "12",
+   "13",
+   "20"
+  ],
+  "explanation": "fact is een functie die met recursie zichzelf aanroept als n × fact(n − 1) en 1 teruggeeft als n 1 of kleiner is. 12! = 479001600 is kleiner dan het maximum van int, 2147483647, dus wordt correct berekend, maar 13! = 6227020800 overschrijdt het maximum. Bij fact(13) treedt in de laatste vermenigvuldiging 13 × 479001600 overloop van een integer met teken op, en dat is ongedefinieerd gedrag. Niet-geoptimaliseerde gcc op x86-64 geeft bijvoorbeeld 1932053504 terug, de rest van 6227020800 bij deling door 2³², maar dit resultaat is niet gegarandeerd. Voor grotere n gebruik je bijvoorbeeld de 64-bits long long (tot n = 20)."
+ },
+ "c-language-020": {
+  "question": "int is 4 bytes en een pointer is 8 bytes. Als de waarde (het adres) van een pointer p naar int 0x1000 is, wat is dan de waarde van p + 3?",
+  "choices": [
+   "0x100C",
+   "0x1012",
+   "0x1018"
+  ],
+  "explanation": "Als een geheel getal bij een pointer wordt opgeteld, schuift de pointer op in eenheden van de grootte van het type waarnaar hij wijst. int is 4 bytes, dus p + 3 wijst 3 × 4 = 12 bytes verder, naar 0x1000 + 0xC = 0x100C. p + 3 is het adres van het array-element p[3], en *(p + 3) betekent hetzelfde als p[3]. Een pointer naar char schuift telkens 1 byte op, en een pointer naar double (8 bytes) telkens 8 bytes."
+ },
+ "c-language-021": {
+  "question": "int is 4 bytes en een pointer is 8 bytes. Wat is de uitvoer als het bovenstaande programma wordt uitgevoerd?",
+  "code": "void f(int a[10]) {\n    printf(\"%zu\\n\", sizeof a);\n}\nint main(void) {\n    int b[10] = {0};\n    printf(\"%zu \", sizeof b);\n    f(b);\n    return 0;\n}",
+  "choices": [
+   "10 10",
+   "40 8",
+   "40 40"
+  ],
+  "explanation": "b in main is een int-array van 10 elementen, dus sizeof b is 10 × 4 = 40 bytes. Ook als een functieparameter als int a[10] wordt geschreven, wordt de parameter niet als array maar als pointer naar int (int *a) behandeld, en f(b) geeft alleen het adres van het eerste element door. Daarom is sizeof a binnen f gelijk aan 8, de grootte van een pointer. gcc geeft met -Wall een waarschuwing voor deze sizeof. Als een functie het aantal elementen van een array nodig heeft, wordt dat als apart argument doorgegeven."
+ },
+ "c-language-022": {
+  "question": "int is 4 bytes. Wat is de uitvoer als de bovenstaande code wordt uitgevoerd?",
+  "code": "int m[3][4];\nprintf(\"%td\\n\", (char *)&m[2][1] - (char *)&m[0][0]);",
+  "choices": [
+   "9",
+   "20",
+   "36"
+  ],
+  "explanation": "Een tweedimensionale array wordt in C rij voor rij opgeslagen (row-major): m[3][4] ligt in de volgorde m[0][0] tot m[0][3], m[1][0] tot m[1][3] en daarna m[2][0] tot m[2][3]. Vóór m[2][1] staan 2 × 4 = 8 elementen uit twee rijen plus 1 uit dezelfde rij, samen 9 elementen. Elk element is 4 bytes, dus de afstand vanaf het begin is 9 × 4 = 36 bytes. De aftrekking gebeurt na omzetting naar char *, dus het verschil wordt in bytes uitgedrukt."
+ },
+ "c-language-023": {
+  "question": "Wat is de uitvoer als de bovenstaande code met een char-array die een string bevat, wordt uitgevoerd?",
+  "code": "char s[10] = \"hello\";\nprintf(\"%zu %zu\\n\", strlen(s), sizeof s);",
+  "choices": [
+   "5 10",
+   "6 10",
+   "10 10"
+  ],
+  "explanation": "Een string in C is een reeks tekens, gevolgd door het afsluitende teken '\\0'. strlen telt de tekens vanaf het begin tot vlak voor '\\0', dus geeft 5 voor \"hello\". sizeof s is de grootte van de hele array s, de gedeclareerde 10 bytes (de overige elementen bevatten 0). Als het aantal elementen wordt weggelaten, zoals in char s[] = \"hello\";, ontstaat een array van 6 bytes inclusief '\\0'."
+ },
+ "c-language-024": {
+  "question": "Na de bovenstaande declaraties wordt een van de statements A „p = t;”, B „*p = 'x';”, C „q = t;” of D „*q = 'x';” geschreven. Welke combinatie geeft compileerfouten?",
+  "code": "char s[] = \"abc\", t[] = \"xyz\";\nconst char *p = s;\nchar *const q = s;",
+  "choices": [
+   "A en D",
+   "B en C",
+   "B en D"
+  ],
+  "explanation": "const char *p is een „pointer naar const char”: het teken waarnaar hij wijst, kan niet via p worden gewijzigd, maar p zelf kan naar een ander adres worden veranderd. char *const q is een „const pointer”: q kan niet worden veranderd, maar waarnaar q wijst, kan wel worden gewijzigd. Daarom geven B (toekenning aan *p) en C (toekenning aan q) een fout. Lees het zo: const links van * legt vast waarnaar wordt gewezen, en const rechts van * legt de pointer zelf vast."
+ },
+ "c-language-025": {
+  "question": "Wat is de uitvoer als het bovenstaande programma, dat een array van functiepointers gebruikt, wordt uitgevoerd?",
+  "code": "int add(int a, int b) { return a + b; }\nint mul(int a, int b) { return a * b; }\nint main(void) {\n    int (*op[2])(int, int) = {add, mul};\n    int r = 1;\n    for (int i = 0; i < 2; i++)\n        r = op[i](r, 3);\n    printf(\"%d\\n\", r);\n    return 0;\n}",
+  "choices": [
+   "3",
+   "6",
+   "12"
+  ],
+  "explanation": "op is een array van twee pointers naar functies die twee ints aannemen en een int teruggeven; op[0] bevat het adres van add en op[1] dat van mul. op[i](r, 3) roept de functie aan waarnaar de pointer wijst. Met i = 0 is r = add(1, 3) = 4, en met i = 1 is r = mul(4, 3) = 12. Functiepointers worden gebruikt voor dispatchtabellen, interruptvectoren, callbacks en dergelijke."
+ },
+ "c-language-026": {
+  "question": "fill en use zijn elders gedefinieerde functies. Wat is een probleem van de bovenstaande functie?",
+  "code": "int process(int n) {\n    int *buf = malloc(n * sizeof(int));\n    if (buf == NULL) return -1;\n    if (fill(buf, n) != 0)\n        return -2;\n    use(buf, n);\n    free(buf);\n    return 0;\n}",
+  "choices": [
+   "Als fill een waarde ongelijk aan 0 teruggeeft, keert de functie terug zonder buf vrij te geven, dus het gereserveerde gebied blijft achter zonder te worden vrijgegeven",
+   "De retourwaarde van malloc wordt niet gecontroleerd, dus bij een mislukte reservering wordt een NULL-pointer gederefereerd",
+   "buf wordt na free gebruikt, dus een vrijgegeven gebied wordt benaderd"
+  ],
+  "explanation": "Een met malloc gereserveerd gebied blijft bestaan tot het met free wordt vrijgegeven. Op het pad waarbij fill mislukt en de functie met return -2 terugkeert, wordt free niet aangeroepen en gaat de waarde (het adres) van buf verloren, zodat dat gebied nooit meer kan worden vrijgegeven. Dit heet een geheugenlek; als de functie herhaaldelijk wordt aangeroepen, krimpt het bruikbare geheugen steeds verder, wat vooral een probleem is voor embedded apparaten en servers die lang draaien. Roep free(buf) aan vóór het terugkeren, of breng het vrijgeven samen op één plek aan het einde van de functie."
+ },
+ "c-language-027": {
+  "question": "Wat is juist over de pointer die de bovenstaande functie make teruggeeft?",
+  "code": "int *make(void) {\n    int x = 42;\n    return &x;\n}",
+  "choices": [
+   "x blijft tot het einde van het programma op dezelfde plek staan, dus via de teruggegeven pointer kan altijd veilig 42 worden gelezen",
+   "x wordt bij het terugkeren naar de heap verplaatst, dus de aanroeper moet het na gebruik met free vrijgeven",
+   "De levensduur van x eindigt als de functie terugkeert, dus de teruggegeven pointer wijst naar een ongeldige plek, en gebruik ervan is ongedefinieerd gedrag"
+  ],
+  "explanation": "x is een lokale variabele zonder static (een automatische variabele); haar levensduur eindigt als de functie terugkeert, en de plek op de stack die ze innam, wordt door andere functieaanroepen hergebruikt. Een pointer die wijst naar een gebied waarvan de levensduur is afgelopen, heet een dangling pointer, en lezen of schrijven via zo'n pointer is ongedefinieerd gedrag. gcc geeft voor deze code een waarschuwing en kan zelfs code genereren die NULL teruggeeft. Geef de waarde zelf terug, of gebruik een gebied dat de aanroeper heeft voorbereid of dat met malloc is gereserveerd."
+ },
+ "c-language-028": {
+  "question": "Wat is in C de meest passende reden waarom wordt aangeraden om direct na free(p); de regel p = NULL; te schrijven?",
+  "choices": [
+   "Zonder toekenning van NULL komt het vrijgegeven gebied niet opnieuw beschikbaar, wat een geheugenlek veroorzaakt",
+   "p blijft naar het vrijgegeven gebied wijzen, dus zo worden dubbele vrijgave en gebruik na vrijgave voorkomen en gemakkelijker gevonden",
+   "free zet p automatisch op NULL, maar dezelfde waarde nog eens schrijven dient als veiligheidscontrole"
+  ],
+  "explanation": "free(p) geeft het gebied vrij waarnaar p wees, maar de waarde (het adres) van de variabele p blijft ongewijzigd. Daarna *p lezen of schrijven is gebruik na vrijgave (use-after-free), en free(p) nog eens aanroepen is een dubbele vrijgave (double free); beide zijn ongedefinieerd gedrag en kunnen de beheerinformatie van de heap beschadigen, zodat een storing ergens ver weg optreedt. Als p op NULL wordt gezet, is de dubbele vrijgave onschadelijk, omdat vastligt dat free(NULL) niets doet, en een controle op NULL vóór gebruik brengt ook de fout aan het licht. Andere pointers die naar hetzelfde gebied wijzen, vragen nog steeds aparte aandacht."
+ },
+ "c-language-029": {
+  "question": "De string \"ABCDEFGH\" van 8 tekens werd aan de bovenstaande functie save doorgegeven. Wat gebeurt er?",
+  "code": "void save(const char *input) {\n    char name[8];\n    strcpy(name, input);\n    printf(\"%s\\n\", name);\n}",
+  "choices": [
+   "Er worden 9 bytes geschreven, inclusief het afsluitende '\\0', waardoor 1 byte buiten name wordt beschadigd (ongedefinieerd gedrag)",
+   "Het zijn precies 8 tekens, dus de string past in name en ABCDEFGH wordt correct afgedrukt",
+   "strcpy kort de string in tot 7 tekens zodat die in name past, en zet het afsluitende '\\0' in het laatste element"
+  ],
+  "explanation": "De string \"ABCDEFGH\" is inclusief het afsluitende '\\0' 9 bytes. strcpy kent de grootte van de bestemming niet en kopieert alles tot en met '\\0', dus schrijft het 1 byte voorbij het einde van de 8 bytes van name (een bufferoverloop). Het teveel kan andere variabelen op de stack of het retouradres beschadigen, en wordt ook misbruikt door aanvallen die lange invoer aanleveren om willekeurige code uit te voeren. Dit wordt voorkomen met een functie waaraan de te schrijven grootte wordt meegegeven, zoals snprintf(name, sizeof name, \"%s\", input)."
+ },
+ "c-language-030": {
+  "question": "Welke beschrijving van wat er in C gebeurt als een NULL-pointer wordt gederefereerd (*p wordt gelezen terwijl p NULL is), is juist?",
+  "choices": [
+   "De standaard eist dat dit tijdens de uitvoering als fout wordt gedetecteerd, dus in elke omgeving drukt het programma een foutmelding af en stopt het",
+   "NULL is vastgelegd als wijzend naar adres 0, dus in elke omgeving wordt de inhoud van adres 0 gelezen en gaat de verwerking door",
+   "Het is ongedefinieerd gedrag; onder een besturingssysteem crasht het programma in het algemeen, maar op een microcontroller zonder MMU kan adres 0 leesbaar zijn en blijft de fout soms onopgemerkt"
+  ],
+  "explanation": "Het derefereren van een NULL-pointer is ongedefinieerd gedrag, en de standaard zegt niet wat er gebeurt. Linux en Windows wijzen rond adres 0 geen pagina's toe, dus een dereferentie veroorzaakt een page fault (paginafout) en het programma wordt in het algemeen abnormaal beëindigd (op Linux bijvoorbeeld met een segmentation fault). Op een kleine microcontroller zonder MMU kan op adres 0 flashgeheugen of de tabel met interruptvectoren staan en leesbaar zijn, zodat de fout tot verkeerd gedrag leidt zonder ooit zichtbaar te worden. Het is belangrijk om vóór het gebruik van een pointer te controleren dat die niet NULL is."
+ },
+ "c-language-031": {
+  "question": "Neem een gebruikelijke omgeving aan waarin char 1 byte en int 4 bytes is, en int op adressen wordt geplaatst die een veelvoud van 4 zijn. Wat is de uitvoer als de bovenstaande code wordt uitgevoerd?",
+  "code": "struct S { char c; int i; char d; };\nstruct T { int i; char c; char d; };\nprintf(\"%zu %zu\\n\", sizeof(struct S), sizeof(struct T));",
+  "choices": [
+   "6 6",
+   "9 6",
+   "12 8"
+  ],
+  "explanation": "int wordt geplaatst op een adres dat een veelvoud van 4 is, dus in struct S worden na c 3 bytes opvulling (padding) ingevoegd, staat i op byte-offset 4 en d op offset 8. Bovendien wordt de grootte van de hele struct naar boven afgerond op een veelvoud van 4, zodat i in elk element van een array van structs goed uitgelijnd blijft; na de 9 bytes worden dus 3 bytes toegevoegd, wat 12 bytes geeft. In struct T volgen c en d op i, samen 6 bytes, wat naar boven wordt afgerond op 8 bytes. Door de members van het grootste naar het kleinste type te ordenen, wordt de padding kleiner."
+ },
+ "c-language-032": {
+  "question": "uint32_t en uint8_t zijn integertypen zonder teken van 32 en 8 bits, en de omgeving is little-endian. Wat is de uitvoer als de bovenstaande code wordt uitgevoerd?",
+  "code": "union { uint32_t w; uint8_t b[4]; } u;\nu.w = 0x12345678;\nprintf(\"%02X %02X\\n\", u.b[0], u.b[1]);",
+  "choices": [
+   "12 34",
+   "78 56",
+   "87 65"
+  ],
+  "explanation": "De members van een union overlappen elkaar vanaf hetzelfde adres, dus u.b[0] tot u.b[3] stellen elk een van de 4 bytes van u.w voor. Little-endian plaatst de minst significante byte op het laagste adres, dus 0x12345678 ligt vanaf het laagste adres als 78, 56, 34, 12. Daarom is u.b[0] gelijk aan 0x78 en u.b[1] gelijk aan 0x56. Een andere member lezen dan die waarnaar is geschreven, kan zo worden gebruikt om de bytevolgorde te onderzoeken, maar het resultaat hangt af van de endianness."
+ },
+ "c-language-033": {
+  "question": "Wat is de uitvoer als de bovenstaande code, die 9 opslaat in een bitveld van 3 bits, wordt uitgevoerd?",
+  "code": "struct { unsigned int x : 3; } s;\nint v = 9;\ns.x = v;\nprintf(\"%d\\n\", s.x);",
+  "choices": [
+   "1",
+   "7",
+   "9"
+  ],
+  "explanation": "x is een bitveld zonder teken van 3 bits, dus het kan alleen 0 tot 7 weergeven. Een waarde opslaan die niet in een type zonder teken past, geeft de rest bij deling door 2³ = 8, dus 9 wordt 1. Bitvelden kunnen worden gebruikt om kleine waarden compact op te slaan, zoals instelvelden van registers of communicatievlaggen, maar details zoals de bitvolgorde van de velden verschillen per implementatie. gcc geeft een waarschuwing als de constante 9 rechtstreeks aan s.x wordt toegekend."
+ },
+ "c-language-034": {
+  "question": "Wat is de uitvoer als de bovenstaande code, die de met #define gedefinieerde macro SQUARE gebruikt, wordt uitgevoerd?",
+  "code": "#define SQUARE(x) x * x\nint a = 3;\nprintf(\"%d\\n\", SQUARE(a + 1));",
+  "choices": [
+   "7",
+   "10",
+   "16"
+  ],
+  "explanation": "Een macro is alleen een tekstvervanging door de preprocessor. SQUARE(a + 1) wordt geëxpandeerd tot a + 1 * a + 1, en de vermenigvuldiging wordt eerst berekend, wat 3 + 3 + 1 = 7 geeft. Om het bedoelde kwadraat van (a + 1), 16, te krijgen, worden haakjes rond het argument en de hele body gezet, zoals in #define SQUARE(x) ((x) * (x)). Zelfs dan evalueert een argument met neveneffecten, zoals SQUARE(i++), i++ twee keer en wordt het ongedefinieerd gedrag, dus kan in plaats daarvan een inline functie worden gebruikt."
+ },
+ "c-language-035": {
+  "question": "Het headerbestand sensor.h is geschreven zoals hierboven. Wat is het doel van de drie regels #ifndef, #define en #endif?",
+  "code": "#ifndef SENSOR_H\n#define SENSOR_H\ntypedef struct { int id; int value; } Sensor;\nint sensor_read(Sensor *s);\n#endif",
+  "choices": [
+   "Het resultaat van het compileren van de header in een bestand opslaan, zodat het compileren van andere bronbestanden die dezelfde header gebruiken sneller gaat",
+   "Alleen bronbestanden die SENSOR_H definiëren, deze header laten gebruiken",
+   "De inhoud maar één keer opnemen, ook als dezelfde header meerdere keren in één bronbestand wordt ingevoegd (include), zodat fouten door dubbele definities worden voorkomen"
+  ],
+  "explanation": "Als a.h en b.h allebei sensor.h invoegen en een bronbestand a.h en b.h invoegt, wordt de inhoud van sensor.h twee keer opgenomen. De eerste keer wordt SENSOR_H gedefinieerd, dus de tweede keer is de voorwaarde #ifndef SENSOR_H onwaar en wordt alles tot #endif overgeslagen. Zonder dit mechanisme zou het struct-type Sensor twee keer worden gedefinieerd en een compileerfout geven. Dit idioom heet een include guard, en bij veel compilers kan #pragma once voor hetzelfde doel worden gebruikt."
+ },
+ "c-language-036": {
+  "question": "Wat is de uitvoer als de bovenstaande code binnen de functie main wordt geschreven en uitgevoerd?",
+  "code": "#define DEBUG 0\n#ifdef DEBUG\n    printf(\"A\\n\");\n#endif\n#if DEBUG\n    printf(\"B\\n\");\n#endif",
+  "choices": [
+   "Alleen A wordt afgedrukt",
+   "Er wordt niets afgedrukt",
+   "A en B worden afgedrukt"
+  ],
+  "explanation": "#ifdef DEBUG controleert alleen of een macro met de naam DEBUG is gedefinieerd, niet de waarde ervan. DEBUG is gedefinieerd met de waarde 0, dus de voorwaarde is waar en het statement dat A afdrukt, wordt gecompileerd. #if DEBUG controleert de waarde, die 0 is, dus de voorwaarde is onwaar en het statement dat B afdrukt, wordt verwijderd. Bij het in- en uitschakelen van debugcode ontstaan zulke tegenstrijdigheden als niet consequent #ifdef of #if voor de test wordt gebruikt."
+ },
+ "c-language-037": {
+  "question": "Een uitgangsregister van een microcontroller wordt gedeclareerd en gebruikt zoals hierboven. Welke beschrijving van deze declaratie is juist?",
+  "code": "#define GPIO_BASE 0x40020000u\nvolatile uint32_t *const odr =\n    (volatile uint32_t *)(GPIO_BASE + 0x14);\n*odr |= 1u << 5;",
+  "choices": [
+   "De waarde van *odr kan niet worden gewijzigd, terwijl odr zelf door interrupts kan veranderen, dus wordt het bij elk gebruik opnieuw gelezen",
+   "Doordat volatile is toegevoegd, wordt de read-modify-write van *odr |= 1u << 5 één bewerking die niet kan worden onderbroken",
+   "Het adres waarnaar odr wijst, kan niet worden veranderd, en lees- en schrijfacties via odr worden niet weggelaten, maar precies zo vaak uitgevoerd als ze zijn geschreven"
+  ],
+  "explanation": "const staat rechts van *, dus de pointer odr zelf kan niet worden veranderd en wijst altijd naar hetzelfde registeradres. Het uint32_t waarnaar hij wijst, is volatile, dus de compiler laat lees- en schrijfacties van *odr niet weg en voegt ze niet samen, en voert precies zoveel toegangen uit als er zijn geschreven. volatile maakt bewerkingen echter niet atomair, dus tussen het lezen en het schrijven van *odr |= … kan een interrupt optreden. Als hetzelfde register ook door een interrupt handler wordt bewerkt, schakel dan gedurende die bewerking de interrupts uit, of gebruik een speciaal register om bits te zetten."
+ },
+ "c-language-038": {
+  "question": "Welke beschrijving van ongedefinieerd gedrag in de zin van de C-standaard is juist?",
+  "choices": [
+   "Gedrag waaraan de standaard geen eisen stelt; de compiler mag optimaliseren in de veronderstelling dat het nooit optreedt, zodat de resultaten onverwacht kunnen zijn",
+   "Gedrag waarvan elke implementatie het resultaat bepaalt en dat ze verplicht moet documenteren",
+   "Gedrag dat tijdens de uitvoering altijd wordt gedetecteerd, waarbij een foutmelding wordt afgedrukt en het programma stopt"
+  ],
+  "explanation": "Ongedefinieerd gedrag is gedrag waaraan de standaard geen enkele eis stelt, zoals overloop van integers met teken, toegang buiten de grenzen van een array, het derefereren van een NULL-pointer en gebruik na vrijgave. Het kan toevallig werken zoals verwacht, maar omdat de compiler mag optimaliseren in de veronderstelling dat het „in een correct programma niet voorkomt”, kan alleen al een andere optimalisatie-instelling of compilerversie het resultaat veranderen. Daartegenover heten zaken zoals de grootte van int en of char een teken heeft, die de implementatie bepaalt en moet documenteren, door de implementatie bepaald gedrag (implementation-defined behavior). Met -fsanitize=undefined detecteren gcc en clang een deel van het ongedefinieerde gedrag tijdens de uitvoering."
+ },
+ "c-language-039": {
+  "question": "int en unsigned int zijn 32 bits. Welke van de volgende bewerkingen is volgens de C-standaard ongedefinieerd gedrag?",
+  "choices": [
+   "1 optellen bij een variabele van het type unsigned int waarvan de waarde het maximum 4294967295 is",
+   "Een negatieve int-waarde met >> 1 bit naar rechts schuiven",
+   "1 optellen bij een variabele van het type int waarvan de waarde het maximum 2147483647 is"
+  ],
+  "explanation": "Een bewerking met integers met teken waarvan het resultaat het weer te geven bereik overschrijdt, zoals 2147483647 + 1 bij int, is ongedefinieerd gedrag. Voor rekenen met integers zonder teken ligt vast dat het resultaat de rest bij deling door 2³² is, dus 4294967295 + 1 geeft 0 en is geen ongedefinieerd gedrag. Een negatieve waarde naar rechts schuiven is door de implementatie bepaald gedrag: de implementatie bepaalt of het een rekenkundige shift of een logische shift is, en gcc gebruikt een rekenkundige shift. Een negatieve waarde naar links schuiven is daarentegen ongedefinieerd gedrag."
+ },
+ "c-language-040": {
+  "question": "Als de bovenstaande functie met gcc met ingeschakelde optimalisatie wordt gecompileerd, kan de controle if (p == NULL) worden verwijderd. Wat is de reden?",
+  "code": "int get(int *p) {\n    int v = *p;\n    if (p == NULL)\n        return -1;\n    return v;\n}",
+  "choices": [
+   "*p wordt eerst gelezen, en als p NULL was, zou dat al ongedefinieerd gedrag zijn, dus de compiler mag aannemen dat p niet NULL is",
+   "De standaard legt vast dat een vergelijking met NULL altijd onwaar is",
+   "Bij optimalisatie worden if-statements die functieargumenten controleren als verantwoordelijkheid van de aanroeper beschouwd en mogen ze allemaal worden verwijderd"
+  ],
+  "explanation": "Als p NULL is, derefereert int v = *p;, dat eerst wordt uitgevoerd, een NULL-pointer, en is er op dat moment ongedefinieerd gedrag. Omdat de compiler mag aannemen dat ongedefinieerd gedrag niet optreedt, concludeert hij dat p niet NULL is, aangezien *p is gelezen, en verwijdert hij de controle p == NULL en de return -1. Met gcc 13 voor x86-64 en -O2 wordt de functie code die alleen *p leest en teruggeeft, terwijl bij -O0 de controle blijft staan. Controleer p vóór het lezen van *p om de controle zeker te laten werken."
+ }
+}
