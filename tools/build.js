@@ -1809,6 +1809,25 @@ ${x.faq?.length ? `<section class="faq">
     <div class="table-wrap" id="cp-table"></div>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    evm: x => `<form id="ev-form" class="dy-form ev-form" data-text="${esc(JSON.stringify({ examples: x.examples, now: x.now_label, behind: x.behind, ahead: x.ahead, on_time: x.on_time, over: x.over, under: x.under, on_budget: x.on_budget }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${field('bac', x.bac, 1000, 'min="0" step="any"')}
+    ${field('pv', x.pv, 500, 'min="0" step="any"')}
+    ${field('ev', x.ev, 400, 'min="0" step="any"')}
+    ${field('ac', x.ac, 450, 'min="0" step="any"')}
+    ${field('now', x.now, 50, 'min="0" max="100" step="any"')}
+    <p class="notice ev-wide" id="ev-error" hidden>${esc(x.invalid)}</p>
+  </form>
+  <section class="dy-out ev" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p class="ev-verdict" id="ev-verdict"></p>
+    <dl class="dy-stats">${stat('sv', x.sv)}${stat('cv', x.cv)}${stat('spi', x.spi)}${stat('cpi', x.cpi)}${stat('done', x.done)}</dl>
+    <h3>${esc(x.fc_heading)}</h3>
+    <dl class="dy-stats">${stat('eac', x.eac)}${stat('eacPlan', x.eac_plan)}${stat('eacBoth', x.eac_both)}${stat('etc', x.etc)}${stat('vac', x.vac)}${stat('tcpi', x.tcpi)}</dl>
+    <svg id="ev-chart" class="sta-chart ev-chart" viewBox="0 0 600 240" role="img" aria-label="${esc(x.chart)}"></svg>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
