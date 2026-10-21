@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-c52d6074d4';
+const CACHE = 'sq-e0c4c9dfad';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -75,6 +75,7 @@ const PRECACHE = [
   "/data/ja/q/system-architecture.json",
   "/data/ja/q/test.json",
   "/data/ja/q/wafer.json",
+  "/data/ja/q/wireless.json",
   "/data/ja/q/yield.json",
   "/en/",
   "/en/quiz/",
@@ -146,6 +147,7 @@ const PRECACHE = [
   "/data/en/q/system-architecture.json",
   "/data/en/q/test.json",
   "/data/en/q/wafer.json",
+  "/data/en/q/wireless.json",
   "/data/en/q/yield.json",
   "/zh-hant/",
   "/zh-hant/quiz/",
@@ -217,6 +219,7 @@ const PRECACHE = [
   "/data/zh-hant/q/system-architecture.json",
   "/data/zh-hant/q/test.json",
   "/data/zh-hant/q/wafer.json",
+  "/data/zh-hant/q/wireless.json",
   "/data/zh-hant/q/yield.json",
   "/ko/",
   "/ko/quiz/",
@@ -287,6 +290,7 @@ const PRECACHE = [
   "/data/ko/q/system-architecture.json",
   "/data/ko/q/test.json",
   "/data/ko/q/wafer.json",
+  "/data/ko/q/wireless.json",
   "/data/ko/q/yield.json",
   "/de/",
   "/de/quiz/",
@@ -357,6 +361,7 @@ const PRECACHE = [
   "/data/de/q/system-architecture.json",
   "/data/de/q/test.json",
   "/data/de/q/wafer.json",
+  "/data/de/q/wireless.json",
   "/data/de/q/yield.json",
   "/nl/",
   "/nl/quiz/",
@@ -427,6 +432,7 @@ const PRECACHE = [
   "/data/nl/q/system-architecture.json",
   "/data/nl/q/test.json",
   "/data/nl/q/wafer.json",
+  "/data/nl/q/wireless.json",
   "/data/nl/q/yield.json",
   "/fr/",
   "/fr/quiz/",
@@ -497,6 +503,7 @@ const PRECACHE = [
   "/data/fr/q/system-architecture.json",
   "/data/fr/q/test.json",
   "/data/fr/q/wafer.json",
+  "/data/fr/q/wireless.json",
   "/data/fr/q/yield.json",
   "/js/adc-snr.js",
   "/js/ads.js",
