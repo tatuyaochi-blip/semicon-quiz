@@ -19,9 +19,9 @@ export const reportUrl = (tpl, id, lang) =>
 // 「SiC(炭化ケイ素)」は「SiC(炭化ケイ素)」「SiC」「炭化ケイ素」のどれにも一致させる
 export function termMatcher(terms) {
   const keys = new Map();
-  for (const { id, term } of terms) {
+  for (const { id, term, aliases = [] } of terms) {
     const m = term.match(/^(.*?)\s*[(（](.+?)[)）]/);
-    for (const k of [term, ...(m ? [m[1], m[2]] : [])]) {
+    for (const k of [term, ...(m ? [m[1], m[2]] : []), ...aliases]) {
       const key = k.trim().toLowerCase();
       if (key.length >= 2 && !keys.has(key)) keys.set(key, id);
     }
@@ -32,8 +32,14 @@ export function termMatcher(terms) {
       const w = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       return /^[ァ-ヶー・]+$/.test(k) ? `(?<![ァ-ヶー])${w}(?![ァ-ヶー])` : w;
     });
-  return { keys, re: new RegExp(`(?<![A-Za-z0-9])(${words.join('|')})(?![A-Za-z0-9])`, 'gi') };
+  // 英字・数字の境界(「CMOS」を「CMOSFET」の中で一致させない)は、語の端が英数字のときだけ linkTerms で確かめる。
+  // 正規表現の各語に境界を付けると100倍以上遅くなるため。日本語の語は「投影飛程Rp」「理想係数n」のように英字が続いても一致させる
+  return { keys, re: new RegExp(`(${words.join('|')})`, 'gi') };
 }
+
+const ALNUM = /[A-Za-z0-9]/;
+const bounded = (text, start, end) => !(ALNUM.test(text[start] ?? '') && ALNUM.test(text[start - 1] ?? ''))
+  && !(ALNUM.test(text[end - 1] ?? '') && ALNUM.test(text[end] ?? ''));
 
 // 同じ略語の別の意味。「HBM(人体モデル)」は静電気試験のモデルで、メモリのHBMではない
 const OTHER_MEANING = /^\s*[(（]\s*(人体|人體|인체|human body|modèle du corps)/i;
@@ -43,7 +49,10 @@ export function linkTerms(text, { keys, re }) {
   const parts = [];
   const used = new Set();
   let last = 0;
-  for (const m of text.matchAll(re)) {
+  re.lastIndex = 0;
+  for (let m; (m = re.exec(text));) {
+    // 英数字の途中で切れている一致は捨て、次の文字から探し直す
+    if (!bounded(text, m.index, m.index + m[0].length)) { re.lastIndex = m.index + 1; continue; }
     const id = keys.get(m[0].toLowerCase());
     // ハイフンでつながった別の略語の一部(「ICP-MS」の中の「ICP」など)はリンクしない。「SiC-based」「GPIO-Pins」「MEMS-Gyroskop」は対象
     const end = m.index + m[0].length;

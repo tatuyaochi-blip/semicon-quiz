@@ -261,8 +261,9 @@ function buildLang(L) {
   // 用語集。key(既定言語の用語名)を言語共通のアンカーIDにする
   // 詳しい解説(about)とよくある質問(faq)は言語ごとに持つ。既定言語の分がほかの言語のページに混ざらないよう外す
   // 検索結果用のタイトル・説明文(title・description)も言語ごと。書いてある語だけ、決まった形の代わりに使う
-  const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
-  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key] }));
+  // 別表記(aliases)も言語ごと。問題文が「CMOSイメージセンサ」のように別の書き方をしていても用語ページにつなぐ
+  const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, aliases, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description, aliases } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
+  const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key], ...(g.aliases?.length ? { aliases: g.aliases } : {}) }));
   const matcher = termMatcher(glossaryIndex);
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
