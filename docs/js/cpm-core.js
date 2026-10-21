@@ -6,7 +6,7 @@ export function parseTasks(text) {
   for (const [k, l] of lines.entries()) {
     // 「A 3」「C 4 A,B」「C 4 A B」
     const m = l.split(/[\s,、]+/).filter(Boolean);
-    if (m.length < 2 || !/^[A-Za-z0-9_]{1,8}$/.test(m[0]) || !/^\d+(\.\d+)?$/.test(m[1]) || m.slice(2).some(x => !/^[A-Za-z0-9_]{1,8}$/.test(x))) return { error: 'line', line: k + 1 };
+    if (m.length < 2 || !/^[\p{L}\p{N}_]{1,8}$/u.test(m[0]) || !/^\d+(\.\d+)?$/.test(m[1]) || m.slice(2).some(x => !/^[\p{L}\p{N}_]{1,8}$/u.test(x))) return { error: 'line', line: k + 1 };
     if (tasks.some(t => t.id === m[0])) return { error: 'dup', id: m[0] };
     tasks.push({ id: m[0], d: Number(m[1]), pre: [...new Set(m.slice(2))] });
   }
