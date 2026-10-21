@@ -10,6 +10,7 @@ npm run build      # docs/ を生成（validate も自動で実行）
 npm run serve      # http://localhost:8080/ で確認
 npm run check:ui   # 各言語のクイズ画面に「undefined」などが出ていないかをブラウザで検査(Playwright が必要)
 npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必要な言語と問題IDを一覧にする
+node tools/x-post.js --preview 14  # X に投稿する「今日の半導体クイズ」の予定を表示する(投稿はしない)
 ```
 
 `docs/` はビルドのたびに作り直すため、直接編集しないこと。
@@ -28,6 +29,7 @@ npm run i18n:stale # 日本語の問題を直したあと、訳し直しが必�
 | adsenseSlots | AdSense の広告ユニットID。`{ "default": "1234567890", "top": "…" }` のように、枠の名前（top / question / category / glossary / stats / compare / term / figures）ごと、または `default` で指定する。IDのない枠は何も出さない。null なら枠に広告を入れない |
 | amazonTag / amazonDomain | AmazonアソシエイトのトラッキングIDと販売ドメインを言語ごとに指定する（例: ja は `-22` + `www.amazon.co.jp`、en は `-20` + `www.amazon.com`）。タグのない言語では参考書リンクを出さない。検索キーワードは ja が `data/books.json`、他言語は `data/i18n/{言語}/books.json` |
 | ga4Id | Google アナリティクス 4 の測定ID（`G-…`）。設定すると全ページに計測タグを出力し、プライバシーポリシーに説明を載せる。null なら何も出さない |
+| xPost | X への毎日の投稿(`.github/workflows/x-daily.yml`)。`lang`（投稿する言語）、`start`（1問目の日付）、`hashtag`、`campaign`（リンクに付ける utm_campaign）。準備の手順はワークフローの先頭に書いてある |
 
 ## PWA
 
