@@ -25,7 +25,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Model FLOPs utilization (MFU)","item":"https://semiconroom.com/en/term/model-flops-utilization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Model FLOPs utilization (MFU)","description":"The percentage of hardware peak performance achieved, computed from the operations a model actually requires.","url":"https://semiconroom.com/en/term/model-flops-utilization/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Model FLOPs utilization (MFU)","item":"https://semiconroom.com/en/term/model-flops-utilization/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Model FLOPs utilization (MFU)","description":"The percentage of hardware peak performance achieved, computed from the operations a model actually requires.","url":"https://semiconroom.com/en/term/model-flops-utilization/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is MFU, in simple terms?","acceptedAnswer":{"@type":"Answer","text":"A metric showing the achieved compute throughput, calculated from the operations the model inherently needs for training, as a percentage of the hardware's peak performance. It indicates how effectively the hardware's performance is being used."}},{"@type":"Question","name":"What is the difference between MFU and HFU?","acceptedAnswer":{"@type":"Answer","text":"HFU counts every operation the hardware actually executed, including activation recomputation. MFU counts only the operations the model requires and excludes extra work such as recomputation. Because both are divided by the same peak, HFU is always at least as high as MFU."}},{"@type":"Question","name":"How is MFU calculated?","acceptedAnswer":{"@type":"Answer","text":"For Transformer training, multiply about 6N operations per token (N being the parameter count) by the tokens processed per second to get effective throughput, then divide by the combined peak performance of the hardware used. It is important to state which precision's peak performance was used."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>How MFU is calculated</h2>
+  <p>MFU (model FLOPs utilization) expresses the achieved compute <a class="term-link" href="/en/term/throughput/">throughput</a>, calculated from the operations the model inherently requires, as a percentage of the hardware&#39;s peak performance. Training a Transformer with N parameters is taken to need about 6N operations per token. Multiplying the tokens processed per second by 6N gives the effective throughput, which is then divided by the combined peak performance of the accelerators used. For example, a system with 1,000 PFLOPS of combined peak that achieves 400 PFLOPS effective has an MFU of 40%. Attention operations are sometimes added to the count.</p>
+</section>
+<section class="term-about">
+  <h2>Compared with HFU</h2>
+  <p>A similar metric is HFU (hardware FLOPs utilization). HFU counts every operation the hardware actually executed, including the extra operations from activation recomputation (<a class="term-link" href="/en/term/gradient-checkpointing/">gradient checkpointing</a>) used to save memory. MFU counts only the operations the model requires, so recomputation does not raise MFU and in fact lowers it by taking extra time. HFU shows how busy the hardware was, while MFU shows how much useful computation progressed, which makes MFU better for fairly comparing training systems with different implementations. MFU was proposed in the paper on the PaLM large language model published in 2022.</p>
+</section>
+<section class="term-about">
+  <h2>What lowers MFU</h2>
+  <p>In real training, MFU never approaches 100%, and large-scale training is often said to stay at a few tens of percent. Factors that lower it include waiting on communication between GPUs, idle time at the start and end of pipeline-parallel schedules (bubbles), memory-bound operations such as normalization and activation functions, slow data loading, and time spent recovering from failures or saving checkpoints. Peak performance also varies greatly with precision, for example whether it is counted in <a class="term-link" href="/en/term/fp8/">FP8</a> or BF16, so values cannot be compared without checking which precision&#39;s peak was used as the denominator.</p>
+</section>
+<section class="term-about">
+  <h2>How it is used, and caveats</h2>
+  <p>MFU is used as a gauge of how much changes to training settings or software have helped. Engineers vary the parallelization scheme, number of microbatches, kernel optimizations that fuse operations, and overlap of communication with computation, and watch how MFU changes. A high MFU, however, is not the same as faster training overall. Switching to a model or algorithm that reaches the same quality with fewer operations can finish training sooner even if MFU drops. For inference, decoding tends to be bound by memory bandwidth, so it is more often evaluated by memory-bandwidth utilization or cost per token than by compute utilization.</p>
+</section>
 <section>
   <h2>Try it: questions about Model FLOPs utilization (MFU)</h2>
   <article class="q-mini" data-qid="ai-stack-044" data-cat="ai-stack" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. The percentage of hardware peak performance achieved, computed from the operations the model actually requires</p><p class="explanation"><a class="term-link" href="/en/term/model-flops-utilization/">MFU</a> derives the rate of useful computation from tokens processed per second and the operations the model requires, then divides it by the GPUs&#39; peak performance. Communication waits, memory-bound operations, pipeline bubbles and recomputation all lower it. Because it shows how well the hardware is used, it guides improvements to training configuration and software.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is MFU, in simple terms?</h3>
+  <p>A metric showing the achieved compute throughput, calculated from the operations the model inherently needs for training, as a percentage of the hardware&#39;s peak performance. It indicates how effectively the hardware&#39;s performance is being used.</p>
+  <h3>What is the difference between MFU and HFU?</h3>
+  <p>HFU counts every operation the hardware actually executed, including activation recomputation. MFU counts only the operations the model requires and excludes extra work such as recomputation. Because both are divided by the same peak, HFU is always at least as high as MFU.</p>
+  <h3>How is MFU calculated?</h3>
+  <p>For Transformer training, multiply about 6N operations per token (N being the parameter count) by the tokens processed per second to get effective throughput, then divide by the combined peak performance of the hardware used. It is important to state which precision&#39;s peak performance was used.</p>
+</section>
 <section>
   <h2>Model FLOPs utilization (MFU) in the explanations</h2>
   <ul class="term-quotes"><li><p>MFU derives the rate of useful computation from tokens processed per second and the operations the model requires, then divides it by the GPUs&#39; peak performance.</p><a href="/en/q/ai-stack/ai-stack-044/">Which describes MFU (Model FLOPs Utilization), a metric of …</a></li></ul>
