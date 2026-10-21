@@ -9888,5 +9888,247 @@
         "The high-temperature storage test simply holds products at high temperature, for example 150 °C, without voltage, evaluating degradation driven by temperature alone, such as wire-bond joint degradation and data retention in nonvolatile memory. HTOL operates devices under voltage at around 125 °C, so it also accelerates degradation driven by electric field or current, such as TDDB and electromigration."
       ]
     ]
+  },
+  "secure-boot-vs-measured-boot": {
+    "title": "Secure Boot vs Measured Boot: Signature Checks, TPM Measurements and Attestation Compared",
+    "description": "Secure boot vs measured boot compared in one table: what each checks, whether it blocks or records, root of trust, behavior on tampering, what it needs, how the results are used, limits and how they are combined.",
+    "lead": "Both mechanisms check the next piece of software at each boot stage, from power-on until the OS is running. Secure boot verifies the digital signature of the next stage and stops the boot if it is not properly signed. Measured boot computes a hash of the next stage and records it cumulatively in the TPM's PCRs (Platform Configuration Registers), without stopping anything. Secure boot prevents; measured boot records so the state can be checked and proven later. They are not alternatives and are often used together.",
+    "items": [
+      "Secure boot",
+      "Measured boot"
+    ],
+    "rows": [
+      [
+        "What it checks",
+        "The digital signature of the next software: whether the vendor's signature over the image hash verifies with a trusted key",
+        "The hash (measurement) of the next software: the value of what was actually loaded is recorded as is"
+      ],
+      [
+        "When something is wrong",
+        "Stops the boot on the spot if verification fails (enforcement)",
+        "Lets the boot continue and only leaves a record (recording)"
+      ],
+      [
+        "Root of trust",
+        "Immutable ROM boot code and the public key used for verification (often stored as its hash in eFuses to save space)",
+        "A small trusted piece of code that runs first and starts measuring, plus the TPM that holds the record"
+      ],
+      [
+        "If software has been tampered with",
+        "The signature does not match, so it never runs; a modified bootloader or kernel cannot start",
+        "It boots anyway, but the PCR values differ from the expected ones, so checking the record reveals it later"
+      ],
+      [
+        "What it needs",
+        "A verification public key on the device and a signing private key kept securely by the vendor; combined with anti-rollback so old versions cannot be reinstalled",
+        "TPM PCRs (which can only be extended, folding in a new measurement through a hash) and a record of each stage's measurements (the event log)"
+      ],
+      [
+        "How the result is used",
+        "Prevents unauthorized software from starting on that device. To show others what booted, it is combined with measured boot or similar",
+        "Remote attestation (PCR values signed with a TPM key and presented to a server) and sealing (releasing secrets such as a disk-encryption key only when the PCRs hold the expected values)"
+      ],
+      [
+        "Limits",
+        "It only tells whether code is signed by a trusted key, so it cannot tell an old but validly signed vulnerable version or a configuration change apart; it protects only the boot path",
+        "It cannot stop malicious code from running, and the record means something only when someone checks it; expected PCR values change with every software update and must be managed"
+      ],
+      [
+        "Typical use",
+        "Smartphones, PCs and many embedded devices; shipped products also lock debug ports such as JTAG",
+        "PCs with a TPM, for disk encryption and device-health checks before network access; TPM-less microcontrollers use schemes such as DICE that derive keys from measurements for the same purpose"
+      ]
+    ],
+    "when": [
+      [
+        "Secure boot",
+        "When unauthorized software must never run on the device at all. It works on its own, even on devices that cannot reach a verifying server."
+      ],
+      [
+        "Measured boot",
+        "When you need to prove to a server what booted, or to release a disk-encryption key only when the boot state is correct. An old but validly signed version can also be spotted by comparing the record with expected values."
+      ],
+      [
+        "Together",
+        "Secure boot blocks unauthorized boots, and measured boot records the boot state so it can be proven. Both can run on the same device at the same time."
+      ]
+    ],
+    "faq": [
+      [
+        "What is the main difference between secure boot and measured boot?",
+        "Whether the boot stops when a check fails. Secure boot refuses to start software whose signature is not valid. Measured boot lets the boot continue and records the hash of each piece of software in the TPM in a tamper-evident way, so it can be checked later or proven to a remote server."
+      ],
+      [
+        "Does measured boot need a TPM?",
+        "It usually records into TPM PCRs. A TPM can be a discrete chip or firmware running inside the CPU or SoC (fTPM). Microcontrollers without a TPM can achieve a similar goal with schemes such as DICE that derive keys from measurements."
+      ],
+      [
+        "If I have secure boot, do I still need measured boot?",
+        "They do different jobs, so using both makes sense. Secure boot only checks whether code is signed by a trusted key, so it cannot distinguish an old but validly signed vulnerable version or a configuration change, and it cannot show anyone else what booted. Measured boot keeps the values of what actually started, which enables remote attestation and sealing."
+      ]
+    ]
+  },
+  "write-allocate-vs-no-write-allocate": {
+    "title": "Write-Allocate vs No-Write-Allocate: Write-Miss Behavior, Traffic and Pairing Compared",
+    "description": "Write-allocate vs no-write-allocate cache policies compared in one table: what happens on a write miss, line fill, pairing with write-back or write-through, traffic, write-only data, later reads, implementation techniques and where each is used.",
+    "lead": "Write-allocate and no-write-allocate are policies that decide whether a line is brought into the cache when a write misses. With write-allocate, the cache first reads the line from the level below and then performs the write in the cache. With no-write-allocate, the line is not fetched and the write is sent straight to the level below. This is a separate choice from write-back vs write-through, which decide when a write that hits reaches the level below, but write-allocate is usually paired with write-back and no-write-allocate with write-through.",
+    "items": [
+      "Write-allocate",
+      "No-write-allocate"
+    ],
+    "rows": [
+      [
+        "On a write miss",
+        "Reads the whole line from the level below, places it in the cache, then writes into it",
+        "Leaves the cache untouched and sends the write directly to the level below"
+      ],
+      [
+        "Line fill (read)",
+        "Required. On multicore systems it is a read for ownership (RFO) that invalidates other cores' copies before the write, so a store miss looks like a read on the memory bus",
+        "Not needed; only the written data is sent to the level below"
+      ],
+      [
+        "Usual pairing",
+        "Write-back: later writes to the fetched line hit and are absorbed without memory traffic, which pays back the cost of the initial read",
+        "Write-through: every write goes to the level below anyway, so fetching the line would not reduce write traffic"
+      ],
+      [
+        "Traffic to the level below",
+        "Lower when the same line is written many times or the written data is read back",
+        "Each missing write goes out every time, but no extra reads are generated"
+      ],
+      [
+        "Large write-only data (clearing memory, writing output)",
+        "Each line is read only to be overwritten and later written back, roughly doubling traffic, and useful data is evicted from the cache",
+        "No reads and no cache pollution, so it suits this kind of data"
+      ],
+      [
+        "Reading right after writing",
+        "The line is in the cache, so the read hits",
+        "The line is not in the cache, so the read misses and fetches it"
+      ],
+      [
+        "Implementation techniques",
+        "For write-only data, non-temporal (streaming) stores bypass the cache and send combined writes straight to main memory; some ISAs also have an instruction that zeroes a whole line without reading its old contents",
+        "A write buffer hides write latency, and it often merges several writes to the same line into one transfer"
+      ],
+      [
+        "Where it is used",
+        "Common in write-back caches; most CPU L1 to L3 caches are write-back",
+        "Common in write-through caches, such as a small L1 backed by a write-back L2, or simple embedded processors"
+      ]
+    ],
+    "when": [
+      [
+        "Write-allocate",
+        "When written data will soon be read or written again, such as a loop updating array elements: writes with temporal locality."
+      ],
+      [
+        "No-write-allocate",
+        "When writing a large amount of data that will not be read back for a while. It avoids useless reads and keeps the cache free for useful data."
+      ],
+      [
+        "In software",
+        "Even with a write-allocate cache, non-temporal stores avoid the line reads for large write-only buffers. The written data does not stay in the cache, though, so reading it back immediately is slower."
+      ]
+    ],
+    "faq": [
+      [
+        "What is the difference between write-allocate and no-write-allocate?",
+        "On a write miss, write-allocate loads the line into the cache and then writes it in the cache. No-write-allocate does not load the line and writes directly to the level below."
+      ],
+      [
+        "Does write-through always use no-write-allocate?",
+        "Not always. How a write hit is propagated (write-back or write-through) and whether a line is fetched on a miss are separate choices. In practice, though, write-through is usually paired with no-write-allocate and write-back with write-allocate. In a write-through cache, a store that hits updates the cached copy and is also written to the level below; a store that misses is normally sent straight down without fetching the line."
+      ],
+      [
+        "Why is write-allocate slow for write-only data?",
+        "Because each line that will only be overwritten is first read from main memory. The read plus the later write-back roughly doubles the traffic and also evicts other data that would be reused. Non-temporal stores avoid this read."
+      ]
+    ]
+  },
+  "epitaxy-vs-cvd": {
+    "title": "Epitaxy vs CVD: Crystal Quality, Substrate, Temperature and Uses Compared",
+    "description": "Epitaxial growth vs ordinary CVD deposition compared in one table: resulting crystal, substrate requirements, pre-growth surface preparation, temperature, typical films, doping control, uses, quality concerns and equipment. Also explains why most epitaxy is itself done by CVD.",
+    "lead": "Epitaxial growth grows a single-crystal film on a single-crystal substrate with the same crystal orientation as the substrate. Most silicon epitaxy is done by CVD (chemical vapor deposition), so the two are not opposites: epitaxy can be seen as CVD that continues the substrate's crystal and grows single crystal (there are also non-CVD methods such as MBE). This table compares epitaxial growth of single crystal with ordinary CVD that deposits non-single-crystal films such as polysilicon, amorphous silicon, oxide and nitride.",
+    "items": [
+      "Epitaxial growth",
+      "CVD (ordinary deposition)"
+    ],
+    "rows": [
+      [
+        "Resulting crystal",
+        "Single crystal that continues the arrangement and orientation of the underlying crystal",
+        "Polycrystalline (polysilicon) or amorphous; silicon oxide and nitride films are amorphous too"
+      ],
+      [
+        "Substrate requirement",
+        "Needs a clean single-crystal surface to copy. In heteroepitaxy of a different material, mismatch in lattice constant and thermal expansion becomes an issue",
+        "Need not be single crystal: films deposit on oxide, metal, patterned topography or any surface the gas can reach"
+      ],
+      [
+        "Surface preparation before growth",
+        "Strict. Native oxide about 1 nm thick or carbon left on the surface seeds defects such as stacking faults. For silicon, an HF clean is usually followed by a hydrogen bake at about 1,100 °C that removes the oxide",
+        "No crystal has to connect to the underlying layer, so oxide removal is generally not as strict as for epitaxy"
+      ],
+      [
+        "Temperature tendency",
+        "For silicon it depends on the precursor: about 1,100–1,150 °C with trichlorosilane, about 1,000–1,100 °C with dichlorosilane, and roughly 600–900 °C with silane. SiC uses about 1,500–1,650 °C",
+        "Wide range by method: LPCVD about 600–800 °C, plasma CVD about 200–400 °C. Silicon from silane is amorphous below about 580 °C and polycrystalline above it"
+      ],
+      [
+        "Typical films",
+        "Silicon epitaxial layers, SiGe, SiC, and compound-semiconductor layers such as GaN and GaAs",
+        "Polysilicon, amorphous silicon, silicon oxide (from TEOS and others), silicon nitride, tungsten"
+      ],
+      [
+        "Doping control",
+        "In-situ doping with phosphine or diborane during growth lets each layer have its own concentration and gives abrupt depth profiles. Autodoping from heavily doped substrates must be controlled",
+        "Polysilicon can be made conductive by in-situ doping; for insulating films, doping is not the main purpose"
+      ],
+      [
+        "Main uses",
+        "Lightly doped drift layers in power devices, epitaxial wafers for CMOS (such as p/p+), substrates for CMOS image sensors, raised transistor source/drain, SiGe HBT bases, multilayer structures in LEDs and lasers",
+        "Interlayer dielectrics, STI fill, spacers, hard masks, polysilicon gates and resistors, tungsten plugs"
+      ],
+      [
+        "What quality means",
+        "Crystal defects such as stacking faults and dislocations, epi thickness and resistivity (doping). In heteroepitaxy, exceeding the critical thickness introduces misfit dislocations",
+        "Thickness uniformity, step coverage, film density and impurities such as hydrogen, film stress"
+      ],
+      [
+        "Equipment",
+        "For silicon on 300 mm wafers, lamp-heated single-wafer reactors are mainstream. Compound semiconductors widely use MOCVD, and MBE is also used, for example in research",
+        "LPCVD that processes many wafers at once in a vertical furnace, plasma CVD, HDP-CVD for gap fill and others"
+      ]
+    ],
+    "when": [
+      [
+        "Epitaxial growth",
+        "When you need a layer that does the device's electrical work, with few defects and doping chosen independently of the substrate, such as a power-device drift layer or SiGe source/drain."
+      ],
+      [
+        "CVD (ordinary deposition)",
+        "When you need insulators, electrodes, masks or fill films that do not have to be single crystal, while covering topography."
+      ],
+      [
+        "Same gas, different result",
+        "The same silicon precursor gives single crystal on clean single-crystal silicon but polysilicon or similar on oxide. Selective epitaxy strengthens this difference with chlorine-containing precursors or HCl so that single crystal grows only where silicon is exposed."
+      ]
+    ],
+    "faq": [
+      [
+        "Is epitaxial growth a type of CVD?",
+        "Most silicon epitaxy is done by CVD, so it can be seen as a way of using CVD to grow single crystal. Strictly, though, epitaxy names the result, growing single crystal that continues the underlying crystal, and the method is not limited to CVD. MOCVD, widely used for compound semiconductors, is epitaxy by CVD, while MBE (molecular beam epitaxy) supplies source materials as molecular beams in ultra-high vacuum and is not CVD."
+      ],
+      [
+        "Why is a hydrogen bake done before epitaxy?",
+        "Because native oxide (about 1 nm) or contamination such as carbon left on the surface prevents proper single-crystal growth and causes defects such as stacking faults. Heating in hydrogen to about 1,100 °C makes the oxide evaporate as SiO and exposes a clean crystal surface. Advanced processes that must limit the thermal budget combine it with wet cleaning or plasma treatment and run it at lower temperatures."
+      ],
+      [
+        "What is the difference between an epitaxial silicon layer and polysilicon?",
+        "An epitaxial layer is single crystal connected to the substrate, with few crystal defects, so it can serve as a layer that does the device's electrical work, such as a drift layer or source/drain. Polysilicon is a collection of small grains that can be deposited anywhere, including on oxide, and is used for gate electrodes, resistors and similar parts."
+      ]
+    ]
   }
 }

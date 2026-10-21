@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寫入配置與不寫入配置的差異：寫入未命中時的動作、流量、搭配方式比較 | 半導體教室</title>
+<meta name="description" content="從未命中時的動作、快取行的載入、與寫回或寫透的搭配、流量、只寫入資料的行為、之後的讀取、實作上的技巧與使用場合等面向，以表格比較快取寫入未命中策略中的寫入配置（write-allocate）與不寫入配置（no-write-allocate）。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/compare/write-allocate-vs-no-write-allocate/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/write-allocate-vs-no-write-allocate/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/write-allocate-vs-no-write-allocate/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/write-allocate-vs-no-write-allocate/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/write-allocate-vs-no-write-allocate/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="寫入配置與不寫入配置的差異：寫入未命中時的動作、流量、搭配方式比較 | 半導體教室">
+<meta property="og:description" content="從未命中時的動作、快取行的載入、與寫回或寫透的搭配、流量、只寫入資料的行為、之後的讀取、實作上的技巧與使用場合等面向，以表格比較快取寫入未命中策略中的寫入配置（write-allocate）與不寫入配置（no-write-allocate）。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/compare/write-allocate-vs-no-write-allocate/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/zh-hant/compare/"},{"@type":"ListItem","position":3,"name":"寫入配置與不寫入配置的差異：寫入未命中時的動作、流量、搭配方式比較","item":"https://semiconroom.com/zh-hant/compare/write-allocate-vs-no-write-allocate/"}]},{"@context":"https://schema.org","@type":"Article","headline":"寫入配置與不寫入配置的差異：寫入未命中時的動作、流量、搭配方式比較","description":"從未命中時的動作、快取行的載入、與寫回或寫透的搭配、流量、只寫入資料的行為、之後的讀取、實作上的技巧與使用場合等面向，以表格比較快取寫入未命中策略中的寫入配置（write-allocate）與不寫入配置（no-write-allocate）。","inLanguage":"zh-Hant","dateModified":"2026-10-21","mainEntityOfPage":"https://semiconroom.com/zh-hant/compare/write-allocate-vs-no-write-allocate/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"寫入配置與不寫入配置的差異是什麼？","acceptedAnswer":{"@type":"Answer","text":"寫入未命中時，寫入配置會先將快取行載入快取，再寫入快取。不寫入配置則不載入快取行，直接寫入下一層。"}},{"@type":"Question","name":"寫透方式一定使用不寫入配置嗎？","acceptedAnswer":{"@type":"Answer","text":"不一定。寫入命中時如何傳遞（寫回或寫透），與未命中時是否載入快取行，是各自獨立的選擇。不過一般而言，寫透方式會與不寫入配置搭配，寫回方式會與寫入配置搭配。在寫透快取中，儲存命中時會更新快取中的副本，同時也寫入下一層；未命中時通常不載入快取行，直接送往下一層。"}},{"@type":"Question","name":"為什麼對只寫入的資料，寫入配置會變慢？","acceptedAnswer":{"@type":"Answer","text":"因為只會被覆寫的快取行，也要先從主記憶體載入。載入加上之後的寫回，使流量約變為 2 倍，還會把會重複使用的其他資料逐出快取。使用非暫存儲存就能避免這次載入。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/write-allocate-vs-no-write-allocate/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/compare/write-allocate-vs-no-write-allocate/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/write-allocate-vs-no-write-allocate/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/#topics">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>寫入配置與不寫入配置的差異：寫入未命中時的動作、流量、搭配方式比較</h1>
+  <p class="lead">寫入配置與不寫入配置，是決定寫入發生快取未命中時，是否把該快取行放入快取的策略。寫入配置會先從下一層載入快取行，再於快取中寫入。不寫入配置則不載入快取行，直接把寫入送往下一層。這與決定寫入命中時何時傳到下一層的寫回、寫透（write-through）是不同的軸線，但一般會將寫入配置與寫回搭配，不寫入配置與寫透搭配。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="已複製">複製表格</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="已複製連結">分享</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">寫入配置</th><th scope="col">不寫入配置</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">寫入未命中時的動作</th><td>從下一層載入整條快取行放入快取，再寫入其中</td><td>不動快取，直接把寫入送往下一層</td></tr>
+        <tr><th scope="row">快取行的載入</th><td>需要。在多核心系統中，這是為取得獨占所有權而讀取（RFO），會先使其他核心的副本失效再寫入。因此儲存未命中在記憶體匯流排上看起來就像讀取</td><td>不需要。只把要寫入的資料送往下一層</td></tr>
+        <tr><th scope="row">常搭配的寫入方式</th><td>寫回。之後對已載入快取行的寫入會命中，不需與記憶體通訊即可吸收，因此能回收最初載入的成本</td><td>寫透。寫入反正都會傳到下一層，即使載入快取行也無法減少寫入的流量</td></tr>
+        <tr><th scope="row">與下一層之間的流量</th><td>對同一行多次寫入，或寫入後又讀回資料時，流量較少</td><td>每次未命中的寫入都會送往下一層。但不會產生多餘的載入</td></tr>
+        <tr><th scope="row">只寫入的大量資料（清除記憶體、輸出資料）</th><td>只為了覆寫而先載入快取行，之後又寫回，流量約變為 2 倍。還會把有用的資料逐出快取</td><td>既不載入也不污染快取，因此適合這類資料</td></tr>
+        <tr><th scope="row">寫入後立刻讀取</th><td>快取行在快取中，因此會命中</td><td>快取行不在快取中，因此會未命中而重新載入</td></tr>
+        <tr><th scope="row">實作上的技巧</th><td>對只寫入的資料，使用不經過快取、把寫入集中後直接送往主記憶體的非暫存儲存（串流儲存）。部分 ISA 也有不讀取舊內容、直接將整條快取行清為零的指令</td><td>以寫入緩衝區隱藏寫入的延遲。緩衝區也常把對同一行的多次寫入合併成一次傳輸</td></tr>
+        <tr><th scope="row">使用場合</th><td>在寫回快取中很常見。CPU 的 L1～L3 快取大多是寫回方式</td><td>在寫透快取中很常見。例如背後有寫回 L2 的小型 L1 快取，或簡單的嵌入式處理器</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">數值為具代表性的大致參考值，會因世代或產品而異。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>適用於什麼情況</h2>
+  <dl class="compare-when">
+    <dt>寫入配置</dt><dd>寫入的資料很快又會被讀寫時。適合像更新陣列元素的迴圈這類具有時間局部性的寫入。</dd>
+    <dt>不寫入配置</dt><dd>要大量寫入一次寫入後暫時不會讀回的資料時。可省去無謂的載入，讓快取留給有用的資料。</dd>
+    <dt>程式上的技巧</dt><dd>即使是寫入配置的快取，對只寫入的大型緩衝區使用非暫存儲存，也能避免載入。但寫入的資料不會留在快取中，若馬上讀回反而會變慢。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>寫入配置與不寫入配置的差異是什麼？</h3>
+  <p>寫入未命中時，寫入配置會先將快取行載入快取，再寫入快取。不寫入配置則不載入快取行，直接寫入下一層。</p>
+  <h3>寫透方式一定使用不寫入配置嗎？</h3>
+  <p>不一定。寫入命中時如何傳遞（寫回或寫透），與未命中時是否載入快取行，是各自獨立的選擇。不過一般而言，寫透方式會與不寫入配置搭配，寫回方式會與寫入配置搭配。在寫透快取中，儲存命中時會更新快取中的副本，同時也寫入下一層；未命中時通常不載入快取行，直接送往下一層。</p>
+  <h3>為什麼對只寫入的資料，寫入配置會變慢？</h3>
+  <p>因為只會被覆寫的快取行，也要先從主記憶體載入。載入加上之後的寫回，使流量約變為 2 倍，還會把會重複使用的其他資料逐出快取。使用非暫存儲存就能避免這次載入。</p>
+</section>
+<section>
+  <h2>理解度檢測</h2>
+  <article class="q-mini" data-qid="memory-hierarchy-013" data-cat="memory-hierarchy" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
+    <h3><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-013/">寫入時發生快取未命中，不載入該快取行而直接寫入下一層階層的方式為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">寫入配置（write-allocate）</span></li><li><span class="choice-mark">B</span><span class="choice-text">寫回（write-back）</span></li><li><span class="choice-mark">C</span><span class="choice-text">不寫入配置（no-write-allocate）</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 不寫入配置（no-write-allocate）</p><p class="explanation">寫入未命中時不載入<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>、直接寫入下一層階層的方式是不<a class="term-link" href="/zh-hant/term/write-allocate/">寫入配置</a>，多與直寫方式搭配使用。對於寫過一次就不會再讀回的資料，可以省去多餘的載入。寫入配置則相反，是先載入快取行再寫入的方式，在寫入的資料馬上又會被使用的情況下有利，因此多與寫回方式搭配使用。寫回是決定寫入命中時如何處理的方式，與未命中時是否載入屬於不同的軸線。</p></details>
+  </article>
+  <article class="q-mini" data-qid="memory-hierarchy-043" data-cat="memory-hierarchy" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-043/">寫出一次寫入後暫時不會再讀回的大量資料時，使用不經過快取的儲存（非暫存儲存，non-temporal store）的主要優點為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">寫入的資料會長時間留在快取中，之後讀取時會變快</span></li><li><span class="choice-mark">B</span><span class="choice-text">不會讓不重複使用的資料佔滿快取</span></li><li><span class="choice-mark">C</span><span class="choice-text">寫入順序不再受保證，因此更容易發現程式的錯誤</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 不會讓不重複使用的資料佔滿快取</p><p class="explanation">一般的寫入會因<a class="term-link" href="/zh-hant/term/write-allocate/">寫入配置</a>而先從主記憶體載入<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>再寫入，所以即使是只寫入的資料也會產生載入的傳輸，並把其他會重複使用的資料逐出。非暫存儲存會將寫入集中、直接送往主記憶體，不污染快取，也省去不必要的載入。寫入的資料不會留在快取中，因此若立刻讀回反而會變慢。順序處理方式的改變是副作用，不是優點。</p></details>
+  </article>
+  <article class="q-mini" data-qid="memory-hierarchy-038" data-cat="memory-hierarchy" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-038/">在對同一條快取行多次寫入的處理中，寫回方式比直寫方式更有利的主要理由為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">因為寫入在快取內完成，逐出時只要對主記憶體寫入一次即可</span></li><li><span class="choice-mark">B</span><span class="choice-text">因為每次寫入主記憶體也會是最新的，所以逐出時不需要處理</span></li><li><span class="choice-mark">C</span><span class="choice-text">因為快取與主記憶體的內容始終一致，所以不需要一致性管理</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 因為寫入在快取內完成，逐出時只要對主記憶體寫入一次即可</p><p class="explanation">在寫回方式中，對同一條<a class="term-link" href="/zh-hant/term/cache-line/">快取行</a>的多次寫入只在快取內完成，逐出時只需將髒的快取行寫回一次。因此能大幅減少對主記憶體的傳輸量與耗電。每次寫入時主記憶體也保持最新是直寫方式的性質，對同一條快取行多次寫入時，每次都會產生傳輸。快取與主記憶體始終一致也是直寫的性質，在寫回中有不一致的期間。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/cpu/cpu-037/">在快取的寫入方式中，關於寫回（write-back）方式的說明，下列何者正確？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-011/">在直寫（write-through）快取中，設置寫入緩衝器（write buffer）的主要目的為下列何者？</a></li>
+  <li data-level="2"><a href="/zh-hant/q/memory-hierarchy/memory-hierarchy-012/">在寫回（write-back）快取中，附加於各快取行的髒位元（dirty bit）的作用，下列何者正確？</a></li></ol>
+  <p><a class="btn btn-primary" href="/zh-hant/c/memory-hierarchy/">前往記憶體階層與效能的練習題</a></p>
+</section>
+<section>
+  <h2>相關名詞的解說</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/zh-hant/term/write-allocate/">寫入配置(Write-allocate)</a></dt><dd>寫入時發生快取失誤，先將該行載入快取再進行寫入的方式。多與寫回方式組合使用。不載入而直接寫到下層的方式稱為非寫入配置。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/write-through/">寫穿(Write-through)</a></dt><dd>寫入快取的同時，也寫入下層(主記憶體等)的方式。下層始終保持最新，但寫入的通訊量多，因此與寫入緩衝區組合使用。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/cache-line/">快取行</a></dt><dd>快取與下層之間讀寫資料的單位。也稱為快取區塊。多數CPU為64位元組，位址的低位元表示行內的位置(位移)。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/cache-memory/">快取記憶體</a></dt><dd>設置在 CPU 附近的高速、小容量記憶體。保存常用資料，以緩和與主記憶體之間的速度差。主要由 SRAM 製成。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/temporal-locality/">時間局部性</a></dt><dd>曾經存取過的資料或指令，在不久之後容易再次被存取的性質。例如在迴圈中重複使用的變數，是快取有效的原因之一。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/cache-coherency/">快取一致性</a></dt><dd>在多核心 CPU 中，各核心的快取內有相同位址的資料時，維持其內容一致性的機制。當某個核心改寫時，藉由讓其他核心的舊副本失效等方式來實現。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>相關的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/write-through-vs-write-back-cache/"><strong>寫透與寫回的差異：快取寫入方式比較</strong><span>以寫入方式、記憶體流量、速度、一致性、複雜度、逐出成本與用途等面向，用表格比較寫透與寫回的快取。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/l1-vs-l2-vs-l3-cache/"><strong>L1、L2、L3 快取的差異：容量、延遲、共用範圍、包含關係比較</strong><span>以一般 PC 與伺服器的 CPU 為例，從容量與延遲的參考值、每個核心專用或共用、指令與資料的分離、包含關係、設計重點等面向，以表格比較 L1、L2、L3 快取。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/direct-mapped-vs-set-associative-vs-fully-associative-cache/"><strong>直接映射、組相聯、全相聯的差異：快取架構比較</strong><span>以區塊可放置的位置、標籤比較、速度、成本、衝突未命中與用途等面向，用表格比較直接映射、組相聯、全相聯的快取。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/msi-vs-mesi-vs-moesi/"><strong>MSI、MESI、MOESI 的差異：狀態數、Exclusive 狀態、Owned 狀態、通訊比較</strong><span>從狀態數與意義、Exclusive 狀態的優點、Owned 狀態的優點、寫回記憶體與電路複雜度等面向，以表格比較快取一致性的 MSI、MESI、MOESI 協定。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/cpu-vs-gpu/"><strong>CPU 與 GPU 的差異：結構、擅長的運算、用途比較</strong><span>從設計目的、核心數、執行模型、快取、記憶體頻寬、分支、資料傳輸與擅長的運算等面向，以表格比較 CPU 與 GPU。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/dram-vs-sram/"><strong>DRAM 與 SRAM 的差異：結構、速度、成本、用途比較</strong><span>從單元結構、更新、速度、積體度、成本、耗電量與用途等面向，以表格比較 DRAM 與 SRAM，並說明各自適用的時機。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
