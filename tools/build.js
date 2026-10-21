@@ -1341,6 +1341,26 @@ ${x.faq?.length ? `<section class="faq">
     <dl class="dy-stats">${stat('vth', x.o_vth)}${stat('vfb', x.o_vfb)}${stat('phims', x.o_phims)}${stat('phif', x.o_phif)}${stat('qd', x.o_qd)}${stat('cox', x.o_cox)}${stat('wd', x.o_wd)}${stat('gamma', x.o_gamma)}</dl>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
+    <h2 class="visually-hidden">${esc(x.h1)}</h2>
+    <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
+      <span class="ls-bar-label">${esc(x.palette)}</span>
+      ${['in', 'out', 'clk', 'and', 'or', 'not', 'nand', 'nor', 'xor', 'xnor', 'dff'].map(k => `<button type="button" class="btn btn-ghost btn-small" data-add="${k}">${esc(x.parts[k])}</button>`).join('')}
+    </div>
+    <div class="ls-bar">
+      <label class="ls-ex"><span class="visually-hidden">${esc(x.examples)}</span><select id="ls-example"><option value="">${esc(x.examples)}</option>${Object.entries(x.ex).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+      <button type="button" class="btn btn-ghost btn-small" id="ls-del" disabled>${esc(x.del)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="ls-clear">${esc(x.clear)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="ls-pause" hidden>${esc(x.pause)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="ls-step" hidden>${esc(x.step)}</button>
+      <button type="button" class="btn btn-ghost btn-small" id="ls-share">${esc(x.share)}</button>
+    </div>
+    <div class="ls-canvas"><svg id="ls-svg" width="800" height="480" viewBox="0 0 800 480" role="img" aria-label="${esc(x.h1)}"></svg></div>
+    <p class="notice" id="ls-unstable" hidden>${esc(x.unstable)}</p>
+    <p class="muted">${esc(x.hint)}</p>
+    <h3>${esc(x.table)}</h3>
+    <div id="ls-table"></div>
+  </section>`,
     dbm: x => `<form id="db-form" class="dy-form">
     <h2>${esc(x.in_heading)}</h2>
     ${field('dbm', x.dbm, 0, 'step="0.1"')}
