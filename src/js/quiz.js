@@ -20,7 +20,7 @@ const homeUrl = cat ? `${home}c/${cat.id}/` : home;
 const matcher = termMatcher(index.glossary);
 const slugOf = new Map(index.glossary.map(g => [g.id, g.slug]));
 // 別の意味で使う分野ではリンクしない用語(用語集の noLinkIn)
-const skipIn = cat => new Set(index.glossary.filter(g => g.noLinkIn?.includes(cat)).map(g => g.id));
+const skipIn = cat => new Set(index.glossary.filter(g => g.noLinkIn?.includes(cat) || (g.linkOnlyIn && !g.linkOnlyIn.includes(cat))).map(g => g.id));
 
 // コード(問題文の下に表示する短いプログラム)。言語名は見出しとして小さく出す。
 // コードがない問題では '' を返す(replaceChildren に undefined を渡すと「undefined」と表示されるため)
