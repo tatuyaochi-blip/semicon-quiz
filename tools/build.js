@@ -49,6 +49,7 @@ const glossary = readJSON('data/glossary.json');
 const gloEn = readOpt('data/i18n/en/glossary.json', {});
 const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
+const catByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/categories.json`, {})]));
 // 用語ページは、訳のある言語でだけ作る(訳のない語を日本語のまま出さない)
 const gloByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/glossary.json`, {})]));
 const termLangs = key => langs.filter(x => x.code === defLang || gloByLang[x.code][key]);
@@ -670,8 +671,10 @@ function buildLang(L) {
   }
 
   // 分野ページ /c/{id}/
-  const catAlt = id => Object.fromEntries(langs.map(x => [x.code, `${x.path}c/${id}/`]));
+  // 分野の訳がない言語(更新を止めた言語に新しく足した分野など)では、分野ページを作らず、hreflang からも外す
+  const catAlt = id => Object.fromEntries(langs.filter(x => x.code === defLang || catByLang[x.code][id]).map(x => [x.code, `${x.path}c/${id}/`]));
   for (const c of cats) {
+    if (!isDef && !catT[c.id]) continue;
     const g = groupOf(c);
     const count = qs[c.id].length;
     const pqs = qs[c.id].map(q => ({ ...q, cat: c.id }));
@@ -736,7 +739,7 @@ function buildLang(L) {
       page({
         path: qUrl(c.id, q.id),
         alt: Object.fromEntries(langs.filter(x => hasQ[x.code].has(q.id)).map(x => [x.code, qUrl(c.id, q.id, x)])),
-        fallback: x => `${x.path}c/${c.id}/`,
+        fallback: x => (x.code === defLang || catByLang[x.code][c.id] ? `${x.path}c/${c.id}/` : x.path), // 分野の訳がない言語ではトップへ
         title: qTitle(c, q),
         description: qDescription(q),
         jsonld: crumbs([S.nav_home, home], [c.name, `${home}c/${c.id}/`], [short(q.question, 60), `${base}${qUrl(c.id, q.id)}`]),
