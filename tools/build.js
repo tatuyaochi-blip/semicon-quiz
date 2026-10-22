@@ -2102,6 +2102,26 @@ ${x.faq?.length ? `<section class="faq">
     <svg id="bode-phase" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.phase_chart_label)}"></svg>
     <p class="muted">${esc(x.chart_note)}</p>
   </section>`,
+    dcdc: x => `<form id="dc-form" class="dy-form" data-text="${esc(JSON.stringify({ examples: x.examples, ccm: x.ccm, dcm: x.dcm, dcm_note: x.dcm_note, buck_range: x.buck_range, boost_range: x.boost_range, positive: x.positive, x_label: x.x_label, y_label: x.y_label }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${select('topo', x.topo, [['buck', x.topo_buck], ['boost', x.topo_boost], ['buckboost', x.topo_buckboost]], 'buck')}
+    ${field('vin', x.vin, 12, 'min="0" step="any"')}
+    ${field('vout', x.vout, 3.3, 'min="0" step="any"')}
+    ${field('iout', x.iout, 2, 'min="0" step="any"')}
+    ${field('f', x.f, 500, 'min="0" step="any"')}<input type="hidden" name="fu" value="1000">
+    ${field('L', x.L, 4.7, 'min="0" step="any"')}<input type="hidden" name="Lu" value="0.000001">
+    ${field('C', x.C, 22, 'min="0" step="any"')}<input type="hidden" name="Cu" value="0.000001">
+    ${field('esr', x.esr, 5, 'min="0" step="any"')}<input type="hidden" name="esru" value="0.001">
+    <p class="notice crc-check" id="dc-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('mode', x.mode)}${stat('D', x.D)}${stat('iavg', x.iavg)}${stat('di', x.di)}${stat('ipk', x.ipk)}${stat('icrit', x.icrit)}${stat('dv', x.dv)}${stat('L30', x.L30)}</dl>
+    <p class="muted" id="dc-note"></p>
+    <svg id="dc-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
@@ -2569,7 +2589,9 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
       title: g.title ?? (withEn ? t('term_title_en', { term: g.term, en }) : t('term_title', { term: g.term })),
       description: g.description ?? termDescription(g.desc, list.length),
       scripts: ['answer.js'],
-      noindex: !list.length && !nw, // 問題に一度も出てこない用語のページは検索に出さない(ニュース用語は出す)
+      // 問題に一度も出てこず、詳しい解説(about)もない用語のページは、中身が薄いので検索に出さない(ニュース用語は出す)。
+      // 解説のある用語は、その言語の問題に出てこなくても検索に出す(Search Console で、解説を書いたページが noindex になっていた: 2026-10-22)
+      noindex: !list.length && !nw && !g.about?.length,
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.nav_glossary, `${home}glossary/`], [g.term, termUrl]),
         { '@context': 'https://schema.org', '@type': 'DefinedTerm', name: g.term, description: g.desc, url: abs(termUrl), inLanguage: L.htmlLang,
