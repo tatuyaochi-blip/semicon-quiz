@@ -1,0 +1,371 @@
+{
+ "cloud-container-001": {
+  "question": "Parmi les fonctions du noyau Linux qui permettent les conteneurs, quelle association entre les espaces de noms (namespaces), les cgroups (groupes de contrôle) et leur rôle est correcte ?",
+  "choices": [
+   "Espaces de noms : séparent ce qu'un processus voit (identifiants de processus, réseau, points de montage, etc.) ; cgroups : limitent et mesurent l'utilisation de ressources comme le CPU et la mémoire",
+   "Espaces de noms : limitent et mesurent l'utilisation de ressources comme le CPU et la mémoire ; cgroups : séparent ce qu'un processus voit (identifiants de processus, réseau, points de montage, etc.)",
+   "Espaces de noms : démarrent un noyau distinct pour chaque conteneur afin de les isoler les uns des autres ; cgroups : créent un CPU virtuel pour chaque conteneur et émulent le matériel"
+  ],
+  "explanation": "Un conteneur est un processus ordinaire qui s'exécute sur le noyau de l'hôte et que deux mécanismes isolent. Les espaces de noms répartissent en groupes les identifiants de processus, le réseau, les points de montage (la vue du système de fichiers), le nom d'hôte, etc., de sorte que les processus d'un conteneur ne voient que leur propre part. Les cgroups limitent le temps CPU et la quantité de mémoire qu'un groupe de processus peut utiliser, et en mesurent l'utilisation. Ce sont deux fonctions du noyau : un conteneur ne démarre donc pas d'autre noyau et n'émule pas non plus de matériel."
+ },
+ "cloud-container-002": {
+  "question": "Sur un hôte Linux, Docker sert à démarrer un conteneur à partir d'une image fondée sur une autre distribution que celle de l'hôte, et l'on y exécute uname -r (commande qui affiche la version du noyau) et cat /etc/os-release (commande qui affiche les informations sur la distribution). Quelle description des résultats est correcte ?",
+  "choices": [
+   "uname -r comme /etc/os-release affichent des informations sur le noyau et la distribution de l'hôte",
+   "uname -r comme /etc/os-release affichent des informations sur la distribution sur laquelle l'image est fondée et sur son noyau",
+   "uname -r affiche le noyau de l'hôte, et /etc/os-release affiche la distribution de l'image"
+  ],
+  "explanation": "Un conteneur partage le noyau de l'hôte : uname -r, qui interroge le noyau, affiche donc la version du noyau de l'hôte, même dans le conteneur. /etc/os-release, en revanche, est un fichier : il est lu dans le système de fichiers que voit le conteneur, c'est-à-dire dans l'image, et il affiche le nom de la distribution de l'image. Une image ne contient pas de noyau, seulement des fichiers de l'espace utilisateur comme des commandes et des bibliothèques. C'est pourquoi un programme qui dépend d'une fonction absente du noyau de l'hôte ne fonctionne pas non plus dans un conteneur."
+ },
+ "cloud-container-003": {
+  "question": "Quelle description de la relation entre une image de conteneur et un conteneur est correcte ?",
+  "choices": [
+   "Quand un conteneur est arrêté, les modifications faites à l'intérieur sont automatiquement réécrites dans l'image, ce qui écrase l'image d'origine",
+   "Une image est un modèle en lecture seule, et l'on peut démarrer à partir d'une seule image plusieurs conteneurs ayant chacun sa propre couche inscriptible",
+   "On ne peut démarrer qu'un seul conteneur à la fois à partir d'une image ; pour en démarrer un deuxième, il faut d'abord copier l'image sous un autre nom"
+  ],
+  "explanation": "Une image est un modèle en lecture seule qui regroupe les fichiers et les réglages nécessaires pour exécuter une application, et un conteneur est une unité d'exécution créée à partir d'une image. À la création d'un conteneur, une couche inscriptible qui lui est propre est empilée sur les couches de l'image. On peut donc démarrer de nombreux conteneurs à partir d'une seule image, et les modifications faites dans l'un n'affectent ni les autres conteneurs ni l'image. Pour conserver une modification dans une image, on modifie habituellement le Dockerfile et l'on reconstruit l'image."
+ },
+ "cloud-container-004": {
+  "question": "Dans un conteneur démarré à partir d'une image, on modifie le fichier de configuration /etc/app.conf, qui fait partie de l'image. Quelle description de ce qui se passe avec le mécanisme de stockage habituel de Docker (comme overlay2) est correcte ?",
+  "choices": [
+   "Le fichier est copié dans la couche inscriptible du conteneur puis modifié ; l'image et les autres conteneurs ne sont donc pas affectés",
+   "Le fichier de la couche de l'image est modifié directement ; les autres conteneurs démarrés à partir de la même image voient donc aussi le nouveau contenu",
+   "Les couches d'une image sont en lecture seule : les fichiers contenus dans l'image ne peuvent donc pas être modifiés, et l'écriture échoue avec une erreur"
+  ],
+  "explanation": "Le système de fichiers d'un conteneur présente sous la forme d'une seule arborescence les couches de l'image, en lecture seule, surmontées d'une couche inscriptible propre au conteneur. La première fois qu'un fichier d'une couche inférieure est modifié, il est copié dans la couche inscriptible, et c'est ensuite cette copie qui est utilisée (copie sur écriture). Les couches de l'image restent donc inchangées, et les autres conteneurs qui partagent la même image ne sont pas affectés. Comme la première copie d'un gros fichier prend du temps, les données écrites fréquemment, comme celles d'une base de données, sont placées dans un volume."
+ },
+ "cloud-container-005": {
+  "question": "Pour décompresser une archive de 500 MB, data.tar.gz, une image a été construite avec le Dockerfile ci-dessus. Bien que l'archive ait été supprimée dans le même RUN après la décompression, l'image est restée plus grosse de la taille de l'archive. Quelle association entre la cause et le remède est la plus appropriée ?",
+  "code": "FROM alpine\nCOPY data.tar.gz /tmp/\nRUN tar -xzf /tmp/data.tar.gz -C /opt && rm /tmp/data.tar.gz",
+  "choices": [
+   "Le rm placé après && n'est pas exécuté pendant la construction. Il faut écrire le rm dans une instruction RUN séparée",
+   "Les fichiers supprimés restent dans l'image sous forme de cache de construction. Il faut reconstruire en ajoutant --no-cache à docker build",
+   "L'archive reste dans la couche créée par l'instruction COPY. Il faut utiliser une construction multi-étapes et ne copier dans l'image finale que les fichiers décompressés"
+  ],
+  "explanation": "Chaque instruction d'un Dockerfile qui modifie le système de fichiers (comme COPY ou RUN) devient une couche, et une image est l'empilement de ces couches. Supprimer un fichier dans une couche ultérieure ne fait qu'enregistrer une marque de suppression dans la couche supérieure : l'archive de 500 MB entrée dans la couche de COPY reste donc dans l'image. Avec une construction multi-étapes qui décompresse dans une autre étape et n'apporte que les fichiers décompressés dans la dernière étape avec COPY --from, l'archive ne figure pas dans l'image finale. Télécharger, décompresser et supprimer dans un seul RUN est une autre approche, mais elle ne s'applique pas à un fichier apporté par COPY."
+ },
+ "cloud-container-006": {
+  "question": "Cinq images empilent chacune leur propre couche de 30 MB sur la même image de base (120 MB). On néglige la compression des couches et la taille des métadonnées. Quel est l'espace disque utilisé par les images quand les cinq sont récupérées (pull) sur un même serveur ?",
+  "choices": [
+   "150 MB",
+   "270 MB",
+   "750 MB"
+  ],
+  "explanation": "Les couches d'une image sont identifiées par un condensé (digest) calculé à partir de leur contenu, et une couche identique n'est stockée qu'une seule fois sur un serveur et partagée par plusieurs images. La couche de base de 120 MB est stockée une fois, et les cinq couches propres occupent 30 MB × 5 = 150 MB, soit un total de 120 + 150 = 270 MB. C'est 480 MB de moins que les 750 MB, (120 + 30) × 5, qu'il faudrait sans partage. Une image de base commune réduit la durée des pulls et l'espace disque utilisé."
+ },
+ "cloud-container-007": {
+  "question": "Pour le Dockerfile ci-dessus, quelle association entre la commande exécutée lors de la construction de l'image avec docker build et la commande exécutée lors du démarrage d'un conteneur avec docker run est correcte ?",
+  "code": "FROM python:slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install -r requirements.txt\nCOPY . .\nCMD [\"python\", \"app.py\"]",
+  "choices": [
+   "À la construction : pip install ; au démarrage : python app.py",
+   "À la construction : pip install et python app.py ; au démarrage : python app.py",
+   "À la construction : rien ; au démarrage : pip install et python app.py"
+  ],
+  "explanation": "RUN exécute une commande pendant la construction de l'image et enregistre le résultat (ici, les bibliothèques installées) dans l'image sous forme d'une nouvelle couche. CMD ne fait qu'enregistrer, dans la configuration de l'image, la commande par défaut à exécuter au démarrage d'un conteneur ; elle n'est pas exécutée pendant la construction. Les bibliothèques sont donc installées une seule fois, à la construction, et python app.py s'exécute à chaque démarrage d'un conteneur. Si une commande est écrite après le nom de l'image dans docker run, elle remplace le contenu de CMD."
+ },
+ "cloud-container-008": {
+  "question": "Une image nommée pinger, construite à partir du Dockerfile ci-dessus, est démarrée par docker run pinger example.com. Quelle est la commande exécutée dans le conteneur ?",
+  "code": "FROM alpine\nENTRYPOINT [\"ping\", \"-c\", \"3\"]\nCMD [\"localhost\"]",
+  "choices": [
+   "ping -c 3 localhost",
+   "ping -c 3 example.com",
+   "example.com (la tentative de l'exécuter comme commande échoue avec une erreur)"
+  ],
+  "explanation": "Un ENTRYPOINT écrit sous forme exec (un tableau JSON) est la commande que le conteneur exécute toujours, et CMD en fournit les arguments par défaut. Les arguments écrits après le nom de l'image dans docker run remplacent CMD et sont ajoutés après l'ENTRYPOINT : c'est donc ping -c 3 example.com qui est exécuté. Démarré sans arguments, par docker run pinger, le conteneur utiliserait le localhost de CMD, ce qui donnerait ping -c 3 localhost. Pour changer l'ENTRYPOINT lui-même, on utilise l'option --entrypoint de docker run."
+ },
+ "cloud-container-009": {
+  "question": "Un conteneur est démarré par la commande ci-dessus à partir de l'image nginx, un serveur web qui écoute sur le port 80. L'adresse IP de l'hôte est 192.0.2.10, et il n'y a aucune restriction comme un pare-feu. Quelle est l'URL correcte pour joindre ce serveur web depuis un navigateur sur un autre PC du même réseau ?",
+  "code": "$ docker run -d -p 8080:80 nginx",
+  "choices": [
+   "http://192.0.2.10:80/",
+   "http://(adresse IP du conteneur):8080/",
+   "http://192.0.2.10:8080/"
+  ],
+  "explanation": "L'option s'écrit -p port de l'hôte:port du conteneur ; -p 8080:80 transfère donc le trafic qui arrive sur le port 8080 de l'hôte vers le port 80 du conteneur. Depuis un autre PC, on se connecte au port 8080 de l'adresse IP de l'hôte. L'adresse IP du conteneur appartient généralement à un réseau virtuel interne à l'hôte et n'est pas directement joignable depuis d'autres PC. EXPOSE 80 dans un Dockerfile ne fait qu'indiquer le port qu'utilise le conteneur ; cela ne publie à lui seul aucun port de l'hôte, d'où la nécessité de -p."
+ },
+ "cloud-container-010": {
+  "question": "Le Dockerfile (B) ci-dessus a été obtenu à partir du Dockerfile (A), qui plaçait RUN npm ci après COPY . ., en changeant l'ordre pour ne copier d'abord que les fichiers de dépendances. npm ci prend 120 secondes, npm run build 30 secondes et COPY . . 2 secondes, et la durée des autres instructions est négligeable. L'image est reconstruite 20 fois par jour après une modification du seul code source sous src (package.json et package-lock.json ne changent pas). Si le cache de la construction précédente peut être utilisé, de combien la durée totale de construction par jour est-elle plus courte avec B qu'avec A ?",
+  "code": "FROM node:lts\nWORKDIR /app\nCOPY package.json package-lock.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build\nCMD [\"node\", \"dist/server.js\"]",
+  "choices": [
+   "2 minutes",
+   "Environ 11 minutes",
+   "40 minutes"
+  ],
+  "explanation": "Le cache de construction s'utilise instruction par instruction, et pour COPY il dépend de ce que le contenu des fichiers copiés est identique ou non à celui de la fois précédente. Dès que le cache ne peut pas être utilisé pour une instruction, toutes les instructions suivantes sont réexécutées. Dans A, la modification est détectée dès le premier COPY . ., donc chaque construction prend 2 + 120 + 30 = 152 secondes. Dans B, package.json et package-lock.json n'ont pas changé : le cache est utilisé jusqu'à npm ci inclus, et seuls COPY . . et npm run build s'exécutent, soit 2 + 30 = 32 secondes. La différence est de 120 secondes par construction, soit 2400 secondes = 40 minutes pour 20 constructions."
+ },
+ "cloud-container-011": {
+  "question": "Dans Docker, quelle description des volumes nommés et des montages bind (bind mounts), qui servent à conserver les données écrites par un conteneur, est correcte ?",
+  "choices": [
+   "Un volume est stocké dans une zone gérée par Docker et un montage bind dans un répertoire de l'hôte que l'on indique, et les deux subsistent après la suppression du conteneur",
+   "Les données d'un volume nommé subsistent après la suppression du conteneur, mais celles d'un montage bind disparaissent aussi du répertoire de l'hôte quand le conteneur est supprimé",
+   "Les deux sont créés comme partie de la couche inscriptible du conteneur : supprimer le conteneur avec docker rm efface donc aussi les données"
+  ],
+  "explanation": "Les données écrites dans la couche inscriptible d'un conteneur disparaissent quand le conteneur est supprimé ; les données à conserver sont donc placées hors du conteneur. Un volume nommé est créé dans une zone gérée par Docker et subsiste jusqu'à sa suppression explicite, par exemple avec docker volume rm. Un montage bind rend visible dans le conteneur un répertoire quelconque de l'hôte, et les données restent simplement sous forme de fichiers sur l'hôte. Les montages bind sont courants pendant le développement, quand le code source modifié sur l'hôte doit prendre effet immédiatement, et les volumes pour les données dont il vaut mieux confier la gestion à Docker, comme celles d'une base de données."
+ },
+ "cloud-container-012": {
+  "question": "Une image est récupérée (pull) en indiquant registry.example.com/team/web:1.4. Quelle association donnant le sens de chaque partie de cette référence est correcte ?",
+  "choices": [
+   "registry.example.com : dépôt ; team/web : tag ; 1.4 : condensé (digest) calculé à partir du contenu de l'image",
+   "registry.example.com : registre (le serveur qui stocke les images) ; team/web : dépôt ; 1.4 : tag",
+   "registry.example.com : registre ; team : dépôt ; web : tag ; 1.4 : nom du conteneur à démarrer"
+  ],
+  "explanation": "Une référence d'image a la forme « registre/dépôt:tag » : le registre est le serveur qui stocke et distribue les images, le dépôt regroupe les images d'un même type, et le tag est un nom qui désigne par exemple une version ; dans cet exemple, registry.example.com est le registre, team/web le dépôt et 1.4 le tag. Si le registre est omis, c'est le registre par défaut (Docker Hub) qui est utilisé, et si le tag est omis, c'est latest. Un tag est un nom donné par les utilisateurs, et le même tag peut plus tard être déplacé vers une autre image. L'identifiant qui change toujours quand le contenu change est le condensé (digest) commençant par sha256, que l'on indique après @."
+ },
+ "cloud-container-013": {
+  "question": "scratch est une image vide qui ne contient aucun fichier. Quelle description du contenu de l'image finale construite avec le Dockerfile multi-étapes ci-dessus est correcte ?",
+  "code": "FROM golang AS build\nWORKDIR /src\nCOPY . .\nRUN CGO_ENABLED=0 go build -o /out/app .\n\nFROM scratch\nCOPY --from=build /out/app /app\nENTRYPOINT [\"/app\"]",
+  "choices": [
+   "Uniquement l'exécutable /app construit dans l'étape build ; le compilateur Go et le code source n'y figurent pas",
+   "Les couches de l'étape build et de la dernière étape sont toutes empilées : le compilateur Go, le code source et /app y figurent tous",
+   "Uniquement l'image golang du premier FROM et le code source ; /app est construit à chaque démarrage d'un conteneur"
+  ],
+  "explanation": "Dans une construction multi-étapes, chaque FROM commence une étape, et seule la dernière étape devient l'image finale. Les étapes précédentes servent à produire des artefacts avec des outils comme des compilateurs, et seuls les fichiers nommés dans COPY --from sont apportés dans la dernière étape. Ici, seul /app est copié dans l'image vide scratch : le résultat est une petite image sans le compilateur Go ni le code source. Comme scratch ne contient pas non plus la moindre bibliothèque partagée, on utilise CGO_ENABLED=0 pour construire un exécutable qui ne dépend d'aucune autre bibliothèque. Moins de contenu signifie des pulls plus rapides, moins d'outils pour les attaquants et moins de cibles pour les vulnérabilités."
+ },
+ "cloud-container-014": {
+  "question": "Dans Kubernetes, quelle est la plus petite unité déployée et gérée, qui regroupe un ou plusieurs conteneurs partageant la même adresse IP et les mêmes volumes ?",
+  "choices": [
+   "Nœud (node)",
+   "Service",
+   "Pod"
+  ],
+  "explanation": "Un Pod est la plus petite unité que Kubernetes place et exécute. Les conteneurs qu'il contient partagent un espace de noms réseau : ils peuvent donc communiquer entre eux par localhost et utiliser les mêmes volumes. Un Pod contient habituellement un seul conteneur applicatif, et l'on ajoute parfois au même Pod des conteneurs auxiliaires, par exemple pour transférer les journaux. Les Pods sont jetables et reçoivent une nouvelle adresse IP quand ils sont recréés : on les gère donc normalement de façon indirecte, par un Deployment ou un objet similaire. Un nœud est une machine sur laquelle s'exécutent des Pods, et un Service est un point d'accès stable pour plusieurs Pods."
+ },
+ "cloud-container-015": {
+  "question": "Dans Kubernetes, un Deployment avec replicas: 3 fait tourner trois Pods. Quelle description de ce qui se passe quand l'un de ces Pods est supprimé avec kubectl delete pod est correcte ?",
+  "choices": [
+   "Le réglage du Deployment est lui aussi réécrit en replicas: 2, et deux Pods continuent de tourner",
+   "Un contrôleur détecte que le nombre réel est passé sous le nombre indiqué de 3 et crée un nouveau Pod",
+   "Les deux autres Pods du Deployment sont aussi supprimés, et tout le Deployment s'arrête"
+  ],
+  "explanation": "Dans Kubernetes, les utilisateurs déclarent un état souhaité comme « faire tourner trois Pods », et des contrôleurs observent sans cesse l'état réel et agissent pour le rapprocher de la déclaration quand les deux diffèrent (réconciliation). La suppression d'un Pod ramène le nombre réel à 2 : le contrôleur du ReplicaSet crée donc un nouveau Pod pour revenir à 3. Quand un Pod est perdu à cause de la panne d'un nœud, le même mécanisme le recrée sur un autre nœud. Pour réellement réduire le nombre de Pods, on modifie les replicas du Deployment au lieu de supprimer des Pods."
+ },
+ "cloud-container-016": {
+  "question": "Dans un Deployment Kubernetes, l'image de conteneur du modèle de Pod est remplacée par une nouvelle version. Quelle description de ce qui se passe avec la stratégie de mise à jour par défaut (RollingUpdate) est correcte ?",
+  "choices": [
+   "Un nouveau ReplicaSet est créé, et des Pods de la nouvelle version sont ajoutés pendant que des Pods de l'ancienne version sont retirés. L'ancien ReplicaSet est conservé avec 0 Pod pour un retour arrière",
+   "L'image de conteneur des Pods en cours d'exécution est remplacée sur place par la nouvelle version sans recréer les Pods : ni les adresses IP ni les noms des Pods ne changent",
+   "Tous les Pods de l'ancienne version sont supprimés d'un coup, puis les Pods de la nouvelle version sont créés ensemble : le service est donc interrompu temporairement pendant la mise à jour"
+  ],
+  "explanation": "Quand le modèle de Pod change, un Deployment crée un ReplicaSet pour le nouveau modèle et, tout en vérifiant que les nouveaux Pods sont devenus prêts, réduit progressivement les Pods de l'ancien ReplicaSet. Un certain nombre de Pods continuent ainsi de traiter les requêtes pendant la mise à jour. L'ancien ReplicaSet est conservé avec 0 Pod, ce qui permet à kubectl rollout undo de revenir à la version précédente. La stratégie qui supprime d'abord tous les Pods puis les recrée est Recreate, utilisée seulement si on l'indique explicitement."
+ },
+ "cloud-container-017": {
+  "question": "Un Deployment avec replicas: 10 a pour réglages de mise à jour progressive (rolling update) maxSurge: 25% et maxUnavailable: 25%. Quelle association entre la limite supérieure du nombre total de Pods et la limite inférieure du nombre de Pods disponibles pendant une mise à jour est correcte ?",
+  "choices": [
+   "Limite supérieure 12, limite inférieure 8",
+   "Limite supérieure 13, limite inférieure 7",
+   "Limite supérieure 13, limite inférieure 8"
+  ],
+  "explanation": "Quand un pourcentage est converti en nombre de Pods, maxSurge est arrondi à l'entier supérieur et maxUnavailable à l'entier inférieur. 10 × 25 % = 2,5 : maxSurge vaut donc 3 et maxUnavailable vaut 2. La limite supérieure du nombre total de Pods est 10 + 3 = 13, et la limite inférieure du nombre de Pods disponibles est 10 − 2 = 8. Cet arrondi aide la mise à jour à progresser tout en garantissant que le nombre de Pods disponibles ne descend jamais sous le pourcentage indiqué."
+ },
+ "cloud-container-018": {
+  "question": "Dans Kubernetes, un Pod reçoit une adresse IP différente chaque fois qu'il est recréé. Quelle ressource permet à d'autres applications de se connecter, par un nom et une adresse qui ne changent pas, à plusieurs Pods sélectionnés par des labels, en répartissant la charge entre eux ?",
+  "choices": [
+   "ConfigMap",
+   "Service",
+   "PersistentVolume"
+  ],
+  "explanation": "Un Service attribue à l'ensemble des Pods qui correspondent à son sélecteur de labels une adresse IP virtuelle et un nom DNS qui restent les mêmes au sein du cluster, et il distribue le trafic entrant entre ces Pods. Même quand des Pods sont remplacés, les clients n'ont qu'à se connecter avec le nom du Service et n'ont pas besoin de connaître les adresses des Pods. Pour l'exposer hors du cluster, on règle le type sur NodePort ou LoadBalancer, ou l'on utilise un Ingress. Un ConfigMap est une ressource pour des valeurs de configuration, et un PersistentVolume une ressource pour du stockage persistant."
+ },
+ "cloud-container-019": {
+  "question": "Dans un cluster Kubernetes, les requêtes HTTPS qui arrivent pour un même nom d'hôte doivent être envoyées au Service api si le chemin commence par /api, et au Service web sinon. Quelle ressource convient pour définir cette règle d'aiguillage ?",
+  "choices": [
+   "Ingress",
+   "ReplicaSet",
+   "Un Service de type: ClusterIP"
+  ],
+  "explanation": "Un Ingress est une ressource qui définit des règles pour aiguiller vers des Services, selon le nom d'hôte et le chemin de l'URL, les requêtes HTTP et HTTPS venant de l'extérieur du cluster, et l'on peut aussi y configurer la terminaison TLS. Le composant qui reçoit et aiguille réellement les requêtes est un contrôleur Ingress installé dans le cluster (qui joue le rôle de proxy inverse). Un Service de type: ClusterIP est un point d'accès joignable seulement depuis l'intérieur du cluster et n'offre pas d'aiguillage selon le chemin. Un ReplicaSet maintient le nombre de Pods et n'a rien à voir avec l'aiguillage du trafic."
+ },
+ "cloud-container-020": {
+  "question": "Le mot de passe d'une base de données est stocké dans un Secret Kubernetes. Quelle description d'un Secret est correcte ?",
+  "choices": [
+   "Les valeurs placées dans un Secret sont automatiquement chiffrées avec une cryptographie robuste : personne dans le cluster ne peut donc connaître le mot de passe d'origine en les lisant",
+   "Les valeurs d'un Secret ne peuvent pas être lues depuis les conteneurs : le mot de passe doit donc être écrit dans un fichier de configuration à l'intérieur de l'image",
+   "Par défaut, les valeurs sont seulement représentées en Base64, ce qui n'est pas un chiffrement ; on restreint donc aussi qui peut les lire et l'on utilise le chiffrement au repos"
+  ],
+  "explanation": "Un Secret est une ressource qui sert à gérer des valeurs confidentielles comme des mots de passe et des clés d'API séparément des images et des définitions de Pod, et à les transmettre aux conteneurs sous forme de variables d'environnement ou de fichiers. Cependant, les valeurs écrites dans un manifeste sont seulement représentées en Base64, que n'importe qui peut décoder. De plus, elles sont stockées par défaut sans chiffrement dans etcd, où sont conservées les données du cluster. On combine donc des mesures comme limiter avec RBAC qui peut lire les Secrets et activer le chiffrement au repos pour etcd."
+ },
+ "cloud-container-021": {
+  "question": "Une application web ne peut pas traiter de requêtes pendant environ 60 secondes après son démarrage, le temps de charger son cache, et renvoie 503 sur /ready pendant ce temps. Quelle description de l'effet de l'ajout des réglages ci-dessus au conteneur du Pod est correcte ?",
+  "code": "readinessProbe:\n  httpGet:\n    path: /ready\n    port: 8080\n  periodSeconds: 5",
+  "choices": [
+   "Tant que /ready échoue, le Pod est retiré des destinations du Service et ne reçoit aucune requête, et le conteneur n'est pas redémarré",
+   "Le conteneur est redémarré chaque fois que /ready échoue : il redémarre donc sans cesse avant la fin du chargement du cache",
+   "Tant que /ready n'a pas réussi, le Pod n'est affecté à aucun nœud, et le conteneur n'est pas démarré"
+  ],
+  "explanation": "Une sonde readiness vérifie si un conteneur est prêt à accepter des requêtes et, tant qu'elle échoue, retire le Pod des destinations du Service. Une sonde HTTP considère comme un succès une réponse d'au moins 200 et inférieure à 400 : aucune requête n'est donc envoyée tant que 503 est renvoyé, et les requêtes arrivent dès que l'application est prête. Redémarrer le conteneur en cas d'échec est le rôle d'une sonde liveness ; ne donner à une application lente à démarrer qu'une sonde liveness à intervalle court peut provoquer des redémarrages répétés. Le nœud sur lequel s'exécute un Pod est choisi par l'ordonnanceur (scheduler), pas par les sondes."
+ },
+ "cloud-container-022": {
+  "question": "Dans une application web sur Kubernetes, la vérification effectuée par la sonde liveness a été étendue pour tester aussi si l'application peut se connecter à la base de données dont elle dépend. Quel est le problème le plus probable avec ce réglage ?",
+  "choices": [
+   "Quand la base de données s'arrête, les Pods sont automatiquement déplacés vers le nœud où tourne la base de données, ce qui dégrade les autres applications de ce nœud",
+   "Une brève indisponibilité de la base de données fait redémarrer à répétition les conteneurs de tous les Pods, ce qui retarde la reprise même après le retour de la base de données",
+   "Quand la sonde liveness échoue, le Pod est seulement retiré des destinations du Service : il ne se pose donc pas de problème particulier"
+  ],
+  "explanation": "Une sonde liveness sert à rétablir, en le redémarrant, un conteneur qui ne répond plus lui-même (par exemple à cause d'un interblocage). Si elle vérifie aussi une dépendance, alors, quand la base de données s'arrête, les sondes liveness de tous les Pods échouent et les conteneurs sont redémarrés sans cesse, alors que le redémarrage ne règle rien. Pendant les redémarrages, aucune requête n'est traitée, et l'attente avant le redémarrage suivant peut s'allonger à mesure qu'ils se répètent : la reprise est donc retardée même après le retour de la base de données. Une sonde liveness ne doit vérifier que si le processus lui-même peut répondre, et l'état des dépendances se traite au besoin par des sondes readiness ou par la gestion d'erreurs de l'application."
+ },
+ "cloud-container-023": {
+  "question": "Un HorizontalPodAutoscaler de Kubernetes a pour cible une utilisation CPU des Pods de 70 % et une plage de 1 à 10 Pods. Actuellement, l'utilisation CPU moyenne de 5 Pods est de 30 %. Si le nombre de Pods nécessaire est calculé par ⌈nombre actuel × utilisation actuelle ÷ utilisation cible⌉ (⌈ ⌉ désigne l'arrondi à l'entier supérieur), combien de Pods faut-il ?",
+  "choices": [
+   "2",
+   "3",
+   "12"
+  ],
+  "explanation": "Un HorizontalPodAutoscaler détermine le nombre de Pods par nombre nécessaire = ⌈nombre actuel × utilisation actuelle ÷ utilisation cible⌉. 5 × 30 ÷ 70 = 2,14…, arrondi à 3. La même formule réduit le nombre quand la charge baisse (scale-in), et le résultat reste dans la plage indiquée (1 à 10). En pratique, une bande de tolérance laisse le nombre inchangé quand le rapport d'utilisation est proche de 1, et une période d'attente observe la charge un certain temps avant de réduire le nombre, de sorte que le nombre de Pods ne change pas trop souvent."
+ },
+ "cloud-container-024": {
+  "question": "Dans un Deployment dont les conteneurs des Pods ont les réglages ci-dessus, quatre Pods tournent et chacun utilise 400m (0,4 cœur) de CPU. La cible d'utilisation CPU du HorizontalPodAutoscaler est de 60 %, et le nombre de Pods nécessaire est calculé par ⌈nombre actuel × utilisation actuelle ÷ utilisation cible⌉. Combien de Pods faut-il ?",
+  "code": "resources:\n  requests:\n    cpu: 500m\n  limits:\n    cpu: 1000m",
+  "choices": [
+   "3",
+   "5",
+   "6"
+  ],
+  "explanation": "L'utilisation CPU qu'emploie un HorizontalPodAutoscaler est un pourcentage des requests, pas des limits. Chaque Pod utilise 400m ÷ 500m = 80 % : le nombre nécessaire est donc 4 × 80 ÷ 60 = 5,33…, arrondi à 6. Avec 6 Pods, l'utilisation totale de 400m × 4 = 1600m se répartit à environ 267m chacun, soit une utilisation d'environ 53 %, sous la cible. Si les requests ne sont pas définies, la mise à l'échelle automatique fondée sur l'utilisation CPU ne fonctionne pas."
+ },
+ "cloud-container-025": {
+  "question": "Dans Kubernetes, quelle description des requests et des limits de ressources définies pour un conteneur est correcte ?",
+  "choices": [
+   "Les nœuds sont choisis d'après les requests, un conteneur dont la mémoire dépasse sa limit peut être tué, et le CPU est maintenu à la limit",
+   "L'ordonnanceur place les Pods de sorte que la somme des limits tienne dans les ressources d'un nœud, et un conteneur dont l'utilisation CPU dépasse sa request est tué",
+   "Les requests sont le maximum qu'un conteneur peut utiliser, et quand l'utilisation dépasse la request, le conteneur est tué aussitôt, qu'il s'agisse de mémoire ou de CPU"
+  ],
+  "explanation": "Les requests sont la quantité de ressources qu'un conteneur veut se voir réserver, et l'ordonnanceur choisit le nœud d'un Pod de sorte que la somme des requests des Pods d'un nœud ne dépasse pas les ressources allouables de ce nœud. Les limits sont la borne supérieure de l'utilisation. Le CPU peut être partagé dans le temps : quand un conteneur tente de dépasser sa limit de CPU, son utilisation est freinée (throttling) et le traitement ralentit. La mémoire est difficile à reprendre : un conteneur qui tente d'utiliser plus que sa limit de mémoire peut être tué pour manque de mémoire (OOMKilled)."
+ },
+ "cloud-container-026": {
+  "question": "Un nœud dispose de ressources allouables de 4 cœurs de CPU et de 8 GiB de mémoire. Le conteneur de chaque Pod a pour requests 500m de CPU et 1,5 GiB de mémoire, et pour limits 1 cœur de CPU et 2 GiB de mémoire. Il n'y a ni autres Pods ni réservations pour le système. Quel est le nombre maximal de Pods que l'on peut placer sur ce nœud ?",
+  "choices": [
+   "4",
+   "5",
+   "8"
+  ],
+  "explanation": "L'ordonnanceur place les Pods de sorte que la somme des requests des Pods d'un nœud ne dépasse pas la quantité allouable, séparément pour le CPU et pour la mémoire. Le CPU permet jusqu'à 4000m ÷ 500m = 8 Pods, mais la mémoire 8 ÷ 1,5 = 5,33…, c'est-à-dire 5 au plus. Les deux conditions doivent être remplies : la réponse est donc 5. Les limits ne servent pas au placement : les limits des 5 Pods totalisent 5 cœurs de CPU et 10 GiB de mémoire, plus que ce dont dispose le nœud, et les ressources manquent si tous les Pods utilisent leur maximum en même temps."
+ },
+ "cloud-container-027": {
+  "question": "On utilise un service de base de données managé dans le cloud (un service dans lequel le fournisseur exploite le logiciel de base de données). Selon le modèle de responsabilité partagée, qu'est-ce qui reste en général de la responsabilité de l'utilisateur ?",
+  "choices": [
+   "L'application des correctifs de sécurité à l'OS des serveurs qui exécutent la base de données et au logiciel de base de données",
+   "La protection contre les pannes et les intrusions des bâtiments du centre de données et des équipements physiques comme les serveurs",
+   "La gestion des comptes d'utilisateurs et des privilèges de la base de données, des plages réseau autorisées à se connecter et des données stockées"
+  ],
+  "explanation": "Selon le modèle de responsabilité partagée, le fournisseur de cloud et l'utilisateur se partagent la responsabilité de la sécurité et de l'exploitation, et l'emplacement de la frontière dépend du type de service. Avec un service de base de données managé, le fournisseur se charge non seulement des installations physiques, mais aussi de la mise à jour de l'OS et du logiciel de base de données. En revanche, qui peut accéder à quelles données, quels réseaux peuvent se connecter et quelles données sont stockées restent de la responsabilité de l'utilisateur quel que soit le type de service. Un incident dans lequel une erreur de configuration expose une base de données à Internet est un problème du côté de l'utilisateur."
+ },
+ "cloud-container-028": {
+  "question": "Dans le cloud, quel est le principal objectif de la répartition des serveurs web et des réplicas de la base de données entre plusieurs zones de disponibilité d'une même région ?",
+  "choices": [
+   "Maintenir le service dans les autres zones même en cas de panne à l'échelle d'un centre de données (comme une coupure de l'alimentation ou du refroidissement)",
+   "Répartir les serveurs dans diverses parties du monde pour que les réponses viennent de lieux proches des utilisateurs, ce qui réduit la latence des communications",
+   "Les communications entre zones n'ont ni latence ni coût, ce qui rend le traitement plus rapide et moins cher que dans une seule zone"
+  ],
+  "explanation": "Une région est une zone géographique où un fournisseur de cloud dispose de centres de données, et une zone de disponibilité est, au sein de cette région, un groupe d'un ou plusieurs centres de données dont l'alimentation, le refroidissement et le réseau sont indépendants de ceux des autres zones. Les zones sont reliées par des liaisons à faible latence : en répartissant les serveurs et les réplicas des données entre plusieurs zones, le service peut continuer dans les zones restantes si une zone s'arrête. Pour se préparer à des catastrophes qui touchent toute une zone géographique, on place aussi des réplicas dans une autre région. Les communications entre zones ont bel et bien une latence et peuvent être facturées : la conception doit donc tenir compte de la méthode de réplication des données."
+ },
+ "cloud-container-029": {
+  "question": "Avec des fonctions sans serveur (FaaS), il arrive que seul le premier appel d'une fonction qui n'a pas été appelée depuis un certain temps réponde avec quelques centaines de millisecondes à quelques secondes de retard. Quelle explication de ce phénomène est correcte ?",
+  "choices": [
+   "Le résultat du premier appel est mis en cache : à partir du deuxième appel, le code de la fonction n'est pas exécuté et seul le résultat enregistré est renvoyé",
+   "Il faut du temps pour préparer un nouvel environnement d'exécution de la fonction, démarrer l'environnement d'exécution du langage et effectuer l'initialisation (un démarrage à froid)",
+   "Au premier appel, le code de la fonction est envoyé sur l'appareil de l'utilisateur, compilé sur place, puis exécuté"
+  ],
+  "explanation": "Pour les fonctions sans serveur, le fournisseur prépare au besoin des environnements d'exécution (comme des conteneurs ou des machines virtuelles légères) et les libère quand ils ne sont pas utilisés pendant un certain temps. Le premier appel après la libération d'un environnement exige de préparer l'environnement, de démarrer l'environnement d'exécution du langage et d'effectuer l'initialisation de la fonction, et la réponse est retardée d'autant. Les appels suivants réutilisent l'environnement préparé et sont plus rapides (un démarrage à chaud). Parmi les contre-mesures figurent l'allègement de l'initialisation et des bibliothèques chargées, et des réglages qui maintiennent prêt à l'avance un certain nombre d'environnements."
+ },
+ "cloud-container-030": {
+  "question": "Un stockage cloud est utilisé pour trois usages : (1) le rattacher à une machine virtuelle comme disque, y créer un système de fichiers et y placer les fichiers de données d'une base de données ; (2) le monter depuis plusieurs serveurs en même temps et l'utiliser comme répertoire partagé ; (3) lire et écrire un grand nombre d'images par clé (nom) au moyen d'une API HTTP, et en augmenter la capacité sans la fixer à l'avance. Quelle association de types de stockage convient aux usages (1) à (3) ?",
+  "choices": [
+   "(1) stockage objet, (2) stockage en mode bloc, (3) stockage de fichiers",
+   "(1) stockage de fichiers, (2) stockage objet, (3) stockage en mode bloc",
+   "(1) stockage en mode bloc, (2) stockage de fichiers, (3) stockage objet"
+  ],
+  "explanation": "Le stockage en mode bloc rattache à une machine virtuelle, comme disque virtuel, une zone de taille fixe ; on y crée un système de fichiers, et il convient à des usages comme les bases de données, qui effectuent rapidement de nombreuses petites lectures et écritures. Le stockage de fichiers fournit un système de fichiers partagé que plusieurs serveurs peuvent monter en même temps par NFS, SMB ou un protocole similaire. Le stockage objet lit et écrit les données sous forme d'objets entiers identifiés par des clés, au moyen d'une API HTTP ; sa capacité peut croître presque sans limite, et il convient aux images, aux sauvegardes et aux journaux. Il ne convient pas à la réécriture d'une partie d'un objet : on n'y place donc pas les fichiers de données d'une base de données."
+ },
+ "cloud-container-031": {
+  "question": "On utilise des machines virtuelles facturées seulement pour la durée d'utilisation, à 40 yens de l'heure (prix fictif). En temps normal, 2 machines tournent en permanence pendant tout le mois (30 jours), et pendant 20 jours ouvrés, 4 machines sont ajoutées 6 heures par jour pour suivre la charge. Quel est le montant facturé pour le mois ?",
+  "choices": [
+   "76 800 yens",
+   "86 400 yens",
+   "172 800 yens"
+  ],
+  "explanation": "Avec la facturation à l'usage, le montant est nombre de machines × heures de fonctionnement × prix unitaire. Les 2 machines permanentes tournent 2 × 24 × 30 = 1440 heures, et les 4 machines ajoutées 4 × 6 × 20 = 480 heures, soit 1920 heures au total. Le montant est 1920 × 40 = 76 800 yens. Faire tourner en permanence 6 machines pour couvrir la pointe coûterait 6 × 720 × 40 = 172 800 yens : adapter le nombre de machines à la charge maintient donc le coût sous la moitié."
+ },
+ "cloud-container-032": {
+  "question": "Une machine virtuelle coûte 50 yens de l'heure à la demande, où l'on ne paie que les heures utilisées, ou 262 800 yens par an avec une réservation qui engage à l'avance sur un an d'utilisation, quelles que soient les heures utilisées (deux prix fictifs). En comptant 8760 heures dans une année, la réservation devient moins chère dès que le nombre d'heures d'utilisation dans l'année dépasse une certaine valeur. Quelle est cette valeur ?",
+  "choices": [
+   "3504 heures (40 % de l'année)",
+   "5256 heures (60 % de l'année)",
+   "8760 heures (100 % de l'année)"
+  ],
+  "explanation": "La réservation coûte 262 800 yens quelles que soient les heures utilisées, et le tarif à la demande 50 yens × heures utilisées : les deux sont donc égaux à 262 800 ÷ 50 = 5256 heures. Cela représente 5256 ÷ 8760 = 60 % : si la machine est utilisée plus de 60 % de l'année, la réservation est moins chère. Ramenée à un tarif horaire, la réservation revient à 262 800 ÷ 8760 = 30 yens, soit 40 % de moins qu'à la demande. Une approche courante consiste à réserver les serveurs qui tournent en permanence et à utiliser le tarif à la demande pour la capacité supplémentaire ajoutée selon la charge."
+ },
+ "cloud-container-033": {
+  "question": "Qu'est-ce qui s'applique en général à la façon dont de nombreux clouds publics facturent le transfert de données ?",
+  "choices": [
+   "Le transfert de données est gratuit, et seuls le volume des données stockées et les heures de fonctionnement des machines virtuelles sont facturés",
+   "Le transfert depuis Internet vers le cloud est facturé au volume, et le transfert du cloud vers n'importe quelle autre destination est gratuit",
+   "Le transfert entrant depuis Internet est gratuit ou bon marché, et le transfert sortant vers Internet (egress) est facturé au volume"
+  ],
+  "explanation": "Dans de nombreux clouds, le transfert dans le sens où les données entrent est gratuit ou bon marché, et le transfert sortant du cloud est facturé au volume. Le transfert entre zones de disponibilité ou entre régions peut aussi être facturé. Pour les services qui livrent de grandes quantités de données, ce coût de transfert peut dépasser celui du calcul : on réduit donc le volume sortant par des choix de conception comme l'utilisation des caches d'un CDN, la compression des données et le traitement des données près de l'endroit où elles sont stockées. Les tarifs diffèrent selon les fournisseurs et les services : il faut donc les vérifier avant la conception."
+ },
+ "cloud-container-034": {
+  "question": "Un environnement a été créé en appliquant, avec un outil d'IaC (infrastructure en tant que code) déclaratif, un fichier qui définit un réseau et deux machines virtuelles. Juste après, on applique de nouveau le même fichier sans rien modifier. Que se passe-t-il ?",
+  "choices": [
+   "Il n'y a aucune différence entre la définition et l'état réel : rien n'est donc modifié",
+   "Un second ensemble identique est créé, ce qui donne quatre machines virtuelles",
+   "Comme l'environnement existe déjà, la deuxième application s'arrête avec une erreur"
+  ],
+  "explanation": "Avec une IaC déclarative, le code décrit la configuration souhaitée plutôt que les étapes, et l'outil la compare à l'état réel pour ne créer, modifier ou supprimer que ce qui diffère. Appliquer la même définition un nombre quelconque de fois donne donc le même résultat (idempotence), et la deuxième application ne change rien. Si quelqu'un modifie un réglage à la main et que l'état réel s'écarte de la définition (dérive de configuration), l'application suivante le ramène à l'état défini. Gérer les définitions dans Git permet en outre de consulter l'historique et de faire des revues, comme pour des programmes."
+ },
+ "cloud-container-035": {
+  "question": "Quelle est une manière appropriée de mettre à jour le logiciel des serveurs de production conformément à l'idée d'infrastructure immuable ?",
+  "choices": [
+   "Se connecter par SSH aux serveurs de production en fonctionnement, mettre à jour les paquets puis redémarrer le service",
+   "Créer de nouveaux serveurs à partir d'une nouvelle image qui contient la mise à jour, basculer vers eux et jeter les anciens serveurs sans les modifier",
+   "Réécrire à la main les fichiers de configuration sans arrêter les serveurs de production, et consigner les modifications dans un journal de travail"
+  ],
+  "explanation": "Avec une infrastructure immuable, les serveurs (machines virtuelles ou conteneurs) ne sont jamais modifiés une fois créés ; quand un changement est nécessaire, on en crée de nouveaux à partir d'une image qui contient ce changement et on les met à la place. Comme chaque serveur est créé à partir de la même image, les configurations ne divergent pas d'un serveur à l'autre par l'accumulation de différences manuelles. En cas de problème, recréer les serveurs à partir de l'image précédente rétablit l'ancien état. Tout ce qui doit être conservé, comme les journaux et les données, est stocké dans du stockage ou des bases de données hors des serveurs."
+ },
+ "cloud-container-036": {
+  "question": "On prépare deux environnements ayant la même configuration que la production ; la version actuelle continue de tourner dans l'un pendant que la nouvelle version est installée et vérifiée dans l'autre, puis le répartiteur de charge est basculé d'un coup vers ce dernier. En cas de problème, on revient rapidement à l'ancienne version en rebasculant. Quelle est cette méthode de mise en production ?",
+  "choices": [
+   "Déploiement bleu-vert",
+   "Déploiement canari",
+   "Mise à jour progressive (rolling update)"
+  ],
+  "explanation": "Le déploiement bleu-vert prépare deux environnements (bleu et vert) et bascule d'un coup le trafic des utilisateurs vers le nouvel environnement. L'ancien environnement est laissé tel quel pendant un certain temps : en cas de problème, il suffit de rebasculer pour rétablir l'ancienne version. En revanche, il faut des ressources pour deux environnements autour du basculement, et les modifications du schéma de la base de données doivent se faire sous une forme utilisable par l'ancienne comme par la nouvelle version. Un déploiement canari n'expose la nouvelle version qu'à une partie des requêtes, et une mise à jour progressive remplace les serveurs quelques-uns à la fois."
+ },
+ "cloud-container-037": {
+  "question": "Un service qui reçoit 12 000 requêtes par heure effectue un déploiement canari d'une nouvelle version et n'envoie à celle-ci que 5 % des requêtes. La nouvelle version a un bogue qui fait échouer 3 % des requêtes qu'elle reçoit ; on s'en aperçoit au bout d'une heure, et toutes les requêtes sont renvoyées vers l'ancienne version. Combien de requêtes ont échoué à cause du bogue pendant cette heure ?",
+  "choices": [
+   "18",
+   "360",
+   "600"
+  ],
+  "explanation": "La nouvelle version a reçu 12 000 × 5 % = 600 requêtes, dont 3 % ont échoué, soit 600 × 3 % = 18 requêtes en échec. Si toutes les requêtes avaient été basculées d'un coup vers la nouvelle version, 12 000 × 3 % = 360 auraient échoué. Un déploiement canari limite ainsi à une petite part les requêtes touchées par un bogue, et augmente cette part s'il n'y a pas de problème, tout en surveillant des indicateurs comme le taux d'erreur et le temps de réponse. Comparer les indicateurs de la nouvelle et de l'ancienne version exige suffisamment de requêtes : la part et la durée d'observation se décident donc ensemble."
+ },
+ "cloud-container-038": {
+  "question": "Une image de conteneur construite par une chaîne CI/CD a été testée dans l'environnement de préproduction (staging) et validée. Quelle est la manière la plus appropriée de mettre cette image en production ?",
+  "choices": [
+   "Reconstruire l'image pour la production à partir du même code source et mettre celle-ci en production",
+   "Renommer l'image testée avec le tag latest et récupérer (pull) latest dans l'environnement de production",
+   "Mettre en production l'image testée elle-même en l'indiquant par son condensé (digest), et fournir les différences entre environnements par la configuration"
+  ],
+  "explanation": "Dans une telle chaîne, l'artefact produit par la construction (ici, l'image) est traité comme non modifiable, et c'est le même artefact qui passe de la préproduction à la production. Même à partir du même code source, une reconstruction peut récupérer d'autres versions des bibliothèques ou de l'image de base dont elle dépend : ce qui arriverait en production serait alors différent de ce qui a été testé. Un tag peut plus tard être déplacé vers une autre image ; pour être sûr de désigner la même image, on utilise le condensé, qui est déterminé par le contenu. Les différences entre environnements, comme les destinations de connexion, ne sont pas intégrées à l'image, mais fournies par une configuration comme des variables d'environnement."
+ },
+ "cloud-container-039": {
+  "question": "Comme ci-dessus, la destination de connexion à la base de données n'est pas écrite dans l'image, mais transmise sous forme de variable d'environnement au démarrage du conteneur. Quel est le principal avantage de cette conception ?",
+  "code": "$ docker run -d -e DB_HOST=db.staging.example.com web:1.4.2\n$ docker run -d -e DB_HOST=db.prod.example.com web:1.4.2",
+  "choices": [
+   "Les valeurs placées dans des variables d'environnement sont chiffrées automatiquement : même un mot de passe ne peut donc pas être lu par d'autres",
+   "La même image peut servir en préproduction et en production, en changeant seulement les réglages et sans reconstruction : ce qui a été testé peut donc être mis en production tel quel",
+   "Les informations de connexion n'entrent pas dans les couches de l'image : l'image a donc moins de couches et les conteneurs démarrent beaucoup plus vite"
+  ],
+  "explanation": "Transmettre la configuration par des variables d'environnement est aussi recommandé par la méthodologie appelée The Twelve-Factor App, et cela sépare le code et l'image de l'environnement qui les exécute. La même image peut servir en préproduction et en production : ce qui arrive en production est donc exactement ce qui a été testé, et il n'est pas nécessaire de reconstruire l'image chaque fois que la destination de connexion change. Les variables d'environnement ne sont toutefois pas chiffrées : quiconque peut voir la configuration du conteneur ou les informations sur les processus peut les lire. Les valeurs confidentielles comme les mots de passe sont transmises par des mécanismes comme les Secrets de Kubernetes, qui restreignent qui peut les lire."
+ },
+ "cloud-container-040": {
+  "question": "Dans un système où plusieurs services fonctionnent ensemble, on veut savoir par quels services est passée une requête d'un utilisateur, dans quel ordre, et combien de temps elle a passé dans chacun. Parmi les données utilisées pour l'observabilité, laquelle est la plus adaptée ?",
+  "choices": [
+   "Métriques (séries temporelles numériques comme l'utilisation CPU et le nombre de requêtes)",
+   "Journaux (enregistrements d'événements émis par chaque service)",
+   "Traces (enregistrements du parcours d'une requête et du temps de chaque segment)"
+  ],
+  "explanation": "L'observabilité est la mesure dans laquelle l'état interne d'un système peut être déduit des données qu'il émet, et l'on cite souvent les métriques, les journaux et les traces comme données à cet effet. Dans le traçage (traçage distribué), un identifiant propre à la requête est transmis entre les services, et les heures de début et de fin des segments de traitement (spans) dans chaque service sont enregistrées pour reconstituer le parcours d'une requête et la répartition de son temps. Les métriques conviennent pour détecter les tendances générales et les anomalies, et les journaux pour l'examen détaillé d'événements particuliers, mais les traces sont les plus adaptées pour suivre le flux d'une requête à travers les services. En pratique, l'identifiant de la trace est aussi écrit dans les journaux, et l'on combine les trois pour trouver les causes."
+ }
+}
