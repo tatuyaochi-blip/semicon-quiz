@@ -25,7 +25,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"オールリデュース","item":"https://semiconroom.com/term/all-reduce/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"オールリデュース","description":"全GPUが持つ値を要素ごとに合計し、その結果をすべてのGPUに配る通信。データ並列の学習で勾配の平均に使う。","url":"https://semiconroom.com/term/all-reduce/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"オールリデュース","item":"https://semiconroom.com/term/all-reduce/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"オールリデュース","description":"全GPUが持つ値を要素ごとに合計し、その結果をすべてのGPUに配る通信。データ並列の学習で勾配の平均に使う。","url":"https://semiconroom.com/term/all-reduce/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"オールリデュースとリデュースの違いは?","acceptedAnswer":{"@type":"Answer","text":"リデュースは、全員のデータを集計した結果を1台だけが受け取る通信です。オールリデュースは、集計した結果を全員が受け取ります。リデュースの後にブロードキャストを行うのと同じ結果になりますが、リング方式などでより効率よく実行できます。"}},{"@type":"Question","name":"リングオールリデュースで1台が送るデータの量は?","acceptedAnswer":{"@type":"Answer","text":"データの大きさをS、台数をNとすると、1台が送る量は2(N − 1)/N × Sです。Nが大きくなっても2Sを超えないため、台数が増えても1台あたりの通信量はほぼ一定に保たれます。例えばN = 8なら1.75Sです。"}},{"@type":"Question","name":"データ並列の学習でオールリデュースが必要なのはなぜですか?","acceptedAnswer":{"@type":"Answer","text":"各GPUは異なるデータで勾配を計算するので、そのまま重みを更新するとモデルの複製が少しずつずれていきます。毎回オールリデュースで勾配を合計して平均すると、全GPUが同じ勾配で更新でき、1台で大きなバッチを学習したのとほぼ同じ結果になります。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>この用語の分野: <a href="/c/ai-stack/">AIハードウェアとソフトウェアスタック</a></p>
 </article>
-
+<section class="term-about">
+  <h2>オールリデュースの働き</h2>
+  <p>オールリデュース(All-Reduce)は、複数の<a class="term-link" href="/term/gpu/">GPU</a>やプロセスが持つ同じ形のデータを要素ごとに集計(リデュース)し、その結果を全員が受け取る集団通信です。集計には合計が最もよく使われ、最大値や最小値なども選べます。例えば4台のGPUがそれぞれ勾配のベクトルを持つとき、オールリデュースの後には、全員が4つのベクトルの合計を持ちます。<a class="term-link" href="/term/data-parallelism/">データ並列</a>の学習では、これを台数で割って勾配の平均とし、全員が同じ値で重みを更新することで、モデルの複製を同じに保ちます。</p>
+</section>
+<section class="term-about">
+  <h2>リングオールリデュースの仕組み</h2>
+  <p>よく使われる方法の一つがリングオールリデュースです。N台を輪のようにつなぎ、データをN個の塊に分けて、隣へ送りながら足し合わせます。前半のN − 1段(リデューススキャッタ)で各台が1つの塊の合計を完成させ、後半のN − 1段(オールギャザー)で完成した塊を全員に配ります。1台が送るデータの量は全体の2(N − 1)/N倍で、台数が増えても2倍を超えません。例えば1 GBの勾配を8台で集計する場合、1台が送るのは1.75 GBです。このため、帯域の面では台数が増えても効率が落ちにくい方法です。</p>
+</section>
+<section class="term-about">
+  <h2>通信時間を左右する要素</h2>
+  <p>リング方式は段数が2(N − 1)と台数に比例して増えるため、データが小さいときは1段ごとの待ち時間(レイテンシ)が目立ちます。そこで、木構造で集計する方法や、段数が台数の対数で済む方法も、データの大きさや台数に応じて使い分けられます。実際の通信時間は、ノード内の<a class="term-link" href="/term/gpu/">GPU</a>をつなぐ高速な接続や、ノード間のネットワークの帯域で決まり、階層ごとに方法を組み合わせます。学習では、計算の終わった層の勾配から順に通信を始めて、<a class="term-link" href="/term/backpropagation/">逆伝播</a>の計算と重ね合わせることで待ち時間を隠します。</p>
+</section>
+<section class="term-about">
+  <h2>ライブラリと関連する通信</h2>
+  <p>オールリデュースは、並列計算の標準であるMPIのMPI_Allreduceとして古くから使われてきました。<a class="term-link" href="/term/gpu/">GPU</a>の分散学習では、NVIDIAのNCCLのような集団通信ライブラリが、GPUどうしの接続の形に合わせた方法を選んで実行します。関連する通信には、1台にだけ結果を集めるリデュース、1台のデータを全員に配るブロードキャスト、各台が結果の一部だけを受け取るリデューススキャッタ、全員のデータを集めるオールギャザーがあります。モデルの状態を分割して持つ学習方法(ZeROやFSDP)では、リデューススキャッタとオールギャザーを組み合わせて使います。</p>
+</section>
 <section>
   <h2>オールリデュースの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="ai-stack-036" data-cat="ai-stack" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 全GPUが持つ値(勾配など)を合計し、その合計をすべてのGPUに配る</p><p class="explanation"><a class="term-link" href="/term/all-reduce/">オールリデュース</a>は、各<a class="term-link" href="/term/gpu/">GPU</a>が持つ同じ形のテンソルを要素ごとに足し合わせ(リデュース)、その結果を全GPUが受け取る通信です。GPUを輪のようにつないで、データを細かく分けながら隣へ渡していく方法(リングオールリデュース)では、GPUの数が増えても1台あたりの通信の量がほぼ一定に保たれます。<a class="term-link" href="/term/data-parallelism/">データ並列</a>の学習では、毎回の勾配の平均にこの通信を使います。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>オールリデュースとリデュースの違いは?</h3>
+  <p>リデュースは、全員のデータを集計した結果を1台だけが受け取る通信です。オールリデュースは、集計した結果を全員が受け取ります。リデュースの後にブロードキャストを行うのと同じ結果になりますが、リング方式などでより効率よく実行できます。</p>
+  <h3>リングオールリデュースで1台が送るデータの量は?</h3>
+  <p>データの大きさをS、台数をNとすると、1台が送る量は2(N − 1)/N × Sです。Nが大きくなっても2Sを超えないため、台数が増えても1台あたりの通信量はほぼ一定に保たれます。例えばN = 8なら1.75Sです。</p>
+  <h3>データ並列の学習でオールリデュースが必要なのはなぜですか?</h3>
+  <p>各GPUは異なるデータで勾配を計算するので、そのまま重みを更新するとモデルの複製が少しずつずれていきます。毎回オールリデュースで勾配を合計して平均すると、全GPUが同じ勾配で更新でき、1台で大きなバッチを学習したのとほぼ同じ結果になります。</p>
+</section>
 <section>
   <h2>解説の中の「オールリデュース」</h2>
   <ul class="term-quotes"><li><p>オールリデュースは、各GPUが持つ同じ形のテンソルを要素ごとに足し合わせ(リデュース)、その結果を全GPUが受け取る通信です。</p><a href="/q/ai-stack/ai-stack-036/">分散学習で使われるオールリデュース(All-Reduce)の通信の働きとして正しいものはどれか。</a></li><li><p>各GPUの勾配は違うので、全GPUで勾配を合計して平均する通信(オールリデュース)を行い、全員が同じ勾配で重みを更新して、モデルの複製を同じに保ちます。</p><a href="/q/ai-stack/ai-stack-033/">複数のGPUで学習するデータ並列の説明として正しいものはどれか。</a></li></ul>

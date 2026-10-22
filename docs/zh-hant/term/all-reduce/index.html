@@ -25,7 +25,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"全歸約（All-reduce）","item":"https://semiconroom.com/zh-hant/term/all-reduce/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"全歸約（All-reduce）","description":"將所有 GPU 所持有的值逐元素加總，並把結果分送給所有 GPU 的通訊。在資料平行訓練中用於梯度的平均。","url":"https://semiconroom.com/zh-hant/term/all-reduce/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"全歸約（All-reduce）","item":"https://semiconroom.com/zh-hant/term/all-reduce/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"全歸約（All-reduce）","description":"將所有 GPU 所持有的值逐元素加總，並把結果分送給所有 GPU 的通訊。在資料平行訓練中用於梯度的平均。","url":"https://semiconroom.com/zh-hant/term/all-reduce/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"全歸約與歸約（reduce）有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"歸約是只有1台收到所有成員資料彙總結果的通訊。全歸約則是所有成員都收到彙總結果。結果與歸約之後再進行broadcast相同，但以環狀方式等能更有效率地執行。"}},{"@type":"Question","name":"環狀全歸約中每台傳送多少資料？","acceptedAnswer":{"@type":"Answer","text":"設資料大小為S、台數為N，每台傳送的量為2(N − 1)/N × S。即使N變大也不會超過2S，因此台數增加時每台的通訊量幾乎維持固定。例如N = 8時為1.75S。"}},{"@type":"Question","name":"為什麼資料平行訓練需要全歸約？","acceptedAnswer":{"@type":"Answer","text":"各GPU以不同的資料計算梯度，若直接以此更新權重，模型的副本會逐漸產生差異。每次以全歸約加總並平均梯度，所有GPU就能以相同的梯度更新，得到與以1台訓練大批次幾乎相同的結果。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/ai-stack/">AI硬體與軟體堆疊</a></p>
 </article>
-
+<section class="term-about">
+  <h2>全歸約的作用</h2>
+  <p>全歸約（All-reduce）是將多個<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>或行程所持有的相同形狀資料逐元素彙總（reduce），並讓所有成員都收到結果的集體通訊。彙總最常用的是加總，也可以選擇最大值或最小值等。例如4個GPU各自持有梯度向量時，全歸約之後，所有成員都持有這4個向量的總和。在<a class="term-link" href="/zh-hant/term/data-parallelism/">資料平行</a>的訓練中，把這個結果除以台數作為梯度的平均，所有成員以相同的值更新權重，使模型的副本保持一致。</p>
+</section>
+<section class="term-about">
+  <h2>環狀全歸約的機制</h2>
+  <p>常用的方法之一是環狀全歸約（Ring All-Reduce）。把N台連成環狀，將資料分成N個區塊，一邊傳給相鄰的成員一邊相加。前半的N − 1步（reduce-scatter）讓每台完成一個區塊的總和，後半的N − 1步（all-gather）再把完成的區塊分送給所有成員。每台傳送的資料量為整體的2(N − 1)/N倍，無論台數增加多少都不會超過2倍。例如以8台彙總1 GB的梯度時，每台傳送1.75 GB。因此就頻寬而言，台數增加時效率也不易下降。</p>
+</section>
+<section class="term-about">
+  <h2>影響通訊時間的因素</h2>
+  <p>環狀方式的步數為2(N − 1)，與台數成正比增加，因此資料量小時，每一步的等待時間（延遲）就會很明顯。因此也會依資料大小與台數，分別使用以樹狀結構彙總的方法，或步數只需台數對數的方法。實際的通訊時間取決於節點內連接<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>的高速連線，以及節點間的網路頻寬，並依階層組合不同方法。訓練時，會從已完成計算的層的梯度開始依序通訊，與<a class="term-link" href="/zh-hant/term/backpropagation/">反向傳播</a>的計算重疊，以隱藏等待時間。</p>
+</section>
+<section class="term-about">
+  <h2>函式庫與相關通訊</h2>
+  <p>全歸約長久以來就以平行計算標準MPI中的MPI_Allreduce被使用。在<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>的分散式訓練中，NVIDIA的NCCL等集體通訊函式庫會依GPU之間的連接形態選擇方法並執行。相關的通訊有：只把結果彙整到1台的reduce、把1台的資料分送給所有成員的broadcast、每台只收到結果一部分的reduce-scatter，以及收集所有成員資料的all-gather。分割保存模型狀態的訓練方法（ZeRO或FSDP）則組合使用reduce-scatter與all-gather。</p>
+</section>
 <section>
   <h2>練習全歸約（All-reduce）的題目</h2>
   <article class="q-mini" data-qid="ai-stack-036" data-cat="ai-stack" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 將所有GPU持有的值（梯度等）加總，並把加總結果分送給所有GPU</p><p class="explanation"><a class="term-link" href="/zh-hant/term/all-reduce/">All-Reduce</a>是將各<a class="term-link" href="/zh-hant/term/gpu/">GPU</a>持有的相同形狀的張量逐元素相加（reduce），並讓所有GPU都收到結果的通訊。以環狀串接GPU，一邊將資料細分一邊傳給鄰居的方法（Ring All-Reduce），即使GPU數量增加，每台的通訊量也大致維持固定。在<a class="term-link" href="/zh-hant/term/data-parallelism/">資料平行</a>的訓練中，每次的梯度平均都使用這個通訊。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>全歸約與歸約（reduce）有什麼不同？</h3>
+  <p>歸約是只有1台收到所有成員資料彙總結果的通訊。全歸約則是所有成員都收到彙總結果。結果與歸約之後再進行broadcast相同，但以環狀方式等能更有效率地執行。</p>
+  <h3>環狀全歸約中每台傳送多少資料？</h3>
+  <p>設資料大小為S、台數為N，每台傳送的量為2(N − 1)/N × S。即使N變大也不會超過2S，因此台數增加時每台的通訊量幾乎維持固定。例如N = 8時為1.75S。</p>
+  <h3>為什麼資料平行訓練需要全歸約？</h3>
+  <p>各GPU以不同的資料計算梯度，若直接以此更新權重，模型的副本會逐漸產生差異。每次以全歸約加總並平均梯度，所有GPU就能以相同的梯度更新，得到與以1台訓練大批次幾乎相同的結果。</p>
+</section>
 <section>
   <h2>解析中的「全歸約（All-reduce）」</h2>
   <ul class="term-quotes"><li><p>All-Reduce是將各GPU持有的相同形狀的張量逐元素相加（reduce），並讓所有GPU都收到結果的通訊。</p><a href="/zh-hant/q/ai-stack/ai-stack-036/">關於分散式訓練中使用的All-Reduce通訊之作用，下列何者正確？</a></li><li><p>由於各GPU的梯度不同，要進行將所有GPU的梯度加總並取平均的通訊（All-Reduce），讓大家以相同的梯度更新權重，使模型的副本保持一致。</p><a href="/zh-hant/q/ai-stack/ai-stack-033/">關於以多顆GPU訓練的資料平行，下列說明何者正確？</a></li></ul>

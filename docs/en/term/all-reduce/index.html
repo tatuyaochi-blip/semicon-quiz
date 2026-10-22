@@ -25,7 +25,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"All-reduce","item":"https://semiconroom.com/en/term/all-reduce/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"All-reduce","description":"Communication that sums values held by all GPUs element by element and gives the result to every GPU, used to average gradients in data-parallel training.","url":"https://semiconroom.com/en/term/all-reduce/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"All-reduce","item":"https://semiconroom.com/en/term/all-reduce/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"All-reduce","description":"Communication that sums values held by all GPUs element by element and gives the result to every GPU, used to average gradients in data-parallel training.","url":"https://semiconroom.com/en/term/all-reduce/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between all-reduce and reduce?","acceptedAnswer":{"@type":"Answer","text":"Reduce is a communication in which only one device receives the combined result of everyone's data. In all-reduce every device receives the combined result. It gives the same result as a reduce followed by a broadcast, but methods such as ring all-reduce perform it more efficiently."}},{"@type":"Question","name":"How much data does each device send in ring all-reduce?","acceptedAnswer":{"@type":"Answer","text":"With data size S and N devices, each device sends 2(N − 1)/N × S. This never exceeds 2S as N grows, so per-device communication stays nearly constant as devices are added. For N = 8 it is 1.75S."}},{"@type":"Question","name":"Why does data-parallel training need all-reduce?","acceptedAnswer":{"@type":"Answer","text":"Each GPU computes gradients on different data, so updating weights with them directly would make the model replicas drift apart. Summing and averaging the gradients with an all-reduce at every step lets all GPUs apply the same update, giving nearly the same result as training one device on a large batch."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Field: <a href="/en/c/ai-stack/">AI Hardware &amp; Software Stack</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What all-reduce does</h2>
+  <p>All-reduce is a collective communication in which identically shaped data held by multiple GPUs or processes is combined element by element (the reduce), and everyone receives the result. Summation is the most common operation, but maximum, minimum and others can be chosen. If four GPUs each hold a gradient vector, for example, after the all-reduce every <a class="term-link" href="/en/term/gpu/">GPU</a> holds the sum of the four vectors. In data-parallel training this is divided by the number of GPUs to give the average gradient, and all GPUs update their weights with the same values, keeping the model replicas identical.</p>
+</section>
+<section class="term-about">
+  <h2>How ring all-reduce works</h2>
+  <p>One widely used method is ring all-reduce. N devices are connected in a ring, the data is split into N chunks, and chunks are summed as they are passed to the neighbor. In the first N − 1 steps (reduce-scatter) each device completes the sum of one chunk, and in the next N − 1 steps (all-gather) the completed chunks are distributed to everyone. Each device sends 2(N − 1)/N times the data size, never more than twice it however many devices are added. All-reducing a 1 GB gradient across 8 GPUs, for example, means each sends 1.75 GB. In bandwidth terms, efficiency therefore holds up well as devices are added.</p>
+</section>
+<section class="term-about">
+  <h2>What determines communication time</h2>
+  <p>In the ring method the number of steps, 2(N − 1), grows in proportion to the device count, so with small data the latency of each step stands out. Tree-based reductions and methods whose step count grows only with the logarithm of the device count are therefore used depending on data size and scale. Actual communication time is set by the fast links between GPUs within a node and the network bandwidth between nodes, and methods are combined level by level. In training, communication starts with the gradients of layers whose computation has finished and overlaps with <a class="term-link" href="/en/term/backpropagation/">backpropagation</a> to hide the waiting time.</p>
+</section>
+<section class="term-about">
+  <h2>Libraries and related collectives</h2>
+  <p>All-reduce has long been used in parallel computing as MPI_Allreduce in the MPI standard. In distributed <a class="term-link" href="/en/term/gpu/">GPU</a> training, collective communication libraries such as NVIDIA&#39;s NCCL choose a method suited to how the GPUs are connected. Related collectives include reduce, which gathers the result on one device only; broadcast, which sends one device&#39;s data to everyone; reduce-scatter, in which each device receives only part of the result; and all-gather, which collects everyone&#39;s data on every device. Training methods that shard model state (ZeRO and FSDP) combine reduce-scatter and all-gather.</p>
+</section>
 <section>
   <h2>Try it: questions about All-reduce</h2>
   <article class="q-mini" data-qid="ai-stack-036" data-cat="ai-stack" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. It sums the values (such as gradients) held by all GPUs and distributes the total to every GPU</p><p class="explanation"><a class="term-link" href="/en/term/all-reduce/">All-reduce</a> sums identically shaped tensors held by each <a class="term-link" href="/en/term/gpu/">GPU</a> element by element (the reduce) and gives the result to every GPU. With ring all-reduce, which arranges GPUs in a ring and passes chunks of data to neighbors, the communication volume per GPU stays nearly constant as GPUs are added. Data-parallel training uses it to average gradients at every step.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between all-reduce and reduce?</h3>
+  <p>Reduce is a communication in which only one device receives the combined result of everyone&#39;s data. In all-reduce every device receives the combined result. It gives the same result as a reduce followed by a broadcast, but methods such as ring all-reduce perform it more efficiently.</p>
+  <h3>How much data does each device send in ring all-reduce?</h3>
+  <p>With data size S and N devices, each device sends 2(N − 1)/N × S. This never exceeds 2S as N grows, so per-device communication stays nearly constant as devices are added. For N = 8 it is 1.75S.</p>
+  <h3>Why does data-parallel training need all-reduce?</h3>
+  <p>Each GPU computes gradients on different data, so updating weights with them directly would make the model replicas drift apart. Summing and averaging the gradients with an all-reduce at every step lets all GPUs apply the same update, giving nearly the same result as training one device on a large batch.</p>
+</section>
 <section>
   <h2>All-reduce in the explanations</h2>
   <ul class="term-quotes"><li><p>All-reduce sums identically shaped tensors held by each GPU element by element (the reduce) and gives the result to every GPU.</p><a href="/en/q/ai-stack/ai-stack-036/">What does the all-reduce communication used in distributed …</a></li><li><p>Their gradients differ, so an all-reduce communication sums and averages gradients across GPUs, and everyone updates weights with the same gradient, keeping the replicas identical.</p><a href="/en/q/ai-stack/ai-stack-033/">Which describes data parallelism in multi-GPU training?</a></li></ul>

@@ -25,7 +25,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"テンソルコア","item":"https://semiconroom.com/term/tensor-core/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"テンソルコア","description":"小さな行列どうしの積和を1つの命令でまとめて計算するGPUの演算器。主に低い精度の数値で使い、AIの計算を大幅に速くする。","url":"https://semiconroom.com/term/tensor-core/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"用語集","item":"https://semiconroom.com/glossary/"},{"@type":"ListItem","position":3,"name":"テンソルコア","item":"https://semiconroom.com/term/tensor-core/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"テンソルコア","description":"小さな行列どうしの積和を1つの命令でまとめて計算するGPUの演算器。主に低い精度の数値で使い、AIの計算を大幅に速くする。","url":"https://semiconroom.com/term/tensor-core/","inLanguage":"ja","inDefinedTermSet":{"@type":"DefinedTermSet","name":"用語集","url":"https://semiconroom.com/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"テンソルコアとCUDAコアの違いは?","acceptedAnswer":{"@type":"Answer","text":"CUDAコアは、各スレッドが1回ずつFP32などの積和や整数演算を行う汎用の演算器です。テンソルコアは、小さな行列どうしの積和をワープ単位の1命令でまとめて行う専用の演算器で、行列の積に限れば同じクロックでずっと多くの演算ができます。"}},{"@type":"Question","name":"TF32とは何ですか?","acceptedAnswer":{"@type":"Answer","text":"NVIDIAがAmpere世代のテンソルコアで導入した計算用の形式で、FP32と同じ8ビットの指数部と、FP16と同じ10ビットの仮数部をもちます。FP32のデータをそのまま入力でき、表せる範囲はFP32並みのまま、仮数の精度を落とす代わりにテンソルコアで高速に計算できます。"}},{"@type":"Question","name":"テンソルコアは学習と推論のどちらに使われますか?","acceptedAnswer":{"@type":"Answer","text":"両方に使われます。学習では主にBF16やFP16の混合精度で、推論ではさらに低いFP8やINT8などで使われることが多く、どちらでも計算の大部分を占める行列の積を速くします。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>この用語の分野: <a href="/c/gpu-programming/">GPUプログラミング</a></p>
 </article>
-
+<section class="term-about">
+  <h2>テンソルコアが行う計算</h2>
+  <p>テンソルコアは、NVIDIAの<a class="term-link" href="/term/gpu/">GPU</a>に搭載されている行列演算専用の演算器で、D = A × B + Cの形の小さな行列の積和を1つの命令でまとめて計算します。2017年に発表されたVolta世代で初めて搭載され、各テンソルコアは1クロックに4×4の行列どうしの積和、つまり64回の積和演算を行いました。プログラムからは、ワープ(32スレッド)が協力して16×16のような少し大きな行列の断片を扱う命令として使います。ニューラルネットワークの全結合層や<a class="term-link" href="/term/convolution/">畳み込み</a>の大部分は行列の積に直せるため、AIの計算を大きく速くします。</p>
+</section>
+<section class="term-about">
+  <h2>低い精度と高い精度の組み合わせ</h2>
+  <p>テンソルコアは、主にFP16やBF16、<a class="term-link" href="/term/fp8/">FP8</a>、<a class="term-link" href="/term/int8/">INT8</a>などの低い精度の入力で使われます。掛け算をビット数の少ない形式で行うと、演算器の面積と電力、メモリの量と帯域を大きく節約できるからです。一方、何千もの積を足し合わせる累積では<a class="term-link" href="/term/rounding-error/">丸め誤差</a>がたまるため、FP16の入力に対して累積をFP32で行う<a class="term-link" href="/term/mixed-precision/">混合精度</a>の形が基本です。世代が進むにつれて対応する形式は増え、FP32と同じ<a class="term-link" href="/term/exponent-field/">指数部</a>をもつTF32や、倍精度のFP64に対応した製品もあります。どの形式を使えるかは世代によって異なります。</p>
+</section>
+<section class="term-about">
+  <h2>なぜ通常の演算器より速いのか</h2>
+  <p>行列の積では、同じデータを何度も再利用できます。n×nの行列どうしの積は、n³回の積和に対してデータはn²個のオーダーで済むため、小さな行列の単位でまとめて計算すると、レジスタからの読み出しや命令の発行1回あたりの計算量が増えます。通常の演算器(<a class="term-link" href="/term/cuda/">CUDA</a>コア)はスレッドごとに1回ずつ積和を行いますが、テンソルコアはこの再利用を回路に組み込んでいるため、同じ面積と電力で何倍もの演算ができます。その代わり、行列の積和以外の計算には使えず、データを決まった形に並べる必要があります。</p>
+</section>
+<section class="term-about">
+  <h2>使い方と、ほかの行列演算器</h2>
+  <p>多くの場合、テンソルコアは直接プログラムせず、cuBLASやcuDNNなどのライブラリや、PyTorchなどのフレームワークを通して使います。データの形式をFP16やBF16にし、行列の寸法を推奨される倍数にそろえると、ライブラリがテンソルコアを使う計算方法を選びます。<a class="term-link" href="/term/cuda/">CUDA</a>では、ワープ単位で行列の断片を扱うWMMA APIや、PTXのmma命令から直接使うこともできます。他社の<a class="term-link" href="/term/gpu/">GPU</a>やAIアクセラレータにも同じ目的の行列演算器があり、GoogleのTPUのように、<a class="term-link" href="/term/systolic-array/">シストリックアレイ</a>で行列の積を計算するものもあります。</p>
+</section>
 <section>
   <h2>テンソルコアの練習問題に挑戦</h2>
   <article class="q-mini" data-qid="gpu-programming-039" data-cat="gpu-programming" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 小さな行列どうしの積和を1つの命令でまとめて計算し、主に低い精度の数値でAIの計算を大幅に速くする</p><p class="explanation"><a class="term-link" href="/term/tensor-core/">テンソルコア</a>は、例えば4×4や16×16のような小さな行列の掛け算と足し算を、1つの命令で一度に行う演算器です。普通の演算器で1回ずつ掛け算と足し算を行うより、同じ面積と電力で何倍もの計算ができます。FP16やBF16、<a class="term-link" href="/term/fp8/">FP8</a>、<a class="term-link" href="/term/int8/">INT8</a>などの低い精度で使うことが多く、ニューラルネットワークの学習と<a class="term-link" href="/term/ai-inference/">推論</a>の大部分を占める行列の積を大きく速くします。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>テンソルコアとCUDAコアの違いは?</h3>
+  <p>CUDAコアは、各スレッドが1回ずつFP32などの積和や整数演算を行う汎用の演算器です。テンソルコアは、小さな行列どうしの積和をワープ単位の1命令でまとめて行う専用の演算器で、行列の積に限れば同じクロックでずっと多くの演算ができます。</p>
+  <h3>TF32とは何ですか?</h3>
+  <p>NVIDIAがAmpere世代のテンソルコアで導入した計算用の形式で、FP32と同じ8ビットの指数部と、FP16と同じ10ビットの仮数部をもちます。FP32のデータをそのまま入力でき、表せる範囲はFP32並みのまま、仮数の精度を落とす代わりにテンソルコアで高速に計算できます。</p>
+  <h3>テンソルコアは学習と推論のどちらに使われますか?</h3>
+  <p>両方に使われます。学習では主にBF16やFP16の混合精度で、推論ではさらに低いFP8やINT8などで使われることが多く、どちらでも計算の大部分を占める行列の積を速くします。</p>
+</section>
 <section>
   <h2>解説の中の「テンソルコア」</h2>
   <ul class="term-quotes"><li><p>テンソルコアは、例えば4×4や16×16のような小さな行列の掛け算と足し算を、1つの命令で一度に行う演算器です。</p><a href="/q/gpu-programming/gpu-programming-039/">最近のGPUに搭載されているテンソルコア(行列演算ユニット)の特徴として正しいものはどれか。</a></li><li><p>テンソルコアの多くは、この形の積和を1命令で行えます。</p><a href="/q/gpu-programming/gpu-programming-040/">GPUの混合精度の計算で、掛け算をFP16などの低い精度で行い、足し合わせ(累積)をFP32で行うことが多い理由として…</a></li><li><p>窓が重なる分だけ入力が重複してメモリは増えますが、何十年も最適化されてきた行列の積のライブラリや、テンソルコアのような行列の演算器をそのまま使えるので、全体として速くなることが多いです。</p><a href="/q/ai-stack/ai-stack-025/">畳み込みニューラルネットワークで、畳み込みの計算をim2colなどの方法で行列の積に変換して計算することがある理由とし…</a></li></ul>

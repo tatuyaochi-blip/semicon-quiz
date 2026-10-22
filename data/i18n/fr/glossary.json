@@ -25525,5 +25525,217 @@
  "直線位相": {
   "term": "Phase linéaire",
   "desc": "Propriété d'un filtre dont la réponse en phase est une droite proportionnelle à la fréquence. Toutes les composantes fréquentielles sont alors retardées du même temps (le retard de groupe est constant), si bien que la forme d'onde est préservée. Un filtre FIR a exactement une phase linéaire lorsque ses coefficients sont symétriques (ou antisymétriques) par rapport au centre, avec un retard de (N − 1)/2 échantillons pour N prises. Un filtre IIR stable et causal ne peut pas avoir une phase exactement linéaire : les filtres FIR sont donc très utilisés là où les formes d'onde doivent être préservées, comme en audio, dans les récepteurs de communication et en mesure."
+ },
+ "コンテナ": {
+  "term": "Conteneur",
+  "desc": "Unité d'exécution qui regroupe une application avec les bibliothèques et les réglages dont elle a besoin, et l'exécute isolée des autres processus tout en partageant le noyau de l'OS de l'hôte. Sous Linux, il repose sur les espaces de noms (namespaces), qui séparent la vue des identifiants de processus, du réseau, des points de montage, etc., et sur les cgroups, qui limitent l'utilisation du CPU et de la mémoire. Il est plus léger et plus rapide à démarrer qu'une machine virtuelle qui démarre un OS complet, mais, comme il partage le noyau, il ne peut pas exécuter le noyau d'un autre type d'OS que celui de l'hôte. Les conteneurs sont créés à partir d'images de conteneur, et créés et gérés avec des outils comme Docker et Kubernetes.",
+  "about": [
+   {
+    "h": "Différence avec une machine virtuelle",
+    "p": "Les machines virtuelles exécutent chacune un OS, noyau compris, sur un hyperviseur. Un conteneur ne démarre pas d'OS ; il s'exécute comme un processus isolé sur le noyau de l'hôte : il démarre donc souvent en moins d'une seconde, et l'on peut en loger beaucoup sur une même machine. En revanche, son isolation repose sur des fonctions du noyau et n'est pas aussi forte que celle d'une machine virtuelle. Quand une isolation forte est nécessaire, on exécute parfois les conteneurs dans des machines virtuelles légères."
+   },
+   {
+    "h": "Système de fichiers d'un conteneur",
+    "p": "Le système de fichiers d'un conteneur est une couche inscriptible propre à ce conteneur, empilée sur les couches de l'image, en lecture seule. Quand un fichier de l'image est modifié, il est d'abord copié dans la couche inscriptible, puis modifié (copie sur écriture). La couche inscriptible disparaît quand le conteneur est supprimé : les données à conserver sont donc placées dans un stockage externe comme un volume."
+   },
+   {
+    "h": "Concevoir pour des conteneurs jetables",
+    "p": "Les conteneurs sont conçus en partant du principe qu'un conteneur défaillant n'est pas réparé, mais recréé à partir de l'image et remplacé. La configuration est fournie de l'extérieur, par exemple par des variables d'environnement, les journaux sont écrits sur la sortie standard pour que la plateforme les collecte, et l'état est conservé dans des bases de données ou du stockage. Il devient ainsi facile de changer le nombre de conteneurs ou de mettre en place une nouvelle version."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Un conteneur peut-il utiliser une autre distribution Linux que l'hôte ?",
+    "a": "Oui. Une image contient des fichiers de l'espace utilisateur comme des commandes et des bibliothèques, et ceux-ci peuvent provenir d'une autre distribution. Le noyau, lui, est partagé avec l'hôte : uname -r affiche donc le noyau de l'hôte, et les fonctions absentes du noyau de l'hôte ne sont pas disponibles."
+   },
+   {
+    "q": "Pourquoi des conteneurs Linux peuvent-ils tourner sous Windows ou macOS ?",
+    "a": "Des outils comme Docker Desktop font tourner une petite machine virtuelle Linux et y exécutent les conteneurs Linux. Les conteneurs Linux ont toujours besoin d'un noyau Linux quelque part."
+   }
+  ],
+  "aliases": [
+   "conteneurs"
+  ]
+ },
+ "コンテナイメージ": {
+  "term": "Image de conteneur",
+  "desc": "Modèle en lecture seule à partir duquel on crée des conteneurs. Elle empile en couches les fichiers d'une application, comme les exécutables, les bibliothèques et les réglages, et y ajoute une configuration comme la commande à lancer au démarrage ; elle ne contient pas de noyau d'OS. Les images sont construites à partir d'un Dockerfile ou d'un fichier similaire, puis stockées et distribuées par des registres. Une image se désigne par un nom de dépôt et un tag (par exemple web:1.4), ou de façon univoque par un condensé (digest) calculé à partir de son contenu (sha256:…). Les couches identiques sont partagées entre images.",
+  "about": [
+   {
+    "h": "Fonctionnement des couches",
+    "p": "Chaque instruction d'un Dockerfile qui modifie des fichiers (RUN, COPY, etc.) devient une couche. Les couches sont identifiées par un condensé calculé à partir de leur contenu : les images construites sur la même image de base partagent donc cette couche, qui n'est téléchargée et stockée qu'une seule fois. Supprimer un fichier dans une couche ultérieure laisse le contenu de la couche antérieure dans l'image ; les gros fichiers temporaires sont donc soit supprimés dans la même instruction, soit tenus hors de l'image finale par une construction multi-étapes."
+   },
+   {
+    "h": "Tags et condensés",
+    "p": "Un tag, comme latest ou web:1.4, est un nom donné par des personnes et peut plus tard être déplacé vers une autre image. Un condensé est calculé à partir du contenu de l'image et change si un seul bit diffère. En production, ou partout où il faut utiliser exactement ce qui a été testé, les images sont désignées par leur condensé."
+   },
+   {
+    "h": "Rendre les images petites et sûres",
+    "p": "Omettre les compilateurs et les gestionnaires de paquets inutiles à l'exécution rend les images plus petites, plus rapides à récupérer et moins exposées aux vulnérabilités. Une méthode courante est la construction multi-étapes, qui sépare une étape de construction d'une étape d'exécution. Les secrets ne sont pas placés dans les images, mais transmis au démarrage."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Quelle est la différence entre une image et un conteneur ?",
+    "a": "Une image est un modèle en lecture seule, et un conteneur est une instance en cours d'exécution (ou arrêtée) créée à partir de celle-ci. On peut créer de nombreux conteneurs à partir d'une seule image, et chacun reçoit sa propre couche inscriptible. C'est comparable à la relation entre un fichier de programme et un processus."
+   },
+   {
+    "q": "Le tag latest donne-t-il toujours la version la plus récente ?",
+    "a": "latest est un tag ordinaire sans signification particulière. C'est simplement le nom par défaut utilisé quand aucun tag n'est indiqué, et il ne désigne une nouvelle version que si quelqu'un le déplace. Pour figer une version, on indique un tag précis ou un condensé."
+   }
+  ],
+  "aliases": [
+   "images de conteneur",
+   "images de conteneurs",
+   "image Docker",
+   "images Docker"
+  ]
+ },
+ "Docker": {
+  "term": "Docker",
+  "desc": "Ensemble logiciel très répandu qui sert à construire des images de conteneur, à échanger des images avec des registres, et à démarrer et gérer des conteneurs. Il construit les images à partir des instructions écrites dans un Dockerfile et démarre les conteneurs avec docker run. Il peut publier des ports avec -p, conserver des données dans des volumes et des montages bind, et configurer le réseau. Les formats d'image et de conteneur sont normalisés par les spécifications de l'OCI (Open Container Initiative) : les mêmes images peuvent donc être utilisées avec d'autres outils que Docker."
+ },
+ "Kubernetes": {
+  "term": "Kubernetes",
+  "desc": "Plateforme d'orchestration qui place des conteneurs sur un cluster de nombreuses machines (nœuds), maintient leur nombre, les met à jour et leur fournit des points d'accès. Les utilisateurs déclarent un état souhaité avec des ressources comme les Deployments et les Services, et des contrôleurs observent l'état réel et le rapprochent de la déclaration (réconciliation). La plus petite unité est le Pod ; les Pods perdus sont recréés automatiquement, et les mises à jour progressives ainsi que la mise à l'échelle automatique selon la charge sont prises en charge. On l'abrège aussi en K8s.",
+  "about": [
+   {
+    "h": "Principales ressources",
+    "p": "Un Pod est la plus petite unité qui regroupe des conteneurs, un ReplicaSet maintient le nombre de Pods, et un Deployment utilise des ReplicaSets pour déployer de nouvelles versions et revenir en arrière. Un Service donne à plusieurs Pods un nom et une adresse stables, et un Ingress aiguille les requêtes HTTP venant de l'extérieur du cluster vers les Services selon le chemin ou le nom d'hôte. Les ConfigMaps et les Secrets transmettent la configuration et les valeurs confidentielles séparément des images, et les espaces de noms découpent un cluster par équipe ou par environnement."
+   },
+   {
+    "h": "Déclaration et réconciliation",
+    "p": "Les utilisateurs déclarent un état comme « faire tourner trois Pods de cette version » en YAML ou dans un format similaire et l'enregistrent auprès de Kubernetes. Des contrôleurs vérifient sans cesse l'état réel, recréent les Pods qui disparaissent et suppriment ceux en trop. Comme c'est le résultat et non les étapes qui est déclaré, appliquer la même définition un nombre quelconque de fois aboutit au même état, et le système se rétablit automatiquement après la panne d'un nœud."
+   },
+   {
+    "h": "Réglages de ressources et sondes",
+    "p": "Chaque conteneur indique le CPU et la mémoire qu'il veut se voir réserver (requests) et ses limites supérieures (limits), et l'ordonnanceur choisit un nœud pour chaque Pod d'après les requests. Une sonde readiness vérifie si un conteneur peut accepter des requêtes et commande l'aiguillage, et une sonde liveness fait redémarrer un conteneur qui ne répond plus. Un HorizontalPodAutoscaler modifie le nombre de Pods d'après des métriques comme l'utilisation rapportée aux requests."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Quelle est la différence entre Docker et Kubernetes ?",
+    "a": "Docker est surtout un outil pour construire des images et exécuter des conteneurs sur une seule machine. Kubernetes est une plateforme qui gère, sur de nombreuses machines, quel nœud exécute quoi, combien d'exemplaires tournent et comment ils sont mis à jour. Kubernetes exécute des conteneurs à partir d'images au format standard construites avec Docker ou d'autres outils."
+   },
+   {
+    "q": "Faut-il utiliser Kubernetes même pour un petit système ?",
+    "a": "Pas nécessairement. Kubernetes excelle dans la haute disponibilité, le rétablissement automatique et la gestion de nombreux services, mais l'exploitation d'un cluster demande des connaissances et des efforts. Pour un petit système, exécuter des conteneurs sur une seule machine ou utiliser un service de conteneurs managé dans le cloud peut mieux convenir."
+   }
+  ],
+  "aliases": [
+   "K8s"
+  ]
+ },
+ "Pod": {
+  "term": "Pod",
+  "desc": "Plus petite unité que Kubernetes place et exécute. Il regroupe un ou plusieurs conteneurs, qui partagent un espace de noms réseau, adresse IP comprise, ainsi que des volumes, et qui peuvent communiquer entre eux par localhost. Il contient habituellement un seul conteneur applicatif, auquel on ajoute au besoin des conteneurs auxiliaires. Les Pods sont jetables et reçoivent en général un nouveau nom et une nouvelle adresse IP quand ils sont recréés : leur nombre est donc maintenu par un Deployment ou un objet similaire, et un Service leur fournit un point d'accès stable.",
+  "aliases": [
+   "pods"
+  ]
+ },
+ "オートスケーリング": {
+  "term": "Mise à l'échelle automatique (autoscaling)",
+  "desc": "Mécanisme qui augmente ou diminue automatiquement le nombre de serveurs ou de conteneurs selon des indicateurs de charge (utilisation CPU, débit de requêtes, longueur d'une file d'attente, etc.). L'ajout de machines s'appelle scale-out et leur retrait scale-in. Le HorizontalPodAutoscaler de Kubernetes calcule le nombre nécessaire par ⌈nombre actuel × valeur actuelle ÷ valeur cible⌉. Les nouvelles instances mettent du temps à devenir opérationnelles : les hausses soudaines de charge sont donc absorbées par une cible qui laisse de la marge, et une période d'attente avant de réduire le nombre est courante, pour que celui-ci ne change pas trop souvent."
+ },
+ "サーバーレス": {
+  "term": "Informatique sans serveur (serverless)",
+  "desc": "Manière d'exécuter des applications dans laquelle la mise à disposition des serveurs, la gestion de leur nombre et la mise à jour de l'OS sont laissées au fournisseur de cloud, si bien que les utilisateurs n'ont pas à s'en soucier. La forme typique est le FaaS (Function as a Service) : une fonction ne s'exécute qu'à l'arrivée d'une requête ou d'un événement, et la facturation dépend du nombre d'exécutions, de leur durée et de la mémoire utilisée. L'adaptation à la charge est automatique, et presque rien n'est facturé en l'absence d'utilisation. En revanche, il existe des contraintes, comme les démarrages à froid, où le premier appel après une période d'inactivité est lent, et des limites de durée d'exécution.",
+  "about": [
+   {
+    "h": "Il y a quand même des serveurs",
+    "p": "« Sans serveur » ne signifie pas qu'il n'y a pas de serveurs, mais que les utilisateurs n'ont pas à les gérer. Le fournisseur prépare à la demande des environnements d'exécution comme des conteneurs ou des machines virtuelles légères et y exécute les fonctions. Les applications complètes sont souvent assemblées en combinant des fonctions avec des bases de données managées, du stockage, une file d'attente de messages, etc."
+   },
+   {
+    "h": "Démarrages à froid",
+    "p": "Quand une fonction n'est pas appelée pendant un certain temps, son environnement d'exécution est libéré, et l'appel suivant exige de préparer un environnement, de démarrer l'environnement d'exécution du langage et d'initialiser la fonction. Ce délai est un démarrage à froid ; selon le langage et la quantité de bibliothèques, il peut aller de quelques centaines de millisecondes à quelques secondes. On le réduit en allégeant l'initialisation ou en utilisant des réglages qui maintiennent prêts à l'avance un certain nombre d'environnements."
+   },
+   {
+    "h": "Charges de travail adaptées",
+    "p": "Elle convient aux traitements événementiels qui se terminent rapidement, comme la conversion d'images téléversées, l'agrégation périodique et la réception de webhooks, ainsi qu'aux charges de travail dont la charge varie fortement et qui connaissent de longues périodes d'inactivité. Pour des charges de travail constamment élevées, des serveurs ou des conteneurs toujours actifs peuvent revenir moins cher. L'état n'est pas conservé dans les fonctions, mais dans des bases de données ou un stockage similaire."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Le sans serveur et les conteneurs sont-ils opposés ?",
+    "a": "Non. De nombreuses plateformes sans serveur utilisent en interne des conteneurs ou des machines virtuelles légères, et certains services peuvent exécuter directement une image de conteneur comme une fonction. La différence porte sur qui gère le nombre d'instances et l'environnement d'exécution."
+   },
+   {
+    "q": "Passer au sans serveur réduit-il toujours les coûts ?",
+    "a": "Pas nécessairement. Comme on paie ce que l'on utilise, c'est moins cher pour des charges de travail légères et irrégulières, mais pour des charges de travail constantes au-dessus d'un certain niveau, des serveurs toujours actifs peuvent revenir moins cher. La comparaison doit aussi inclure des frais comme ceux du transfert de données."
+   }
+  ],
+  "aliases": [
+   "sans serveur"
+  ]
+ },
+ "オブジェクトストレージ": {
+  "term": "Stockage objet (object storage)",
+  "desc": "Stockage qui conserve les données sous forme d'objets munis d'une clé (nom) et de métadonnées, et les lit et les écrit en entier au moyen d'une API HTTP. Sa capacité peut croître presque sans limite sans être fixée à l'avance, et les données sont en général répliquées sur plusieurs appareils ou sites pour une grande durabilité. Il convient aux images, aux vidéos, aux sauvegardes, aux journaux et aux fichiers des sites web statiques. Il ne convient ni à la réécriture de parties de fichiers comme dans un système de fichiers, ni à l'hébergement des fichiers de données d'une base de données ; pour ces usages, on utilise le stockage en mode bloc, qui fournit des disques virtuels, ou le stockage de fichiers, qui fournit un système de fichiers partagé."
+ },
+ "IaC(Infrastructure as Code)": {
+  "term": "Infrastructure en tant que code (IaC)",
+  "desc": "Méthode qui consiste à décrire la configuration d'une infrastructure (serveurs, réseaux, stockage, etc.) dans du code (des fichiers de définition) plutôt qu'à la main, et à la créer et la modifier automatiquement avec des outils. Avec les outils déclaratifs, on écrit la configuration souhaitée, et l'outil n'applique que la différence avec l'état réel : appliquer la même définition un nombre quelconque de fois donne donc le même résultat (idempotence). Gérer les définitions dans Git ou un outil similaire facilite l'historique des modifications, les revues et la reproduction d'environnements identiques.",
+  "about": [
+   {
+    "h": "Déclaratif ou procédural",
+    "p": "Dans un style déclaratif, on écrit le résultat, comme « deux machines virtuelles », et l'outil le compare à l'état actuel pour décider quoi faire. Dans un style procédural, on écrit des opérations dans l'ordre, comme « créer une machine virtuelle », et il faut donc tenir compte de l'état actuel ; une double exécution pourrait créer quatre machines. Les méthodes déclaratives, qui facilitent l'idempotence, sont très utilisées pour la configuration d'infrastructure."
+   },
+   {
+    "h": "Dérive de configuration",
+    "p": "Quand quelqu'un modifie un réglage à la main, par exemple dans une console d'administration, l'état réel s'écarte du code. Un outil déclaratif affiche la différence avant d'appliquer, ce qui permet de repérer une telle dérive. Si toutes les modifications passent par le code, l'état de l'environnement reste conforme au code."
+   },
+   {
+    "h": "Revue et reproductibilité",
+    "p": "Gérer les fichiers de définition dans Git comme des programmes permet de savoir qui a modifié quoi et quand, et de faire relire les modifications avant de les appliquer. Créer la préproduction et la production à partir des mêmes définitions réduit en outre les problèmes dus aux différences entre environnements. Les valeurs confidentielles comme les mots de passe ne sont pas écrites directement dans les fichiers de définition, mais gérées par des mécanismes dédiés."
+   }
+  ],
+  "faq": [
+   {
+    "q": "L'IaC supprime-t-elle la configuration manuelle ?",
+    "a": "Une grande partie du travail peut être transformée en code, mais certaines étapes manuelles, comme la configuration initiale de l'authentification, subsistent. L'important est de ne pas laisser les modifications manuelles en l'état, mais de les intégrer au code afin que le code et l'état réel restent cohérents."
+   },
+   {
+    "q": "Quel est le lien entre l'IaC et les conteneurs ?",
+    "a": "L'IaC sert à construire les fondations comme les réseaux, les machines virtuelles et les clusters, et les applications qui s'exécutent dessus sont souvent livrées sous forme d'images de conteneur. Les manifestes Kubernetes suivent la même idée que l'IaC, puisqu'ils déclarent un état souhaité."
+   }
+  ],
+  "aliases": [
+   "infrastructure as code"
+  ]
+ },
+ "責任共有モデル": {
+  "term": "Modèle de responsabilité partagée (shared responsibility model)",
+  "desc": "Principe selon lequel, dans l'utilisation du cloud, la responsabilité de la sécurité et de l'exploitation est partagée entre le fournisseur de cloud et l'utilisateur. Le fournisseur est responsable des bâtiments des centres de données et des équipements physiques, et l'utilisateur des données stockées, des comptes et des réglages d'accès, des autorisations de connexion réseau, etc. La frontière entre les deux change selon le type de service : IaaS, PaaS, SaaS ou services managés. De nombreuses fuites d'informations dues à des erreurs de configuration se produisent dans le périmètre de responsabilité de l'utilisateur."
+ },
+ "アベイラビリティゾーン": {
+  "term": "Zone de disponibilité (availability zone)",
+  "desc": "Groupe d'un ou plusieurs centres de données, au sein d'une région de cloud (une zone géographique dotée de centres de données), dont l'alimentation, le refroidissement et le réseau sont indépendants de ceux des autres zones. Les zones sont reliées par des liaisons à faible latence : en répartissant les réplicas des serveurs et des données entre plusieurs zones, le service continue de fonctionner même si une zone tombe en panne (par exemple à cause d'une coupure de courant ou d'une défaillance d'équipement). Les catastrophes qui touchent toute une zone géographique sont couvertes par une réplication vers une autre région. Les communications entre zones ont elles aussi une latence et peuvent être facturées.",
+  "aliases": [
+   "zones de disponibilité",
+   "availability zones"
+  ]
+ },
+ "ブルーグリーンデプロイメント": {
+  "term": "Déploiement bleu-vert (blue-green deployment)",
+  "desc": "Méthode de mise en production qui prépare deux environnements (bleu et vert) ayant la même configuration que la production, fait tourner la version actuelle dans l'un pendant que la nouvelle version est installée et vérifiée dans l'autre, puis bascule d'un coup le répartiteur de charge ou un dispositif similaire. En cas de problème, il suffit de rebasculer pour rétablir l'ancienne version. Il faut des ressources pour deux environnements autour du basculement, et les modifications du schéma de la base de données doivent se faire sous une forme utilisable par l'ancienne comme par la nouvelle version.",
+  "aliases": [
+   "déploiements bleu-vert"
+  ]
+ },
+ "カナリアリリース": {
+  "term": "Déploiement canari (canary release)",
+  "desc": "Méthode de mise en production qui expose d'abord une nouvelle version à une partie seulement des utilisateurs ou des requêtes (par exemple 5 %) et augmente cette part progressivement s'il n'y a pas de problème, tout en surveillant des indicateurs comme le taux d'erreur et le temps de réponse. En cas de bogue, seule une partie des requêtes est touchée, et l'ancienne version peut être rétablie rapidement. Le nom vient des canaris que l'on emportait dans les mines de charbon pour être averti tôt de la présence de gaz toxiques. Comparer l'ancienne et la nouvelle version exige suffisamment de requêtes, et la surveillance des indicateurs est souvent combinée à un retour arrière automatique.",
+  "aliases": [
+   "déploiements canari",
+   "canary deployment"
+  ]
+ },
+ "オブザーバビリティ": {
+  "term": "Observabilité",
+  "desc": "Propriété qui exprime dans quelle mesure l'état interne d'un système peut être déduit des données qu'il émet. On cite souvent comme données à cet effet les métriques (séries temporelles numériques), les journaux (enregistrements d'événements) et les traces (enregistrements du parcours et des temps d'une requête à travers plusieurs services). Elle vise non seulement à surveiller les pannes prévues à l'avance, mais aussi à permettre d'enquêter sur les causes de problèmes imprévus. C'est un contexte différent de l'observabilité des circuits dans la conception en vue du test."
+ },
+ "イミュータブルインフラストラクチャ": {
+  "term": "Infrastructure immuable (immutable infrastructure)",
+  "desc": "Approche d'exploitation dans laquelle les serveurs (machines virtuelles ou conteneurs) ne sont jamais modifiés une fois créés ; quand une mise à jour est nécessaire, on en crée de nouveaux à partir d'une image qui contient le changement, on les met à la place et l'on jette les anciens. Comme chaque serveur est créé à partir de la même image, les configurations ne divergent pas par l'accumulation de différences manuelles, et revenir à l'image précédente rétablit facilement l'ancien état. Tout ce qui doit être conservé, comme les journaux et les données, est placé dans du stockage ou des bases de données hors des serveurs."
  }
 }
