@@ -448,5 +448,32 @@
    "Der Start ist asynchron; die CPU fährt fort, ohne auf das Ende des Kernels zu warten, und muss vor der Verwendung des Ergebnisses synchronisieren"
   ],
   "explanation": "Ein Kernel-Start fügt der Befehlsfolge an die GPU lediglich eine Verarbeitung hinzu, und die Kontrolle kehrt sofort zur CPU-Seite zurück. Die CPU kann daher, während die GPU rechnet, z. B. die nächsten Daten vorbereiten. Bevor das Ergebnis auf der CPU gelesen wird, muss das Ende des Kernels jedoch durch cudaDeviceSynchronize oder durch Kopieren des Ergebnisses (im selben Stream wird auf den Abschluss der vorherigen Verarbeitung gewartet) sichergestellt werden. Auch bei Zeitmessungen lässt sich die Kernel-Zeit ohne Synchronisation nicht korrekt messen."
+ },
+ "gpu-programming-051": {
+  "question": "Wie erhält bei CUDA das CPU-seitige Programm die Ergebnisse, die ein GPU-Kernel (eine mit __global__ gekennzeichnete Funktion) berechnet hat?",
+  "choices": [
+   "Über den Rückgabewert (return) des Kernels, der die Ergebnisse aller Threads gesammelt an die CPU zurückgibt",
+   "Der Kernel schreibt seine Ergebnisse in ein Array im GPU-Speicher, und die CPU-Seite kopiert dieses Array nach Ende des Kernels in den CPU-Speicher (oder liest Unified Memory)",
+   "Das CPU-seitige Programm liest die Werte, die jeder Thread mit printf ausgegeben hat, als Variablen ein"
+  ],
+  "explanation": "Ein GPU-Kernel wird von vielen Threads gleichzeitig ausgeführt und kann seine Ergebnisse daher nicht als einzelnen Rückgabewert liefern; bei CUDA muss eine __global__-Funktion den Rückgabetyp void haben. Die CPU-Seite reserviert ein Array im GPU-Speicher und übergibt dessen Zeiger als Argument, und jeder Thread schreibt sein Ergebnis in das Element, für das er zuständig ist. Da Kernel-Starts asynchron sind, kopiert die CPU-Seite das Array nach Ende des Kernels mit cudaMemcpy o. Ä. zurück (im selben Stream wartet die Kopie auf das Ende des vorherigen Kernels). printf im Kernel ist ein Debugging-Hilfsmittel zur Anzeige; das Programm kann diese Werte nicht einlesen."
+ },
+ "gpu-programming-052": {
+  "question": "Auf einer GPU mit einer Obergrenze von 1024 Threads pro Thread-Block wird ein CUDA-Kernel mit blockDim.x = 2048 gestartet. Was passiert im Allgemeinen?",
+  "choices": [
+   "Die GPU teilt ihn automatisch in zwei Blöcke zu je 1024 Threads auf und führt sie aus",
+   "Nur die ersten 1024 Threads werden ausgeführt, der Rest wird ignoriert",
+   "Die Startkonfiguration wird als ungültig behandelt, der Kernel wird nicht ausgeführt und ein Fehler zurückgegeben"
+  ],
+  "explanation": "Alle Threads in einem Thread-Block müssen gleichzeitig auf einem SM liegen und über Shared Memory und __syncthreads() zusammenarbeiten können, daher ist die Zahl der Threads pro Block begrenzt. Wird ein Kernel mit einer Konfiguration über der Grenze gestartet, läuft kein einziger Thread, und der Start schlägt mit einem Fehler fehl, der eine ungültige Konfiguration meldet. Da ein Kernel-Start keinen Wert zurückgibt, übersieht man leicht, dass das Array mit den Ergebnissen nie aktualisiert wurde, wenn der Fehler nicht mit cudaGetLastError() o. Ä. geprüft wird. Die Arbeit für 2048 Threads wird auf mehrere Blöcke mit höchstens 1024 Threads verteilt."
+ },
+ "gpu-programming-053": {
+  "question": "Ein SM einer GPU habe eine Ausgabeeinheit, die pro Zyklus Befehle eines Warps ausgeben kann. Jeder Warp gibt wiederholt 20 Zyklen lang Befehle aus und wartet dann 400 Zyklen auf das Ergebnis eines Speicherladevorgangs. Wie viele Warps sind mindestens nötig, um Leerlauf durch Speicherwartezeiten zu vermeiden (Latenzverdeckung), wenn der Warp-Wechsel keine Zeit kostet?",
+  "choices": [
+   "21",
+   "2",
+   "420"
+  ],
+  "explanation": "Ein Warp kann nur in 20 von je 420 Zyklen (20 + 400) Befehle ausgeben. Damit die Ausgabeeinheit ausgelastet bleibt, müssen sich 420 ÷ 20 = 21 Warps abwechseln: Während ein Warp 400 Zyklen wartet, füllen die anderen 20 Warps diese Zeit mit je 20 Zyklen Befehlsausgabe. Bei zu wenigen Warps schlägt die Wartezeit auf die Leistung durch, und die Recheneinheiten stehen still. Auf einer realen GPU hängt die nötige Zahl von der Wartezeit und dem Befehlsmix ab, und Wartezeiten lassen sich auch füllen, indem man innerhalb eines Warps mehr voneinander unabhängige Befehle bereitstellt (Parallelität auf Befehlsebene)."
  }
 }

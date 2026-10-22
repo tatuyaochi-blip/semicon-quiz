@@ -72,10 +72,10 @@ if (form) {
     out('mode').textContent = r.mode === 'ccm' ? T.ccm : T.dcm;
     out('D').textContent = `${g(r.D * 100)}%`;
     out('iavg').textContent = si(r.iavg, 'A');
-    out('di').textContent = r.mode === 'ccm' ? `${si(r.di, 'A')}(${g(r.di / r.iavg * 100)}%)` : si(r.di, 'A');
+    out('di').textContent = r.mode === 'ccm' ? `${si(r.di, 'A')} (${g(r.di / r.iavg * 100)}%)` : si(r.di, 'A');
     out('ipk').textContent = si(r.ipk, 'A');
     out('icrit').textContent = si(r.icrit, 'A');
-    out('dv').textContent = r.mode === 'ccm' ? `${si(r.dv, 'V')}(${g(r.dv / p.vout * 100)}%)` : '–';
+    out('dv').textContent = r.mode === 'ccm' ? `${si(r.dv, 'V')} (${g(r.dv / p.vout * 100)}%)` : '–';
     out('L30').textContent = si(r.L30, 'H');
     document.getElementById('dc-note').textContent = r.mode === 'ccm' ? '' : T.dcm_note;
     lineChart(document.getElementById('dc-chart'), { xlabel: T.x_label, ylabel: T.y_label, ymin: 0,

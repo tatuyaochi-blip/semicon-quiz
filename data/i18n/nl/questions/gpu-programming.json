@@ -448,5 +448,32 @@
    "Het starten is asynchroon, dus de CPU gaat zonder op het einde van de kernel te wachten verder met de volgende bewerking, en vóór het gebruik van het resultaat moet worden gesynchroniseerd"
   ],
   "explanation": "Het starten van een kernel voegt alleen een bewerking toe aan de reeks opdrachten voor de GPU, en de besturing keert direct terug naar de CPU. De CPU kan dus terwijl de GPU rekent al de volgende data voorbereiden. Voordat het resultaat op de CPU wordt gelezen, moet echter het einde van de kernel worden vastgesteld, met cudaDeviceSynchronize of het kopiëren van het resultaat (in dezelfde stream wordt gewacht tot de voorgaande bewerking klaar is). Ook bij het meten van tijd kan de tijd van de kernel zonder synchronisatie niet juist worden gemeten."
+ },
+ "gpu-programming-051": {
+  "question": "Hoe ontvangt bij CUDA het programma aan de CPU-kant de resultaten die een GPU-kernel (een functie gemarkeerd met __global__) heeft berekend?",
+  "choices": [
+   "Via de returnwaarde van de kernel, die de resultaten van alle threads samen naar de CPU terugstuurt",
+   "De kernel schrijft zijn resultaten naar een array in het GPU-geheugen, en na afloop van de kernel kopieert de CPU-kant die array naar het CPU-geheugen (of leest ze unified memory)",
+   "Het programma aan de CPU-kant leest de waarden die elke thread met printf heeft afgedrukt als variabelen in"
+  ],
+  "explanation": "Een GPU-kernel wordt door veel threads tegelijk uitgevoerd en kan zijn resultaten dus niet met één returnwaarde teruggeven, en bij CUDA moet het type van de returnwaarde van een __global__-functie void zijn. De CPU-kant reserveert een array in het GPU-geheugen en geeft de pointer ervan als argument mee, en elke thread schrijft zijn resultaat naar het element waarvoor hij verantwoordelijk is. Omdat het starten van een kernel asynchroon is, kopieert de CPU-kant de array met cudaMemcpy of iets vergelijkbaars terug nadat de kernel klaar is (in dezelfde stream wacht de kopie op het einde van de voorgaande kernel). printf in een kernel is een debughulpmiddel om uitvoer te tonen, en het programma kan die waarden niet terug inlezen."
+ },
+ "gpu-programming-052": {
+  "question": "Op een GPU met een limiet van 1024 threads per thread block wordt een CUDA-kernel gestart met blockDim.x ingesteld op 2048. Wat gebeurt er in het algemeen?",
+  "choices": [
+   "De GPU splitst het automatisch in twee blocks van elk 1024 threads en voert die uit",
+   "Alleen de eerste 1024 threads worden uitgevoerd en de rest wordt genegeerd",
+   "De startconfiguratie wordt als ongeldig behandeld, zodat de kernel niet wordt uitgevoerd en er een fout wordt teruggegeven"
+  ],
+  "explanation": "Alle threads van een thread block moeten tegelijk op één SM staan en moeten via shared memory en __syncthreads() kunnen samenwerken, dus het aantal threads per block is begrensd. Wordt een kernel gestart met een configuratie boven de limiet, dan wordt er geen enkele thread uitgevoerd en mislukt de start met een fout die op een ongeldige configuratie wijst. Het starten van een kernel geeft geen waarde terug, dus zonder de fout te controleren met cudaGetLastError() of iets vergelijkbaars valt het gemakkelijk niet op dat de array met de resultaten nooit is bijgewerkt. Werk voor 2048 threads wordt verdeeld over meerdere blocks van 1024 threads of minder."
+ },
+ "gpu-programming-053": {
+  "question": "Stel dat een SM van een GPU één issue-eenheid heeft die per cyclus instructies van één warp kan uitgeven. Elke warp geeft herhaaldelijk 20 cycli instructies uit en wacht dan 400 cycli op het resultaat van een geheugenlading. Hoeveel warps zijn minstens nodig om ledige tijd door het wachten op het geheugen weg te werken (latentieverberging), als het wisselen tussen warps geen tijd kost?",
+  "choices": [
+   "21",
+   "2",
+   "420"
+  ],
+  "explanation": "Eén warp kan maar in 20 van elke 420 cycli (20 + 400) instructies uitgeven. Om de issue-eenheid bezig te houden, moeten 420 ÷ 20 = 21 warps elkaar afwisselen: terwijl één warp 400 cycli wacht, vullen de andere 20 warps die tijd door elk 20 cycli instructies uit te geven. Met te weinig warps wordt het wachten zichtbaar in de prestaties en staan de rekeneenheden stil. Op een echte GPU hangt het benodigde aantal af van de wachttijd en de instructiemix, en wachttijden kunnen ook worden opgevuld door binnen één warp meer onderling onafhankelijke instructies te gebruiken (parallellisme op instructieniveau)."
  }
 }

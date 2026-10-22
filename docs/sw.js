@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-f7c629ad02';
+const CACHE = 'sq-7f8677d711';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -71,6 +71,7 @@ const PRECACHE = [
   "/data/ja/q/photonics.json",
   "/data/ja/q/physics.json",
   "/data/ja/q/pn-junction.json",
+  "/data/ja/q/power-electronics.json",
   "/data/ja/q/power-management.json",
   "/data/ja/q/power.json",
   "/data/ja/q/probability-statistics.json",
@@ -156,6 +157,7 @@ const PRECACHE = [
   "/data/en/q/photonics.json",
   "/data/en/q/physics.json",
   "/data/en/q/pn-junction.json",
+  "/data/en/q/power-electronics.json",
   "/data/en/q/power-management.json",
   "/data/en/q/power.json",
   "/data/en/q/probability-statistics.json",
@@ -241,6 +243,7 @@ const PRECACHE = [
   "/data/zh-hant/q/photonics.json",
   "/data/zh-hant/q/physics.json",
   "/data/zh-hant/q/pn-junction.json",
+  "/data/zh-hant/q/power-electronics.json",
   "/data/zh-hant/q/power-management.json",
   "/data/zh-hant/q/power.json",
   "/data/zh-hant/q/probability-statistics.json",
@@ -325,6 +328,7 @@ const PRECACHE = [
   "/data/ko/q/photonics.json",
   "/data/ko/q/physics.json",
   "/data/ko/q/pn-junction.json",
+  "/data/ko/q/power-electronics.json",
   "/data/ko/q/power-management.json",
   "/data/ko/q/power.json",
   "/data/ko/q/probability-statistics.json",
@@ -409,6 +413,7 @@ const PRECACHE = [
   "/data/de/q/photonics.json",
   "/data/de/q/physics.json",
   "/data/de/q/pn-junction.json",
+  "/data/de/q/power-electronics.json",
   "/data/de/q/power-management.json",
   "/data/de/q/power.json",
   "/data/de/q/probability-statistics.json",
@@ -493,6 +498,7 @@ const PRECACHE = [
   "/data/nl/q/photonics.json",
   "/data/nl/q/physics.json",
   "/data/nl/q/pn-junction.json",
+  "/data/nl/q/power-electronics.json",
   "/data/nl/q/power-management.json",
   "/data/nl/q/power.json",
   "/data/nl/q/probability-statistics.json",
@@ -577,6 +583,7 @@ const PRECACHE = [
   "/data/fr/q/photonics.json",
   "/data/fr/q/physics.json",
   "/data/fr/q/pn-junction.json",
+  "/data/fr/q/power-electronics.json",
   "/data/fr/q/power-management.json",
   "/data/fr/q/power.json",
   "/data/fr/q/probability-statistics.json",
