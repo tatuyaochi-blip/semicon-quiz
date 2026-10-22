@@ -71,7 +71,8 @@ if (form) {
   let T = {};
   try { T = JSON.parse(form.dataset.text); } catch {}
   const out = k => document.querySelector(`[data-out="${k}"]`);
-  const f = (v, d = 3) => (Number.isFinite(v) ? Number(v.toPrecision(d)).toLocaleString(document.documentElement.lang, { maximumFractionDigits: 6 }) : '–');
+  // 計算の誤差で残る、目標値の1万分の1より小さい値は 0 と表示する
+  const f = (v, d = 3) => (Number.isFinite(v) ? Number((Math.abs(v) < 1e-4 ? 0 : v).toPrecision(d)).toLocaleString(document.documentElement.lang, { maximumFractionDigits: 6 }) : '–');
   const read = k => { const v = Number(form.elements[k].value); return Number.isFinite(v) ? v : Number(form.elements[k].defaultValue); };
   const warn = document.getElementById('pid-warn');
   function update() {
@@ -86,7 +87,7 @@ if (form) {
     out('overshoot').textContent = Number.isFinite(r.overshoot) ? `${f(r.overshoot, 3)}%` : '–';
     out('rise').textContent = Number.isFinite(r.rise) ? `${f(r.rise, 3)} ${T.sec}` : '–';
     out('settle').textContent = Number.isFinite(r.settle) ? `${f(r.settle, 3)} ${T.sec}` : '–';
-    out('umaxv').textContent = f(Math.max(...r.u.map(Math.abs)), 3);
+    out('umaxv').textContent = r.unstable ? '–' : f(Math.max(...r.u.map(Math.abs)), 3);
     warn.textContent = r.unstable ? T.unstable : !r.settled ? T.not_settled : '';
     warn.hidden = !warn.textContent;
     const step = Math.max(1, Math.floor(r.t.length / 600));

@@ -127,7 +127,9 @@ if (form) {
   try { T = JSON.parse(form.dataset.text); } catch {}
   const lang = document.documentElement.lang;
   const out = k => document.querySelector(`[data-out="${k}"]`);
-  const f = (v, d = 3) => (Number.isFinite(v) ? Number(v.toPrecision(d)).toLocaleString(lang, { maximumFractionDigits: 6 }) : '–');
+  // 計算の誤差で −0 や 1e−13 のように出る値は 0 にする
+  const f = (v, d = 3) => (Number.isFinite(v) ? Number((Math.abs(v) < 1e-9 ? 0 : v).toPrecision(d)).toLocaleString(lang, { maximumFractionDigits: 6 }) : '–');
+  const byRe = list => [...list].sort((a, b) => b[0] - a[0] || b[1] - a[1]);
   const cx = ([re, im]) => (im === 0 ? f(re, 4) : `${f(re, 4)} ${im < 0 ? '−' : '+'} ${f(Math.abs(im), 4)}j`);
   const err = document.getElementById('bode-error');
   function update() {
@@ -137,9 +139,9 @@ if (form) {
     if (num.length > den.length) { err.textContent = T.improper; err.hidden = false; return; }
     err.hidden = true;
     const r = analyze(num, den, L);
-    out('poles').textContent = r.poles.length ? r.poles.map(cx).join(', ') : '–';
-    out('zeros').textContent = r.zeros.length ? r.zeros.map(cx).join(', ') : '–';
-    out('dc').textContent = r.type > 0 ? T.integrator.replace('{n}', r.type) : Number.isFinite(r.dc) ? `${f(r.dc, 4)}(${f(20 * Math.log10(Math.abs(r.dc)), 3)} dB)` : '–';
+    out('poles').textContent = r.poles.length ? byRe(r.poles).map(cx).join(', ') : '–';
+    out('zeros').textContent = r.zeros.length ? byRe(r.zeros).map(cx).join(', ') : '–';
+    out('dc').textContent = r.type > 0 ? T.integrator.replace('{n}', r.type) : Number.isFinite(r.dc) ? `${f(r.dc, 4)} (${f(20 * Math.log10(Math.abs(r.dc)), 3)} dB)` : '–';
     out('wgc').textContent = Number.isFinite(r.wgc) ? `${f(r.wgc)} rad/s` : T.none;
     out('pm').textContent = Number.isFinite(r.pm) ? `${f(r.pm)}°` : T.none;
     out('wpc').textContent = Number.isFinite(r.wpc) ? `${f(r.wpc)} rad/s` : T.none;

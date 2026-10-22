@@ -2075,7 +2075,7 @@ ${x.faq?.length ? `<section class="faq">
     ${field('kd', x.kd, 0, 'min="0" step="any"')}
     ${field('N', x.N, 10, 'min="1" step="any"')}
     ${field('umax', x.umax, 0, 'min="0" step="any"')}
-    <label class="dy-field dy-check"><input name="aw" type="checkbox"> <span>${esc(x.aw)}</span></label>
+    <label class="crc-check"><input name="aw" type="checkbox"> ${esc(x.aw)}</label>
     ${field('tend', x.tend, 30, 'min="0.001" step="any"')}
   </form>
   <section class="dy-out" aria-live="polite">
