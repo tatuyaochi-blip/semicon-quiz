@@ -2061,6 +2061,47 @@ ${x.faq?.length ? `<section class="faq">
     <ol class="hf-steps" id="hf-steps"></ol>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    pid: x => `<form id="pid-form" class="dy-form pid-form" data-plant="fo" data-text="${esc(JSON.stringify({ examples: x.examples, sec: x.sec, unstable: x.unstable, not_settled: x.not_settled, x_label: x.x_label, y_label: x.y_label, u_label: x.u_label }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${select('plant', x.plant, ['fo', 'fopdt', 'so', 'int'].map(k => [k, x[`plant_${k}`]]), 'fo')}
+    ${field('K', x.K, 1, 'step="any"')}
+    ${field('T', x.T, 5, 'min="0" step="any"').replace('class="dy-field"', 'class="dy-field pid-T"')}
+    ${field('zeta', x.zeta, 0.5, 'min="0" step="any"').replace('class="dy-field"', 'class="dy-field pid-so"')}
+    ${field('wn', x.wn, 1, 'min="0" step="any"').replace('class="dy-field"', 'class="dy-field pid-so"')}
+    ${field('L', x.L, 2, 'min="0" step="any"').replace('class="dy-field"', 'class="dy-field pid-L"')}
+    ${field('kp', x.kp, 4, 'step="any"')}
+    ${field('ki', x.ki, 1, 'min="0" step="any"')}
+    ${field('kd', x.kd, 0, 'min="0" step="any"')}
+    ${field('N', x.N, 10, 'min="1" step="any"')}
+    ${field('umax', x.umax, 0, 'min="0" step="any"')}
+    <label class="crc-check"><input name="aw" type="checkbox"> ${esc(x.aw)}</label>
+    ${field('tend', x.tend, 30, 'min="0.001" step="any"')}
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <p class="notice" id="pid-warn" hidden></p>
+    <dl class="dy-stats">${stat('final', x.final)}${stat('ess', x.ess)}${stat('overshoot', x.overshoot)}${stat('rise', x.rise)}${stat('settle', x.settle)}${stat('umaxv', x.umaxv)}</dl>
+    <svg id="pid-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_label)}"></svg>
+    <svg id="pid-u-chart" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.chart_u_label)}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
+    bode: x => `<form id="bode-form" class="dy-form bode-form" data-text="${esc(JSON.stringify({ examples: x.examples, bad_num: x.bad_num, bad_den: x.bad_den, improper: x.improper, integrator: x.integrator, none: x.none, inf: x.inf, cl_stable: x.cl_stable, cl_unstable: x.cl_unstable, cl_delay: x.cl_delay, x_label: x.x_label, mag_label: x.mag_label, phase_label: x.phase_label }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    <label class="dy-field"><span>${esc(x.num)}</span><input name="num" type="text" value="${esc(x.examples[0].num)}" spellcheck="false" autocomplete="off" autocapitalize="off"></label>
+    <label class="dy-field"><span>${esc(x.den)}</span><input name="den" type="text" value="${esc(x.examples[0].den)}" spellcheck="false" autocomplete="off" autocapitalize="off"></label>
+    ${field('L', x.L, 0, 'min="0" step="any"')}
+    <p class="muted bode-wide">${esc(x.hint)}</p>
+    <p class="notice bode-wide" id="bode-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('wgc', x.wgc)}${stat('pm', x.pm)}${stat('wpc', x.wpc)}${stat('gm', x.gm)}${stat('dc', x.dc)}${stat('cl', x.cl)}${stat('poles', x.poles)}${stat('zeros', x.zeros)}</dl>
+    <svg id="bode-mag" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.mag_chart_label)}"></svg>
+    <svg id="bode-phase" class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(x.phase_chart_label)}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">

@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-0c8f5978b9';
+const CACHE = 'sq-4dbaa655fb';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -26,6 +26,7 @@ const PRECACHE = [
   "/data/ja/q/compiler.json",
   "/data/ja/q/compound.json",
   "/data/ja/q/computer-arithmetic.json",
+  "/data/ja/q/control.json",
   "/data/ja/q/cpu.json",
   "/data/ja/q/cryptography.json",
   "/data/ja/q/cyber-defense.json",
@@ -110,6 +111,7 @@ const PRECACHE = [
   "/data/en/q/compiler.json",
   "/data/en/q/compound.json",
   "/data/en/q/computer-arithmetic.json",
+  "/data/en/q/control.json",
   "/data/en/q/cpu.json",
   "/data/en/q/cryptography.json",
   "/data/en/q/cyber-defense.json",
@@ -194,6 +196,7 @@ const PRECACHE = [
   "/data/zh-hant/q/compiler.json",
   "/data/zh-hant/q/compound.json",
   "/data/zh-hant/q/computer-arithmetic.json",
+  "/data/zh-hant/q/control.json",
   "/data/zh-hant/q/cpu.json",
   "/data/zh-hant/q/cryptography.json",
   "/data/zh-hant/q/cyber-defense.json",
@@ -277,6 +280,7 @@ const PRECACHE = [
   "/data/ko/q/compiler.json",
   "/data/ko/q/compound.json",
   "/data/ko/q/computer-arithmetic.json",
+  "/data/ko/q/control.json",
   "/data/ko/q/cpu.json",
   "/data/ko/q/cryptography.json",
   "/data/ko/q/cyber-defense.json",
@@ -360,6 +364,7 @@ const PRECACHE = [
   "/data/de/q/compiler.json",
   "/data/de/q/compound.json",
   "/data/de/q/computer-arithmetic.json",
+  "/data/de/q/control.json",
   "/data/de/q/cpu.json",
   "/data/de/q/cryptography.json",
   "/data/de/q/cyber-defense.json",
@@ -443,6 +448,7 @@ const PRECACHE = [
   "/data/nl/q/compiler.json",
   "/data/nl/q/compound.json",
   "/data/nl/q/computer-arithmetic.json",
+  "/data/nl/q/control.json",
   "/data/nl/q/cpu.json",
   "/data/nl/q/cryptography.json",
   "/data/nl/q/cyber-defense.json",
@@ -526,6 +532,7 @@ const PRECACHE = [
   "/data/fr/q/compiler.json",
   "/data/fr/q/compound.json",
   "/data/fr/q/computer-arithmetic.json",
+  "/data/fr/q/control.json",
   "/data/fr/q/cpu.json",
   "/data/fr/q/cryptography.json",
   "/data/fr/q/cyber-defense.json",
@@ -600,6 +607,7 @@ const PRECACHE = [
   "/js/bintree-core.js",
   "/js/bintree.js",
   "/js/bitops.js",
+  "/js/bode.js",
   "/js/breakeven.js",
   "/js/cache-calc.js",
   "/js/chart.js",
@@ -650,6 +658,7 @@ const PRECACHE = [
   "/js/paging.js",
   "/js/password.js",
   "/js/pdn.js",
+  "/js/pid.js",
   "/js/pn-junction.js",
   "/js/progress.js",
   "/js/pseudo-core.js",
