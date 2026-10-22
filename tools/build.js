@@ -2011,6 +2011,22 @@ ${x.faq?.length ? `<section class="faq">
     <p class="cv-vector"><span>${esc(x.vector_out)}</span> <code data-out="vector"></code></p>
     <p class="muted">${esc(x.note)}</p>
   </section>`,
+    huffman: x => `<form id="hf-form" class="dy-form hf-form" data-text="${esc(JSON.stringify({ examples: x.examples, bits: x.bits, vs_fixed: x.vs_fixed, col_sym: x.col_sym, col_p: x.col_p, col_count: x.col_count, col_code: x.col_code, col_len: x.col_len, step: x.step, few: x.few, dup: x.dup, bad_line: x.bad_line }))}">
+    <h2>${esc(x.in_heading)}</h2>
+    ${select('example', x.example, x.examples.map((e, i) => [String(i), e.label]), '0')}
+    ${select('mode', x.mode, [['symbols', x.mode_symbols], ['text', x.mode_text]], 'symbols')}
+    <label class="dy-field hf-wide hf-sym"><span>${esc(x.symbols)}</span><textarea name="symbols" rows="6" spellcheck="false" autocomplete="off"></textarea></label>
+    <label class="dy-field hf-wide hf-txt"><span>${esc(x.text)}</span><textarea name="text" rows="3" spellcheck="false" autocomplete="off"></textarea></label>
+    <p class="notice hf-wide" id="hf-error" hidden></p>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('H', x.H)}${stat('L', x.L)}${stat('eff', x.eff)}${stat('fixed', x.fixed)}${stat('ratio', x.ratio)}${stat('total', x.total)}</dl>
+    <div class="table-wrap" id="hf-table"></div>
+    <h3>${esc(x.steps_heading)}</h3>
+    <ol class="hf-steps" id="hf-steps"></ol>
+    <p class="muted">${esc(x.note)}</p>
+  </section>`,
     'logic-sim': x => `<section class="dy-out ls" id="ls" data-text="${esc(JSON.stringify({ pause: x.pause, resume: x.resume, share: x.share, copied: x.copied, table_none: x.table_none, confirm_clear: x.confirm_clear }))}">
     <h2 class="visually-hidden">${esc(x.h1)}</h2>
     <div class="ls-bar" role="toolbar" aria-label="${esc(x.palette)}">
