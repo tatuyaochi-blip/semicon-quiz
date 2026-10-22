@@ -25,7 +25,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"VCD（值變更傾印）","item":"https://semiconroom.com/zh-hant/term/value-change-dump/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"VCD（值變更傾印）","description":"Value Change Dump 的縮寫。記錄模擬過程中訊號值變化的標準檔案格式，可用波形顯示工具檢視並用於除錯。","url":"https://semiconroom.com/zh-hant/term/value-change-dump/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"VCD（值變更傾印）","item":"https://semiconroom.com/zh-hant/term/value-change-dump/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"VCD（值變更傾印）","description":"Value Change Dump 的縮寫。記錄模擬過程中訊號值變化的標準檔案格式，可用波形顯示工具檢視並用於除錯。","url":"https://semiconroom.com/zh-hant/term/value-change-dump/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"要用什麼檢視VCD檔案？","acceptedAnswer":{"@type":"Answer","text":"以GTKWave等波形顯示工具開啟，就能把訊號的變化看成沿時間軸的波形。模擬器附帶的波形顯示工具多半也能讀入VCD。內容是文字，也可以直接用編輯器確認。"}},{"@type":"Question","name":"VCD檔案太大時該怎麼辦？","acceptedAnswer":{"@type":"Answer","text":"以$dumpvars縮小記錄的階層，或以$dumpoff與$dumpon限制記錄的期間，藉此減少資料。若模擬器支援，以FST或FSDB等壓縮格式輸出，檔案會變小，讀取也更快。"}},{"@type":"Question","name":"VCD與SAIF有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"VCD會依時刻記錄各訊號的值於何時、如何改變的所有資訊。SAIF則只彙整每個訊號的轉換次數，以及處於0或1的時間長度等，雖然無法重現波形，但檔案小，適合功耗分析。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/hdl-verification/">硬體描述語言與驗證</a></p>
 </article>
-
+<section class="term-about">
+  <h2>VCD記錄的內容</h2>
+  <p>VCD（Value Change Dump，值變更傾印）是在邏輯模擬期間，記錄各訊號的值於何時、如何改變的文字格式檔案。它是<a class="term-link" href="/zh-hant/term/verilog/">Verilog</a>的IEEE 1364標準所定義的格式，多數模擬器都能輸出，可用GTKWave等波形顯示工具開啟並用於除錯。由於只記錄值改變的時刻與新值，比每個時脈寫下所有值要小。值以0、1、x（未知）、z（高阻抗）四種狀態表示，多位元訊號則整合成向量記錄。</p>
+</section>
+<section class="term-about">
+  <h2>檔案的結構</h2>
+  <p>VCD檔案由前半的標頭與後半的值變化序列組成。標頭寫入建立日期（$date）、時間單位（$timescale）、模組階層（$scope、$upscope）與訊號定義（$var），並以$enddefinitions結束。$var會為各訊號分配「!」或「%」等簡短的識別符號。後半先寫出「#100」這樣的時刻，再以值與識別符號列出該時刻改變的訊號，例如「1!」（1位元）或「b1010 %」（向量）。格式簡單，自行撰寫的腳本也能讀寫。</p>
+</section>
+<section class="term-about">
+  <h2>在Verilog中的輸出方法與注意事項</h2>
+  <p>在<a class="term-link" href="/zh-hant/term/verilog/">Verilog</a>中，於<a class="term-link" href="/zh-hant/term/testbench/">測試平台</a>內以$dumpfile指定輸出的檔名，以$dumpvars指定要記錄的範圍。$dumpvars(0, top)會記錄top模組以下所有階層的訊號。以$dumpoff與$dumpon可以暫停或恢復記錄，只保留想調查的時間區間。由於VCD是文字格式，長時間記錄大型電路的所有訊號，檔案會變得非常大，寫出檔案也會拖慢模擬。因此會縮小記錄的階層或期間，或改用經過壓縮的其他格式。</p>
+</section>
+<section class="term-about">
+  <h2>與其他波形格式及SAIF的差異</h2>
+  <p>VCD是標準所定義的通用格式，因此方便在不同公司的模擬器與波形顯示工具之間傳遞資料。另一方面，大型設計常使用經過壓縮、讀取較快的專有格式（FST、FSDB、WLF等）。此外，從VCD的值變化計算訊號的轉換次數，也能用於功耗分析。只彙整轉換次數等資訊的SAIF格式比VCD小，常用於功耗估算。另外，IEEE 1364-2001也定義了額外記錄埠方向與訊號強度的擴充VCD。</p>
+</section>
 <section>
   <h2>練習VCD（值變更傾印）的題目</h2>
   <article class="q-mini" data-qid="hdl-verification-037" data-cat="hdl-verification" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 以波形顯示工具查看訊號值隨時間的變化，調查缺陷的原因</p><p class="explanation"><a class="term-link" href="/zh-hant/term/value-change-dump/">VCD</a>（Value Change Dump）是記錄模擬期間各訊號的值何時、如何改變的標準檔案格式。以波形顯示工具開啟後，可以沿著時間軸看到每個時脈訊號的變化，因此能追查在哪裡出現了與期望不同的值。記錄所有訊號會使檔案變得非常大，因此有時也會將範圍縮小到想調查的區間或訊號。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>要用什麼檢視VCD檔案？</h3>
+  <p>以GTKWave等波形顯示工具開啟，就能把訊號的變化看成沿時間軸的波形。模擬器附帶的波形顯示工具多半也能讀入VCD。內容是文字，也可以直接用編輯器確認。</p>
+  <h3>VCD檔案太大時該怎麼辦？</h3>
+  <p>以$dumpvars縮小記錄的階層，或以$dumpoff與$dumpon限制記錄的期間，藉此減少資料。若模擬器支援，以FST或FSDB等壓縮格式輸出，檔案會變小，讀取也更快。</p>
+  <h3>VCD與SAIF有什麼不同？</h3>
+  <p>VCD會依時刻記錄各訊號的值於何時、如何改變的所有資訊。SAIF則只彙整每個訊號的轉換次數，以及處於0或1的時間長度等，雖然無法重現波形，但檔案小，適合功耗分析。</p>
+</section>
 <section>
   <h2>解析中的「VCD（值變更傾印）」</h2>
   <ul class="term-quotes"><li><p>VCD（Value Change Dump）是記錄模擬期間各訊號的值何時、如何改變的標準檔案格式。</p><a href="/zh-hant/q/hdl-verification/hdl-verification-037/">將模擬的結果輸出成VCD等格式的檔案，其主要目的為何？</a></li></ul>

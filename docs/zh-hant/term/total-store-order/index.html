@@ -25,7 +25,7 @@
 <link rel="manifest" href="/zh-hant/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"TSO（全域儲存順序）","item":"https://semiconroom.com/zh-hant/term/total-store-order/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TSO（全域儲存順序）","description":"x86 的記憶體一致性模型。只允許寫入之後對其他位址的讀取超前於該寫入。這是反映儲存緩衝區存在的模型。","url":"https://semiconroom.com/zh-hant/term/total-store-order/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"名詞解釋","item":"https://semiconroom.com/zh-hant/glossary/"},{"@type":"ListItem","position":3,"name":"TSO（全域儲存順序）","item":"https://semiconroom.com/zh-hant/term/total-store-order/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"TSO（全域儲存順序）","description":"x86 的記憶體一致性模型。只允許寫入之後對其他位址的讀取超前於該寫入。這是反映儲存緩衝區存在的模型。","url":"https://semiconroom.com/zh-hant/term/total-store-order/","inLanguage":"zh-Hant","inDefinedTermSet":{"@type":"DefinedTermSet","name":"名詞解釋","url":"https://semiconroom.com/zh-hant/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"TSO與循序一致性有什麼不同？","acceptedAnswer":{"@type":"Answer","text":"在循序一致性下，所有讀寫看起來都依程式順序進行。TSO只允許一種例外：寫入之後對其他位址的讀取，看起來可以比該寫入先進行。這是因為寫入還停留在儲存緩衝區時，後面的讀取就已先進行。"}},{"@type":"Question","name":"x86的記憶體模型是TSO嗎？","acceptedAnswer":{"@type":"Answer","text":"x86的記憶體模型以文字定義在Intel與AMD的手冊中，已知與TSO幾乎相同，其形式化定義稱為x86-TSO。TSO這個名稱本身，則源自SPARC架構所定義的模型。"}},{"@type":"Question","name":"TSO的CPU也需要記憶體屏障嗎？","acceptedAnswer":{"@type":"Answer","text":"有時需要。若演算法必須保持「寫入之後讀取其他位址」的順序才能正確運作（例如德克爾演算法），在x86上就需要MFENCE或帶LOCK前綴的指令。在高階語言中使用原子變數，編譯器就會產生所需的指令。"}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -79,7 +79,22 @@
   
   <p>這個名詞所屬的領域: <a href="/zh-hant/c/multicore-sync/">多核心與同步</a></p>
 </article>
-
+<section class="term-about">
+  <h2>TSO允許的重新排序</h2>
+  <p>TSO（全域儲存順序）是<a class="term-link" href="/zh-hant/term/memory-consistency-model/">記憶體一致性模型</a>之一，描述的行為與x86的記憶體模型幾乎相同。讀取之間、寫入之間，以及讀取之後寫入的順序都會被保持；從其他核心看來可以對調的，只有寫入之後對其他位址的讀取超前於該寫入這一種情況。此外，所有寫入在其他核心看來都是同一個順序。「全域儲存順序」這個名稱，就是指整體的寫入順序只有一個。</p>
+</section>
+<section class="term-about">
+  <h2>與儲存緩衝區的關係</h2>
+  <p>TSO是直接描述「每個核心都有先進先出的<a class="term-link" href="/zh-hant/term/store-buffer/">儲存緩衝區</a>」這種構成的模型。核心先把寫入放進緩衝區並繼續執行，之後才寫出到快取。在這段期間，後面的讀取可以從快取讀值，因此看起來就像寫入被讀取超前。核心自己的讀取可以先取得緩衝區內自己寫入的值（儲存至載入轉送）。由於緩衝區依序寫出，寫入之間的順序不會被打亂。</p>
+</section>
+<section class="term-about">
+  <h2>與循序一致性及弱模型的差異</h2>
+  <p><a class="term-link" href="/zh-hant/term/sequential-consistency/">循序一致性</a>是讓所有核心的操作在各自保持程式順序的前提下，看起來排成一列的模型，保證比TSO更強。在TSO下，當x與y都是0時，若核心1在x = 1之後讀取y，核心2在y = 1之後讀取x，兩者可能都讀到0，而循序一致性不會發生這種情形。相反地，Arm或RISC-V（RVWMO）這類弱模型還允許寫入之間或讀取之間的對調，因此傳遞資料時需要比TSO更多的屏障或獲取、釋放指令。</p>
+</section>
+<section class="term-about">
+  <h2>x86需要屏障的場合</h2>
+  <p>在TSO下，以旗標傳遞資料這類多數同步，不需要特殊指令就能依直覺運作。需要屏障的，是必須保持「寫入之後讀取其他位址」順序的情況，例如德克爾演算法這類互斥。在x86上，MFENCE指令、帶LOCK前綴的指令，以及對記憶體的XCHG指令，會作為清空<a class="term-link" href="/zh-hant/term/store-buffer/">儲存緩衝區</a>的屏障。使用C11或C++11的原子<a class="term-link" href="/zh-hant/term/variable/">變數</a>時，獲取與釋放的讀寫以一般指令即可，通常只有<a class="term-link" href="/zh-hant/term/sequential-consistency/">循序一致性</a>的寫入會使用屏障或XCHG。</p>
+</section>
 <section>
   <h2>練習TSO（全域儲存順序）的題目</h2>
   <article class="q-mini" data-qid="multicore-sync-029" data-cat="multicore-sync" data-answer="2" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 C">
@@ -88,7 +103,15 @@
     <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：C. 只允許寫入之後對其他位址的讀取，比該寫入更早被看到的、相對較強的模型</p><p class="explanation">在<a class="term-link" href="/zh-hant/term/total-store-order/">TSO</a>中，寫入之間的順序、讀取之間的順序、讀取之後寫入的順序都會被保持，只有寫入之後對其他位址的讀取可以超前。這是直接反映<a class="term-link" href="/zh-hant/term/store-buffer/">儲存緩衝區</a>存在的模型。多數程式在這個範圍內都能依直覺運作，所以在x86上需要屏障的場合相對較少。</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>TSO與循序一致性有什麼不同？</h3>
+  <p>在循序一致性下，所有讀寫看起來都依程式順序進行。TSO只允許一種例外：寫入之後對其他位址的讀取，看起來可以比該寫入先進行。這是因為寫入還停留在儲存緩衝區時，後面的讀取就已先進行。</p>
+  <h3>x86的記憶體模型是TSO嗎？</h3>
+  <p>x86的記憶體模型以文字定義在Intel與AMD的手冊中，已知與TSO幾乎相同，其形式化定義稱為x86-TSO。TSO這個名稱本身，則源自SPARC架構所定義的模型。</p>
+  <h3>TSO的CPU也需要記憶體屏障嗎？</h3>
+  <p>有時需要。若演算法必須保持「寫入之後讀取其他位址」的順序才能正確運作（例如德克爾演算法），在x86上就需要MFENCE或帶LOCK前綴的指令。在高階語言中使用原子變數，編譯器就會產生所需的指令。</p>
+</section>
 <section>
   <h2>解析中的「TSO（全域儲存順序）」</h2>
   <ul class="term-quotes"><li><p>在TSO中，寫入之間的順序、讀取之間的順序、讀取之後寫入的順序都會被保持，只有寫入之後對其他位址的讀取可以超前。</p><a href="/zh-hant/q/multicore-sync/multicore-sync-029/">關於x86的記憶體一致性模型（TSO，Total Store Order，全域儲存順序）的特徵，下列何者正確？</a></li></ul>

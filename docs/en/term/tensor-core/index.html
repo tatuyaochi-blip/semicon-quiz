@@ -25,7 +25,7 @@
 <link rel="manifest" href="/en/manifest.json">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Tensor core","item":"https://semiconroom.com/en/term/tensor-core/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Tensor core","description":"A GPU unit that computes the product and sum of small matrices in one instruction, mainly with low-precision numbers, greatly speeding up AI.","url":"https://semiconroom.com/en/term/tensor-core/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}}]</script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://semiconroom.com/en/glossary/"},{"@type":"ListItem","position":3,"name":"Tensor core","item":"https://semiconroom.com/en/term/tensor-core/"}]},{"@context":"https://schema.org","@type":"DefinedTerm","name":"Tensor core","description":"A GPU unit that computes the product and sum of small matrices in one instruction, mainly with low-precision numbers, greatly speeding up AI.","url":"https://semiconroom.com/en/term/tensor-core/","inLanguage":"en","inDefinedTermSet":{"@type":"DefinedTermSet","name":"Glossary","url":"https://semiconroom.com/en/glossary/"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is the difference between tensor cores and CUDA cores?","acceptedAnswer":{"@type":"Answer","text":"CUDA cores are general-purpose units in which each thread performs one multiply-add (for example in FP32) or integer operation at a time. Tensor cores are dedicated units that perform a multiply-accumulate of small matrices with one warp-level instruction, so for matrix products they do far more operations per clock."}},{"@type":"Question","name":"What is TF32?","acceptedAnswer":{"@type":"Answer","text":"A compute format NVIDIA introduced with its Ampere-generation tensor cores. It has the same 8-bit exponent as FP32 and the same 10-bit mantissa as FP16. FP32 data can be fed in directly, keeping FP32's range while trading mantissa precision for fast tensor-core computation."}},{"@type":"Question","name":"Are tensor cores used for training or inference?","acceptedAnswer":{"@type":"Answer","text":"Both. Training mostly uses mixed precision with BF16 or FP16, and inference often uses even lower precisions such as FP8 or INT8; in both cases they speed up the matrix products that dominate the computation."}}]}]</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
 <script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
@@ -78,7 +78,22 @@
   
   <p>Field: <a href="/en/c/gpu-programming/">GPU Programming</a></p>
 </article>
-
+<section class="term-about">
+  <h2>What a tensor core computes</h2>
+  <p>A tensor core is a dedicated matrix unit in NVIDIA GPUs that computes a multiply-accumulate of small matrices, D = A × B + C, in a single instruction. Tensor cores first appeared in the Volta generation announced in 2017, where each one performed a multiply-accumulate of 4 × 4 matrices per clock, that is, 64 multiply-add operations. Programs use them through instructions in which a warp (32 threads) cooperates on somewhat larger matrix fragments, such as 16 × 16. Most of the work in fully connected and convolutional layers of neural networks can be expressed as matrix products, so tensor cores greatly speed up AI workloads.</p>
+</section>
+<section class="term-about">
+  <h2>Combining low and high precision</h2>
+  <p>Tensor cores are mainly used with low-precision inputs such as FP16, BF16, <a class="term-link" href="/en/term/fp8/">FP8</a> and <a class="term-link" href="/en/term/int8/">INT8</a>, because doing the multiplications in formats with fewer bits saves a great deal of arithmetic area, power, memory capacity and bandwidth. Accumulating thousands of products, however, piles up <a class="term-link" href="/en/term/rounding-error/">rounding error</a>, so the basic pattern is <a class="term-link" href="/en/term/mixed-precision/">mixed precision</a>: FP16 inputs with FP32 accumulation. Supported formats have grown over the generations, and some products also handle TF32, which shares FP32&#39;s <a class="term-link" href="/en/term/exponent-field/">exponent field</a>, or double-precision FP64. Which formats are available depends on the generation.</p>
+</section>
+<section class="term-about">
+  <h2>Why they are faster than ordinary units</h2>
+  <p>Matrix multiplication reuses the same data many times: multiplying two n × n matrices takes n³ multiply-adds but only on the order of n² data values, so computing in small matrix blocks raises the amount of work per register read and per instruction issued. Ordinary units (<a class="term-link" href="/en/term/cuda/">CUDA</a> cores) perform one multiply-add per thread at a time, whereas tensor cores build this reuse into the hardware and can do many times more operations for the same area and power. In exchange, they cannot be used for anything other than matrix multiply-accumulate, and data must be laid out in fixed shapes.</p>
+</section>
+<section class="term-about">
+  <h2>How they are used, and other matrix units</h2>
+  <p>Tensor cores are usually not programmed directly but used through libraries such as cuBLAS and cuDNN or frameworks such as PyTorch. With data in FP16 or BF16 and matrix dimensions aligned to the recommended multiples, the library chooses methods that use the tensor cores. In <a class="term-link" href="/en/term/cuda/">CUDA</a> they can also be used directly through the WMMA API, which handles matrix fragments per warp, or through PTX mma instructions. Other vendors&#39; GPUs and AI accelerators have matrix units for the same purpose, and some, such as Google&#39;s TPU, compute matrix products with a <a class="term-link" href="/en/term/systolic-array/">systolic array</a>.</p>
+</section>
 <section>
   <h2>Try it: questions about Tensor core</h2>
   <article class="q-mini" data-qid="gpu-programming-039" data-cat="gpu-programming" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
@@ -87,7 +102,15 @@
     <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. They compute products and sums of small matrices in a single instruction, greatly accelerating AI mainly with low-precision numbers</p><p class="explanation">A <a class="term-link" href="/en/term/tensor-core/">tensor core</a> multiplies and accumulates small matrices, such as 4 × 4 or 16 × 16, in a single instruction. For the same area and power it performs many times more work than ordinary units doing one multiply and add at a time. It is mostly used with low precisions such as FP16, BF16, <a class="term-link" href="/en/term/fp8/">FP8</a> and <a class="term-link" href="/en/term/int8/">INT8</a>, greatly speeding up the matrix products that dominate neural network training and inference.</p></details>
   </article>
 </section>
-
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What is the difference between tensor cores and CUDA cores?</h3>
+  <p>CUDA cores are general-purpose units in which each thread performs one multiply-add (for example in FP32) or integer operation at a time. Tensor cores are dedicated units that perform a multiply-accumulate of small matrices with one warp-level instruction, so for matrix products they do far more operations per clock.</p>
+  <h3>What is TF32?</h3>
+  <p>A compute format NVIDIA introduced with its Ampere-generation tensor cores. It has the same 8-bit exponent as FP32 and the same 10-bit mantissa as FP16. FP32 data can be fed in directly, keeping FP32&#39;s range while trading mantissa precision for fast tensor-core computation.</p>
+  <h3>Are tensor cores used for training or inference?</h3>
+  <p>Both. Training mostly uses mixed precision with BF16 or FP16, and inference often uses even lower precisions such as FP8 or INT8; in both cases they speed up the matrix products that dominate the computation.</p>
+</section>
 <section>
   <h2>Tensor core in the explanations</h2>
   <ul class="term-quotes"><li><p>A tensor core multiplies and accumulates small matrices, such as 4 × 4 or 16 × 16, in a single instruction.</p><a href="/en/q/gpu-programming/gpu-programming-039/">What is a characteristic of the tensor cores (matrix units)…</a></li></ul>
