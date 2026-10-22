@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-d95fde6044';
+const CACHE = 'sq-c6b9edff8a';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -42,6 +42,7 @@ const PRECACHE = [
   "/data/ja/q/finfet.json",
   "/data/ja/q/gpu-programming.json",
   "/data/ja/q/hdl-verification.json",
+  "/data/ja/q/hw-security-adv.json",
   "/data/ja/q/hw-security.json",
   "/data/ja/q/image-sensor.json",
   "/data/ja/q/industry.json",
@@ -124,6 +125,7 @@ const PRECACHE = [
   "/data/en/q/finfet.json",
   "/data/en/q/gpu-programming.json",
   "/data/en/q/hdl-verification.json",
+  "/data/en/q/hw-security-adv.json",
   "/data/en/q/hw-security.json",
   "/data/en/q/image-sensor.json",
   "/data/en/q/industry.json",
@@ -206,6 +208,7 @@ const PRECACHE = [
   "/data/zh-hant/q/finfet.json",
   "/data/zh-hant/q/gpu-programming.json",
   "/data/zh-hant/q/hdl-verification.json",
+  "/data/zh-hant/q/hw-security-adv.json",
   "/data/zh-hant/q/hw-security.json",
   "/data/zh-hant/q/image-sensor.json",
   "/data/zh-hant/q/industry.json",
@@ -287,6 +290,7 @@ const PRECACHE = [
   "/data/ko/q/finfet.json",
   "/data/ko/q/gpu-programming.json",
   "/data/ko/q/hdl-verification.json",
+  "/data/ko/q/hw-security-adv.json",
   "/data/ko/q/hw-security.json",
   "/data/ko/q/image-sensor.json",
   "/data/ko/q/industry.json",
@@ -368,6 +372,7 @@ const PRECACHE = [
   "/data/de/q/finfet.json",
   "/data/de/q/gpu-programming.json",
   "/data/de/q/hdl-verification.json",
+  "/data/de/q/hw-security-adv.json",
   "/data/de/q/hw-security.json",
   "/data/de/q/image-sensor.json",
   "/data/de/q/industry.json",
@@ -449,6 +454,7 @@ const PRECACHE = [
   "/data/nl/q/finfet.json",
   "/data/nl/q/gpu-programming.json",
   "/data/nl/q/hdl-verification.json",
+  "/data/nl/q/hw-security-adv.json",
   "/data/nl/q/hw-security.json",
   "/data/nl/q/image-sensor.json",
   "/data/nl/q/industry.json",
@@ -530,6 +536,7 @@ const PRECACHE = [
   "/data/fr/q/finfet.json",
   "/data/fr/q/gpu-programming.json",
   "/data/fr/q/hdl-verification.json",
+  "/data/fr/q/hw-security-adv.json",
   "/data/fr/q/hw-security.json",
   "/data/fr/q/image-sensor.json",
   "/data/fr/q/industry.json",
