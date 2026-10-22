@@ -2589,7 +2589,9 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
       title: g.title ?? (withEn ? t('term_title_en', { term: g.term, en }) : t('term_title', { term: g.term })),
       description: g.description ?? termDescription(g.desc, list.length),
       scripts: ['answer.js'],
-      noindex: !list.length && !nw, // 問題に一度も出てこない用語のページは検索に出さない(ニュース用語は出す)
+      // 問題に一度も出てこず、詳しい解説(about)もない用語のページは、中身が薄いので検索に出さない(ニュース用語は出す)。
+      // 解説のある用語は、その言語の問題に出てこなくても検索に出す(Search Console で、解説を書いたページが noindex になっていた: 2026-10-22)
+      noindex: !list.length && !nw && !g.about?.length,
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.nav_glossary, `${home}glossary/`], [g.term, termUrl]),
         { '@context': 'https://schema.org', '@type': 'DefinedTerm', name: g.term, description: g.desc, url: abs(termUrl), inLanguage: L.htmlLang,
