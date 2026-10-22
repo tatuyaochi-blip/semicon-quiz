@@ -1,0 +1,362 @@
+{
+ "hw-security-adv-001": {
+  "question": "Welke uitspraak beschrijft juist het verschil tussen de TEE's voor confidential computing van het VM-type, die een hele virtuele machine beschermen (zoals AMD SEV-SNP en Intel TDX), en die van het enclave-type, die een deel van een applicatie beschermen (zoals Intel SGX)?",
+  "choices": [
+   "Het VM-type versleutelt het geheugen van de virtuele machine niet en beschermt het alleen door toegangsrechten te controleren; alleen het enclave-type beschermt het geheugen door het te versleutelen",
+   "Met het VM-type kunnen bestaande besturingssystemen en applicaties vrijwel ongewijzigd draaien, maar het hele gast-OS valt dan binnen wat vertrouwd moet worden (de TCB)",
+   "Bij het enclave-type vallen ook het OS en de hypervisor binnen wat vertrouwd moet worden, terwijl bij het VM-type alleen de CPU vertrouwd hoeft te worden"
+  ],
+  "explanation": "Een enclave voert alleen het deel van de applicatie dat geheimen verwerkt in een beschermd gebied uit, dus wat vertrouwd moet worden (de TCB: trusted computing base) wordt beperkt tot de CPU en de code van de enclave, maar de applicatie moet worden opgesplitst en herschreven. Het VM-type versleutelt het geheugen van de hele virtuele machine en beschermt het tegen de hypervisor en de beheerders van de cloud, zodat bestaande software vrijwel ongewijzigd kan worden overgezet. Daartegenover staat dat het gast-OS en alle software daarop binnen de TCB vallen, en een kwetsbaarheid daarin kan geheimen laten uitlekken. Hoe kleiner de TCB, hoe makkelijker die te controleren is en hoe kleiner het aanvalsoppervlak, dus de keuze is een afweging tussen gebruiksgemak en de omvang van wat vertrouwd moet worden."
+ },
+ "hw-security-adv-002": {
+  "question": "Waarom wordt bij TEE's van het VM-type alleen het versleutelen van het geheugen van de virtuele machine als onvoldoende beschouwd, zodat, zoals bij AMD SEV-SNP, mechanismen zijn toegevoegd die de integriteit van het geheugen beschermen?",
+  "choices": [
+   "Ook bij versleuteld geheugen beheert de hypervisor de sleutel van de virtuele machine, zodat hij het geheugen daarmee buiten de CPU vrij kan ontsleutelen",
+   "Door de versleuteling halveert het geheugen dat de virtuele machine kan gebruiken, waardoor er vaker pagina's moeten worden uitgewisseld",
+   "Ook zonder de inhoud te kunnen lezen kan de hypervisor de toewijzing van pagina's veranderen of oude cijfertekst terugschrijven en zo de werking van de virtuele machine verstoren"
+  ],
+  "explanation": "Bij de vroege geheugenversleuteling kon de hypervisor de cijfertekst niet lezen, maar wel de pagina's van de virtuele machine aan andere plaatsen toewijzen, eerder opgeslagen oude cijfertekst terugschrijven (replay) of de cijfertekst beschadigen. Als de cijfertekst wordt veranderd, wordt het ontsleutelde resultaat alleen een onvoorspelbare waarde, zodat de virtuele machine de manipulatie niet opmerkt; onderzoek heeft aanvallen laten zien die dit als opstap gebruikten. Bij SEV-SNP controleert de CPU een tabel (de RMP) waarin per fysieke pagina staat welke virtuele machine de eigenaar is en met welk adres die overeenkomt, en voorkomt zo dat de hypervisor naar pagina's van een virtuele machine schrijft of de toewijzingen verwisselt. Volgens openbare documentatie van halverwege de jaren 2020 vallen geavanceerde fysieke aanvallen, zoals het rechtstreeks manipuleren van de geheugenbus tijdens bedrijf, buiten wat SEV-SNP beschermt."
+ },
+ "hw-security-adv-003": {
+  "question": "Beschouw een schakeling die aan geheugenversleuteling detectie van manipulatie en bescherming tegen replay toevoegt. Per cacheregel van 64 bytes worden in het hoofdgeheugen een MAC van 8 bytes (een code om manipulatie te detecteren) en een teller van 8 bytes, die bij elke schrijfactie wordt verhoogd, opgeslagen. Welk aandeel extra opslagcapaciteit is nodig ten opzichte van de hoeveelheid beschermde gegevens, als de boom die de tellers beschermt buiten beschouwing blijft?",
+  "choices": [
+   "12,5%",
+   "20%",
+   "25%"
+  ],
+  "explanation": "De extra informatie per regel is 8 + 8 = 16 bytes, dus 16 ÷ 64 = 25%. In echte schema's is ook een boom nodig die de tellers gezamenlijk beschermt (een integriteitsboom), zodat de tellers zelf niet kunnen worden herschreven, en die kost nog meer capaciteit. Naast de capaciteit moeten bij elke leesactie van gegevens ook de MAC, de teller en knooppunten van de boom worden gelezen, wat veel extra vertraging en belasting van de geheugenbandbreedte geeft. Daarom gebruiken de meeste TEE's van het VM-type die grote geheugens beschermen halverwege de jaren 2020 geen volledige boom voor bescherming tegen replay, maar beschermen ze de integriteit op een andere manier."
+ },
+ "hw-security-adv-004": {
+  "question": "Bij confidential computing controleert de verificatieserver van de gebruiker (de verifier) het attestatierapport dat van een TEE van het VM-type is ontvangen, voordat hij de sleutel overhandigt waarmee de gegevens worden ontsleuteld. Welke combinatie van punten die de verifier controleert, is het meest passend?",
+  "choices": [
+   "Dat de handtekening terug te voeren is op de sleutel van de CPU-fabrikant, dat de meetwaarden bij het opstarten zijn zoals verwacht, dat de TCB-versie gelijk aan of hoger is dan de gecorrigeerde versie en dat de door de verifier gestuurde nonce erin staat",
+   "Als de handtekening van het rapport terug te voeren is op de sleutel van de echte CPU-fabrikant, is ook de software die erin draait veilig, dus meetwaarden en versienummers hoeven niet te worden gecontroleerd",
+   "Dat de naam, het IP-adres en de geheugengrootte van de virtuele machine in het rapport overeenkomen met wat in het contract met de cloudaanbieder is afgesproken"
+  ],
+  "explanation": "Het controleren van de handtekening laat alleen zien dat het rapport van een echte TEE afkomstig is. Wat erin is opgestart, wordt gecontroleerd door de meetwaarden te vergelijken met waarden waarvan bekend is dat ze juist zijn, en doordat de door de verifier gestuurde nonce erin staat, wordt bevestigd dat het rapport zojuist is gemaakt en geen replay is. Bovendien kan een TEE die draait met firmware of microcode van vóór het verhelpen van een kwetsbaarheid ook correct ondertekende rapporten maken, dus wordt ook gecontroleerd dat de TCB-versie in het rapport (de beveiligingsversienummers) gelijk aan of hoger is dan de gecorrigeerde versie. Als het rapport de hash van een publieke sleutel voor de communicatie bevat, kan ervoor worden gezorgd dat de overhandigde sleutel alleen die virtuele machine bereikt."
+ },
+ "hw-security-adv-005": {
+  "question": "Halverwege de jaren 2020 hebben sommige GPU's voor datacenters functies waarmee ze samen met de TEE van een CPU voor confidential computing kunnen worden gebruikt. Welke uitspraak beschrijft het idee achter dit mechanisme juist?",
+  "choices": [
+   "Omdat de GPU buiten de TEE van de CPU ligt, worden de gegevens die op de GPU worden berekend onversleuteld aan de hypervisor gegeven, en wordt erop vertrouwd dat de hypervisor ze laat berekenen",
+   "Ook de GPU bewijst zijn toestand via attestatie, en gegevens die tussen de TEE van de CPU en de GPU worden uitgewisseld, worden versleuteld en tegen manipulatie beschermd voordat ze worden verstuurd",
+   "De gegevens in het geheugen van de GPU worden bij elke berekening opnieuw versleuteld met de sleutel van de TEE van de CPU, en de GPU rekent verder met de cijfertekst zonder die te ontsleutelen"
+  ],
+  "explanation": "Bij het trainen van AI-modellen en bij inferentie worden modellen en gegevens op GPU's verwerkt, dus de TEE van de CPU alleen kan de gegevens tijdens de verwerking niet volledig beschermen. Daarom worden de firmware en de instellingen van de GPU via attestatie bewezen, geeft de verifier na controle de sleutels vrij en wordt de GPU als deel van de TEE behandeld. Gegevens tussen CPU en GPU lopen door geheugen dat de hypervisor beheert en over het PCIe-pad, dus worden ze met een sleutel die beide kanten delen versleuteld en tegen manipulatie beschermd voordat ze worden verstuurd. In de GPU wordt met de ontsleutelde gegevens gerekend, en toegang tot het interne geheugen van de GPU vanaf de host wordt beperkt."
+ },
+ "hw-security-adv-006": {
+  "question": "Welke uitspraak beschrijft de realm (Realm) die met Arm CCA (Confidential Compute Architecture) is ingevoerd juist?",
+  "choices": [
+   "Naast de normal world en de secure world wordt een wereld voor het draaien van virtuele machines ingesteld, de realm, zodat de hypervisor er wel middelen aan kan toewijzen maar de inhoud niet kan aanraken",
+   "Het is alleen een nieuwe naam voor de secure world van TrustZone, waarin kleine taken zoals het vergelijken van vingerafdrukken en betalingen op smartphones worden uitgevoerd met een OS van de apparaatfabrikant",
+   "Programma's in een realm krijgen geen bescherming van de hardware en worden alleen beschermd doordat het gast-OS de eigen geheugeninhoud in software versleutelt"
+  ],
+  "explanation": "De secure world van TrustZone is bedoeld voor een klein vertrouwd OS van de apparaatfabrikant en was niet geschikt om gebruikers hun eigen virtuele machines te laten draaien. CCA voegt naast de normal world en de secure world een realm world toe, en een root world die het wisselen tussen de werelden beheert. Omdat de CPU in een tabel (de granule protection table) controleert tot welke wereld elk geheugengebied behoort, kan een hypervisor die in de normal world draait geheugen en rekentijd van de CPU toewijzen aan een virtuele machine in een realm, maar de inhoud niet lezen of schrijven. Net als AMD SEV-SNP en Intel TDX is het een mechanisme om een TEE van het VM-type te realiseren, hier op de Arm-architectuur."
+ },
+ "hw-security-adv-007": {
+  "question": "Welke uitspraak beschrijft de capabilities juist die worden gebruikt in de uitbreiding van de instructieset die CHERI heet?",
+  "choices": [
+   "Pointerwaarden worden met een sleutel in de CPU versleuteld voordat ze in het geheugen worden gezet en bij elk gebruik ontsleuteld, zodat andere programma's en het OS de pointerwaarden niet kunnen lezen",
+   "De CPU controleert de digitale handtekening van het uitvoerbare bestand van het programma telkens wanneer hij één instructie uitvoert, en voert geen ongetekende instructies uit",
+   "Een pointer krijgt het bereik waartoe hij toegang mag hebben en zijn rechten mee, en een tag van 1 bit die software in het geheugen niet kan herschrijven, onderscheidt of hij op legitieme wijze is gemaakt"
+  ],
+  "explanation": "CHERI vervangt pointers die alleen een adres zijn door capabilities die het adres, de onder- en bovengrens van het bereik waarnaar ze mogen wijzen en rechten zoals lezen, schrijven en uitvoeren bundelen (bij adressen van 64 bits worden ze gecomprimeerd tot 128 bits, met daarnaast een tag van 1 bit). De CPU controleert bij elke toegang het bereik en de rechten, zodat fouten in de geheugenveiligheid, zoals lezen of schrijven buiten een array, in hardware kunnen worden gestopt. De tag wordt alleen gezet wanneer een capability met de juiste instructies wordt gemaakt, en verdwijnt wanneer die als gewone gegevens wordt overschreven, dus pointers kunnen niet worden vervalst. Het onderzoek wordt geleid door onder meer de Universiteit van Cambridge, en Arm heeft begin jaren 2020 Morello, een prototypeprocessor met evaluatiebord die erop is gebaseerd, aan onderzoekers beschikbaar gesteld."
+ },
+ "hw-security-adv-008": {
+  "question": "Bij Arm MTE (Memory Tagging Extension) krijgt elke 16 bytes geheugen een tag van 4 bits, wordt ook in de hoge bits van de pointer een tag van 4 bits gezet, en controleert de CPU bij elke toegang of beide overeenkomen. Beschouw de fout waarbij via een oude pointer naar een vrijgegeven gebied toegang tot dat gebied wordt verkregen. Als de nieuwe tag bij het opnieuw toewijzen van het gebied uniform willekeurig uit de 16 mogelijkheden wordt gekozen, hoe groot is dan de kans dat de tags toevallig overeenkomen en de fout wordt gemist?",
+  "choices": [
+   "1/16 (ongeveer 6,3%)",
+   "1/4 (25%)",
+   "15/16 (ongeveer 93,8%)"
+  ],
+  "explanation": "Een tag heeft 4 bits en kan dus 2⁴ = 16 waarden aannemen. Als de nieuwe tag uniform uit de 16 waarden wordt gekozen, is de kans dat die toevallig overeenkomt met de tag van de oude pointer 1/16 = 6,25% (ongeveer 6,3%), en in de overige 15/16 van de gevallen wordt de afwijking gedetecteerd. Zelfs één enkele toegang wordt met een kans van ongeveer 94% ontdekt, dus fouten kunnen worden gevonden terwijl het systeem op veel apparaten draait, en aanvallen worden moeilijker. Als bij het toewijzen naburige gebieden altijd verschillende tags krijgen, wordt een overloop naar een naburig gebied altijd gedetecteerd."
+ },
+ "hw-security-adv-009": {
+  "question": "Welke uitspraak beschrijft het mechanisme van Arm-pointerauthenticatie (PAC) juist?",
+  "choices": [
+   "Bij elk gebruik van een pointer wordt het OS via een systeemaanroep gevraagd te bevestigen of de pointer een juiste waarde heeft",
+   "Uit de pointerwaarde en een contextwaarde wordt met een sleutel in de CPU een korte authenticatiecode berekend, die in de hoge bits van de pointer wordt gezet en vóór gebruik wordt gecontroleerd",
+   "Alle bits van de pointer worden met een sleutel in de CPU versleuteld voordat ze in het geheugen worden opgeslagen, en vóór elk gebruik in de CPU ontsleuteld"
+  ],
+  "explanation": "In de hoge bits van een pointer van 64 bits die niet voor het virtuele adres worden gebruikt, wordt een authenticatiecode gezet die met een sleutel in de CPU is berekend uit de pointerwaarde en een contextwaarde (bijvoorbeeld de stackpointer). Vlak voordat bijvoorbeeld het terugkeeradres van een functie wordt gebruikt, berekent een speciale instructie de code opnieuw en vergelijkt die; bij een afwijking wordt de pointer een onbruikbaar adres, wat aanvallen die terugkeeradressen op de stack overschrijven (zoals ROP) moeilijker maakt. Software kan de sleutel niet lezen, dus een aanvaller kan geen authenticatiecode maken die bij een gewijzigde pointer past. De lengte van de code hangt echter af van instellingen zoals de breedte van het virtuele adres en bedraagt vaak niet meer dan zo'n tien à vijftien bits, dus waar vaak kan worden gegokt, moet rekening worden gehouden met de kans op een toevallige overeenkomst."
+ },
+ "hw-security-adv-010": {
+  "question": "Welke uitspraak beschrijft de hardwarematige shadow stack juist, die onder meer in Intel CET (Control-flow Enforcement Technology) wordt gebruikt?",
+  "choices": [
+   "De inhoud van de stack wordt met vaste tussenpozen in niet-vluchtig geheugen opgeslagen, en wanneer een programma abnormaal eindigt, wordt de uitvoering vanaf die inhoud hervat",
+   "Lokale variabelen van functies worden in snel geheugen apart van de normale stack geplaatst, zodat er minder cachemissers zijn en functieaanroepen sneller worden",
+   "Bij het aanroepen van een functie wordt een kopie van het terugkeeradres ook op een aparte stack gezet die met gewone schrijfacties niet kan worden veranderd, en bij het terugkeren worden beide vergeleken"
+  ],
+  "explanation": "Als een terugkeeradres wordt overschreven door bijvoorbeeld een bufferoverloop op de stack, springt de uitvoering bij het terugkeren uit de functie naar een plaats die de aanvaller heeft gekozen. Bij een shadow stack zet de call-instructie het terugkeeradres op zowel de normale stack als de shadow stack, en vergelijkt de ret-instructie beide. Pagina's van de shadow stack zijn een speciaal soort pagina waarnaar gewone store-instructies niet kunnen schrijven, dus een aanvaller die de normale stack heeft overschreven, kan de kopie niet veranderen, en bij een afwijking treedt een exceptie op die de uitvoering stopt."
+ },
+ "hw-security-adv-011": {
+  "question": "Welke combinatie is juist voor hardwarefuncties die control-flow-integriteit ondersteunen, namelijk wat het terugkeren uit functies beschermt en wat indirecte aanroepen en sprongen, zoals via functiepointers, beschermt?",
+  "choices": [
+   "Terugkeren wordt beschermd door shadow stacks of pointerauthenticatie; indirecte aanroepen en sprongen door mechanismen die eisen dat aan het begin van het doel een aangewezen markeringsinstructie staat",
+   "Terugkeren wordt beschermd door mechanismen die eisen dat aan het begin van het doel een aangewezen markeringsinstructie staat; indirecte aanroepen en sprongen door shadow stacks",
+   "Terugkeren wordt beschermd door KPTI (kernel page-table isolation); indirecte aanroepen en sprongen door adresvertaling in de IOMMU"
+  ],
+  "explanation": "Een shadow stack vergelijkt het terugkeeradres met de kopie en pointerauthenticatie controleert de authenticatiecode die aan het terugkeeradres is toegevoegd, dus beide beschermen het terugkeren uit functies. Voor indirecte aanroepen en sprongen eisen Intel IBT en Arm Branch Target Identification dat aan het begin van het doel een markeringsinstructie staat (ENDBR64 bij x86), en maken ze van sprongen naar bijvoorbeeld het midden van een functie een exceptie. Een plaats met een markering is echter nog steeds vanuit elke indirecte sprong bereikbaar, dus soms worden ze gecombineerd met fijnere controles door de compiler die de doelen beperken tot functies van een passend type. KPTI is een tegenmaatregel tegen Meltdown en de IOMMU beperkt de DMA van apparaten; geen van beide beschermt de control flow."
+ },
+ "hw-security-adv-012": {
+  "question": "Wat is de juiste verklaring waarom wordt gezegd dat Rowhammer gemakkelijker optreedt naarmate DRAM verder wordt verkleind?",
+  "choices": [
+   "Door verkleining is geen refresh meer nodig, zodat er lange tijd verstrijkt zonder dat de lading van de cel ooit wordt aangevuld",
+   "Cellen komen dichter bij elkaar te liggen en slaan minder lading op, waardoor ze gevoeliger worden voor interferentie door het activeren van naburige rijen",
+   "Bij verkleinde DRAM verbiedt de standaard dezelfde rij vaak te activeren, en het overschrijden van die grens leidt tot storingen"
+  ],
+  "explanation": "Bij elke activering van een rij zwaait de potentiaal van de woordlijn sterk, waardoor de lading van cellen in nabije rijen gemakkelijker weglekt. Als de afstand tussen cellen door verkleining kleiner wordt, wordt de interferentie sterker, terwijl de kleinere celcapaciteit ook de marge tot het omklappen van een bit verkleint. Onderzoek heeft een tendens gemeld dat nieuwere generaties DRAM minder activeringen nodig hebben tot het eerste omgeklapte bit. Daarom worden tegenmaatregelen tegen Rowhammer met elke nieuwe generatie DRAM belangrijker."
+ },
+ "hw-security-adv-013": {
+  "question": "Wat is de juiste verklaring waarom bescherming tegen Rowhammer door TRR (target row refresh) in de DRAM in onderzoek is omzeild?",
+  "choices": [
+   "TRR is een mechanisme dat de refresh stopt, dus terwijl TRR actief is, klappen de bits in alle rijen juist gemakkelijker om",
+   "TRR werkt door eerst ECC uit te schakelen, dus telkens wanneer TRR ingrijpt, nemen niet-corrigeerbare fouten toe en die worden door aanvallen benut",
+   "Het aantal rijen dat kan worden gevolgd is beperkt, zodat bij het activeren van veel rijen sommige rijen onbeschermd blijven, en er konden ook bits omklappen in rijen die twee rijen verder lagen"
+  ],
+  "explanation": "Door de beperkte oppervlakte voor de schakeling registreerden veel TRR-implementaties in de DRAM slechts een paar vaak geactiveerde rijen en gaven ze de rijen ernaast een extra refresh. TRRespass, gepubliceerd in 2020, liet zien dat het na elkaar activeren van veel rijen de registratie liet tekortschieten, zodat bits omklapten in onbeschermde rijen. Half-Double, gepubliceerd in 2021, liet zien dat ook in rijen op twee rijen afstand bits omklappen, en dat de extra refreshes (activeringen) die de aangrenzende rijen moeten beschermen, zelf kunnen bijdragen aan de interferentie op rijen verder naar buiten. Deze resultaten leidden tot de vraag naar mechanismen die de activeringen van elke rij exact tellen en naar gelaagde tegenmaatregelen in het hele systeem."
+ },
+ "hw-security-adv-014": {
+  "question": "Wat is er mis met de gedachte „als geheugen met ECC wordt gebruikt, hoeft men zich over Rowhammer geen zorgen te maken”?",
+  "choices": [
+   "Gangbare ECC (SECDED) corrigeert maar een fout van 1 bit per woord, en als veel bits omklappen, kan de fout soms niet worden gecorrigeerd of zelfs niet worden gedetecteerd",
+   "ECC vertraagt alleen het lezen van gegevens en heeft helemaal geen functie om bits te corrigeren die in het geheugen zijn omgeklapt",
+   "Door het plaatsen van controlebits voor ECC neemt het aantal rijen toe en wordt de afstand tussen geactiveerde rijen kleiner, waardoor Rowhammer twee keer zo vaak optreedt"
+  ],
+  "explanation": "ECC volgens SECDED, zoals gebruikt in servers, voegt aan 64 databits 8 controlebits toe, corrigeert fouten van 1 bit en detecteert fouten van 2 bits. Bij Rowhammer kunnen in hetzelfde woord drie of meer bits omklappen, en dan kan de fout onopgemerkt blijven of voor een andere waarde worden aangezien en verkeerd worden gecorrigeerd. ECC is een effectieve laag die veel omgeklapte bits onderdrukt, maar moet worden gecombineerd met tegenmaatregelen die het omklappen zelf voorkomen, zoals TRR en het beheer van de refresh."
+ },
+ "hw-security-adv-015": {
+  "question": "Welke uitspraak beschrijft het idee van PRAC (per-row activation counting) juist, dat is toegevoegd aan de DDR5-standaard die in 2024 is bijgewerkt (JESD79-5C)?",
+  "choices": [
+   "De geheugencontroller stopt met het tellen van activeringen, en ook alle refreshes in de DRAM worden uitgevoerd doordat de externe controller ze rij voor rij aanstuurt",
+   "De DRAM telt per rij het aantal activeringen, meldt het aan de controller als een rij een drempel overschrijdt, en krijgt dan tijd om de naburige rijen te verversen",
+   "Een rij die vaker dan een vastgesteld aantal keren is geactiveerd, wordt door de DRAM permanent buiten gebruik gesteld en vervangen door een reserverij die bij de productie is voorzien"
+  ],
+  "explanation": "Bij eerdere tegenmaatregelen volgde TRR in de DRAM slechts een paar rijen, of telde de geheugencontroller, zoals bij RFM van DDR5, de activeringen per bank en gaf die de DRAM extra tijd. Bij PRAC heeft de DRAM voor elke rij een teller en telt die bij elke activering mee, zodat er niets meer wordt gemist door een grens aan het aantal rijen dat kan worden gevolgd. Als een telling de drempel overschrijdt, meldt de DRAM dit aan de controller, laat de toegangen even pauzeren en geeft het gebied rond de aangevallen rij een refresh. Het bijwerken van de tellers zou timingparameters zoals de tijd om een rij te sluiten verlengen, dus er is een afweging met de prestaties."
+ },
+ "hw-security-adv-016": {
+  "question": "Neem voor de eenvoud aan dat het kortste interval waarmee rijen in dezelfde bank kunnen worden geactiveerd tRC = 50 ns is. Bij een periode van 64 ms voor de refresh is het maximale aantal keren dat één naburige rij kan worden geactiveerd tussen twee opeenvolgende verversingen van een bepaalde rij gelijk aan 64 ms ÷ 50 ns. Hoe groot is dit maximale aantal als de refreshfrequentie wordt verdubbeld?",
+  "choices": [
+   "Ongeveer 640.000",
+   "Ongeveer 1.280.000",
+   "Ongeveer 2.560.000"
+  ],
+  "explanation": "Bij een verdubbelde refreshfrequentie wordt de periode 64 ms ÷ 2 = 32 ms. Het maximale aantal activeringen in die tijd is 32 ms ÷ 50 ns = 640.000, de helft van de oorspronkelijke 64 ms ÷ 50 ns = 1.280.000. Onderzoek heeft DRAM gemeld waarin bits al na enkele duizenden activeringen omklappen, dus ook als het aantal wordt gehalveerd, blijven er ruim genoeg over voor een aanval, en alleen meer refresh kan het niet voorkomen. Bovendien kan een bank tijdens de refresh niet worden gebruikt en stijgt het stroomverbruik, dus de belasting voor prestaties en energieverbruik wordt groot."
+ },
+ "hw-security-adv-017": {
+  "question": "Welke uitspraak beschrijft de kenmerken van de kwetsbaarheid MDS (Microarchitectural Data Sampling), gepubliceerd in 2019, juist?",
+  "choices": [
+   "De sprongvoorspeller wordt opzettelijk verkeerd getraind, zodat het slachtofferprogramma speculatief array-elementen buiten het bereik leest, waaruit geheimen worden gehaald",
+   "Dezelfde rij van een DRAM wordt in korte tijd vele malen geactiveerd, waardoor cellen in naburige rijen lading verliezen en bits in gegevens van andere processen of de kernel omklappen",
+   "Gegevens van andere verwerking die tijdelijk in buffers in de CPU staan, zoals line fill buffers, worden doorgegeven aan instructies die alleen transiënt worden uitgevoerd"
+  ],
+  "explanation": "MDS is een reeks transiënte-uitvoeringsaanvallen die zijn gepubliceerd onder namen als RIDL, Fallout en ZombieLoad. Bij getroffen CPU's konden, wanneer een load door bijvoorbeeld een exceptie werd geannuleerd, gegevens van een ander proces of de kernel die niet in de cache maar in interne buffers waren achtergebleven, worden doorgegeven aan daaropvolgende instructies die transiënt werden uitgevoerd, en via een side-channel van de cache worden uitgelezen. De aanvaller kan het gelezen adres niet kiezen, maar kan door herhaald observeren geheimen verzamelen. Als tegenmaatregel voegden microcode-updates een functie toe die de interne buffers wist bij het wisselen van bevoegdheidsniveau, maar een andere thread die via SMT tegelijk dezelfde core gebruikt, kan zonder zo'n wissel observeren, dus werd het ook nodig cores niet met onbetrouwbare partijen te delen."
+ },
+ "hw-security-adv-018": {
+  "question": "Welke combinatie van beschrijvingen van retpoline en IBRS is juist, tegenmaatregelen tegen de variant van Spectre die de voorspelling van indirecte sprongen misbruikt (branch target injection)?",
+  "choices": [
+   "Retpoline bouwt de schakelingen van de CPU opnieuw om de voorspeller te verwijderen, en IBRS is een tegenmaatregel waarbij de compiler instructies voor indirecte sprongen herschrijft tot een andere reeks instructies",
+   "Retpoline is een softwarematige tegenmaatregel die indirecte sprongen vervangt door instructiereeksen die niet op de voorspeller steunen, en IBRS is een functie van de CPU die de voorspelling van indirecte sprongen beperkt",
+   "Zowel retpoline als IBRS stopt de speculatieve uitvoering van de CPU zelf, dus met elk van beide gaat de prestatiewinst door speculatieve uitvoering verloren"
+  ],
+  "explanation": "Bij retpoline vervangt de compiler instructies voor indirecte sprongen door een reeks die call en ret combineert, zodat de CPU de voorspelling van het retouradres gebruikt in plaats van de misbruikbare voorspeller van indirecte sprongen, en speculatief uitgevoerde instructies onschadelijk in een lus ronddraaien. IBRS is een besturingsfunctie van de CPU, toegevoegd via onder meer microcode-updates, die bijvoorbeeld de voorspelling van indirecte sprongen in de kernel zo beperkt dat die niet volgt wat gebruikersprogramma's hebben getraind. Op oudere CPU's kostte het omschakelen van IBRS veel tijd, dus werd retpoline veel gebruikt, terwijl nieuwere CPU's een verbeterde versie hebben die permanent aan kan blijven (eIBRS). Sommige CPU's steunen echter ook voor de voorspelling van het retouradres op een andere voorspeller, en onder meer Retbleed, gepubliceerd in 2022, liet gevallen zien waarin retpoline alleen onvoldoende is."
+ },
+ "hw-security-adv-019": {
+  "question": "Een taak duurde vóór het toepassen van tegenmaatregelen tegen speculatieve uitvoering 10 seconden en deed in die tijd 5 miljoen systeemaanroepen. Neem aan dat de tegenmaatregelen de verwerkingstijd per systeemaanroep verhogen van 0,4 µs naar 0,6 µs en de tijd van al het andere niet veranderen. Met welk aandeel neemt de totale tijd van de taak toe?",
+  "choices": [
+   "Ongeveer 10%",
+   "Ongeveer 30%",
+   "Ongeveer 50%"
+  ],
+  "explanation": "De tijd voor systeemaanroepen is vóór de tegenmaatregelen 5 miljoen × 0,4 µs = 2 seconden en erna 5 miljoen × 0,6 µs = 3 seconden. De toename is 1 seconde, dus het geheel gaat van 10 naar 11 seconden, een toename van 1 ÷ 10 = 10%. Ook al wordt elke systeemaanroep 1,5 keer zo traag (50% meer), het effect op het geheel wordt bepaald door het aandeel van de tijd dat dat deel inneemt (hier 20%). Daarom is bij tegenmaatregelen zoals KPTI het prestatieverlies groter bij databases en invoer-/uitvoerverwerking, waar systeemaanroepen en de afhandeling van een interrupt veel voorkomen."
+ },
+ "hw-security-adv-020": {
+  "question": "Bij op roosters gebaseerde post-kwantumcryptografie worden vaak polynomen van graad n = 256 met elkaar vermenigvuldigd. Als de naïeve methode, waarbij alle paren coëfficiënten met elkaar worden vermenigvuldigd, ongeveer n² vermenigvuldigingen nodig heeft en de methode met de getaltheoretische transformatie (NTT) ongeveer n log₂ n, welke waarde ligt dan het dichtst bij de factor waarmee de NTT het aantal vermenigvuldigingen vermindert?",
+  "choices": [
+   "Ongeveer 1/8",
+   "Ongeveer 1/32",
+   "Ongeveer 1/256"
+  ],
+  "explanation": "De naïeve methode heeft n² = 256² = 65.536 vermenigvuldigingen nodig en de methode met de NTT n log₂ n = 256 × 8 = 2048, dus 65.536 ÷ 2048 = 32, een vermindering tot ongeveer 1/32. De getaltheoretische transformatie past het idee van de snelle fouriertransformatie toe op gehele getallen modulo een priemgetal, en na de transformatie is alleen nog een vermenigvuldiging per coëfficiënt nodig. ML-KEM rekent met coëfficiënten modulo q = 3329 en is ontworpen om met de NTT te worden berekend, dus NTT-schakelingen vormen een centraal onderdeel van versnellers voor post-kwantumcryptografie. Daarnaast gebruiken ML-KEM en ML-DSA veel functies uit de SHA-3-familie (SHAKE) om matrices en willekeurige waarden te maken, dus ook versnellers daarvoor zijn effectief."
+ },
+ "hw-security-adv-021": {
+  "question": "De publieke sleutel van ML-KEM-768 is 1184 bytes en de cijfertekst 1088 bytes, terwijl de publieke waarde van X25519, een sleuteluitwisseling op elliptische krommen, 32 bytes is. Hoeveel keer zo groot als de publieke waarde van X25519 is de publieke sleutel van ML-KEM-768?",
+  "choices": [
+   "37 keer",
+   "71 keer",
+   "296 keer"
+  ],
+  "explanation": "1184 ÷ 32 = 37, dus 37 keer. Bij een sleuteluitwisseling wordt ook de cijfertekst van 1088 bytes verstuurd, dus er worden veel meer gegevens uitgewisseld dan bij een sleuteluitwisseling op elliptische krommen, waarbij publieke waarden van 32 bytes worden uitgewisseld. Bij een smartcard of een kleine microcontroller moeten onder meer de grootte van het RAM en de buffers voor sleutels en tussenwaarden en de maximale grootte van in één keer verstuurde gegevens worden herzien, wat het hardwareontwerp beïnvloedt. Ook bij handtekeningen is een handtekening van ML-DSA-65 al 3309 bytes groot, veel groter dan een handtekening op elliptische krommen."
+ },
+ "hw-security-adv-022": {
+  "question": "Bij de decapsulatie van ML-KEM wordt uit het resultaat van het ontsleutelen van de ontvangen cijfertekst met de privésleutel opnieuw een cijfertekst opgebouwd en vergeleken met de ontvangen cijfertekst. Welke voorzorg bij de implementatie van dit deel is juist?",
+  "choices": [
+   "Als ze niet overeenkomen, de verwerking direct afbreken en de andere partij een gedetailleerde foutmelding geven met de byte die afweek; dat helpt de oorzaak te vinden en is vriendelijk en veilig",
+   "Zolang een schema wordt gebruikt dat bestand is tegen kwantumcomputers, heeft de manier van vergelijken geen invloed op de veiligheid, dus kan de snelste methode worden gekozen",
+   "De vergelijking kost dezelfde tijd ongeacht de geheimen, en bij een afwijking wordt geen fout teruggegeven maar een niet-gerelateerde sleutel die uit een geheime waarde is afgeleid, zodat de gevallen niet te onderscheiden zijn"
+  ],
+  "explanation": "De stap waarin met de opnieuw opgebouwde cijfertekst wordt vergeleken, dient om aanvallen tegen te houden die bewerkte cijferteksten sturen en de reactie bekijken (chosen-ciphertext-aanvallen). Als overeenkomst of afwijking uitlekt via de tijd van de vergelijking of via een foutmelding die een afwijking aangeeft, wordt dat zelf een aanwijzing voor een aanval, en kan de privésleutel beetje bij beetje worden afgeleid. Daarom schrijft FIPS 203 voor dat bij een afwijking geen fout wordt teruggegeven, maar een andere sleutel die uit een geheime waarde en de cijfertekst is afgeleid (impliciete afwijzing), en voeren implementaties de vergelijking en de keuze van het resultaat in constante tijd uit. Ook als een schema bestand is tegen kwantumcomputers, gaat de veiligheid verloren als geheimen uitlekken via de tijd of het stroomverbruik van de implementatie, en rond 2024 werd ook een implementatieprobleem gemeld waarbij de tijd van een deling van geheimen afhing (KyberSlash)."
+ },
+ "hw-security-adv-023": {
+  "question": "U ontwerpt een SoC voor een embedded apparaat dat meer dan 10 jaar wordt gebruikt. Welk hardware- en firmwareontwerp is passend als voorbereiding op een toekomstige migratie van cryptografie (zoals de overstap op post-kwantumcryptografie)?",
+  "choices": [
+   "Het veiligst is om het schema voor het verifiëren van handtekeningen en de publieke sleutel als één enkel paar in het boot-ROM te schrijven en zo vast te leggen dat niemand ze later kan veranderen",
+   "Ruimte laten om bij de verificatie tijdens het opstarten meerdere schema's en sleutels te verwerken, versnellers uitvoeren als bouwstenen die door meerdere schema's bruikbaar zijn, en schema's via updates verwisselbaar maken",
+   "Het volstaat om voor slechts één kromme van de nu gebruikte elliptische-krommecryptografie een speciale schakeling met een zo klein mogelijke oppervlakte in te bouwen"
+  ],
+  "explanation": "Hardware kan na de productie niet opnieuw worden gemaakt, dus als één enkel schema in schakelingen of ROM wordt vastgelegd, moet het apparaat zelf opnieuw worden gemaakt wanneer dat schema niet meer veilig is. Als het boot-ROM meerdere hashes van sleutels in eFuse kan bewaren of tussen schema's kan kiezen, kunnen sleutels en schema's later worden omgeschakeld. Als versnellers bouwstenen zijn die door meerdere schema's bruikbaar zijn, zoals een hashfunctie (SHA-2 en SHA-3), de vermenigvuldiging van polynomen en het rekenen met grote gehele getallen, kunnen firmware-updates gemakkelijker nieuwe schema's ondersteunen. Voor het ondertekenen van firmware zijn ook schema's zoals LMS en XMSS een optie, waarvan de veiligheid alleen op hashfuncties berust; in dat geval is het beheer van de toestand aan de ondertekenende kant onmisbaar, zodat een eenmalige sleutel nooit twee keer wordt gebruikt."
+ },
+ "hw-security-adv-024": {
+  "question": "Wat is het meest passende voordeel van initiatieven zoals OpenTitan en Caliptra, die het ontwerp van schakelingen voor een root of trust openbaar maken?",
+  "choices": [
+   "Veel experts kunnen het ontwerp onderzoeken en verifiëren, zodat de veiligheid gemakkelijker kan worden bevestigd zonder te steunen op het geheimhouden van het mechanisme",
+   "Omdat het ontwerp openbaar is, mogen ook de geheime sleutels van elke chip samen met het ontwerp openbaar worden gemaakt, zodat sleutelbeheer overbodig wordt",
+   "Door het ontwerp openbaar te maken is het niet meer nodig de processen te beheren waarin chips worden geproduceerd en in de fabriek sleutels in de chips worden geschreven"
+  ],
+  "explanation": "De root of trust is het uitgangspunt van al het vertrouwen in een apparaat, dus het is belangrijk te kunnen bevestigen dat het ontwerp geen fouten of verborgen functies bevat. OpenTitan, als open-source root of trust in silicium, en Caliptra, als root of trust om in SoC's voor datacenters in te bouwen, zijn vanaf 2019 met deelname van meerdere bedrijven ontworpen en openbaar gemaakt (OpenTitan werd aangekondigd in 2019, Caliptra in 2022). Dit volgt het principe dat veiligheid moet berusten op het geheimhouden van sleutels en niet op het verbergen van het mechanisme (het principe van Kerckhoffs), en de resultaten van ontwerpverificatie en tests kunnen worden gedeeld. Het beheer van de sleutels per chip, de controle over de processen voor productie en het schrijven van sleutels, en de bevestiging dat de werkelijk gemaakte chips overeenkomen met het openbare ontwerp blijven echter apart nodig."
+ },
+ "hw-security-adv-025": {
+  "question": "Welke uitspraak beschrijft het mechanisme van DICE (Device Identifier Composition Engine), vastgelegd door de TCG, juist?",
+  "choices": [
+   "Alle apparaten krijgen dezelfde geheime waarde, en ook wanneer de firmware wordt bijgewerkt en verandert, wordt voor altijd dezelfde sleutel als bij de productie gebruikt",
+   "Bij elke start wordt via het netwerk een nieuwe sleutel van een server gedownload en gebruikt, en het apparaat bevat zelf geen enkele geheime waarde",
+   "Uit het apparaatspecifieke geheim en de meetwaarde van de firmware van de volgende laag wordt het geheim van die laag afgeleid, en elke laag maakt het eigen geheim onleesbaar voordat ze verdergaat"
+  ],
+  "explanation": "Bij DICE leidt de kleine hardware of ROM-code die direct na het inschakelen draait met een eenrichtingsfunctie een geheim af dat CDI heet, uit het apparaatspecifieke geheim (UDS) en de hash van de firmware die als eerste draait. Die firmware gebruikt op haar beurt de meetwaarde van de volgende laag om de CDI van de volgende laag af te leiden, en wist haar eigen CDI voordat ze de besturing overdraagt. Als firmware wordt herschreven, veranderen ook de afgeleide geheimen, dus gemanipuleerde firmware kan zich niet met de juiste sleutel voordoen, en zelfs als een latere laag wordt overgenomen, lekken de geheimen van eerdere lagen niet. Ook op een kleine microcontroller zonder TPM kunnen apparaatidentiteit en attestatie met weinig hardware worden gerealiseerd."
+ },
+ "hw-security-adv-026": {
+  "question": "Een apparaat werkt zijn firmware bij met twee gebieden, kant A en kant B, en legt voor rollbackbeveiliging een minimaal versienummer in eFuse vast. Wanneer is het het meest passend om dit minimale versienummer naar het nieuwe versienummer op te hogen?",
+  "choices": [
+   "Direct zodra het downloaden van de nieuwe firmware begint, het minimale versienummer al naar het nieuwe versienummer ophogen",
+   "Het nummer ophogen nadat de handtekening van de nieuwe firmware is geverifieerd en is bevestigd dat die vanaf haar kant opstart en normaal werkt",
+   "Het minimale versienummer houden dat bij de productie is geschreven, en het nummer nooit ophogen, ook niet bij een update van de firmware"
+  ],
+  "explanation": "Als het nummer eerst wordt opgehoogd en de nieuwe firmware onderweg beschadigd blijkt of niet opstart, wordt ook de oude versie die op de oorspronkelijke kant staat geweigerd als „ouder dan de minimale versie”, en kan het apparaat niet meer opstarten. Daarom wordt de nieuwe versie naar de vrije kant geschreven, wordt de handtekening geverifieerd en wordt pas na de bevestiging dat het apparaat vanaf die kant opstart en normaal werkt (commit) het minimale versienummer opgehoogd. Daarna wordt voorkomen dat het apparaat wordt teruggezet naar een oude, kwetsbare versie. Omgekeerd kunnen, als het nummer nooit wordt opgehoogd, aanvallen die een oude, correct ondertekende versie terugschrijven niet worden voorkomen."
+ },
+ "hw-security-adv-027": {
+  "question": "Welke uitspraak beschrijft een hardware bill of materials (HBOM) juist?",
+  "choices": [
+   "Een lijst van de chips en onderdelen in een apparaat, hun fabrikanten en typenummers, firmwareversies enzovoort, die wordt gebruikt om de gevolgen van kwetsbaarheden en namaak te onderzoeken",
+   "Een lijst van het per onderdeel van een apparaat gemeten stroomverbruik, die wordt gebruikt om de levensduur van de batterij van apparaten op batterijen te schatten en de warmteontwikkeling te onderzoeken",
+   "Een tabel met de licentievoorwaarden en vergoedingen voor elk stuk software in een apparaat, die wordt gebruikt bij de berekening van de productprijs"
+  ],
+  "explanation": "Terwijl een lijst van softwarecomponenten (zoals bibliotheken) een SBOM heet, is een HBOM een lijst die de hardwareopbouw van een apparaat samenvat. Wanneer in een chip een kwetsbaarheid wordt gevonden of blijkt dat er namaak in omloop is, kan met een HBOM snel worden nagegaan welke apparaten van welke producten worden getroffen. Met onder meer de publicatie van een HBOM-raamwerk door het Amerikaanse CISA in 2023 wordt het verder ontwikkeld als middel om risico's in de toeleveringsketen te beheren. Het is belangrijk ook zaken op de grens tussen hardware en software, zoals firmware, mee te beheren."
+ },
+ "hw-security-adv-028": {
+  "question": "Welke denkwijze over beveiliging is passend bij het combineren van chiplets van meerdere bedrijven in één package?",
+  "choices": [
+   "Alle chiplets in hetzelfde package mogen onvoorwaardelijk worden vertrouwd, dus de communicatie tussen chiplets hoeft niet speciaal te worden beschermd",
+   "De communicatie tussen chiplets komt niet buiten het package, dus er is geen risico dat een chiplet tijdens assemblage of distributie door een namaakexemplaar wordt vervangen",
+   "Met authenticatie of attestatie controleren of elke chiplet echt is en met de juiste firmware draait, en zo nodig ook de communicatie tussen de dies beschermen"
+  ],
+  "explanation": "Binnen één chip was het gebruikelijk dat één bedrijf alle schakelingen ontwierp en dat ze in dezelfde fabriek werden gemaakt. Bij chiplets worden dies gecombineerd die door verschillende bedrijven zijn ontworpen en in afzonderlijke fabrieken zijn gemaakt, dus moet men rekening houden met de mogelijkheid dat een van de dies namaak is of een hardwaretrojan bevat. Daarom worden methoden onderzocht zoals een die met een root of trust die de identiteit en de meetwaarden van de andere dies controleert, en versleuteling en detectie van manipulatie op de verbindingen tussen dies. Ook het assemblageproces van het package en de aansluitingen voor tests worden zo beheerd dat ze geen toegangspunt voor aanvallen worden."
+ },
+ "hw-security-adv-029": {
+  "question": "Welke combinatie van technieken die halfgeleiderontwerpen beschermen en de onbetrouwbare partij waar elk vooral van uitgaat, is juist?",
+  "choices": [
+   "Split manufacturing: gebruikers die de afgewerkte chip hebben gekocht; IC-camouflage: de fabriek die de productie verzorgt; logic locking: de leverancier van de ontwerptools",
+   "Split manufacturing: de fabriek die de productie verzorgt; IC-camouflage: wie de schakeling uit beelden van de chip afleest; logic locking: de fabriek of wie chips zonder de sleutel in handen heeft",
+   "Split manufacturing, IC-camouflage en logic locking zijn alle drie alleen gericht tegen softwarevirussen die het apparaat binnendringen"
+  ],
+  "explanation": "Bij split manufacturing worden de transistors en de onderste bedradingslagen (FEOL) bij een externe fabriek met de nieuwste technologie gemaakt en de bovenste bedradingslagen bij een vertrouwde fabriek, zodat de externe fabriek de volledige verbindingen van de schakeling niet kan zien. IC-camouflage maakt reverse engineering, waarbij de schakeling wordt afgelezen uit beelden van een laag voor laag afgeslepen chip, moeilijker door cellen te gebruiken die er hetzelfde uitzien maar een andere functie hebben, of valse contacten die alleen verbonden lijken, maar het werkt niet tegen een fabriek die de ontwerpgegevens heeft. Logic locking voegt poorten toe waarvan de werking van een sleutel afhangt en zorgt dat de schakeling pas correct werkt wanneer na de productie de juiste sleutel is geschreven; het doel is te voorkomen dat de fabriek het ontwerp steelt of extra chips produceert. Sinds in 2015 een aanval is gedemonstreerd waarbij een aanvaller met een werkende chip invoer en uitvoer vergelijkt en de sleutel met een SAT-solver vernauwt, gaat het onderzoek naar schema's die daartegen bestand zijn door."
+ },
+ "hw-security-adv-030": {
+  "question": "Uitgaande van reverse engineering waarbij de schakeling wordt afgelezen door de lagen van een chip een voor een weg te slijpen en met een elektronenmicroscoop te fotograferen, of door het inwendige met röntgenstraling af te beelden: welke ontwerpbenadering is passend?",
+  "choices": [
+   "Waarden in mask-ROM en de vorm van bedrading kunnen uit beelden worden afgelezen, dus geheime sleutels worden niet in de vorm van de schakeling ingebouwd maar per apparaat verschillend gemaakt en samen met fysieke maatregelen beschermd",
+   "Als de layout van de schakeling maar complex genoeg is, kan de schakeling niet uit beelden worden afgelezen, dus mag een voor alle apparaten gemeenschappelijke geheime sleutel in mask-ROM worden geschreven",
+   "Röntgenstraling brengt de schakelingen in een chip niet in beeld, dus als maatregel tegen reverse engineering volstaat het om het oppervlak van de chip met een harde laag te bedekken, zodat de lagen niet kunnen worden weggeslepen"
+  ],
+  "explanation": "Waarden in mask-ROM worden als aan- of afwezigheid van transistors of contacten in de vorm van de schakeling ingebouwd, dus ze kunnen worden afgelezen door lagen weg te slijpen en te fotograferen. Bovendien bevatten alle chips die met hetzelfde masker zijn gemaakt dezelfde waarden, zodat de analyse van één exemplaar de geheimen van alle apparaten laat uitlekken. In de jaren 2020 is ook onderzoek gemeld waarin met röntgenbeelden de interne bedrading fijn in beeld werd gebracht zonder de chip te vernietigen. Daarom worden geheimen niet afhankelijk gemaakt van de vorm van de schakeling maar per apparaat verschillend gemaakt; bij opslag waarvan de geschreven toestand zichtbaar kan zijn, zoals eFuse, worden sleutels bijvoorbeeld versleuteld bewaard met een sleutel die uit een PUF is afgeleid, worden de leespaden beperkt en worden maatregelen voor manipulatiebestendigheid gecombineerd."
+ },
+ "hw-security-adv-031": {
+  "question": "Welke uitspraak beschrijft de eisen aan fysieke beveiliging juist bij de beveiligingsniveaus 1 tot 4 van FIPS 140-3, de certificeringsnorm voor cryptografische modules?",
+  "choices": [
+   "Niveau 1 stelt de strengste eisen en de eisen worden lichter naarmate het getal hoger wordt; niveau 4 is het niveau voor cryptografische modules die alleen uit software bestaan",
+   "Het niveau wordt bepaald door de lengte van de cryptografische sleutels die kunnen worden gebruikt: niveau 3 betekent AES-192 en niveau 4 AES-256, en eisen aan fysieke beveiliging horen er niet bij",
+   "Niveau 2 eist dat openen sporen achterlaat, niveau 3 dat openen moeilijk is en dat sleutels bij detectie worden gewist, en niveau 4 zelfs detectie van indringing over de hele behuizing en bescherming tegen abnormale spanning of temperatuur"
+  ],
+  "explanation": "FIPS 140-3 is de norm van het Amerikaanse NIST voor cryptografische modules, is gebaseerd op de internationale norm ISO/IEC 19790 en werd in 2020 als opvolger van FIPS 140-2 opengesteld voor certificering. Niveau 1 vraagt alleen onderdelen van normale productkwaliteit; niveau 2 vraagt zegels of coatings die bij openen sporen achterlaten; niveau 3 vraagt dat openen en aftasten moeilijk worden gemaakt en dat kritieke waarden zoals sleutels bij detectie worden gewist; en niveau 4 vraagt detectie van indringing over de hele behuizing en bescherming wanneer spanning of temperatuur buiten het bereik komt. De certificering omvat niet alleen fysieke beveiliging, maar ook de correcte implementatie van cryptografische algoritmen, sleutelbeheer, zelftests en meer. Het opgeven van een niveau is een gangbare voorwaarde bij de aanschaf van HSM's en beveiligingschips."
+ },
+ "hw-security-adv-032": {
+  "question": "Wat geeft het EAL (evaluation assurance level) van Common Criteria (ISO/IEC 15408), de internationale norm voor het evalueren van beveiligingsproducten, weer?",
+  "choices": [
+   "De lengte van de cryptografische sleutels van het product en de hoeveelheid rekenwerk die nodig is om die cryptografie met brute force te breken, uitgedrukt in stappen van 1 tot 7",
+   "Hoe diepgaand en streng de evaluatie is uitgevoerd; de functionele eisen voor wat wordt beschermd, worden apart vastgelegd, bijvoorbeeld in een security target",
+   "Een score die de evaluatie-instantie elk jaar opnieuw toekent op basis van hoe vaak het product sinds de introductie werkelijk is aangevallen en hoeveel kwetsbaarheden zijn gevonden"
+  ],
+  "explanation": "Bij Common Criteria worden de beveiligingsfuncties die een product moet bieden vastgelegd in een security target (ST) of protection profile (PP), en onderzoekt een onafhankelijke evaluatie-instantie of die functies correct zijn gebouwd. EAL's lopen van 1 tot 7, en een hoger getal betekent dat ontwerpdocumenten, tests en de analyse van kwetsbaarheden diepgaander en strenger zijn geëvalueerd. Chips voor smartcards hebben vaak certificeringen zoals EAL5+ of EAL6+, die een evaluatie van kwetsbaarheden toevoegen die uitgaat van een hoog aanvalspotentieel. Ook bij hetzelfde EAL verschilt de reikwijdte van de bescherming per product, dus bij een vergelijking moet naar de inhoud van de ST worden gekeken en niet alleen naar het getal."
+ },
+ "hw-security-adv-033": {
+  "question": "Welke uitspraak beschrijft het idee van compositie juist, dat wordt benadrukt in PSA Certified en SESIP, certificeringskaders voor de beveiliging van IoT-apparaten?",
+  "choices": [
+   "Wanneer een product wordt gebouwd op een gecertificeerde chip of root of trust, worden de resultaten van die evaluatie hergebruikt, en wordt de apparaatfabrikant vooral geëvalueerd op de delen die hij heeft toegevoegd",
+   "Een apparaat kan helemaal niet worden gecertificeerd tenzij alle onderdelen ervan door één enkel bedrijf zijn ontworpen en geproduceerd",
+   "Als een gecertificeerde chip wordt gebruikt, wordt het hele apparaat als gecertificeerd en veilig beschouwd, ook als de applicaties die erop draaien kwetsbaarheden hebben"
+  ],
+  "explanation": "Er bestaan veel soorten IoT-apparaten, en elk apparaat afzonderlijk door een zware evaluatie zoals Common Criteria laten gaan, kost veel geld en tijd. PSA Certified (een kader van onder meer Arm, gestart in 2019) en SESIP, vastgelegd door GlobalPlatform (een evaluatiemethode die later ook de Europese norm EN 17927 werd), volgen een compositionele aanpak: elke laag, zoals de chip, de root of trust en het OS, wordt geëvalueerd, en hogere lagen bouwen hun evaluatie voort op die resultaten. Zo kunnen apparaatfabrikanten gecertificeerde onderdelen kiezen en zich concentreren op de evaluatie van wat ze zelf hebben toegevoegd. Certificering van lagere lagen garandeert echter niet de veiligheid van hogere lagen, dus moeten de hogere lagen worden geëvalueerd en moeten de gebruiksvoorwaarden van de onderdelen worden nageleefd."
+ },
+ "hw-security-adv-034": {
+  "question": "Welk ontwerp voor geauthenticeerd debuggen, waarbij alleen de technici van de fabrikant de debugpoort van uitgeleverde producten kunnen openen, is het meest passend?",
+  "choices": [
+   "Een vast wachtwoord vastleggen dat voor alle producten gelijk is, zodat het invoeren daarvan de debugpoort van elk product opent",
+   "De debugpoort open laten en in de handleiding schrijven dat „gebruikers de debugpoort niet mogen gebruiken”, zodat het gebruik verboden is",
+   "Bij een challenge met een apparaatspecifieke identificatie en een willekeurig getal dat elke keer verandert, de poort alleen voor die sessie openen wanneer een met de privésleutel van de fabrikant ondertekend antwoord is geverifieerd"
+  ],
+  "explanation": "Als een gedeeld wachtwoord uit één exemplaar wordt uitgelezen of door een betrokkene wordt gelekt, kunnen de debugpoorten van alle producten worden geopend. Bij de challenge-responsemethode bevat het apparaat alleen de publieke sleutel voor verificatie, en wordt de privésleutel voor het ondertekenen bewaard in bijvoorbeeld een HSM van de fabrikant. Omdat de challenge de identificatie van het apparaat en een willekeurig getal bevat dat elke keer verandert, kan een vastgelegd antwoord niet op een ander apparaat of in een latere sessie worden hergebruikt. Door in het antwoord aan te geven hoeveel wordt geopend (welke cores en welk geheugen) en registraties bij te houden, kan het gebruik worden beperkt tot legitieme doeleinden zoals foutanalyse."
+ },
+ "hw-security-adv-035": {
+  "question": "De levenscyclustoestand van een beveiligingschip wordt beheerd in fasen zoals test, productie en analyse van defecte retourproducten (RMA). Hoe wordt de overgang van de productietoestand naar de RMA-toestand voor foutanalyse passend afgehandeld?",
+  "choices": [
+   "Om de analyse te vergemakkelijken alle test- en debugfuncties openen, terwijl de sleutels en gebruikersgegevens uit de productie behouden blijven",
+   "Geheimen zoals de in de productie gebruikte sleutels wissen of onbruikbaar maken voordat de analysefuncties worden geopend, en het onmogelijk maken naar de productietoestand terug te keren",
+   "Een chip die naar de RMA-toestand is gebracht direct na de analyse terugzetten naar de productietoestand, zodat hij opnieuw als nieuw kan worden uitgeleverd"
+  ],
+  "explanation": "Foutanalyse vereist het openen van krachtige test- en debugfuncties, maar als dat zonder meer gebeurt, kunnen de sleutels en gebruikersgegevens uit de productie worden uitgelezen. Daarom worden in de procedure voor de overgang naar de RMA-toestand de geheimen uit de productie gewist of de paden die ze gebruiken afgesneden, en worden de analysefuncties pas daarna beschikbaar. Als de toestandsovergangen in OTP of eFuse worden vastgelegd, zodat ze maar in één richting gaan en de chip niet van RMA naar productie kan terugkeren, komt een chip die voor analyse is geopend nooit meer in omloop. Ook openbare ontwerpen van een root of trust, zoals OpenTitan, leggen dit soort beheer van levenscyclustoestanden vast."
+ },
+ "hw-security-adv-036": {
+  "question": "Welke combinatie van de reden waarom scanketens voor de scantest in een chip met cryptografische verwerking een aanvalspad kunnen worden en een tegenmaatregel daarvoor, is juist?",
+  "choices": [
+   "Door midden in de verwerking naar de testmodus te schakelen, kunnen waarden van registers die met de sleutel samenhangen soms naar buiten worden uitgelezen. Bij het wisselen van modus worden geheimen gewist, en na uitlevering wordt scan uitgeschakeld of is authenticatie vereist",
+   "Scanketens verbruiken tijdens bedrijf veel stroom, waardoor het verloop van het stroomverbruik verstoord raakt en vermogensanalyse onmogelijk wordt. Daarom worden scanketens zo lang mogelijk gemaakt",
+   "Scanketens voegen alleen bedrading in de chip toe en kunnen niet worden gebruikt om gegevens in de chip naar buiten uit te lezen. Daarom is geen bijzondere tegenmaatregel nodig"
+  ],
+  "explanation": "Bij scanontwerp wordt elke flipflop in een chip in een keten opgenomen, zodat de interne toestand van buitenaf kan worden ingesteld en uitgelezen. Onderzoek heeft laten zien dat, als tussentoestanden van een cryptografische schakeling via scan kunnen worden uitgelezen, de sleutel kan worden afgeleid door tussenwaarden te vergelijken terwijl de invoer wordt gevarieerd. Daarom worden tegenmaatregelen gecombineerd: registers zoals die van de sleutel resetten bij het overschakelen naar de testmodus, sleutelregisters uit de keten halen, de scanuitvoer door elkaar husselen, en scan bij uitlevering met eFuse uitschakelen of alleen na authenticatie toestaan. Testbaarheid en de bescherming van geheimen staan met elkaar op gespannen voet, dus beide worden vroeg in het ontwerp meegenomen."
+ },
+ "hw-security-adv-037": {
+  "question": "Wat is de juiste verklaring voor de belangrijkste reden waarom een chip storingen vertoont bij een glitch in de voedingsspanning die de spanning een ogenblik verlaagt?",
+  "choices": [
+   "Op het moment dat de spanning daalt, worden alle gegevens in de registers en het geheugen van de chip op 0 gewist en keert de chip terug naar de toestand direct na het inschakelen",
+   "Als de spanning daalt, gaat de frequentie van de interne klokoscillator van de chip automatisch omhoog en wordt de uitvoering van instructies navenant sneller",
+   "Bij een lagere spanning worden transistors trager, zodat signalen de flipflops niet vóór de volgende klokflank bereiken en verkeerde waarden worden ingelezen"
+  ],
+  "explanation": "Als de voedingsspanning daalt, kunnen transistors minder stroom leveren en neemt de vertraging van poorten toe. Wanneer de in het ontwerp gecontroleerde timingvoorwaarde dat signalen binnen de klokperiode aankomen (de insteltijd) niet meer wordt gehaald, leest een flipflop verkeerde waarden in. Daardoor kan een vergelijkingsresultaat veranderen of kunnen sprongen en instructies worden overgeslagen, zodat een controle van een handtekening kan worden omzeild. Een klokglitch, waarbij een te korte klokperiode wordt ingevoegd, breekt de timingvoorwaarde op dezelfde manier en veroorzaakt storingen."
+ },
+ "hw-security-adv-038": {
+  "question": "Welke combinatie van kenmerken is juist voor een foutinjectieaanval met een laser en een met elektromagnetische pulsen?",
+  "choices": [
+   "Een laser wordt vaak met nabij-infrarood licht op de achterkant van een geopende chip gericht en kan de plaats heel nauwkeurig kiezen. Elektromagnetische pulsen worden met een spoel toegepast en werken soms zonder de chip te openen, maar het getroffen gebied is relatief groot",
+   "Een laser gaat door de kunststof van het package heen, zodat hij zonder de chip te openen één gekozen transistor kan raken. Elektromagnetische pulsen werken alleen als de chip wordt afgeslepen om de bedrading bloot te leggen",
+   "Zowel lasers als elektromagnetische pulsen verhogen plotseling de temperatuur van een deel van de chip en smelten bedrading of transistors, waardoor ze met blijvende schade de werking van de schakeling veranderen"
+  ],
+  "explanation": "De bandgap van silicium is ongeveer 1,12 eV, en licht met een golflengte langer dan ongeveer 1,1 µm wordt nauwelijks geabsorbeerd. Nabij-infrarood licht rond 1 µm wordt maar zwak geabsorbeerd, dringt vanaf de achterkant van een gedund substraat diep door en wordt deels in de buurt van de transistors geabsorbeerd, waarbij elektron-gatparen ontstaan. De voorkant is bedekt met veel metalen bedradingslagen, dus bij laserfoutinjectie wordt meestal vanaf de achterkant belicht, en met de fotostroom worden bepaalde transistors of SRAM-cellen tot storingen gebracht. Bij elektromagnetische pulsen wordt kort een grote stroom door een spoel gestuurd om een sterke verandering van het magnetisch veld te veroorzaken, die spanningen in de bedrading en het voedingsnet van de chip opwekt en storingen veroorzaakt. Als tegenmaatregel worden sensoren die licht of elektromagnetische velden detecteren, verdubbeling van kritieke berekeningen en mechanismen die sleutels wissen wanneer fouten worden gedetecteerd, gecombineerd."
+ },
+ "hw-security-adv-039": {
+  "question": "Een poging tot foutinjectie slaagt telkens met een kans van 0,1%, en de resultaten van de pogingen zijn onafhankelijk van elkaar. Welke waarde ligt het dichtst bij de kans op minstens één succes bij 1000 pogingen?",
+  "choices": [
+   "Ongeveer 0,1%",
+   "Ongeveer 63%",
+   "100%"
+  ],
+  "explanation": "De kans dat geen enkele poging slaagt, is (1 − 0,001)¹⁰⁰⁰ ≈ e⁻¹ ≈ 0,368, dus de kans op minstens één succes is 1 − 0,368 ≈ 0,632, ongeveer 63%. Ook bij een lage slaagkans per poging is een aanval die automatisch duizenden keren kan worden geprobeerd vrijwel zeker succesvol. Daarom combineren tegenmaatregelen het verlagen van de slaagkans per poging met mechanismen zoals sleutels wissen na een paar gedetecteerde afwijkingen, of het tellen en beperken van het aantal pogingen. Eenvoudig 0,1% × 1000 = 100% rekenen is een fout waarbij gevallen met meer dan één succes dubbel worden geteld."
+ },
+ "hw-security-adv-040": {
+  "question": "Stel dat een controle van de handtekening van firmware met een kans van 1/1000 door één poging tot foutinjectie wordt overgeslagen. Dezelfde controle wordt nu op twee plaatsen uitgevoerd, zodat de aanval alleen slaagt als beide worden overgeslagen. Als één poging beide plaatsen tegelijk kan treffen en elk onafhankelijk met een kans van 1/1000 wordt overgeslagen, wat is dan de verwachtingswaarde van het aantal pogingen tot de aanval slaagt?",
+  "choices": [
+   "1000",
+   "2000",
+   "1.000.000"
+  ],
+  "explanation": "De kans dat beide in één poging worden overgeslagen, is (1/1000) × (1/1000) = 1/1.000.000. Als pogingen met slaagkans p worden herhaald, is de verwachtingswaarde van het aantal tot het eerste succes 1/p, dus 1.000.000 (een miljoen), 1000 keer de 1000 die bij één controle nodig zijn. Deze berekening gaat er echter van uit dat de twee fouten onafhankelijk van elkaar optreden. Bij een opbouw waarin één storing beide controles overslaat (zoals dezelfde vergelijking twee keer achter elkaar schrijven), levert het weinig op, dus worden maatregelen toegevoegd zoals de controles op verschillende tijdstippen uitvoeren, geïnverteerde waarden met elkaar vergelijken en willekeurige wachttijden invoegen."
+ }
+}
