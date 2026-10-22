@@ -2585,10 +2585,29 @@ const pageKey = url => url.slice(baseUrl.length) || '/';
 const lastmod = Object.fromEntries(sitemap.map(({ url, hash }) =>
   [pageKey(url), lastmodOld[pageKey(url)]?.hash === hash ? lastmodOld[pageKey(url)] : { hash, date: today }]));
 fs.writeFileSync(lastmodFile, '{\n' + Object.entries(lastmod).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n') + '\n}\n');
-write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
+// サイトマップは言語ごとのファイル(sitemaps/{言語}.xml)に分け、/sitemap.xml をその目次(サイトマップインデックス)にする。
+// 1ファイルは5万URLまでなので、1言語が SITEMAP_MAX を超えたら sitemaps/{言語}-2.xml … と続ける。
+// /sitemap.xml の場所は変えないので、Search Console と robots.txt はそのままでよい
+const SITEMAP_MAX = 40000;
+const langOfUrl = url => [...langs].sort((a, b) => b.path.length - a.path.length).find(x => pageKey(url).startsWith(x.path)).code; // 既定言語(path が空)は最後に当たる
+const sitemapFiles = [];
+for (const L of langs) {
+  const list = sitemap.filter(({ url }) => langOfUrl(url) === L.code);
+  for (let i = 0; i < list.length; i += SITEMAP_MAX) {
+    const part = list.slice(i, i + SITEMAP_MAX);
+    const name = `sitemaps/${L.code}${i ? `-${i / SITEMAP_MAX + 1}` : ''}.xml`;
+    write(name, `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemap.map(({ url }) => `  <url><loc>${url}</loc><lastmod>${lastmod[pageKey(url)].date}</lastmod></url>`).join('\n')}
+${part.map(({ url }) => `  <url><loc>${url}</loc><lastmod>${lastmod[pageKey(url)].date}</lastmod></url>`).join('\n')}
 </urlset>
+`);
+    sitemapFiles.push({ name, date: part.map(({ url }) => lastmod[pageKey(url)].date).sort().at(-1) });
+  }
+}
+write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemapFiles.map(f => `  <sitemap><loc>${baseUrl}${f.name}</loc><lastmod>${f.date}</lastmod></sitemap>`).join('\n')}
+</sitemapindex>
 `);
 write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}sitemap.xml\n`);
 write('.nojekyll', '');

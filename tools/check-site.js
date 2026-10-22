@@ -109,10 +109,20 @@ list(`注意: 長い description(半角${DESC_MAX}超)`, longDescs);
 let bytes = 0;
 const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else bytes += fs.statSync(p).size; } };
 walk(out);
-const urls = (fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8').match(/<loc>/g) ?? []).length;
+// サイトマップ: /sitemap.xml は言語ごとのファイルの目次。目次に書いたファイルがあるか、1ファイルあたりのURL数(上限5万)を見る
+const smIndex = fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8');
+const smFiles = [...smIndex.matchAll(/<sitemap><loc>([^<]+)<\/loc>/g)].map(m => m[1].slice(config.baseUrl.length));
+const smCounts = smFiles.map(f => {
+  const p = path.join(out, f);
+  if (!fs.existsSync(p)) { errors.push(`サイトマップの目次にあるファイルがありません: ${f}`); return [f, 0]; }
+  return [f, (fs.readFileSync(p, 'utf8').match(/<loc>/g) ?? []).length];
+});
+if (!smFiles.length) errors.push('sitemap.xml がサイトマップの目次(sitemapindex)になっていません');
+const urls = smCounts.reduce((s, [, n]) => s + n, 0);
+const [maxFile, maxUrls] = smCounts.reduce((a, b) => (b[1] > a[1] ? b : a), ['', 0]);
 const mb = bytes / 2 ** 20;
-console.log(`\n容量: 公開するファイル ${mb.toFixed(0)} MB / 1024 MB(${(mb / 1024 * 100).toFixed(0)}%)、サイトマップ ${urls} / 50000 URL(${(urls / 50000 * 100).toFixed(0)}%)`);
+console.log(`\n容量: 公開するファイル ${mb.toFixed(0)} MB / 1024 MB(${(mb / 1024 * 100).toFixed(0)}%)、サイトマップ ${smFiles.length} ファイル・計 ${urls} URL(最も多い ${maxFile} が ${maxUrls} / 50000 URL = ${(maxUrls / 50000 * 100).toFixed(0)}%)`);
 if (mb > 1024 * 0.8) console.log('注意: 公開するファイルが 1 GB の8割を超えました。大きなファイルや言語ごとのページ数を見直してください');
-if (urls > 50000 * 0.8) console.log('注意: サイトマップが5万URLの8割を超えました。サイトマップを言語ごとに分けてください');
+if (maxUrls > 50000 * 0.8) console.log(`注意: ${maxFile} が5万URLの8割を超えました(build.js の SITEMAP_MAX で分割されるはず)`);
 if (errors.length) process.exit(1);
 console.log('\nOK: 誤りはありません');
