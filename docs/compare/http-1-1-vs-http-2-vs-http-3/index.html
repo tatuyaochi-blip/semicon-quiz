@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP/1.1・HTTP/2・HTTP/3の違い：トランスポート・多重化・ヘッドオブラインブロッキング・ヘッダ圧縮・暗号化を比較 | 半導体教室</title>
+<meta name="description" content="HTTP/1.1・HTTP/2・HTTP/3を、仕様・トランスポート・メッセージの形式・多重化・ヘッドオブラインブロッキング・ヘッダの圧縮・暗号化・接続の確立にかかる往復・ネットワークが変わったときの観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/http-1-1-vs-http-2-vs-http-3/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTTP/1.1・HTTP/2・HTTP/3の違い：トランスポート・多重化・ヘッドオブラインブロッキング・ヘッダ圧縮・暗号化を比較 | 半導体教室">
+<meta property="og:description" content="HTTP/1.1・HTTP/2・HTTP/3を、仕様・トランスポート・メッセージの形式・多重化・ヘッドオブラインブロッキング・ヘッダの圧縮・暗号化・接続の確立にかかる往復・ネットワークが変わったときの観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/http-1-1-vs-http-2-vs-http-3/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"HTTP/1.1・HTTP/2・HTTP/3の違い：トランスポート・多重化・ヘッドオブラインブロッキング・ヘッダ圧縮・暗号化を比較","item":"https://semiconroom.com/compare/http-1-1-vs-http-2-vs-http-3/"}]},{"@context":"https://schema.org","@type":"Article","headline":"HTTP/1.1・HTTP/2・HTTP/3の違い：トランスポート・多重化・ヘッドオブラインブロッキング・ヘッダ圧縮・暗号化を比較","description":"HTTP/1.1・HTTP/2・HTTP/3を、仕様・トランスポート・メッセージの形式・多重化・ヘッドオブラインブロッキング・ヘッダの圧縮・暗号化・接続の確立にかかる往復・ネットワークが変わったときの観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-22","mainEntityOfPage":"https://semiconroom.com/compare/http-1-1-vs-http-2-vs-http-3/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"HTTP/2で、ヘッドオブラインブロッキングはなくなったのではないのですか？","acceptedAnswer":{"@type":"Answer","text":"HTTPの層ではなくなりましたが、TCPの層には残っています。HTTP/2は1つのTCP接続の上に複数のストリームを多重化しますが、TCPはどのストリームのデータかを知らず、バイト列を順番どおりに渡します。そのため、1つのパケットが失われると、再送が届くまで、関係のないストリームのデータも受信側のアプリケーションに渡されません。HTTP/3では、QUICがストリームごとに順序を管理するので、この待ちが起きるのは、失われたデータを含むストリームだけです。"}},{"@type":"Question","name":"クライアントは、サーバがHTTP/3に対応していることを、どうやって知るのですか？","acceptedAnswer":{"@type":"Answer","text":"HTTP/3はUDPを使うので、TCPの接続とは別に始める必要があります。一般的には、まずTCPの上のHTTP/1.1かHTTP/2で接続し、サーバが応答のAlt-Svcヘッダで、HTTP/3(h3)を使えることを知らせます。クライアントは、その後の接続でQUICを使います。なお、TLSの上でHTTP/1.1とHTTP/2のどちらを使うかは、TLSのハンドシェイクの中のALPNで決めます。"}},{"@type":"Question","name":"HTTP/3の0-RTTには、注意点がありますか？","acceptedAnswer":{"@type":"Answer","text":"あります。0-RTTで送るデータは、攻撃者に記録されて、もう一度送り直される(リプレイ攻撃)おそれがあります。そのため0-RTTでは、GETのように、同じリクエストを何度受けても問題のないものだけを送るといった配慮が必要です。"}},{"@type":"Question","name":"HTTP/2やHTTP/3にすると、Webアプリケーションを書き換える必要がありますか？","acceptedAnswer":{"@type":"Answer","text":"多くの場合は不要です。メソッド、ステータスコード、ヘッダの意味は3つの版に共通(RFC 9110)で、違うのは運び方です。版は接続ごとに決まるので、ブラウザとの間はリバースプロキシやCDNがHTTP/2やHTTP/3で受け、その後ろのアプリケーションサーバとはHTTP/1.1で通信する構成もよく使われます。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>HTTP/1.1・HTTP/2・HTTP/3の違い：トランスポート・多重化・ヘッドオブラインブロッキング・ヘッダ圧縮・暗号化を比較</h1>
+  <p class="lead">3つの版は、メソッド、ステータスコード、ヘッダといったHTTPの意味(RFC 9110)を共通にもち、それをどんな形で、どの通信路に載せて運ぶかが違います。HTTP/1.1(RFC 9112)はテキストのメッセージをTCPで送り、1つの接続では応答を1つずつ順に返します。HTTP/2(RFC 9113)はメッセージをバイナリのフレームに分け、1つのTCP接続の上に複数のストリームを多重化します。HTTP/3(RFC 9114)は、UDPの上で動くQUIC(RFC 9000)を使い、ストリームの多重化とTLS 1.3による暗号化をトランスポートの側で行います。そのため、1つのパケットの損失がすべてのストリームを待たせる、TCPでのヘッドオブラインブロッキングを避けられます。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">HTTP/1.1</th><th scope="col">HTTP/2</th><th scope="col">HTTP/3</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">仕様</th><td>RFC 9112(意味は3つの版に共通のRFC 9110)</td><td>RFC 9113</td><td>RFC 9114(QUICはRFC 9000)</td></tr>
+        <tr><th scope="row">トランスポート</th><td>TCP</td><td>TCP</td><td>QUIC(UDPの上で動く)</td></tr>
+        <tr><th scope="row">メッセージの形式</th><td>テキスト。リクエスト行とヘッダを1行ずつ書く</td><td>バイナリのフレーム</td><td>バイナリのフレーム(QUICのストリームの上)</td></tr>
+        <tr><th scope="row">多重化</th><td>なし。1つの接続では、リクエストと応答を1つずつ順に扱う。並行して取得するには、複数の接続を張る</td><td>1つのTCP接続の上で、複数のストリームを並行して送る</td><td>QUICの複数のストリームを並行して送る。ストリームはトランスポートの側で管理する</td></tr>
+        <tr><th scope="row">ヘッドオブラインブロッキング</th><td>HTTPの層で起きる。同じ接続では、前の応答が終わるまで次の応答を返せない(パイプライン化しても、応答はリクエストの順に返す)</td><td>HTTPの層では解消。ただしTCPがバイト列を順番どおりに渡すので、1つのパケットが失われると、すべてのストリームが再送を待つ</td><td>QUICがストリームごとに順序を管理するので、損失の影響は、失われたデータを含むストリームにとどまる</td></tr>
+        <tr><th scope="row">ヘッダの圧縮</th><td>なし(本文は圧縮できるが、ヘッダはテキストのまま送る)</td><td>HPACK(RFC 7541)</td><td>QPACK(RFC 9204)。ストリームの順番が入れ替わって届いても使えるよう、HPACKを改めたもの</td></tr>
+        <tr><th scope="row">暗号化</th><td>任意。https ではTLSを使い、http では平文で送る</td><td>TLS上(h2)と平文(h2c)の両方を仕様で定める。TLSを使う場合はTLS 1.2以上。主要なブラウザはTLS上のHTTP/2だけに対応</td><td>必須。QUICにTLS 1.3が組み込まれていて、平文の通信はない</td></tr>
+        <tr><th scope="row">接続の確立にかかる往復</th><td>TCPで1往復。TLS 1.3を使うと、さらに1往復。計2往復の後にリクエストを送る</td><td>HTTP/1.1と同じ(TCPとTLSで計2往復)</td><td>QUICがトランスポートと暗号のハンドシェイクをまとめ、1往復。以前に接続したサーバには、最初の送信からデータを送る0-RTTも使える</td></tr>
+        <tr><th scope="row">ネットワークが変わったとき</th><td>TCPの接続は、送信元と宛先のアドレスとポートで決まるので、IPアドレスが変わると接続し直す</td><td>HTTP/1.1と同じ</td><td>QUICは接続をコネクションIDで見分けるので、無線LANから携帯電話の回線に切り替わっても、同じ接続を続けられる(接続の移行)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>HTTP/1.1</dt><dd>どのクライアントとサーバでも使える基本の版です。サーバの内部どうしの通信や、機器の設定画面のような簡単なWebの画面でも使われます。</dd>
+    <dt>HTTP/2</dt><dd>多くの小さなファイルを読み込むWebページを、1つの接続で効率よく配信したいとき。UDPが通らないネットワークでも使えるので、HTTP/3に対応したサイトでも、HTTP/3が使えないときの受け皿になります。</dd>
+    <dt>HTTP/3</dt><dd>損失や遅延の大きい携帯電話の回線などで、ストリームどうしが待たされるのを避けたいときや、接続の確立を速くしたいとき。UDPを通さないネットワークもあるので、HTTP/2やHTTP/1.1にも対応しておくのが一般的です。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>HTTP/2で、ヘッドオブラインブロッキングはなくなったのではないのですか？</h3>
+  <p>HTTPの層ではなくなりましたが、TCPの層には残っています。HTTP/2は1つのTCP接続の上に複数のストリームを多重化しますが、TCPはどのストリームのデータかを知らず、バイト列を順番どおりに渡します。そのため、1つのパケットが失われると、再送が届くまで、関係のないストリームのデータも受信側のアプリケーションに渡されません。HTTP/3では、QUICがストリームごとに順序を管理するので、この待ちが起きるのは、失われたデータを含むストリームだけです。</p>
+  <h3>クライアントは、サーバがHTTP/3に対応していることを、どうやって知るのですか？</h3>
+  <p>HTTP/3はUDPを使うので、TCPの接続とは別に始める必要があります。一般的には、まずTCPの上のHTTP/1.1かHTTP/2で接続し、サーバが応答のAlt-Svcヘッダで、HTTP/3(h3)を使えることを知らせます。クライアントは、その後の接続でQUICを使います。なお、TLSの上でHTTP/1.1とHTTP/2のどちらを使うかは、TLSのハンドシェイクの中のALPNで決めます。</p>
+  <h3>HTTP/3の0-RTTには、注意点がありますか？</h3>
+  <p>あります。0-RTTで送るデータは、攻撃者に記録されて、もう一度送り直される(リプレイ攻撃)おそれがあります。そのため0-RTTでは、GETのように、同じリクエストを何度受けても問題のないものだけを送るといった配慮が必要です。</p>
+  <h3>HTTP/2やHTTP/3にすると、Webアプリケーションを書き換える必要がありますか？</h3>
+  <p>多くの場合は不要です。メソッド、ステータスコード、ヘッダの意味は3つの版に共通(RFC 9110)で、違うのは運び方です。版は接続ごとに決まるので、ブラウザとの間はリバースプロキシやCDNがHTTP/2やHTTP/3で受け、その後ろのアプリケーションサーバとはHTTP/1.1で通信する構成もよく使われます。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="web-tech-001" data-cat="web-tech" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/web-tech/web-tech-001/">HTTP/1.1のリクエストの最初の行(リクエスト行)に並ぶ要素の組み合わせとして、正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">メソッド、リクエストの対象(パスなど)、HTTPのバージョン</span></li><li><span class="choice-mark">B</span><span class="choice-text">HTTPのバージョン、ステータスコード、理由を表す短い語句</span></li><li><span class="choice-mark">C</span><span class="choice-text">送信元のIPアドレス、宛先のポート番号、メソッド</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. メソッド、リクエストの対象(パスなど)、HTTPのバージョン</p><p class="explanation"><a class="term-link" href="/term/http/">HTTP</a>のリクエストは、リクエスト行、ヘッダ(1行に1つの「名前: 値」)、空行、本文の順に並びます。例えば「GET /docs/index.html HTTP/1.1」は、GETメソッドで /docs/index.html を要求する行です。HTTP/1.1ではHostヘッダも必ず送り、同じIPアドレスで複数のサイトを運用していても、どのサイトへの要求かをサーバが判断できるようにします。応答の最初の行はステータス行で、「HTTP/1.1 200 OK」のように、バージョン、<a class="term-link" href="/term/http-status-code/">ステータスコード</a>、理由句が並びます。</p></details>
+  </article>
+  <article class="q-mini" data-qid="web-tech-007" data-cat="web-tech" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/web-tech/web-tech-007/">HTTP/2とHTTP/3の説明として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">HTTP/2は1つのTCP接続で複数のリクエストを並行して扱えるが、パケットの損失でほかのストリームも待たされることがあり、HTTP/3はUDP上のQUICでこれを減らした</span></li><li><span class="choice-mark">B</span><span class="choice-text">HTTP/2は、HTTP/1.1と同じテキストの形式のメッセージを使い、リクエストごとに新しいTCP接続を並行して作ることで、複数の資源を同時に受け取れるようにした版である</span></li><li><span class="choice-mark">C</span><span class="choice-text">HTTP/3は、HTTP/2と同じくTCPの上で動き、ヘッダを圧縮する方式だけを改めた版で、パケットの損失の影響はHTTP/2と変わらず、UDPは使わない</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. HTTP/2は1つのTCP接続で複数のリクエストを並行して扱えるが、パケットの損失でほかのストリームも待たされることがあり、HTTP/3はUDP上のQUICでこれを減らした</p><p class="explanation"><a class="term-link" href="/term/http/">HTTP</a>/1.1でも持続的接続(keep-alive)で1つのTCP接続を使い回せますが、1つの接続では応答を1つずつ順に受け取るため、ブラウザは複数の接続を並行して張っていました。HTTP/2はメッセージをバイナリのフレームに分け、1つのTCP接続の上に複数のストリームを多重化して並行に送ります。ただし、TCPはバイト列を順番どおりに渡すので、パケットが1つ失われると、再送が届くまで関係のないストリームのデータも待たされます(ヘッドオブラインブロッキング)。HTTP/3はUDPの上で動くQUICを使い、ストリームごとに順序を管理するので、損失の影響がそのストリームだけにとどまります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="web-tech-008" data-cat="web-tech" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/web-tech/web-tech-008/">RTTが40 msのWebサーバから、HTMLを1つと、そこから参照される画像を4つ、1つずつ順番に取得する。TCPの接続の確立に1往復、各リクエストと応答に1往復かかるとし、データの転送時間、サーバの処理時間、TLS、接続の切断は考えない。オブジェクトごとに新しいTCP接続を張る場合と、1つのTCP接続を使い回す持続的接続の場合とで、かかる時間の差はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">160 ms</span></li><li><span class="choice-mark">B</span><span class="choice-text">200 ms</span></li><li><span class="choice-mark">C</span><span class="choice-text">400 ms</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 160 ms</p><p class="explanation">オブジェクトは全部で5つです。毎回新しく接続する場合は、オブジェクトごとに接続の確立とリクエストと応答の2往復がかかり、5 × 2 × 40 = 400 msです。持続的接続では、最初に1回だけ接続を確立し、その後は5回のリクエストと応答だけなので、(1 + 5) × 40 = 240 msです。差は 400 − 240 = 160 ms で、省けるのは4回分の接続の確立です。<a class="term-link" href="/term/http/">HTTP</a>/1.1では持続的接続が標準の動作になっています。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="3"><a href="/q/network/network-023/">RTT(往復の時間)が100 msのWebサーバに、HTTPS(TCPの上のTLS 1.3)で新しく接続し、最初のリクエストを送って応答を受け取り始めるまでにかかる時間に最も近いものはどれか。DNSの名前解決は済んでおり、サーバの処理時間とデータの転送時間は無視する。</a></li>
+  <li data-level="2"><a href="/q/network/network-032/">HTTPS(HTTPをTLSで保護した通信)で守られることとして正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/web-tech/">Web技術の基礎の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/http/">HTTP</a></dt><dd>WebブラウザとWebサーバなどの間で、HTMLや画像、データをやり取りするためのアプリケーション層のプロトコル。クライアントがメソッド、URL、ヘッダ、本文からなるリクエストを送り、サーバがステータスコード、ヘッダ、本文からなる応答を返す。プロトコルとしてはステートレスで、ログインのような状態はCookieなどを使って保つ。HTTP/1.1はテキストの形式で持続的接続を使い、HTTP/2は1つのTCP接続の上で複数のストリームを多重化し、HTTP/3はUDPの上のQUICを使う。TLSで保護したものをHTTPSと呼ぶ。</dd></div>
+    <div class="term"><dt><a href="/term/tls/">TLS</a></dt><dd>Transport Layer Securityの略。通信の暗号化、改ざんの検出、証明書によるサーバの認証を行うプロトコル。HTTPSはHTTPをTLSで保護したもの。</dd></div>
+    <div class="term"><dt><a href="/term/three-way-handshake/">3ウェイハンドシェイク</a></dt><dd>TCPでコネクションを確立する手順。クライアントのSYN、サーバのSYN+ACK、クライアントのACKの3回のやり取りで、互いの初期シーケンス番号を確かめ合う。</dd></div>
+    <div class="term"><dt><a href="/term/http-method/">HTTPメソッド</a></dt><dd>HTTPのリクエストで、資源に対して行いたい操作を表す語。GET(取得)、HEAD(ヘッダだけを取得)、POST(処理や作成)、PUT(置き換え)、PATCH(一部の更新)、DELETE(削除)、OPTIONS(使える機能の問い合わせ)などがある。サーバの状態を変えないものを「安全」、何回送っても1回送ったときと同じ状態になるものを「べき等」と呼ぶ。GETは安全でべき等、PUTとDELETEはべき等だが安全ではなく、POSTは一般にどちらでもない。</dd></div>
+    <div class="term"><dt><a href="/term/http-status-code/">HTTPステータスコード</a></dt><dd>HTTPの応答の最初の行に入る3桁の数で、リクエストの結果を表す。百の位で分類し、1xxは情報、2xxは成功(200 OK、201 Created、204 No Content)、3xxはリダイレクト(301 Moved Permanently、302 Found、304 Not Modified)、4xxはクライアント側の誤り(400 Bad Request、401 Unauthorized、403 Forbidden、404 Not Found)、5xxはサーバ側の誤り(500 Internal Server Error、503 Service Unavailable)を表す。401は認証の情報がないか正しくないとき、403は認証されていても権限がないときに使う。</dd></div>
+    <div class="term"><dt><a href="/term/reverse-proxy/">リバースプロキシ</a></dt><dd>Webサーバの手前に置かれ、利用者からのリクエストをサーバの代わりに受けて、後ろにある1台または複数のサーバへ中継するサーバ。HTTPSの暗号の処理をまとめて行う(TLSの終端)、よく使われる応答を保存して返す、複数のサーバに負荷を分ける、後ろのサーバの構成を隠す、といった役割を受け持つ。利用者の側に置かれ、利用者の代わりに外部のサイトへ接続するフォワードプロキシとは、置かれる場所と守る対象が違う。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/tcp-vs-udp/"><strong>TCPとUDPの違い：接続・信頼性・順序・輻輳制御・ヘッダ・遅延・用途を比較</strong><span>TCPとUDPを、接続の確立・届いたかの確認と再送・順序・データの区切り・フロー制御と輻輳制御・ヘッダの大きさ・遅延・宛先の種類・主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/ids-vs-ips-vs-waf-vs-firewall/"><strong>ファイアウォール・IDS・IPS・WAFの違い：調べる範囲・止めるか知らせるか・守る対象を比較</strong><span>ファイアウォール・IDS(侵入検知システム)・IPS(侵入防止システム)・WAFを、調べる範囲(層)・通信の経路への置き方・見つけたときの動き・判定の方法・守る対象・誤検知の影響・置く場所・限界の観点で表にして比較しま…</span></a></li>
+  <li><a class="cmp-card" href="/compare/zero-trust-vs-perimeter-security/"><strong>境界型防御とゼロトラストの違い：信頼の前提・認証の頻度・リモートアクセスを比較</strong><span>境界型防御とゼロトラストを、信頼の前提・防御を置く場所・認証と認可の頻度・リモートアクセス(VPNとZTNA)・侵入後の横への広がり・可視化と記録・クラウドとの相性・移行の難しさの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/secure-boot-vs-measured-boot/"><strong>セキュアブートと測定ブートの違い：署名の検証・TPMへの記録・アテステーションを比較</strong><span>セキュアブートと測定ブート(メジャードブート)を、確かめるもの・起動を止めるか記録するか・信頼の起点・改ざんされたときの動き・必要なもの・結果の使い道・限界・組み合わせ方の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/tpm-vs-hsm-vs-secure-element/"><strong>TPM・HSM・セキュアエレメントの違い：置き場所・用途・鍵の守り方・認証を比較</strong><span>TPM・HSM・セキュアエレメントを、置かれる場所・主な目的・使う機器・鍵の守り方・暗号処理の性能・耐タンパ性と認証(FIPS 140-3・コモンクライテリア)・アテステーション・コスト・代表的な使い方の観点で表にして…</span></a></li>
+  <li><a class="cmp-card" href="/compare/trustzone-vs-sgx-vs-sev-tdx/"><strong>TrustZone・SGX・SEV/TDXの違い：分離の単位・信頼する範囲・メモリの暗号化を比較</strong><span>ArmのTrustZone、IntelのSGX(エンクレーブ)、AMD SEVやIntel TDXの機密VMを、分離の単位・守る相手・信頼する範囲(TCB)・メモリの暗号化・アテステーション・主な使われ方・移植の手間・…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
