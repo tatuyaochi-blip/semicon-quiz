@@ -448,5 +448,32 @@
    "Le lancement étant asynchrone, le CPU passe au traitement suivant sans attendre la fin du noyau, et une synchronisation est nécessaire avant d'utiliser le résultat"
   ],
   "explanation": "Le lancement d'un noyau se contente d'ajouter le traitement à la file de commandes du GPU, et le contrôle revient immédiatement au CPU. Le CPU peut ainsi préparer les données suivantes pendant que le GPU calcule. En revanche, avant de lire le résultat côté CPU, il faut s'assurer de la fin du noyau par cudaDeviceSynchronize ou par la copie du résultat (qui, dans le même flux, attend la fin du traitement précédent). De même, sans synchronisation, le temps d'un noyau ne peut pas être mesuré correctement."
+ },
+ "gpu-programming-051": {
+  "question": "En CUDA, comment le programme côté CPU reçoit-il les résultats calculés par un noyau GPU (une fonction marquée __global__) ?",
+  "choices": [
+   "Par la valeur de retour du noyau, qui renvoie ensemble au CPU les résultats de tous les threads",
+   "Le noyau écrit ses résultats dans un tableau en mémoire GPU et, une fois le noyau terminé, le côté CPU copie ce tableau dans la mémoire CPU (ou lit la mémoire unifiée)",
+   "Le programme côté CPU lit comme variables les valeurs que chaque thread a affichées avec printf"
+  ],
+  "explanation": "Un noyau GPU est exécuté par de nombreux threads à la fois : il ne peut donc pas renvoyer ses résultats par une seule valeur de retour, et en CUDA le type de la valeur de retour d'une fonction __global__ doit être void. Le côté CPU alloue un tableau en mémoire GPU et en passe le pointeur en argument, et chaque thread écrit son résultat dans l'élément dont il a la charge. Comme le lancement d'un noyau est asynchrone, le côté CPU recopie le tableau avec cudaMemcpy ou une fonction similaire une fois le noyau terminé (dans le même flux, la copie attend la fin du noyau précédent). printf dans un noyau est une aide au débogage destinée à l'affichage, et le programme ne peut pas relire ces valeurs."
+ },
+ "gpu-programming-052": {
+  "question": "Sur un GPU dont la limite est de 1024 threads par bloc de threads, on lance un noyau CUDA avec blockDim.x égal à 2048. Que se passe-t-il en général ?",
+  "choices": [
+   "Le GPU le découpe automatiquement en deux blocs de 1024 threads et les exécute",
+   "Seuls les 1024 premiers threads s'exécutent et les autres sont ignorés",
+   "La configuration de lancement est considérée comme invalide : le noyau ne s'exécute pas et une erreur est renvoyée"
+  ],
+  "explanation": "Tous les threads d'un bloc de threads doivent résider simultanément sur un même SM et pouvoir coopérer par la mémoire partagée et __syncthreads() ; le nombre de threads par bloc est donc limité. Si l'on lance un noyau avec une configuration qui dépasse la limite, aucun thread ne s'exécute et le lancement échoue avec une erreur signalant une configuration invalide. Le lancement d'un noyau ne renvoie pas de valeur : sans vérifier l'erreur avec cudaGetLastError() ou une fonction similaire, on risque de ne pas remarquer que le tableau des résultats n'a jamais été mis à jour. Un travail pour 2048 threads se répartit entre plusieurs blocs de 1024 threads ou moins."
+ },
+ "gpu-programming-053": {
+  "question": "On suppose qu'un SM de GPU possède une seule unité d'émission capable d'émettre à chaque cycle les instructions d'un warp. Chaque warp émet de façon répétée 20 cycles d'instructions, puis attend 400 cycles le résultat d'une lecture en mémoire. Si le changement de warp ne prend pas de temps, combien de warps faut-il au minimum pour supprimer le temps d'inactivité dû aux attentes mémoire (masquage de latence) ?",
+  "choices": [
+   "21",
+   "2",
+   "420"
+  ],
+  "explanation": "Un warp ne peut émettre des instructions que pendant 20 cycles sur 420 (20 + 400). Pour occuper en permanence l'unité d'émission, 420 ÷ 20 = 21 warps doivent se relayer : pendant qu'un warp attend 400 cycles, les 20 autres remplissent ce temps en émettant chacun 20 cycles d'instructions. Avec trop peu de warps, l'attente se répercute sur les performances et les unités d'exécution restent inactives. Sur un GPU réel, le nombre nécessaire dépend de la durée d'attente et de la composition des instructions, et l'attente peut aussi être comblée en augmentant, au sein d'un même warp, le nombre d'instructions indépendantes les unes des autres (parallélisme au niveau des instructions)."
  }
 }
