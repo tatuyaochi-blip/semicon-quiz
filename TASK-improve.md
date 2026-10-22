@@ -83,6 +83,7 @@
 
 ## 済
 
+- 2026-10-22 ko・de・nl・fr に不足していた用語(DRAM・SSD・CRC・光電融合・情報理論の用語など、ko・de 21語、nl・fr 36語)。ko・de に暗号技術、nl・fr に情報理論と暗号技術。用語リンク: ko・fr の DUV に noLinkIn(深紫外 LED の文脈)、fr ナンスに linkOnlyIn(énonce の中で一致するため)、ko・de・nl・fr の認証局に noLinkIn datasheet
 - 2026-10-22 新しい分野「サイバー攻撃と防御の実務」(cyber-defense、40問・用語15語、日英繁。ゼロトラスト、EDR・SIEM・SOC、インシデント対応、ATT&CK、フォレンジック、SBOM とサプライチェーン攻撃。計算5問を Python で検算。NIST SP 800-61 Rev.3 の公開日 2025-04-03 は NIST の発表で確認)。学習コース it-exam に追加。用語リンク: SoC に noLinkIn [deposition, cyber-defense](スピンオンカーボン SOC と SOC=セキュリティオペレーションセンター)、ALE に noLinkIn [cyber-defense](年間予想損失額)
 - 2026-10-22 新しい分野「ハードウェアセキュリティの最新動向」(hw-security-adv、40問・用語15語、日英繁。機密コンピューティング、CHERI・MTE・PAC、ロウハンマーと PRAC、過渡的実行、PQC のハードウェア実装、ルートオブトラストと DICE、FIPS 140-3・CC、故障注入。計算8問を Python で検算。FIPS 140-2 の移行は NIST CMVP の移行計画で確認)
 - 2026-10-22 ハフマン符号の計算ツール(huffman-coding-calculator、日英繁。記号と確率、または文章から符号・平均符号長・エントロピー・効率を表示。教科書の例と ABRACADABRA=23ビットで検算)。CRC・ハミング符号のツールを情報理論の分野にも案内。
