@@ -604,7 +604,8 @@ function buildLang(L) {
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
-    contactFormUrl: esc(loc(config.contactFormUrl, code)),
+    // 問い合わせフォーム: 日本語のページは日本語のフォーム、ほかの言語は(その言語のフォームがなければ)英語のフォーム
+    contactFormUrl: esc(typeof config.contactFormUrl === 'object' ? config.contactFormUrl[code] ?? config.contactFormUrl[code === defLang ? defLang : mainLang] ?? config.contactFormUrl[defLang] : config.contactFormUrl),
     categoryList, glossaryList, courseList, compareIndex, figureGallery, figureLd,
     // トップの開始ボタンの下: 学習コースへの案内(コースの一覧は分野の一覧より下にある)
     courseHint: liveCourses.length ? `<p class="hero-note"><a href="#courses">${esc(t('home_course_hint'))} → ${esc(t('course_heading'))}</a></p>` : '',
@@ -682,6 +683,8 @@ function buildLang(L) {
       head,
       langLinks,
       langCurrent: esc(L.label),
+      // 幅の狭いスマートフォンでは言語名を短くして、サイト名の場所を空ける(漢字・ハングルの名前はもともと短い)
+      langShort: esc({ en: 'EN', de: 'DE', nl: 'NL', fr: 'FR' }[code] ?? L.label),
       headerNav,
       navMenu,
       langBanner: bannerHtml,
