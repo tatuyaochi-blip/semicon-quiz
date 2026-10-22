@@ -20,8 +20,30 @@ function filter() {
   }
   const nav = document.querySelector('.glossary-nav');
   if (nav) nav.hidden = words.length > 0;
+  // 用語集の分野は開閉できる欄。検索中は当たりのある欄を開き、検索をやめたら利用者が開いた欄だけ残す
+  for (const d of document.querySelectorAll('details.glossary-cat')) {
+    if (words.length) {
+      if (!('userOpen' in d.dataset)) d.dataset.userOpen = d.open ? '1' : '';
+      d.open = !d.hidden;
+    } else if ('userOpen' in d.dataset) {
+      d.open = d.dataset.userOpen === '1';
+      delete d.dataset.userOpen;
+    }
+  }
   count.textContent = count.dataset.label.replace('{n}', n);
 }
 
+// 用語ページのパンくず(#cat-分野)や用語へのリンク(#用語)で来たら、その欄を開いて見せる
+function openTarget() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const el = id ? document.getElementById(id) : null;
+  const d = el?.closest('details');
+  if (!d) return;
+  d.open = true;
+  el.scrollIntoView();
+}
+
 input.addEventListener('input', filter);
+window.addEventListener('hashchange', openTarget);
 filter();
+openTarget();
