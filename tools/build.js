@@ -370,15 +370,15 @@ function buildLang(L) {
   // トップでは大分類を閉じておき(分野が増えても縦に伸びない)、分野一覧 /c/ では開いて並べる。分野名は閉じていても HTML にある
   const examGroups = e => e.groups.map(g => ({ g, list: live.filter(c => c.exam === e.id && c.group === g.id) })).filter(x => x.list.length);
   const listSep = ['ja', 'zh-hant'].includes(code) ? '、' : ', ';
-  const topicRows = list => '<ul class="topic-rows">' + list.map(c => `
-      <li><a href="${home}c/${c.id}/"><span class="tr-name">${esc(c.name)}</span><span class="tr-meta">${t('n_questions', { n: qs[c.id].length })}<span class="cat-rate" hidden> · <b data-rate="${c.id}"></b></span></span>
+  const topicRows = (list, track) => '<ul class="topic-rows">' + list.map(c => `
+      <li><a href="${home}c/${c.id}/"${track ? ` data-track="${track}"` : ''}><span class="tr-name">${esc(c.name)}</span><span class="tr-meta">${t('n_questions', { n: qs[c.id].length })}<span class="cat-rate" hidden> · <b data-rate="${c.id}"></b></span></span>
         <span class="meter" hidden><span class="meter-bar" data-progress="${c.id}:${qs[c.id].length}" style="width:0%"></span></span></a></li>`).join('') + '</ul>';
   const topicBrowser = open => exams.filter(e => examGroups(e).length).map(e => `
 <section class="topic-area">
   <h3 class="area-title">${esc(exName(e))}</h3>
   ${examGroups(e).map(({ g, list }) => `<details class="topic-group" id="g-${e.id}-${g.id}"${open ? ' open' : ''}>
     <summary><span class="tg-name">${esc(grName(e, g))}</span><span class="tg-meta">${esc(t('course_steps_n', { n: list.length }))} · ${esc(t('n_questions', { n: list.reduce((s, c) => s + qs[c.id].length, 0) }))}</span><span class="tg-preview">${esc(list.slice(0, 4).map(c => c.name).join(listSep))}${list.length > 4 ? ' …' : ''}</span></summary>
-    ${topicRows(list)}
+    ${topicRows(list, open ? '' : 'home_topic_row')}
   </details>`).join('\n  ')}
 </section>`).join('');
   const categoryList = `<section id="topics" class="topics">
@@ -520,13 +520,19 @@ function buildLang(L) {
   const amazonTag = config.amazonTag?.[code];
   const amazonHost = config.amazonDomain?.[code] || 'www.amazon.co.jp';
   const booksData = isDef ? readOpt('data/books.json', {}) : readOpt(`data/i18n/${code}/books.json`, {});
+  const kitsData = readOpt('data/kits.json', {})[code];
   const bookSection = c => {
     if (!amazonTag) return '';
     const kws = booksData[c.id] || [`${t('books_fallback')} ${c.name.replace(/[(（].*?[)）]/g, '')}`];
-    const links = kws.map(kw => `<li><a href="https://${amazonHost}/s?k=${encodeURIComponent(kw)}&amp;tag=${esc(amazonTag)}" target="_blank" rel="sponsored nofollow noopener">${esc(t('books_link', { kw }))}</a></li>`).join('');
+    const link = (kw, track) => `<li><a href="https://${amazonHost}/s?k=${encodeURIComponent(kw)}&amp;tag=${esc(amazonTag)}" target="_blank" rel="sponsored nofollow noopener" data-track="${track}">${esc(t('books_link', { kw }))}</a></li>`;
+    // 手を動かして学べる分野だけ、実習用の部品・キットの検索リンクを添える(data/kits.json。試行中)
+    const kit = kitsData?.items?.[c.id];
     return `<section class="books">
   <h2>${esc(t('books_heading', { name: c.name }))} <small class="pr-badge">${esc(t('books_pr'))}</small></h2>
-  <ul>${links}</ul>
+  <ul>${kws.map(kw => link(kw, 'book_link')).join('')}</ul>${kit ? `
+  <h3>${esc(kitsData.heading)}</h3>
+  <p>${esc(kitsData.note)}</p>
+  <ul>${kit.map(kw => link(kw, 'kit_link')).join('')}</ul>` : ''}
   <p class="muted">${esc(t('books_note'))}</p>
 </section>`;
   };
