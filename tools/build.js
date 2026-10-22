@@ -366,18 +366,25 @@ function buildLang(L) {
     ${news.length ? feature(`${home}news-terms/`, S.news_title, t('home_feat_news_desc'), 'home_feat_news') : ''}
   </div>
 </section>`;
-  // 先頭の #topics はヘッダーの Topics と「分野から選ぶ」からのジャンプ先。大分類(試験の区分)ごとの目次を置く
+  // 分野の選び方: 大きな区分(半導体 / コンピュータ・IT) → 大分類(開閉できる行) → 分野(1行ずつ)。
+  // トップでは大分類を閉じておき(分野が増えても縦に伸びない)、分野一覧 /c/ では開いて並べる。分野名は閉じていても HTML にある
   const examGroups = e => e.groups.map(g => ({ g, list: live.filter(c => c.exam === e.id && c.group === g.id) })).filter(x => x.list.length);
-  const categoryList = `<div id="topics"></div>
-<nav class="topic-index" aria-label="${esc(t('topics_index'))}">
-  <h2>${esc(t('topics_index'))}</h2>
-  ${exams.map(e => `<p><b>${esc(exName(e))}</b>${examGroups(e).map(({ g, list }) => ` <a class="chip" href="#g-${e.id}-${g.id}">${esc(grName(e, g))} <small>${list.length}</small></a>`).join('')}</p>`).join('\n  ')}
-</nav>` + exams.map(e => `
-<section class="exam">
-  <h2>${esc(t('exam_heading', { exam: exName(e) }))}</h2>
-  ${examGroups(e).map(({ g, list }) => `<h3 class="group-title" id="g-${e.id}-${g.id}">${esc(grName(e, g))}</h3>
-  ${catCards(list)}`).join('\n')}
-</section>`).join('\n');
+  const listSep = ['ja', 'zh-hant'].includes(code) ? '、' : ', ';
+  const topicRows = list => '<ul class="topic-rows">' + list.map(c => `
+      <li><a href="${home}c/${c.id}/"><span class="tr-name">${esc(c.name)}</span><span class="tr-meta">${t('n_questions', { n: qs[c.id].length })}<span class="cat-rate" hidden> · <b data-rate="${c.id}"></b></span></span>
+        <span class="meter" hidden><span class="meter-bar" data-progress="${c.id}:${qs[c.id].length}" style="width:0%"></span></span></a></li>`).join('') + '</ul>';
+  const topicBrowser = open => exams.filter(e => examGroups(e).length).map(e => `
+<section class="topic-area">
+  <h3 class="area-title">${esc(exName(e))}</h3>
+  ${examGroups(e).map(({ g, list }) => `<details class="topic-group" id="g-${e.id}-${g.id}"${open ? ' open' : ''}>
+    <summary><span class="tg-name">${esc(grName(e, g))}</span><span class="tg-meta">${esc(t('course_steps_n', { n: list.length }))} · ${esc(t('n_questions', { n: list.reduce((s, c) => s + qs[c.id].length, 0) }))}</span><span class="tg-preview">${esc(list.slice(0, 4).map(c => c.name).join(listSep))}${list.length > 4 ? ' …' : ''}</span></summary>
+    ${topicRows(list)}
+  </details>`).join('\n  ')}
+</section>`).join('');
+  const categoryList = `<section id="topics" class="topics">
+  <h2>${esc(t('exam_heading'))}</h2>${topicBrowser(false)}
+  <p class="topics-all"><a href="${home}c/">${esc(t('topics_all_link', { n: live.length }))} →</a></p>
+</section>`;
 
   terms.sort((a, b) => (isDef ? a.reading.localeCompare(b.reading, 'ja') : a.term.localeCompare(b.term, L.locale)));
   // 用語集は試験の区分 → 分野の順にまとめる(分野の中は読み順)。上に分野へのジャンプ用リンクを置く
@@ -391,16 +398,16 @@ function buildLang(L) {
     cats: cats.filter(c => c.exam === e.id && c.group === g.id)
       .map(c => ({ c, list: terms.filter(x => x.cat === c.id) })).filter(x => x.list.length),
   }))).filter(g => g.cats.length);
-  const glossaryList = `<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}">${gloGroups.map(g => `
-  <p><b>${esc(g.name)}</b>${g.cats.map(({ c, list }) => ` <a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join('')}</p>`).join('')}
-</nav>` + gloGroups.map(g => `
+  // 分野ごとに開閉できる欄にする(1,000語を超えて縦に長くなりすぎるため)。説明文は閉じていても HTML にあり、検索で開く(glossary.js)
+  const glossaryList = gloGroups.map(g => `
 <section class="glossary-group">
   <h2>${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
-  <section class="glossary-cat" id="cat-${c.id}">
-    <h3>${esc(c.name)}<a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></h3>
+  <details class="glossary-cat" id="cat-${c.id}">
+    <summary><span class="tg-name">${esc(c.name)}</span><span class="tg-meta">${list.length}</span></summary>
+    <p class="glossary-cat-quiz"><a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></p>
     <dl class="glossary">${list.map(termItem).join('')}
     </dl>
-  </section>`).join('')}
+  </details>`).join('')}
 </section>`).join('') + (terms.some(g => !catOf(g.cat)) ? `
 <dl class="glossary">${terms.filter(g => !catOf(g.cat)).map(termItem).join('')}</dl>` : '');
 
@@ -593,6 +600,8 @@ function buildLang(L) {
     year: new Date().getFullYear(),
     contactFormUrl: esc(loc(config.contactFormUrl, code)),
     categoryList, glossaryList, courseList, compareIndex, figureGallery, figureLd,
+    // トップの開始ボタンの下: 学習コースへの案内(コースの一覧は分野の一覧より下にある)
+    courseHint: liveCourses.length ? `<p class="hero-note"><a href="#courses">${esc(t('home_course_hint'))} → ${esc(t('course_heading'))}</a></p>` : '',
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     // トップ下部の「ほかの練習方法」(ランダム10問は上の入口にあるので除く)
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
@@ -653,8 +662,8 @@ function buildLang(L) {
       ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : []),
       ...(toolsIn(code).length ? [['tools/', S.nav_tools]] : [])];
     // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
-    const headerNav = [['#topics', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
-    const navMenu = [['', S.nav_home], ['#topics', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
+    const headerNav = [['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
+    const navMenu = [['', S.nav_home], ['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
@@ -688,6 +697,22 @@ function buildLang(L) {
       alternateName: [...new Set(Object.values(config.siteName))].filter(x => x !== siteName), inLanguage: L.htmlLang } : null;
     page({ path: pagePath(L, name), alt, jsonld, ...JSON.parse(fill(m[1], common)), content: fill(src.slice(m[0].length), common) });
   }
+
+  // 分野一覧 /c/: すべての分野を大分類ごとに開いて並べる(ヘッダーの Topics の行き先)
+  page({
+    path: `${L.path}c/`,
+    alt: Object.fromEntries(langs.map(x => [x.code, `${x.path}c/`])),
+    title: t('topics_all_title'),
+    description: t('topics_all_desc', { n: live.length, q: live.reduce((s, c) => s + qs[c.id].length, 0) }),
+    jsonld: crumbs([S.nav_home, home], [t('topics_all_title'), `${home}c/`]),
+    scripts: ['progress.js'],
+    content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(t('topics_all_title'))}</h1>
+<p class="lead">${esc(t('topics_all_lead', { n: live.length }))}</p>
+<nav class="topic-jump" aria-label="${esc(t('topics_index'))}">${exams.flatMap(e => examGroups(e).map(({ g, list }) => `<a class="chip" href="#g-${e.id}-${g.id}">${esc(grName(e, g))} <small>${list.length}</small></a>`)).join(' ')}</nav>
+<div class="topics topics-page">${topicBrowser(true)}
+</div>`,
+  });
 
   // 分野ページ /c/{id}/
   // 分野の訳がない言語(更新を止めた言語に新しく足した分野など)では、分野ページを作らず、hreflang からも外す
