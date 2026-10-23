@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRC是什麼？用0與1的除法找出傳輸錯誤的原理 | 半導體教室</title>
+<meta name="description" content="CRC把資料在只有0和1的世界裡相除，將餘數附作檢查值，接收端重新計算就能發現錯誤。本文說明它和同位檢查的差異、手算的除法、XOR電路，以及能發現的錯誤與無法更正的原因。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/learn/crc-and-gf2-polynomials/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/learn/crc-and-gf2-polynomials/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/learn/crc-and-gf2-polynomials/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/learn/crc-and-gf2-polynomials/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/learn/crc-and-gf2-polynomials/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CRC是什麼？用0與1的除法找出傳輸錯誤的原理 | 半導體教室">
+<meta property="og:description" content="CRC把資料在只有0和1的世界裡相除，將餘數附作檢查值，接收端重新計算就能發現錯誤。本文說明它和同位檢查的差異、手算的除法、XOR電路，以及能發現的錯誤與無法更正的原因。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/learn/crc-and-gf2-polynomials/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"入門解說","item":"https://semiconroom.com/zh-hant/learn/"},{"@type":"ListItem","position":3,"name":"CRC是什麼？用0與1的除法找出傳輸錯誤的原理","item":"https://semiconroom.com/zh-hant/learn/crc-and-gf2-polynomials/"}]},{"@context":"https://schema.org","@type":"Article","headline":"CRC是什麼？用0與1的除法找出傳輸錯誤的原理","description":"CRC把資料在只有0和1的世界裡相除，將餘數附作檢查值，接收端重新計算就能發現錯誤。本文說明它和同位檢查的差異、手算的除法、XOR電路，以及能發現的錯誤與無法更正的原因。","inLanguage":"zh-Hant","datePublished":"2026-10-23","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/zh-hant/learn/crc-and-gf2-polynomials/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/learn/crc-and-gf2-polynomials/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/c/">領域</a><a href="/zh-hant/learn/">入門解說</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">繁體中文</span><span class="lang-short" aria-hidden="true">繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/learn/crc-and-gf2-polynomials/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/learn/crc-and-gf2-polynomials/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/" lang="ko" data-lang="ko">한국어</a><a href="/de/" lang="de" data-lang="de">Deutsch</a><a href="/nl/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/c/">領域</a><a href="/zh-hant/learn/">入門解說</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/learn/">入門解說</a> <span>›</span> <a href="/zh-hant/learn/#s-foundations">技術背後的基礎（物理・化學・數學）</a></nav>
+<article class="prose learn-article">
+<h1>CRC是什麼？用0與1的除法找出傳輸錯誤的原理</h1>
+<p class="learn-meta">約 11 分鐘 · 更新：2026年10月23日</p>
+
+<p class="lead">CRC（循環冗餘檢查）是從資料算出簡短的檢查值一起傳送，再由接收端重新計算來發現錯誤的機制。計算的是只用0和1的「除法的餘數」，並以XOR代替減法，所以用小小的電路就能快速算出。有線網路、Wi-Fi、ZIP檔等都會用到，偶然發生的錯誤幾乎不會漏掉。不過，它無法更正錯誤，也無法識破蓄意的竄改。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>用來發現錯誤的「檢查值」的概念</li>
+<li>同位檢查和檢查碼（checksum）會漏掉的錯誤</li>
+<li>用只有0和1的除法，手算求出CRC的方法</li>
+<li>計算CRC的電路原理</li>
+<li>CRC一定能發現的錯誤，以及CRC做不到的事</li>
+</ul><p class="muted">先備知識：二進位，以及XOR（互斥或：2個輸入不同時輸出1的運算）。兩者都在「<a href="/zh-hant/learn/how-computers-calculate-with-0-and-1/">電腦怎麼用0和1計算？</a>」中說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>你是否曾經在打開下載的ZIP檔時，看到「檔案已損毀」的訊息？ZIP檔裡，每個檔案都記錄著一個從內容算出的檢查值。開啟的軟體會重新計算同樣的值，如果不一致，就判斷檔案已損毀。這個值就是CRC。</p>
+<p>資料是以0和1的排列來傳送與儲存的。在這過程中，0可能翻轉成1，1也可能翻轉成0。原因包括傳進纜線的電氣雜訊、微弱的電波，以及來自宇宙的粒子打到記憶體（<a class="term-link" href="/zh-hant/term/soft-error/">軟錯誤</a>）等。</p>
+<p>這些都很少發生，但無法降到零。例如錯誤的比例即使只有1兆位元中1個，若每秒傳送10億位元，大約每17分鐘就會錯1個。因此，接收端需要有確認資料的機制。</p>
+</section>
+
+<section>
+<h2>附上檢查值的概念</h2>
+<p>商店商品上的條碼（EAN-13，日本稱JAN）通常是13位數字。最後1位，是由其他12位依固定的算法算出的檢查用數字。收銀機做同樣的計算，確認是否和最後1位一致，不一致就重新讀取。</p>
+<p>「把從資料算出的簡短值一起送出，由接收端重新計算再比對」。這就是發現錯誤的基本概念。CRC也是同樣的概念，只是計算方法不同。</p>
+<h3>最簡單的檢查：同位檢查</h3>
+<p>對0和1的排列來說，最簡單的方法是數1的個數。在最後補上1個0或1，讓資料中1的個數成為偶數。這1個位元稱為<a class="term-link" href="/zh-hant/term/parity-bit/">同位位元</a>。</p>
+<p>例如1011001有4個1（偶數），所以補上0，傳送10110010。途中若只有1個位元翻轉，1的個數會變成奇數，就能發現錯誤。</p>
+<p>但如果同時有2個位元翻轉，1的個數仍是偶數，錯誤就會被漏掉。雜訊往往會持續一段時間，相鄰的幾個位元容易一起出錯。這種成塊出現的錯誤，稱為叢發錯誤。出錯的位元若是偶數個，同位檢查就會漏掉。</p>
+<h3>用加法檢查：檢查碼</h3>
+<p>也有一種方法，是把資料切成16位元等大小的區塊，全部相加後附上總和。這稱為檢查碼（checksum），網際網路的IP和TCP都有使用（RFC 1071）。</p>
+<p>不過，加法即使調換順序，答案也一樣。因此，區塊之間互換位置的錯誤，或某個區塊加1、另一個區塊減1的錯誤，都會被漏掉。CRC則在計算方法上下了工夫，連位元的位置都能區分。</p>
+</section>
+
+<section>
+<h2>CRC用在哪裡</h2>
+<p>CRC廣泛用於身邊的通訊和檔案。名稱後面的數字，是檢查值的位元數。</p>
+<table>
+<thead><tr><th>使用的地方</th><th>CRC的種類</th><th>保護的對象</th></tr></thead>
+<tbody>
+<tr><td>有線網路（乙太網路）</td><td>CRC-32</td><td>每次傳送的整個單位</td></tr>
+<tr><td>Wi-Fi</td><td>CRC-32</td><td>每次傳送的整個單位</td></tr>
+<tr><td>USB</td><td>CRC-5、CRC-16</td><td>簡短的指示、資料</td></tr>
+<tr><td>SD卡</td><td>CRC-7、CRC-16</td><td>命令、資料</td></tr>
+<tr><td>PNG圖片</td><td>CRC-32</td><td>檔案內的每個區段</td></tr>
+<tr><td>ZIP檔</td><td>CRC-32</td><td>裡面的每個檔案</td></tr>
+</tbody>
+</table>
+<p><a class="term-link" href="/zh-hant/term/ethernet/">乙太網路</a>把資料分成稱為「訊框」的單位來傳送，並在最後附上4位元組（32位元）的CRC。這個部分稱為FCS（訊框檢查序列）。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 196" role="img"><title>乙太網路的訊框：最後4位元組放入由前面部分算出的CRC-32（FCS）</title><line x1="14" y1="40" x2="266" y2="40" class="dash"/><line x1="14" y1="34" x2="14" y2="46" class="thin"/><line x1="266" y1="34" x2="266" y2="46" class="thin"/><text x="140" y="26" text-anchor="middle" class="m">計算CRC的範圍</text><rect x="14" y="56" width="56" height="40" class="ok"/><text x="42.0" y="82" text-anchor="middle">目的地</text><text x="42.0" y="118" text-anchor="middle" class="m">6</text><rect x="70" y="56" width="62" height="40" class="ok"/><text x="101.0" y="82" text-anchor="middle">來源</text><text x="101.0" y="118" text-anchor="middle" class="m">6</text><rect x="132" y="56" width="46" height="40" class="ok"/><text x="155.0" y="82" text-anchor="middle">類型</text><text x="155.0" y="118" text-anchor="middle" class="m">2</text><rect x="178" y="56" width="88" height="40" class="ok"/><text x="222.0" y="82" text-anchor="middle">資料</text><text x="222.0" y="118" text-anchor="middle" class="m">46～1500</text><rect x="266" y="56" width="60" height="40" class="ok"/><text x="296.0" y="82" text-anchor="middle" class="a">FCS</text><text x="296.0" y="118" text-anchor="middle" class="m">4</text><rect x="266" y="56" width="60" height="40" class="ac"/><text x="326" y="140" text-anchor="end" class="m">數字為位元組數</text><text x="14" y="168" text-anchor="start">FCS = 前面部分的CRC-32</text><text x="14" y="190" text-anchor="start">接收端重新計算並比對</text></svg><figcaption class="fig-cap">乙太網路一次傳送的單位（訊框）。最後4位元組（FCS）放入從目的地到資料為止的CRC-32。省略的部分：前面的同步用訊號、VLAN欄位。方塊的寬度與位元組數不成比例。</figcaption></figure>
+<p>接收的設備會丟棄FCS不一致的訊框。乙太網路本身不會重送，缺少的資料由稱為<a class="term-link" href="/zh-hant/term/tcp/">TCP</a>的機制重送。在Wi-Fi中，正確收到時接收端會回覆，沒有回覆就會重送（「<a href="/zh-hant/learn/how-wi-fi-works/">Wi-Fi是怎麼運作的？</a>」）。</p>
+</section>
+
+<section>
+<h2>原理1：沒有進位、只有0和1的計算</h2>
+<p>CRC的計算，是在和一般算術稍有不同的「只有0和1的世界」裡進行的。這個世界的加法規則只有以下3條。</p>
+<ul>
+<li>0+0=0</li>
+<li>0+1=1、1+0=1</li>
+<li>1+1=0（沒有進位）</li>
+</ul>
+<p>一般的二進位中，1+1=10會進位，但這裡把進位捨去。於是規則變成「兩者不同就是1，相同就是0」，和XOR的規則相同。也就是把加法電路（半加器）的進位輸出拿掉的樣子。</p>
+<p>減法也是同樣的規則。0−1是「加上1會變成0的數」，由1+1=0可知是1。也就是說，在這個世界裡，減法和加法都是XOR。每一位都能和相鄰的位無關地計算，所以電路非常簡單。</p>
+<p>在數學上，這個只有0和1的世界稱為GF(2)。GF是伽羅瓦體（Galois field）的縮寫，名稱來自19世紀的數學家伽羅瓦。在這篇文章中，只要記得「沒有進位的二進位計算」就夠了。</p>
+</section>
+
+<section>
+<h2>原理2：把0和1的排列看成多項式</h2>
+<p>接著，把0和1的排列改寫成稱為多項式的形式。多項式是像x²+3x+1這樣，把x的幾次方相加的式子。CRC把排列的每一位用「x的幾次方」當作名牌，該位是1就寫出來，是0就不寫。</p>
+<p>例如1011，從左起依序是x³、x²、x¹、x⁰的位，所以寫成x³+x+1（x⁰寫成1）。這裡不是把數字代入x來計算，x的幾次方只是表示位數位置的記號。</p>
+<p>寫成多項式後，就能運用數學上研究已久的多項式性質。因此能夠證明「哪些錯誤一定能發現」。</p>
+<p>CRC中當作除數的多項式，稱為生成多項式。乙太網路的CRC-32是x³²+x²⁶+x²³+…+x+1這個32次的式子。規格書省略最高次的x³²，把其餘32位用十六進位寫成04C11DB7。十六進位是把二進位的4位寫成1個字元的方法。</p>
+</section>
+
+<section>
+<h2>原理3：用手算算看</h2>
+<p>用小例子來手算CRC。要傳送的資料是4位元的1101，生成多項式是x³+x+1，也就是1011。除數是4位，所以餘數是3位，得到3位元的CRC。</p>
+<ol>
+<li>在資料後面補上和CRC位數相同的3個0，成為1101000（空出放CRC的位置）</li>
+<li>在最左邊的1下方，對齊除數1011的左端寫下，做XOR</li>
+<li>對結果中留在最左邊的1，再對齊1011做XOR。0的位就跳過</li>
+<li>持續到除數超出右端為止。最後留下的右邊3位就是餘數，也就是CRC</li>
+</ol>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" role="img"><title>CRC的直式計算：把1101000除以1011，重複XOR求出餘數001</title><text x="189.0" y="30" text-anchor="middle" class="m">資料</text><text x="280.0" y="30" text-anchor="middle" class="m">3個0</text><line x1="241" y1="16" x2="241" y2="40" class="dash"/><text x="150" y="64" text-anchor="middle">1</text><text x="176" y="64" text-anchor="middle">1</text><text x="202" y="64" text-anchor="middle">0</text><text x="228" y="64" text-anchor="middle">1</text><text x="254" y="64" text-anchor="middle">0</text><text x="280" y="64" text-anchor="middle">0</text><text x="306" y="64" text-anchor="middle">0</text><text x="8" y="64" text-anchor="start">被除數</text><text x="150" y="90" text-anchor="middle" class="a">1</text><text x="176" y="90" text-anchor="middle" class="a">0</text><text x="202" y="90" text-anchor="middle" class="a">1</text><text x="228" y="90" text-anchor="middle" class="a">1</text><text x="128" y="90" text-anchor="middle" class="a">⊕</text><text x="8" y="90" text-anchor="start">除數</text><line x1="138" y1="98" x2="240" y2="98" class="ln"/><text x="150" y="118" text-anchor="middle" class="m">0</text><text x="176" y="118" text-anchor="middle">1</text><text x="202" y="118" text-anchor="middle">1</text><text x="228" y="118" text-anchor="middle">0</text><text x="254" y="118" text-anchor="middle">0</text><text x="280" y="118" text-anchor="middle">0</text><text x="306" y="118" text-anchor="middle">0</text><text x="176" y="144" text-anchor="middle" class="a">1</text><text x="202" y="144" text-anchor="middle" class="a">0</text><text x="228" y="144" text-anchor="middle" class="a">1</text><text x="254" y="144" text-anchor="middle" class="a">1</text><text x="154" y="144" text-anchor="middle" class="a">⊕</text><line x1="164" y1="152" x2="266" y2="152" class="ln"/><text x="150" y="172" text-anchor="middle" class="m">0</text><text x="176" y="172" text-anchor="middle" class="m">0</text><text x="202" y="172" text-anchor="middle">1</text><text x="228" y="172" text-anchor="middle">1</text><text x="254" y="172" text-anchor="middle">1</text><text x="280" y="172" text-anchor="middle">0</text><text x="306" y="172" text-anchor="middle">0</text><text x="202" y="198" text-anchor="middle" class="a">1</text><text x="228" y="198" text-anchor="middle" class="a">0</text><text x="254" y="198" text-anchor="middle" class="a">1</text><text x="280" y="198" text-anchor="middle" class="a">1</text><text x="180" y="198" text-anchor="middle" class="a">⊕</text><line x1="190" y1="206" x2="292" y2="206" class="ln"/><text x="150" y="226" text-anchor="middle" class="m">0</text><text x="176" y="226" text-anchor="middle" class="m">0</text><text x="202" y="226" text-anchor="middle" class="m">0</text><text x="228" y="226" text-anchor="middle">1</text><text x="254" y="226" text-anchor="middle">0</text><text x="280" y="226" text-anchor="middle">1</text><text x="306" y="226" text-anchor="middle">0</text><text x="228" y="252" text-anchor="middle" class="a">1</text><text x="254" y="252" text-anchor="middle" class="a">0</text><text x="280" y="252" text-anchor="middle" class="a">1</text><text x="306" y="252" text-anchor="middle" class="a">1</text><text x="206" y="252" text-anchor="middle" class="a">⊕</text><line x1="216" y1="260" x2="318" y2="260" class="ln"/><text x="150" y="280" text-anchor="middle" class="m">0</text><text x="176" y="280" text-anchor="middle" class="m">0</text><text x="202" y="280" text-anchor="middle" class="m">0</text><text x="228" y="280" text-anchor="middle" class="m">0</text><text x="254" y="280" text-anchor="middle" class="a">0</text><text x="280" y="280" text-anchor="middle" class="a">0</text><text x="306" y="280" text-anchor="middle" class="a">1</text><rect x="242" y="261" width="76" height="26" class="ac"/><text x="8" y="280" text-anchor="start" class="a">餘數 = CRC</text><text x="326" y="320" text-anchor="end">傳送 1101 001</text></svg><figcaption class="fig-cap">⊕是XOR（相同為0，不同為1）。把1011對齊最左邊的1做XOR，逐一消去最左邊的1。淡色的0是已消去的位。最後留下的右邊3位001就是餘數（CRC）。省略的部分：實際規格另外加上的約定（初始值、最後的反轉等）。</figcaption></figure>
+<p>這個例子做了4次XOR，得到餘數001。傳送端把這個餘數接在資料後面，傳送1101001。</p>
+<p>和一般的直式除法不同，不需要比較「是否比除數大」。最左邊是1就做XOR，是0就前進到下一位。這種單純，正是CRC快速的原因。</p>
+<p>接收端把收到的7個位元，直接用同樣的1011去除。沒有錯誤的話，餘數是000。因為附上餘數之後，整體已成為剛好能整除的排列。例如左起第3個位元出錯，收到1111001時，餘數會變成110，就能發現錯誤。</p>
+<p>實際的規格會再加上一些約定。例如乙太網路的CRC-32，把計算的初始值全部設為1，最後再把所有位元反轉。初始值設為1，是為了連開頭多出或少了0的錯誤也能發現。</p>
+<p>用<a href="/zh-hant/tools/crc-calculator/">CRC 計算工具</a>，也能逐段看到這個除法。種類選CRC-8，寬度設3，生成多項式設3，資料格式選十六進位，再輸入0D。0D用二進位表示是00001101，開頭的0不會改變餘數。</p>
+</section>
+
+<section>
+<h2>原理4：用電路計算</h2>
+<p>在設備裡，CRC是由專用的小電路，在資料流進來的同時計算的。這種電路把記住1位元的電路串成一串，每來一次節拍訊號（時脈），就把內容往隔壁送1格。這稱為<a class="term-link" href="/zh-hant/term/shift-register/">移位暫存器</a>。</p>
+<p>如果是3位元的CRC，就排3個記住1位元的方格A、B、C，並在2個地方放入XOR。資料從右邊1位元1位元進入，每次時脈往左前進1格。從左端C溢出的位元，會經由線路送回右邊，進入2個地方的XOR。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 236" role="img"><title>計算CRC-3的電路：3個1位元的記憶、2個XOR，以及把左端溢出的位元送回的線路</title><rect x="20" y="100" width="50" height="40" class="ok"/><text x="45" y="126" text-anchor="middle">C</text><rect x="92" y="100" width="50" height="40" class="ok"/><text x="117" y="126" text-anchor="middle">B</text><circle cx="168" cy="120" r="12" class="hole"/><line x1="156" y1="120" x2="180" y2="120" class="ln"/><line x1="168" y1="108" x2="168" y2="132" class="ln"/><rect x="194" y="100" width="50" height="40" class="ok"/><text x="219" y="126" text-anchor="middle">A</text><circle cx="270" cy="120" r="12" class="hole"/><line x1="258" y1="120" x2="282" y2="120" class="ln"/><line x1="270" y1="108" x2="270" y2="132" class="ln"/><line x1="156" y1="120" x2="148" y2="120" class="ln"/><path d="M142,120 L150,115 L150,125 Z" class="ink"/><line x1="194" y1="120" x2="186" y2="120" class="ln"/><path d="M180,120 L188,115 L188,125 Z" class="ink"/><line x1="258" y1="120" x2="250" y2="120" class="ln"/><path d="M244,120 L252,115 L252,125 Z" class="ink"/><line x1="92" y1="120" x2="76" y2="120" class="ln"/><path d="M70,120 L78,115 L78,125 Z" class="ink"/><line x1="332" y1="120" x2="288" y2="120" class="ln"/><path d="M282,120 L290,115 L290,125 Z" class="ink"/><text x="332" y="106" text-anchor="end">資料</text><path d="M20,120 L8,120 L8,58 L270,58 L270,102" class="ac"/><path d="M270,108 L265,99 L275,99 Z" class="fa"/><line x1="168" y1="58" x2="168" y2="102" class="ac"/><path d="M168,108 L163,99 L173,99 Z" class="fa"/><circle cx="168" cy="58" r="4" class="fa"/><text x="140" y="40" text-anchor="middle" class="a">把從C溢出的位元送回</text><text x="45" y="164" text-anchor="start" class="m">← 每次時脈往左前進1格</text><rect x="20" y="184" width="22" height="16" class="ok"/><text x="52" y="198" text-anchor="start">記住1位元的電路</text><circle cx="31" cy="222" r="9" class="hole"/><line x1="22" y1="222" x2="40" y2="222" class="ln"/><line x1="31" y1="213" x2="31" y2="231" class="ln"/><text x="52" y="228" text-anchor="start">XOR</text></svg><figcaption class="fig-cap">除以x³+x+1來求CRC的電路。2個XOR的位置，對應x¹和x⁰的項。資料和3個0都送完後，C、B、A裡留下的就是餘數。省略的部分：時脈的線路、把內容歸零的電路。</figcaption></figure>
+<p>只有溢出的位元是1時，2個地方的位元才會反轉。這和直式計算中「最左邊是1就和1011做XOR」是同樣的操作。這種把輸出送回輸入端的接法，稱為線性回饋移位暫存器（LFSR）。依序送入1101和3個0，方格的內容會如下變化。</p>
+<table>
+<thead><tr><th>進入的位元</th><th>從C溢出的位元</th><th>之後的內容（C、B、A）</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>0</td><td>001</td></tr>
+<tr><td>1</td><td>0</td><td>011</td></tr>
+<tr><td>0</td><td>0</td><td>110</td></tr>
+<tr><td>1</td><td>1</td><td>110</td></tr>
+<tr><td>0</td><td>1</td><td>111</td></tr>
+<tr><td>0</td><td>1</td><td>101</td></tr>
+<tr><td>0</td><td>1</td><td>001</td></tr>
+</tbody>
+</table>
+<p>最後留在方格裡的是001，和直式計算的餘數相同。CRC-32只是方格變成32個，XOR的位置也配合生成多項式的項而增加。</p>
+</section>
+
+<section>
+<h2>CRC一定能發現的錯誤</h2>
+<p>CRC的強項，在於能說「這種錯誤一定能發現」。只要生成多項式同時有最高次項和x⁰項（+1），以下性質就會成立。這是Peterson和Brown在1961年的論文中證明的性質。</p>
+<ul>
+<li>只有1個位元的錯誤，不論發生在哪裡，都一定能發現</li>
+<li>範圍不超過CRC位元數的叢發錯誤，不論其中有幾個位元出錯，都一定能發現（CRC-32為32位元以內）</li>
+<li>更長的錯誤也幾乎都能發現。假設各種錯誤樣式發生的機會相同，32位元的CRC漏掉的比例約為43億次中1次（2的32次方分之1）</li>
+</ul>
+<p>在各種資料長度下，幾個位元以內的錯誤能全部發現，取決於生成多項式的選擇。卡內基美隆大學的Koopman在2002年，調查了所有32位元的生成多項式。乙太網路的CRC-32，在最大長度的訊框中，能發現3個位元以內的所有錯誤。不過他也發現，還有更強的多項式。</p>
+<p>反過來說，CRC會漏掉的，是錯誤樣式（哪些位元出錯）能被生成多項式整除的情況。以剛才的1101001為例，若左起第1、3、4個位元一起出錯，錯誤樣式就是1011000。它能被1011整除，所以餘數仍是000，無法察覺。這是跨越4個位元的錯誤，超出了3位元CRC的保證範圍。實際上會使用16位元或32位元的CRC。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>用十進位傳送「1234」時，附上除以7的餘數「2」。如果變成1264，餘數是4，和2不一致，就能發現。但如果變成1241，差值7剛好能被7整除，餘數仍是2，就會漏掉。CRC也一樣，只有錯誤樣式能被除數整除時才會漏掉。</p><p class="analogy-limit"><strong>比喻的限制：</strong>十進位的計算有進位，所以餘數的變化方式和CRC完全不同。「短的叢發錯誤一定能發現」這類保證，也無法從十進位的例子得出。這個比喻表達的，只有「能整除時才會漏掉」這一點。</p></aside>
+</section>
+
+<section>
+<h2>CRC做不到的事</h2>
+<h3>無法更正錯誤</h3>
+<p>CRC能知道錯誤「存在」，但通常無法告訴你錯誤在「哪裡」。發現錯誤之後，只能丟掉資料請對方重送，或通知資料已損毀。</p>
+<p>要更正錯誤，就得增加檢查用的位元，設計成連哪個位元出錯都能知道。這稱為<a class="term-link" href="/zh-hant/term/ecc/">錯誤更正碼（ECC）</a>。漢明在1950年發表的<a class="term-link" href="/zh-hant/term/hamming-code/">漢明碼</a>，在4位元資料上加3位元，能更正1個位元的錯誤。伺服器用的ECC記憶體，每64位元加上8位元，能更正1位元的錯誤，並發現2位元的錯誤。</p>
+<p>能更正更多錯誤的編碼，有里德和所羅門在1960年發表的里德－所羅門碼。它用於CD和QR碼，QR碼即使有一部分弄髒也能讀取，就是這個緣故。它和CRC一樣，使用多項式的計算。</p>
+<p>能更正錯誤的編碼，檢查用的位元較多，計算也較重。在可以重送的通訊中，用輕量的CRC發現錯誤再重送，往往比較有效率。在無法重送的廣播、與太空之間的通訊等，則使用能更正錯誤的編碼。這稱為<a class="term-link" href="/zh-hant/term/forward-error-correction/">前向錯誤更正（FEC）</a>。</p>
+<h3>無法識破蓄意的竄改</h3>
+<p>CRC的計算方法公開在規格中，也不使用祕密金鑰。竄改的人只要用新的資料重新算出CRC並換上即可。CRC發現的是偶然的錯誤，而不是惡意的竄改。</p>
+<p>實際上，早期無線區域網路的加密方式WEP，曾用CRC-32來確認內容。2001年，Borisov等人證明，可以不解開加密就竄改內容，還能讓CRC也對得上。因為WEP的加密和CRC都只用XOR計算，所以能算出反轉哪些位元，會讓CRC的哪裡改變。</p>
+<p>要發現竄改，要使用以祕密金鑰計算的<a class="term-link" href="/zh-hant/term/message-authentication-code/">訊息鑑別碼</a>或<a class="term-link" href="/zh-hant/term/digital-signature/">數位簽章</a>（「<a href="/zh-hant/learn/what-is-encryption/">加密是什麼？</a>」）。密碼學使用的<a class="term-link" href="/zh-hant/term/hash-function/">雜湊函數</a>，也設計成實際上無法做出相同值的另一份資料。而CRC卻能輕易做出這樣的資料。</p>
+</section>
+
+<section>
+<h2>同位檢查、檢查碼、CRC、ECC的差異</h2>
+<table>
+<thead><tr><th>方法</th><th>能發現的錯誤</th><th>能否更正</th><th>使用場合的例子</th></tr></thead>
+<tbody>
+<tr><td>同位檢查</td><td>奇數個位元的錯誤</td><td>無法更正</td><td>序列通訊（UART）</td></tr>
+<tr><td>檢查碼</td><td>多數的錯誤（會漏掉互換等）</td><td>無法更正</td><td>IP、TCP</td></tr>
+<tr><td>CRC</td><td>1位元錯誤和短的叢發錯誤一定能發現，其他也幾乎都能</td><td>通常不更正（重送）</td><td>乙太網路、Wi-Fi、USB、檔案</td></tr>
+<tr><td>ECC（錯誤更正碼）</td><td>一定數量以內的錯誤</td><td>能更正</td><td>ECC記憶體、SSD、QR碼、CD</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：有了CRC，損毀的資料會自動修好</p><p>實際上，CRC只負責到發現錯誤為止。通訊中看起來像是修好了，是因為請對方重送了丟掉的資料。如果只有1個位元出錯，有時能從餘數的值推算出位置。名為ATM的通訊方式，就是這樣更正簡短標頭中的1位元錯誤。但2個位元以上的錯誤，可能被誤認為1位元的錯誤，所以通常只用來發現錯誤。</p></div>
+<div class="myth"><p class="myth-q">誤解：CRC對得上，就證明沒有被任何人竄改</p><p>實際上，竄改的人只要換上新的CRC，CRC就會對得上。能知道的只有「混入偶然錯誤的可能性很低」。要發現竄改，需要使用金鑰的訊息鑑別碼或數位簽章。因為名稱裡有「檢查」二字，看起來就像是安全的保證。</p></div>
+<div class="myth"><p class="myth-q">誤解：CRC越長，任何錯誤都能發現</p><p>實際上，不論CRC多長，都會漏掉能被生成多項式整除的錯誤。若是隨機的錯誤，32位元的CRC約43億次會漏掉1次。此外，CRC保護的只有從附上到檢查之間的區間。在附上CRC之前，就已在設備內損毀的資料，會被當成正確的資料通過。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>數字</th><th>代表什麼</th></tr></thead>
+<tbody>
+<tr><td>4位元組（32位元）</td><td>乙太網路訊框最後附上的CRC（FCS）的大小</td></tr>
+<tr><td>約43億次中1次</td><td>32位元的CRC漏掉隨機錯誤的大約比例</td></tr>
+<tr><td>約每17分鐘1個</td><td>在1兆位元錯1個的傳輸路徑上，每秒傳送10億位元時的錯誤間隔</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>名詞的詳細解說：<a class="term-link" href="/zh-hant/term/crc/">CRC（循環冗餘檢查）</a>／<a class="term-link" href="/zh-hant/term/parity-bit/">同位位元</a>／<a class="term-link" href="/zh-hant/term/hamming-code/">漢明碼</a>／<a class="term-link" href="/zh-hant/term/bit-error-rate/">位元錯誤率</a></li>
+<li>用數字試試看：<a href="/zh-hant/tools/crc-calculator/">CRC 計算工具</a>／<a href="/zh-hant/tools/hamming-code-calculator/">漢明碼計算工具</a>／<a href="/zh-hant/tools/bitwise-operations-calculator/">位元運算計算工具</a>（試試XOR）</li>
+<li>相關的解說：「<a href="/zh-hant/learn/how-the-internet-delivers-data/">網際網路怎麼傳送資料？</a>」／「<a href="/zh-hant/learn/how-passwords-get-cracked/">密碼為什麼會被破解？</a>」</li>
+</ul>
+</section>
+
+</article>
+
+<section>
+  <h2>系列「技術背後的基礎（物理・化學・數學）」的文章</h2>
+  <ol class="learn-toc"><li><a href="/zh-hant/learn/arrhenius-equation-in-chips/" data-track="learn_series">阿瑞尼斯方程式是什麼？溫度讓反應和故障快幾倍</a></li><li><a href="/zh-hant/learn/linear-algebra-for-ai-chips/" data-track="learn_series">矩陣乘法要算幾次？AI晶片的運算量與運算強度</a></li><li><a href="/zh-hant/learn/fermi-dirac-and-boltzmann-in-semiconductors/" data-track="learn_series">費米分布和波茲曼分布是什麼？半導體電子的算法</a></li><li><a href="/zh-hant/learn/quantum-tunneling-in-chips/" data-track="learn_series">穿隧效應是什麼？電子穿過薄牆的原理與晶片中的影響</a></li><li><a href="/zh-hant/learn/diffusion-in-semiconductor-processing/" data-track="learn_series">擴散是什麼？雜質在矽中擴散的原理與√(Dt)的意義</a></li><li><strong aria-current="page">CRC是什麼？用0與1的除法找出傳輸錯誤的原理</strong></li></ol>
+</section>
+<p class="learn-quiz muted">這個領域的題目： <a href="/zh-hant/c/info-theory/" data-track="learn_topic">資訊理論與編碼基礎</a></p>
+<details class="news-sources"><summary>參考資料</summary><ul><li><a href="https://doi.org/10.1109/JRPROC.1961.287814" target="_blank" rel="noopener">W. W. Peterson, D. T. Brown: Cyclic Codes for Error Detection, Proceedings of the IRE 49(1), 228–235 (1961)</a></li><li><a href="https://www.japanprize.jp/en/prize_past_1999_prize01.html" target="_blank" rel="noopener">Japan Prize Foundation: 1999 Japan Prize, W. Wesley Peterson（建立錯誤更正與錯誤偵測編碼的理論）</a></li><li><a href="https://kilthub.cmu.edu/articles/journal_contribution/32-Bit_Cyclic_Redundancy_Codes_for_Internet_Applications/6620594" target="_blank" rel="noopener">P. Koopman: 32-Bit Cyclic Redundancy Codes for Internet Applications, DSN 2002（全面搜尋32位元的生成多項式。乙太網路的CRC-32在最大長度的訊框為HD=4）</a></li><li><a href="https://users.ece.cmu.edu/~koopman/crc/notes.html" target="_blank" rel="noopener">P. Koopman, Carnegie Mellon University: CRC Polynomial Zoo（各資料長度下生成多項式效能的一覽。說明表格讀法的頁面）</a></li><li><a href="https://standards.ieee.org/ieee/8802-3/10422/" target="_blank" rel="noopener">IEEE 802.3-2022, IEEE Standard for Ethernet（IEEE Standards Association。FCS為CRC-32）</a></li><li><a href="https://grouper.ieee.org/groups/802/16/maint/contrib/C80216maint-05_136r6.pdf" target="_blank" rel="noopener">IEEE 802.16 contribution C80216maint-05/136r6（與IEEE 802.3相同的CRC-32生成多項式。省略最高次項後，以十六進位表示為0x04C11DB7）</a></li><li><a href="https://standards.ieee.org/ieee/802.11/7028/" target="_blank" rel="noopener">IEEE 802.11-2020, Wireless LAN MAC and PHY Specifications（MAC訊框最後有32位元的FCS。已由2024年版取代）</a></li><li><a href="https://www.usb.org/document-library/usb-20-specification" target="_blank" rel="noopener">USB-IF: USB 2.0 Specification（token用CRC5，資料用CRC16）</a></li><li><a href="https://www.sdcard.org/downloads/pls/" target="_blank" rel="noopener">SD Association: Simplified Specifications, Part 1 Physical Layer（命令用CRC7，資料用CRC16）</a></li><li><a href="https://www.w3.org/TR/png-3/" target="_blank" rel="noopener">W3C: Portable Network Graphics (PNG) Specification (Third Edition), 2025（每個區塊各有CRC）</a></li><li><a href="https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT" target="_blank" rel="noopener">PKWARE: APPNOTE.TXT, .ZIP File Format Specification（每個檔案各有CRC-32）</a></li><li><a href="https://gs1.org/how-calculate-check-digit-manually" target="_blank" rel="noopener">GS1: How to calculate a check digit manually（GTIN-13，即EAN-13條碼〔日本稱JAN〕的檢查用數字）</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc1071" target="_blank" rel="noopener">R. Braden, D. Borman, C. Partridge: RFC 1071, Computing the Internet Checksum (1988)</a></li><li><a href="https://csclub.uwaterloo.ca/~iagoldbe/pubs/wep-mob01.pdf" target="_blank" rel="noopener">N. Borisov, I. Goldberg, D. Wagner: Intercepting Mobile Communications: The Insecurity of 802.11, MobiCom 2001（WEP的CRC-32無法防止竄改）</a></li><li><a href="https://archive.org/details/bstj29-2-147" target="_blank" rel="noopener">R. W. Hamming: Error Detecting and Error Correcting Codes, Bell System Technical Journal 29(2), 147–160 (1950)（Internet Archive）</a></li><li><a href="https://epubs.siam.org/doi/10.1137/0108018" target="_blank" rel="noopener">I. S. Reed, G. Solomon: Polynomial Codes over Certain Finite Fields, J. SIAM 8(2), 300–304 (1960)</a></li><li><a href="https://sunsite.icm.edu.pl/packages/normos/atm/af-phy-0034.000.pdf" target="_blank" rel="noopener">ATM Forum af-phy-0034.000（ATM細胞〔cell〕的標頭以CRC-8的HEC更正1位元錯誤。ITU-T I.432）</a></li></ul></details>
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="/zh-hant/learn/">入門解說一覽</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
