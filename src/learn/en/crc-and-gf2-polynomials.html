@@ -1,0 +1,206 @@
+<!--
+{
+  "title": "How CRC Works: Polynomial Division in GF(2), Step by Step",
+  "description": "CRC attaches the remainder of a 0-and-1 division so the receiver can spot errors. Work one by hand, see the XOR circuit, and learn what CRC cannot do.",
+  "series": "foundations",
+  "order": 6,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2028-10",
+  "cats": ["info-theory", "io-interface", "network", "logic"],
+  "terms": ["CRC(巡回冗長検査)", "パリティビット", "シフトレジスタ"],
+  "sources": [
+    { "title": "W. W. Peterson, D. T. Brown: Cyclic Codes for Error Detection, Proceedings of the IRE 49(1), 228–235 (1961)", "url": "https://doi.org/10.1109/JRPROC.1961.287814" },
+    { "title": "Japan Prize Foundation: 1999 Japan Prize, W. Wesley Peterson (establishing the theory of error-correcting and error-detecting codes)", "url": "https://www.japanprize.jp/en/prize_past_1999_prize01.html" },
+    { "title": "P. Koopman: 32-Bit Cyclic Redundancy Codes for Internet Applications, DSN 2002 (exhaustive search of 32-bit generator polynomials; Ethernet's CRC-32 has HD=4 at the maximum frame length)", "url": "https://kilthub.cmu.edu/articles/journal_contribution/32-Bit_Cyclic_Redundancy_Codes_for_Internet_Applications/6620594" },
+    { "title": "P. Koopman, Carnegie Mellon University: CRC Polynomial Zoo (performance of generator polynomials by data length; page on how to read the tables)", "url": "https://users.ece.cmu.edu/~koopman/crc/notes.html" },
+    { "title": "IEEE 802.3-2022, IEEE Standard for Ethernet (IEEE Standards Association; the FCS is CRC-32)", "url": "https://standards.ieee.org/ieee/8802-3/10422/" },
+    { "title": "IEEE 802.16 contribution C80216maint-05/136r6 (the same CRC-32 generator polynomial as IEEE 802.3; 0x04C11DB7 in hex with the top term omitted)", "url": "https://grouper.ieee.org/groups/802/16/maint/contrib/C80216maint-05_136r6.pdf" },
+    { "title": "IEEE 802.11-2020, Wireless LAN MAC and PHY Specifications (a 32-bit FCS at the end of each MAC frame; superseded by the 2024 edition)", "url": "https://standards.ieee.org/ieee/802.11/7028/" },
+    { "title": "USB-IF: USB 2.0 Specification (CRC5 for tokens, CRC16 for data)", "url": "https://www.usb.org/document-library/usb-20-specification" },
+    { "title": "SD Association: Simplified Specifications, Part 1 Physical Layer (CRC7 for commands, CRC16 for data)", "url": "https://www.sdcard.org/downloads/pls/" },
+    { "title": "W3C: Portable Network Graphics (PNG) Specification (Third Edition), 2025 (a CRC for each chunk)", "url": "https://www.w3.org/TR/png-3/" },
+    { "title": "PKWARE: APPNOTE.TXT, .ZIP File Format Specification (a CRC-32 for each file)", "url": "https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT" },
+    { "title": "GS1: How to calculate a check digit manually (check digit of GTIN-13, the EAN-13 barcode, called JAN in Japan)", "url": "https://gs1.org/how-calculate-check-digit-manually" },
+    { "title": "R. Braden, D. Borman, C. Partridge: RFC 1071, Computing the Internet Checksum (1988)", "url": "https://www.rfc-editor.org/rfc/rfc1071" },
+    { "title": "N. Borisov, I. Goldberg, D. Wagner: Intercepting Mobile Communications: The Insecurity of 802.11, MobiCom 2001 (WEP's CRC-32 cannot prevent tampering)", "url": "https://csclub.uwaterloo.ca/~iagoldbe/pubs/wep-mob01.pdf" },
+    { "title": "R. W. Hamming: Error Detecting and Error Correcting Codes, Bell System Technical Journal 29(2), 147–160 (1950) (Internet Archive)", "url": "https://archive.org/details/bstj29-2-147" },
+    { "title": "I. S. Reed, G. Solomon: Polynomial Codes over Certain Finite Fields, J. SIAM 8(2), 300–304 (1960)", "url": "https://epubs.siam.org/doi/10.1137/0108018" },
+    { "title": "ATM Forum af-phy-0034.000 (the ATM cell header uses a CRC-8 HEC to correct 1-bit errors; ITU-T I.432)", "url": "https://sunsite.icm.edu.pl/packages/normos/atm/af-phy-0034.000.pdf" }
+  ]
+}
+-->
+<p class="lead">CRC (cyclic redundancy check) is a way to catch errors in data. The sender computes a short check value from the data and sends it along. The receiver computes it again and compares. The math is the remainder of a division that uses only 0s and 1s. It uses XOR instead of subtraction, so a small circuit can do it fast. CRC is used in wired LAN, Wi-Fi, ZIP files and more, and it almost never misses random errors. But it cannot fix errors, and it cannot spot deliberate tampering.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>The idea of a "check value" for finding errors</li>
+<li>Errors that parity and checksums miss</li>
+<li>How to find a CRC by hand, with a division that uses only 0s and 1s</li>
+<li>How a circuit computes a CRC</li>
+<li>Errors that CRC always catches, and what CRC cannot do</li>
+</ul><p class="muted">Prerequisites: binary numbers, and XOR (an operation that outputs 1 when its two inputs differ). Both are explained in "<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">How Do Computers Use Binary?</a>"</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>Have you ever downloaded a ZIP file, tried to open it, and been told "the file is corrupted"? A ZIP file stores a check value for each file inside it. The value is computed from that file's contents. The software that opens the ZIP computes the same value again. If the two values don't match, it decides the file is broken. That value is a CRC.</p>
+<p>Data is carried and stored as rows of 0s and 1s. Along the way, a 0 can flip to a 1, or a 1 to a 0. Causes include electrical noise on a cable, weak radio signals, and particles from space striking memory ({{term:ソフトエラー|soft errors}}).</p>
+<p>All of these are rare, but they can never be brought to zero. Say only one bit in a trillion goes wrong. If you send a billion bits per second, you still get an error about every 17 minutes. So the receiver needs a way to check the data.</p>
+</section>
+
+<section>
+<h2>The basic idea: attach a check value</h2>
+<p>The barcode on a product in a store usually has 13 digits. This is the EAN-13 barcode (called JAN in Japan). Its last digit is a check digit, made from the other 12 digits by a fixed calculation. The checkout scanner does the same calculation and checks that it matches the last digit. If it doesn't, the scanner reads the code again.</p>
+<p>Compute a short value from the data and send it along. The receiver computes it again and compares. This is the basic idea behind finding errors. CRC uses the same idea; only the calculation is different.</p>
+<h3>The simplest check: parity</h3>
+<p>For a row of 0s and 1s, the simplest method is to count the 1s. You add one extra bit, 0 or 1, at the end, so that the number of 1s is even. This extra bit is called a {{term:パリティビット|parity bit}}.</p>
+<p>For example, 1011001 has four 1s (an even number), so you add a 0 and send 10110010. If one bit flips on the way, the number of 1s becomes odd, and you notice the error.</p>
+<p>But if two bits flip at once, the count stays even, and the error is missed. Noise often lasts for a while, so several neighboring bits tend to go bad together. Such a clump of errors is called a burst error. If an even number of bits flip, parity misses it.</p>
+<h3>A check by addition: the checksum</h3>
+<p>Another method splits the data into chunks, such as 16 bits each, adds them all up, and attaches the total. This is called a checksum. It is used in the internet's IP and TCP (RFC 1071).</p>
+<p>But addition gives the same answer in any order. So a checksum misses errors where two chunks swap places. It also misses one chunk going up by 1 while another goes down by 1. CRC uses a cleverer calculation that also tells bit positions apart.</p>
+</section>
+
+<section>
+<h2>Where CRC is used</h2>
+<p>CRC is widely used in everyday networks and files. The number after the name is the size of the check value in bits.</p>
+<table>
+<thead><tr><th>Where it is used</th><th>CRC type</th><th>What it protects</th></tr></thead>
+<tbody>
+<tr><td>Wired LAN (Ethernet)</td><td>CRC-32</td><td>Each whole unit sent</td></tr>
+<tr><td>Wi-Fi</td><td>CRC-32</td><td>Each whole unit sent</td></tr>
+<tr><td>USB</td><td>CRC-5, CRC-16</td><td>Short control messages, data</td></tr>
+<tr><td>SD card</td><td>CRC-7, CRC-16</td><td>Commands, data</td></tr>
+<tr><td>PNG image</td><td>CRC-32</td><td>Each section within the file</td></tr>
+<tr><td>ZIP file</td><td>CRC-32</td><td>Each file inside</td></tr>
+</tbody>
+</table>
+<p>{{term:イーサネット|Ethernet}} splits data into units called "frames." It adds a 4-byte (32-bit) CRC at the end of each frame. This part is called the FCS (frame check sequence).</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 196" role="img"><title>Ethernet frame: the last 4 bytes hold the CRC-32 (FCS) computed from the part before it</title><line x1="14" y1="40" x2="266" y2="40" class="dash"/><line x1="14" y1="34" x2="14" y2="46" class="thin"/><line x1="266" y1="34" x2="266" y2="46" class="thin"/><text x="140" y="26" text-anchor="middle" class="m">Range the CRC covers</text><rect x="14" y="56" width="56" height="40" class="ok"/><text x="42.0" y="82" text-anchor="middle">To</text><text x="42.0" y="118" text-anchor="middle" class="m">6</text><rect x="70" y="56" width="62" height="40" class="ok"/><text x="101.0" y="82" text-anchor="middle">From</text><text x="101.0" y="118" text-anchor="middle" class="m">6</text><rect x="132" y="56" width="46" height="40" class="ok"/><text x="155.0" y="82" text-anchor="middle">Type</text><text x="155.0" y="118" text-anchor="middle" class="m">2</text><rect x="178" y="56" width="88" height="40" class="ok"/><text x="222.0" y="82" text-anchor="middle">Data</text><text x="222.0" y="118" text-anchor="middle" class="m">46–1500</text><rect x="266" y="56" width="60" height="40" class="ok"/><text x="296.0" y="82" text-anchor="middle" class="a">FCS</text><text x="296.0" y="118" text-anchor="middle" class="m">4</text><rect x="266" y="56" width="60" height="40" class="ac"/><text x="326" y="140" text-anchor="end" class="m">Numbers are bytes</text><text x="14" y="168" text-anchor="start">FCS = CRC-32 of the part before</text><text x="14" y="190" text-anchor="start">Receiver recomputes it and compares</text></svg><figcaption class="fig-cap">One unit sent over Ethernet (a frame). The last 4 bytes (the FCS) hold the CRC-32 of everything from the destination address ("To") through the data. Left out: the sync signal sent before the frame, and the VLAN field. Box widths are not proportional to byte counts.</figcaption></figure>
+<p>The receiving device throws away any frame whose FCS does not match. Ethernet itself does not resend it. The missing data is resent by a mechanism called {{term:TCP|TCP}}. On Wi-Fi, the receiver sends a reply when a frame arrives correctly. If no reply comes back, the sender sends the frame again (see "<a href="{{home}}learn/how-wi-fi-works/">How Does Wi-Fi Work?</a>").</p>
+</section>
+
+<section>
+<h2>How it works 1: math with only 0 and 1, and no carries</h2>
+<p>CRC math happens in a "world of only 0 and 1," which differs a little from everyday arithmetic. Addition in this world follows just three rules.</p>
+<ul>
+<li>0+0=0</li>
+<li>0+1=1, 1+0=1</li>
+<li>1+1=0 (no carry)</li>
+</ul>
+<p>In ordinary binary, 1+1=10 with a carry. Here, the carry is thrown away. The rule becomes "1 if the two differ, 0 if they are the same," which is exactly XOR. It is an adder circuit (the half adder) with its carry output removed.</p>
+<p>Subtraction follows the same rule. 0−1 means "the number that gives 0 when you add 1." Since 1+1=0, that number is 1. So in this world, subtraction and addition are both XOR. Each digit is calculated without looking at its neighbors, so the circuit is very simple.</p>
+<p>Mathematicians call this world of only 0 and 1 GF(2). GF stands for Galois field, named after Galois, a 19th-century mathematician. For this article, just remember it as "binary math without carries."</p>
+</section>
+
+<section>
+<h2>How it works 2: reading a row of bits as a polynomial</h2>
+<p>Next, we rewrite a row of 0s and 1s as a polynomial. A polynomial is an expression that adds up powers of x, like x²+3x+1. In CRC, each digit gets a name tag, "x to some power." If the digit is 1, you write that term; if it is 0, you leave it out.</p>
+<p>For example, the digits of 1011 are, from the left, the x³, x², x¹ and x⁰ places. So 1011 becomes x³+x+1 (x⁰ is written as 1). You never plug a number in for x. The power of x just marks where a digit sits.</p>
+<p>Writing data as a polynomial lets us use properties of polynomials that mathematicians have long studied. Thanks to them, we can prove which kinds of errors are always caught.</p>
+<p>The polynomial used as the divisor in CRC is called the generator polynomial. Ethernet's CRC-32 uses x³²+x²⁶+x²³+…+x+1, which has degree 32. Specifications drop the top term, x³². They write the remaining 32 digits in hexadecimal as 04C11DB7. (Hexadecimal writes each group of four binary digits as one character.)</p>
+</section>
+
+<section>
+<h2>How it works 3: finding a CRC by hand</h2>
+<p>Let's find a CRC by hand with a small example. The data to send is the 4 bits 1101. The generator polynomial is x³+x+1, that is, 1011. The divisor has 4 digits, so the remainder has 3, which gives a 3-bit CRC.</p>
+<ol>
+<li>Append three 0s to the data, one for each CRC bit: 1101000 (this makes room for the CRC)</li>
+<li>Write the divisor 1011 under the leftmost 1, lined up on the left, and XOR</li>
+<li>Line up 1011 again under the leftmost 1 that remains, and XOR. Skip any 0 digits</li>
+<li>Repeat until the divisor would stick out past the right end. The 3 digits left on the right are the remainder, and that is the CRC</li>
+</ol>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" role="img"><title>CRC long division: dividing 1101000 by 1011 with repeated XOR gives the remainder 001</title><text x="189.0" y="30" text-anchor="middle" class="m">Data</text><text x="280.0" y="30" text-anchor="middle" class="m">3 zeros</text><line x1="241" y1="16" x2="241" y2="40" class="dash"/><text x="150" y="64" text-anchor="middle">1</text><text x="176" y="64" text-anchor="middle">1</text><text x="202" y="64" text-anchor="middle">0</text><text x="228" y="64" text-anchor="middle">1</text><text x="254" y="64" text-anchor="middle">0</text><text x="280" y="64" text-anchor="middle">0</text><text x="306" y="64" text-anchor="middle">0</text><text x="8" y="64" text-anchor="start">Dividend</text><text x="150" y="90" text-anchor="middle" class="a">1</text><text x="176" y="90" text-anchor="middle" class="a">0</text><text x="202" y="90" text-anchor="middle" class="a">1</text><text x="228" y="90" text-anchor="middle" class="a">1</text><text x="128" y="90" text-anchor="middle" class="a">⊕</text><text x="8" y="90" text-anchor="start">Divisor</text><line x1="138" y1="98" x2="240" y2="98" class="ln"/><text x="150" y="118" text-anchor="middle" class="m">0</text><text x="176" y="118" text-anchor="middle">1</text><text x="202" y="118" text-anchor="middle">1</text><text x="228" y="118" text-anchor="middle">0</text><text x="254" y="118" text-anchor="middle">0</text><text x="280" y="118" text-anchor="middle">0</text><text x="306" y="118" text-anchor="middle">0</text><text x="176" y="144" text-anchor="middle" class="a">1</text><text x="202" y="144" text-anchor="middle" class="a">0</text><text x="228" y="144" text-anchor="middle" class="a">1</text><text x="254" y="144" text-anchor="middle" class="a">1</text><text x="154" y="144" text-anchor="middle" class="a">⊕</text><line x1="164" y1="152" x2="266" y2="152" class="ln"/><text x="150" y="172" text-anchor="middle" class="m">0</text><text x="176" y="172" text-anchor="middle" class="m">0</text><text x="202" y="172" text-anchor="middle">1</text><text x="228" y="172" text-anchor="middle">1</text><text x="254" y="172" text-anchor="middle">1</text><text x="280" y="172" text-anchor="middle">0</text><text x="306" y="172" text-anchor="middle">0</text><text x="202" y="198" text-anchor="middle" class="a">1</text><text x="228" y="198" text-anchor="middle" class="a">0</text><text x="254" y="198" text-anchor="middle" class="a">1</text><text x="280" y="198" text-anchor="middle" class="a">1</text><text x="180" y="198" text-anchor="middle" class="a">⊕</text><line x1="190" y1="206" x2="292" y2="206" class="ln"/><text x="150" y="226" text-anchor="middle" class="m">0</text><text x="176" y="226" text-anchor="middle" class="m">0</text><text x="202" y="226" text-anchor="middle" class="m">0</text><text x="228" y="226" text-anchor="middle">1</text><text x="254" y="226" text-anchor="middle">0</text><text x="280" y="226" text-anchor="middle">1</text><text x="306" y="226" text-anchor="middle">0</text><text x="228" y="252" text-anchor="middle" class="a">1</text><text x="254" y="252" text-anchor="middle" class="a">0</text><text x="280" y="252" text-anchor="middle" class="a">1</text><text x="306" y="252" text-anchor="middle" class="a">1</text><text x="206" y="252" text-anchor="middle" class="a">⊕</text><line x1="216" y1="260" x2="318" y2="260" class="ln"/><text x="150" y="280" text-anchor="middle" class="m">0</text><text x="176" y="280" text-anchor="middle" class="m">0</text><text x="202" y="280" text-anchor="middle" class="m">0</text><text x="228" y="280" text-anchor="middle" class="m">0</text><text x="254" y="280" text-anchor="middle" class="a">0</text><text x="280" y="280" text-anchor="middle" class="a">0</text><text x="306" y="280" text-anchor="middle" class="a">1</text><rect x="242" y="261" width="76" height="26" class="ac"/><text x="8" y="280" text-anchor="start" class="a">Remainder = CRC</text><text x="326" y="320" text-anchor="end">Send: 1101 001</text></svg><figcaption class="fig-cap">⊕ means XOR (0 if the same, 1 if different). Line up 1011 under the leftmost 1 and XOR, so the leftmost 1 disappears each time. Faded 0s are digits that are gone. The 3 digits left on the right, 001, are the remainder (the CRC). Left out: extra rules that real standards add (a starting value, a final inversion and so on).</figcaption></figure>
+<p>In this example, four XORs give the remainder 001. The sender attaches this remainder after the data and sends 1101001.</p>
+<p>Unlike ordinary long division, you never need to ask "is it bigger than the divisor?" If the leftmost digit is 1, you XOR; if it is 0, you move on to the next digit. This simplicity is why CRC is fast.</p>
+<p>The receiver divides all 7 received bits by the same 1011. If there are no errors, the remainder is 000. That is because attaching the remainder made the whole row divide exactly. Suppose the third bit from the left flips, so 1111001 arrives. The remainder is then 110, and the error is caught.</p>
+<p>Real standards add a few more rules. For example, Ethernet's CRC-32 starts the calculation from all 1s and flips every bit at the end. Starting from 1s lets it also catch errors that add or drop 0s at the front.</p>
+<p>The <a href="{{home}}tools/crc-calculator/">CRC calculator</a> also shows this division step by step. Set the variant to CRC-8, the width to 3, the generator polynomial to 3 and the data format to hex bytes. Then enter 0D. (0D is 00001101 in binary. The leading 0s do not change the remainder.)</p>
+</section>
+
+<section>
+<h2>How it works 4: computing it with a circuit</h2>
+<p>Inside a device, a small dedicated circuit computes the CRC while the data streams in. It is a chain of circuits that each remember 1 bit. At each tick of a timing signal (the clock), every bit moves one place along the chain. This circuit is called a {{term:シフトレジスタ|shift register}}.</p>
+<p>For a 3-bit CRC, line up three 1-bit boxes, A, B and C, and put XORs in two places. Data enters from the right, one bit at a time. At each clock tick, it moves one place to the left. The bit that spills out of C, at the left end, is wired back to the right. There it feeds into the two XORs.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 236" role="img"><title>Circuit that computes CRC-3: three 1-bit memories, two XORs, and a wire that feeds back the bit spilling out of the left end</title><rect x="20" y="100" width="50" height="40" class="ok"/><text x="45" y="126" text-anchor="middle">C</text><rect x="92" y="100" width="50" height="40" class="ok"/><text x="117" y="126" text-anchor="middle">B</text><circle cx="168" cy="120" r="12" class="hole"/><line x1="156" y1="120" x2="180" y2="120" class="ln"/><line x1="168" y1="108" x2="168" y2="132" class="ln"/><rect x="194" y="100" width="50" height="40" class="ok"/><text x="219" y="126" text-anchor="middle">A</text><circle cx="270" cy="120" r="12" class="hole"/><line x1="258" y1="120" x2="282" y2="120" class="ln"/><line x1="270" y1="108" x2="270" y2="132" class="ln"/><line x1="156" y1="120" x2="148" y2="120" class="ln"/><path d="M142,120 L150,115 L150,125 Z" class="ink"/><line x1="194" y1="120" x2="186" y2="120" class="ln"/><path d="M180,120 L188,115 L188,125 Z" class="ink"/><line x1="258" y1="120" x2="250" y2="120" class="ln"/><path d="M244,120 L252,115 L252,125 Z" class="ink"/><line x1="92" y1="120" x2="76" y2="120" class="ln"/><path d="M70,120 L78,115 L78,125 Z" class="ink"/><line x1="332" y1="120" x2="288" y2="120" class="ln"/><path d="M282,120 L290,115 L290,125 Z" class="ink"/><text x="332" y="106" text-anchor="end">Data</text><path d="M20,120 L8,120 L8,58 L270,58 L270,102" class="ac"/><path d="M270,108 L265,99 L275,99 Z" class="fa"/><line x1="168" y1="58" x2="168" y2="102" class="ac"/><path d="M168,108 L163,99 L173,99 Z" class="fa"/><circle cx="168" cy="58" r="4" class="fa"/><text x="140" y="40" text-anchor="middle" class="a">Bit spilling out of C goes back</text><text x="45" y="164" text-anchor="start" class="m">← one place left per tick</text><rect x="20" y="184" width="22" height="16" class="ok"/><text x="52" y="198" text-anchor="start">Remembers 1 bit</text><circle cx="31" cy="222" r="9" class="hole"/><line x1="22" y1="222" x2="40" y2="222" class="ln"/><line x1="31" y1="213" x2="31" y2="231" class="ln"/><text x="52" y="228" text-anchor="start">XOR</text></svg><figcaption class="fig-cap">A circuit that divides by x³+x+1 to find the CRC. The two XORs match the x¹ and x⁰ terms. After the data and three 0s have gone in, the remainder is left in C, B and A. Left out: the clock wires and the circuit that resets the contents to 0.</figcaption></figure>
+<p>Bits flip at the two XORs only when the spilled bit is 1. This is the same step as "if the leftmost digit is 1, XOR with 1011" in the hand calculation. This wiring feeds an output back toward the input. It is called a linear feedback shift register (LFSR). Feed in 1101 and then three 0s, and the contents of the boxes change like this.</p>
+<table>
+<thead><tr><th>Bit in</th><th>Bit spilling out of C</th><th>Contents after (C, B, A)</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>0</td><td>001</td></tr>
+<tr><td>1</td><td>0</td><td>011</td></tr>
+<tr><td>0</td><td>0</td><td>110</td></tr>
+<tr><td>1</td><td>1</td><td>110</td></tr>
+<tr><td>0</td><td>1</td><td>111</td></tr>
+<tr><td>0</td><td>1</td><td>101</td></tr>
+<tr><td>0</td><td>1</td><td>001</td></tr>
+</tbody>
+</table>
+<p>The boxes end up holding 001, the same as the remainder found by hand. CRC-32 simply has 32 boxes. It also has more XORs, placed to match the terms of its generator polynomial.</p>
+</section>
+
+<section>
+<h2>Errors CRC always catches</h2>
+<p>The strength of CRC is that you can say "this kind of error is always caught." Suppose the generator polynomial has both a top term and an x⁰ term (+1). Then the following holds. Peterson and Brown showed these properties in a 1961 paper.</p>
+<ul>
+<li>An error in a single bit is always caught, wherever it happens</li>
+<li>A burst error no longer than the CRC is always caught, however many bits inside it flip (within 32 bits for CRC-32)</li>
+<li>Longer errors are almost always caught too. If every error pattern is equally likely, a 32-bit CRC misses about 1 in 4.3 billion (1 in 2 to the 32nd power)</li>
+</ul>
+<p>For each data length, how many flipped bits are always caught depends on the choice of generator polynomial. In 2002, Koopman at Carnegie Mellon University checked every 32-bit generator polynomial. Ethernet's CRC-32 catches every error of up to 3 bits in a frame of the maximum length. But he also found that stronger polynomials exist.</p>
+<p>CRC misses an error only when the error pattern (which bits flipped) divides exactly by the generator polynomial. Take the 1101001 from before. Say the 1st, 3rd and 4th bits from the left all flip. The error pattern is then 1011000. This divides exactly by 1011, so the remainder stays 000 and nobody notices. The error spans 4 bits, so it is outside what a 3-bit CRC guarantees. In practice, 16-bit or 32-bit CRCs are used.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>Suppose you send the decimal number "1234" along with "2," its remainder after dividing by 7. If it turns into 1264, the remainder is 4. That does not match 2, so you notice. But if it turns into 1241, the difference is 7, which divides exactly by 7. The remainder stays 2, and the error is missed. CRC, too, misses an error only when the error pattern divides exactly by the divisor.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> Decimal math has carries, so its remainders change in a completely different way from CRC. Guarantees such as "short burst errors are always caught" do not follow from the decimal example either. It shows just one point: an error is missed only when it divides exactly.</p></aside>
+</section>
+
+<section>
+<h2>What CRC cannot do</h2>
+<h3>It cannot fix errors</h3>
+<p>CRC can tell you that an error exists. But it usually cannot tell you where. Once an error is found, there are only two options. Throw the data away and ask for it again, or report that it is broken.</p>
+<p>To fix errors, you add more check bits, arranged so that you can tell which bit flipped. This is called an {{term:ECC(誤り訂正符号)|error-correcting code (ECC)}}. The {{term:ハミング符号|Hamming code}}, published by Hamming in 1950, adds 3 bits to 4 bits of data and can fix a 1-bit error. ECC memory for servers adds 8 bits to every 64 bits. It fixes 1-bit errors and detects 2-bit errors.</p>
+<p>A code that can fix more errors is the Reed–Solomon code, published by Reed and Solomon in 1960. It is used in CDs and QR codes. That is why a QR code can still be read when part of it is dirty. Like CRC, it uses polynomial math.</p>
+<p>Codes that fix errors need more check bits and heavier calculation. When data can be resent, it is often more efficient to find errors with a light CRC and resend. Where resending is impossible, such as broadcasting or links with space probes, codes that fix errors are used. This is called {{term:前方誤り訂正(FEC)|forward error correction (FEC)}}.</p>
+<h3>It cannot spot deliberate tampering</h3>
+<p>How CRC is calculated is public in the standards, and it uses no secret key. Someone who changes the data can simply compute a new CRC and attach it. CRC catches accidental errors, not malicious changes.</p>
+<p>This really happened. WEP, an early encryption method for wireless LAN, used CRC-32 to check the contents. In 2001, Borisov and colleagues showed how to change the contents without breaking the encryption. They could make the CRC match as well. Both WEP's encryption and CRC are computed with XOR alone. So flipping certain bits changes the CRC in a way anyone can calculate.</p>
+<p>To detect tampering, use {{term:メッセージ認証コード|message authentication codes}} or {{term:デジタル署名|digital signatures}}, which rely on secret keys (see "<a href="{{home}}learn/what-is-encryption/">What Is Encryption?</a>"). The {{term:ハッシュ関数|hash functions}} used in cryptography are also designed so that, in practice, no one can make different data with the same value. With CRC, making such data is easy.</p>
+</section>
+
+<section>
+<h2>Parity vs checksum vs CRC vs ECC</h2>
+<table>
+<thead><tr><th>Method</th><th>Errors it catches</th><th>Can it fix them?</th><th>Examples of use</th></tr></thead>
+<tbody>
+<tr><td>Parity</td><td>Errors in an odd number of bits</td><td>No</td><td>Serial links (UART)</td></tr>
+<tr><td>Checksum</td><td>Many errors (misses swaps and the like)</td><td>No</td><td>IP, TCP</td></tr>
+<tr><td>CRC</td><td>Always 1-bit errors and short burst errors; almost all others</td><td>Usually not (resends instead)</td><td>Ethernet, Wi-Fi, USB, files</td></tr>
+<tr><td>ECC (error-correcting code)</td><td>Errors up to a set number</td><td>Yes</td><td>ECC memory, SSDs, QR codes, CDs</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>Common misconceptions</h2>
+<div class="myth"><p class="myth-q">Myth: With CRC, corrupted data gets fixed automatically</p><p>In fact, CRC only goes as far as finding errors. In networks, errors seem to get fixed because the discarded data is sent again. For a single-bit error, the remainder can sometimes reveal where it is. A network technology called ATM fixes 1-bit errors in its short headers this way. But an error of 2 or more bits could be mistaken for a 1-bit error. So CRC is normally used only for finding errors.</p></div>
+<div class="myth"><p class="myth-q">Myth: If the CRC matches, that proves nobody tampered with the data</p><p>In fact, if someone changes the data and attaches a new CRC, the CRC will match. All it tells you is that an accidental error is unlikely. To detect tampering, you need a message authentication code or a digital signature, which uses a key. The word "check" in the name makes CRC look like a security guarantee.</p></div>
+<div class="myth"><p class="myth-q">Myth: A long enough CRC catches every error</p><p>In fact, however long the CRC is, it misses errors whose pattern divides exactly by the generator polynomial. For random errors, a 32-bit CRC misses about 1 in 4.3 billion. Also, CRC only protects the stretch from where it is attached to where it is checked. Data that was already corrupted inside a device before the CRC was attached passes as correct data.</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Number</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td>4 bytes (32 bits)</td><td>Size of the CRC (FCS) at the end of an Ethernet frame</td></tr>
+<tr><td>About 1 in 4.3 billion</td><td>Rough rate at which a 32-bit CRC misses random errors</td></tr>
+<tr><td>About one every 17 minutes</td><td>Time between errors when sending a billion bits per second over a link that gets one bit in a trillion wrong</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Glossary entries: {{term:CRC(巡回冗長検査)|CRC (cyclic redundancy check)}} / {{term:パリティビット|parity bit}} / {{term:ハミング符号|Hamming code}} / {{term:ビット誤り率|bit error rate (BER)}}</li>
+<li>Try the numbers: the <a href="{{home}}tools/crc-calculator/">CRC calculator</a> / the <a href="{{home}}tools/hamming-code-calculator/">Hamming code calculator</a> / the <a href="{{home}}tools/bitwise-operations-calculator/">bitwise operations calculator</a> (try XOR)</li>
+<li>Related articles: "<a href="{{home}}learn/how-the-internet-delivers-data/">How Is Data Sent Over the Internet?</a>" / "<a href="{{home}}learn/how-passwords-get-cracked/">How Are Passwords Cracked?</a>"</li>
+</ul>
+</section>
