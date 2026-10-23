@@ -1,0 +1,254 @@
+<!--
+{
+  "title": "How Is Data Sent Over the Internet? Packets and Routers",
+  "description": "The internet splits data into packets that routers pass along by IP address. See how a web page loads, what DNS, TCP and HTTPS do, and why it is fast.",
+  "series": "internet",
+  "order": 1,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["network", "web-tech", "network-advanced", "wireless"],
+  "terms": ["パケット", "IPアドレス", "ルータ", "IP(インターネットプロトコル)", "ルーティング(経路制御)", "DNS", "RTT(往復遅延時間)"],
+  "sources": [
+    { "title": "RFC 791: Internet Protocol (IETF, 1981)", "url": "https://www.rfc-editor.org/rfc/rfc791" },
+    { "title": "RFC 1122: Requirements for Internet Hosts — Communication Layers (IETF, 1989; defines the link, IP and transport layers)", "url": "https://www.rfc-editor.org/rfc/rfc1122" },
+    { "title": "RFC 9293: Transmission Control Protocol (TCP) (IETF, 2022)", "url": "https://www.rfc-editor.org/rfc/rfc9293" },
+    { "title": "RFC 768: User Datagram Protocol (IETF, 1980)", "url": "https://www.rfc-editor.org/rfc/rfc768" },
+    { "title": "RFC 1034: Domain Names — Concepts and Facilities (IETF, 1987)", "url": "https://www.rfc-editor.org/rfc/rfc1034" },
+    { "title": "RFC 9000: QUIC: A UDP-Based Multiplexed and Secure Transport (IETF, 2021)", "url": "https://www.rfc-editor.org/rfc/rfc9000" },
+    { "title": "RFC 9114: HTTP/3 (IETF, 2022)", "url": "https://www.rfc-editor.org/rfc/rfc9114" },
+    { "title": "RFC 1918: Address Allocation for Private Internets (IETF, 1996)", "url": "https://www.rfc-editor.org/rfc/rfc1918" },
+    { "title": "RFC 3022: Traditional IP Network Address Translator (Traditional NAT) (IETF, 2001)", "url": "https://www.rfc-editor.org/rfc/rfc3022" },
+    { "title": "RFC 894: A Standard for the Transmission of IP Datagrams over Ethernet Networks (IETF, 1984; maximum of 1,500 bytes; a typo in the text is corrected in the errata)", "url": "https://www.rfc-editor.org/rfc/inline-errata/rfc894.html" },
+    { "title": "Internet Society: A Brief History of the Internet (the beginnings of packet switching)", "url": "https://www.internetsociety.org/internet/history-internet/brief-history-internet/" },
+    { "title": "I. N. Bozkurt et al.: Dissecting Latency in the Internet's Fiber Infrastructure (arXiv:1811.10737, 2018)", "url": "https://arxiv.org/abs/1811.10737" },
+    { "title": "Verizon Business: IP Latency Statistics (monthly average round-trip delay for Trans Pacific; about 111 ms in February 2026)", "url": "https://www.verizon.com/business/terms/latency/" },
+    { "title": "Verizon Business: Global Latency SLA (Trans Pacific is measured between hub routers in Tokyo and Los Angeles)", "url": "https://www.verizon.com/business/terms/global_latency_sla/" },
+    { "title": "TeleGeography: Do Submarine Cables Account For Over 99% of Intercontinental Data Traffic? (2023)", "url": "https://blog.telegeography.com/2023-mythbusting-part-3" },
+    { "title": "Chromium Blog: An Update on the Lock Icon (May 2023)", "url": "https://blog.chromium.org/2023/05/an-update-on-lock-icon.html" }
+  ]
+}
+-->
+<p class="lead">The internet sends data in small chunks called "packets." Each packet carries the number of its destination (an IP address). Devices along the way called "routers" read that number and pass the packet on, one after another. When the packets arrive, the receiver puts them back in order and rebuilds the original data.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>The steps that happen behind the scenes when you open a web page</li>
+<li>What packets, IP addresses and routers each do</li>
+<li>Why the work of communication is split into four "layers"</li>
+<li>Why data travels fast even through many devices, and where delays come from</li>
+</ul><p class="muted">Prerequisites: none. If you have ever looked at a web page on a phone, that is enough.</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>Tap a link to a news story on your phone, and the page usually appears in less than a few seconds. Its data comes from a computer somewhere far away. A computer that hands out data when asked is called a "server."</p>
+<p>This article walks through what happens behind the scenes when you open one web page. Here is the rough flow.</p>
+<ol>
+<li>Look up the server's number from the site's name (for example, www.example.com)</li>
+<li>Get ready to start talking with the server</li>
+<li>Send a request: "Please send me this page"</li>
+<li>The page's data arrives, split into many chunks</li>
+<li>The phone puts the chunks back together and shows the page</li>
+</ol>
+</section>
+
+<section>
+<h2>Data is sent in "packets"</h2>
+<p>On the internet, photos and page text alike are sent as rows of 0s and 1s. Large data is not sent in one long piece. It is cut into small chunks, which are sent one at a time. Each chunk is called a {{term:パケット|packet}}.</p>
+<p>A packet starts with a section that holds the destination's number, the sender's number and other details. This section is called the "header." The receiver uses the headers to collect the pieces and rebuild the original data.</p>
+<p>There is a size limit for one packet. On home wired networks and Wi-Fi, it is usually 1,500 bytes (1 byte is eight 0s and 1s in a row). A 1 MB (1 million bytes) photo works out to about 700 packets.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 286" role="img"><title>One piece of data is cut into small pieces, and each gets a header to become a packet</title>
+<text x="180" y="22" text-anchor="middle">Data to send (e.g. a photo)</text>
+<rect x="20" y="34" width="320" height="36" rx="6" class="p"/>
+<line x1="100" y1="34" x2="100" y2="70" class="dash"/>
+<line x1="180" y1="34" x2="180" y2="70" class="dash"/>
+<line x1="260" y1="34" x2="260" y2="70" class="dash"/>
+<text x="60" y="58" text-anchor="middle">1</text>
+<text x="140" y="58" text-anchor="middle">2</text>
+<text x="220" y="58" text-anchor="middle">3</text>
+<text x="300" y="58" text-anchor="middle">4</text>
+<line x1="60" y1="74" x2="60" y2="96" class="ln"/><polygon points="60,104 55,95 65,95" class="ink"/>
+<line x1="140" y1="74" x2="140" y2="96" class="ln"/><polygon points="140,104 135,95 145,95" class="ink"/>
+<line x1="220" y1="74" x2="220" y2="96" class="ln"/><polygon points="220,104 215,95 225,95" class="ink"/>
+<line x1="300" y1="74" x2="300" y2="96" class="ln"/><polygon points="300,104 295,95 305,95" class="ink"/>
+<rect x="24" y="110" width="32" height="34" rx="4" class="ox"/><rect x="56" y="110" width="40" height="34" rx="4" class="p"/><text x="76" y="133" text-anchor="middle">1</text>
+<rect x="104" y="110" width="32" height="34" rx="4" class="ox"/><rect x="136" y="110" width="40" height="34" rx="4" class="p"/><text x="156" y="133" text-anchor="middle">2</text>
+<rect x="184" y="110" width="32" height="34" rx="4" class="ox"/><rect x="216" y="110" width="40" height="34" rx="4" class="p"/><text x="236" y="133" text-anchor="middle">3</text>
+<rect x="264" y="110" width="32" height="34" rx="4" class="ox"/><rect x="296" y="110" width="40" height="34" rx="4" class="p"/><text x="316" y="133" text-anchor="middle">4</text>
+<text x="180" y="170" text-anchor="middle" class="a">Add a header: now a packet</text>
+<text x="180" y="200" text-anchor="middle" class="m">Inside one packet</text>
+<rect x="20" y="210" width="130" height="40" rx="6" class="ox"/>
+<text x="85" y="235" text-anchor="middle">Header</text>
+<rect x="150" y="210" width="190" height="40" rx="6" class="p"/>
+<text x="245" y="235" text-anchor="middle">Piece of data</text>
+<text x="85" y="274" text-anchor="middle">To, from, etc.</text>
+<text x="245" y="274" text-anchor="middle">Part of the original</text>
+</svg><figcaption class="fig-cap">Large data is cut into small pieces, and each piece with a header attached is a packet. Left out: headers are stacked, one per layer (see the "layers" section later), and real data is cut into far more pieces.</figcaption></figure>
+<p>There are two main reasons to go to the trouble of cutting data up. First, many people can share one line. With small packets, different people's traffic can take turns, a little at a time. Second, if part of the data is lost on the way, only the lost pieces need to be sent again.</p>
+<p>Old landline telephones worked the opposite way. For the whole call, they reserved an entire line to the other person. Even when no one was talking, nobody else could use that line. The idea of cutting data up and sharing lines was developed in the 1960s, and it became the foundation of the internet.</p>
+</section>
+
+<section>
+<h2>IP addresses: the destination number on a packet</h2>
+<p>The destination on a packet is a number that identifies the other device. This number is called an {{term:IPアドレス|IP address}}. Phones, PCs, servers: every device connected to the internet is given an IP address.</p>
+<p>In the widely used format, an IP address looks like "192.0.2.10." It is four numbers from 0 to 255, separated by dots. In 0s and 1s it is 32 digits long, so only about 4.3 billion addresses are possible. That is not enough for all the devices in the world. So a newer format with many more digits (IPv6) is being rolled out. "<a href="{{home}}compare/ipv4-vs-ipv6/">IPv4 vs. IPv6</a>" compares them in a table.</p>
+<p>The set of rules for delivering packets to their destination using IP addresses is called {{term:IP(インターネットプロトコル)|IP (Internet Protocol)}}. IP focuses on sending packets toward their destination. Checking whether they arrived is not IP's job.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>A packet is like an envelope with an address on it. Mail carriers look only at the address on the front to decide where it goes; they do not read the letter inside. Devices along the way do the same: they look only at a packet's header to decide where it goes next. What matches is this: the destination is written on the outside and handled separately from the contents.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> A postal address is a place name, so it tells you where the place is. An IP address is just a number; it does not tell you an exact location. When a phone switches to a different Wi-Fi network, its number often changes. And unlike a sealed letter, a packet that is not encrypted can be read by anyone along the way.</p></aside>
+</section>
+
+<section>
+<h2>Routers choose only "where to go next"</h2>
+<p>The internet is made of many small networks joined together. There are home networks, company networks, the networks of telecom companies and more. A device that sits at the border between networks and hands packets to the next network is called a {{term:ルータ|router}}.</p>
+<p>A router reads the destination IP address from the header of each packet that arrives. Then it checks a table of its own to decide which neighboring router to hand it to. This table is called a routing table (see {{term:ルーティング(経路制御)|IP routing}}). It holds entries like "numbers in this range go to that neighbor."</p>
+<p>The key point is that no router knows the whole route to the destination. Each one knows only "where to hand it next." The full route is not worked out before sending. Packets are carried from router to router, like buckets passed down a line of people.</p>
+<p>Routers exchange information with each other and rebuild their routing tables automatically. If a line somewhere fails, the tables change to avoid that path. Packets to the same destination usually take nearly the same path. Even so, the path can change in the middle of a connection, and packets keep arriving afterward.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>From a phone to a server, packets pass through routers in turn. When a line fails, they take another path</title>
+<rect x="8" y="16" width="84" height="34" rx="6" class="metal"/>
+<text x="50" y="38" text-anchor="middle">Phone</text>
+<line x1="50" y1="50" x2="50" y2="100" class="dash"/>
+<text x="58" y="80">Wi-Fi</text>
+<rect x="4" y="100" width="92" height="34" rx="6" class="ox"/>
+<text x="50" y="122" text-anchor="middle">Home router</text>
+<rect x="116" y="16" width="236" height="218" rx="12" class="dash"/>
+<text x="234" y="38" text-anchor="middle" class="m">Network providers' routers</text>
+<line x1="96" y1="117" x2="134" y2="117" class="thin"/>
+<line x1="150" y1="117" x2="225" y2="66" class="thin"/>
+<line x1="150" y1="117" x2="225" y2="190" class="thin"/>
+<line x1="225" y1="66" x2="305" y2="117" class="thin"/>
+<line x1="225" y1="190" x2="305" y2="117" class="thin"/>
+<line x1="225" y1="66" x2="225" y2="190" class="thin"/>
+<polyline points="96,112 150,112 225,61 305,112" class="ac"/>
+<polyline points="96,122 150,122 225,195 290,250" class="ac2"/>
+<line x1="305" y1="117" x2="305" y2="250" class="ac"/>
+<line x1="256" y1="78" x2="272" y2="94" class="ln"/><line x1="272" y1="78" x2="256" y2="94" class="ln"/>
+<circle cx="150" cy="117" r="16" class="n"/>
+<circle cx="225" cy="66" r="16" class="n"/>
+<circle cx="225" cy="190" r="16" class="n"/>
+<circle cx="305" cy="117" r="16" class="n"/>
+<text x="150" y="122" text-anchor="middle">R</text>
+<text x="225" y="71" text-anchor="middle">R</text>
+<text x="225" y="195" text-anchor="middle">R</text>
+<text x="305" y="122" text-anchor="middle">R</text>
+<rect x="246" y="250" width="100" height="34" rx="6" class="metal"/>
+<text x="296" y="272" text-anchor="middle">Server</text>
+<line x1="12" y1="304" x2="44" y2="304" class="ac"/>
+<text x="52" y="309">Usual path</text>
+<line x1="160" y1="304" x2="192" y2="304" class="ac2"/>
+<text x="200" y="309">Path after a failure</text>
+<text x="40" y="186" text-anchor="middle">R = router</text>
+</svg><figcaption class="fig-cap">Each router looks at the destination and picks only "the next neighbor." If a line on the way fails (×), the routing tables change and packets take another path. Left out: the real number of routers (far more), and long lines such as undersea cables.</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>A router works like the direction signs at road junctions. At each junction, a driver reads a sign such as "Airport →" and decides which way to turn. You can reach your destination by following the signs, without planning the whole route on a map before you leave. What matches is this: at each point, you decide only the next direction to take.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> Road signs rarely change, but routing tables are rewritten automatically when something fails. Also, cars do not vanish when roads are jammed. A router that gets too busy throws away the packets it cannot handle. TCP, explained below, makes up for the lost ones by sending them again.</p></aside>
+</section>
+
+<section>
+<h2>Splitting the work into four "layers"</h2>
+<p>The story so far mixed several different jobs. One job carries a signal to the next device. Another finds a route to a faraway destination. Another makes sure nothing is lost. The internet splits these jobs into "layers" and sets rules for communication in each layer. Such a set of rules is called a "protocol."</p>
+<p>The layers are usually described as the four below (known as the four layers of TCP/IP). In the table, higher layers are closer to apps, and lower layers are closer to radio waves and cables.</p>
+<table>
+<thead><tr><th>Layer</th><th>Main protocols</th><th>Job</th></tr></thead>
+<tbody>
+<tr><td>Application layer</td><td>HTTP, HTTPS, DNS</td><td>The content of the conversation between the browser and the server</td></tr>
+<tr><td>Transport layer</td><td>TCP, UDP</td><td>Fixing lost or out-of-order data (TCP)</td></tr>
+<tr><td>Internet layer</td><td>IP</td><td>Delivering across networks to the destination</td></tr>
+<tr><td>Link layer</td><td>Wi-Fi, Ethernet</td><td>Carrying data to the next device as radio, electrical or light signals</td></tr>
+</tbody>
+</table>
+<p>The bottom layer, the link layer, only carries data to the next connected device. For a phone on Wi-Fi, its job ends at the home router. From there, {{term:イーサネット|Ethernet}} (the standard for wired networks) or fiber-optic lines carry the data on to the next device.</p>
+<p>At the top, the rules for exchanging web pages are set by {{term:HTTP|HTTP}}. HTTP defines the shape of the conversation: "Please send me this page." "Here it is." The layers below take over that conversation, one after another, and carry it to the other side.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 290" role="img"><title>The layers of a phone, a router and a server. The sender passes data from top to bottom, the receiver from bottom to top, and the router goes up to the IP layer</title>
+<text x="62" y="20" text-anchor="middle">Phone</text>
+<text x="180" y="20" text-anchor="middle">Router</text>
+<text x="298" y="20" text-anchor="middle">Server</text>
+<rect x="24" y="30" width="76" height="36" rx="6" class="metal"/><text x="62" y="54" text-anchor="middle">HTTP</text>
+<rect x="24" y="72" width="76" height="36" rx="6" class="n"/><text x="62" y="96" text-anchor="middle">TCP</text>
+<rect x="24" y="114" width="76" height="36" rx="6" class="ox"/><text x="62" y="138" text-anchor="middle">IP</text>
+<rect x="24" y="156" width="76" height="36" rx="6" class="p"/><text x="62" y="180" text-anchor="middle">Wi-Fi</text>
+<rect x="142" y="114" width="76" height="36" rx="6" class="ox"/><text x="180" y="138" text-anchor="middle">IP</text>
+<rect x="142" y="156" width="76" height="36" rx="6" class="p"/><text x="180" y="180" text-anchor="middle">Link</text>
+<rect x="260" y="30" width="76" height="36" rx="6" class="metal"/><text x="298" y="54" text-anchor="middle">HTTP</text>
+<rect x="260" y="72" width="76" height="36" rx="6" class="n"/><text x="298" y="96" text-anchor="middle">TCP</text>
+<rect x="260" y="114" width="76" height="36" rx="6" class="ox"/><text x="298" y="138" text-anchor="middle">IP</text>
+<rect x="260" y="156" width="76" height="36" rx="6" class="p"/><text x="298" y="180" text-anchor="middle">Wired</text>
+<line x1="12" y1="40" x2="12" y2="180" class="ac"/><polygon points="12,190 7,180 17,180" class="fa"/>
+<polyline points="62,192 62,212 150,212 150,134" class="ac"/><polygon points="150,124 145,134 155,134" class="fa"/>
+<polyline points="210,126 210,212 298,212 298,203" class="ac"/><polygon points="298,194 293,203 303,203" class="fa"/>
+<line x1="348" y1="190" x2="348" y2="50" class="ac"/><polygon points="348,40 343,50 353,50" class="fa"/>
+<text x="62" y="240" text-anchor="middle">Top down</text>
+<text x="180" y="240" text-anchor="middle">Reads up to IP</text>
+<text x="298" y="240" text-anchor="middle">Bottom up</text>
+<text x="180" y="274" text-anchor="middle" class="m">Each layer adds a header, then it is removed</text>
+</svg><figcaption class="fig-cap">The sender stacks on headers starting from the top layer, and the receiver removes them starting from the bottom layer. A router on the way usually reads only up to the IP layer. Left out: the many routers in between, the number rewriting done by the home router (NAT, see later), and the encryption layer of HTTPS.</figcaption></figure>
+<p>With layers, you can swap one layer without touching the others. For example, switching from Wi-Fi to a wired network does not mean rebuilding the browser or IP.</p>
+<p>In networking courses and certification exams, you will often also meet the {{term:OSI参照モデル|OSI reference model}}, which sorts the same ideas into seven layers. It just divides things more finely; the idea of "one layer per job" is the same. Roughly, the link layer (also called the network interface layer) matches OSI layers 1–2, and the internet layer matches layer 3. The transport layer matches layer 4, and the application layer matches layers 5–7.</p>
+</section>
+
+<section>
+<h2>DNS: looking up a number from a name</h2>
+<p>People remember sites by names such as "www.example.com." But the destination on a packet must be a number (an IP address). So a system turns names into numbers. It is called {{term:DNS|DNS}} (the Domain Name System).</p>
+<p>First, the browser asks a DNS server, "What is the number for this name?" Only after getting the answer can it send packets to the page's server. This is step 1 of the flow at the start. Answers are remembered for a while, so the browser does not ask again every time.</p>
+</section>
+
+<section>
+<h2>TCP and UDP: reliable or lightweight?</h2>
+<p>IP's job ends once it sends packets on their way. A router that gets too busy may throw packets away, and packets may arrive out of order. Web pages still show up complete thanks to a set of rules called {{term:TCP|TCP}}.</p>
+<p>With TCP, the sender gives the data serial numbers. The receiver sends back replies saying, "Everything up to here has arrived." The sender sends again any part that gets no reply. The receiver uses the numbers to put the data back in the right order.</p>
+<p>TCP also exchanges a short greeting with the other side to get ready before sending data. This is step 2 of the flow at the start. The greeting takes one round trip.</p>
+<p>The other option, {{term:UDP|UDP}}, skips the numbering and resending; it just sends packets and moves on. With fewer steps, it can cut waiting time. It is used where data from "right now" matters more than data that arrives late, such as video calls and online games. DNS lookups also mainly use UDP.</p>
+<p>The newer HTTP/3 puts a set of rules called {{term:QUIC|QUIC}} on top of UDP, and QUIC handles resending and similar jobs. "<a href="{{home}}compare/tcp-vs-udp/">TCP vs. UDP</a>" and "<a href="{{home}}compare/http-1-1-vs-http-2-vs-http-3/">HTTP/1.1 vs. HTTP/2 vs. HTTP/3</a>" compare them in tables.</p>
+</section>
+
+<section>
+<h2>The home router and number rewriting (NAT)</h2>
+<p>A home Wi-Fi box is often a Wi-Fi access point and a router in one device. Phones and PCs in the home get numbers that work only inside the home. Numbers starting with "192.168." are common. With those numbers alone, replies from across the internet could not find their way back.</p>
+<p>So the home router rewrites the sender's number on outgoing packets to its internet-facing number. The router keeps track of which connection belongs to which device. When reply packets come back, it changes the number back and delivers them. This rewriting is called {{term:NAT|NAT}}. It lets many devices share the only roughly 4.3 billion numbers available.</p>
+</section>
+
+<section>
+<h2>HTTPS and the lock icon</h2>
+<p>Devices along the way could read the contents of packets if they wanted to. So data is changed, before sending, into a form that only someone with the key can turn back. This is called "encryption."</p>
+<p>The way of sending web traffic in encrypted form is {{term:HTTPS|HTTPS}}. HTTPS also checks whether the other side is the real server.</p>
+<p>For this, the server shows a "certificate," a kind of digital ID card. A certificate is a guarantee from a trusted issuer that it has checked who owns the site's name. The browser checks that guarantee before it starts talking.</p>
+<p>The lock icon in the address bar has shown that this check and the encryption are in place. But the lock does not mean "the people running this site can be trusted." Even scam sites can get certificates. To avoid this misunderstanding, Chrome replaced the lock with a different icon, starting with version 117 in 2023.</p>
+</section>
+
+<section>
+<h2>Why is it fast, even through many devices?</h2>
+<p>Long-distance links mostly use fiber-optic cable. It sends signals as light through a thin glass strand about as fine as a hair. Inside it, light travels about 200,000 km per second. That is about two-thirds of the speed of light in a vacuum (about 300,000 km per second).</p>
+<p>Per kilometer, that is about 5 microseconds (a microsecond is a millionth of a second). The time from sending data until a reply comes back is called the {{term:RTT(往復遅延時間)|round-trip time (RTT)}}. Tokyo and Osaka in Japan are about 400 km apart in a straight line. So the RTT is at least about 4 ms (a millisecond is a thousandth of a second). Real cables do not run in straight lines, so the actual path is longer.</p>
+<p>Tokyo and Los Angeles are about 8,800 km apart along the shortest path over the Earth's surface. A round trip over fiber takes about 88 ms for the distance alone. Verizon, a US telecom company, publishes round-trip times between its hubs in the two cities. The monthly average in early 2026 was about 110 ms. The gap of about 20 ms comes from cables taking longer paths, and from processing and queuing in devices along the way.</p>
+<p>When routers are not busy, their processing takes little time. For a faraway destination, most of the wait is the time the signal spends covering the distance. Most traffic across oceans goes through fiber-optic cables laid on the seabed. In a 2023 check, the research firm TeleGeography said this is true for over 99% of data between continents.</p>
+</section>
+
+<section>
+<h2>Common misconceptions</h2>
+<div class="myth"><p class="myth-q">Myth: There is one private line between you and the server</p><p>In fact, lines are shared by many people, and your packets travel mixed in with everyone else's. The route is not fixed in advance either. Routers choose the next stop on the spot, and the route can change along the way. This idea is easy to pick up from the image of a phone call "connecting a line."</p></div>
+<div class="myth"><p class="myth-q">Myth: Wi-Fi and the internet are the same thing</p><p>In fact, {{term:Wi-Fi|Wi-Fi}} is only the radio link between your phone and your home router (the access point). Beyond that, lines such as fiber connect to the telecom company's network. That is why "connected to Wi-Fi, but no internet" can happen.</p></div>
+<div class="myth"><p class="myth-q">Myth: A faster connection speed always means faster responses</p><p>In fact, a number like "1 Gbps" is the amount of data that can be sent per second (bandwidth). It is not the same as the time until a reply comes back (RTT). For example, a small 100 KB piece of data takes about 8 ms at 100 Mbps and about 0.8 ms at 1 Gbps. But if the server is in the US, the round trip alone can take more than 100 ms.</p><p>So for small exchanges, ten times the bandwidth barely shortens the wait. Bandwidth makes the biggest difference for large file downloads. (This is simplified and leaves out TCP's detailed behavior.) You can try the math with the <a href="{{home}}tools/data-transfer-time-calculator/">data transfer time calculator</a>.</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Item</th><th>Number</th><th>For comparison</th></tr></thead>
+<tbody>
+<tr><td>Size of one packet (wired network, Wi-Fi)</td><td>usually up to 1,500 bytes</td><td>about 700 for a 1 MB photo</td></tr>
+<tr><td>Number of IPv4 addresses</td><td>about 4.3 billion (2 multiplied by itself 32 times)</td><td>fewer than the world's population</td></tr>
+<tr><td>Speed of light in optical fiber</td><td>about 200,000 km per second</td><td>about 5 microseconds per km</td></tr>
+<tr><td>Round trip, Tokyo–Osaka (about 400 km in a straight line)</td><td>about 4 ms</td><td>the floor set by distance alone</td></tr>
+<tr><td>Round trip, Tokyo–Los Angeles (about 8,800 km at the shortest)</td><td>about 88 ms (floor)</td><td>measured: about 110 ms (Verizon, monthly average, early 2026)</td></tr>
+<tr><td>Share of data between continents that goes through undersea cables</td><td>over 99%</td><td>TeleGeography's check (2023)</td></tr>
+</tbody>
+</table>
+<p>"Floor" means the time for a round trip over the shortest distance at the speed of light in fiber. A real round trip can never be shorter than this.</p>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Compare in a table: <a href="{{home}}compare/hub-vs-switch-vs-router/">hub vs. switch vs. router</a> (devices in home and office networks)</li>
+<li>Try the math: the <a href="{{home}}tools/ip-subnet-calculator/">IP subnet calculator</a> (splits an IP address into a "network part" and a "device part")</li>
+<li>Terms for the next step: {{term:MACアドレス|MAC address}}, {{term:デフォルトゲートウェイ|default gateway}}, {{term:DHCP|DHCP}} (how a home network works)</li>
+<li>More on HTTPS: {{term:認証局|certificate authority}} (the issuer of certificates), {{term:TLS|TLS}} (the encryption rules behind HTTPS)</li>
+<li>See the route yourself: {{term:traceroute|traceroute}} (a command that lists the routers a packet passed through)</li>
+<li>Start from the foundation: servers and phones alike have a CPU inside that carries out instructions. See "<a href="{{home}}learn/what-is-a-cpu/">What Is a CPU?</a>"</li>
+</ul>
+</section>
