@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr" data-lang="fr" data-base="/" data-home="/fr/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Machine de Mealy vs machine de Moore : sorties, temporisation, nombre d’états et style HDL | Semiconductor Room</title>
+<meta name="description" content="Machines à états de Mealy et de Moore comparées dans un tableau : ce qui détermine la sortie, représentation des sorties dans un diagramme d’états, réaction aux entrées, nombre d’états pour un détecteur de séquence et en général, glitchs et bruit, chemins de temporisation, style de codage HDL et cas d’usage.">
+<link rel="canonical" href="https://semiconroom.com/fr/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/mealy-vs-moore-machine/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Machine de Mealy vs machine de Moore : sorties, temporisation, nombre d’états et style HDL | Semiconductor Room">
+<meta property="og:description" content="Machines à états de Mealy et de Moore comparées dans un tableau : ce qui détermine la sortie, représentation des sorties dans un diagramme d’états, réaction aux entrées, nombre d’états pour un détecteur de séquence et en général, glitchs et bruit, chemins de temporisation, style de codage HDL et cas d’usage.">
+<meta property="og:url" content="https://semiconroom.com/fr/compare/mealy-vs-moore-machine/">
+<meta property="og:site_name" content="Semiconductor Room">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/fr/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://semiconroom.com/fr/"},{"@type":"ListItem","position":2,"name":"Comparatifs","item":"https://semiconroom.com/fr/compare/"},{"@type":"ListItem","position":3,"name":"Machine de Mealy vs machine de Moore : sorties, temporisation, nombre d’états et style HDL","item":"https://semiconroom.com/fr/compare/mealy-vs-moore-machine/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Machine de Mealy vs machine de Moore : sorties, temporisation, nombre d’états et style HDL","description":"Machines à états de Mealy et de Moore comparées dans un tableau : ce qui détermine la sortie, représentation des sorties dans un diagramme d’états, réaction aux entrées, nombre d’états pour un détecteur de séquence et en général, glitchs et bruit, chemins de temporisation, style de codage HDL et cas d’usage.","inLanguage":"fr","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/fr/compare/mealy-vs-moore-machine/","author":{"@type":"Organization","name":"Semiconductor Room"},"publisher":{"@type":"Organization","name":"Semiconductor Room"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Que signifie concrètement « un cycle plus tard » ?","acceptedAnswer":{"@type":"Answer","text":"Prenons un détecteur de « 101 ». Une machine de Mealy dans l’état « 10 reconnu » met sa sortie à 1 pendant le cycle même où l’entrée passe à 1. Une machine de Moore ne met sa sortie à 1 qu’après avoir capturé ce 1 au front d’horloge et être passée dans l’état « 101 détecté » : la sortie vaut donc 1 au cycle suivant. Les deux détectent les mêmes séquences d’entrée, mais la sortie de Moore est décalée d’un cycle par rapport à celle de Mealy."}},{"@type":"Question","name":"Peut-on convertir une machine de Mealy en machine de Moore et inversement ?","acceptedAnswer":{"@type":"Answer","text":"Oui. Scinder chaque état de Mealy selon la sortie des transitions qui y entrent donne une machine de Moore de même comportement entrée-sortie, même si le nombre d’états peut augmenter et si les sorties apparaissent un cycle plus tard. Inversement, écrire la sortie de chaque état de Moore sur les transitions qui entrent dans cet état donne une machine de Mealy dont les sorties apparaissent un cycle plus tôt, et il est parfois possible de fusionner ensuite des états."}},{"@type":"Question","name":"Dans le code HDL, qu’est-ce qui fait d’une machine une machine de Mealy ou de Moore ?","acceptedAnswer":{"@type":"Answer","text":"Les expressions de sortie. Quand le code est séparé en un bloc qui met à jour le registre d’état et un bloc combinatoire qui détermine l’état suivant et les sorties, la machine est de Mealy si les expressions de sortie contiennent des entrées, et de Moore si elles ne dépendent que de l’état. Dans le bloc combinatoire, affectez chaque sortie dans toutes les conditions pour éviter de créer des latchs involontaires."}},{"@type":"Question","name":"Une machine de Moore n’a-t-elle jamais de glitchs en sortie ?","acceptedAnswer":{"@type":"Answer","text":"Les changements et le bruit des entrées n’atteignent pas les sorties, mais si une logique combinatoire décode l’état pour produire les sorties, plusieurs bits d’état qui changent en même temps peuvent provoquer un glitch. Coder les états pour que les sorties viennent directement des bits du registre d’état, ou placer des registres en sortie, donne des sorties sans glitch."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/mealy-vs-moore-machine/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/fr/"><span class="logo-mark" aria-hidden="true"></span><span>Semiconductor Room<small></small></span></a>
+    <nav class="header-nav"><a href="/fr/c/">Thèmes</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/figures/">Schémas</a><a href="/fr/tools/">Calculateurs</a><a href="/fr/stats/">Progression</a></nav>
+    <form class="site-search" role="search" action="/fr/search/" method="get"><input type="search" name="q" placeholder="Rechercher (p. ex. MOSFET)" aria-label="Rechercher sur le site" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/fr/search/" aria-label="Rechercher sur le site"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Langue: Français"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">Français</span><span class="lang-short" aria-hidden="true">FR</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Langue"><a href="/compare/mealy-vs-moore-machine/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/mealy-vs-moore-machine/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/mealy-vs-moore-machine/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/mealy-vs-moore-machine/" hreflang="ko" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/mealy-vs-moore-machine/" hreflang="de" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/mealy-vs-moore-machine/" hreflang="nl" lang="nl" data-lang="nl">Nederlands</a><span aria-current="true" lang="fr">Français</span></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/fr/">Accueil</a><a href="/fr/c/">Thèmes</a><a href="/fr/glossary/">Glossaire</a><a href="/fr/compare/">Comparatifs</a><a href="/fr/figures/">Schémas</a><a href="/fr/tools/">Calculateurs</a><a href="/fr/stats/">Progression</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/fr/">Accueil</a> <span>›</span> <a href="/fr/compare/">Comparatifs</a></nav>
+<article class="compare-page">
+  <h1>Machine de Mealy vs machine de Moore : sorties, temporisation, nombre d’états et style HDL</h1>
+  <p class="lead">Une machine à états se compose d’un registre qui mémorise l’état courant, d’une logique combinatoire qui détermine l’état suivant et d’une logique combinatoire qui détermine les sorties. Les machines de Mealy et de Moore diffèrent par ce qui détermine les sorties. Dans une machine de Mealy, les sorties dépendent à la fois de l’état courant et des entrées courantes : un changement d’entrée apparaît en sortie dans le même cycle. Dans une machine de Moore, les sorties ne dépendent que de l’état courant : un changement d’entrée n’atteint la sortie qu’après la mise à jour de l’état par l’horloge, un cycle plus tard. Les machines de Mealy demandent moins d’états et réagissent plus vite ; les machines de Moore donnent des sorties stables et une temporisation plus prévisible.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copié !">Copier le tableau</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Lien copié">Partager</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Critère</th><th scope="col">Machine de Mealy</th><th scope="col">Machine de Moore</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Ce qui détermine la sortie</th><td>L’état courant et les entrées courantes</td><td>L’état courant seulement</td></tr>
+        <tr><th scope="row">Sortie dans un diagramme d’états</th><td>Écrite sur les flèches de transition sous la forme « entrée/sortie »</td><td>Écrite dans le cercle de l’état, avec le nom de l’état</td></tr>
+        <tr><th scope="row">Réaction aux entrées</th><td>Quand une entrée change, la sortie change dans le même cycle sans attendre l’horloge</td><td>La sortie change après la mise à jour de l’état au front d’horloge suivant, un cycle plus tard qu’avec une machine de Mealy</td></tr>
+        <tr><th scope="row">Nombre d’états (détecteur de « 101 » avec recouvrement)</th><td>3 états (aucune correspondance, 1 reconnu, 10 reconnu)</td><td>4 états (un état supplémentaire « 101 détecté » est nécessaire pour sortir 1)</td></tr>
+        <tr><th scope="row">Nombre d’états (en général)</th><td>Égal ou inférieur à celui d’une machine de Moore pour le même comportement</td><td>Les états de Mealy doivent être scindés selon la sortie de leurs transitions entrantes, d’où en général davantage d’états</td></tr>
+        <tr><th scope="row">Glitchs et bruit</th><td>Les glitchs et le bruit des entrées traversent la logique combinatoire jusqu’à la sortie</td><td>Le bruit des entrées n’atteint pas la sortie ; coder les états pour que les sorties soient directement des bits du registre d’état supprime aussi les glitchs en sortie</td></tr>
+        <tr><th scope="row">Chemins de temporisation</th><td>La logique combinatoire relie les entrées aux sorties, ce qui allonge les chemins incluant la logique environnante ; connecter des machines de Mealy entre elles peut créer des boucles combinatoires</td><td>Les sorties ne dépendent que de l’état après le front d’horloge : les chemins sont coupés par des registres et la temporisation est plus facile à analyser</td></tr>
+        <tr><th scope="row">Style HDL</th><td>Le bloc combinatoire des sorties lit les entrées en plus de l’état</td><td>Les expressions de sortie ne lisent que l’état (par exemple une instruction case qui fixe les sorties pour chaque état) ; les sorties sont souvent pilotées par des registres</td></tr>
+        <tr><th scope="row">Cas d’usage</th><td>Contrôle qui doit réagir sans un cycle de retard, ou quand on veut moins d’états</td><td>Signaux de contrôle qui exigent des sorties propres (vers un autre domaine d’horloge ou hors de la puce, par exemple), ou quand une temporisation prévisible compte</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Les valeurs indiquées sont des ordres de grandeur typiques et varient selon la génération de procédé et le produit.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>Quand choisir l&#39;un ou l&#39;autre ?</h2>
+  <dl class="compare-when">
+    <dt>Machine de Mealy</dt><dd>Adaptée pour réagir aux entrées dans le même cycle ou limiter le nombre d’états. Synchronisez d’abord les entrées sur l’horloge, et utilisez les sorties là où un bref glitch est sans conséquence, par exemple en les capturant dans des bascules sur la même horloge. Placer des registres en sortie supprime les glitchs, mais ajoute le même retard d’un cycle qu’une machine de Moore.</dd>
+    <dt>Machine de Moore</dt><dd>Adaptée aux conceptions qui privilégient la stabilité des sorties et une temporisation prévisible. Le bruit des entrées n’atteint pas les sorties, ce qui convient bien aux signaux de contrôle importants et aux signaux qui sortent de la puce. Tenez compte de la réaction un cycle plus tard et de la tendance à demander plus d’états. Dans les conceptions réelles, on choisit souvent Mealy ou Moore sortie par sortie, ou on combine les deux.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>Questions fréquentes</h2>
+  <h3>Que signifie concrètement « un cycle plus tard » ?</h3>
+  <p>Prenons un détecteur de « 101 ». Une machine de Mealy dans l’état « 10 reconnu » met sa sortie à 1 pendant le cycle même où l’entrée passe à 1. Une machine de Moore ne met sa sortie à 1 qu’après avoir capturé ce 1 au front d’horloge et être passée dans l’état « 101 détecté » : la sortie vaut donc 1 au cycle suivant. Les deux détectent les mêmes séquences d’entrée, mais la sortie de Moore est décalée d’un cycle par rapport à celle de Mealy.</p>
+  <h3>Peut-on convertir une machine de Mealy en machine de Moore et inversement ?</h3>
+  <p>Oui. Scinder chaque état de Mealy selon la sortie des transitions qui y entrent donne une machine de Moore de même comportement entrée-sortie, même si le nombre d’états peut augmenter et si les sorties apparaissent un cycle plus tard. Inversement, écrire la sortie de chaque état de Moore sur les transitions qui entrent dans cet état donne une machine de Mealy dont les sorties apparaissent un cycle plus tôt, et il est parfois possible de fusionner ensuite des états.</p>
+  <h3>Dans le code HDL, qu’est-ce qui fait d’une machine une machine de Mealy ou de Moore ?</h3>
+  <p>Les expressions de sortie. Quand le code est séparé en un bloc qui met à jour le registre d’état et un bloc combinatoire qui détermine l’état suivant et les sorties, la machine est de Mealy si les expressions de sortie contiennent des entrées, et de Moore si elles ne dépendent que de l’état. Dans le bloc combinatoire, affectez chaque sortie dans toutes les conditions pour éviter de créer des latchs involontaires.</p>
+  <h3>Une machine de Moore n’a-t-elle jamais de glitchs en sortie ?</h3>
+  <p>Les changements et le bruit des entrées n’atteignent pas les sorties, mais si une logique combinatoire décode l’état pour produire les sorties, plusieurs bits d’état qui changent en même temps peuvent provoquer un glitch. Coder les états pour que les sorties viennent directement des bits du registre d’état, ou placer des registres en sortie, donne des sorties sans glitch.</p>
+</section>
+<section>
+  <h2>Vérifier vos connaissances</h2>
+  <article class="q-mini" data-qid="hdl-verification-022" data-cat="hdl-verification" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
+    <h3><a href="/fr/q/hdl-verification/hdl-verification-022/">Quelle est la caractéristique d&#39;une machine d&#39;états de type Mealy ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Les sorties ne dépendent que de l&#39;état courant et ne changent pas avant le cycle suivant même si les entrées changent</span></li><li><span class="choice-mark">B</span><span class="choice-text">Les sorties dépendent à la fois de l&#39;état courant et des entrées, si bien qu&#39;un changement d&#39;entrée apparaît en sortie dans le même cycle</span></li><li><span class="choice-mark">C</span><span class="choice-text">C&#39;est un circuit combinatoire sans état</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Les sorties dépendent à la fois de l&#39;état courant et des entrées, si bien qu&#39;un changement d&#39;entrée apparaît en sortie dans le même cycle</p><p class="explanation">Dans une <a class="term-link" href="/fr/term/mealy-machine/">machine de Mealy</a>, la logique de sortie observe les entrées en plus de l&#39;état courant ; un changement d&#39;entrée modifie la sortie sans attendre l&#39;horloge, ce qui permet de réagir un cycle plus tôt. Le nombre d&#39;états peut aussi être réduit. En revanche, un chemin combinatoire relie les entrées aux sorties, si bien que le bruit d&#39;entrée peut apparaître en sortie et que les chemins temporels s&#39;allongent. On recapture parfois les sorties dans des bascules avant de les utiliser.</p></details>
+  </article>
+  <article class="q-mini" data-qid="logic-018" data-cat="logic" data-answer="1" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est B.">
+    <h3><a href="/fr/q/logic/logic-018/">Quel type de circuit séquentiel (machine à états) a une sortie déterminée uniquement par l&#39;état actuel ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Type Mealy</span></li><li><span class="choice-mark">B</span><span class="choice-text">Type Moore</span></li><li><span class="choice-mark">C</span><span class="choice-text">Type Harvard</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : B. Type Moore</p><p class="explanation">Dans le type Moore, la sortie dépend uniquement de l&#39;état actuel ; dans le type Mealy, elle dépend à la fois de l&#39;état et de l&#39;entrée. Le type Moore, dont la sortie ne change qu&#39;après un front d&#39;horloge et ne subit pas directement les variations ni les glitchs de l&#39;entrée, est stable et a un comportement temporel prévisible, mais sa réaction à l&#39;entrée est retardée d&#39;un cycle et le nombre d&#39;états tend à augmenter. Le type Mealy réduit le nombre d&#39;états et réagit immédiatement à l&#39;entrée, mais les variations de l&#39;entrée se répercutent directement sur la sortie. En pratique, on combine les deux.</p></details>
+  </article>
+  <article class="q-mini" data-qid="hdl-verification-020" data-cat="hdl-verification" data-answer="2" data-correct="Correct !" data-incorrect="Incorrect. La bonne réponse est C.">
+    <h3><a href="/fr/q/hdl-verification/hdl-verification-020/">Quelle est la structure de base d&#39;une machine d&#39;états décrite en HDL ?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Seulement une mémoire conservant l&#39;état, sans logique</span></li><li><span class="choice-mark">B</span><span class="choice-text">Seulement le circuit déterminant les sorties, sans mémorisation d&#39;état</span></li><li><span class="choice-mark">C</span><span class="choice-text">Un registre mémorisant l&#39;état courant, un circuit combinatoire déterminant l&#39;état suivant et un circuit combinatoire déterminant les sorties</span></li></ol>
+    <details class="q-answer"><summary>Afficher la réponse et l&#39;explication</summary><p class="verdict ok">Réponse : C. Un registre mémorisant l&#39;état courant, un circuit combinatoire déterminant l&#39;état suivant et un circuit combinatoire déterminant les sorties</p><p class="explanation">Une machine d&#39;états mémorise l&#39;état courant dans un registre de bascules, détermine l&#39;état suivant par un <a class="term-link" href="/fr/term/combinational-circuit/">circuit combinatoire</a> à partir de l&#39;état courant et des entrées, et met à jour l&#39;état sur front d&#39;horloge. Les sorties sont déterminées par un circuit combinatoire à partir de l&#39;état courant (et des entrées). La plupart des circuits suivant une procédure, comme le contrôle de protocoles de communication, les distributeurs automatiques ou les feux de circulation, sont décrits comme des machines d&#39;états.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/fr/q/hdl-verification/hdl-verification-023/">Quelle est la caractéristique du codage one-hot des états d&#39;une machine d&#39;états ?</a></li>
+  <li data-level="1"><a href="/fr/q/hdl-verification/hdl-verification-024/">Pour une machine d&#39;états à trois états, quelle combinaison donne le nombre de bascules nécessaires pour mémoriser l&#39;état (codage binaire / codage one-hot) ?</a></li>
+  <li><a href="/fr/q/logic/logic-006/">Quelle description d&#39;un circuit séquentiel est correcte ?</a></li></ol>
+  <p><a class="btn btn-primary" href="/fr/c/hdl-verification/">Questions d&#39;entraînement sur HDL et vérification</a></p>
+</section>
+<section>
+  <h2>Termes clés expliqués</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/fr/term/mealy-machine/">Machine de Mealy</a></dt><dd>Machine à états dont la sortie dépend à la fois de l&#39;état courant et des entrées. Un changement d&#39;entrée apparaît en sortie dans le même cycle, mais le bruit d&#39;entrée s&#39;y propage aussi plus facilement. Si la sortie ne dépend que de l&#39;état, c&#39;est une machine de Moore.</dd></div>
+    <div class="term"><dt><a href="/fr/term/sequential-circuit/">Circuit séquentiel</a></dt><dd>Circuit logique qui mémorise un état à l&#39;aide de bascules, etc., et dont la sortie dépend à la fois des entrées et des états passés. Exemples : compteurs, registres.</dd></div>
+    <div class="term"><dt><a href="/fr/term/combinational-circuit/">Circuit combinatoire</a></dt><dd>Circuit logique dont la sortie dépend uniquement des entrées présentes. Exemples : additionneurs, multiplexeurs, décodeurs.</dd></div>
+    <div class="term"><dt><a href="/fr/term/flip-flop/">Bascule (flip-flop)</a></dt><dd>Élément de base des circuits séquentiels qui mémorise un bit d&#39;information. La bascule D capture son entrée sur un front d&#39;horloge.</dd></div>
+    <div class="term"><dt><a href="/fr/term/glitch/">Glitch (impulsion parasite)</a></dt><dd>Impulsion indésirable et brève apparaissant en sortie, due par exemple aux différences de délai entre chemins. En logique combinatoire, on parle aussi d&#39;aléa ; dans un CNA, elle survient lors des changements de code.</dd></div>
+    <div class="term"><dt><a href="/fr/term/one-hot-encoding/">Codage one-hot</a></dt><dd>Codage qui attribue une bascule à chaque état d&#39;une machine à états, une seule étant à 1 à tout moment. La logique est simple et tend à être rapide ; très utilisé sur FPGA.</dd></div>
+    <div class="term"><dt><a href="/fr/term/combinational-loop/">Boucle combinatoire</a></dt><dd>Structure où la sortie d&#39;un circuit combinatoire revient sur sa propre entrée sans passer par une bascule. Elle peut osciller ou ne pas se stabiliser et empêche l&#39;analyse temporelle ; elle est donc à éviter.</dd></div>
+    <div class="term"><dt><a href="/fr/term/unintended-latch/">Latch involontaire</a></dt><dd>Latch mémorisant une valeur, créé par la synthèse logique dans une description censée être combinatoire, parce que la sortie n&#39;est pas affectée dans certaines conditions.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Comparatifs associés</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/fr/compare/synchronous-vs-asynchronous-reset/"><strong>Reset synchrone vs asynchrone : timing, horloge et relâchement</strong><span>Resets synchrone et asynchrone comparés : moment d&#39;action, besoin d&#39;horloge, glitches, analyse temporelle, re…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/combinational-vs-sequential-logic/"><strong>Logique combinatoire vs séquentielle : les différences expliquées</strong><span>Logique combinatoire et séquentielle comparées dans un tableau : de quoi dépend la sortie, éléments de mémori…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/verilog-vs-vhdl/"><strong>Verilog vs VHDL : les différences entre les deux HDL</strong><span>Verilog et VHDL comparés dans un tableau : origine, syntaxe, typage, sensibilité à la casse, fonctions de vér…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/blocking-vs-nonblocking-assignment/"><strong>Affectation bloquante (=) vs non bloquante (&lt;=) en Verilog</strong><span>Affectations bloquante (=) et non bloquante (&lt;=) comparées : mise à jour, dépendance à l&#39;ordre, logique combi…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/latch-vs-flip-flop/"><strong>Latch vs bascule : les différences expliquées</strong><span>Latch et bascule (flip-flop) comparés dans un tableau : déclenchement, comportement de la sortie, constructio…</span></a></li>
+  <li><a class="cmp-card" href="/fr/compare/cpu-vs-gpu/"><strong>CPU vs GPU : différences d&#39;architecture et d&#39;usage</strong><span>CPU et GPU comparés dans un tableau : objectif de conception, nombre de cœurs, modèle d&#39;exécution, caches, ba…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">Ce site d'apprentissage sur les semi-conducteurs est géré par un particulier.</p>
+    <p class="footer-request"><a href="/fr/contact/">Vos demandes et commentaires sont les bienvenus. Envoyez-les via le formulaire de contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/fr/about/">À propos</a>
+      <a href="/fr/figures/">Schémas</a>
+      <a href="/fr/privacy/">Politique de confidentialité</a>
+      <a href="/fr/disclaimer/">Avertissement</a>
+      <a href="/fr/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Semiconductor Room</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
