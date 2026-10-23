@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNSとは? 名前からIPアドレスを調べるしくみ | 半導体教室</title>
+<meta name="description" content="DNSは、www.example.com のような名前から通信に使うIPアドレスを調べるしくみです。世界中のサーバが分担して案内をたどる流れ、キャッシュとTTL、プライバシーと攻撃への備えをやさしく解説します。">
+<link rel="canonical" href="https://semiconroom.com/learn/how-dns-works/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/learn/how-dns-works/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/learn/how-dns-works/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/learn/how-dns-works/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/learn/how-dns-works/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DNSとは? 名前からIPアドレスを調べるしくみ | 半導体教室">
+<meta property="og:description" content="DNSは、www.example.com のような名前から通信に使うIPアドレスを調べるしくみです。世界中のサーバが分担して案内をたどる流れ、キャッシュとTTL、プライバシーと攻撃への備えをやさしく解説します。">
+<meta property="og:url" content="https://semiconroom.com/learn/how-dns-works/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"やさしい解説","item":"https://semiconroom.com/learn/"},{"@type":"ListItem","position":3,"name":"DNSとは? 名前からIPアドレスを調べるしくみ","item":"https://semiconroom.com/learn/how-dns-works/"}]},{"@context":"https://schema.org","@type":"Article","headline":"DNSとは? 名前からIPアドレスを調べるしくみ","description":"DNSは、www.example.com のような名前から通信に使うIPアドレスを調べるしくみです。世界中のサーバが分担して案内をたどる流れ、キャッシュとTTL、プライバシーと攻撃への備えをやさしく解説します。","inLanguage":"ja","datePublished":"2026-10-23","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/learn/how-dns-works/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/learn/how-dns-works/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/learn/how-dns-works/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/learn/how-dns-works/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/" lang="ko" data-lang="ko">한국어</a><a href="/de/" lang="de" data-lang="de">Deutsch</a><a href="/nl/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/learn/">やさしい解説</a> <span>›</span> <a href="/learn/#s-internet">ネットワークとインターネット</a></nav>
+<article class="prose learn-article">
+<h1>DNSとは? 名前からIPアドレスを調べるしくみ</h1>
+<p class="learn-meta">約14分 · 更新: 2026年10月23日</p>
+
+<p class="lead">DNSは、「www.example.com」のような名前から、通信に使う番号(IPアドレス)を調べるしくみです。世界中のサーバが名前の区切りごとに分担し、「次はあちらへ」という案内をたどって答えを見つけます。調べた答えは決まった時間だけ覚えておくので、ふだんは一瞬で済みます。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>名前と番号の両方が必要な理由と、ドメイン名の読み方</li>
+<li>名前から番号を調べるまでの流れ(リゾルバ・ルート・TLD・権威DNSサーバ)</li>
+<li>キャッシュとTTL、設定の変更がすぐ伝わらない理由</li>
+<li>DNSとプライバシー、攻撃と守り、DNSが原因の大きな障害</li>
+</ul><p class="muted">前提知識: 特にありません。「IPアドレスとは?」を読んでいると、より読みやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>Webサイトを開くとき、私たちは「www.example.com」のような名前を入力するか、リンクをタップします。メールの宛先も、「@」の後ろに名前がついた形です。数字の番号を入力することは、まずありません。</p>
+<p>一方で、「DNSの設定を変えたのに、前のサイトが出る」「DNSの障害で大手のサービスが止まった」という話も耳にします。名前の裏で、何が起きているのでしょうか。</p>
+</section>
+
+<section>
+<h2>なぜ名前と番号の2つがあるのか</h2>
+<p>インターネットでは、データを小さなかたまり(パケット)に分けて送ります。パケットの宛先に書けるのは、<a class="term-link" href="/term/ip-address/">IPアドレス</a>という番号だけです。番号のしくみは「<a href="/learn/what-is-an-ip-address/">IPアドレスとは?</a>」で説明しています。</p>
+<p>しかし「203.0.113.10」のような数字は、人には覚えにくいものです。また、サイトが別のサーバに引っ越すと、番号は変わります。名前を窓口にしておけば、番号が変わっても、利用者は同じ名前でつながれます。</p>
+<p>そこで、名前と番号の対応を調べるしくみが作られました。これを<a class="term-link" href="/term/dns/">DNS</a>(ドメインネームシステム)と呼びます。今の形の基本は、1987年に決められました。</p>
+<p>DNSの前は、全部の名前と番号の対応表を1つのファイルにまとめ、各コンピュータが写していました。コンピュータが増えると、更新が追いつかなくなりました。DNSは、この表を分けて、持ち主ごとに管理するしくみです。</p>
+</section>
+
+<section>
+<h2>ドメイン名は右から読む</h2>
+<p>「www.example.com」のように、点で区切った名前をドメイン名と呼びます。ドメイン名は、右へ行くほど大きな区切りを表します。日本の住所を「県・市・町・番地」と大きい順に書くのとは、逆の向きです。ただし住所と違い、ドメイン名は場所を表しません。</p>
+<p>いちばん右の「com」や「jp」のような区切りを、トップレベルドメイン(TLD)と呼びます。「com」はもともと会社向け、「jp」は日本向けの区切りです。その左の「example」は、組織や個人が申し込んで使う部分です。いちばん左の「www」は、持ち主が自由につける名前で、ここではWebサーバを指します。</p>
+<p>日本でよく見る「example.co.jp」では、「co」(日本の会社向け)が2段目になり、組織の名前はその左に来ます。</p>
+<p>実は、ドメイン名のいちばん右には、ふだん省略される点があります。正式には「www.example.com.」と書き、最後の点がすべての名前の出発点を表します。この出発点をルートと呼びます。名前の全体は、ルートを根元にして枝分かれする、1本の木の形をしています。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 400" role="img"><title>www.example.com. を右から読むと、ルート、TLDのcom、example、www の順。名前の全体はルートから枝分かれする木の形</title>
+<rect x="8" y="14" width="66" height="40" rx="6" class="n"/>
+<text x="41" y="40" text-anchor="middle">www</text>
+<text x="81" y="40" text-anchor="middle">.</text>
+<rect x="88" y="14" width="104" height="40" rx="6" class="ox"/>
+<text x="140" y="40" text-anchor="middle">example</text>
+<text x="199" y="40" text-anchor="middle">.</text>
+<rect x="206" y="14" width="64" height="40" rx="6" class="p"/>
+<text x="238" y="40" text-anchor="middle">com</text>
+<rect x="282" y="14" width="70" height="40" rx="6" class="metal"/>
+<text x="317" y="40" text-anchor="middle">.</text>
+<text x="41" y="76" text-anchor="middle">サーバ名</text>
+<text x="140" y="76" text-anchor="middle">組織の名前</text>
+<text x="238" y="76" text-anchor="middle">TLD</text>
+<text x="317" y="76" text-anchor="middle">ルート</text>
+<line x1="340" y1="96" x2="30" y2="96" class="ac"/><polygon points="20,96 32,90 32,102" class="fa"/>
+<text x="180" y="122" text-anchor="middle" class="a">右から順に、大きな区切り</text>
+<line x1="10" y1="140" x2="350" y2="140" class="thin"/>
+<rect x="140" y="156" width="80" height="36" rx="6" class="metal"/>
+<text x="180" y="180" text-anchor="middle">ルート</text>
+<line x1="160" y1="192" x2="62" y2="236" class="thin"/>
+<line x1="180" y1="192" x2="180" y2="236" class="ac"/>
+<line x1="200" y1="192" x2="298" y2="236" class="thin"/>
+<rect x="22" y="236" width="80" height="36" rx="6" class="p"/>
+<text x="62" y="260" text-anchor="middle">jp</text>
+<rect x="140" y="236" width="80" height="36" rx="6" class="p"/>
+<text x="180" y="260" text-anchor="middle">com</text>
+<rect x="258" y="236" width="80" height="36" rx="6" class="p"/>
+<text x="298" y="260" text-anchor="middle">org</text>
+<line x1="180" y1="272" x2="180" y2="300" class="ac"/>
+<rect x="124" y="300" width="112" height="36" rx="6" class="ox"/>
+<text x="180" y="324" text-anchor="middle">example</text>
+<line x1="160" y1="336" x2="110" y2="356" class="ac"/>
+<line x1="200" y1="336" x2="250" y2="356" class="thin"/>
+<rect x="66" y="356" width="88" height="36" rx="6" class="n"/>
+<text x="110" y="380" text-anchor="middle">www</text>
+<rect x="206" y="356" width="88" height="36" rx="6" class="n"/>
+<text x="250" y="380" text-anchor="middle">mail</text>
+</svg><figcaption class="fig-cap">ドメイン名は右から読み、ルートから枝をたどった道筋になります(太い線)。省略していること: 実際には1,000を超えるTLDと、その下の非常に多くの名前があること。「co.jp」のように段が多い名前。</figcaption></figure>
+</section>
+
+<section>
+<h2>名前から番号を調べる流れ</h2>
+<p>名前から番号を調べることを、「名前解決」と呼びます。名前解決には、役割の違う3種類の担当が関わります。</p>
+<p>1つ目は、スマホやパソコンの中にいる担当です。OSに組み込まれた小さなしくみで、決まった相手に「この名前の番号は?」と聞くだけです。自分では調べ回りません。これをスタブリゾルバと呼びます。聞く相手は、Wi-Fiにつないだときに<a class="term-link" href="/term/dhcp/">DHCP</a>で自動的に知らされるのがふつうです。</p>
+<p>2つ目は、その問い合わせを受けて、代わりに調べ回るサーバです。多くはプロバイダや会社が用意し、誰でも使える公開のものもあります。このサーバを、フルサービスリゾルバ、またはキャッシュDNSサーバと呼びます。以下、短く「リゾルバ」と書きます。</p>
+<p>3つ目は、答えの元を持っているサーバです。example.com の名前と番号の対応は、その持ち主が用意したサーバに書かれています。このように、その区切りについて正式な答えを持つサーバを、権威DNSサーバと呼びます。</p>
+<p>リゾルバは、まずルートを受け持つサーバに聞きます。これをルートサーバと呼びます。ルートサーバは答えを知りませんが、「comのことなら、comのサーバへ」と案内します。comのサーバ(TLDのサーバ)は、「example.comなら、このサーバへ」と案内します。最後にexample.comの権威DNSサーバが、「203.0.113.10です」と答えます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 372" role="img"><title>スマホがリゾルバに聞き、リゾルバがルートサーバ、comのサーバ、example.comの権威DNSサーバの順に聞いて、答えをスマホに返す</title>
+<rect x="8" y="12" width="110" height="52" rx="6" class="metal"/>
+<text x="63" y="44" text-anchor="middle">スマホ</text>
+<rect x="210" y="12" width="142" height="52" rx="6" class="metal"/>
+<text x="281" y="35" text-anchor="middle">リゾルバ</text>
+<text x="281" y="56" text-anchor="middle" class="m">プロバイダなど</text>
+<line x1="118" y1="28" x2="200" y2="28" class="ac"/><polygon points="210,28 199,23 199,33" class="fa"/>
+<text x="164" y="20" text-anchor="middle">①</text>
+<line x1="210" y1="50" x2="128" y2="50" class="ln"/><polygon points="118,50 129,45 129,55" class="ink"/>
+<text x="164" y="76" text-anchor="middle">⑤</text>
+<line x1="300" y1="64" x2="300" y2="310" class="dash"/>
+<rect x="8" y="94" width="206" height="58" rx="6" class="p"/>
+<text x="18" y="117">② ルートサーバ</text>
+<text x="18" y="141" class="m">「comはこちらへ」</text>
+<line x1="300" y1="114" x2="224" y2="114" class="ac"/><polygon points="214,114 225,109 225,119" class="fa"/>
+<line x1="214" y1="134" x2="290" y2="134" class="ln"/><polygon points="300,134 289,129 289,139" class="ink"/>
+<rect x="8" y="172" width="206" height="58" rx="6" class="p"/>
+<text x="18" y="195">③ comのサーバ</text>
+<text x="18" y="219" class="m">「exampleはこちらへ」</text>
+<line x1="300" y1="192" x2="224" y2="192" class="ac"/><polygon points="214,192 225,187 225,197" class="fa"/>
+<line x1="214" y1="212" x2="290" y2="212" class="ln"/><polygon points="300,212 289,207 289,217" class="ink"/>
+<rect x="8" y="250" width="206" height="58" rx="6" class="ox"/>
+<text x="18" y="273">④ 権威DNSサーバ</text>
+<text x="18" y="297" class="m">「203.0.113.10です」</text>
+<line x1="300" y1="270" x2="224" y2="270" class="ac"/><polygon points="214,270 225,265 225,275" class="fa"/>
+<line x1="214" y1="290" x2="290" y2="290" class="ln"/><polygon points="300,290 289,285 289,295" class="ink"/>
+<line x1="20" y1="334" x2="50" y2="334" class="ac"/>
+<text x="58" y="339">問い合わせ</text>
+<line x1="170" y1="334" x2="200" y2="334" class="ln"/>
+<text x="208" y="339">答え・案内</text>
+<text x="180" y="364" text-anchor="middle" class="a">⑤ 答えを返し、しばらく覚える</text>
+</svg><figcaption class="fig-cap">スマホはリゾルバに聞くだけで、案内をたどるのはリゾルバです。省略していること: スマホやブラウザの中のキャッシュ、②③はふだん覚えた答えで省かれること、IPv6の番号も調べること。番号は説明用の例です。</figcaption></figure>
+<p>どのサーバも、自分の区切りの中のことと、1つ下の区切りの案内先だけを知っています。だから、世界中の名前を1か所で抱える必要がありません。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>リゾルバの動きは、大きな役所で、代わりの人が窓口を回ってくれる様子に似ています。総合案内で聞くと「その件は3階の課へ」と言われ、課では「担当は奥の係です」と案内されます。最後の係で、ようやく答えがわかります。似ているのは「どの窓口も、全部は知らず、次に聞く先を知っている」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 役所の窓口は1か所ずつですが、DNSの各段は、同じ答えを持つサーバが何台も用意されています。また、リゾルバは一度聞いた案内を覚えていて、次からは途中の窓口を飛ばします。</p></aside>
+</section>
+
+<section>
+<h2>答えを覚えておく: キャッシュとTTL</h2>
+<p>毎回ルートから順に聞いていたら、時間がかかり、ルートサーバにも問い合わせが集中します。そこでリゾルバは、一度得た答えをしばらく覚えておきます。この「一時的に覚えておくこと」や、その置き場所をキャッシュと呼びます。スマホやブラウザも、小さなキャッシュを持っています。</p>
+<p>覚えておく時間は、ドメインの持ち主が決め、答えに添えて返します。この時間をTTL(Time To Live)と呼び、秒で表します。例えばTTLが3600なら、1時間は覚えた答えを使い、その後に聞き直します。</p>
+<p>「comのサーバはどこか」という案内も同じように覚えるので、ルートサーバに聞く回数はわずかです。よく使われる名前なら、リゾルバのキャッシュだけで答えが出ます。</p>
+<p>このしくみには、裏返しの面もあります。サーバの引っ越しで番号を変えても、世界中のリゾルバは、TTLが切れるまで古い答えを使います。「DNSの変更が浸透するまで待つ」と言われるのはこのためです。実際は、何かが世界に順に広がるのではなく、各地のキャッシュが切れるのを待っているのです。そこで、引っ越しの前にTTLを短くしておくのが、よくある備えです。</p>
+</section>
+
+<section>
+<h2>ルートサーバは13台しかない?</h2>
+<p>ルートサーバには、aからmまでの13の名前がついています。運用しているのは12の組織で、米国のVerisign社がAとJを受け持っています。Mは、日本のWIDEプロジェクトが運用しています。</p>
+<p>ただし、「世界に13台しかない」わけではありません。それぞれの名前の裏には、世界各地に置かれた多くの複製があります。運用組織が共同で公開するroot-servers.orgによると、2026年時点で約2,000か所あります。</p>
+<p>各地の複製は、同じ番号を一斉に名乗っています。途中のルータは、その番号宛てのパケットを、経路の上でいちばん近い複製へ届けます。この届け方をエニーキャストと呼びます。1か所が故障したり攻撃を受けたりしても、ほかの場所が答え続けられます。</p>
+</section>
+
+<section>
+<h2>DNSに登録されている情報: 主なレコード</h2>
+<p>権威DNSサーバには、名前ごとに「どんな種類の情報か」をつけた行が登録されています。この1行1行をレコードと呼びます。</p>
+<table>
+<thead><tr><th>種類</th><th>中身</th><th>例</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>名前に対応するIPv4の番号</td><td>www.example.com → 203.0.113.10</td></tr>
+<tr><td>AAAA</td><td>名前に対応するIPv6の番号</td><td>www.example.com → 2001:db8::10</td></tr>
+<tr><td>CNAME</td><td>別名。「この名前は、あの名前と同じ」</td><td>shop.example.com → 外部のサービスの名前</td></tr>
+<tr><td>MX</td><td>その名前宛てのメールを受け取るサーバ</td><td>example.com → mail.example.com</td></tr>
+<tr><td>TXT</td><td>自由な文字列。メールの送り主の確認などに使う</td><td>メールを送ってよいサーバの宣言</td></tr>
+<tr><td>NS</td><td>その区切りを受け持つ権威DNSサーバ</td><td>example.com → ns1.example.com</td></tr>
+</tbody>
+</table>
+<p>IPv6の番号は、IPv4の4倍の長さ(128ビット)です。違いは「<a href="/compare/ipv4-vs-ipv6/">IPv4とIPv6の違い</a>」の表で見られます。</p>
+<p>CNAMEは、配信を<a class="term-link" href="/term/cdn/">CDN</a>(各地のサーバから配信を代行するサービス)などに任せるときに使います。相手の名前の別名にしておけば、相手が番号を変えても、自分の設定は直さずに済みます。</p>
+<p>メールを送るサーバは、宛先の「@」の後ろの名前のMXレコードを調べて、届け先を探します。</p>
+</section>
+
+<section>
+<h2>DNSとプライバシー</h2>
+<p>昔からの方式のDNSの問い合わせは、暗号化されずに送られます。そのため、同じWi-Fiにいる人や途中の通信事業者は、どの名前を調べたかを読み取れます。</p>
+<p>「<a href="/learn/what-does-https-mean/">HTTPSとは?</a>」で見たとおり、HTTPSで中身を守っても、どのサイトを見ようとしたかは、ここから分かります。</p>
+<p>そこで、DNSの問い合わせそのものを暗号化する方式が作られました。HTTPSと同じ<a class="term-link" href="/term/tls/">TLS</a>で包んで送る方式をDNS over TLS(DoT)と呼び、2016年に規格になりました。HTTPSの通信として送る方式をDNS over HTTPS(DoH)と呼び、2018年に規格になりました。どちらも、多くのブラウザやOSで使えます。</p>
+<p>ただし、暗号化されるのは、自分の機器とリゾルバの間だけです。リゾルバ自身は、どの名前が調べられたかを知っています。リゾルバから権威DNSサーバへの問い合わせも、多くはまだ暗号化されていません。どのリゾルバを使うかは、「問い合わせの記録を誰に預けるか」を選ぶことでもあります。</p>
+</section>
+
+<section>
+<h2>DNSをねらう攻撃と、その守り</h2>
+<h3>偽の答えを覚えさせる: キャッシュポイズニング</h3>
+<p>リゾルバに偽の答えを覚えさせる攻撃を、DNSキャッシュポイズニングと呼びます。成功すると、利用者が正しい名前を入力しても、偽のサーバに案内されます。偽の答えが覚えられている間は、そのリゾルバを使う全員が影響を受けます。</p>
+<p>リゾルバは、問い合わせにつけた番号(ID)と同じ番号の答えを、本物と見なします。このIDは16ビットで、65,536通りしかありません。攻撃者は、本物の答えより先に、IDを当て推量した偽の答えを大量に送りつけます。</p>
+<p>2008年、研究者のダン・カミンスキーは、この攻撃をずっと成功させやすくする方法を見つけました。存在しない名前を次々に問い合わせさせて、何度でも挑戦できるようにする方法です。同年7月8日、米国の対策機関CERT/CCが公表し、多くのDNSソフトが同時に修正されました。修正の中心は、<a class="term-link" href="/term/port-number/">ポート番号</a>も毎回ばらばらにして、当てるべき組み合わせを増やすことでした。</p>
+<h3>答えに署名をつける: DNSSEC</h3>
+<p>より根本的な対策が、DNSSECです。ドメインの持ち主が、レコードに電子的なはんこ(<a class="term-link" href="/term/digital-signature/">デジタル署名</a>)をつけます。リゾルバは、ルートから順に署名をたどり、答えが本物で、途中で書き換えられていないかを確かめます。ルートには、2010年7月から署名がつけられています。</p>
+<p>ただし、DNSSECには、できないこともあります。答えを暗号化しないので、どの名前を調べたかは隠せません(それはDoHやDoTの役目です)。署名をつけていないドメインや、署名を確かめないリゾルバでは効きません。大量の通信で相手を止める攻撃(DDoS)も防げません。</p>
+<p>もう1つの守りが、HTTPSです。偽のサーバに案内されても、そのサーバは、ふつうその名前の正しい証明書を持っていません。そのためブラウザが警告を出します。警告が出たら、先へ進まないことが大切です。</p>
+</section>
+
+<section>
+<h2>DNSが止まると: 2021年のFacebookの障害</h2>
+<p>2021年10月4日、Facebook・Instagram・WhatsAppが6時間以上つながらなくなりました。以下は、運営会社(今のMeta社)が翌日に公開した説明の要約です。</p>
+<p>きっかけは、社内の回線の保守作業でした。回線の空き具合を調べるつもりで出したコマンドが、世界中のデータセンターをつなぐ回線を、すべて切ってしまいました。こうした誤りを止めるはずの点検の道具にも、不具合がありました。</p>
+<p>同社の権威DNSサーバは、データセンターと連絡が取れないと、接続に問題があると判断するように作られていました。そのときは、「この番号へはこちらへ」という道案内を、インターネットに出すのをやめます。この道案内を交換する決まりを<a class="term-link" href="/term/bgp/">BGP</a>と呼びます。結果として、DNSサーバ自体は動いていたのに、外からたどり着けなくなりました。</p>
+<p>世界中のリゾルバは、facebook.com などの番号を調べられなくなりました。サービスのサーバが動いていても、番号が分からなければ、利用者はつながれません。社内の道具も同じネットワークに頼っていたため、技術者がデータセンターへ出向いて復旧させました。Metaは、攻撃によるものではないとしています。</p>
+</section>
+
+<section>
+<h2>自分で試してみる</h2>
+<p>名前解決は、パソコンで実際に見られます。Windowsのコマンドプロンプトや、Macのターミナルで「nslookup example.com」と入力します。番号と、答えたリゾルバが表示されます。</p>
+<p>Macなどで「dig +trace example.com」と入力すると、ルートから順にたどる様子も見られます。どちらも調べるだけで、設定は変わりません。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: DNSは、世界のどこかにある1台の大きなサーバ</p><p>実際は、名前の区切りごとに、たくさんのサーバが分担しています。ルートだけでも13の名前があり、約2,000か所で動いています(2026年)。それぞれのドメインの答えは、その持ち主の権威DNSサーバが持っています。スマホの設定に出てくる「DNSサーバ」は、このうち自分が問い合わせるリゾルバのことです。</p></div>
+<div class="myth"><p class="myth-q">誤解: DNSサーバを変えると、インターネットが速くなる</p><p>実際は、変わるのは名前を調べる時間だけです。これはつながる前の最初の一歩で、多くはキャッシュからすぐ答えが出ます。動画やファイルを受け取る速さは変わりません。</p><p>逆に遅くなることもあります。大きなサービスの中には、リゾルバの場所を手がかりに、近いサーバの番号を返すものがあるからです。遠いリゾルバを使うと、遠いサーバに案内されることがあります。今のリゾルバが遅いなら、変えて改善することはあります。</p></div>
+<div class="myth"><p class="myth-q">誤解: HTTPSなら、どのサイトを見ているかも隠れる</p><p>実際は、HTTPSが隠すのはページの中身やURLの後半などです。昔からの方式のDNSの問い合わせは暗号化されないので、調べた名前は途中から読み取れます。DoHやDoTを使っても、リゾルバには分かります。相手のIPアドレスや、HTTPSの準備で送るサイトの名前(SNI)から分かることもあります。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>時点・出典</th></tr></thead>
+<tbody>
+<tr><td>ルートサーバの名前と運用組織</td><td>13(a〜m)と12</td><td>IANA、root-servers.org</td></tr>
+<tr><td>ルートサーバの稼働中の拠点</td><td>約2,000か所</td><td>2026年、root-servers.org</td></tr>
+<tr><td>TLDの数</td><td>1,000を超える</td><td>2026年、IANAの一覧</td></tr>
+<tr><td>Facebookなどがつながらなかった時間</td><td>6時間以上</td><td>2021年10月4日、外部の観測(ThousandEyes)</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="/compare/tcp-vs-udp/">TCPとUDPの違い</a>(DNSの問い合わせが主にUDPを使う理由)</li>
+<li>経路の案内のしくみ: <a href="/compare/ospf-vs-bgp/">OSPFとBGPの違い</a>(Facebookの障害で出てきたBGPの位置づけ)</li>
+<li>止まりにくくする計算: <a href="/tools/availability-calculator/">稼働率の計算ツール</a>(サーバを複数置くと止まりにくくなる計算)</li>
+<li>次の一歩の用語: <a class="term-link" href="/term/url/">URL</a>(ドメイン名を含む、Webページの場所の書き方)</li>
+<li>名前を調べた後の流れ: 「<a href="/learn/how-the-internet-delivers-data/">インターネットはどうやってデータを届けるの?</a>」</li>
+</ul>
+</section>
+
+</article>
+
+<section>
+  <h2>シリーズ「ネットワークとインターネット」の記事</h2>
+  <ol class="learn-toc"><li><a href="/learn/how-the-internet-delivers-data/" data-track="learn_series">インターネットはどうやってデータを届けるの? パケットとルータ</a></li><li><a href="/learn/what-is-an-ip-address/" data-track="learn_series">IPアドレスとは? ネットの住所のしくみとIPv4・IPv6</a></li><li><a href="/learn/how-wi-fi-works/" data-track="learn_series">Wi-Fiのしくみとは? 電波でデータを送る方法と速さが変わる理由</a></li><li><a href="/learn/what-does-https-mean/" data-track="learn_series">HTTPSとは? 鍵マークが守っているもの・守れないもの</a></li><li><strong aria-current="page">DNSとは? 名前からIPアドレスを調べるしくみ</strong></li></ol>
+</section>
+<p class="learn-quiz muted">この分野の問題: <a href="/c/network/" data-track="learn_topic">ネットワークの基礎</a></p>
+<details class="news-sources"><summary>参考にした資料</summary><ul><li><a href="https://www.rfc-editor.org/rfc/rfc1034" target="_blank" rel="noopener">RFC 1034: Domain Names — Concepts and Facilities(IETF, 1987年。名前の木構造、HOSTS.TXT からの移行の経緯)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc1035" target="_blank" rel="noopener">RFC 1035: Domain Names — Implementation and Specification(IETF, 1987年。レコードの種類、16ビットのID、53番ポート)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc1591" target="_blank" rel="noopener">RFC 1591: Domain Name System Structure and Delegation(IETF, 1994年。com は営利の組織向けなど、TLDの役割)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9499.html" target="_blank" rel="noopener">RFC 9499: DNS Terminology(IETF, 2024年。スタブリゾルバ・フルサービスリゾルバ・権威サーバなどの用語)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc3596" target="_blank" rel="noopener">RFC 3596: DNS Extensions to Support IP Version 6(IETF, 2003年。AAAAレコード)</a></li><li><a href="https://root-servers.org/" target="_blank" rel="noopener">Root Server Technical Operations Association: root-servers.org(13のルートサーバと12の運用組織、稼働中の拠点数。2026年は約2,000か所)</a></li><li><a href="https://www.iana.org/domains/root/servers" target="_blank" rel="noopener">IANA: Root Servers(a〜m のルートサーバと運用組織の一覧)</a></li><li><a href="https://data.iana.org/TLD/tlds-alpha-by-domain.txt" target="_blank" rel="noopener">IANA: List of Top-Level Domains(TLDの一覧。2026年時点で1,000を超える)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc7858" target="_blank" rel="noopener">RFC 7858: Specification for DNS over Transport Layer Security (TLS)(IETF, 2016年)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc8484" target="_blank" rel="noopener">RFC 8484: DNS Queries over HTTPS (DoH)(IETF, 2018年)</a></li><li><a href="https://kb.cert.org/vuls/id/800113" target="_blank" rel="noopener">CERT/CC: Vulnerability Note VU#800113 — Multiple DNS implementations vulnerable to cache poisoning(2008年7月8日)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc5452" target="_blank" rel="noopener">RFC 5452: Measures for Making DNS More Resilient against Forged Answers(IETF, 2009年。IDとポート番号のランダム化)</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc4033" target="_blank" rel="noopener">RFC 4033: DNS Security Introduction and Requirements(IETF, 2005年。DNSSECが守るものと守らないもの)</a></li><li><a href="https://www.iana.org/dnssec" target="_blank" rel="noopener">IANA: DNSSEC(ルートゾーンの署名。2010年7月から)</a></li><li><a href="https://engineering.fb.com/2021/10/05/networking-traffic/outage-details/" target="_blank" rel="noopener">Engineering at Meta: More details about the October 4 outage(2021年10月5日)</a></li><li><a href="https://engineering.fb.com/2021/10/04/networking-traffic/outage/" target="_blank" rel="noopener">Engineering at Meta: Update about the October 4th outage(2021年10月4日)</a></li><li><a href="https://www.thousandeyes.com/blog/facebook-outage-analysis" target="_blank" rel="noopener">ThousandEyes: Facebook Outage Analysis(2021年10月。障害の時刻の外部からの観測)</a></li></ul></details>
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="/learn/">やさしい解説の一覧へ</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

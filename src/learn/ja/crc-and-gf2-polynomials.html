@@ -1,0 +1,206 @@
+<!--
+{
+  "title": "CRCとは? 0と1の割り算で通信の誤りを見つけるしくみ",
+  "description": "CRCは、データを0と1だけの世界で割った余りを検査用の値として付け、受け取った側で計算し直して誤りを見つけるしくみです。パリティとの違い、手で解く割り算、XORの回路、見つけられる誤りと直せない理由を解説します。",
+  "series": "foundations",
+  "order": 6,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2028-10",
+  "cats": ["info-theory", "io-interface", "network", "logic"],
+  "terms": ["CRC(巡回冗長検査)", "パリティビット", "シフトレジスタ"],
+  "sources": [
+    { "title": "W. W. Peterson, D. T. Brown: Cyclic Codes for Error Detection, Proceedings of the IRE 49(1), 228–235 (1961)", "url": "https://doi.org/10.1109/JRPROC.1961.287814" },
+    { "title": "Japan Prize Foundation: 1999 Japan Prize, W. Wesley Peterson(誤り訂正・誤り検出の符号の理論の確立)", "url": "https://www.japanprize.jp/en/prize_past_1999_prize01.html" },
+    { "title": "P. Koopman: 32-Bit Cyclic Redundancy Codes for Internet Applications, DSN 2002(32ビットの生成多項式の全数探索。イーサネットのCRC-32は最大長のフレームでHD=4)", "url": "https://kilthub.cmu.edu/articles/journal_contribution/32-Bit_Cyclic_Redundancy_Codes_for_Internet_Applications/6620594" },
+    { "title": "P. Koopman, Carnegie Mellon University: CRC Polynomial Zoo(データの長さごとの生成多項式の性能の一覧。表の読み方のページ)", "url": "https://users.ece.cmu.edu/~koopman/crc/notes.html" },
+    { "title": "IEEE 802.3-2022, IEEE Standard for Ethernet(IEEE Standards Association。FCSはCRC-32)", "url": "https://standards.ieee.org/ieee/8802-3/10422/" },
+    { "title": "IEEE 802.16 contribution C80216maint-05/136r6(IEEE 802.3と同じCRC-32の生成多項式。最上位を省いた16進数で0x04C11DB7)", "url": "https://grouper.ieee.org/groups/802/16/maint/contrib/C80216maint-05_136r6.pdf" },
+    { "title": "IEEE 802.11-2020, Wireless LAN MAC and PHY Specifications(MACフレームの最後に32ビットのFCS。2024年版で置き換え)", "url": "https://standards.ieee.org/ieee/802.11/7028/" },
+    { "title": "USB-IF: USB 2.0 Specification(トークンはCRC5、データはCRC16)", "url": "https://www.usb.org/document-library/usb-20-specification" },
+    { "title": "SD Association: Simplified Specifications, Part 1 Physical Layer(命令はCRC7、データはCRC16)", "url": "https://www.sdcard.org/downloads/pls/" },
+    { "title": "W3C: Portable Network Graphics (PNG) Specification (Third Edition), 2025(チャンクごとのCRC)", "url": "https://www.w3.org/TR/png-3/" },
+    { "title": "PKWARE: APPNOTE.TXT, .ZIP File Format Specification(ファイルごとのCRC-32)", "url": "https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT" },
+    { "title": "GS1: How to calculate a check digit manually(GTIN-13 = JANコードのチェックデジット)", "url": "https://gs1.org/how-calculate-check-digit-manually" },
+    { "title": "R. Braden, D. Borman, C. Partridge: RFC 1071, Computing the Internet Checksum (1988)", "url": "https://www.rfc-editor.org/rfc/rfc1071" },
+    { "title": "N. Borisov, I. Goldberg, D. Wagner: Intercepting Mobile Communications: The Insecurity of 802.11, MobiCom 2001(WEPのCRC-32では書き換えを防げない)", "url": "https://csclub.uwaterloo.ca/~iagoldbe/pubs/wep-mob01.pdf" },
+    { "title": "R. W. Hamming: Error Detecting and Error Correcting Codes, Bell System Technical Journal 29(2), 147–160 (1950)(Internet Archive)", "url": "https://archive.org/details/bstj29-2-147" },
+    { "title": "I. S. Reed, G. Solomon: Polynomial Codes over Certain Finite Fields, J. SIAM 8(2), 300–304 (1960)", "url": "https://epubs.siam.org/doi/10.1137/0108018" },
+    { "title": "ATM Forum af-phy-0034.000(ATMのセルの見出しは、CRC-8のHECで1ビットの誤りを直す。ITU-T I.432)", "url": "https://sunsite.icm.edu.pl/packages/normos/atm/af-phy-0034.000.pdf" }
+  ]
+}
+-->
+<p class="lead">CRC(巡回冗長検査)は、データから計算した短い検査用の値を付けて送り、受け取った側が計算し直して誤りを見つけるしくみです。計算は0と1だけの「割り算の余り」で、引き算の代わりにXORを使うので、小さな回路で速く求められます。有線LANやWi-Fi、ZIPファイルなどで使われ、偶然の誤りはほとんど見逃しません。ただし、誤りを直すことも、わざとの書き換えを見破ることもできません。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>誤りを見つける「検査用の値」の考え方</li>
+<li>パリティやチェックサムが見逃す誤り</li>
+<li>0と1だけの割り算で、CRCを手で求める方法</li>
+<li>CRCを計算する回路のしくみ</li>
+<li>CRCが必ず見つける誤りと、CRCにできないこと</li>
+</ul><p class="muted">前提知識: 2進数と、XOR(2つの入力が違うときに1を出す計算)。どちらも「<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">コンピュータは0と1でどう計算するの?</a>」で説明しています。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>ダウンロードしたZIPファイルを開こうとして、「ファイルが壊れています」と表示されたことはないでしょうか。ZIPファイルには、中のファイルごとに、中身から計算した検査用の値が書かれています。開くソフトは同じ値を計算し直し、合わなければ「壊れている」と判断します。この値がCRCです。</p>
+<p>データは0と1の並びで運ばれ、保存されます。その途中で、0が1に、1が0にひっくり返ることがあります。ケーブルに入る電気の雑音、弱い電波、メモリに当たる宇宙からの粒子({{term:ソフトエラー}})などが原因です。</p>
+<p>どれもめったに起きませんが、ゼロにはできません。例えば誤る割合が1兆ビットに1個でも、1秒に10億ビット送れば、約17分に1個は誤ります。そこで、受け取った側で確かめるしくみが必要になります。</p>
+</section>
+
+<section>
+<h2>検査用の値を付ける、という考え方</h2>
+<p>お店の商品のバーコード(JANコード)は、ふつう13桁の数字です。最後の1桁は、ほかの12桁から決まった計算で作った検査用の数字です。レジは同じ計算をして最後の1桁と合うかを確かめ、合わなければ読み直します。</p>
+<p>「データから計算した短い値を一緒に送り、受け取った側で計算し直して比べる」。これが誤りを見つける基本の考え方です。CRCも同じ考え方で、計算のしかたが違うだけです。</p>
+<h3>いちばん簡単な検査: パリティ</h3>
+<p>0と1の並びで最も簡単なのは、1の個数を数える方法です。データの1の個数が偶数になるように、最後に0か1を1つ付け足します。この1ビットを{{term:パリティビット}}と呼びます。</p>
+<p>例えば1011001は1が4個(偶数)なので、0を付けて10110010として送ります。途中で1ビットだけひっくり返ると、1の個数が奇数になるので、誤りに気づけます。</p>
+<p>ところが、2ビットが同時にひっくり返ると、1の個数は偶数のままで、誤りを見逃します。雑音はある時間続けて入ることが多く、となり合う何ビットかがまとめて化けやすいのです。このひとかたまりの誤りをバースト誤りと呼びます。化けたビットが偶数個なら、パリティは見逃します。</p>
+<h3>足し算の検査: チェックサム</h3>
+<p>データを16ビットなどの塊に区切って全部足し、合計を付ける方法もあります。これをチェックサムと呼び、インターネットのIPやTCPで使われています(RFC 1071)。</p>
+<p>ただし足し算は、順番を入れ替えても答えが同じです。そのため、塊どうしが入れ替わる誤りや、ある塊が1増えて別の塊が1減る誤りを見逃します。CRCは、ビットの位置まで区別できるように計算を工夫した方法です。</p>
+</section>
+
+<section>
+<h2>CRCが使われている所</h2>
+<p>CRCは、身の回りの通信やファイルで広く使われています。名前の後の数字は、検査用の値のビット数です。</p>
+<table>
+<thead><tr><th>使われている所</th><th>CRCの種類</th><th>守るもの</th></tr></thead>
+<tbody>
+<tr><td>有線LAN(イーサネット)</td><td>CRC-32</td><td>送るまとまり全体</td></tr>
+<tr><td>Wi-Fi</td><td>CRC-32</td><td>送るまとまり全体</td></tr>
+<tr><td>USB</td><td>CRC-5、CRC-16</td><td>短い指示、データ</td></tr>
+<tr><td>SDカード</td><td>CRC-7、CRC-16</td><td>命令、データ</td></tr>
+<tr><td>PNG画像</td><td>CRC-32</td><td>ファイル内の区切りごと</td></tr>
+<tr><td>ZIPファイル</td><td>CRC-32</td><td>中のファイルごと</td></tr>
+</tbody>
+</table>
+<p>{{term:イーサネット}}では、データを「フレーム」というまとまりに分けて送り、最後に4バイト(32ビット)のCRCを付けます。この部分をFCS(フレームの検査用の並び)と呼びます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 196" role="img"><title>イーサネットのフレーム: 最後の4バイトに、前の部分から計算したCRC-32(FCS)が入る</title><line x1="14" y1="40" x2="266" y2="40" class="dash"/><line x1="14" y1="34" x2="14" y2="46" class="thin"/><line x1="266" y1="34" x2="266" y2="46" class="thin"/><text x="140" y="26" text-anchor="middle" class="m">CRCを計算する範囲</text><rect x="14" y="56" width="56" height="40" class="ok"/><text x="42.0" y="82" text-anchor="middle">宛先</text><text x="42.0" y="118" text-anchor="middle" class="m">6</text><rect x="70" y="56" width="62" height="40" class="ok"/><text x="101.0" y="82" text-anchor="middle">送信元</text><text x="101.0" y="118" text-anchor="middle" class="m">6</text><rect x="132" y="56" width="46" height="40" class="ok"/><text x="155.0" y="82" text-anchor="middle">種類</text><text x="155.0" y="118" text-anchor="middle" class="m">2</text><rect x="178" y="56" width="88" height="40" class="ok"/><text x="222.0" y="82" text-anchor="middle">データ</text><text x="222.0" y="118" text-anchor="middle" class="m">46〜1500</text><rect x="266" y="56" width="60" height="40" class="ok"/><text x="296.0" y="82" text-anchor="middle" class="a">FCS</text><text x="296.0" y="118" text-anchor="middle" class="m">4</text><rect x="266" y="56" width="60" height="40" class="ac"/><text x="326" y="140" text-anchor="end" class="m">数字はバイト数</text><text x="14" y="168" text-anchor="start">FCS = 前の部分のCRC-32</text><text x="14" y="190" text-anchor="start">受け取った側は計算し直して比べる</text></svg><figcaption class="fig-cap">イーサネットで1回に送るまとまり(フレーム)。最後の4バイト(FCS)に、宛先からデータまでのCRC-32が入る。省略していること: 前に付く同期用の信号、VLANの欄。箱の幅はバイト数に比例しない。</figcaption></figure>
+<p>受け取った機器は、FCSが合わないフレームを捨てます。イーサネット自身は送り直さず、欠けたデータは、{{term:TCP}}というしくみが送り直します。Wi-Fiでは、正しく届くと受け取った側が返事を返し、返事がなければ送り直します(「<a href="{{home}}learn/how-wi-fi-works/">Wi-Fiのしくみとは?</a>」)。</p>
+</section>
+
+<section>
+<h2>しくみ1: 繰り上がりのない、0と1だけの計算</h2>
+<p>CRCの計算は、ふつうの算数とは少し違う「0と1だけの世界」で行います。この世界の足し算の規則は、次の3つです。</p>
+<ul>
+<li>0+0=0</li>
+<li>0+1=1、1+0=1</li>
+<li>1+1=0(繰り上がりはない)</li>
+</ul>
+<p>ふつうの2進数なら1+1=10と繰り上がりますが、ここでは繰り上がりを捨てます。すると「2つが違えば1、同じなら0」となり、XORと同じ規則になります。足し算の回路(半加算器)から、繰り上がりの出力を外したものです。</p>
+<p>引き算も同じ規則になります。0−1は「1を足すと0になる数」なので、1+1=0から1です。つまりこの世界では、引き算も足し算も、どちらもXORです。各桁を隣と無関係に計算できるので、回路がとても簡単になります。</p>
+<p>数学では、この0と1だけの世界をGF(2)と呼びます。GFはガロア体(Galois field)の略で、19世紀の数学者ガロアの名前です。この記事では「繰り上がりのない2進数の計算」と覚えれば十分です。</p>
+</section>
+
+<section>
+<h2>しくみ2: 0と1の並びを多項式として見る</h2>
+<p>次に、0と1の並びを、多項式という形で書き直します。多項式は、x²+3x+1のような、xの何乗かを足し合わせた式です。CRCでは並びの各桁を「xの何乗」という名札で呼び、その桁が1なら書き、0なら書きません。</p>
+<p>例えば1011は、左から順にx³・x²・x¹・x⁰の桁なので、x³+x+1になります(x⁰は1と書きます)。xに数を入れて計算するのではなく、xの何乗かは桁の位置を表す印です。</p>
+<p>多項式で書くと、数学で調べられてきた多項式の性質を使えます。そのおかげで、「どんな誤りなら必ず見つかるか」を証明できます。</p>
+<p>CRCで割る数に使う多項式を、生成多項式と呼びます。イーサネットのCRC-32では、x³²+x²⁶+x²³+…+x+1という32次の式です。仕様書では最上位のx³²を省き、残りの32桁を16進数(2進数の4桁を1文字で書く方法)で04C11DB7と書きます。</p>
+</section>
+
+<section>
+<h2>しくみ3: 手で計算してみる</h2>
+<p>小さな例で、CRCを手で求めます。送るデータは4ビットの1101、生成多項式はx³+x+1、つまり1011とします。割る数が4桁なので余りは3桁になり、3ビットのCRCができます。</p>
+<ol>
+<li>データの後ろにCRCの桁数と同じ3個の0を付け、1101000にする(CRCを入れる席を空ける)</li>
+<li>左端の1の下に、割る数1011の左端をそろえて書き、XORする</li>
+<li>結果の左端に残った1に、また1011をそろえてXORする。0の桁は飛ばす</li>
+<li>割る数が右にはみ出すまで続ける。最後に残った右の3桁が余りで、これがCRC</li>
+</ol>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" role="img"><title>CRCの筆算: 1101000を1011で割り、XORをくり返して余り001を求める</title><text x="189.0" y="30" text-anchor="middle" class="m">データ</text><text x="280.0" y="30" text-anchor="middle" class="m">0を3つ</text><line x1="241" y1="16" x2="241" y2="40" class="dash"/><text x="150" y="64" text-anchor="middle">1</text><text x="176" y="64" text-anchor="middle">1</text><text x="202" y="64" text-anchor="middle">0</text><text x="228" y="64" text-anchor="middle">1</text><text x="254" y="64" text-anchor="middle">0</text><text x="280" y="64" text-anchor="middle">0</text><text x="306" y="64" text-anchor="middle">0</text><text x="8" y="64" text-anchor="start">割られる数</text><text x="150" y="90" text-anchor="middle" class="a">1</text><text x="176" y="90" text-anchor="middle" class="a">0</text><text x="202" y="90" text-anchor="middle" class="a">1</text><text x="228" y="90" text-anchor="middle" class="a">1</text><text x="128" y="90" text-anchor="middle" class="a">⊕</text><text x="8" y="90" text-anchor="start">割る数</text><line x1="138" y1="98" x2="240" y2="98" class="ln"/><text x="150" y="118" text-anchor="middle" class="m">0</text><text x="176" y="118" text-anchor="middle">1</text><text x="202" y="118" text-anchor="middle">1</text><text x="228" y="118" text-anchor="middle">0</text><text x="254" y="118" text-anchor="middle">0</text><text x="280" y="118" text-anchor="middle">0</text><text x="306" y="118" text-anchor="middle">0</text><text x="176" y="144" text-anchor="middle" class="a">1</text><text x="202" y="144" text-anchor="middle" class="a">0</text><text x="228" y="144" text-anchor="middle" class="a">1</text><text x="254" y="144" text-anchor="middle" class="a">1</text><text x="154" y="144" text-anchor="middle" class="a">⊕</text><line x1="164" y1="152" x2="266" y2="152" class="ln"/><text x="150" y="172" text-anchor="middle" class="m">0</text><text x="176" y="172" text-anchor="middle" class="m">0</text><text x="202" y="172" text-anchor="middle">1</text><text x="228" y="172" text-anchor="middle">1</text><text x="254" y="172" text-anchor="middle">1</text><text x="280" y="172" text-anchor="middle">0</text><text x="306" y="172" text-anchor="middle">0</text><text x="202" y="198" text-anchor="middle" class="a">1</text><text x="228" y="198" text-anchor="middle" class="a">0</text><text x="254" y="198" text-anchor="middle" class="a">1</text><text x="280" y="198" text-anchor="middle" class="a">1</text><text x="180" y="198" text-anchor="middle" class="a">⊕</text><line x1="190" y1="206" x2="292" y2="206" class="ln"/><text x="150" y="226" text-anchor="middle" class="m">0</text><text x="176" y="226" text-anchor="middle" class="m">0</text><text x="202" y="226" text-anchor="middle" class="m">0</text><text x="228" y="226" text-anchor="middle">1</text><text x="254" y="226" text-anchor="middle">0</text><text x="280" y="226" text-anchor="middle">1</text><text x="306" y="226" text-anchor="middle">0</text><text x="228" y="252" text-anchor="middle" class="a">1</text><text x="254" y="252" text-anchor="middle" class="a">0</text><text x="280" y="252" text-anchor="middle" class="a">1</text><text x="306" y="252" text-anchor="middle" class="a">1</text><text x="206" y="252" text-anchor="middle" class="a">⊕</text><line x1="216" y1="260" x2="318" y2="260" class="ln"/><text x="150" y="280" text-anchor="middle" class="m">0</text><text x="176" y="280" text-anchor="middle" class="m">0</text><text x="202" y="280" text-anchor="middle" class="m">0</text><text x="228" y="280" text-anchor="middle" class="m">0</text><text x="254" y="280" text-anchor="middle" class="a">0</text><text x="280" y="280" text-anchor="middle" class="a">0</text><text x="306" y="280" text-anchor="middle" class="a">1</text><rect x="242" y="261" width="76" height="26" class="ac"/><text x="8" y="280" text-anchor="start" class="a">余り = CRC</text><text x="326" y="320" text-anchor="end">送るのは 1101 001</text></svg><figcaption class="fig-cap">⊕はXOR(同じなら0、違えば1)。左端の1に1011をそろえてXORし、左端の1を消していく。薄い0は消えた桁。最後に残った右の3桁001が余り(CRC)。省略していること: 実際の規格で加わる約束(初めの値、最後の反転など)。</figcaption></figure>
+<p>この例では、4回のXORで余り001が出ました。送る側は、データの後ろにこの余りを付けて1101001を送ります。</p>
+<p>ふつうの筆算と違い、「割る数より大きいか」を比べる必要はありません。左端が1ならXORし、0なら次の桁に進むだけです。この単純さが、CRCが速い理由です。</p>
+<p>受け取った側は、届いた7ビットをそのまま同じ1011で割ります。誤りがなければ、余りは000になります。余りを付けたことで、全体がちょうど割り切れる並びになっているからです。例えば左から3番目のビットが化けて1111001が届くと、余りは110になり、誤りに気づけます。</p>
+<p>実際の規格では約束が少し加わります。例えばイーサネットのCRC-32は、計算の初めの値を全部1にし、最後に全ビットを反転します。初めの値を1にするのは、先頭に0が増えたり減ったりする誤りも見つけるためです。</p>
+<p><a href="{{home}}tools/crc-calculator/">CRC計算ツール</a>でも、この割り算を1段ずつ見られます。種類をCRC-8、幅を3、生成多項式を3、データの形式を16進数にして、0Dを入れます(0Dは2進数で00001101。先頭の0は余りを変えません)。</p>
+</section>
+
+<section>
+<h2>しくみ4: 回路で計算する</h2>
+<p>機器の中では、CRCを専用の小さな回路で、データが流れてくるそばから計算します。使うのは、1ビットを覚える回路を数珠つなぎにして、合図(クロック)のたびに中身を1つ隣へ送る回路です。これを{{term:シフトレジスタ}}と呼びます。</p>
+<p>3ビットのCRCなら、1ビットを覚える箱をA・B・Cの3つ並べ、2か所にXORを入れます。データは右から1ビットずつ入り、合図ごとに左へ1つずつ進みます。左端のCからあふれたビットは線で右へ戻され、2か所のXORに入ります。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 236" role="img"><title>CRC-3を計算する回路: 3つの1ビットの記憶とXOR 2つ、左端からあふれたビットを戻す線</title><rect x="20" y="100" width="50" height="40" class="ok"/><text x="45" y="126" text-anchor="middle">C</text><rect x="92" y="100" width="50" height="40" class="ok"/><text x="117" y="126" text-anchor="middle">B</text><circle cx="168" cy="120" r="12" class="hole"/><line x1="156" y1="120" x2="180" y2="120" class="ln"/><line x1="168" y1="108" x2="168" y2="132" class="ln"/><rect x="194" y="100" width="50" height="40" class="ok"/><text x="219" y="126" text-anchor="middle">A</text><circle cx="270" cy="120" r="12" class="hole"/><line x1="258" y1="120" x2="282" y2="120" class="ln"/><line x1="270" y1="108" x2="270" y2="132" class="ln"/><line x1="156" y1="120" x2="148" y2="120" class="ln"/><path d="M142,120 L150,115 L150,125 Z" class="ink"/><line x1="194" y1="120" x2="186" y2="120" class="ln"/><path d="M180,120 L188,115 L188,125 Z" class="ink"/><line x1="258" y1="120" x2="250" y2="120" class="ln"/><path d="M244,120 L252,115 L252,125 Z" class="ink"/><line x1="92" y1="120" x2="76" y2="120" class="ln"/><path d="M70,120 L78,115 L78,125 Z" class="ink"/><line x1="332" y1="120" x2="288" y2="120" class="ln"/><path d="M282,120 L290,115 L290,125 Z" class="ink"/><text x="332" y="106" text-anchor="end">データ</text><path d="M20,120 L8,120 L8,58 L270,58 L270,102" class="ac"/><path d="M270,108 L265,99 L275,99 Z" class="fa"/><line x1="168" y1="58" x2="168" y2="102" class="ac"/><path d="M168,108 L163,99 L173,99 Z" class="fa"/><circle cx="168" cy="58" r="4" class="fa"/><text x="140" y="40" text-anchor="middle" class="a">Cからあふれたビットを戻す</text><text x="45" y="164" text-anchor="start" class="m">← 合図ごとに左へ1つ進む</text><rect x="20" y="184" width="22" height="16" class="ok"/><text x="52" y="198" text-anchor="start">1ビットを覚える回路</text><circle cx="31" cy="222" r="9" class="hole"/><line x1="22" y1="222" x2="40" y2="222" class="ln"/><line x1="31" y1="213" x2="31" y2="231" class="ln"/><text x="52" y="228" text-anchor="start">XOR</text></svg><figcaption class="fig-cap">x³+x+1で割ってCRCを求める回路。XORの2か所は、x¹とx⁰の項に当たる。データと3個の0を入れ終わると、C・B・Aに余りが残る。省略していること: 合図(クロック)の線、中身を0に戻す回路。</figcaption></figure>
+<p>あふれたビットが1のときだけ、2か所でビットが反転します。これは、筆算で「左端が1なら1011をXORする」のと同じ操作です。出力を入力の側へ戻すこのつなぎ方を、線形帰還シフトレジスタ(LFSR)と呼びます。1101と3個の0を入れていくと、箱の中身は次のように変わります。</p>
+<table>
+<thead><tr><th>入るビット</th><th>Cからあふれたビット</th><th>後の中身(C・B・A)</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>0</td><td>001</td></tr>
+<tr><td>1</td><td>0</td><td>011</td></tr>
+<tr><td>0</td><td>0</td><td>110</td></tr>
+<tr><td>1</td><td>1</td><td>110</td></tr>
+<tr><td>0</td><td>1</td><td>111</td></tr>
+<tr><td>0</td><td>1</td><td>101</td></tr>
+<tr><td>0</td><td>1</td><td>001</td></tr>
+</tbody>
+</table>
+<p>最後に箱に残るのは001で、筆算の余りと同じです。CRC-32なら箱が32個になり、XORの場所が生成多項式の項に合わせて増えるだけです。</p>
+</section>
+
+<section>
+<h2>CRCが必ず見つける誤り</h2>
+<p>CRCの強みは、「この種類の誤りなら必ず見つかる」と言える点です。生成多項式に最上位の項とx⁰の項(+1)の両方があれば、次のことが成り立ちます。PetersonとBrownが1961年の論文で示した性質です。</p>
+<ul>
+<li>1ビットだけの誤りは、どこで起きても必ず見つかる</li>
+<li>CRCのビット数以下の範囲に収まるバースト誤りは、中で何ビット化けても必ず見つかる(CRC-32なら32ビット以内)</li>
+<li>それより長い誤りも、ほとんど見つかる。どんな誤りの形も同じくらい起こると考えると、32ビットのCRCが見逃すのは約43億回に1回(2の32乗分の1)</li>
+</ul>
+<p>データの長さごとに、何ビットまでの誤りをすべて見つけられるかは、生成多項式の選び方で変わります。カーネギーメロン大学のKoopmanは2002年、32ビットの生成多項式を全部調べました。イーサネットのCRC-32は、最大の長さのフレームで3ビットまでの誤りをすべて見つけます。ただし、もっと強い多項式もあるとわかりました。</p>
+<p>逆に見逃すのは、誤りの形(どのビットが化けたか)が生成多項式で割り切れるときです。さきほどの1101001で、左から1・3・4番目がそろって化けると、誤りの形は1011000です。これは1011で割り切れるので、余りは000のままで気づけません。4ビットにまたがる誤りなので、3ビットのCRCの保証の外です。実際には16ビットや32ビットのCRCを使います。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>10進数で「1234」を送るとき、7で割った余りの「2」を添えるとします。1264に化ければ余りは4で、2と合わないので気づけます。ところが1241に化けると、差の7がちょうど7で割り切れるため、余りは2のままで見逃します。CRCも、誤りの形が割る数で割り切れるときだけ見逃します。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 10進数の計算には繰り上がりがあるので、CRCとは余りの変わり方がまったく違います。「短いバースト誤りは必ず見つかる」といった保証も、10進数の例からは出てきません。表しているのは「割り切れるときだけ見逃す」という一点だけです。</p></aside>
+</section>
+
+<section>
+<h2>CRCにできないこと</h2>
+<h3>誤りを直すことはできない</h3>
+<p>CRCは、誤りが「ある」ことはわかっても、ふつうは「どこに」あるかまでは教えてくれません。見つけた後は、データを捨てて送り直してもらうか、壊れていると知らせるしかありません。</p>
+<p>誤りを直すには、検査用のビットを増やし、どのビットが化けたかまでわかるように工夫します。これを{{term:ECC(誤り訂正符号)|誤り訂正符号(ECC)}}と呼びます。1950年にハミングが発表した{{term:ハミング符号}}は、4ビットのデータに3ビットを足し、1ビットの誤りを直せます。サーバー用のECCメモリは、64ビットごとに8ビットを足し、1ビットの誤りを直し、2ビットの誤りを見つけます。</p>
+<p>もっと多くの誤りを直せる符号に、1960年にリードとソロモンが発表したリード・ソロモン符号があります。CDやQRコードで使われ、QRコードが一部汚れていても読めるのはこのためです。CRCと同じく多項式の計算を使います。</p>
+<p>直す符号は検査用のビットが多く、計算も重くなります。送り直しができる通信では、軽いCRCで見つけて送り直すほうが効率的なことが多いのです。送り直せない放送や宇宙との通信などでは、直す符号を使います。これを{{term:前方誤り訂正(FEC)}}と呼びます。</p>
+<h3>わざとの書き換えは見破れない</h3>
+<p>CRCの計算方法は規格で公開されていて、秘密の鍵を使いません。書き換えた人は、新しいデータでCRCを計算し直して付け直せば済みます。CRCが見つけるのは偶然の誤りで、悪意のある書き換えではありません。</p>
+<p>実際に、初期の無線LANの暗号方式WEPは、中身の確認にCRC-32を使っていました。2001年にBorisovらは、暗号を解かずに中身を書き換え、CRCのつじつまも合わせられることを示しました。WEPの暗号もCRCもXORだけで計算するため、どこを反転すればCRCのどこが変わるかを計算で求められたのです。</p>
+<p>書き換えを見つけるには、秘密の鍵を使う{{term:メッセージ認証コード}}や{{term:デジタル署名}}を使います(「<a href="{{home}}learn/what-is-encryption/">暗号とは?</a>」)。暗号で使う{{term:ハッシュ関数}}も、同じ値になる別のデータを事実上作れないように設計されています。CRCでは、そうしたデータを簡単に作れます。</p>
+</section>
+
+<section>
+<h2>パリティ・チェックサム・CRC・ECCの違い</h2>
+<table>
+<thead><tr><th>方法</th><th>見つけられる誤り</th><th>直せるか</th><th>使われる所の例</th></tr></thead>
+<tbody>
+<tr><td>パリティ</td><td>奇数個のビットの誤り</td><td>直せない</td><td>シリアル通信(UART)</td></tr>
+<tr><td>チェックサム</td><td>多くの誤り(入れ替えなどは見逃す)</td><td>直せない</td><td>IP・TCP</td></tr>
+<tr><td>CRC</td><td>1ビットの誤りと短いバースト誤りは必ず。ほかもほとんど</td><td>ふつうは直さない(送り直す)</td><td>イーサネット、Wi-Fi、USB、ファイル</td></tr>
+<tr><td>ECC(誤り訂正符号)</td><td>決まった数までの誤り</td><td>直せる</td><td>ECCメモリ、SSD、QRコード、CD</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: CRCがあれば、壊れたデータも自動で直る</p><p>実際は、CRCがするのは誤りを見つけるところまでです。通信で直ったように見えるのは、捨てたデータを送り直してもらっているからです。1ビットだけの誤りなら、余りの値から位置を割り出せる場合もあります。ATMという通信方式は、短い見出しの1ビットの誤りをこうして直します。ただし2ビット以上の誤りを1ビットと取り違えるおそれがあるため、ふつうは見つけることだけに使います。</p></div>
+<div class="myth"><p class="myth-q">誤解: CRCが合えば、だれにも書き換えられていない証拠になる</p><p>実際は、書き換えた人がCRCを付け直せば、CRCは合います。わかるのは「偶然の誤りが入った可能性は低い」ということだけです。改ざんを見つけるには、鍵を使うメッセージ認証コードやデジタル署名が必要です。「検査」という名前から、安全の保証のように見えてしまうのです。</p></div>
+<div class="myth"><p class="myth-q">誤解: CRCを長くすれば、どんな誤りも見つかる</p><p>実際は、どんなに長いCRCでも、生成多項式で割り切れる形の誤りは見逃します。でたらめな誤りなら、32ビットで約43億回に1回です。また、CRCが守るのは付けてから検査するまでの区間だけです。付ける前に機器の中で壊れたデータは、正しいデータとして通ってしまいます。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>数字</th><th>何の数字か</th></tr></thead>
+<tbody>
+<tr><td>4バイト(32ビット)</td><td>イーサネットのフレームの最後に付くCRC(FCS)の大きさ</td></tr>
+<tr><td>約43億回に1回</td><td>32ビットのCRCが、でたらめな誤りを見逃すおよその割合</td></tr>
+<tr><td>約17分に1個</td><td>1兆ビットに1個誤る伝送路で、1秒に10億ビット送るときの誤りの間隔</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>用語の詳しい解説: {{term:CRC(巡回冗長検査)}} / {{term:パリティビット}} / {{term:ハミング符号}} / {{term:ビット誤り率}}</li>
+<li>数字で試す: <a href="{{home}}tools/crc-calculator/">CRC計算ツール</a> / <a href="{{home}}tools/hamming-code-calculator/">ハミング符号の計算ツール</a> / <a href="{{home}}tools/bitwise-operations-calculator/">ビット演算の計算ツール</a>(XORを試す)</li>
+<li>関連する解説: 「<a href="{{home}}learn/how-the-internet-delivers-data/">インターネットはどうやってデータを届けるの?</a>」 / 「<a href="{{home}}learn/how-passwords-get-cracked/">パスワードはなぜ破られる?</a>」</li>
+</ul>
+</section>
