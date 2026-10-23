@@ -1,0 +1,225 @@
+<!--
+{
+  "title": "矩陣乘法要算幾次？AI晶片的運算量與運算強度",
+  "description": "矩陣乘法需要2mnk FLOP的計算。本文用除以搬運位元組數得到的運算強度，說明批次1的推論為何在等記憶體、大型矩陣乘法為何跑在計算上限，並介紹Roofline、量化與脈動陣列。",
+  "series": "foundations",
+  "order": 2,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["ai-stack", "gpu-programming", "performance", "machine-learning"],
+  "terms": ["演算強度", "Rooflineモデル", "シストリックアレイ", "バッチサイズ", "TOPS"],
+  "sources": [
+    { "title": "NVIDIA: Matrix Multiplication Background User's Guide(2mnk の数え方、演算強度、行列×ベクトルはメモリ律速)", "url": "https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/index.html" },
+    { "title": "NVIDIA: GPU Performance Background User's Guide(演算強度と ops:byte 比、演算律速とメモリ律速)", "url": "https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/index.html" },
+    { "title": "S. Williams, A. Waterman, D. Patterson: Roofline: An Insightful Visual Performance Model for Multicore Architectures, Communications of the ACM 52(4), 2009", "url": "https://doi.org/10.1145/1498765.1498785" },
+    { "title": "NVIDIA: H100 Tensor Core GPU(仕様: SXM 版の FP16 テンソルコア 1,979 TFLOPS・INT8 3,958 TOPS はいずれも疎の場合で、密ではその半分。メモリ帯域 3.35 TB/s)", "url": "https://www.nvidia.com/en-us/data-center/h100/" },
+    { "title": "N. P. Jouppi et al.: In-Datacenter Performance Analysis of a Tensor Processing Unit, ISCA 2017(65,536 個の8ビット積和回路、最大 92 TOPS)", "url": "https://arxiv.org/abs/1704.04760" },
+    { "title": "H. T. Kung, C. E. Leiserson: Systolic Arrays (for VLSI), カーネギーメロン大学の技術報告(1978年。SIAM Sparse Matrix Proceedings 1978 に収録、1979年刊)", "url": "https://www.eecs.harvard.edu/htk/static/files/1978-cmu-cs-report-kung-leiserson.pdf" },
+    { "title": "H. T. Kung: Why Systolic Architectures?, IEEE Computer 15(1), 1982(データの流れを、心臓を出入りする血液にたとえる)", "url": "https://doi.org/10.1109/MC.1982.1653825" },
+    { "title": "S. Chetlur et al.: cuDNN: Efficient Primitives for Deep Learning(2014年。畳み込みを行列の積に直す方法と、そのメモリの負担)", "url": "https://arxiv.org/abs/1410.0759" },
+    { "title": "B. Jacob et al.: Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference, CVPR 2018", "url": "https://arxiv.org/abs/1712.05877" }
+  ]
+}
+-->
+<p class="lead">直m×橫k的矩陣，乘上直k×橫n的矩陣，需要做m×n×k次「相乘再相加」。把乘法和加法分開計算的話，是2mnk次。AI晶片的速度，由這個計算次數，和從記憶體搬運的位元組數兩者決定。每1位元組的計算次數（運算強度）小的工作會等記憶體，大的工作則由計算電路的速度決定。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>矩陣乘法所需計算次數的算法（2mnk）</li>
+<li>搬運資料量的算法，以及稱為運算強度的指標</li>
+<li>一次只處理1人份的推論會等記憶體，大型矩陣乘法卻由計算電路決定的原因（Roofline）</li>
+<li>批次、分塊、量化、脈動陣列，都是「減少搬運量」的技巧</li>
+</ul><p class="muted">先備知識：知道AI的計算是「相乘再相加」的重複（在「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」中說明）。乘法、除法，以及「10的幾次方」這種數字的寫法。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>AI晶片的規格表上，通常會列出2種數字。1秒能計算幾次，以及1秒能從記憶體搬運幾位元組。例如NVIDIA的H100（2022年發表，SXM版），16位元的矩陣計算每秒約1,000兆次。能搬運的量是每秒3.35TB。</p>
+<p>那麼，手上AI的速度，是由哪個數字決定的呢？答案是「看計算的內容」。這篇文章會計算矩陣乘法的工作量和搬運的資料量，分辨是哪一邊決定了速度。</p>
+<p>GPU用大量計算電路同時進行矩陣計算，已在「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」中說明過。這篇文章則聚焦在更進一步的「計算數量」。</p>
+</section>
+
+<section>
+<h2>原理1：向量和矩陣是「數字的表」</h2>
+<p>把數字排成1排的東西，稱為向量。某個學生國文、數學、英文的分數（80, 60, 70），就是3個數字的向量。在文字AI裡，1個詞會用數千個數字的向量來表示。</p>
+<p>把數字排成縱橫的表，就是矩陣。有m列（橫排）、k行（直排）的矩陣，寫成「m×k的矩陣」。AI的權重（表示要多看重哪個輸入的數字），也是以矩陣的形式存放。</p>
+<p>矩陣乘上向量時，會對表的每一列做1次「和輸入相乘再相加」，得到和列數一樣多的答案。這就是矩陣×向量的乘積。從1個學生的分數，算出理組和文組2個分數的計算，就屬於這種。</p>
+<p>把100人份的分數一起計算，輸入也會變成表（3×100），就成了矩陣×矩陣的乘積。特色是同一張權重表，可以重複用在100人份上。聊天AI一個詞一個詞產生答案的計算，只有1人份時接近前者，把很多人份合在一起時則接近後者。</p>
+</section>
+
+<section>
+<h2>原理2：計算次數的算法（2mnk）</h2>
+<p>m×k的矩陣A乘上k×n的矩陣B，答案C是m×n的矩陣。A的行數和B的列數，必須同樣是k才能相乘。答案的1格，是從A的1列和B的1行，把k組數字相乘再相加做出來的。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 24 340 276" role="img"><title>矩陣乘法：答案的1格，是把A的1列和B的1行的k組數字相乘再相加做出來的</title>
+<rect x="150" y="34" width="24" height="24" class="n"/><rect x="174" y="34" width="24" height="24" class="p"/><rect x="198" y="34" width="24" height="24" class="n"/>
+<rect x="150" y="58" width="24" height="24" class="n"/><rect x="174" y="58" width="24" height="24" class="p"/><rect x="198" y="58" width="24" height="24" class="n"/>
+<rect x="150" y="82" width="24" height="24" class="n"/><rect x="174" y="82" width="24" height="24" class="p"/><rect x="198" y="82" width="24" height="24" class="n"/>
+<rect x="150" y="106" width="24" height="24" class="n"/><rect x="174" y="106" width="24" height="24" class="p"/><rect x="198" y="106" width="24" height="24" class="n"/>
+<rect x="30" y="146" width="24" height="24" class="n"/><rect x="54" y="146" width="24" height="24" class="n"/><rect x="78" y="146" width="24" height="24" class="n"/><rect x="102" y="146" width="24" height="24" class="n"/>
+<rect x="30" y="170" width="24" height="24" class="p"/><rect x="54" y="170" width="24" height="24" class="p"/><rect x="78" y="170" width="24" height="24" class="p"/><rect x="102" y="170" width="24" height="24" class="p"/>
+<rect x="30" y="194" width="24" height="24" class="n"/><rect x="54" y="194" width="24" height="24" class="n"/><rect x="78" y="194" width="24" height="24" class="n"/><rect x="102" y="194" width="24" height="24" class="n"/>
+<rect x="150" y="146" width="24" height="24" class="hole"/><rect x="174" y="146" width="24" height="24" class="hole"/><rect x="198" y="146" width="24" height="24" class="hole"/>
+<rect x="150" y="170" width="24" height="24" class="hole"/><rect x="174" y="170" width="24" height="24" class="fa"/><rect x="198" y="170" width="24" height="24" class="hole"/>
+<rect x="150" y="194" width="24" height="24" class="hole"/><rect x="174" y="194" width="24" height="24" class="hole"/><rect x="198" y="194" width="24" height="24" class="hole"/>
+<text x="234" y="76">B</text>
+<text x="234" y="98" class="m">k×n</text>
+<text x="30" y="134">A</text>
+<text x="54" y="134" class="m">m×k</text>
+<text x="234" y="176">答案C</text>
+<text x="234" y="198" class="m">m×n</text>
+<text x="142" y="88" text-anchor="end" class="m">k個</text>
+<text x="78" y="240" text-anchor="middle" class="m">k個</text>
+<text x="10" y="262" class="a">塗色的1格 = k次相乘再相加</text>
+<text x="10" y="288">總共 m×n×k 次</text>
+</svg><figcaption class="fig-cap">m=3、k=4、n=3的例子。答案C中塗滿的格子，是把A上色的列和B上色的行的4組數字相乘再相加。答案的9格，都不必等待彼此的結果就能計算。圖中省略的部分：實際的AI中，m、k、n常常是數千。</figcaption></figure>
+<p>1次乘法加1次加法的組合，稱為乘積累加運算。也取英文字首寫成MAC。答案有m×n格，每1格需要k次乘積累加，所以總共是m×n×k次。</p>
+<p>在計算機的世界，常把乘法和加法分別算成1次，這時就是2×m×n×k次。這種算法的1次，稱為FLOP（1次浮點數計算）。NVIDIA的效能指南，也用這個2mnk來計算矩陣乘法。</p>
+<p>用小例子確認看看。2×3和3×2的矩陣相乘，答案有4格，每格3次乘積累加，所以是12次乘積累加，也就是24 FLOP。用Python寫3層的重複（迴圈）來數，乘法是12次，加法是8次。加法比較少，是因為每格第一個乘積，不需要加到任何東西上。</p>
+<p>這個差距只有答案的格數（m×n）。在k有數千的實際計算中，差距不到1,000分之1，所以用2mnk來算成了標準。縱橫都是4,096的正方形矩陣互乘，是2×4,096×4,096×4,096，約1,370億FLOP。</p>
+<p>1秒能做幾次FLOP，就是FLOPS，用來表示晶片的速度。加上代表兆的「tera」，寫成TFLOPS。整數的計算以「運算」來算，1秒幾兆次寫成{{term:TOPS|TOPS}}。</p>
+</section>
+
+<section>
+<h2>原理3：搬運資料量的算法</h2>
+<p>計算電路要工作，必須從記憶體讀出A和B的數字，再把答案C寫回記憶體。讀寫的數字有m×k＋k×n＋m×n個。乘上1個數字的位元組數，就是搬運的資料量。</p>
+<p>1個數字的大小，由數字的格式決定。AI常用的16位元浮點數（FP16）是2位元組，8位元整數（INT8）是1位元組。格式的差異，整理在「<a href="{{home}}compare/fp32-vs-fp16-vs-bf16-vs-int8/">FP32、FP16、BF16、INT8的差異</a>」中。</p>
+<p>縱橫4,096的例子用FP16來算，3個矩陣約有5,000萬個數字，約1億位元組（約100MB）。這裡算的是每個數字只要搬一次的理想情況。後面會看到，實際搬運的量會因程式的寫法而變成好幾倍。</p>
+</section>
+
+<section>
+<h2>原理4：運算強度是「1位元組計算幾次」</h2>
+<p>把計算次數除以搬運的位元組數，得到的值稱為{{term:演算強度|運算強度}}。它表示搬來的1位元組能計算幾次，單位是FLOP/位元組。</p>
+<p>矩陣×向量的乘積，運算強度只有約1。因為FP16的1個權重（2位元組），只用在1次乘積累加（2 FLOP），之後就沒有用處了。NVIDIA的指南也說明，矩陣×向量的乘積運算強度小於1，速度總是由記憶體決定。</p>
+<p>矩陣×矩陣的情況就不同了。在縱橫4,096的例子中，約1,370億FLOP除以約1億位元組，運算強度約1,365。因為搬來的每一個數字，都會用在答案的1列或1行上，被使用好幾千次。運算強度可以想成是「搬來的數字會重複使用幾次」的指標。</p>
+</section>
+
+<section>
+<h2>原理5：Roofline：2個上限中較低的那個</h2>
+<p>晶片的速度有2個上限。1個是計算電路1秒能做的計算次數。另1個是1秒能搬運的位元組數（記憶體頻寬）乘上運算強度。數字送不到就無法計算，所以實際的速度，不會超過2者中較低的那個。</p>
+<p>以橫軸為運算強度、縱軸為計算速度，畫出這個關係的圖，稱為{{term:Rooflineモデル|Roofline}}（屋頂線）。這是2009年Williams等人提出、用來估計效能的圖。左邊的斜線是搬運速度的上限，右邊的平線是計算的上限。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 320" role="img"><title>Roofline：運算強度小時由搬運速度決定，大時由計算上限決定速度</title>
+<line x1="44" y1="262" x2="324" y2="262" class="ln"/>
+<line x1="44" y1="262" x2="44" y2="40" class="ln"/>
+<line x1="70" y1="262" x2="70" y2="268" class="ln"/>
+<line x1="140" y1="262" x2="140" y2="268" class="ln"/>
+<line x1="210" y1="262" x2="210" y2="268" class="ln"/>
+<line x1="280" y1="262" x2="280" y2="268" class="ln"/>
+<text x="70" y="286" text-anchor="middle" class="m">1</text>
+<text x="140" y="286" text-anchor="middle" class="m">10</text>
+<text x="210" y="286" text-anchor="middle" class="m">100</text>
+<text x="280" y="286" text-anchor="middle" class="m">1000</text>
+<text x="324" y="308" text-anchor="end" class="m">運算強度（FLOP/位元組）→</text>
+<text x="24" y="151" text-anchor="middle" class="m" transform="rotate(-90 24 151)">計算速度（對數）</text>
+<polyline points="48.9,238.8 242.9,100.2 320,100.2" class="ac"/>
+<line x1="242.9" y1="100.2" x2="242.9" y2="262" class="dash"/>
+<text x="324" y="86" text-anchor="end" class="a">計算的上限</text>
+<text x="56" y="128" class="a">搬運速度</text>
+<text x="56" y="148" class="a">的上限</text>
+<circle cx="70" cy="223.7" r="6" class="fa2"/>
+<text x="80" y="250">矩陣×向量</text>
+<circle cx="289.5" cy="100.2" r="6" class="fa2"/>
+<text x="324" y="126" text-anchor="end">大型</text>
+<text x="324" y="146" text-anchor="end">矩陣乘法</text>
+<text x="236" y="210" text-anchor="end" class="m">← 記憶體受限</text>
+<text x="250" y="210" class="m">運算受限 →</text>
+</svg><figcaption class="fig-cap">橫軸、縱軸都是對數刻度（1格是10倍）。線是用H100規格的值（16位元約989兆FLOP/秒、3.35TB/秒）畫的。轉折點（虛線）的運算強度約300。矩陣×向量（約1）在斜線上，縱橫4,096的矩陣乘法（約1,365）在平線上。圖中省略的部分：晶片內記憶位置的階層、計算以外處理的時間。</figcaption></figure>
+<p>2條線交點的運算強度，可以用計算的上限除以記憶體頻寬求得。H100是約989兆÷3.35兆，約300。運算強度比這個小的工作，計算電路等記憶體的時間會變長。這種狀態稱為記憶體受限，相反地，計算電路不停工作的狀態稱為運算受限。</p>
+<p>一次1人份的矩陣×向量（運算強度約1），位在交點左邊很遠的地方，只能用到H100計算能力的約0.3%。大型矩陣乘法（約1,365）在右側，能以計算的上限運作。</p>
+</section>
+
+<section>
+<h2>原理6：批次：把同一份權重用在好幾人份上</h2>
+<p>提高運算強度最直接的方法，是把輸入合在一起。一起處理的輸入數量，稱為{{term:バッチサイズ|批次大小}}。權重表只要讀一次，就能用在合併起來的所有人份的計算上。</p>
+<p>以縱橫4,096的權重表（FP16約3,400萬位元組）來說，批次設為B時，在B還小的範圍內，運算強度也大約是B。因為計算次數變成B倍，搬運的量卻幾乎還是權重那一份。要達到H100交點的約300，需要合併數百人份（見後面「從數字來看」的表格）。</p>
+</section>
+
+<section>
+<h2>原理7：分塊：在晶片內的小記憶體裡重複使用</h2>
+<p>到目前為止，都假設每個數字只搬一次。但是，計算電路旁邊的高速記憶體（晶片內記憶體）比較小。它比HBM等外部記憶體小得多，大的矩陣無法整個放進去。</p>
+<p>如果不下任何功夫，每做出答案的1格，就要從外部記憶體重新讀一次A的1列和B的1行。這樣，搬運的量會增加到和乘積累加次數差不多，運算強度會降到和矩陣×向量一樣的1左右。</p>
+<p>所以，要把矩陣切成小的正方形區塊。把A的區塊和B的區塊讀進晶片內，做完這一組能做的所有計算後，再換下一個區塊。這種方法稱為分塊（tiling）。區塊的1邊設為b個時，從外部記憶體搬運的量，會減少到不下功夫時的約b分之1。</p>
+<p>根據NVIDIA的指南，GPU會把答案矩陣分成區塊來計算。{{term:テンソルコア|張量核心}}這類專用電路，也會用1個指令，一次算完小區塊之間的乘積。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>想像要從遠處的書庫搬書，在小桌子上查資料的情景。如果每有1個問題就去書庫拿書，大部分時間都花在來回路上。如果搬來桌上放得下的書，把用這些書能回答的問題全部處理完再歸還，來回的次數就少得多。相似的是「搬來的東西在手邊用得越徹底，搬運的次數就越少」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>實際的晶片會同時進行搬運和計算，在搬某個區塊的期間，也會繼續計算別的區塊。決定什麼時候搬哪個區塊的，不是當場思考的人，而是事先寫好的程式。搬運的單位也不是1本書，而是固定大小的資料塊。</p></aside>
+</section>
+
+<section>
+<h2>原理8：影像的卷積也能變成矩陣乘法</h2>
+<p>影像AI（{{term:畳み込みニューラルネットワーク(CNN)|CNN}}）常用的卷積，是一邊移動小窗口（例如3×3像素），一邊把窗口裡的數字乘上權重再相加的計算。把窗口內容排成1列，依窗口位置的數量縱向堆疊，就會得到一個大矩陣。再乘上權重矩陣，卷積就變成了矩陣乘法。這種重新排列稱為im2col。</p>
+<p>不過，窗口會互相重疊，所以重新排列後，同一個數字會被複製好幾次。3×3的窗口每次移動1像素的話，1個數字最多出現9次，記憶體也用得比較多。所以，也有只在晶片內一點一點做出重排矩陣的方法（cuDNN 2014年的論文）。每一層的乘積累加次數，可以用<a href="{{home}}tools/cnn-output-size-calculator/">CNN輸出尺寸計算工具</a>試算。</p>
+</section>
+
+<section>
+<h2>原理9：量化：把數字變短，減少搬運量</h2>
+<p>把浮點數換成位元數較少的整數等，減少1個數字的大小，在AI領域稱為量化。FP16換成{{term:INT8|INT8}}，搬運的位元組數會減半；從32位元浮點數（FP32）換的話，則是4分之1。</p>
+<p>在記憶體受限的工作中，搬運量減半，時間也幾乎減半。1人份的矩陣×向量，換成INT8後，運算強度會提高到約2。運算受限的工作也有好處。在H100的規格中，INT8的計算上限是16位元的2倍。不過，數字太粗的話答案會偏掉，所以要一邊確認精度一邊使用。</p>
+</section>
+
+<section>
+<h2>原理10：脈動陣列：把重複使用做成電路的形狀</h2>
+<p>把乘積累加的電路排成像棋盤的格子，讓數字依序傳給旁邊的電路來計算矩陣乘法，這種結構稱為{{term:シストリックアレイ|脈動陣列}}。它是1970年代末，由H. T. Kung和C. E. Leiserson提出的。資料從記憶體出來，在電路之間規律地流動，再回到記憶體。Kung在1982年的解說中，把這種流動比喻成進出心臟的血液。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 318" role="img"><title>脈動陣列：在放有權重的乘加電路之間，輸入往右流，部分和往下流</title>
+<text x="10" y="22" class="m">每一格放1個權重</text>
+<rect x="110" y="40" width="52" height="52" rx="6" class="p"/><rect x="186" y="40" width="52" height="52" rx="6" class="p"/><rect x="262" y="40" width="52" height="52" rx="6" class="p"/>
+<rect x="110" y="116" width="52" height="52" rx="6" class="p"/><rect x="186" y="116" width="52" height="52" rx="6" class="p"/><rect x="262" y="116" width="52" height="52" rx="6" class="p"/>
+<rect x="110" y="192" width="52" height="52" rx="6" class="p"/><rect x="186" y="192" width="52" height="52" rx="6" class="p"/><rect x="262" y="192" width="52" height="52" rx="6" class="p"/>
+<text x="136" y="71" text-anchor="middle">乘加</text><text x="212" y="71" text-anchor="middle">乘加</text><text x="288" y="71" text-anchor="middle">乘加</text>
+<text x="136" y="147" text-anchor="middle">乘加</text><text x="212" y="147" text-anchor="middle">乘加</text><text x="288" y="147" text-anchor="middle">乘加</text>
+<text x="136" y="223" text-anchor="middle">乘加</text><text x="212" y="223" text-anchor="middle">乘加</text><text x="288" y="223" text-anchor="middle">乘加</text>
+<text x="10" y="71">輸入1</text><text x="10" y="147">輸入2</text><text x="10" y="223">輸入3</text>
+<line x1="60" y1="66" x2="98" y2="66" class="ac"/><polygon points="107,66 98,61 98,71" class="fa"/>
+<line x1="60" y1="142" x2="98" y2="142" class="ac"/><polygon points="107,142 98,137 98,147" class="fa"/>
+<line x1="60" y1="218" x2="98" y2="218" class="ac"/><polygon points="107,218 98,213 98,223" class="fa"/>
+<line x1="164" y1="66" x2="176" y2="66" class="ac"/><polygon points="184,66 176,61 176,71" class="fa"/>
+<line x1="240" y1="66" x2="252" y2="66" class="ac"/><polygon points="260,66 252,61 252,71" class="fa"/>
+<line x1="164" y1="142" x2="176" y2="142" class="ac"/><polygon points="184,142 176,137 176,147" class="fa"/>
+<line x1="240" y1="142" x2="252" y2="142" class="ac"/><polygon points="260,142 252,137 252,147" class="fa"/>
+<line x1="164" y1="218" x2="176" y2="218" class="ac"/><polygon points="184,218 176,213 176,223" class="fa"/>
+<line x1="240" y1="218" x2="252" y2="218" class="ac"/><polygon points="260,218 252,213 252,223" class="fa"/>
+<line x1="136" y1="94" x2="136" y2="106" class="ac2"/><polygon points="136,114 131,106 141,106" class="fa2"/>
+<line x1="212" y1="94" x2="212" y2="106" class="ac2"/><polygon points="212,114 207,106 217,106" class="fa2"/>
+<line x1="288" y1="94" x2="288" y2="106" class="ac2"/><polygon points="288,114 283,106 293,106" class="fa2"/>
+<line x1="136" y1="170" x2="136" y2="182" class="ac2"/><polygon points="136,190 131,182 141,182" class="fa2"/>
+<line x1="212" y1="170" x2="212" y2="182" class="ac2"/><polygon points="212,190 207,182 217,182" class="fa2"/>
+<line x1="288" y1="170" x2="288" y2="182" class="ac2"/><polygon points="288,190 283,182 293,182" class="fa2"/>
+<line x1="136" y1="246" x2="136" y2="258" class="ac2"/><polygon points="136,266 131,258 141,258" class="fa2"/>
+<line x1="212" y1="246" x2="212" y2="258" class="ac2"/><polygon points="212,266 207,258 217,258" class="fa2"/>
+<line x1="288" y1="246" x2="288" y2="258" class="ac2"/><polygon points="288,266 283,258 293,258" class="fa2"/>
+<text x="10" y="290" class="a">輸入往右傳遞</text>
+<text x="10" y="312" class="m">部分和往下，在最下端得到答案</text>
+</svg><figcaption class="fig-cap">3×3的例子。輸入的數字從左邊進入，一個一個傳給右邊的電路。每個電路都把輸入乘上自己的權重，加到從上面來的部分和，再往下傳。讀1次的輸入，會被橫向排列的所有電路使用。圖中省略的部分：讓輸入每次錯開1拍流動的時序、權重的載入。初代TPU的大小是256×256。</figcaption></figure>
+<p>Google的TPU（初代）就是用這種方式計算矩陣乘法。權重一直放在各個電路裡，讓輸入的數字從左往右流，部分和從上往下流。從記憶體讀出的1個數字，會被橫向排列的256個電路使用，所以讀記憶體的次數大幅減少。</p>
+<p>初代TPU以256×256＝65,536個8位元乘積累加電路，每秒最多能做92兆次運算（2017年的論文）。這是把提高運算強度的技巧，直接做進電路排列方式本身的設計。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：只看TFLOPS的數字，就知道AI的速度</p><p>實際上，運算強度比交點小的工作，是由記憶體頻寬決定速度。想像一個有70億個權重的文字AI，用FP16（140億位元組）一次只處理1人份。每1個詞的計算約140億FLOP，以H100的計算上限只要約0.014毫秒。另一方面，把權重全部讀一遍，即使是3.35TB/秒也要約4.2毫秒，速度是由這邊決定的（省略其他資料的概算）。規格表上的TFLOPS，有些是用了省略大量0的技巧的值，所以也要確認條件。</p></div>
+<div class="myth"><p class="myth-q">誤解：批次越大越好</p><p>實際上，超過交點之後，批次加倍，1次計算的時間也會加倍，每秒能處理的量就不再增加。然而，1人份的答案出來前的等待時間卻會變長。等人數湊齊的時間，以及每1人需要的記憶體也會增加。在重視回應速度的用途中，會先為較慢那一側的回應時間訂出目標，再在這個範圍內選擇批次。TPU的論文也寫到，守住較慢那一側（第99百分位）的回應時間很重要。</p></div>
+</section>
+
+<section>
+<h2>從數字來看：改變批次會發生什麼事</h2>
+<p>用H100規格的值，估算縱橫4,096的權重表（FP16）乘上批次數量輸入的計算。這是假設計算和搬運同時進行、所花時間取較長那一邊的理想值。「計算」「搬運」分別是各自所需的時間（µs是100萬分之1秒），「使用率」是計算電路在工作的時間比例。</p>
+<table>
+<thead><tr><th>批次</th><th>運算強度</th><th>計算</th><th>搬運</th><th>使用率</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>約1</td><td>0.03 µs</td><td>10.0 µs</td><td>約0.3%</td></tr>
+<tr><td>8</td><td>約8</td><td>0.27 µs</td><td>10.1 µs</td><td>約3%</td></tr>
+<tr><td>64</td><td>約62</td><td>2.2 µs</td><td>10.3 µs</td><td>約21%</td></tr>
+<tr><td>256</td><td>約228</td><td>8.7 µs</td><td>11.3 µs</td><td>約77%</td></tr>
+<tr><td>512</td><td>約410</td><td>17.4 µs</td><td>12.5 µs</td><td>100%</td></tr>
+<tr><td>1,024</td><td>約683</td><td>34.7 µs</td><td>15.0 µs</td><td>100%</td></tr>
+</tbody>
+</table>
+<p>從批次1到256，所花時間幾乎維持在10～11 µs，合併多少就賺多少。到了512，計算時間超過搬運時間，之後批次加倍，時間也會加倍。每1人的處理速度不再提高，只有1次的等待時間變長。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>名詞的詳細說明：{{term:演算強度|運算強度}} / {{term:Rooflineモデル|Roofline模型}} / {{term:シストリックアレイ|脈動陣列}} / {{term:学習後量子化|訓練後量化}} / {{term:混合精度|混合精度}}</li>
+<li>用表格看差異：<a href="{{home}}compare/training-vs-inference/">訓練與推論的差異</a> / <a href="{{home}}compare/cpu-vs-gpu-vs-npu/">CPU、GPU、NPU的差異</a> / <a href="{{home}}compare/ddr-vs-lpddr-vs-gddr-vs-hbm/">DDR、LPDDR、GDDR、HBM的差異</a></li>
+<li>用數字試試看：<a href="{{home}}tools/memory-bandwidth-calculator/">記憶體頻寬計算</a> / <a href="{{home}}tools/cnn-output-size-calculator/">CNN的輸出尺寸、乘積累加次數</a></li>
+<li>用圖來看：<a href="{{home}}figures/">圖解一覽</a>（Roofline模型、GPU執行緒的階層）</li>
+<li>從基礎讀起：「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」 / 「<a href="{{home}}learn/what-is-a-cpu/">CPU是什麼？</a>」</li>
+</ul>
+</section>
