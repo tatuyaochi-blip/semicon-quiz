@@ -1,0 +1,254 @@
+<!--
+{
+  "title": "インターネットはどうやってデータを届けるの? パケットとルータ",
+  "description": "インターネットでは、データを小さなパケットに分け、宛先のIPアドレスを見たルータが次々に中継して届けます。Webページが表示されるまでの流れ、DNS・TCP・HTTPSの役割、遠くても速い理由をやさしく解説します。",
+  "series": "internet",
+  "order": 1,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["network", "web-tech", "network-advanced", "wireless"],
+  "terms": ["パケット", "IPアドレス", "ルータ", "IP(インターネットプロトコル)", "ルーティング(経路制御)", "DNS", "RTT(往復遅延時間)"],
+  "sources": [
+    { "title": "RFC 791: Internet Protocol(IETF, 1981年)", "url": "https://www.rfc-editor.org/rfc/rfc791" },
+    { "title": "RFC 1122: Requirements for Internet Hosts — Communication Layers(IETF, 1989年。リンク層・IP層・トランスポート層の整理)", "url": "https://www.rfc-editor.org/rfc/rfc1122" },
+    { "title": "RFC 9293: Transmission Control Protocol (TCP)(IETF, 2022年)", "url": "https://www.rfc-editor.org/rfc/rfc9293" },
+    { "title": "RFC 768: User Datagram Protocol(IETF, 1980年)", "url": "https://www.rfc-editor.org/rfc/rfc768" },
+    { "title": "RFC 1034: Domain Names — Concepts and Facilities(IETF, 1987年)", "url": "https://www.rfc-editor.org/rfc/rfc1034" },
+    { "title": "RFC 9000: QUIC: A UDP-Based Multiplexed and Secure Transport(IETF, 2021年)", "url": "https://www.rfc-editor.org/rfc/rfc9000" },
+    { "title": "RFC 9114: HTTP/3(IETF, 2022年)", "url": "https://www.rfc-editor.org/rfc/rfc9114" },
+    { "title": "RFC 1918: Address Allocation for Private Internets(IETF, 1996年)", "url": "https://www.rfc-editor.org/rfc/rfc1918" },
+    { "title": "RFC 3022: Traditional IP Network Address Translator (Traditional NAT)(IETF, 2001年)", "url": "https://www.rfc-editor.org/rfc/rfc3022" },
+    { "title": "RFC 894: A Standard for the Transmission of IP Datagrams over Ethernet Networks(IETF, 1984年。最大1,500バイト。本文の誤記は正誤表で訂正)", "url": "https://www.rfc-editor.org/rfc/inline-errata/rfc894.html" },
+    { "title": "Internet Society: A Brief History of the Internet(パケット交換の始まり)", "url": "https://www.internetsociety.org/internet/history-internet/brief-history-internet/" },
+    { "title": "I. N. Bozkurt et al.: Dissecting Latency in the Internet's Fiber Infrastructure(arXiv:1811.10737, 2018年)", "url": "https://arxiv.org/abs/1811.10737" },
+    { "title": "Verizon Business: IP Latency Statistics(Trans Pacificの往復遅延の月平均。2026年2月は約111ミリ秒)", "url": "https://www.verizon.com/business/terms/latency/" },
+    { "title": "Verizon Business: Global Latency SLA(Trans Pacificは東京とロサンゼルスの拠点ルータの間)", "url": "https://www.verizon.com/business/terms/global_latency_sla/" },
+    { "title": "TeleGeography: Do Submarine Cables Account For Over 99% of Intercontinental Data Traffic?(2023年)", "url": "https://blog.telegeography.com/2023-mythbusting-part-3" },
+    { "title": "Chromium Blog: An Update on the Lock Icon(2023年5月)", "url": "https://blog.chromium.org/2023/05/an-update-on-lock-icon.html" }
+  ]
+}
+-->
+<p class="lead">インターネットでは、データを「パケット」という小さなかたまりに分けて送ります。各パケットには宛先の番号(IPアドレス)が書かれ、途中の「ルータ」という機器が、それを見て次々に中継します。届いたパケットは受け取った側で順番どおりに並べ直され、元のデータに戻ります。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>Webページを開いたとき、裏で起きていることの順番</li>
+<li>パケット・IPアドレス・ルータが、それぞれ何をしているか</li>
+<li>通信の仕事を4つの「層」に分けて考える理由</li>
+<li>何台もの機器を経由するのに速い理由と、待ち時間が生まれるところ</li>
+</ul><p class="muted">前提知識: 特にありません。スマホでWebページを見たことがあれば十分です。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>スマホでニュースのリンクをタップすると、多くの場合、数秒もかからずにページが表示されます。そのデータは、どこか遠くのコンピュータから届いています。このように、求めに応じてデータを渡すコンピュータを「サーバ」と呼びます。</p>
+<p>この記事では、Webページを1つ開くときに裏で起きていることを、順番に見ていきます。大まかな流れは次のとおりです。</p>
+<ol>
+<li>サイトの名前(例: www.example.com)から、サーバの番号を調べる</li>
+<li>サーバとの間で、やり取りを始める準備をする</li>
+<li>「このページをください」という依頼を送る</li>
+<li>ページのデータが、たくさんのかたまりに分かれて届く</li>
+<li>スマホの側で組み立て直し、画面に表示する</li>
+</ol>
+</section>
+
+<section>
+<h2>データは「パケット」に分けて送る</h2>
+<p>インターネットでは、写真もページの文章も、0と1の並びとして送ります。大きなデータは、一続きのままでは送りません。小さなかたまりに切り分けて、1つずつ送ります。このかたまりを{{term:パケット}}と呼びます。</p>
+<p>パケットの先頭には、宛先や送り主の番号などを書いた部分がつきます。これを「ヘッダ」と呼びます。受け取った側は、ヘッダを手がかりにかけらを集め、元のデータに組み立て直します。</p>
+<p>1つのパケットの大きさには上限があります。家庭の有線LANやWi-Fiでは、ふつう1,500バイトまでです(1バイトは0と1を8個並べた量)。1MB(100万バイト)の写真なら、約700個のパケットに分かれる計算です。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 286" role="img"><title>1つのデータを小さなかけらに分け、それぞれにヘッダをつけてパケットにする</title>
+<text x="180" y="22" text-anchor="middle">送りたいデータ(例: 写真)</text>
+<rect x="20" y="34" width="320" height="36" rx="6" class="p"/>
+<line x1="100" y1="34" x2="100" y2="70" class="dash"/>
+<line x1="180" y1="34" x2="180" y2="70" class="dash"/>
+<line x1="260" y1="34" x2="260" y2="70" class="dash"/>
+<text x="60" y="58" text-anchor="middle">1</text>
+<text x="140" y="58" text-anchor="middle">2</text>
+<text x="220" y="58" text-anchor="middle">3</text>
+<text x="300" y="58" text-anchor="middle">4</text>
+<line x1="60" y1="74" x2="60" y2="96" class="ln"/><polygon points="60,104 55,95 65,95" class="ink"/>
+<line x1="140" y1="74" x2="140" y2="96" class="ln"/><polygon points="140,104 135,95 145,95" class="ink"/>
+<line x1="220" y1="74" x2="220" y2="96" class="ln"/><polygon points="220,104 215,95 225,95" class="ink"/>
+<line x1="300" y1="74" x2="300" y2="96" class="ln"/><polygon points="300,104 295,95 305,95" class="ink"/>
+<rect x="24" y="110" width="32" height="34" rx="4" class="ox"/><rect x="56" y="110" width="40" height="34" rx="4" class="p"/><text x="76" y="133" text-anchor="middle">1</text>
+<rect x="104" y="110" width="32" height="34" rx="4" class="ox"/><rect x="136" y="110" width="40" height="34" rx="4" class="p"/><text x="156" y="133" text-anchor="middle">2</text>
+<rect x="184" y="110" width="32" height="34" rx="4" class="ox"/><rect x="216" y="110" width="40" height="34" rx="4" class="p"/><text x="236" y="133" text-anchor="middle">3</text>
+<rect x="264" y="110" width="32" height="34" rx="4" class="ox"/><rect x="296" y="110" width="40" height="34" rx="4" class="p"/><text x="316" y="133" text-anchor="middle">4</text>
+<text x="180" y="170" text-anchor="middle" class="a">ヘッダをつけてパケットに</text>
+<text x="180" y="200" text-anchor="middle" class="m">1個のパケットの中身</text>
+<rect x="20" y="210" width="130" height="40" rx="6" class="ox"/>
+<text x="85" y="235" text-anchor="middle">ヘッダ</text>
+<rect x="150" y="210" width="190" height="40" rx="6" class="p"/>
+<text x="245" y="235" text-anchor="middle">データのかけら</text>
+<text x="85" y="274" text-anchor="middle">宛先・送り主など</text>
+<text x="245" y="274" text-anchor="middle">元のデータの一部</text>
+</svg><figcaption class="fig-cap">大きなデータを小さなかけらに分け、それぞれにヘッダをつけたものがパケットです。省略していること: ヘッダは層ごとに重なってつくこと(後の「層」の節)、実際のかけらの数はずっと多いこと。</figcaption></figure>
+<p>わざわざ切り分ける理由は、主に2つあります。1つは、1本の回線を大勢で分け合えることです。小さなパケットなら、いろいろな人の通信を少しずつ交互に流せます。もう1つは、途中で一部が失われても、そのかけらだけを送り直せばよいことです。</p>
+<p>昔の固定電話は、逆の考え方でした。通話のあいだ、相手までの回線をまるごと確保します。話していない時間も、その回線はほかの人には使えません。データを分けて回線を分け合う方式は1960年代に考え出され、インターネットの土台になりました。</p>
+</section>
+
+<section>
+<h2>IPアドレス: パケットの宛先になる番号</h2>
+<p>パケットの宛先には、相手の機器を表す番号を書きます。この番号を{{term:IPアドレス}}と呼びます。スマホもパソコンもサーバも、インターネットにつながる機器にはIPアドレスが割り当てられます。</p>
+<p>広く使われている形式では、IPアドレスを「192.0.2.10」のように書きます。0〜255の4つの数を、点で区切った形です。0と1で表すと32けたなので、作れる番号は約43億通りしかありません。これでは世界の機器の数に足りないため、けたを大きく増やした新しい形式(IPv6)への切り替えが進んでいます。違いは「<a href="{{home}}compare/ipv4-vs-ipv6/">IPv4とIPv6の違い</a>」で表にまとめています。</p>
+<p>IPアドレスを使って、パケットを相手まで届ける決まりごとを{{term:IP(インターネットプロトコル)|IP}}と呼びます。IPは、パケットを宛先に向けて送り出すことに専念します。届いたかどうかの確認は、IPの仕事ではありません。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>パケットは、宛先を書いた封筒に似ています。郵便の配達では、封筒の表書きだけを見て届け先を決め、中の手紙は読みません。途中の機器も同じように、パケットのヘッダだけを見て行き先を決めます。似ているのは「宛先は外側に書き、中身とは分けて扱う」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 郵便の住所は地名なので、書かれた場所がわかります。IPアドレスはただの番号で、そこから正確な場所はわかりません。スマホを別のWi-Fiにつなぎ替えると、番号が変わることもよくあります。また、封をした手紙と違い、暗号にしていないパケットは、途中で中身を読まれるおそれがあります。</p></aside>
+</section>
+
+<section>
+<h2>ルータが「次の行き先」だけを選んで運ぶ</h2>
+<p>インターネットは、たくさんの小さなネットワークをつなぎ合わせたものです。家のネットワーク、会社のネットワーク、通信会社のネットワークなどがあります。ネットワークの境目にいて、パケットを隣のネットワークへ受け渡す機器を{{term:ルータ}}と呼びます。</p>
+<p>ルータは、届いたパケットのヘッダから、宛先のIPアドレスを読みます。そして、自分の持つ表と照らし合わせて、隣のどのルータに渡すかを決めます。この表を{{term:ルーティング(経路制御)|経路表}}と呼びます。経路表には「この範囲の番号なら、あちらの隣へ」という対応が書かれています。</p>
+<p>大切なのは、どのルータも相手までの道順の全部は知らない、という点です。知っているのは「次にどこへ渡せばよいか」だけです。送る前に道順を全部決めておくのではありません。パケットはルータからルータへ、バケツリレーのように運ばれます。</p>
+<p>経路表は、ルータどうしが情報を交換して、自動的に作り直されます。どこかの回線が故障すると、その道を避けるように書き換わります。同じ相手へのパケットは、ふだんはほぼ同じ道を通ります。それでも、通信の途中で道が変わることがあり、そのあともパケットは届き続けます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>スマホからサーバまで、パケットがルータを順に経由する。故障があると別の道を通る</title>
+<rect x="8" y="16" width="84" height="34" rx="6" class="metal"/>
+<text x="50" y="38" text-anchor="middle">スマホ</text>
+<line x1="50" y1="50" x2="50" y2="100" class="dash"/>
+<text x="58" y="80">Wi-Fi</text>
+<rect x="4" y="100" width="92" height="34" rx="6" class="ox"/>
+<text x="50" y="122" text-anchor="middle">家のルータ</text>
+<rect x="116" y="16" width="236" height="218" rx="12" class="dash"/>
+<text x="234" y="38" text-anchor="middle" class="m">通信会社などのルータ</text>
+<line x1="96" y1="117" x2="134" y2="117" class="thin"/>
+<line x1="150" y1="117" x2="225" y2="66" class="thin"/>
+<line x1="150" y1="117" x2="225" y2="190" class="thin"/>
+<line x1="225" y1="66" x2="305" y2="117" class="thin"/>
+<line x1="225" y1="190" x2="305" y2="117" class="thin"/>
+<line x1="225" y1="66" x2="225" y2="190" class="thin"/>
+<polyline points="96,112 150,112 225,61 305,112" class="ac"/>
+<polyline points="96,122 150,122 225,195 290,250" class="ac2"/>
+<line x1="305" y1="117" x2="305" y2="250" class="ac"/>
+<line x1="256" y1="78" x2="272" y2="94" class="ln"/><line x1="272" y1="78" x2="256" y2="94" class="ln"/>
+<circle cx="150" cy="117" r="16" class="n"/>
+<circle cx="225" cy="66" r="16" class="n"/>
+<circle cx="225" cy="190" r="16" class="n"/>
+<circle cx="305" cy="117" r="16" class="n"/>
+<text x="150" y="122" text-anchor="middle">R</text>
+<text x="225" y="71" text-anchor="middle">R</text>
+<text x="225" y="195" text-anchor="middle">R</text>
+<text x="305" y="122" text-anchor="middle">R</text>
+<rect x="246" y="250" width="100" height="34" rx="6" class="metal"/>
+<text x="296" y="272" text-anchor="middle">サーバ</text>
+<line x1="12" y1="304" x2="44" y2="304" class="ac"/>
+<text x="52" y="309">ふだんの道</text>
+<line x1="160" y1="304" x2="192" y2="304" class="ac2"/>
+<text x="200" y="309">故障のときの道</text>
+<text x="40" y="186" text-anchor="middle">R = ルータ</text>
+</svg><figcaption class="fig-cap">各ルータは宛先を見て「次の隣」だけを選びます。途中の回線が故障すると(×)、経路表が書き換わり、別の道を通るようになります。省略していること: 実際のルータの数(ずっと多い)、海底ケーブルなどの長い回線。</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>ルータの働きは、道路の交差点にある行き先の案内板に似ています。運転する人は、交差点ごとに「大阪方面はこちら」という案内を見て曲がる方向を決めます。出発前に地図で全部の道順を調べなくても、案内板をたどれば目的地に着きます。似ているのは「各地点では、次に進む方向だけを決める」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 道路の案内板はめったに変わりませんが、経路表は故障などに合わせて自動で書き換わります。また、道路が混んでも車が消えることはありませんが、ルータは混みすぎると、さばききれないパケットを捨ててしまいます。捨てられた分は、次に説明するTCPが送り直しで補います。</p></aside>
+</section>
+
+<section>
+<h2>仕事を4つの「層」に分けて考える</h2>
+<p>ここまでの話には、いくつもの仕事が混ざっていました。隣の機器まで信号を届ける仕事、遠くの相手まで道を探す仕事、取りこぼしを防ぐ仕事などです。インターネットでは、こうした仕事を「層」に分けて、層ごとに通信の決まりごとを定めています。この決まりごとを「プロトコル」と呼びます。</p>
+<p>層は、一般に次の4つで説明されます(TCP/IPの4階層と呼ばれます)。表では、上の層ほどアプリに近く、下の層ほど電波やケーブルに近くなります。</p>
+<table>
+<thead><tr><th>層</th><th>主なプロトコル</th><th>受け持つ仕事</th></tr></thead>
+<tbody>
+<tr><td>アプリケーション層</td><td>HTTP・HTTPS、DNS</td><td>ブラウザとサーバが交わす会話の中身</td></tr>
+<tr><td>トランスポート層</td><td>TCP・UDP</td><td>取りこぼしや順番の乱れを直す(TCP)</td></tr>
+<tr><td>インターネット層</td><td>IP</td><td>ネットワークをまたいで相手まで届ける</td></tr>
+<tr><td>リンク層</td><td>Wi-Fi・イーサネット</td><td>隣の機器まで、電波や電気・光の信号で運ぶ</td></tr>
+</tbody>
+</table>
+<p>いちばん下のリンク層は、つながっている隣の機器まで運ぶだけです。スマホのWi-Fiなら、家のルータまでが受け持ちです。その先は{{term:イーサネット}}(有線LANの規格)や光ファイバの回線で、また次の機器まで運ばれます。</p>
+<p>いちばん上で、Webページのやり取りを決めているのが{{term:HTTP}}です。「このページをください」「はい、どうぞ」という会話の形を定めています。その会話を、下の層が順に引き受けて相手まで運びます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 290" role="img"><title>スマホ・ルータ・サーバの層。送る側は上から下へ、受け取る側は下から上へ渡す。ルータはIPの層まで</title>
+<text x="62" y="20" text-anchor="middle">スマホ</text>
+<text x="180" y="20" text-anchor="middle">ルータ</text>
+<text x="298" y="20" text-anchor="middle">サーバ</text>
+<rect x="24" y="30" width="76" height="36" rx="6" class="metal"/><text x="62" y="54" text-anchor="middle">HTTP</text>
+<rect x="24" y="72" width="76" height="36" rx="6" class="n"/><text x="62" y="96" text-anchor="middle">TCP</text>
+<rect x="24" y="114" width="76" height="36" rx="6" class="ox"/><text x="62" y="138" text-anchor="middle">IP</text>
+<rect x="24" y="156" width="76" height="36" rx="6" class="p"/><text x="62" y="180" text-anchor="middle">Wi-Fi</text>
+<rect x="142" y="114" width="76" height="36" rx="6" class="ox"/><text x="180" y="138" text-anchor="middle">IP</text>
+<rect x="142" y="156" width="76" height="36" rx="6" class="p"/><text x="180" y="180" text-anchor="middle">リンク</text>
+<rect x="260" y="30" width="76" height="36" rx="6" class="metal"/><text x="298" y="54" text-anchor="middle">HTTP</text>
+<rect x="260" y="72" width="76" height="36" rx="6" class="n"/><text x="298" y="96" text-anchor="middle">TCP</text>
+<rect x="260" y="114" width="76" height="36" rx="6" class="ox"/><text x="298" y="138" text-anchor="middle">IP</text>
+<rect x="260" y="156" width="76" height="36" rx="6" class="p"/><text x="298" y="180" text-anchor="middle">有線LAN</text>
+<line x1="12" y1="40" x2="12" y2="180" class="ac"/><polygon points="12,190 7,180 17,180" class="fa"/>
+<polyline points="62,192 62,212 150,212 150,134" class="ac"/><polygon points="150,124 145,134 155,134" class="fa"/>
+<polyline points="210,126 210,212 298,212 298,203" class="ac"/><polygon points="298,194 293,203 303,203" class="fa"/>
+<line x1="348" y1="190" x2="348" y2="50" class="ac"/><polygon points="348,40 343,50 353,50" class="fa"/>
+<text x="62" y="240" text-anchor="middle">上から下へ</text>
+<text x="180" y="240" text-anchor="middle">IPの層まで見る</text>
+<text x="298" y="240" text-anchor="middle">下から上へ</text>
+<text x="180" y="274" text-anchor="middle" class="m">層ごとにヘッダをつけて、外していく</text>
+</svg><figcaption class="fig-cap">送る側は上の層から順にヘッダを重ねてつけ、受け取る側は下の層から順に外します。途中のルータが見るのは、ふつうIPの層までです。省略していること: 途中の多くのルータ、家のルータが行う番号の書き換え(後述のNAT)、HTTPSの暗号化の層。</figcaption></figure>
+<p>層に分けると、ある層を入れ替えても、ほかの層はそのまま使えます。例えば、Wi-Fiを有線LANに替えても、ブラウザやIPを作り直す必要はありません。</p>
+<p>資格試験の勉強では、同じ考え方を7つの層で整理した{{term:OSI参照モデル}}もよく出てきます。分け方が細かいだけで、「仕事ごとに層に分ける」という考え方は同じです。おおまかには、リンク層(ネットワークインタフェース層とも呼びます)がOSIの第1〜2層、インターネット層が第3層です。トランスポート層は第4層、アプリケーション層は第5〜7層です。</p>
+</section>
+
+<section>
+<h2>DNS: 名前から番号を調べる</h2>
+<p>人はサイトを「www.example.com」のような名前で覚えます。しかし、パケットの宛先に書けるのは番号(IPアドレス)です。そこで、名前を番号に変えるしくみを使います。これを{{term:DNS}}(ドメインネームシステム)と呼びます。</p>
+<p>ブラウザは、まずDNSのサーバに「この名前の番号は?」と問い合わせます。答えをもらって、ようやくページのサーバにパケットを送れます。冒頭の流れの1番がこれです。答えはしばらく覚えておくので、毎回聞き直すわけではありません。</p>
+</section>
+
+<section>
+<h2>TCPとUDP: 確実さを取るか、身軽さを取るか</h2>
+<p>IPは、パケットを送り出すところまでが仕事です。途中で混みすぎたルータがパケットを捨てることも、到着の順番が入れ替わることもあります。それでもWebページが欠けずに表示されるのは、{{term:TCP}}という決まりごとのおかげです。</p>
+<p>TCPでは、送る側がデータに通し番号をつけます。受け取った側は「ここまで届きました」と返事を送ります。返事が来ない分は、送る側がもう一度送ります。受け取った側は、番号を見て正しい順に並べ直します。</p>
+<p>また、TCPはデータを送り始める前に、相手と短いあいさつを交わして準備をします。冒頭の流れの2番がこれです。このあいさつに、1往復分の時間がかかります。</p>
+<p>もう一方の{{term:UDP}}は、番号の管理や送り直しをせず、パケットを送りっぱなしにします。手順が少ない分、待ち時間を短くできます。ビデオ通話や対戦ゲームのように、遅れて届くデータより「今」のデータが大事な用途で使われます。DNSの問い合わせにも、主にUDPが使われます。</p>
+<p>新しいHTTP/3では、UDPの上に{{term:QUIC}}という決まりごとを重ね、送り直しなどをQUICが受け持ちます。違いは「<a href="{{home}}compare/tcp-vs-udp/">TCPとUDPの違い</a>」と「<a href="{{home}}compare/http-1-1-vs-http-2-vs-http-3/">HTTP/1.1・HTTP/2・HTTP/3の違い</a>」で表にまとめています。</p>
+</section>
+
+<section>
+<h2>家のルータと、番号の書き換え(NAT)</h2>
+<p>家のWi-Fiの機器は、多くの場合、Wi-Fiの親機とルータを1台にまとめたものです。家の中のスマホやパソコンには、家の中だけで通じる番号が配られます。「192.168.」で始まる番号が多く使われます。この番号のままでは、インターネットの向こうから返事を送れません。</p>
+<p>そこで、外へ出るパケットの送り主の番号を、家のルータがインターネット用の番号に書き換えます。ルータはどの通信がどの機器のものかを控えておき、返ってきたパケットを元の番号に戻して届けます。この書き換えを{{term:NAT}}と呼びます。約43億個しかない番号を、多くの機器で分け合うための工夫です。</p>
+</section>
+
+<section>
+<h2>HTTPSと鍵マーク</h2>
+<p>途中の機器は、パケットの中身を読もうと思えば読めてしまいます。そこで、鍵を持つ相手にしか元に戻せない形にデータを変えてから送ります。これを「暗号化」と呼びます。</p>
+<p>Webのやり取りを暗号化して送る方式が{{term:HTTPS}}です。HTTPSでは、通信の相手が本物のサーバかどうかも確かめます。</p>
+<p>そのためにサーバは、「証明書」という電子的な身分証を示します。証明書は、信頼された発行機関が、サイトの名前の持ち主を確かめて保証したものです。ブラウザは、その保証を確かめてから通信を始めます。</p>
+<p>アドレス欄の鍵マークは、この確認と暗号化ができていることを表してきました。ただし、鍵マークは「運営者が信頼できるサイト」という意味ではありません。だましサイトでも証明書は取れるからです。Chromeは2023年のバージョン117から、この誤解を避けるため、鍵マークを別のアイコンに替えています。</p>
+</section>
+
+<section>
+<h2>何台も経由するのに、なぜ速いのか</h2>
+<p>長い距離の通信には、主に光ファイバが使われます。光ファイバは、髪の毛ほどの細いガラスの線に光を通して、信号を送るケーブルです。その中を光は1秒に約20万km進みます。真空中の光の速さ(約30万km)の、およそ3分の2です。</p>
+<p>1kmあたりにすると、約5マイクロ秒(1マイクロ秒は100万分の1秒)です。データを送ってから返事が戻るまでの時間を{{term:RTT(往復遅延時間)|RTT}}と呼びます。東京と大阪は直線で約400kmなので、RTTは最短でも約4ミリ秒(1ミリ秒は1000分の1秒)です。実際のケーブルは直線ではないので、道のりはもっと長くなります。</p>
+<p>東京とロサンゼルスは、地球の表面に沿った最短距離で約8,800kmです。光ファイバで往復すると、距離だけで約88ミリ秒かかります。米国の通信会社Verizonの公表値では、両都市の拠点の間の往復は、2026年初めの月平均で約110ミリ秒でした。差の約20ミリ秒は、ケーブルの遠回りと、途中の機器での処理や順番待ちによるものです。</p>
+<p>ルータでの処理は、混んでいなければ短時間で済みます。遠い相手との通信では、待ち時間の大部分は、信号が距離を進む時間です。海を越える通信の大部分は、海底に敷かれた光ファイバのケーブルを通ります。調査会社TeleGeographyは2023年の検証で、大陸の間のデータの99%以上がそうだとしています。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: 自分とサーバの間に、専用の1本の線がつながっている</p><p>実際は、回線は大勢で分け合っていて、自分のパケットはほかの人のパケットと混ざって流れます。道順も前もって決まってはいません。ルータがその場その場で次の行き先を選び、途中で道が変わることもあります。電話の「回線がつながる」というイメージから生まれやすい誤解です。</p></div>
+<div class="myth"><p class="myth-q">誤解: Wi-Fiとインターネットは同じもの</p><p>実際は、{{term:Wi-Fi}}は、スマホと家のルータ(親機)の間を電波で結ぶしくみにすぎません。その先は、光ファイバなどの回線で通信会社のネットワークにつながっています。だから「Wi-Fiにはつながっているのに、インターネットが使えない」ことが起こります。</p></div>
+<div class="myth"><p class="myth-q">誤解: 回線速度の数字が大きいほど、反応も速くなる</p><p>実際は、「1Gbps」のような数字は、1秒間に送れるデータの量(帯域)です。返事が戻るまでの時間(RTT)とは別のものです。例えば100KBの小さなデータなら、100Mbpsで約8ミリ秒、1Gbpsで約0.8ミリ秒で送れます。しかし相手が米国にあれば、往復だけで100ミリ秒以上かかります。</p><p>このため、小さなやり取りでは、帯域を10倍にしても待ち時間はあまり縮みません。帯域の差がよく効くのは、大きなファイルのダウンロードです(ここではTCPの細かい動きを省いて単純化しています)。計算は「<a href="{{home}}tools/data-transfer-time-calculator/">データ転送時間の計算ツール</a>」で試せます。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>くらべると</th></tr></thead>
+<tbody>
+<tr><td>1つのパケットの大きさ(有線LAN・Wi-Fi)</td><td>ふつう最大1,500バイト</td><td>1MBの写真で約700個</td></tr>
+<tr><td>IPv4のアドレスの数</td><td>約43億(2を32回かけた数)</td><td>世界の人口より少ない</td></tr>
+<tr><td>光ファイバの中の光の速さ</td><td>約20万km/秒</td><td>1kmあたり約5マイクロ秒</td></tr>
+<tr><td>東京–大阪(直線約400km)の往復</td><td>約4ミリ秒</td><td>距離だけで決まる下限</td></tr>
+<tr><td>東京–ロサンゼルス(最短約8,800km)の往復</td><td>約88ミリ秒(下限)</td><td>実測は約110ミリ秒(Verizon、2026年初めの月平均)</td></tr>
+<tr><td>大陸の間のデータのうち海底ケーブルを通る割合</td><td>99%以上</td><td>TeleGeographyの検証(2023年)</td></tr>
+</tbody>
+</table>
+<p>「下限」は、光ファイバの中の速さで最短距離を往復した時間です。実際の往復時間は、これより短くはなりません。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="{{home}}compare/hub-vs-switch-vs-router/">ハブ・スイッチ・ルータの違い</a>(家や会社のネットワークの機器)</li>
+<li>計算で試す: <a href="{{home}}tools/ip-subnet-calculator/">IPアドレス・サブネット計算</a>(IPアドレスを「ネットワークの部分」と「機器の部分」に分ける計算)</li>
+<li>次の一歩の用語: {{term:MACアドレス}}、{{term:デフォルトゲートウェイ}}、{{term:DHCP}}(家のネットワークのしくみ)</li>
+<li>HTTPSをもっと知る: {{term:認証局}}(証明書を発行する機関)、{{term:TLS}}(HTTPSの暗号化の決まりごと)</li>
+<li>経路を自分で見る: {{term:traceroute}}(パケットが通ったルータを一覧にするコマンド)</li>
+<li>土台から読む: サーバもスマホも、中ではCPUが命令を実行しています。「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」</li>
+</ul>
+</section>
