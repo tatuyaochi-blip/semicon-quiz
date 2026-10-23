@@ -1,5 +1,6 @@
 // やさしい解説(src/learn/{言語}/*.html)の検査。記事の型(research/2026-10-23-articles-plan.md の5章)と、読みやすさの目安を見る。
-// 誤り: 情報(先頭の JSON)の不足、存在しない分野・問題・用語・図、記事の型の欠け、スクリプトや色の直書き
+// 誤り: 情報(先頭の JSON)の不足、存在しない分野・用語・図、記事の型の欠け、スクリプトや色の直書き、
+// 本文からクイズ・分野ページ・学習コースへのリンク(記事は読み物にする。クイズへの案内はビルドが記事の後に1行だけ出す: 運営者の指示 2026-10-23)
 // 注意: 長すぎる文、題・説明文の長さ、見直しの時期を過ぎた記事
 // 使い方: node tools/check-learn.js [--strict](--strict では注意も失敗にする)
 import fs from 'node:fs';
@@ -15,8 +16,6 @@ const learn = fs.existsSync(path.join(root, 'data/learn.json')) ? readJSON('data
 const cats = new Set(readJSON('data/categories.json').map(c => c.id));
 const glossary = readJSON('data/glossary.json');
 const termOk = k => glossary.some(g => g.term === k || (g.aliases ?? []).includes(k));
-const qids = new Set(fs.readdirSync(path.join(root, 'data/questions')).filter(f => f.endsWith('.json'))
-  .flatMap(f => readJSON(`data/questions/${f}`).map(q => q.id)));
 const figs = new Set(fs.readdirSync(path.join(root, 'data/figures')).map(f => f.replace(/\.svg$/, '')));
 const today = new Date().toISOString().slice(0, 7);
 
@@ -34,12 +33,12 @@ for (const lang of langs) {
     let a;
     try { a = JSON.parse(m[1]); } catch (e) { err(`JSON が読めません: ${e.message}`); continue; }
     const body = src.slice(m[0].length);
-    for (const k of ['title', 'description', 'series', 'order', 'updated', 'review', 'cats', 'check', 'sources']) if (a[k] == null) err(`${k} がありません`);
+    for (const k of ['title', 'description', 'series', 'order', 'updated', 'review', 'cats', 'sources']) if (a[k] == null) err(`${k} がありません`);
     if (a.series && !learn.series.some(s => s.id === a.series)) err(`data/learn.json にないシリーズ ${a.series}`);
     for (const id of a.cats ?? []) if (!cats.has(id)) err(`存在しない分野 ${id}`);
     for (const k of a.terms ?? []) if (!glossary.some(g => g.term === k)) err(`用語集にない語(terms) ${k}`);
-    if ((a.check ?? []).length !== 3) err('check は3問にしてください');
-    for (const id of a.check ?? []) if (!qids.has(id)) err(`存在しない問題 ${id}`);
+    if (a.check) err('check(理解度チェックの問題)は使わなくなりました。消してください');
+    if (/\{\{home\}\}(c|quiz|course)\//.test(body)) err('本文にクイズ・分野ページ・学習コースへのリンクがあります');
     if (!(a.sources ?? []).length) err('参考にした資料(sources)がありません');
     for (const x of a.sources ?? []) if (!x.title || !/^https:\/\//.test(x.url ?? '')) err(`資料の書き方: ${JSON.stringify(x)}`);
     if (a.review && a.review < today) warn(`見直しの時期(${a.review})を過ぎています`);

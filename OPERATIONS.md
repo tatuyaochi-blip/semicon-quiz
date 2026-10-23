@@ -63,10 +63,10 @@
 
 ## やさしい解説の記事の作り方
 
-- 本文は src/learn/{言語}/{slug}.html(先頭の JSON に題・説明・シリーズ・順番・更新日・見直しの時期・分野・用語・理解度チェックの3問・資料)。シリーズは data/learn.json。図は {{fig:id}} か、サイトのクラスだけを使う SVG。用語は {{term:日本語の用語名|表示}}
+- 本文は src/learn/{言語}/{slug}.html(先頭の JSON に題・説明・シリーズ・順番・更新日・見直しの時期・分野・用語・資料)。記事は読み物にし、本文からクイズ・分野ページ・学習コースへはリンクしない(運営者の指示 2026-10-23。クイズへの案内は記事の後の1行だけ)。シリーズは data/learn.json。図は {{fig:id}} か、サイトのクラスだけを使う SVG。用語は {{term:日本語の用語名|表示}}
 - 1本の流れ: 書く係(scratchpad/brief_learn.txt)→ 別の係が事実と読みやすさを確かめて直す(scratchpad/brief_learn_review.txt)→ 主な手が読んで入れる → `npm test`(check-learn.js が型・長い文・存在しない問題や用語を見る)→ ビルドして画面を見る
 - 日本語で先に出し、2〜4週間後に読まれ方を見て英語・繁体字に訳す(新しい中身は日英繁という原則の例外)
-- 記事の terms に挙げた用語のページと、cats の分野ページから記事へリンクが出る。GA4 の cta_click: learn_quiz・learn_next・term_learn・cat_learn・home_feat_learn
+- 記事の terms に挙げた用語のページと、cats の分野ページから記事へリンクが出る。GA4 の cta_click: learn_topic・learn_next・term_learn・cat_learn・course_learn・home_feat_learn
 - 判断: 公開から8週間で、1ページあたりの表示が用語ページの平均を下回り、記事からクイズへ進む割合も低ければ、新しい記事を止めて書き方を見直す。review の月を過ぎた記事は check-learn が注意を出すので読み直す
 
 ## 記録

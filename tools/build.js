@@ -99,17 +99,17 @@ const learnText = {
   ja: { nav: 'やさしい解説', card: '「半導体とは?」「CPUとは?」など、素朴な疑問から読む解説記事', title: 'やさしい解説: 半導体とコンピュータを素朴な疑問から',
     description: '半導体・トランジスタ・CPU など、半導体とコンピュータの基本を、予備知識の少ない人向けに素朴な疑問から解説します。しくみ、身近な使われ方、よくある誤解まで。読んだあとは理解度チェックとクイズで確かめられます。',
     lead: '「半導体って何?」「CPUは何をしているの?」といった素朴な疑問から、しくみと身近な使われ方までを、予備知識が少なくても読めるように解説します。シリーズの順に読むと、半導体からコンピュータまでが一続きでわかります。',
-    minutes: '約{n}分', updated: '更新: {d}', check: '理解度チェック', checkLead: '記事の内容で答えられる3問です。答えを開いて確かめてください。', quiz: 'この分野の問題に挑戦(10問)', topic: '分野「{name}」のページへ',
+    minutes: '約{n}分', updated: '更新: {d}', quizLine: 'この分野の問題:',
     next: '次に読む', inSeries: 'シリーズ「{name}」の記事', sources: '参考にした資料', all: 'やさしい解説の一覧へ', termLink: 'やさしい解説で読む', catLink: 'はじめて学ぶ人へ', search: 'やさしい解説', courseFirst: 'まず読む: やさしい解説' },
   en: { nav: 'Explainers', card: 'Beginner-friendly articles that start from simple questions', title: 'Explainers: semiconductors and computers from simple questions',
     description: 'Beginner-friendly explainers on semiconductors, transistors, CPUs and more: how they work, where you meet them and common misconceptions, with a short check and quizzes.',
     lead: 'Explainers that start from simple questions such as “What is a semiconductor?” and “What does a CPU do?”, written for readers with little background. Read a series in order to follow the path from semiconductors to computers.',
-    minutes: '{n} min read', updated: 'Updated: {d}', check: 'Check your understanding', checkLead: 'Three questions you can answer from this article. Open each answer to check.', quiz: 'Try 10 questions on this topic', topic: 'Go to the topic “{name}”',
+    minutes: '{n} min read', updated: 'Updated: {d}', quizLine: 'Questions on this topic:',
     next: 'Read next', inSeries: 'Articles in the series “{name}”', sources: 'Sources', all: 'All explainers', termLink: 'Read the beginner explainer', catLink: 'New to this topic?', search: 'Explainers', courseFirst: 'Read first: explainers' },
   'zh-hant': { nav: '入門解說', card: '從「半導體是什麼？」等簡單的疑問讀起的解說文章', title: '入門解說：從簡單的疑問認識半導體與電腦',
     description: '為背景知識不多的讀者，從簡單的疑問解說半導體、電晶體、CPU 等基礎：原理、生活中的應用與常見誤解，讀完可用小測驗確認。',
     lead: '從「半導體是什麼？」「CPU 在做什麼？」等簡單的疑問出發，為背景知識不多的讀者解說原理與生活中的應用。依系列順序閱讀，就能從半導體一路了解到電腦。',
-    minutes: '約 {n} 分鐘', updated: '更新：{d}', check: '理解度確認', checkLead: '可以用本文內容回答的 3 題。展開答案確認。', quiz: '挑戰這個領域的題目（10 題）', topic: '前往領域「{name}」',
+    minutes: '約 {n} 分鐘', updated: '更新：{d}', quizLine: '這個領域的題目：',
     next: '接著閱讀', inSeries: '系列「{name}」的文章', sources: '參考資料', all: '入門解說一覽', termLink: '閱讀入門解說', catLink: '第一次學習的人', search: '入門解說', courseFirst: '先讀這些入門解說' },
 };
 const learnFill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
@@ -304,7 +304,7 @@ function buildLang(L) {
     const m = src.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/);
     if (!m) throw new Error(`src/learn/${code}/${slug}.html: 先頭に JSON のコメントがありません`);
     const a = { slug, ...JSON.parse(m[1]), body: src.slice(m[0].length) };
-    for (const k of ['title', 'description', 'series', 'order', 'updated', 'cats', 'check']) if (a[k] == null) throw new Error(`learn/${code}/${slug}: ${k} がありません`);
+    for (const k of ['title', 'description', 'series', 'order', 'updated', 'cats']) if (a[k] == null) throw new Error(`learn/${code}/${slug}: ${k} がありません`);
     if (!learnData.series.some(s => s.id === a.series)) throw new Error(`learn/${code}/${slug}: data/learn.json にないシリーズ ${a.series}`);
     for (const id of a.cats) if (!categories.some(c => c.id === id)) throw new Error(`learn/${code}/${slug}: 存在しない分野 ${id}`);
     for (const k of a.terms ?? []) if (!glossary.some(g => g.term === k)) throw new Error(`learn/${code}/${slug}: 用語集にない語 ${k}`);
@@ -800,10 +800,6 @@ ${seriesList.map(({ s, list }) => `<section class="learn-series" id="s-${s.id}">
           return lg ? `<a class="term-link" href="${home}term/${termSlug[g.term]}/">${esc(label)}</a>` : esc(label);
         }), common);
       if (/\{\{/.test(body)) throw new Error(`${where}: 置き換えられない {{…}} があります`);
-      const checks = a.check.map(id => {
-        if (isDef && !qById.has(id)) throw new Error(`${where}: 存在しない問題 ${id}`);
-        return qById.get(id);
-      }).filter(Boolean);
       const s = seriesOf(a);
       const inSeries = items.filter(x => x.series === a.series).sort((x, y) => x.order - y.order);
       const next = inSeries.find(x => x.order > a.order);
@@ -814,7 +810,6 @@ ${seriesList.map(({ s, list }) => `<section class="learn-series" id="s-${s.id}">
         alt: learnAlt(a.slug),
         title: a.title,
         description: a.description,
-        scripts: ['answer.js'],
         jsonld: [
           crumbs([t('breadcrumb_top'), home], [LT.nav, learnUrl], [a.title, url]),
           { '@context': 'https://schema.org', '@type': 'Article', headline: a.title, description: a.description, inLanguage: L.htmlLang,
@@ -827,16 +822,6 @@ ${seriesList.map(({ s, list }) => `<section class="learn-series" id="s-${s.id}">
 <p class="learn-meta">${esc(learnFill(LT.minutes, { n: a.minutes }))} · ${esc(learnFill(LT.updated, { d: fmtDay(a.updated) }))}</p>
 ${body}
 </article>
-${checks.length ? `<section class="learn-check">
-  <h2>${esc(LT.check)}</h2>
-  <p class="muted">${esc(LT.checkLead)}</p>${checks.map(q => `
-  <article class="q-mini"${qData(q)}>
-    <h3>${esc(q.question)}</h3>
-    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
-    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation, q.cat)}</p></details>
-  </article>`).join('')}
-  ${main && qs[main.id]?.length ? `<p><a class="btn btn-primary" href="${home}quiz/?mode=category&amp;c=${main.id}&amp;n=10" rel="nofollow" data-track="learn_quiz">${esc(LT.quiz)}</a> <a class="btn btn-ghost" href="${home}c/${main.id}/" data-track="learn_topic">${esc(learnFill(LT.topic, { name: main.name }))}</a></p>` : ''}
-</section>` : ''}
 ${next ? `<section class="learn-next">
   <h2>${esc(LT.next)}</h2>
   <ul class="cmp-list">${card(next, 'learn_next')}</ul>
@@ -845,7 +830,7 @@ ${inSeries.length > 1 ? `<section>
   <h2>${esc(learnFill(LT.inSeries, { name: seriesName(s) }))}</h2>
   <ol class="learn-toc">${inSeries.map(x => `<li>${x.slug === a.slug ? `<strong aria-current="page">${esc(x.title)}</strong>` : `<a href="${x.href}" data-track="learn_series">${esc(x.title)}</a>`}</li>`).join('')}</ol>
 </section>` : ''}
-${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}</summary><ul>${a.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join('')}</ul></details>` : ''}
+${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)} <a href="${home}c/${main.id}/" data-track="learn_topic">${esc(main.name)}</a></p>\n` : ''}${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}</summary><ul>${a.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join('')}</ul></details>` : ''}
 <div data-ad="term"></div>
 <p><a class="btn btn-ghost" href="${learnUrl}">${esc(LT.all)}</a></p>`,
       });
