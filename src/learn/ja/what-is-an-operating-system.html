@@ -1,0 +1,244 @@
+<!--
+{
+  "title": "OSとは? パソコンやスマホで何をしているソフトなのか",
+  "description": "OS(オペレーティングシステム)は、CPUやメモリなどの部品を管理し、たくさんのアプリが安全に分け合えるようにする基本のソフトです。カーネル、同時に動くしくみ、メモリの分け方、起動の流れ、アップデートの意味までやさしく解説します。",
+  "series": "computer-basics",
+  "order": 4,
+  "minutes": 15,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["os-hardware", "cpu", "linux-cli", "hw-security"],
+  "terms": ["特権モード", "システムコール", "デバイスドライバ", "仮想記憶", "コンテキストスイッチ"],
+  "sources": [
+    { "title": "R. H. Arpaci-Dusseau, A. C. Arpaci-Dusseau: Operating Systems: Three Easy Pieces(教科書。プロセス、スケジューリング、仮想記憶、ファイルシステム)", "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/" },
+    { "title": "Android Open Source Project: Kernel overview(Android のカーネルは Linux の長期サポート版をもとにしている)", "url": "https://source.android.com/docs/core/architecture/kernel" },
+    { "title": "Apple: apple-oss-distributions/xnu(XNU カーネルは Darwin の一部で、macOS と iOS で使われる)", "url": "https://github.com/apple-oss-distributions/xnu" },
+    { "title": "Android Developers: Processes and app lifecycle(キャッシュされたプロセスは、切り替えを速くするために残し、メモリが必要になると終了させる)", "url": "https://developer.android.com/guide/components/activities/process-lifecycle" },
+    { "title": "Microsoft Learn: Get started with Server Core(デスクトップの画面を持たない入れ方。特に必要がなければ Server Core を勧める)", "url": "https://learn.microsoft.com/en-us/windows-server/get-started/getting-started-with-server-core" },
+    { "title": "UEFI Forum: FAQ(UEFI は OS とファームウェアの間の取り決め。BIOS は使われなくなってきている)", "url": "https://uefi.org/faq" },
+    { "title": "Android Open Source Project: Android Security Bulletins(毎月のセキュリティ情報)", "url": "https://source.android.com/docs/security/bulletin/asb-overview" },
+    { "title": "Microsoft Learn: Update release cycle for Windows clients(毎月の定例のセキュリティ更新は第2火曜日、太平洋時間の午前10時)", "url": "https://learn.microsoft.com/en-us/windows/deployment/update/release-cycle" },
+    { "title": "日本マイクロソフト: Windows 10 のサポート終了(2025年10月14日)", "url": "https://www.microsoft.com/ja-jp/atlife/article-windows10-portal-eos.aspx" },
+    { "title": "Microsoft Österreich: 30 Jahre Windows(ドイツ語。Windows 1.0 は1985年に MS-DOS に重ねて使うソフトとして登場)", "url": "https://news.microsoft.com/de-at/30-jahre-windows-die-erfolgsgeschichte-geht-weiter/" },
+    { "title": "Encyclopaedia Britannica: Linux(1991年にトーバルズが公開、カーネル1.0は1994年)", "url": "https://www.britannica.com/technology/Linux" },
+    { "title": "Linus Torvalds: 30 years since the Linux 0.01 release(2021年、Linux カーネルのメーリングリスト。0.01 は1991年9月17日)", "url": "https://lkml.iu.edu/hypermail/linux/kernel/2109.2/03485.html" },
+    { "title": "University of Helsinki, Department of Computer Science: Linux 20 years(Linux 1.0 は1994年3月14日に公開)", "url": "https://archive.cs.helsinki.fi/www.cs.helsinki.fi/en/news/65599.html" }
+  ]
+}
+-->
+<p class="lead">OS(オペレーティングシステム)は、CPUやメモリ、ストレージなどの部品をまとめて管理する基本のソフトです。たくさんのアプリが、部品を順番とルールを守って安全に分け合えるように取り仕切ります。パソコンのWindows・macOS・Linux、スマホのAndroid・iOSが代表例です。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>OSが何をしていて、アプリとどう違うのか</li>
+<li>たくさんのアプリが同時に動くしくみと、メモリの分け方</li>
+<li>「カーネル」の意味と、電源を入れてからOSが動き出すまで</li>
+<li>アプリがOSごとに違う理由と、アップデートが大事な理由</li>
+</ul><p class="muted">前提知識: 特にありません。CPUを「プログラムの命令を実行する部品」、メモリを「作業中のデータを置く場所」と知っていると読みやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>スマホに「ソフトウェアアップデートがあります」と表示される。パソコンの電源を入れると、ロゴが出てからログインの画面になる。アプリの説明に「Windows 11 対応」と書いてある。こうした場面に出てくるのが「OS」です。</p>
+<p>OSは、ふだん意識しないまま毎日使っているソフトです。この記事では、その裏の仕事を1つずつ見ていきます。</p>
+</section>
+
+<section>
+<h2>OSは「部品」と「アプリ」の間に入るソフト</h2>
+<p>コンピュータは、CPUやメモリなどの部品と、その上で動くプログラムでできています。手で触れる部品のほうを「ハードウェア」と呼びます。プログラムのほうは「ソフトウェア」です。</p>
+<p>ソフトウェアは、大きく2種類に分けられます。メールや写真、ゲームのように、人がしたい作業をするためのものが「アプリ」(アプリケーション)です。一方、アプリが部品を使えるように土台をととのえるのが「OS」です。Operating Systemの略で、日本語では「基本ソフト」とも呼びます。</p>
+<p>アプリは、画面に絵を出すときも、ファイルを保存するときも、部品を直接は動かしません。OSに「これをして」と頼み、OSが部品を動かします。このしくみのおかげで、アプリを作る人は部品の細かい違いを気にせずにすみます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>アプリはOSに頼み、OSが部品を動かす</title>
+<text x="8" y="20" class="m">アプリ</text>
+<rect x="4" y="30" width="110" height="42" rx="8" class="p"/>
+<text x="59" y="57" text-anchor="middle">メール</text>
+<rect x="125" y="30" width="110" height="42" rx="8" class="p"/>
+<text x="180" y="57" text-anchor="middle">写真</text>
+<rect x="246" y="30" width="110" height="42" rx="8" class="p"/>
+<text x="301" y="57" text-anchor="middle">ブラウザ</text>
+<line x1="59" y1="72" x2="59" y2="111" class="ac"/><polygon points="59,120 54,111 64,111" class="fa"/>
+<line x1="180" y1="72" x2="180" y2="111" class="ac"/><polygon points="180,120 175,111 185,111" class="fa"/>
+<line x1="301" y1="72" x2="301" y2="111" class="ac"/><polygon points="301,120 296,111 306,111" class="fa"/>
+<text x="70" y="102" class="a">頼む</text>
+<rect x="4" y="120" width="352" height="96" rx="10" class="ox"/>
+<text x="180" y="146" text-anchor="middle">OS</text>
+<rect x="60" y="158" width="240" height="44" rx="8" class="metal"/>
+<text x="180" y="186" text-anchor="middle">中心部分(カーネル)</text>
+<line x1="180" y1="216" x2="180" y2="255" class="ln"/><polygon points="180,264 175,255 185,255" class="ink"/>
+<text x="192" y="246" class="m">部品を動かす</text>
+<text x="8" y="282" class="m">ハードウェア(部品)</text>
+<rect x="4" y="290" width="84" height="36" rx="6" class="n"/>
+<text x="46" y="314" text-anchor="middle">CPU</text>
+<rect x="93" y="290" width="84" height="36" rx="6" class="n"/>
+<text x="135" y="314" text-anchor="middle">メモリ</text>
+<rect x="182" y="290" width="84" height="36" rx="6" class="n"/>
+<text x="224" y="314" text-anchor="middle">ストレージ</text>
+<rect x="271" y="290" width="85" height="36" rx="6" class="n"/>
+<text x="313" y="314" text-anchor="middle">画面など</text>
+</svg><figcaption class="fig-cap">アプリは部品を直接動かさず、OSに頼みます。OSが部品を管理し、アプリどうしがぶつからないように取り仕切ります。省略していること: OSの中の細かい分担、アプリが共通に使う部品のプログラム(ライブラリ)、ネットワークの機器。</figcaption></figure>
+<p>代表的なOSは、パソコンではMicrosoftのWindows、AppleのmacOS、Linuxです。スマホでは、GoogleのAndroidとAppleのiOSです。</p>
+<p>炊飯器や車の制御用のコンピュータにも、小さなOSが入っていることがあります。その多くは、決められた時間内に必ず反応することを重視したOSで、{{term:RTOS(リアルタイムOS)|リアルタイムOS}}と呼びます。</p>
+</section>
+
+<section>
+<h2>OSの中心「カーネル」</h2>
+<p>OSには、いつもメモリに置かれていて、部品の管理を一手に引き受ける中心部分があります。これを「カーネル」と呼びます。英語で、木の実の「核」や「中心」を表す言葉です。</p>
+<p>「OS」という言葉は、広い意味と狭い意味で使われます。広い意味では、カーネルに、ホーム画面や設定の画面など、最初から付いてくるソフトを合わせた全体を指します。狭い意味では、カーネルだけを指します。この記事では主に広い意味で使います。</p>
+<p>違うOSどうしが、同じカーネルをもとにしていることもあります。Androidの公式資料によると、Androidのカーネルは、Linuxのカーネルをもとに作られています。また、Appleが公開している説明では、macOSとiOSはどちらもXNUというカーネルを使っています。</p>
+</section>
+
+<section>
+<h2>仕事① たくさんのアプリを、順番にCPUで動かす</h2>
+<p>音楽を聞きながらウェブを見て、メールの着信も知らせてもらう。たくさんのアプリが同時に動いているように見えます。しかし、CPUの中で命令を実行する部分(コア)の1つが、ある瞬間に実行できるプログラムは、基本的に1つだけです。</p>
+<p>OSは、実行中のプログラムを1つずつ区別して管理しています。この「実行中のプログラム」を「プロセス」と呼びます。1つのアプリが、いくつものプロセスに分かれて動くこともあります。</p>
+<p>OSは、1つのコアを、ミリ秒(1,000分の1秒)単位のごく短い時間ずつ、プロセスに交代で使わせます。切り替えがとても速いので、人には全部が同時に動いているように見えます。どのプロセスに、いつ、どれだけ使わせるかを決める仕事を「スケジューリング」と呼びます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 250" role="img"><title>1つのコアを、3つのアプリが短い時間ずつ交代で使う</title>
+<text x="180" y="20" text-anchor="middle" class="m">1つのコアの使われ方</text>
+<text x="4" y="62">音楽</text>
+<text x="4" y="112">ブラウザ</text>
+<text x="4" y="162">メール</text>
+<line x1="84" y1="36" x2="84" y2="186" class="thin"/>
+<line x1="84" y1="186" x2="350" y2="186" class="thin"/>
+<rect x="84" y="42" width="30" height="30" class="p"/>
+<rect x="114" y="92" width="30" height="30" class="n"/>
+<rect x="144" y="142" width="30" height="30" class="ox"/>
+<rect x="174" y="42" width="30" height="30" class="p"/>
+<rect x="204" y="92" width="30" height="30" class="n"/>
+<rect x="234" y="142" width="30" height="30" class="ox"/>
+<rect x="264" y="42" width="30" height="30" class="p"/>
+<rect x="294" y="92" width="30" height="30" class="n"/>
+<rect x="324" y="142" width="26" height="30" class="ox"/>
+<line x1="230" y1="206" x2="341" y2="206" class="ln"/><polygon points="350,206 341,201 341,211" class="ink"/>
+<text x="222" y="211" text-anchor="end" class="m">時間</text>
+<text x="180" y="240" text-anchor="middle" class="a">ミリ秒単位で交代する</text>
+</svg><figcaption class="fig-cap">四角は、そのアプリがコアを使っている時間です。省略していること: 実際の順番や長さは毎回同じではないこと、待っているアプリには順番を回さないこと、コアが複数あること。</figcaption></figure>
+<p>交代するときOSは、それまでのプロセスがどこまで進んだかを保存し、次のプロセスの続きを読み込みます。この入れ替えを{{term:コンテキストスイッチ}}と呼びます。保存と読み込みにも少し時間がかかるので、交代を細かくしすぎると無駄が増えます。</p>
+<p>実は、多くのプロセスは、キー入力やネットからのデータを待っている時間が大半です。OSは、待っているだけのプロセスにはコアを使わせず、すぐ動けるプロセスに順番を回します。今のCPUはコアを複数持つので、本当に同時に動くプロセスもあります。それでも、プロセスの数はふつうコアの数よりずっと多く、順番の管理は欠かせません。</p>
+<p>1つのプロセスの中でも、作業をいくつかの流れに分けて同時に進められます。この流れの1本1本を「スレッド」と呼びます。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>OSのスケジューリングは、公園に1台しかない人気のブランコを、並んでいる子どもに少しずつ交代で使わせる係に似ています。似ているのは「1つしかないものを短い時間ずつ交代で使わせ、待っている人にも必ず番が回るようにする」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 係の人はブランコとは別にいて、いつでも声をかけられます。OSは、アプリと同じCPUの上で動くプログラムです。アプリが動いている間、そのコアではOSは動いていません。そこでコンピュータには、一定の時間がたつと合図を出すタイマーがあり、合図のたびにOSへ制御が戻ります。このような合図による中断を{{term:割り込み}}と呼びます。</p></aside>
+</section>
+
+<section>
+<h2>仕事② メモリを、アプリごとに分けて貸す</h2>
+<p>メモリには番地(場所の番号)がついていて、プログラムは番地を指定してデータを読み書きします。もし全部のアプリが同じ番地を自由に使えたら困ります。あるアプリの誤りで、別のアプリのデータが書きかわってしまうからです。</p>
+<p>そこでOSは、アプリごとに専用の番地の空間を用意します。どのアプリも、メモリを自分だけで使っているかのように動けます。アプリが使うのは見かけの番地で、それを実際のメモリのどこに置くかはOSが決めます。このしくみを{{term:仮想記憶}}と呼びます。「仮想メモリ」ともいいます。</p>
+<p>見かけの番地と実際の場所の対応は、メモリを決まった大きさの区画に分け、区画ごとに決めます。この区画を「ページ」と呼びます。OSはアプリごとに、「見かけの何番のページが、実際のどこにあるか」という対応表を持っています。アプリが番地を使うたびに、CPUがこの表を見て、実際の場所に置きかえます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 380" role="img"><title>アプリごとの見かけのページを、OSが実際のメモリやストレージに対応させる</title>
+<text x="4" y="20" class="m">アプリAのページ</text>
+<rect x="4" y="30" width="104" height="34" rx="4" class="p"/>
+<text x="56" y="53" text-anchor="middle">A: 0番</text>
+<rect x="4" y="68" width="104" height="34" rx="4" class="p"/>
+<text x="56" y="91" text-anchor="middle">A: 1番</text>
+<rect x="4" y="106" width="104" height="34" rx="4" class="p"/>
+<text x="56" y="129" text-anchor="middle">A: 2番</text>
+<text x="4" y="176" class="m">アプリBのページ</text>
+<rect x="4" y="186" width="104" height="34" rx="4" class="n"/>
+<text x="56" y="209" text-anchor="middle">B: 0番</text>
+<rect x="4" y="224" width="104" height="34" rx="4" class="n"/>
+<text x="56" y="247" text-anchor="middle">B: 1番</text>
+<text x="250" y="20" text-anchor="middle" class="m">実際のメモリ</text>
+<rect x="190" y="30" width="120" height="196" rx="6" class="hole"/>
+<rect x="198" y="38" width="104" height="34" rx="4" class="n"/>
+<text x="250" y="61" text-anchor="middle">B: 0番</text>
+<rect x="198" y="76" width="104" height="34" rx="4" class="p"/>
+<text x="250" y="99" text-anchor="middle">A: 1番</text>
+<rect x="198" y="114" width="104" height="34" rx="4" class="dep"/>
+<text x="250" y="137" text-anchor="middle" class="m">空き</text>
+<rect x="198" y="152" width="104" height="34" rx="4" class="p"/>
+<text x="250" y="175" text-anchor="middle">A: 0番</text>
+<rect x="198" y="190" width="104" height="30" rx="4" class="n"/>
+<text x="250" y="211" text-anchor="middle">B: 1番</text>
+<line x1="108" y1="47" x2="198" y2="169" class="thin"/>
+<line x1="108" y1="85" x2="198" y2="93" class="thin"/>
+<line x1="108" y1="203" x2="198" y2="55" class="thin"/>
+<line x1="108" y1="241" x2="198" y2="205" class="thin"/>
+<line x1="108" y1="123" x2="190" y2="295" class="dash"/>
+<text x="250" y="270" text-anchor="middle" class="m">ストレージ</text>
+<rect x="190" y="278" width="120" height="44" rx="6" class="hole"/>
+<rect x="198" y="284" width="104" height="32" rx="4" class="p"/>
+<text x="250" y="306" text-anchor="middle">A: 2番</text>
+<text x="180" y="350" text-anchor="middle" class="a">対応表はOSが管理する</text>
+<text x="180" y="372" text-anchor="middle" class="m">点線: 一時的にストレージへ</text>
+</svg><figcaption class="fig-cap">左は、アプリから見たページです。アプリAもBも同じ「0番」を使えますが、実際のメモリでは別々の場所に置かれます。使われていないページは、ストレージへ一時的に移すこともあります。省略していること: 対応表そのものの形、ページの大きさ、対応を速く調べるCPUの回路。</figcaption></figure>
+<p>メモリが足りなくなったときも、この対応表が役に立ちます。OSは、しばらく使われていないページを、一時的にストレージへ移してメモリを空けます。移したページをアプリが使おうとすると、CPUがいったん止めてOSに知らせます。OSはそのページを読み戻してから、アプリの続きを動かします。このように、ページ単位で管理して出し入れする方式を「ページング」と呼びます。</p>
+<p>ただし、ストレージはメモリよりずっと遅いので、出し入れが増えるとコンピュータの動きが重くなります。スマホのOSには、ストレージへ移す代わりに、裏にあるアプリを終了させてメモリを空けるものもあります。くわしくは「<a href="{{home}}learn/memory-vs-storage/">メモリとストレージの違いは?</a>」で説明しています。</p>
+</section>
+
+<section>
+<h2>仕事③ ファイルと機器を扱う</h2>
+<p>ストレージの中身は、そのままでは0と1の巨大な並びにすぎません。そこに名前のついたファイルを、フォルダに分けて保存できるのは、OSが整理しているからです。ファイルの名前と、ストレージの中の実際の置き場所とを結びつける管理のしくみを「ファイルシステム」と呼びます。</p>
+<p>OSは、キーボード、画面、カメラ、プリンターなどの機器も扱います。機器は、メーカーや機種ごとに動かし方の手順が違います。その違いを引き受ける、機器ごとのプログラムを{{term:デバイスドライバ}}と呼びます。略して「ドライバ」ともいいます。</p>
+<p>新しいプリンターをつないだときに「ドライバをインストール」するのは、OSにその機器の動かし方を教えるためです。ドライバがあれば、アプリはOSに「印刷して」と頼むだけで、どのプリンターにも印刷できます。</p>
+</section>
+
+<section>
+<h2>仕事④ アプリに勝手なことをさせない</h2>
+<p>OSが部品を管理していても、アプリが部品を直接いじれたら意味がありません。そこでCPUには、動作のモードを切り替えるしくみがあります。OSのカーネルは、何でもできる特別なモードで動きます。このモードを{{term:特権モード}}と呼びます。「カーネルモード」ともいいます。</p>
+<p>アプリは、できることを制限された「ユーザモード」で動きます。このモードで機器を直接操作したり、ほかのアプリのメモリをのぞいたりしようとすると、CPUが止めてOSに知らせます。ふつうOSは、そのアプリを強制的に終了させます。</p>
+<p>では、アプリがファイルを読みたいときはどうするのか。アプリは、決められた手順でOSに依頼します。このときCPUは一時的に特権モードに切り替わり、カーネルが依頼の中身を確かめてから実行します。この依頼のしくみを{{term:システムコール}}と呼びます。2つのモードの違いは「<a href="{{home}}compare/user-mode-vs-kernel-mode/">ユーザモードとカーネルモードの違い</a>」で表にしています。</p>
+<p>スマホでアプリが初めてカメラや位置情報を使うとき、「許可しますか?」と聞かれます。これもOSの仕事です。OSが利用者の許可を確かめ、許可されたアプリにだけ使わせています。パソコンでも、ログインする人ごとに見られるファイルを分けるなど、OSが使ってよい範囲(権限)を管理しています。</p>
+</section>
+
+<section>
+<h2>仕事⑤ 画面と操作の窓口</h2>
+<p>OSは、人がコンピュータを操作するための窓口も用意します。アイコンやウィンドウを、マウスや指で操作する方式を「GUI」(グラフィカル・ユーザー・インターフェース)と呼びます。</p>
+<p>文字で命令(コマンド)を打ち込んで操作する方式もあり、主にサーバーの管理などで使われます。どちらの方式でも、裏で働くカーネルは同じです。①〜④は、画面に表れない裏方の仕事です。</p>
+</section>
+
+<section>
+<h2>電源を入れてからOSが動き出すまで</h2>
+<p>電源を入れた直後は、メモリは空っぽで、OSもまだストレージの中です。OSが動き出すまでには、小さなプログラムどうしのリレーがあります。ここではパソコンの例を、単純化して説明します。</p>
+<ol>
+<li><strong>ファームウェア</strong>: 本体の部品に最初から書き込まれている小さなプログラムです。部品を点検・準備し、ストレージから次の段階を探します。</li>
+<li><strong>{{term:ブートローダ}}</strong>: OSを読み込むための小さなプログラムです。カーネルをストレージからメモリに読み込み、実行を引き渡します。</li>
+<li><strong>カーネル</strong>: 機器の準備をして、必要なプログラムを順に起動します。最後に、ログインの画面が表示されます。</li>
+</ol>
+<p>パソコンのファームウェアは、古くは「BIOS」と呼ばれる方式でした。今の多くのパソコンは、その後継の「UEFI」という規格に沿って作られています。UEFIは、ファームウェアとOSの間の取り決めを定めた規格で、業界団体のUEFI Forumが管理しています。</p>
+<p>リレーの各段階で、次に動かすプログラムが、信頼できる作り手のものか、書きかえられていないかを確かめるしくみもあります。問題があれば、そこで起動を止めます。これを{{term:セキュアブート}}と呼びます。悪意のあるプログラムが、OSより先に動き出すのを防ぐためのものです。</p>
+</section>
+
+<section>
+<h2>アプリがOSごとに違う理由</h2>
+<p>Windows用のアプリは、そのままではmacOSで動きません。理由の1つは、アプリがOSに頼むときの「頼み方」が、OSごとに違うことです。</p>
+<p>OSは、アプリが使える機能と、その呼び出し方を決めて公開しています。この約束ごとを{{term:API}}と呼びます。「ウィンドウを開く」「ファイルを保存する」といった頼み方が、WindowsとmacOSでは別々です。</p>
+<p>もう1つの理由は、CPUが理解できる命令の種類と表し方の違いです。この決まりごとを「命令セット」と呼びます。命令セットの違うCPUでは、同じOSでもアプリはそのままでは動きません。作り直すか、命令を変換して動かすしくみが必要です。くわしくは「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」の命令セットの節で説明しています。</p>
+<p>ウェブのサービスがOSを問わずに使えるのは、ブラウザがOSごとの違いを引き受けているからです。</p>
+</section>
+
+<section>
+<h2>アップデートが大事な理由</h2>
+<p>OSはとても大きなプログラムなので、どうしても誤りが残ります。その中には、悪意のある人に入り込まれるきっかけになるものがあります。このような弱点を「脆弱性(ぜいじゃくせい)」と呼びます。</p>
+<p>OSの開発元は、脆弱性を見つけると、直したプログラムを配ります。これが「セキュリティ更新」です。OSはすべてを管理する立場なので、その脆弱性を悪用されると、被害がコンピュータ全体に及びかねません。</p>
+<p>セキュリティ更新は、定期的に配られています。Androidは、修正した脆弱性をまとめたセキュリティ情報を毎月公開しています。Windowsの定例の更新は、米国時間の毎月第2火曜日です(日本時間では翌日)。</p>
+<p>一方、古いOSは、いずれ更新が止まります。例えばWindows 10は、2025年10月14日にMicrosoftのサポートが終わりました。更新が止まったOSには、新しく見つかった脆弱性がそのまま残ります。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: OSとは、画面の見た目(ホーム画面やデスクトップ)のこと</p><p>実際は、画面と操作の窓口はOSの仕事の一部にすぎません。中心は、CPUの順番、メモリ、ファイル、機器、権限の管理です。例えばサーバー用のWindowsには、デスクトップの画面を持たない「Server Core」という入れ方があります。Microsoftは、特に必要がなければこちらを勧めています。いつも目にするのが画面なので、OS=見た目と思われやすいのです。</p></div>
+<div class="myth"><p class="myth-q">誤解: アプリを開いたままにするほど、いつも全体が遅くなる</p><p>実際は、開いたアプリはメモリを使いますが、裏で何もせずに待っているだけなら、CPUの順番はほとんど回りません。メモリに余裕があるうちは、開いている数が多くても、ほとんど遅くなりません。Androidは、次に速く開けるように、使っていないアプリをわざとメモリに残します。メモリが必要になれば、OSが自動で終了させます。遅くなるのは、メモリが足りずにページングが増えたときや、裏のアプリが通信などの仕事を続けているときです。その経験から、数そのものが原因と思われやすいのです。</p></div>
+<div class="myth"><p class="myth-q">誤解: AndroidはLinuxとは関係ない</p><p>実際は、Androidのカーネルは、Linuxのカーネルをもとに、Android向けの変更を加えたものです。一方で、その上のアプリのしくみや画面は、パソコン用のLinuxとは大きく違います。パソコン用のLinuxのアプリは、そのままではAndroidで動きません。「Linuxかどうか」は、カーネルの話か、OS全体の話かで答えが変わります。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>時期</th><th>メモ</th></tr></thead>
+<tbody>
+<tr><td>Windows 1.0の発売</td><td>1985年11月</td><td>MS-DOSというOSに重ねて使うソフトとして始まった</td></tr>
+<tr><td>Linuxの最初の公開</td><td>1991年9月</td><td>バージョン0.01。作者はフィンランドの大学生だったリーナス・トーバルズ</td></tr>
+<tr><td>Linuxのカーネル1.0</td><td>1994年3月</td><td>最初の公開から約2年半</td></tr>
+<tr><td>Androidのセキュリティ情報</td><td>毎月</td><td>2026年時点。修正した脆弱性の一覧</td></tr>
+<tr><td>Windows 10のサポート終了</td><td>2025年10月14日</td><td>以後、通常のセキュリティ更新は止まった</td></tr>
+</tbody>
+</table>
+<p>今使われているOSの多くは、何十年も改良が続けられてきたものです。Windowsは、MS-DOSの上で動くソフトから始まり、のちに中身を作り直しながら続いてきました。Linuxは、1人の学生が始めたものが、多くの人の手で育てられました。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="{{home}}compare/process-vs-thread/">プロセスとスレッドの違い</a>、<a href="{{home}}compare/user-mode-vs-kernel-mode/">ユーザモードとカーネルモードの違い</a></li>
+<li>数字で試す: <a href="{{home}}tools/cpu-scheduling-calculator/">CPUスケジューリングの計算ツール</a>(順番の決め方で待ち時間がどう変わるか)、<a href="{{home}}tools/page-replacement-calculator/">ページ置換アルゴリズムの計算ツール</a>(どのページをストレージへ移すか)</li>
+<li>次の一歩の用語: {{term:ページフォルト}}、{{term:デマンドページング}}、{{term:ハイパーバイザ}}</li>
+<li>土台から読む: 「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」、「<a href="{{home}}learn/memory-vs-storage/">メモリとストレージの違いは?</a>」</li>
+</ul>
+</section>
