@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPGA是什麼？做好之後還能改寫電路的晶片原理 | 半導體教室</title>
+<meta name="description" content="FPGA是製造完成後，還能一再重組內部邏輯電路的晶片。本文說明小型真值表（LUT）、正反器、可切換繞線的原理與設計流程，以及它和CPU、ASIC的差異與應用場合。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/learn/what-is-an-fpga/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/learn/what-is-an-fpga/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/learn/what-is-an-fpga/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/learn/what-is-an-fpga/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/learn/what-is-an-fpga/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FPGA是什麼？做好之後還能改寫電路的晶片原理 | 半導體教室">
+<meta property="og:description" content="FPGA是製造完成後，還能一再重組內部邏輯電路的晶片。本文說明小型真值表（LUT）、正反器、可切換繞線的原理與設計流程，以及它和CPU、ASIC的差異與應用場合。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/learn/what-is-an-fpga/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"入門解說","item":"https://semiconroom.com/zh-hant/learn/"},{"@type":"ListItem","position":3,"name":"FPGA是什麼？做好之後還能改寫電路的晶片原理","item":"https://semiconroom.com/zh-hant/learn/what-is-an-fpga/"}]},{"@context":"https://schema.org","@type":"Article","headline":"FPGA是什麼？做好之後還能改寫電路的晶片原理","description":"FPGA是製造完成後，還能一再重組內部邏輯電路的晶片。本文說明小型真值表（LUT）、正反器、可切換繞線的原理與設計流程，以及它和CPU、ASIC的差異與應用場合。","inLanguage":"zh-Hant","datePublished":"2026-10-23","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/zh-hant/learn/what-is-an-fpga/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/learn/what-is-an-fpga/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/c/">領域</a><a href="/zh-hant/learn/">入門解說</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">繁體中文</span><span class="lang-short" aria-hidden="true">繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/learn/what-is-an-fpga/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/learn/what-is-an-fpga/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/" lang="ko" data-lang="ko">한국어</a><a href="/de/" lang="de" data-lang="de">Deutsch</a><a href="/nl/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/c/">領域</a><a href="/zh-hant/learn/">入門解說</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/learn/">入門解說</a> <span>›</span> <a href="/zh-hant/learn/#s-computer-basics">電腦的原理</a></nav>
+<article class="prose learn-article">
+<h1>FPGA是什麼？做好之後還能改寫電路的晶片原理</h1>
+<p class="learn-meta">約 10 分鐘 · 更新：2026年10月23日</p>
+
+<p class="lead">FPGA是在工廠製造完成後，還能一再重組內部邏輯電路的晶片。裡面排滿了寫著答案的小表格（LUT），以及可以切換連接方式的繞線。載入設定資料後，它們就會當成目標電路運作。它比專用晶片（ASIC）慢，也比較耗電。但它的強項是不必花重做晶片的費用和時間。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>「電路可以事後改寫」是什麼意思，和改寫程式的CPU有什麼不同</li>
+<li>FPGA內部3種元件（LUT、正反器、繞線）的原理，以AND和XOR為例</li>
+<li>FPGA電路的製作方式，以及和專用晶片（ASIC）的分工</li>
+<li>FPGA用在哪裡，以及主要廠商的歷史</li>
+</ul><p class="muted">先備知識：如果知道AND、XOR等邏輯閘和真值表，會比較容易閱讀。這在「<a href="/zh-hant/learn/how-computers-calculate-with-0-and-1/">電腦怎麼用0和1計算？</a>」中說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>在手機或家電裡，不太常見到FPGA。常用到它的是行動通訊基地台、量測儀器、資料中心的伺服器、人造衛星等。這些都是生產數量偏少，或出貨後還想改變功能的機器。</p>
+<p>對開發新晶片的公司來說，FPGA也不可或缺。因為在工廠製造晶片之前，會先把設計好的電路放進FPGA，確認它真的能動。</p>
+</section>
+
+<section>
+<h2>FPGA是什麼：電路可以事後決定的晶片</h2>
+<p>一般的晶片，會在工廠把設計好的電路做進去。電晶體的連接方式在完成時就固定，之後不能更改（「<a href="/zh-hant/learn/what-is-an-integrated-circuit/">積體電路（IC）是什麼？</a>」）。CPU的電路本身也是固定的。CPU能改的，是交給電路執行的指令順序，也就是程式（「<a href="/zh-hant/learn/what-is-a-cpu/">CPU是什麼？</a>」）。</p>
+<p>相對地，FPGA是買來之後，才決定電路本身的晶片。裡面有能變成任何功能的小元件，以及連接它們的繞線，像棋盤格一樣排列。設定好每個元件做什麼、怎麼連接，晶片就會當成那個電路運作。</p>
+<p>FPGA是英文Field-Programmable Gate Array的縮寫，中文稱為現場可程式化邏輯閘陣列。意思是「在現場（field）就能設定（programmable）的邏輯閘排列（gate array）」。</p>
+</section>
+
+<section>
+<h2>原理1：LUT——寫著答案的小表格</h2>
+<p>邏輯電路的功能，可以用<a class="term-link" href="/zh-hant/term/truth-table/">真值表</a>寫出來。這是列出所有輸入組合，以及各組合輸出的表。例如2輸入的AND，輸入組合有4種，所以是4列的表。</p>
+<p>FPGA不用邏輯閘組裝，而是把這張表直接寫進小小的記憶體。用輸入的0和1選出「表的第幾列」，再輸出那一列寫的值。因為是查表得出答案，這個元件稱為查找表（LUT）。</p>
+<p>2輸入的LUT，由4個記憶格和選出其中1格的電路組成。要做成AND時，從上到下在4格裡寫入0、0、0、1。輸入A=1、B=1時，選中第4格，輸出1。其他輸入都輸出0，所以和AND的功能相同。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 296" role="img"><title>2輸入的LUT：用輸入A和B從4個格子中選出1個，輸出它的值</title>
+<text x="84" y="24" text-anchor="end" class="m">AB</text>
+<text x="330" y="24" text-anchor="end" class="m">AND的情況</text>
+<text x="84" y="59" text-anchor="end" class="m">00</text>
+<text x="84" y="103" text-anchor="end" class="m">01</text>
+<text x="84" y="147" text-anchor="end" class="m">10</text>
+<text x="84" y="191" text-anchor="end" class="m">11</text>
+<rect x="100" y="36" width="48" height="36" rx="6" class="ox"/>
+<rect x="100" y="80" width="48" height="36" rx="6" class="ox"/>
+<rect x="100" y="124" width="48" height="36" rx="6" class="ox"/>
+<rect x="100" y="168" width="48" height="36" rx="6" class="ox"/>
+<rect x="100" y="168" width="48" height="36" rx="6" class="ac"/>
+<text x="124" y="59" text-anchor="middle">0</text>
+<text x="124" y="103" text-anchor="middle">0</text>
+<text x="124" y="147" text-anchor="middle">0</text>
+<text x="124" y="191" text-anchor="middle" class="a">1</text>
+<line x1="148" y1="54" x2="200" y2="54" class="thin"/>
+<line x1="148" y1="98" x2="200" y2="98" class="thin"/>
+<line x1="148" y1="142" x2="200" y2="142" class="thin"/>
+<line x1="148" y1="186" x2="200" y2="186" class="ac"/>
+<polygon points="200,36 244,60 244,180 200,204" class="hole"/>
+<text x="222" y="125" text-anchor="middle">選擇</text>
+<line x1="244" y1="120" x2="282" y2="120" class="ac"/><polygon points="290,120 281,115 281,125" class="fa"/>
+<text x="296" y="114">輸出</text>
+<text x="311" y="142" text-anchor="middle" class="a">1</text>
+<line x1="212" y1="250" x2="212" y2="198" class="ln"/>
+<line x1="232" y1="250" x2="232" y2="187" class="ln"/>
+<text x="212" y="268" text-anchor="middle" class="a">1</text>
+<text x="232" y="268" text-anchor="middle" class="a">1</text>
+<text x="212" y="288" text-anchor="middle">A</text>
+<text x="232" y="288" text-anchor="middle">B</text>
+<text x="190" y="278" text-anchor="end" class="m">輸入</text>
+</svg><figcaption class="fig-cap">左邊的00～11是A和B的值的組合。因為A=1、B=1，所以選中「11」的格子，輸出裡面的1。圖中省略：選格子的電路內部、把值寫進格子的電路。</figcaption></figure>
+<p>把同一個LUT的格子，從上到下改寫成0、1、1、0看看。這樣它就只在兩個輸入不同時輸出1。這正是XOR的功能。不必更換邏輯閘，只要改寫格子裡的內容，就變成另一個電路。</p>
+<table>
+<thead><tr><th>A</th><th>B</th><th>AND的格子內容</th><th>XOR的格子內容</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+</tbody>
+</table>
+<p>4個格子填入0和1的方式共有16種。2輸入的邏輯功能，總共也是16種。2輸入的LUT，可以變成其中任何一種。</p>
+<p>實際FPGA的LUT，輸入更多。例如超微（AMD）的7系列FPGA，使用6輸入的LUT。格子數是2連乘6次的64個，任何6輸入的邏輯，都能用1個LUT做出來。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>LUT很像九九乘法表。不必計算7×8，只要看表上7那一列的8那一格，就知道是56。相似的是「不當場計算，而是查事先寫好的答案」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>九九乘法表的內容是固定的，LUT卻能改寫表的內容，變成別的功能。另外，1個LUT的表很小，大的計算要把許多LUT連起來進行。</p></aside>
+</section>
+
+<section>
+<h2>原理2：正反器——記住結果</h2>
+<p>LUT的輸出，只由當下的輸入決定。光靠它，無法記住「剛才是什麼值」。計數的電路，或把計算分成幾段依序傳下去的電路，都需要能記住值的元件。</p>
+<p>因此FPGA在LUT旁邊，放了<a class="term-link" href="/zh-hant/term/flip-flop/">正反器</a>。正反器是記住0或1這1個位元的元件。它只在固定的訊號到來的瞬間讀入輸入，並持續輸出同一個值，直到下一個訊號。</p>
+<p>這個訊號以固定間隔重複0和1，稱為時脈。和CPU的「3 GHz」是同一種訊號。本文把幾組LUT和正反器合在一起的單位，稱為「邏輯區塊」。</p>
+<p>只由輸入決定輸出的電路，和也會用到記住的值的電路，兩者的差異整理在「<a href="/zh-hant/compare/combinational-vs-sequential-logic/">組合邏輯電路與循序邏輯電路的差異</a>」的表中。</p>
+</section>
+
+<section>
+<h2>原理3：可以切換連接方式的繞線</h2>
+<p>邏輯區塊之間，縱橫交錯著許多繞線。繞線交會的地方，有能選擇接通或切斷的開關。開關其實是電晶體，開或關由旁邊記憶格裡的0和1決定。</p>
+<p>假設要把某個邏輯區塊的輸出，送到另一個區塊。只要打開途中的幾個開關，就能做出一條路徑。打開哪些開關，決定了電路的連接方式。這種能用設定改變連接的繞線，稱為可程式化繞線。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" role="img"><title>FPGA的內部：附開關的繞線，連接邏輯區塊和專用元件</title>
+<line x1="10" y1="98" x2="330" y2="98" class="thin"/>
+<line x1="10" y1="198" x2="330" y2="198" class="thin"/>
+<line x1="115" y1="10" x2="115" y2="286" class="thin"/>
+<line x1="225" y1="10" x2="225" y2="286" class="thin"/>
+<rect x="30" y="20" width="60" height="56" rx="6" class="ox"/>
+<rect x="140" y="20" width="60" height="56" rx="6" class="metal"/>
+<rect x="250" y="20" width="60" height="56" rx="6" class="ox"/>
+<rect x="30" y="120" width="60" height="56" rx="6" class="ox"/>
+<rect x="140" y="120" width="60" height="56" rx="6" class="metal"/>
+<rect x="250" y="120" width="60" height="56" rx="6" class="ox"/>
+<rect x="30" y="220" width="60" height="56" rx="6" class="ox"/>
+<rect x="140" y="220" width="60" height="56" rx="6" class="metal"/>
+<rect x="250" y="220" width="60" height="56" rx="6" class="ox"/>
+<text x="60" y="53" text-anchor="middle">邏輯</text>
+<text x="170" y="53" text-anchor="middle">RAM</text>
+<text x="280" y="53" text-anchor="middle">邏輯</text>
+<text x="60" y="153" text-anchor="middle">邏輯</text>
+<text x="170" y="153" text-anchor="middle">DSP</text>
+<text x="280" y="153" text-anchor="middle">邏輯</text>
+<text x="60" y="253" text-anchor="middle">邏輯</text>
+<text x="170" y="253" text-anchor="middle">RAM</text>
+<text x="280" y="253" text-anchor="middle">邏輯</text>
+<polyline points="90,48 115,48 115,98 170,98 170,120" class="ac"/>
+<polyline points="170,176 170,198 280,198 280,220" class="ac"/>
+<circle cx="115" cy="198" r="5" class="hole"/>
+<circle cx="225" cy="98" r="5" class="hole"/>
+<circle cx="60" cy="98" r="5" class="hole"/>
+<circle cx="280" cy="98" r="5" class="hole"/>
+<circle cx="60" cy="198" r="5" class="hole"/>
+<circle cx="115" cy="148" r="5" class="hole"/>
+<circle cx="225" cy="148" r="5" class="hole"/>
+<circle cx="115" cy="48" r="5" class="fa"/>
+<circle cx="115" cy="98" r="5" class="fa"/>
+<circle cx="170" cy="98" r="5" class="fa"/>
+<circle cx="170" cy="198" r="5" class="fa"/>
+<circle cx="280" cy="198" r="5" class="fa"/>
+<circle cx="24" cy="306" r="5" class="fa"/>
+<text x="36" y="311">打開的開關</text>
+<circle cx="184" cy="306" r="5" class="hole"/>
+<text x="196" y="311">關閉的開關</text>
+</svg><figcaption class="fig-cap">「邏輯」是邏輯區塊，「RAM」和「DSP」是後面會說明的專用元件。粗線是打開開關後做出的路徑。圖中省略：實際的區塊與繞線數量（數千～數百萬）、輸入輸出接腳、傳送時脈的專用繞線。</figcaption></figure>
+<p>為了放進任何電路都不會不夠用，繞線和開關連可能用不到的路都事先準備好。因此需要多出來的電晶體和面積。這就是後面會看到「比專用晶片慢、也比較耗電」的原因之一。</p>
+</section>
+
+<section>
+<h2>也內建了專用元件</h2>
+<p>乘法這類大的計算，如果用LUT來做，需要很多LUT，速度也慢。因此現在的FPGA，一開始就做進了功能固定的電路。這些稱為硬體區塊。</p>
+<ul>
+<li><strong>DSP區塊</strong>：把乘法和加法合在一起快速執行的電路。DSP是「數位訊號處理」的英文縮寫，用於聲音和無線電波的處理，以及AI的計算</li>
+<li><strong>區塊RAM</strong>：放置一定量資料的晶片內記憶體</li>
+<li><strong>高速收發器</strong>：用很少的線，和其他晶片快速交換資料的電路（<a class="term-link" href="/zh-hant/term/serdes/">SerDes</a>）</li>
+<li><strong>CPU核心</strong>：也有內建Arm等處理器的產品。靠程式運作的部分和組電路的部分，可以放在同一顆晶片上</li>
+</ul>
+</section>
+
+<section>
+<h2>設定資料，每次開機都要載入</h2>
+<p>LUT格子的內容，和繞線開關的開或關，全都是0和1的資料。把這些整合成一份，稱為位元流。所謂「把電路寫進FPGA」，就是把這份資料載入內部的記憶格。</p>
+<p>多數FPGA的記憶格，使用斷電後內容就會消失的記憶體（SRAM）。所以每次開機，都要從同一塊電路板上的快閃記憶體等處載入位元流。載入完成之前，FPGA不會當成目標電路運作。</p>
+<p>另一方面，也有斷電後設定不會消失的產品。例如Microchip公司的PolarFire系列，把設定存在一種快閃記憶體裡。不必在外面放設定用的記憶體，開機後馬上就能運作。</p>
+</section>
+
+<section>
+<h2>FPGA的電路怎麼做？</h2>
+<p>FPGA電路的做法，和專用晶片（ASIC）的設計很像。最大的不同在最後一步。不是把設計資料送到工廠，而是產生位元流，載入FPGA。</p>
+<ol>
+<li><strong>寫出功能</strong>：用<a class="term-link" href="/zh-hant/term/hardware-description-language/">硬體描述語言</a>（HDL）寫出電路的動作。常用的是Verilog和VHDL。</li>
+<li><strong>轉成電路</strong>：軟體把寫好的動作，轉換成LUT、正反器、硬體區塊的組合。這個步驟稱為<a class="term-link" href="/zh-hant/term/logic-synthesis/">邏輯合成</a>。</li>
+<li><strong>擺放並連接</strong>：由軟體決定使用哪些邏輯區塊、用哪些開關連接。這稱為<a class="term-link" href="/zh-hant/term/place-and-route/">佈局繞線</a>。</li>
+<li><strong>寫入</strong>：把結果做成位元流，載入FPGA。</li>
+<li><strong>確認</strong>：實際運作來確認，要修改就回到第1步。</li>
+</ol>
+<p>HDL看起來像程式語言，但寫的不是指令的順序，而是電路的形狀。兩種語言的差異，在「<a href="/zh-hant/compare/verilog-vs-vhdl/">Verilog 與 VHDL 的差異</a>」中比較。</p>
+<p>最近也會用另一種方法：從C語言或C++寫的計算步驟，自動產生相當於HDL的電路描述。這稱為<a class="term-link" href="/zh-hant/term/high-level-synthesis/">高階合成（HLS）</a>。</p>
+</section>
+
+<section>
+<h2>CPU、FPGA、ASIC的差異</h2>
+<p>CPU用固定的電路，一次取出並執行一個指令。它什麼工作都能做，但每次都要花工夫取出並解讀指令。FPGA則是組出配合工作的電路來運作。例如「乘、加、比較」可以用各自的電路同時進行。</p>
+<p>ASIC（特殊應用積體電路）是只為一種工作設計、在工廠製造的晶片。用同一世代的技術做出相同的功能，通常ASIC最快，也最省電。不過開始生產前，設計和電路的原版（光罩）要花很大的費用。必須大量生產，把這筆費用分攤到每一顆上，才能回本。</p>
+<table>
+<thead><tr><th></th><th>CPU</th><th>FPGA</th><th>ASIC</th></tr></thead>
+<tbody>
+<tr><td>事後能改的東西</td><td>程式</td><td>電路本身</td><td>不能改</td></tr>
+<tr><td>固定工作的效率（參考）</td><td>偏低</td><td>中等</td><td>最高</td></tr>
+<tr><td>製作晶片的費用</td><td>不需要（現成品）</td><td>不需要（現成品）</td><td>非常高</td></tr>
+<tr><td>適合的場合</td><td>什麼都能做</td><td>少量、規格會變</td><td>大量、規格已定</td></tr>
+</tbody>
+</table>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 270" role="img"><title>生產數量少時FPGA比較便宜，數量多時ASIC每顆比較便宜</title>
+<text x="50" y="22">每顆的費用</text>
+<line x1="50" y1="30" x2="50" y2="220" class="ln"/>
+<line x1="50" y1="220" x2="326" y2="220" class="ln"/>
+<path d="M50,43 L63.5,53.8 L77,64.5 L90.5,75.3 L104,86.1 L117.5,96.8 L131,107.4 L144.5,118 L158,128.5 L171.5,138.8 L185,148.8 L198.5,158.3 L212,167.3 L225.5,175.5 L239,182.7 L252.5,188.7 L266,193.5 L279.5,197.1 L293,199.7 L306.5,201.5 L320,202.8" class="ac"/>
+<path d="M50,148.8 L77,150.1 L104,150.6 L131,150.9 L171.5,151 L320,151" class="ac2"/>
+<line x1="132" y1="88" x2="152" y2="88" class="ac"/>
+<text x="158" y="93">ASIC</text>
+<line x1="60" y1="134" x2="80" y2="134" class="ac2"/>
+<text x="86" y="139">FPGA</text>
+<line x1="188" y1="151" x2="188" y2="220" class="dash"/>
+<text x="188" y="238" text-anchor="middle">分界點</text>
+<text x="50" y="238">少</text>
+<text x="326" y="238" text-anchor="end">多</text>
+<text x="326" y="262" text-anchor="end" class="m">生產數量 →</text>
+</svg><figcaption class="fig-cap">每顆的費用，是開始生產的費用除以生產數量，再加上做1顆的費用。ASIC開始生產的費用很高，只做少量會很貴。大量生產時，超過某個數量就會比FPGA便宜。名稱左邊短線的顏色，表示是哪一條線。圖中省略：實際金額與刻度（未按比例）。分界點的數量，會因產品和世代而有很大差異。</figcaption></figure>
+<p>三者的差異，以及和把整個系統整合成一顆晶片（SoC）的關係，也整理在「<a href="/zh-hant/compare/asic-vs-fpga-vs-soc/">ASIC、FPGA、SoC 的差異</a>」的表中。</p>
+</section>
+
+<section>
+<h2>為什麼比專用晶片慢，也比較耗電？</h2>
+<p>在FPGA中，訊號每次在邏輯區塊之間移動，都要經過好幾個開關和長長的繞線。ASIC可以用最短的繞線連接兩點，FPGA卻只能轉乘事先準備好的路。另外，就連AND這種小功能，有時也要用掉1個有64格的LUT。</p>
+<p>有研究實際量過這個差距。多倫多大學的Kuon和Rose在2007年的論文中，用FPGA和ASIC做出相同的電路來比較。兩者都是同一世代（90 nm）的技術。只用LUT和正反器時，FPGA的面積平均約35倍，訊號通過電路的時間約3～4倍。</p>
+<p>功耗方面，比較的是0和1切換時用掉的部分（動態功耗），FPGA約14倍。另一方面，使用硬體區塊時，面積差距縮小到約18倍。這是將近20年前世代的量測，現在的產品數字不同。不過，能改寫就會降低效率的理由，現在也一樣。</p>
+</section>
+
+<section>
+<h2>用在哪裡？</h2>
+<ul>
+<li><strong>新晶片的試作</strong>：在工廠製造ASIC之前，把設計好的電路放進FPGA，執行實際的軟體來確認。也有專為這種用途做的超大型FPGA。</li>
+<li><strong>通訊設備</strong>：通訊標準會不斷修訂。在基地台等設備使用FPGA，就保留了出貨後修改電路的空間。</li>
+<li><strong>量測儀器與工業設備</strong>：這些產品生產數量少，做專用晶片不划算。</li>
+<li><strong>資料中心</strong>：Microsoft在2014年的論文中，報告了用FPGA加速搜尋引擎Bing排序計算的試驗。在1,632台伺服器上各裝1片FPGA，每台的處理量增加了95%。</li>
+<li><strong>太空</strong>：在人造衛星上，發射後還能從地面改寫電路是一大優點。太空中容易因輻射讓記憶的位元翻轉，發生<a class="term-link" href="/zh-hant/term/soft-error/">軟錯誤</a>，所以會使用有對策的太空用產品。</li>
+</ul>
+</section>
+
+<section>
+<h2>FPGA的歷史與廠商</h2>
+<p>想出FPGA的人，是美國工程師羅斯．弗里曼（Ross Freeman）。1984年，他為了把這個構想做成產品，和夥伴一起創立了Xilinx。接著在1985年，發表了被視為第一顆FPGA的XC2064。裡面的邏輯元件有64個。</p>
+<p>長久以來，最知名的FPGA大廠是Xilinx和Altera這2家公司。</p>
+<ul>
+<li>2015年12月：英特爾（Intel）完成收購Altera</li>
+<li>2022年2月：超微（AMD）完成收購Xilinx。Xilinx的產品現在以AMD的產品販售</li>
+<li>2025年9月：投資公司Silver Lake取得Altera 51%的股份。Altera不再是英特爾的子公司（英特爾持有49%）</li>
+</ul>
+<p>此外，Lattice和Microchip等公司也生產FPGA。這裡寫的公司關係，是2026年10月時的狀況。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：FPGA像CPU一樣在執行程式</p><p>實際上，位元流不是指令的排列。它是決定LUT內容和開關開或關的「電路設定」。寫入之後，是那個電路直接處理訊號，沒有取出指令的動作。不過，內建CPU核心的產品，那顆CPU會執行程式。同樣用「程式化」這個詞，是誤解的來源。</p></div>
+<div class="myth"><p class="myth-q">誤解：用FPGA，任何處理都會比CPU快</p><p>實際上，會變快的是能同時進行的計算多、步驟固定的處理。如前面所見，訊號通過FPGA電路要花時間，時脈通常也比CPU低。步驟會依條件大幅改變的處理，CPU反而常常比較快。大量的乘法運算，也常使用GPU（「<a href="/zh-hant/learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」）。</p></div>
+<div class="myth"><p class="myth-q">誤解：寫入一次之後就不能再改</p><p>實際上，多數FPGA只要載入別的位元流，就能改寫任意次。使用SRAM的產品，甚至每次開機都會重新載入設定。不過，太空用等少數產品，採用只能寫入一次的方式（反熔絲）。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th></tr></thead>
+<tbody>
+<tr><td>第一顆FPGA XC2064（1985年）的邏輯元件</td><td>64個</td></tr>
+<tr><td>試作用的AMD Versal Premium VP1902（2023年發表）的規模</td><td>1,850萬個邏輯單元</td></tr>
+<tr><td>FPGA與ASIC的差距（Kuon、Rose，2007年，90 nm世代）</td><td>面積約35倍、延遲約3～4倍、動態功耗約14倍</td></tr>
+</tbody>
+</table>
+<p>邏輯單元是廠商自訂的規模計算方式（AMD把1個6輸入LUT算作1.6個邏輯單元）。它和XC2064的「64個」算法不同，不能單純比較。即使如此，仍看得出約40年間規模大了好幾個數量級。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="/zh-hant/compare/latch-vs-flip-flop/">閂鎖器與正反器的差異</a>、<a href="/zh-hant/compare/static-vs-dynamic-power/">靜態功耗與動態功耗的差異</a></li>
+<li>下一步的用語：<a class="term-link" href="/zh-hant/term/fpga/">FPGA</a>（詳細解說）、<a class="term-link" href="/zh-hant/term/rtl/">RTL</a>、<a class="term-link" href="/zh-hant/term/sta/">STA</a>（檢查電路是否趕得上時脈）</li>
+<li>動手試試看：<a href="/zh-hant/tools/logic-circuit-simulator/">邏輯電路模擬器</a>（做出邏輯閘的真值表，就知道LUT要寫入什麼內容）、<a href="/zh-hant/tools/setup-hold-timing-calculator/">建立時間與保持時間時序計算器</a>（電路延遲與時脈速度的關係）</li>
+<li>用圖來看：正反器讀入值的時機，在圖解「<a href="/zh-hant/figures/setup-hold/">建立時間與保持時間</a>」中</li>
+<li>相關文章：「<a href="/zh-hant/learn/what-is-a-microcontroller/">微控制器（MCU）是什麼？</a>」（靠程式運作的小型電腦，常拿來和FPGA比較）</li>
+</ul>
+</section>
+
+</article>
+
+<section>
+  <h2>系列「電腦的原理」的文章</h2>
+  <ol class="learn-toc"><li><a href="/zh-hant/learn/how-computers-calculate-with-0-and-1/" data-track="learn_series">電腦怎麼用0和1計算？二進位與加法電路</a></li><li><a href="/zh-hant/learn/what-is-a-cpu/" data-track="learn_series">CPU是什麼？它在電腦和手機裡做些什麼</a></li><li><a href="/zh-hant/learn/why-gpus-for-ai/" data-track="learn_series">AI為什麼要用GPU？同時處理大量乘法的原理</a></li><li><a href="/zh-hant/learn/what-is-an-operating-system/" data-track="learn_series">作業系統（OS）是什麼？它在電腦和手機裡做些什麼</a></li><li><a href="/zh-hant/learn/how-cpu-cache-works/" data-track="learn_series">CPU快取記憶體是什麼？讓CPU不必苦等記憶體的原理</a></li><li><a href="/zh-hant/learn/what-is-an-npu/" data-track="learn_series">NPU是什麼？手機和電腦裡的AI專用電路原理</a></li><li><strong aria-current="page">FPGA是什麼？做好之後還能改寫電路的晶片原理</strong></li></ol>
+</section>
+<p class="learn-quiz muted">這個領域的題目： <a href="/zh-hant/c/eda/" data-track="learn_topic">LSI設計流程與EDA</a></p>
+<details class="news-sources"><summary>參考資料</summary><ul><li><a href="https://ethw.org/Milestones:The_Field_Programmable_Gate_Array_(FPGA),_1984" target="_blank" rel="noopener">IEEE Milestone（ETHW）: The Field Programmable Gate Array (FPGA), 1984（Ross Freeman為了把1984年的發明做成產品，共同創立Xilinx。1985年的XC2064有64個邏輯功能）</a></li><li><a href="https://spectrum.ieee.org/chip-hall-of-fame-xilinx-xc2064-fpga" target="_blank" rel="noopener">IEEE Spectrum: Chip Hall of Fame: Xilinx XC2064 FPGA</a></li><li><a href="https://docs.amd.com/r/en-US/ug474_7Series_CLB/Look-Up-Table" target="_blank" rel="noopener">AMD: 7 Series FPGAs Configurable Logic Block User Guide (UG474), Look-Up Table（6輸入的LUT。1個就能實現任意6輸入的邏輯）</a></li><li><a href="https://docs.amd.com/r/en-US/ug474_7Series_CLB/Device-Resources" target="_blank" rel="noopener">AMD: UG474, Device Resources（1個6輸入LUT算作1.6個邏輯單元）</a></li><li><a href="https://docs.amd.com/r/en-US/ug892-vivado-design-flows-overview/Creating-and-Managing-Runs" target="_blank" rel="noopener">AMD: Vivado Design Suite User Guide: Design Flows Overview (UG892)（邏輯合成→實作→產生位元流）</a></li><li><a href="https://docs.amd.com/r/en-US/ug1399-vitis-hls/Introduction-to-Vitis-HLS-Components" target="_blank" rel="noopener">AMD: Vitis High-Level Synthesis User Guide (UG1399), Introduction（從C/C++函式合成RTL）</a></li><li><a href="https://docs.amd.com/api/khub/documents/FOs3lXmlcWxBhTIFxVKyGA/content" target="_blank" rel="noopener">AMD: 7 Series FPGAs Configuration User Guide (UG470)（開機時載入組態資料。可從SPI快閃記憶體等載入）</a></li><li><a href="https://www.microchip.com/content/dam/mchp/documents/FPGA/ApplicationNotes/ApplicationNotes/Microchip_PolarFire_FPGAs_for_Safety_Critical__AC478_Application_Note.pdf" target="_blank" rel="noopener">Microchip: PolarFire FPGAs for Safety Critical Applications (AC478)（組態單元是SONOS非揮發性記憶體。不需要外接組態用記憶體）</a></li><li><a href="https://microchip.com/en-us/products/fpgas-and-plds/radiation-tolerant-fpgas/rtax-s" target="_blank" rel="noopener">Microchip: RTAX-S Radiation-Tolerant FPGAs（只能寫入一次的反熔絲式太空用FPGA）</a></li><li><a href="https://doi.org/10.1109/TCAD.2006.884574" target="_blank" rel="noopener">I. Kuon, J. Rose: Measuring the Gap Between FPGAs and ASICs, IEEE Trans. CAD, vol. 26, no. 2, pp. 203–215, Feb. 2007（以90 nm世代比較。只用LUT與正反器的電路，面積平均為35倍，使用硬體區塊可縮小到18倍。延遲約3～4倍，動態功耗約14倍。與會議版（FPGA&#39;06）的40倍是不同的數字）</a></li><li><a href="https://people.ece.uw.edu/hauck/publications/CatapultISCA.pdf" target="_blank" rel="noopener">A. Putnam et al.: A Reconfigurable Fabric for Accelerating Large-Scale Datacenter Services, ISCA 2014（Microsoft Catapult。在1,632台伺服器上加速Bing的排序。每台的處理量提升95%）</a></li><li><a href="https://ir.amd.com/news-events/press-releases/detail/1141/amd-introduces-worlds-largest-fpga-based-adaptive-soc" target="_blank" rel="noopener">AMD: AMD Introduces World’s Largest FPGA-Based Adaptive SoC for Emulation and Prototyping（2023年6月。Versal Premium VP1902，1,850萬個邏輯單元）</a></li><li><a href="https://www.amd.com/content/dam/amd/en/documents/solutions/amd-space-solution-brief.pdf" target="_blank" rel="noopener">AMD: Space Solution Brief（太空用FPGA。在軌道上重新組態）</a></li><li><a href="https://ir.amd.com/news-events/press-releases/detail/1047/amd-completes-acquisition-of-xilinx" target="_blank" rel="noopener">AMD: AMD Completes Acquisition of Xilinx（2022年2月14日）</a></li><li><a href="https://www.intc.com/filings-reports/all-sec-filings/content/0001193125-15-414642/d105836d8k.htm" target="_blank" rel="noopener">Intel: Form 8-K（2015年12月28日。完成收購Altera）</a></li><li><a href="https://www.businesswire.com/news/home/20250915168341/en/Altera-Closes-Silver-Lake-Investment-to-Become-Worlds-Largest-Pure-play-FPGA-Solutions-Provider" target="_blank" rel="noopener">Altera（Business Wire）: Altera Closes Silver Lake Investment to Become World’s Largest Pure-play FPGA Solutions Provider（2025年9月15日發布。Silver Lake持有51%，Intel持有49%）</a></li><li><a href="https://www.sec.gov/Archives/edgar/data/50863/000005086325000153/intc-20250912.htm" target="_blank" rel="noopener">Intel: Form 8-K（2025年9月12日。完成將Altera 51%股份出售給Silver Lake，Intel持有49%）</a></li></ul></details>
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="/zh-hant/learn/">入門解說一覽</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
