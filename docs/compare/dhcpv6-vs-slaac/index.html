@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DHCPv6とSLAACの違い：IPv6のアドレスの決め方・状態の管理・ゲートウェイとDNS・使い分けを比較 | 半導体教室</title>
+<meta name="description" content="IPv6のアドレスを自動で設定するDHCPv6とSLAAC(ステートレスアドレス自動設定)を、アドレスを決めるもの・状態の管理・必要なもの・使うメッセージ・デフォルトゲートウェイ・DNSサーバ・インターフェースID・プレフィックスの長さと委任・アドレスの把握のしやすさの観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/dhcpv6-vs-slaac/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/dhcpv6-vs-slaac/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/dhcpv6-vs-slaac/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/dhcpv6-vs-slaac/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/dhcpv6-vs-slaac/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DHCPv6とSLAACの違い：IPv6のアドレスの決め方・状態の管理・ゲートウェイとDNS・使い分けを比較 | 半導体教室">
+<meta property="og:description" content="IPv6のアドレスを自動で設定するDHCPv6とSLAAC(ステートレスアドレス自動設定)を、アドレスを決めるもの・状態の管理・必要なもの・使うメッセージ・デフォルトゲートウェイ・DNSサーバ・インターフェースID・プレフィックスの長さと委任・アドレスの把握のしやすさの観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/dhcpv6-vs-slaac/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"DHCPv6とSLAACの違い：IPv6のアドレスの決め方・状態の管理・ゲートウェイとDNS・使い分けを比較","item":"https://semiconroom.com/compare/dhcpv6-vs-slaac/"}]},{"@context":"https://schema.org","@type":"Article","headline":"DHCPv6とSLAACの違い：IPv6のアドレスの決め方・状態の管理・ゲートウェイとDNS・使い分けを比較","description":"IPv6のアドレスを自動で設定するDHCPv6とSLAAC(ステートレスアドレス自動設定)を、アドレスを決めるもの・状態の管理・必要なもの・使うメッセージ・デフォルトゲートウェイ・DNSサーバ・インターフェースID・プレフィックスの長さと委任・アドレスの把握のしやすさの観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/compare/dhcpv6-vs-slaac/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"DHCPv6を使っても、ルータ広告(RA)は必要ですか？","acceptedAnswer":{"@type":"Answer","text":"必要です。DHCPv6には、デフォルトゲートウェイを知らせるしくみがありません。端末は、RAを送ったルータのリンクローカルアドレスをデフォルトゲートウェイにします。また、RAのMフラグ(Managed)で、アドレスをDHCPv6から受け取ることを、Oフラグ(Other)で、DNSサーバなどのほかの情報をDHCPv6から受け取ることを、端末に知らせます。"}},{"@type":"Question","name":"ステートレスDHCPv6とは何ですか？","acceptedAnswer":{"@type":"Answer","text":"アドレスはSLAACで端末が自分で作り、DNSサーバのアドレスなど、アドレス以外の情報だけをDHCPv6サーバから受け取る使い方です。サーバはどの端末にどのアドレスを貸したかを記録しないので、ステートレスと呼ばれます。RAのMフラグを0、Oフラグを1にして、端末に知らせます。"}},{"@type":"Question","name":"SLAACでは、アドレスの重複をどう防ぎますか？","acceptedAnswer":{"@type":"Answer","text":"端末は、作ったアドレスを使う前に、近隣探索のしくみで、同じアドレスを使っている機器がないかを確かめます。これを重複アドレス検出(DAD)と呼びます。重複が見つかったアドレスは使いません。DHCPv6で受け取ったアドレスでも、同じように確かめます。"}},{"@type":"Question","name":"SLAACのアドレスから、端末を追跡されることはありますか？","acceptedAnswer":{"@type":"Answer","text":"MACアドレスから作るEUI-64形式のインターフェースIDでは、どのネットワークにつないでも下位64ビットが同じになるので、端末を追跡されやすくなります。そのため、ネットワークごとに違う値になる乱数のようなインターフェースID(RFC 7217)や、一定の時間ごとに変わる一時アドレス(RFC 8981)が使われます。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/dhcpv6-vs-slaac/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/dhcpv6-vs-slaac/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/dhcpv6-vs-slaac/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>DHCPv6とSLAACの違い：IPv6のアドレスの決め方・状態の管理・ゲートウェイとDNS・使い分けを比較</h1>
+  <p class="lead">IPv6の端末がアドレスを自動で得る方法には、DHCPv6とSLAACがあります。SLAAC(ステートレスアドレス自動設定、RFC 4862)では、端末がルータの送るルータ広告(RA)からリンクのプレフィックスを知り、自分でインターフェースIDを作ってアドレスを組み立てます。どの端末がどのアドレスを使っているかをサーバが管理しないので、「ステートレス」と呼ばれます。DHCPv6(RFC 8415)では、IPv4のDHCPと同じように、サーバがアドレスを決めて期限付きで貸し出し、その記録を管理します。どちらの方法でも、デフォルトゲートウェイはRAで知ります。また、アドレスはSLAACで作り、DNSサーバのアドレスなどの情報だけをDHCPv6で受け取る「ステートレスDHCPv6」という組み合わせもあります。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">DHCPv6</th><th scope="col">SLAAC</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">アドレスを決めるもの</th><td>DHCPv6サーバ。サーバが管理する範囲から選んで、期限付きで貸し出す</td><td>端末自身。RAで知ったプレフィックスに、自分で作ったインターフェースIDを組み合わせる</td></tr>
+        <tr><th scope="row">状態の管理</th><td>ステートフル。サーバが、どの端末にどのアドレスを貸したかを記録する</td><td>ステートレス。アドレスの割り当てを記録するサーバはない</td></tr>
+        <tr><th scope="row">必要なもの</th><td>DHCPv6サーバ(別のリンクにあるときはリレーエージェント)と、端末にDHCPv6を使うよう知らせるRA</td><td>プレフィックスを知らせるRAを送るルータ</td></tr>
+        <tr><th scope="row">使うメッセージ</th><td>UDP(クライアントは546番、サーバとリレーエージェントは547番)。Solicit、Advertise、Request、Replyの4つのやり取りが基本</td><td>ICMPv6の近隣探索(NDP)のルータ要請(RS)とルータ広告(RA)</td></tr>
+        <tr><th scope="row">デフォルトゲートウェイ</th><td>DHCPv6では知らせない。RAを送ったルータのリンクローカルアドレスを使う</td><td>RAを送ったルータのリンクローカルアドレスを使う</td></tr>
+        <tr><th scope="row">DNSサーバのアドレス</th><td>DHCPv6のオプションで知らせる</td><td>RAのオプション(RDNSS)か、ステートレスDHCPv6で知らせる</td></tr>
+        <tr><th scope="row">インターフェースID(下位64ビット)</th><td>サーバが選ぶ</td><td>MACアドレスから作るEUI-64形式か、乱数をもとにした値。プライバシーのため、乱数をもとにした値を使うOSが多い</td></tr>
+        <tr><th scope="row">プレフィックスの長さと委任</th><td>アドレスを1つずつ割り当てるので、/64 以外のプレフィックスでも使える。ルータにプレフィックスをまとめて渡す、プレフィックスの委任(DHCPv6-PD)もできる</td><td>一般に /64 のプレフィックスが前提。プレフィックスの委任はできない</td></tr>
+        <tr><th scope="row">アドレスの把握のしやすさ</th><td>サーバの記録から、どの端末がどのアドレスを使っているかが分かる。クライアントは、DUIDという識別子で区別する</td><td>サーバの記録がないので、端末のアドレスを知るには、ルータの近隣キャッシュなどを調べる必要がある</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>DHCPv6</dt><dd>どの端末にどのアドレスを割り当てたかを管理し記録したい企業のネットワークや、ルータにプレフィックスを配りたいプロバイダの回線(DHCPv6-PD)。ただし、端末のOSによっては、DHCPv6でアドレスを受け取る機能をもたないものがあるので、対応を確かめます。</dd>
+    <dt>SLAAC</dt><dd>家庭や多くのLANのように、サーバを置かずに簡単にアドレスを配りたいとき。DNSサーバの情報は、RAのRDNSSオプションか、ステートレスDHCPv6で補います。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>DHCPv6を使っても、ルータ広告(RA)は必要ですか？</h3>
+  <p>必要です。DHCPv6には、デフォルトゲートウェイを知らせるしくみがありません。端末は、RAを送ったルータのリンクローカルアドレスをデフォルトゲートウェイにします。また、RAのMフラグ(Managed)で、アドレスをDHCPv6から受け取ることを、Oフラグ(Other)で、DNSサーバなどのほかの情報をDHCPv6から受け取ることを、端末に知らせます。</p>
+  <h3>ステートレスDHCPv6とは何ですか？</h3>
+  <p>アドレスはSLAACで端末が自分で作り、DNSサーバのアドレスなど、アドレス以外の情報だけをDHCPv6サーバから受け取る使い方です。サーバはどの端末にどのアドレスを貸したかを記録しないので、ステートレスと呼ばれます。RAのMフラグを0、Oフラグを1にして、端末に知らせます。</p>
+  <h3>SLAACでは、アドレスの重複をどう防ぎますか？</h3>
+  <p>端末は、作ったアドレスを使う前に、近隣探索のしくみで、同じアドレスを使っている機器がないかを確かめます。これを重複アドレス検出(DAD)と呼びます。重複が見つかったアドレスは使いません。DHCPv6で受け取ったアドレスでも、同じように確かめます。</p>
+  <h3>SLAACのアドレスから、端末を追跡されることはありますか？</h3>
+  <p>MACアドレスから作るEUI-64形式のインターフェースIDでは、どのネットワークにつないでも下位64ビットが同じになるので、端末を追跡されやすくなります。そのため、ネットワークごとに違う値になる乱数のようなインターフェースID(RFC 7217)や、一定の時間ごとに変わる一時アドレス(RFC 8981)が使われます。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="network-advanced-028" data-cat="network-advanced" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/network-advanced/network-advanced-028/">IPv6で、同じリンクの中だけで使われ、IPv6を使うインターフェースには必ず自動的に設定されるリンクローカルアドレスの範囲はどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">2001:db8::/32</span></li><li><span class="choice-mark">B</span><span class="choice-text">ff00::/8</span></li><li><span class="choice-mark">C</span><span class="choice-text">fe80::/10</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. fe80::/10</p><p class="explanation">リンクローカルアドレスは fe80::/10 の範囲で、<a class="term-link" href="/term/router/">ルータ</a>を越えて転送されず、同じリンクの中の通信にだけ使われます。近隣探索(NDP)やルータ広告のやり取りなどに使われ、端末の<a class="term-link" href="/term/default-gateway/">デフォルトゲートウェイ</a>も、ふつうはルータのリンクローカルアドレスになります。2001:db8::/32 は、説明や資料の例に使うために予約された範囲(ドキュメント用アドレス)です。ff00::/8 はマルチキャストアドレスで、<a class="term-link" href="/term/ipv6/">IPv6</a>ではブロードキャストの代わりにマルチキャストが使われます。</p></details>
+  </article>
+  <article class="q-mini" data-qid="network-advanced-029" data-cat="network-advanced" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/network-advanced/network-advanced-029/">IPv6のSLAAC(ステートレスアドレス自動設定)で、端末がグローバルユニキャストアドレスを作る方法として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">DHCPv6サーバに問い合わせ、サーバが管理する128ビットのアドレスを期限付きで借りる</span></li><li><span class="choice-mark">B</span><span class="choice-text">ルータが送るルータ広告(RA)に含まれる /64 のプレフィックスに、自分で作ったインターフェースID(下位64ビット)を組み合わせ、同じアドレスがほかにないことを確かめてから使う</span></li><li><span class="choice-mark">C</span><span class="choice-text">自分のIPv4アドレスをそのまま下位32ビットに入れ、上位を fe80 で始まる値で埋める</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. ルータが送るルータ広告(RA)に含まれる /64 のプレフィックスに、自分で作ったインターフェースID(下位64ビット)を組み合わせ、同じアドレスがほかにないことを確かめてから使う</p><p class="explanation"><a class="term-link" href="/term/slaac/">SLAAC</a>では、端末は、<a class="term-link" href="/term/router/">ルータ</a>が定期的に、または求めに応じて送るルータ広告(RA)から、そのリンクのプレフィックス(ふつう /64)を知ります。これに、<a class="term-link" href="/term/mac-address/">MACアドレス</a>から作るEUI-64形式や、乱数をもとにした値のインターフェースIDを組み合わせてアドレスを作ります。使う前には、近隣探索のしくみで、同じアドレスを使っている機器がないかを確かめます(重複アドレス検出、DAD)。RAを送ったルータのリンクローカルアドレスが<a class="term-link" href="/term/default-gateway/">デフォルトゲートウェイ</a>になり、サーバがアドレスの割り当てを管理しないので「ステートレス」と呼ばれます。<a class="term-link" href="/term/dns/">DNS</a>サーバのアドレスは、RAのオプションやステートレスDHCPv6で知らせます。</p></details>
+  </article>
+  <article class="q-mini" data-qid="network-advanced-030" data-cat="network-advanced" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/network-advanced/network-advanced-030/">MACアドレスが 00-1A-2B-3C-4D-5E のインターフェースが、プレフィックス 2001:db8:1:1::/64 と、EUI-64形式のインターフェースIDから、SLAACでアドレスを作る。できるアドレスはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">2001:db8:1:1:21a:2bff:fe3c:4d5e</span></li><li><span class="choice-mark">B</span><span class="choice-text">2001:db8:1:1:1a:2bff:fe3c:4d5e</span></li><li><span class="choice-mark">C</span><span class="choice-text">2001:db8:1:1:21a:2bfe:ff3c:4d5e</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 2001:db8:1:1:21a:2bff:fe3c:4d5e</p><p class="explanation">EUI-64形式では、48ビットの<a class="term-link" href="/term/mac-address/">MACアドレス</a>を上位24ビットと下位24ビットに分け、間に FF-FE を入れて64ビットにします。00-1A-2B と 3C-4D-5E の間に入れると 00-1A-2B-FF-FE-3C-4D-5E です。さらに、先頭のバイトの下位から2番目のビット(U/Lビット)を反転させるので、00 は 02 になり、02-1A-2B-FF-FE-3C-4D-5E となります。16ビットずつ区切って各区切りの先頭の0を省くと 21a:2bff:fe3c:4d5e で、プレフィックスと合わせて 2001:db8:1:1:21a:2bff:fe3c:4d5e です。MACアドレスがアドレスに表れると端末を追跡されやすいので、いまの多くのOSは、乱数をもとにしたインターフェースIDを使います。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/network-advanced/network-advanced-022/">VLAN 20(192.168.20.0/24)の端末に、別のネットワークにあるDHCPサーバ 10.0.0.5 からアドレスを割り当てる。そのため、VLAN 20のデフォルトゲートウェイであるL3スイッチのインターフェース(192.168.20.1)に、DHCPリレーエージェントを設定した。リレーエージェントの動作として正しいものはどれか。</a></li>
+  <li data-level="1"><a href="/q/network/network-031/">DHCPで端末がIPアドレスを得るときの、メッセージの順序として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/network-advanced/">ネットワークの設計と運用の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/slaac/">SLAAC(ステートレスアドレス自動設定)</a></dt><dd>Stateless Address Autoconfigurationの略。IPv6で、端末がルータの送るルータ広告(RA)からネットワークのプレフィックス(ふつう /64)を知り、自分で作ったインターフェースIDと組み合わせて、自動的にアドレスを設定するしくみ。インターフェースIDには、MACアドレスから作るEUI-64形式か、追跡を防ぐための乱数をもとにした値を使う。使う前に、重複アドレス検出(DAD)で同じアドレスがないことを確かめる。</dd></div>
+    <div class="term"><dt><a href="/term/dhcp/">DHCP</a></dt><dd>Dynamic Host Configuration Protocolの略。ネットワークにつないだ端末に、IPアドレス、サブネットマスク、デフォルトゲートウェイ、DNSサーバなどの設定を期限付きで自動的に割り当てるプロトコル。</dd></div>
+    <div class="term"><dt><a href="/term/ipv6/">IPv6</a></dt><dd>IPの第6版。アドレスを128ビットに広げ、2001:db8::1 のように、16ビットずつ8つに区切った16進数で書く。ヘッダは40バイトの固定長で単純になり、途中のルータはパケットを分割しない。IPv4とは互換性がないので、両方を同時に動かすデュアルスタックや、変換の仕組みで移行を進める。</dd></div>
+    <div class="term"><dt><a href="/term/default-gateway/">デフォルトゲートウェイ</a></dt><dd>端末が、自分と別のネットワークにある宛先へのパケットを渡すルータ。端末はサブネットマスクで宛先が同じネットワークかを判断し、外ならこのルータに送る。</dd></div>
+    <div class="term"><dt><a href="/term/dns/">DNS</a></dt><dd>Domain Name Systemの略。www.example.com のようなドメイン名と、通信に使うIPアドレスを対応づける、世界中のサーバで分散して管理されるしくみ。</dd></div>
+    <div class="term"><dt><a href="/term/mac-address/">MACアドレス</a></dt><dd>イーサネットや無線LANで、同じネットワークの中の機器を指定するのに使う48ビットのアドレス。上位24ビットが製造者を表し、製造時にインターフェースごとに割り当てられる。</dd></div>
+    <div class="term"><dt><a href="/term/icmp/">ICMP</a></dt><dd>Internet Control Message Protocolの略。IPの通信で起きた誤りや状態を知らせるためのプロトコル。宛先に届けられない(Destination Unreachable)、TTLが0になった(Time Exceeded)といったことを送信元に通知する。pingはエコー要求とエコー応答で相手に届くかとRTTを調べ、tracerouteはTime Exceededの通知を使って経路を調べる。IPv6ではICMPv6が近隣探索なども担う。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/ipv4-vs-ipv6/"><strong>IPv4とIPv6の違い：アドレス長・ヘッダ・フラグメンテーション・アドレスの設定・NATを比較</strong><span>IPv4とIPv6を、アドレスの長さと数・表記・ヘッダ・フラグメンテーション・アドレスの自動設定・MACアドレスの解決・NAT・宛先の種類・IPsecの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/stp-vs-rstp/"><strong>STPとRSTPの違い：ポートの状態と役割・切り替えの速さ・BPDU・互換性を比較</strong><span>STP(IEEE 802.1D)とRSTP(IEEE 802.1w)を、規格・ポートの状態・ポートの役割・障害の後の切り替えの時間・速く切り替えるしくみ・BPDUの送り方と障害の検出・トポロジの変化の伝え方・端末をつな…</span></a></li>
+  <li><a class="cmp-card" href="/compare/tcp-vs-udp/"><strong>TCPとUDPの違い：接続・信頼性・順序・輻輳制御・ヘッダ・遅延・用途を比較</strong><span>TCPとUDPを、接続の確立・届いたかの確認と再送・順序・データの区切り・フロー制御と輻輳制御・ヘッダの大きさ・遅延・宛先の種類・主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/hub-vs-switch-vs-router/"><strong>ハブ・スイッチ・ルータの違い：動作する層・使うアドレス・転送のしかた・ドメインの分け方を比較</strong><span>ハブ(リピータハブ)・スイッチ(L2スイッチ)・ルータを、動作する層・使うアドレス・扱うデータの単位・転送のしかた・コリジョンドメイン・ブロードキャストドメイン・異なるネットワークの接続・置く場所の観点で表にして比較し…</span></a></li>
+  <li><a class="cmp-card" href="/compare/distance-vector-vs-link-state/"><strong>距離ベクトル型とリンクステート型のルーティングプロトコルの違い：RIPとOSPFで経路の求め方・収束・規模を比較</strong><span>距離ベクトル型(RIPなど)とリンクステート型(OSPFなど)のルーティングプロトコルを、ルータが知っている情報・経路の計算・メトリック・更新の送り方・収束の速さとループ・ネットワークの規模・必要な資源と設定・代表例の…</span></a></li>
+  <li><a class="cmp-card" href="/compare/ospf-vs-bgp/"><strong>OSPFとBGPの違い：IGPとEGP・経路の選び方・隣のルータとのつながり方・規模を比較</strong><span>OSPFとBGPを、分類と使う範囲(IGPとEGP)・方式・経路の選び方・ループの防ぎ方・隣のルータとのつながり方・更新の送り方・収束の速さ・扱う経路の数の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
