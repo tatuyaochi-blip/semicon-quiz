@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en" data-lang="en" data-base="/" data-home="/en/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STP vs RSTP: Port States and Roles, Convergence Speed, BPDUs and Compatibility | Semiconductor Room</title>
+<meta name="description" content="STP (IEEE 802.1D) vs RSTP (IEEE 802.1w) compared in one table: standard, port states, port roles, recovery time after a failure, how fast switchover works, how BPDUs are sent and failures detected, how topology changes are signaled, ports for end devices, and compatibility.">
+<link rel="canonical" href="https://semiconroom.com/en/compare/stp-vs-rstp/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/stp-vs-rstp/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/stp-vs-rstp/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/stp-vs-rstp/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/stp-vs-rstp/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="STP vs RSTP: Port States and Roles, Convergence Speed, BPDUs and Compatibility | Semiconductor Room">
+<meta property="og:description" content="STP (IEEE 802.1D) vs RSTP (IEEE 802.1w) compared in one table: standard, port states, port roles, recovery time after a failure, how fast switchover works, how BPDUs are sent and failures detected, how topology changes are signaled, ports for end devices, and compatibility.">
+<meta property="og:url" content="https://semiconroom.com/en/compare/stp-vs-rstp/">
+<meta property="og:site_name" content="Semiconductor Room">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/en/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Comparisons","item":"https://semiconroom.com/en/compare/"},{"@type":"ListItem","position":3,"name":"STP vs RSTP: Port States and Roles, Convergence Speed, BPDUs and Compatibility","item":"https://semiconroom.com/en/compare/stp-vs-rstp/"}]},{"@context":"https://schema.org","@type":"Article","headline":"STP vs RSTP: Port States and Roles, Convergence Speed, BPDUs and Compatibility","description":"STP (IEEE 802.1D) vs RSTP (IEEE 802.1w) compared in one table: standard, port states, port roles, recovery time after a failure, how fast switchover works, how BPDUs are sent and failures detected, how topology changes are signaled, ports for end devices, and compatibility.","inLanguage":"en","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/en/compare/stp-vs-rstp/","author":{"@type":"Organization","name":"Semiconductor Room"},"publisher":{"@type":"Organization","name":"Semiconductor Room"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why does STP take 30 to 50 seconds to switch over?","acceptedAnswer":{"@type":"Answer","text":"Because it advances ports cautiously so that no loop forms. For a failure elsewhere in the network, it first waits the max age of 20 seconds for the stale BPDU information to expire. It then waits a forward delay of 15 seconds in each of the listening and learning states, for up to 20 + 15 × 2 = 50 seconds in total. When a link on the switch's own port fails, it does not need to wait for the max age, so it takes about 30 seconds."}},{"@type":"Question","name":"Can RSTP and STP switches be mixed?","acceptedAnswer":{"@type":"Answer","text":"Yes. An RSTP switch switches to STP-compatible behavior on a port where it receives classic STP BPDUs. On that port, however, the proposal-and-agreement exchange is not available and the switch relies on timers, so switchover is slower. To get fast switchover, run RSTP on all switches in the network."}},{"@type":"Question","name":"Is the root bridge chosen differently in STP and RSTP?","acceptedAnswer":{"@type":"Answer","text":"No, it is the same. The switch with the lowest bridge ID, made of the priority followed by the MAC address, becomes the root bridge. The default priority is 32768, so without configuration the switch with the lowest MAC address wins; it is therefore common to set a lower priority on the switch meant to be at the center."}},{"@type":"Question","name":"What if I want a separate tree for each VLAN?","acceptedAnswer":{"@type":"Answer","text":"STP and RSTP build one tree for the whole network, so a blocked link is unused for every VLAN. MSTP (IEEE 802.1s, now part of IEEE 802.1Q) can build a separate tree (instance) for each group of VLANs, so different VLANs can use different links and redundant links are put to use."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/en/"><span class="logo-mark" aria-hidden="true"></span><span>Semiconductor Room<small></small></span></a>
+    <nav class="header-nav"><a href="/en/c/">Topics</a><a href="/en/glossary/">Glossary</a><a href="/en/compare/">Compare</a><a href="/en/figures/">Diagrams</a><a href="/en/numbers/">Key numbers</a><a href="/en/tools/">Calculators</a><a href="/en/stats/">Progress</a></nav>
+    <form class="site-search" role="search" action="/en/search/" method="get"><input type="search" name="q" placeholder="Search (e.g. MOSFET)" aria-label="Search the site" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/en/search/" aria-label="Search the site"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Language: English"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">English</span><span class="lang-short" aria-hidden="true">EN</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Language"><a href="/compare/stp-vs-rstp/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><span aria-current="true" lang="en">English</span><a href="/zh-hant/compare/stp-vs-rstp/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/en/">Home</a><a href="/en/c/">Topics</a><a href="/en/glossary/">Glossary</a><a href="/en/compare/">Compare</a><a href="/en/figures/">Diagrams</a><a href="/en/numbers/">Key numbers</a><a href="/en/tools/">Calculators</a><a href="/en/stats/">Progress</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/en/">Home</a> <span>›</span> <a href="/en/compare/">Comparisons</a></nav>
+<article class="compare-page">
+  <h1>STP vs RSTP: Port States and Roles, Convergence Speed, BPDUs and Compatibility</h1>
+  <p class="lead">When switches are connected with redundant paths, broadcast frames keep circling the loop and cause a broadcast storm. STP (Spanning Tree Protocol) has switches exchange messages called BPDUs and blocks some ports so that the network forms a loop-free tree rooted at the root bridge. Classic STP (IEEE 802.1D), however, moves ports to the forwarding state while waiting on timers so that no loop forms, so with default values recovery after a failure takes 30 to 50 seconds. RSTP (Rapid STP, IEEE 802.1w) keeps the same root bridge election and the same idea of blocking ports, but cuts the switchover to generally a few seconds or less, using a proposal-and-agreement exchange with the neighboring switch and alternate ports chosen in advance. RSTP was incorporated into the 2004 edition of IEEE 802.1D and has replaced classic STP as the standard.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copied!">Copy table</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link copied">Share</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Aspect</th><th scope="col">STP</th><th scope="col">RSTP</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Standard</th><td>IEEE 802.1D (up to the 1998 edition)</td><td>IEEE 802.1w; incorporated into the 2004 edition of IEEE 802.1D</td></tr>
+        <tr><th scope="row">Port states</th><td>Five: disabled, blocking, listening, learning, forwarding</td><td>Three: discarding, learning, forwarding</td></tr>
+        <tr><th scope="row">Port roles</th><td>Root port and designated port; ports that are neither are blocked</td><td>Root and designated ports, plus the alternate port (a stand-in for the root port) and the backup port (a spare for a designated port)</td></tr>
+        <tr><th scope="row">Recovery time after a failure</th><td>30 to 50 seconds with default timers (max age 20 s + forward delay 15 s × 2)</td><td>Generally a few seconds or less</td></tr>
+        <tr><th scope="row">Fast switchover mechanism</th><td>None; waits on timers and passes through listening and learning before forwarding</td><td>On point-to-point links, exchanges a proposal and an agreement with the neighbor and starts forwarding without waiting for timers; if the root port fails, an alternate port takes over immediately</td></tr>
+        <tr><th scope="row">How BPDUs are sent and failures detected</th><td>Each switch relays the BPDUs sent by the root bridge; a failure is assumed when BPDU information is not refreshed for the max age (20 s by default)</td><td>Each switch sends its own BPDUs every hello time (2 s by default); a failure is assumed when three in a row are missed</td></tr>
+        <tr><th scope="row">How topology changes are signaled</th><td>The switch that notices the change tells the root bridge with a TCN BPDU, and the root bridge spreads it to all; MAC address tables drop old entries by shortening the aging time to the forward delay (15 s)</td><td>The switch that notices the change tells its neighbors directly, and switches that receive it flush old MAC address table entries immediately</td></tr>
+        <tr><th scope="row">Ports for end devices</th><td>Not distinguished by the standard; a device plugged in waits about 30 seconds before forwarding starts</td><td>A port configured as an edge port starts forwarding immediately; if it receives a BPDU, it is treated as a normal port</td></tr>
+        <tr><th scope="row">Compatibility</th><td>Keeps running as STP when connected to RSTP switches</td><td>On ports facing STP switches, switches to STP-compatible behavior (switchover on that port becomes slow)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Figures are typical orders of magnitude and vary by process generation and product.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>When to use which</h2>
+  <dl class="compare-when">
+    <dt>STP</dt><dd>Kept for compatibility where old switches that do not support RSTP are present. There is almost no reason to choose classic STP for a new network.</dd>
+    <dt>RSTP</dt><dd>The standard choice for networks with redundantly connected switches. Configuring ports for end devices as edge ports and using full-duplex point-to-point links between switches gets the full benefit of fast switchover.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>Why does STP take 30 to 50 seconds to switch over?</h3>
+  <p>Because it advances ports cautiously so that no loop forms. For a failure elsewhere in the network, it first waits the max age of 20 seconds for the stale BPDU information to expire. It then waits a forward delay of 15 seconds in each of the listening and learning states, for up to 20 + 15 × 2 = 50 seconds in total. When a link on the switch&#39;s own port fails, it does not need to wait for the max age, so it takes about 30 seconds.</p>
+  <h3>Can RSTP and STP switches be mixed?</h3>
+  <p>Yes. An RSTP switch switches to STP-compatible behavior on a port where it receives classic STP BPDUs. On that port, however, the proposal-and-agreement exchange is not available and the switch relies on timers, so switchover is slower. To get fast switchover, run RSTP on all switches in the network.</p>
+  <h3>Is the root bridge chosen differently in STP and RSTP?</h3>
+  <p>No, it is the same. The switch with the lowest bridge ID, made of the priority followed by the MAC address, becomes the root bridge. The default priority is 32768, so without configuration the switch with the lowest MAC address wins; it is therefore common to set a lower priority on the switch meant to be at the center.</p>
+  <h3>What if I want a separate tree for each VLAN?</h3>
+  <p>STP and RSTP build one tree for the whole network, so a blocked link is unused for every VLAN. MSTP (IEEE 802.1s, now part of IEEE 802.1Q) can build a separate tree (instance) for each group of VLANs, so different VLANs can use different links and redundant links are put to use.</p>
+</section>
+<section>
+  <h2>Check your understanding</h2>
+  <article class="q-mini" data-qid="network-advanced-006" data-cat="network-advanced" data-answer="0" data-correct="Correct!" data-incorrect="Incorrect. The answer is A.">
+    <h3><a href="/en/q/network-advanced/network-advanced-006/">In a network where switches are connected with redundant paths, what role does the Spanning Tree Protocol (STP) play?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">It logically disables some ports so that the paths form a loop-free tree, preventing broadcast frames from circulating endlessly</span></li><li><span class="choice-mark">B</span><span class="choice-text">It spreads frames evenly over several links between switches to increase bandwidth</span></li><li><span class="choice-mark">C</span><span class="choice-text">It relays frames between different VLANs so that the VLANs can communicate with each other</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: A. It logically disables some ports so that the paths form a loop-free tree, preventing broadcast frames from circulating endlessly</p><p class="explanation">If switches are connected in a loop, broadcasts and frames to unknown destinations keep circulating and multiplying around the loop (a broadcast storm), and the network stops working. This happens because <a class="term-link" href="/en/term/ethernet/">Ethernet</a> frames have no mechanism like the <a class="term-link" href="/en/term/ip/">IP</a> TTL that counts hops and discards the frame. <a class="term-link" href="/en/term/spanning-tree-protocol/">STP</a> has the switches exchange messages called BPDUs and blocks some ports so that the active paths form a tree rooted at the root bridge. If a link in use fails, it moves a blocked port to the forwarding state to switch to another path.</p></details>
+  </article>
+  <article class="q-mini" data-qid="network-advanced-007" data-cat="network-advanced" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
+    <h3><a href="/en/q/network-advanced/network-advanced-007/">In STP, the bridge IDs of three switches are known: SW1 has priority 32768 and MAC address 00-00-5E-00-53-01, SW2 has priority 61440 and MAC address 00-00-5E-00-53-05, and SW3 has priority 4096 and MAC address 00-00-5E-00-53-0A. Which switch is elected as the root bridge?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">SW1</span></li><li><span class="choice-mark">B</span><span class="choice-text">SW2</span></li><li><span class="choice-mark">C</span><span class="choice-text">SW3</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. SW3</p><p class="explanation">In <a class="term-link" href="/en/term/spanning-tree-protocol/">STP</a>, the switch with the lowest bridge ID becomes the root bridge. The bridge ID puts the priority in the upper part and the <a class="term-link" href="/en/term/mac-address/">MAC address</a> in the lower part, so priorities are compared first and MAC addresses only when the priorities are equal. Here SW3, with the lowest priority of 4096, becomes the root bridge regardless of its MAC address. The default priority is 32768, and if nothing is configured the switch with the lowest MAC address is chosen, so it is common practice to give the switch at the center of the network a lower priority.</p></details>
+  </article>
+  <article class="q-mini" data-qid="network-advanced-008" data-cat="network-advanced" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
+    <h3><a href="/en/q/network-advanced/network-advanced-008/">Three switches, SW1, SW2 and SW3, are connected in a triangle with one link between each pair. The STP root bridge is SW1, and SW2 has a lower bridge ID than SW3. All links have the same path cost. Which port is blocked (does not forward frames)?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">The port on SW1 that connects to SW3</span></li><li><span class="choice-mark">B</span><span class="choice-text">The port on SW2 that connects to SW3</span></li><li><span class="choice-mark">C</span><span class="choice-text">The port on SW3 that connects to SW2</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. The port on SW3 that connects to SW2</p><p class="explanation">All ports on the root bridge are designated ports in the forwarding state. SW2 and SW3 each choose as their root port the port with the lowest cost to the root bridge, which is the port connected directly to SW1. On the remaining SW2–SW3 link, both switches have the same cost to the root bridge (one link), so the port on SW2, which has the lower bridge ID, becomes the designated port. The port on SW3 is neither a root port nor a designated port, so it is blocked and the triangular loop is broken.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/en/q/network-advanced/network-advanced-009/">With default timers, classic STP (IEEE 802.1D) takes about 30 to 50 seconds after a failure before a previously blocked port starts forwarding. Which mechanism lets RSTP switch over faster?</a></li></ol>
+  <p><a class="btn btn-primary" href="/en/c/network-advanced/">Practice Network Design and Operations questions</a></p>
+</section>
+<section>
+  <h2>Key terms explained</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/en/term/spanning-tree-protocol/">Spanning Tree Protocol (STP)</a></dt><dd>A protocol (IEEE 802.1D) that, in a network where switches are connected with redundant paths, logically blocks some ports so that the paths form a loop-free tree, preventing broadcast storms. If a path in use fails, it switches over by using a port that was blocked. RSTP (Rapid Spanning Tree Protocol) is an improved version that switches over faster.</dd></div>
+    <div class="term"><dt><a href="/en/term/mac-address/">MAC address</a></dt><dd>The 48-bit address used in Ethernet and wireless LAN to identify devices within the same network. The upper 24 bits identify the manufacturer, and it is assigned to each interface at manufacture.</dd></div>
+    <div class="term"><dt><a href="/en/term/broadcast-domain/">Broadcast domain</a></dt><dd>The range that a broadcast frame reaches. Switches and hubs forward broadcasts, so they belong to the same range, and routers (or routing on an L3 switch) mark its boundaries. With VLANs, a single switch can be divided into a separate broadcast domain for each VLAN. If the range is too large, broadcasts such as ARP increase and network efficiency drops.</dd></div>
+    <div class="term"><dt><a href="/en/term/vlan/">VLAN</a></dt><dd>Virtual LAN. A function that creates logically separate networks (broadcast domains) on the same physical equipment, typically per switch port. Between switches, VLANs are distinguished by IEEE 802.1Q tags.</dd></div>
+    <div class="term"><dt><a href="/en/term/ethernet/">Ethernet</a></dt><dd>The family of standards (IEEE 802.3) for wired LANs. Data is placed in frames that are addressed by MAC address. It runs over twisted-pair cable and optical fiber at speeds from 10 Mbit/s to hundreds of Gbit/s. Each frame ends with a CRC-32 error-detection code, the frame check sequence (FCS). Today devices are normally connected to switches in full duplex, so the old CSMA/CD collision handling is no longer used.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Related comparisons</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/en/compare/dhcpv6-vs-slaac/"><strong>DHCPv6 vs SLAAC: How IPv6 Addresses Are Assigned, State, Gateway and DNS, and When to Use Each</strong><span>DHCPv6 vs SLAAC (stateless address autoconfiguration), the two ways to configure IPv6 addresses automatically…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/hub-vs-switch-vs-router/"><strong>Hub vs Switch vs Router: OSI Layer, Addresses Used, Forwarding and Domains</strong><span>Hub (repeater hub) vs switch (L2 switch) vs router compared in one table: OSI layer, address used, data unit,…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/distance-vector-vs-link-state/"><strong>Distance-Vector vs Link-State Routing Protocols: RIP and OSPF Compared on Route Calculation, Convergence and Scale</strong><span>Distance-vector (such as RIP) vs link-state (such as OSPF) routing protocols compared in one table: what each…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/ospf-vs-bgp/"><strong>OSPF vs BGP: IGP and EGP, Route Selection, Neighbor Relationships and Scale</strong><span>OSPF vs BGP compared in one table: classification and scope (IGP and EGP), protocol type, route selection, lo…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/static-vs-dynamic-routing/"><strong>Static vs Dynamic Routing: Configuration, Failover, Load, Scale and When to Use Each</strong><span>Static vs dynamic routing compared in one table: how routes are set, behavior on failure, router load and ban…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/snmp-vs-syslog-vs-netflow/"><strong>SNMP vs syslog vs NetFlow: What Each Tells You in Monitoring, How Data Is Collected, Data Format and Protocols</strong><span>SNMP vs syslog vs NetFlow (IPFIX) for network monitoring compared in one table: what each tells you, how data…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">This is a semiconductor learning site run by an individual.</p>
+    <p class="footer-request"><a href="/en/contact/">Requests and feedback are welcome. Send them via Contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/en/about/">About</a>
+      <a href="/en/figures/">Diagrams</a>
+      <a href="/en/privacy/">Privacy policy</a>
+      <a href="/en/disclaimer/">Disclaimer</a>
+      <a href="/en/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Semiconductor Room</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

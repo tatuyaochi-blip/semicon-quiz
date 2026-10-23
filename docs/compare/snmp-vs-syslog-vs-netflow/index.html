@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNMP・syslog・NetFlowの違い：監視でわかること・集め方・データの形・プロトコルを比較 | 半導体教室</title>
+<meta name="description" content="ネットワークの監視に使うSNMP・syslog・NetFlow(IPFIX)を、わかること・集め方・データの形・時間の細かさ・わからないこと・機器と回線への負荷・規格とポート番号・セキュリティ・主な用途の観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/snmp-vs-syslog-vs-netflow/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/snmp-vs-syslog-vs-netflow/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/snmp-vs-syslog-vs-netflow/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/snmp-vs-syslog-vs-netflow/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/snmp-vs-syslog-vs-netflow/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SNMP・syslog・NetFlowの違い：監視でわかること・集め方・データの形・プロトコルを比較 | 半導体教室">
+<meta property="og:description" content="ネットワークの監視に使うSNMP・syslog・NetFlow(IPFIX)を、わかること・集め方・データの形・時間の細かさ・わからないこと・機器と回線への負荷・規格とポート番号・セキュリティ・主な用途の観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/snmp-vs-syslog-vs-netflow/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"SNMP・syslog・NetFlowの違い：監視でわかること・集め方・データの形・プロトコルを比較","item":"https://semiconroom.com/compare/snmp-vs-syslog-vs-netflow/"}]},{"@context":"https://schema.org","@type":"Article","headline":"SNMP・syslog・NetFlowの違い：監視でわかること・集め方・データの形・プロトコルを比較","description":"ネットワークの監視に使うSNMP・syslog・NetFlow(IPFIX)を、わかること・集め方・データの形・時間の細かさ・わからないこと・機器と回線への負荷・規格とポート番号・セキュリティ・主な用途の観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/compare/snmp-vs-syslog-vs-netflow/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"SNMPのカウンタから、通信の速さはどう求めますか？","acceptedAnswer":{"@type":"Answer","text":"インターフェースの受信や送信のバイト数のカウンタを一定の間隔で読み出し、前回との差をビットに直して、間隔の秒数で割ります。例えば5分(300秒)の間にカウンタが 3,750,000,000 増えたなら、3.75×10⁹ × 8 ÷ 300 = 1×10⁸ bit/s で、平均100 Mbpsです。32ビットのカウンタは約43億で0に戻り、高速なリンクではすぐに1周してしまうので、64ビットのカウンタを使います。結果は間隔の中の平均なので、短い時間の急な増加は見えません。"}},{"@type":"Question","name":"SNMPのポーリングとトラップは、どう使い分けますか？","acceptedAnswer":{"@type":"Answer","text":"ポーリングは、マネージャが決まった間隔で値を読み出すので、通信量のグラフのように、変化を続けて記録するのに向きます。トラップは、リンクのダウンなどが起きたときに機器から知らせるので、すぐに気づけますが、UDPで送るので届かないこともあります。受け取ったことを確かめる通知(インフォーム)もあります。多くの場合、両方を組み合わせます。"}},{"@type":"Question","name":"syslogのメッセージの重要度とは何ですか？","acceptedAnswer":{"@type":"Answer","text":"RFC 5424では、メッセージの重要度を、0(Emergency、システムが使えない)から7(Debug、デバッグ用)までの8段階で表します。数字が小さいほど重要で、どの重要度以上のメッセージをサーバへ送るかを、機器ごとに設定できます。"}},{"@type":"Question","name":"NetFlowとパケットキャプチャは、何が違いますか？","acceptedAnswer":{"@type":"Answer","text":"パケットキャプチャはパケットそのもの(中身を含む)を記録するので、細かく調べられますが、データの量が非常に多くなります。NetFlowはパケットの中身を記録せず、フローごとのパケット数やバイト数などの要約だけを送るので、データの量を大きく減らせ、長い期間の傾向を見るのに向きます。暗号化された通信でも、アドレスやポート番号、量は分かります。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/snmp-vs-syslog-vs-netflow/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/snmp-vs-syslog-vs-netflow/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/snmp-vs-syslog-vs-netflow/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>SNMP・syslog・NetFlowの違い：監視でわかること・集め方・データの形・プロトコルを比較</h1>
+  <p class="lead">ネットワークを運用するには、機器や通信の状態を監視し、異常に早く気づいて原因を調べる必要があります。SNMP・syslog・NetFlowは、どれも機器から情報を集めるしくみですが、わかることが違います。SNMPは、管理する側(マネージャ)が機器(エージェント)に、インターフェースの通信量やCPUの使用率などの値を問い合わせるもので、「どれだけか」が分かります。syslogは、リンクのダウンやログイン、設定の変更などの出来事を、機器が文字のメッセージとして記録用のサーバに送るもので、「いつ何が起きたか」が分かります。NetFlow(と、それをもとに標準化されたIPFIX)は、通信を送信元と宛先などが同じパケットのまとまり(フロー)ごとに集計して送るもので、「だれとだれが、どれだけ通信したか」が分かります。実際の運用では、3つを組み合わせて使います。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">SNMP</th><th scope="col">syslog</th><th scope="col">NetFlow(IPFIX)</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">わかること</th><td>機器の状態と量。インターフェースの通信量やエラーの数、CPUとメモリの使用率、リンクの状態</td><td>出来事。リンクのダウン、ログインの成功と失敗、設定の変更、エラーの発生</td><td>通信の内訳。どの送信元と宛先の組み合わせが、どのプロトコルとポートで、どれだけ通信したか</td></tr>
+        <tr><th scope="row">集め方</th><td>マネージャが一定の間隔で問い合わせる(ポーリング)。異常を機器から知らせる通知(トラップ)もある</td><td>機器が、出来事が起きたときにサーバへ送る</td><td>機器がフローを集計し、フローが終わったときや一定の時間ごとに、収集用のサーバ(コレクタ)へ送る</td></tr>
+        <tr><th scope="row">データの形</th><td>MIBで定義された値(カウンタや状態)。オブジェクト識別子(OID)で指定する</td><td>重要度(0〜7)、発生元の種類(ファシリティ)、時刻と、文字のメッセージ</td><td>フローごとのレコード。アドレス、ポート番号、プロトコル、パケット数、バイト数、開始と終了の時刻など。項目はテンプレートで決める</td></tr>
+        <tr><th scope="row">時間の細かさ</th><td>問い合わせの間隔(例えば5分)ごとの平均になる</td><td>出来事ごとに、ほぼすぐに届く</td><td>フローごと。長く続くフローは、一定の時間ごとに区切って送る</td></tr>
+        <tr><th scope="row">わからないこと</th><td>だれの通信かは分からない</td><td>通信量は分からない</td><td>パケットの中身(データ)は分からない。機器のCPUの使用率なども分からない</td></tr>
+        <tr><th scope="row">機器と回線への負荷</th><td>小さい</td><td>小さい。ただし、障害のときにメッセージが急に増えることがある</td><td>大きめ。高速なリンクでは、一部のパケットだけを調べるサンプリングを使うこともある</td></tr>
+        <tr><th scope="row">規格とポート番号</th><td>SNMPv3はRFC 3411〜3418。UDPの161番(問い合わせ)と162番(トラップ)</td><td>RFC 5424。UDPの514番、TLSを使うときは6514番</td><td>NetFlow v9はRFC 3954(情報提供のRFC)。標準化されたIPFIXはRFC 7011で、ポート番号は4739番</td></tr>
+        <tr><th scope="row">セキュリティ</th><td>v1とv2cでは、コミュニティ名が暗号化されずに流れる。v3で認証と暗号化ができる</td><td>UDPでは、暗号化も届いたことの確認もない。TLSで保護できる</td><td>NetFlow v9には保護のしくみがない。IPFIXはTLSやDTLSで保護できる</td></tr>
+        <tr><th scope="row">主な用途</th><td>通信量のグラフ、回線の使用率の把握、機器の故障の検知</td><td>障害の原因の調査、だれが何をしたかの記録、セキュリティの監視(SIEMへの集約)</td><td>帯域を多く使う端末やアプリケーションの特定、ふだんと違う通信の検知、回線の増強の計画</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>SNMP</dt><dd>回線や機器の使用率を、グラフで継続して見たいとき。機器の故障やリンクのダウンにすぐ気づきたいときは、トラップと組み合わせます。</dd>
+    <dt>syslog</dt><dd>障害やセキュリティに関わる出来事を、時刻とともに記録して後から調べられるようにしたいとき。複数の機器のログを突き合わせるため、機器の時計をNTPで合わせておきます。</dd>
+    <dt>NetFlow(IPFIX)</dt><dd>回線が混んでいるときに、どの端末やアプリケーションが帯域を使っているかを調べたいときや、ふだんと違う通信のパターンを見つけたいとき。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>SNMPのカウンタから、通信の速さはどう求めますか？</h3>
+  <p>インターフェースの受信や送信のバイト数のカウンタを一定の間隔で読み出し、前回との差をビットに直して、間隔の秒数で割ります。例えば5分(300秒)の間にカウンタが 3,750,000,000 増えたなら、3.75×10⁹ × 8 ÷ 300 = 1×10⁸ bit/s で、平均100 Mbpsです。32ビットのカウンタは約43億で0に戻り、高速なリンクではすぐに1周してしまうので、64ビットのカウンタを使います。結果は間隔の中の平均なので、短い時間の急な増加は見えません。</p>
+  <h3>SNMPのポーリングとトラップは、どう使い分けますか？</h3>
+  <p>ポーリングは、マネージャが決まった間隔で値を読み出すので、通信量のグラフのように、変化を続けて記録するのに向きます。トラップは、リンクのダウンなどが起きたときに機器から知らせるので、すぐに気づけますが、UDPで送るので届かないこともあります。受け取ったことを確かめる通知(インフォーム)もあります。多くの場合、両方を組み合わせます。</p>
+  <h3>syslogのメッセージの重要度とは何ですか？</h3>
+  <p>RFC 5424では、メッセージの重要度を、0(Emergency、システムが使えない)から7(Debug、デバッグ用)までの8段階で表します。数字が小さいほど重要で、どの重要度以上のメッセージをサーバへ送るかを、機器ごとに設定できます。</p>
+  <h3>NetFlowとパケットキャプチャは、何が違いますか？</h3>
+  <p>パケットキャプチャはパケットそのもの(中身を含む)を記録するので、細かく調べられますが、データの量が非常に多くなります。NetFlowはパケットの中身を記録せず、フローごとのパケット数やバイト数などの要約だけを送るので、データの量を大きく減らせ、長い期間の傾向を見るのに向きます。暗号化された通信でも、アドレスやポート番号、量は分かります。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="network-advanced-038" data-cat="network-advanced" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/network-advanced/network-advanced-038/">SNMPで、ルータのインターフェースの受信バイト数を数える64ビットのカウンタを5分(300秒)ごとに読み出したところ、前回が 1,200,000,000、今回が 4,950,000,000 だった。この5分間の平均の受信速度に最も近いものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">12.5 Mbps</span></li><li><span class="choice-mark">B</span><span class="choice-text">100 Mbps</span></li><li><span class="choice-mark">C</span><span class="choice-text">500 Mbps</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 100 Mbps</p><p class="explanation">5分間に受信したのは 4,950,000,000 − 1,200,000,000 = 3,750,000,000 バイトで、ビットに直すと 3.75×10⁹ × 8 = 3×10¹⁰ ビットです。これを300秒で割ると 1×10⁸ bit/s、つまり100 Mbpsです。<a class="term-link" href="/term/snmp/">SNMP</a>では、管理する側(マネージャ)が機器のエージェントにMIBの値を問い合わせ、このようにカウンタの差から通信量を求めてグラフにします。32ビットのカウンタは 2^32 ≈ 4.29×10⁹ バイトで0に戻り、100 Mbpsでは約344秒で1周してしまうので、高速なインターフェースでは64ビットのカウンタを使います。</p></details>
+  </article>
+  <article class="q-mini" data-qid="network-advanced-039" data-cat="network-advanced" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/network-advanced/network-advanced-039/">ルータを通る通信について、どの送信元と宛先の組み合わせ(アドレス、ポート番号、プロトコル)の通信が、どれだけのバイト数を占めているかを、通信のまとまりごとに集計して調べたい。用いるしくみとして最も適切なものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">SNMP</span></li><li><span class="choice-mark">B</span><span class="choice-text">syslog</span></li><li><span class="choice-mark">C</span><span class="choice-text">NetFlow(IPFIX)</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. NetFlow(IPFIX)</p><p class="explanation">NetFlowやそれをもとに標準化されたIPFIXは、送信元と宛先のアドレスや<a class="term-link" href="/term/port-number/">ポート番号</a>、プロトコルが同じ<a class="term-link" href="/term/packet/">パケット</a>のまとまり(フロー)ごとに、パケット数やバイト数、時刻などを記録して、収集用のサーバに送るしくみです。どの端末やアプリケーションが帯域を使っているか、ふだんと違う通信がないかを調べるのに使います。<a class="term-link" href="/term/snmp/">SNMP</a>は、機器のインターフェースごとの通信量やCPUの使用率などの値を問い合わせたり、異常を通知(トラップ)させたりするプロトコルで、だれの通信かまでは分かりません。syslogは、リンクのダウンやログインなどの出来事を、文字のメッセージとして記録用のサーバに送るしくみです。</p></details>
+  </article>
+  <article class="q-mini" data-qid="network-021" data-cat="network" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/network/network-021/">UDPの特徴として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">コネクションを確立せず、再送や順序の制御をしないので、ヘッダが小さく、送るまでの待ちもない</span></li><li><span class="choice-mark">B</span><span class="choice-text">コネクションを確立し、届かなかったデータを再送して、受信側で順序もそろえる</span></li><li><span class="choice-mark">C</span><span class="choice-text">IPアドレスを使わずに、MACアドレスだけで宛先の端末に届ける</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. コネクションを確立せず、再送や順序の制御をしないので、ヘッダが小さく、送るまでの待ちもない</p><p class="explanation"><a class="term-link" href="/term/udp/">UDP</a>は、<a class="term-link" href="/term/ip/">IP</a>の上に<a class="term-link" href="/term/port-number/">ポート番号</a>と簡単な誤り検出(チェックサム)を加えただけの軽いプロトコルで、ヘッダは8バイトです(<a class="term-link" href="/term/tcp/">TCP</a>はオプションなしで20バイト)。接続の手順がなく、届いたかの確認や<a class="term-link" href="/term/arq/">再送</a>もしないため、少し失われても遅れない方がよい音声通話やライブ映像、1回の問い合わせと応答で済む<a class="term-link" href="/term/dns/">DNS</a>などに使われます。信頼性が必要なら、アプリケーションの側で補います。例えば、<a class="term-link" href="/term/http/">HTTP</a>/3で使われる<a class="term-link" href="/term/quic/">QUIC</a>は、UDPの上で再送や暗号化を実装しています。コネクションの確立、再送、順序の制御を行うのはTCPです。</p></details>
+  </article>
+  
+  <p><a class="btn btn-primary" href="/c/network-advanced/">ネットワークの設計と運用の練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/snmp/">SNMP</a></dt><dd>Simple Network Management Protocolの略。ルータやスイッチなどの機器の状態を監視・管理するためのプロトコル。管理する側(マネージャ)が機器のエージェントに、MIBとして決められた値(インターフェースの通信量のカウンタ、CPUの使用率など)を問い合わせ、機器は異常をトラップで知らせる。通信量は、カウンタの値を一定の間隔で読み、その差から求める。認証と暗号化が使えるSNMPv3が推奨される。</dd></div>
+    <div class="term"><dt><a href="/term/udp/">UDP</a></dt><dd>User Datagram Protocolの略。トランスポート層のコネクションレス型のプロトコル。ヘッダは8バイトで、ポート番号、長さ、チェックサムだけをもつ。接続の手順も、確認応答や再送も、順序の制御もしないので、遅れが小さい。DNSの問い合わせ、音声や映像の通話、オンラインゲーム、DHCP、QUICなどに使われる。</dd></div>
+    <div class="term"><dt><a href="/term/port-number/">ポート番号</a></dt><dd>TCPやUDPで、端末の中のどのアプリケーション宛ての通信かを区別する0〜65535の番号。HTTPの80、HTTPSの443、DNSの53など、0〜1023はウェルノウンポートと呼ばれる。</dd></div>
+    <div class="term"><dt><a href="/term/packet/">パケット</a></dt><dd>通信で送るデータを一定の大きさ以下に区切り、宛先などの制御情報を書いたヘッダを付けたもの。1本の回線を多くの通信で分け合え(パケット交換)、誤りがあってもその部分だけ送り直せる。階層によって、IPではパケット、TCPではセグメント、イーサネットではフレームと呼び分けることが多い。PCI Expressやオンチップネットワークでも、データをパケットにして送る。</dd></div>
+    <div class="term"><dt><a href="/term/router/">ルータ</a></dt><dd>異なるネットワークの間でパケットを中継する、ネットワーク層(第3層)の機器。受け取ったパケットの宛先IPアドレスを経路表(ルーティングテーブル)と照らし合わせ、次に渡すルータ(ネクストホップ)と出口のインターフェースを決めて送り出す。家庭用のルータは、NAPTやDHCPサーバ、ファイアウォールの機能もまとめてもつ。</dd></div>
+    <div class="term"><dt><a href="/term/siem/">SIEM(セキュリティ情報イベント管理)</a></dt><dd>Security Information and Event Managementの略。ファイアウォール、サーバ、EDR、クラウドのサービス、認証の基盤などのログを1か所に集めて形式と時刻をそろえ、複数の出来事を組み合わせたルール(相関分析)で攻撃の疑いを検知し、警告として示す仕組み。調査のためのログの検索や、規則で求められるログの長期の保存にも使われる。SOC(セキュリティオペレーションセンター)の分析者が監視に使う、中心的な道具の1つである。</dd></div>
+    <div class="term"><dt><a href="/term/tls/">TLS</a></dt><dd>Transport Layer Securityの略。通信の暗号化、改ざんの検出、証明書によるサーバの認証を行うプロトコル。HTTPSはHTTPをTLSで保護したもの。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/distance-vector-vs-link-state/"><strong>距離ベクトル型とリンクステート型のルーティングプロトコルの違い：RIPとOSPFで経路の求め方・収束・規模を比較</strong><span>距離ベクトル型(RIPなど)とリンクステート型(OSPFなど)のルーティングプロトコルを、ルータが知っている情報・経路の計算・メトリック・更新の送り方・収束の速さとループ・ネットワークの規模・必要な資源と設定・代表例の…</span></a></li>
+  <li><a class="cmp-card" href="/compare/ospf-vs-bgp/"><strong>OSPFとBGPの違い：IGPとEGP・経路の選び方・隣のルータとのつながり方・規模を比較</strong><span>OSPFとBGPを、分類と使う範囲(IGPとEGP)・方式・経路の選び方・ループの防ぎ方・隣のルータとのつながり方・更新の送り方・収束の速さ・扱う経路の数の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/static-vs-dynamic-routing/"><strong>静的ルーティングと動的ルーティングの違い：設定・障害時の切り替え・負荷・規模・使い分けを比較</strong><span>静的ルーティングと動的ルーティングを、経路の決め方・障害のときの動き・ルータの負荷と帯域・設定の手間と規模・動きの予測のしやすさ・セキュリティ・アドミニストレーティブディスタンス・向いている場所の観点で表にして比較しま…</span></a></li>
+  <li><a class="cmp-card" href="/compare/ids-vs-ips-vs-waf-vs-firewall/"><strong>ファイアウォール・IDS・IPS・WAFの違い：調べる範囲・止めるか知らせるか・守る対象を比較</strong><span>ファイアウォール・IDS(侵入検知システム)・IPS(侵入防止システム)・WAFを、調べる範囲(層)・通信の経路への置き方・見つけたときの動き・判定の方法・守る対象・誤検知の影響・置く場所・限界の観点で表にして比較しま…</span></a></li>
+  <li><a class="cmp-card" href="/compare/tcp-vs-udp/"><strong>TCPとUDPの違い：接続・信頼性・順序・輻輳制御・ヘッダ・遅延・用途を比較</strong><span>TCPとUDPを、接続の確立・届いたかの確認と再送・順序・データの区切り・フロー制御と輻輳制御・ヘッダの大きさ・遅延・宛先の種類・主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/stp-vs-rstp/"><strong>STPとRSTPの違い：ポートの状態と役割・切り替えの速さ・BPDU・互換性を比較</strong><span>STP(IEEE 802.1D)とRSTP(IEEE 802.1w)を、規格・ポートの状態・ポートの役割・障害の後の切り替えの時間・速く切り替えるしくみ・BPDUの送り方と障害の検出・トポロジの変化の伝え方・端末をつな…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
