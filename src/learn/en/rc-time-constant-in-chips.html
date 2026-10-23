@@ -1,0 +1,277 @@
+<!--
+{
+  "title": "RC Time Constant Explained: Wire Delay and Clock Speed",
+  "description": "RC time constant: how fast a capacitor charges (63% at τ, 99% at 5τ), why wire delay grows with length squared, and how repeaters, copper and low-k help.",
+  "series": "foundations",
+  "order": 7,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2028-10",
+  "cats": ["circuits", "interconnect", "analog", "sta-cdc", "logic"],
+  "terms": ["時定数", "RC遅延", "伝搬遅延", "Low-k材料"],
+  "sources": [
+    { "title": "W. C. Elmore: The Transient Response of Damped Linear Networks with Particular Regard to Wideband Amplifiers, Journal of Applied Physics 19, 55–63 (1948) (the original paper on the Elmore delay)", "url": "https://doi.org/10.1063/1.1697872" },
+    { "title": "J. M. Rabaey, A. Chandrakasan, B. Nikolić: Digital Integrated Circuits, 2nd ed., Prentice Hall (2003) (Chapter 4, The Wire: step response of a lumped RC circuit and a distributed RC line, with the 50% point at 0.69RC and 0.38RC; Elmore delay rcL²/2; repeaters)", "url": "https://icbook.eecs.berkeley.edu/" },
+    { "title": "R. T. Chang, C. P. Yue, S. S. Wong: Near Speed-of-Light On-Chip Electrical Interconnect, Symposium on VLSI Circuits (2002) (wires limited by ordinary RC are far slower than light in SiO2; comparison on a 20 mm wire)", "url": "https://archive.vlsisymposium.org/02web/circuits/cir_pdf/C2p3.pdf" },
+    { "title": "R. Ho, K. W. Mai, M. A. Horowitz: The Future of Wires, Proceedings of the IEEE 89(4), 490–504 (2001) (wires that shrink in length keep pace with gate delay or slow down only gradually; long wires that cross the chip get slower relative to gates, even with repeaters)", "url": "https://seas.upenn.edu/~leebcc/teachdir/ece299_fall10/Ho01_ScalingWires.pdf" },
+    { "title": "V. Wason, K. Banerjee: A Probabilistic Framework for Power-Optimal Repeater Insertion in Global Interconnects under Parameter Variations, ISLPED 2005 (inserting buffers at regular intervals makes delay proportional to length)", "url": "https://courses.ece.ucsb.edu/ECE225/225_W21Banerjee/References/Vineet_ISLPED2005.pdf" },
+    { "title": "IBM: Copper interconnects (IBM history page: chips with copper wiring announced in 1997 and shipped in PowerPC in 1998)", "url": "https://www.ibm.com/history/copper-interconnects" },
+    { "title": "HPCwire: IBM Develops New Semiconductor Manufacturing Process (September 1997; IBM's announcement: CMOS 7S is the first technology to use copper instead of aluminum in the circuits)", "url": "https://www.hpcwire.com/1997/09/26/ibm-develops-new-semiconductor-manufacturing-process/" },
+    { "title": "P. C. Andricacos: Copper On-Chip Interconnections, The Electrochemical Society Interface, Spring 1999 (copper wiring, the damascene process and plating)", "url": "https://www.electrochem.org/dl/interface/spr/spr99/IF3-99-Pages32-37.pdf" },
+    { "title": "HyperPhysics (Georgia State University): Resistivity and Temperature Coefficient at 20 C (copper 1.68×10⁻⁸ Ω·m, aluminum 2.65×10⁻⁸ Ω·m)", "url": "https://hyperphysics.gsu.edu/hbase/Tables/rstiv.html" },
+    { "title": "A. Grill (IBM Research): PECVD Low and Ultralow Dielectric Constant Materials: From Invention and Research to Products, AVS 62nd International Symposium (2015) (SiCOH with k = 3 in products from the 90 nm node, and porous films with k = 2.4 at the 45 nm node)", "url": "https://www2.avs.org/symposium2015/Papers/Paper_EM-ThM1.html" },
+    { "title": "D. Valencia et al.: Grain Boundary Resistance in Copper Interconnects from an Atomistic Model to a Neural Network, Physical Review Applied 9, 044005 (2018) (arXiv:1701.04897; in thin copper wires, electrons scattering at grain boundaries raise the resistance)", "url": "https://arxiv.org/abs/1701.04897" },
+    { "title": "J. Ganssle: A Guide to Debouncing (bounce times measured on many switches; the average was about 1.6 ms)", "url": "https://www.ganssle.com/debouncing.htm" }
+  ]
+}
+-->
+<p class="lead">The time constant (τ = RC) tells you how fast a capacitor C charges through a resistor R. You get it by simply multiplying the resistance by the capacitance. After one τ, the voltage reaches about 63% of its final value; after 5τ, about 99%. Inside a chip, a transistor sends a signal by charging the next circuit and the wire in between. So RC has a big say in how fast the clock can run and how long wires delay signals.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>Why voltages inside a chip do not switch instantly</li>
+<li>What the time constant τ = RC means, and the numbers 63%, 2.2τ and 5τ</li>
+<li>How RC sets the limit on clock speed</li>
+<li>Why the delay of a long wire grows with the square of its length, and what chips do about it</li>
+</ul><p class="muted">Prerequisites: a rough idea of voltage, current and resistance, at the level of school science. It also helps to know that a transistor works as an electrical switch ("<a href="{{home}}learn/what-is-a-transistor/">What Is a Transistor?</a>").</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>A computer or phone processor often comes with a number like "3 GHz." It means a timing signal, the clock, ticks 3 billion times a second. The clock keeps all the circuits in step. Each tick lasts only about 0.33 nanoseconds (a nanosecond is a billionth of a second).</p>
+<p>In that short time, the voltages that stand for 0 and 1 must switch, one after another, across the chip. But a voltage does not jump to its new value the moment a switch turns on. It takes a little time and rises smoothly.</p>
+<p>How smooth that rise is depends on resistance and capacitance. Multiply the two, and you get the time constant. The same idea explains the speed limit of a chip, the delay of long wires and even how a button press is read.</p>
+</section>
+
+<section>
+<h2>How it works 1: resistance and capacitance inside a chip</h2>
+<p>Resistance is how hard it is for current to flow. Its unit is the ohm (Ω). The thinner and longer a metal wire, the higher its resistance.</p>
+<p>Put two metal plates face to face with a thin insulator between them, and they can store electric charge. This part is called a capacitor. Apply a voltage, and positive charge collects on one plate and negative charge on the other.</p>
+<p>How easily a part stores charge is called its capacitance. Its unit is the farad (F). Wider plates and a thinner insulator give a larger capacitance. A larger capacitance needs more charge to reach the same voltage.</p>
+<p>A chip has capacitance all over the place, even without any capacitor parts. Take the gate electrode of a transistor, the electrode that turns its current on and off. It is a conductor sitting on a thin insulating film, so it is a tiny capacitor in itself. Wires have capacitance too. Across an insulating film, they face neighboring wires and the layers above and below.</p>
+<p>At the same time, a transistor that is switched on has resistance, and so does the metal of the wires. So every signal in a chip changes its voltage by charging a capacitance through a resistance. Switching from 0 to 1 is charging; switching from 1 to 0 is discharging (<a href="{{home}}figures/cmos-inverter/">CMOS inverter diagram</a>).</p>
+</section>
+
+<section>
+<h2>How it works 2: fast at first, then slower and slower</h2>
+<p>Picture a battery connected to a resistor and a capacitor, just as charging begins. At first the capacitor is at 0 V. The voltage gap to the battery is at its largest, so a lot of current flows in.</p>
+<p>As charge builds up, the capacitor's voltage rises and the gap to the battery shrinks. A smaller gap means less current flows in, so the voltage rises more slowly. The voltage gets closer and closer to the battery's, but never quite reaches it.</p>
+<p>Here the gap shrinks at a rate set by how much gap is left. This kind of change is called exponential. Its key feature: in every equal stretch of time, the remaining gap shrinks by the same fraction. All the numbers in this article come from this one property.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>Connect a large water tank (the battery) to a small tank (the capacitor) with a thin pipe at the bottom. While the difference in water level is large, water rushes in. As the difference shrinks, the flow slows down. A thinner pipe (more resistance) or a small tank with a wider base (more capacitance) takes longer to fill. The flow weakens in step with the remaining difference, and that is the part that resembles charging.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> Water really travels through the pipe. A signal in a chip is not carried by electrons running from one end of the wire to the other. Also, in a wide pipe or a fast flow, the flow is no longer proportional to the level difference. This analogy shows only one thing: the more is stored, the slower the inflow.</p></aside>
+</section>
+
+<section>
+<h2>How it works 3: the time constant τ = RC</h2>
+<p>How fast this change happens depends only on the resistance R multiplied by the capacitance C. This product is called the {{term:時定数|time constant}}, written with the Greek letter τ (tau). A large resistance lets little current through. A large capacitance needs a lot of charge. So either one makes charging slower.</p>
+<p>If you work out ohms times farads, the unit comes out as seconds. Multiply a resistance by a capacitance, and you get a time.</p>
+<p>As an example, take 1 kΩ (1,000 Ω) and 1 pF (a picofarad, a trillionth of a farad). Then τ = 1,000 × 10⁻¹² seconds = 10⁻⁹ seconds, or 1 nanosecond. Make either the resistance or the capacitance 10 times larger, and τ also grows 10 times, to 10 nanoseconds.</p>
+<p>After one τ, the voltage has risen to about 63% of its final value. That is because the remaining gap shrinks to about 37% in every τ. (Strictly, it shrinks to 1/e, where e is a number of about 2.718.)</p>
+<table>
+<thead><tr><th>Time since charging began</th><th>Voltage, as a share of the final value</th></tr></thead>
+<tbody>
+<tr><td>About 0.69τ</td><td>50%</td></tr>
+<tr><td>τ</td><td>About 63.2%</td></tr>
+<tr><td>2τ</td><td>About 86.5%</td></tr>
+<tr><td>3τ</td><td>About 95.0%</td></tr>
+<tr><td>5τ</td><td>About 99.3%</td></tr>
+</tbody>
+</table>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img"><title>Voltage while a capacitor charges through a resistor: 63% at one time constant τ, about 2.2τ from 10% to 90%, and 99.3% at 5τ</title>
+<line x1="56" y1="46.0" x2="326" y2="46.0" class="dash"/>
+<text x="50" y="51.0" text-anchor="end" class="m">100</text>
+<text x="50" y="241" text-anchor="end" class="m">0</text>
+<line x1="56" y1="236" x2="326" y2="236" class="ln"/>
+<line x1="56" y1="236" x2="56" y2="32" class="ln"/>
+<text x="110.0" y="258" text-anchor="middle" class="m">τ</text>
+<text x="164.0" y="258" text-anchor="middle" class="m">2τ</text>
+<text x="218.0" y="258" text-anchor="middle" class="m">3τ</text>
+<text x="272.0" y="258" text-anchor="middle" class="m">4τ</text>
+<text x="326.0" y="258" text-anchor="middle" class="m">5τ</text>
+<path d="M56.0,236.0 L57.4,231.3 L58.7,226.7 L60.0,222.3 L61.4,217.9 L62.8,213.7 L64.1,209.5 L65.5,205.5 L66.8,201.6 L68.2,197.7 L69.5,194.0 L70.8,190.3 L72.2,186.8 L73.5,183.3 L74.9,179.9 L76.2,176.6 L77.6,173.4 L79.0,170.2 L80.3,167.1 L81.7,164.2 L83.0,161.2 L84.3,158.4 L85.7,155.6 L87.0,152.9 L88.4,150.3 L89.8,147.7 L91.1,145.2 L92.5,142.7 L93.8,140.4 L95.2,138.0 L96.5,135.7 L97.8,133.5 L99.2,131.4 L100.5,129.3 L101.9,127.2 L103.2,125.2 L104.6,123.2 L106.0,121.3 L107.3,119.5 L108.7,117.7 L110.0,115.9 L111.3,114.2 L112.7,112.5 L114.0,110.8 L115.4,109.2 L116.8,107.7 L118.1,106.2 L119.5,104.7 L120.8,103.2 L122.2,101.8 L123.5,100.4 L124.8,99.1 L126.2,97.8 L127.5,96.5 L128.9,95.3 L130.2,94.0 L131.6,92.9 L132.9,91.7 L134.3,90.6 L135.7,89.5 L137.0,88.4 L138.3,87.3 L139.7,86.3 L141.1,85.3 L142.4,84.4 L143.8,83.4 L145.1,82.5 L146.4,81.6 L147.8,80.7 L149.2,79.9 L150.5,79.0 L151.8,78.2 L153.2,77.4 L154.6,76.6 L155.9,75.9 L157.2,75.1 L158.6,74.4 L159.9,73.7 L161.3,73.0 L162.7,72.4 L164.0,71.7 L165.3,71.1 L166.7,70.5 L168.1,69.9 L169.4,69.3 L170.8,68.7 L172.1,68.1 L173.4,67.6 L174.8,67.1 L176.2,66.5 L177.5,66.0 L178.8,65.5 L180.2,65.0 L181.6,64.6 L182.9,64.1 L184.2,63.7 L185.6,63.2 L186.9,62.8 L188.3,62.4 L189.7,62.0 L191.0,61.6 L192.3,61.2 L193.7,60.8 L195.1,60.5 L196.4,60.1 L197.8,59.8 L199.1,59.4 L200.4,59.1 L201.8,58.8 L203.2,58.5 L204.5,58.1 L205.8,57.8 L207.2,57.6 L208.6,57.3 L209.9,57.0 L211.2,56.7 L212.6,56.5 L213.9,56.2 L215.3,55.9 L216.7,55.7 L218.0,55.5 L219.3,55.2 L220.7,55.0 L222.1,54.8 L223.4,54.6 L224.8,54.3 L226.1,54.1 L227.4,53.9 L228.8,53.7 L230.2,53.6 L231.5,53.4 L232.8,53.2 L234.2,53.0 L235.6,52.8 L236.9,52.7 L238.2,52.5 L239.6,52.3 L240.9,52.2 L242.3,52.0 L243.7,51.9 L245.0,51.7 L246.3,51.6 L247.7,51.5 L249.1,51.3 L250.4,51.2 L251.8,51.1 L253.1,50.9 L254.4,50.8 L255.8,50.7 L257.1,50.6 L258.5,50.5 L259.9,50.4 L261.2,50.3 L262.6,50.1 L263.9,50.0 L265.2,49.9 L266.6,49.8 L267.9,49.8 L269.3,49.7 L270.6,49.6 L272.0,49.5 L273.4,49.4 L274.7,49.3 L276.1,49.2 L277.4,49.1 L278.8,49.1 L280.1,49.0 L281.4,48.9 L282.8,48.8 L284.1,48.8 L285.5,48.7 L286.9,48.6 L288.2,48.6 L289.6,48.5 L290.9,48.5 L292.2,48.4 L293.6,48.3 L294.9,48.3 L296.3,48.2 L297.6,48.2 L299.0,48.1 L300.4,48.1 L301.7,48.0 L303.1,48.0 L304.4,47.9 L305.8,47.9 L307.1,47.8 L308.4,47.8 L309.8,47.7 L311.1,47.7 L312.5,47.6 L313.9,47.6 L315.2,47.6 L316.6,47.5 L317.9,47.5 L319.2,47.5 L320.6,47.4 L321.9,47.4 L323.3,47.3 L324.6,47.3 L326.0,47.3" class="ac"/>
+<line x1="110.0" y1="236" x2="110.0" y2="115.9" class="dash"/>
+<line x1="56" y1="115.9" x2="110.0" y2="115.9" class="dash"/>
+<text x="50" y="120.9" text-anchor="end" class="m">63</text>
+<circle cx="110.0" cy="115.9" r="5" class="fa"/>
+<text x="120.0" y="137.9" text-anchor="start" class="a">63% at τ</text>
+<line x1="56" y1="217.0" x2="61.7" y2="217.0" class="dash"/>
+<line x1="61.7" y1="217.0" x2="61.7" y2="236" class="dash"/>
+<text x="50" y="222.0" text-anchor="end" class="m">10</text>
+<circle cx="61.7" cy="217.0" r="5" class="fa2"/>
+<line x1="56" y1="65.0" x2="180.3" y2="65.0" class="dash"/>
+<line x1="180.3" y1="65.0" x2="180.3" y2="236" class="dash"/>
+<text x="50" y="70.0" text-anchor="end" class="m">90</text>
+<circle cx="180.3" cy="65.0" r="5" class="fa2"/>
+<text x="326" y="112.0" text-anchor="end">10→90%: ≈2.2τ</text>
+<circle cx="326.0" cy="47.3" r="5" class="fa"/>
+<text x="326.0" y="35.3" text-anchor="end" class="a">99.3% at 5τ</text>
+<text x="16" y="22" text-anchor="start" class="m">Voltage (% of final value)</text>
+<text x="326" y="284" text-anchor="end" class="m">Time since charging began →</text>
+</svg><figcaption class="fig-cap">Voltage while a capacitor charges. The horizontal axis is time in units of the time constant τ. The span between the 10% and 90% points is the rise time. Left out: the resistance is assumed constant (a real transistor's resistance changes with voltage).</figcaption></figure>
+<p>The time the voltage takes to go from 10% to 90% of its final value is often called the rise time. It leaves out the slow start and the slow finish, so it compares just the speed of the change. For an RC circuit, the rise time is about 2.2τ (more precisely, about 2.197τ).</p>
+<p>In digital circuits, delay is usually measured from the moment the input crosses half the voltage to the moment the output does. This is called the {{term:伝搬遅延|propagation delay}}. For a single RC stage, it is the time to reach half, about 0.69τ.</p>
+</section>
+
+<section>
+<h2>Where it matters 1: each circuit charges the next</h2>
+<p>Small parts that do logic, such as NOT and NAND, are called logic gates. A logic gate passes on a 0 or a 1 by charging or discharging the input of the next logic gate. Here the resistance is that of the switched-on transistor. The capacitance is the next gate electrode plus the wire along the way.</p>
+<p>These numbers are only an example. With a resistance of 10 kΩ and a capacitance of 1 fF (a femtofarad, a quadrillionth of a farad), τ is 10 picoseconds. Reaching half takes about 0.69 times that, about 7 picoseconds. The more gates an output drives, the larger the capacitance, and the slower it gets.</p>
+<p>In one clock tick, a signal passes through many logic gates and wires in turn. The result must arrive and settle before the next tick. At 5 GHz, one tick is 200 picoseconds; at 1 GHz, it is 1 nanosecond (<a href="{{home}}figures/setup-hold/">setup and hold time diagram</a>).</p>
+<p>So the delay of the slowest path decides how fast the clock can go. This path is called the {{term:クリティカルパス|critical path}}. Designers add up the RC delays along each path to check that it arrives in time.</p>
+<p>Charging also uses power. Every switch fills a capacitance with charge and then throws it away. So a larger capacitance and more frequent switching mean more power ({{term:動的消費電力|dynamic power}}). Shrinking the capacitance helps both speed and power saving.</p>
+</section>
+
+<section>
+<h2>Where it matters 2: thinner wires have more resistance</h2>
+<p>A wire's resistance is proportional to its length and inversely proportional to its cross-sectional area. Halve both the width and the thickness, and the area drops to a quarter. The same length of wire then has 4 times the resistance. As scaling makes wires thinner, the resistance per millimeter keeps rising.</p>
+<p>In very thin wires, even the metal's own resistance to current (its resistivity) goes up. This happens once copper wires get narrower than a few tens of nanometers. Electrons then hit the wire's surface and the boundaries between its crystal grains more often (<a href="{{home}}compare/copper-vs-ruthenium-cobalt-interconnect/">copper vs. cobalt vs. ruthenium interconnects</a>).</p>
+<p>A wire's capacitance per unit length, on the other hand, does not fall much. A thinner wire faces less of the layers above and below. But it also sits closer to its neighbors. As a result, the thinner the wire, the larger the RC for the same length.</p>
+</section>
+
+<section>
+<h2>Where it matters 3: long-wire delay grows with the square of length</h2>
+<p>In a long wire, the resistance and capacitance are not lumped in one place. Every bit of the wire has a little resistance and a little capacitance. You can think of it as tiny resistors and capacitors joined like the rungs of a ladder, stage after stage. This is called a distributed RC line.</p>
+<p>Double the length of the wire, and both the resistance and the capacitance double. The delay depends on their product, so it grows 2 × 2 = 4 times. Triple the length, and it grows 9 times: delay grows with the square of length. This has the same form as diffusion, where the spreading distance grows with the square root of time ("<a href="{{home}}learn/diffusion-in-semiconductor-processing/">Dopant Diffusion in Silicon</a>").</p>
+<p>The capacitance near the start of the ladder charges through only the short stretch of resistance before it. So the delay is smaller than the whole resistance times the whole capacitance. The time to reach half is about 0.38 times that product.</p>
+<p>For design estimates, people also often use the Elmore delay, proposed in 1948 by the American physicist W. C. Elmore. For a ladder-like wire, it gives 0.5 times the product. That is a little longer than the real time to reach half.</p>
+<p>Let's work out the delay of the wire alone, using the default values of the interconnect RC delay calculator. A copper wire 50 nm wide and 100 nm thick has a resistance of 3.4 kΩ and a capacitance of 0.12 pF per millimeter. The capacitance is a much simplified value; the real one is a little larger.</p>
+<table>
+<thead><tr><th>Wire length</th><th>Delay to reach half</th></tr></thead>
+<tbody>
+<tr><td>1 mm</td><td>About 150 picoseconds</td></tr>
+<tr><td>2 mm</td><td>About 620 picoseconds (4 times)</td></tr>
+<tr><td>4 mm</td><td>About 2.5 nanoseconds (16 times)</td></tr>
+</tbody>
+</table>
+<p>The delay of the 4 mm wire is more than 10 times one tick of a 5 GHz clock (200 picoseconds). A chip is usually several millimeters or more from edge to edge. Left as they are, long wires would be unusable (<a href="{{home}}tools/interconnect-rc-delay-calculator/">interconnect RC delay calculator</a>).</p>
+</section>
+
+<section>
+<h2>Where it matters 4: breaking the wire up with repeaters</h2>
+<p>If delay grows with the square of length, the answer is to cut the wire into short pieces. So circuits are placed along a long wire that receive the signal and send it out again, fresh. Such a circuit is called a repeater, and inside it is just a simple logic gate. Adding them is called repeater insertion.</p>
+<p>Split a 4 mm wire into four 1 mm sections. Each section has a delay of about 150 picoseconds, so the four add up to about 0.6 nanoseconds. That is a quarter of the roughly 2.5 nanoseconds without the split. In return, each section adds the delay of the circuit that re-sends the signal, and it also costs power and area.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 344" role="img"><title>A long wire is many small resistances and capacitances in a row. Without repeaters, delay grows with the square of length; with a repeater every 1 mm, it grows roughly in proportion to length</title>
+<text x="14" y="24" text-anchor="start">No repeaters (4 mm)</text>
+<polygon points="14,52.0 14,76.0 36,64" class="ok"/>
+<line x1="36" y1="64" x2="60.0" y2="64" class="ln"/>
+<rect x="60.0" y="58" width="24" height="12" class="ok"/>
+<line x1="84.0" y1="64" x2="108" y2="64" class="ln"/>
+<line x1="96.0" y1="64" x2="96.0" y2="90" class="thin"/>
+<line x1="88.0" y1="90" x2="104.0" y2="90" class="ln"/>
+<line x1="88.0" y1="96" x2="104.0" y2="96" class="ln"/>
+<line x1="96.0" y1="96" x2="96.0" y2="104" class="thin"/>
+<line x1="108" y1="64" x2="132.0" y2="64" class="ln"/>
+<rect x="132.0" y="58" width="24" height="12" class="ok"/>
+<line x1="156.0" y1="64" x2="180" y2="64" class="ln"/>
+<line x1="168.0" y1="64" x2="168.0" y2="90" class="thin"/>
+<line x1="160.0" y1="90" x2="176.0" y2="90" class="ln"/>
+<line x1="160.0" y1="96" x2="176.0" y2="96" class="ln"/>
+<line x1="168.0" y1="96" x2="168.0" y2="104" class="thin"/>
+<line x1="180" y1="64" x2="204.0" y2="64" class="ln"/>
+<rect x="204.0" y="58" width="24" height="12" class="ok"/>
+<line x1="228.0" y1="64" x2="252" y2="64" class="ln"/>
+<line x1="240.0" y1="64" x2="240.0" y2="90" class="thin"/>
+<line x1="232.0" y1="90" x2="248.0" y2="90" class="ln"/>
+<line x1="232.0" y1="96" x2="248.0" y2="96" class="ln"/>
+<line x1="240.0" y1="96" x2="240.0" y2="104" class="thin"/>
+<line x1="252" y1="64" x2="276.0" y2="64" class="ln"/>
+<rect x="276.0" y="58" width="24" height="12" class="ok"/>
+<line x1="300.0" y1="64" x2="324" y2="64" class="ln"/>
+<line x1="312.0" y1="64" x2="312.0" y2="90" class="thin"/>
+<line x1="304.0" y1="90" x2="320.0" y2="90" class="ln"/>
+<line x1="304.0" y1="96" x2="320.0" y2="96" class="ln"/>
+<line x1="312.0" y1="96" x2="312.0" y2="104" class="thin"/>
+<line x1="36" y1="104" x2="324" y2="104" class="dash"/>
+<text x="324" y="132" text-anchor="end" class="a">Wire delay ≈ 2.5 ns</text>
+<text x="324" y="156" text-anchor="end" class="m">2× length → 4× delay (length²)</text>
+<text x="14" y="200" text-anchor="start">A repeater every 1 mm</text>
+<polygon points="14,228.0 14,252.0 36,240" class="ok"/>
+<line x1="36" y1="240" x2="52.0" y2="240" class="ln"/>
+<rect x="52.0" y="234" width="24" height="12" class="ok"/>
+<line x1="76.0" y1="240" x2="92" y2="240" class="ln"/>
+<line x1="84.0" y1="240" x2="84.0" y2="266" class="thin"/>
+<line x1="76.0" y1="266" x2="92.0" y2="266" class="ln"/>
+<line x1="76.0" y1="272" x2="92.0" y2="272" class="ln"/>
+<line x1="84.0" y1="272" x2="84.0" y2="280" class="thin"/>
+<polygon points="92,228.0 92,252.0 114,240" class="ok"/>
+<line x1="114" y1="240" x2="130.0" y2="240" class="ln"/>
+<rect x="130.0" y="234" width="24" height="12" class="ok"/>
+<line x1="154.0" y1="240" x2="170" y2="240" class="ln"/>
+<line x1="162.0" y1="240" x2="162.0" y2="266" class="thin"/>
+<line x1="154.0" y1="266" x2="170.0" y2="266" class="ln"/>
+<line x1="154.0" y1="272" x2="170.0" y2="272" class="ln"/>
+<line x1="162.0" y1="272" x2="162.0" y2="280" class="thin"/>
+<polygon points="170,228.0 170,252.0 192,240" class="ok"/>
+<line x1="192" y1="240" x2="208.0" y2="240" class="ln"/>
+<rect x="208.0" y="234" width="24" height="12" class="ok"/>
+<line x1="232.0" y1="240" x2="248" y2="240" class="ln"/>
+<line x1="240.0" y1="240" x2="240.0" y2="266" class="thin"/>
+<line x1="232.0" y1="266" x2="248.0" y2="266" class="ln"/>
+<line x1="232.0" y1="272" x2="248.0" y2="272" class="ln"/>
+<line x1="240.0" y1="272" x2="240.0" y2="280" class="thin"/>
+<polygon points="248,228.0 248,252.0 270,240" class="ok"/>
+<line x1="270" y1="240" x2="286.0" y2="240" class="ln"/>
+<rect x="286.0" y="234" width="24" height="12" class="ok"/>
+<line x1="310.0" y1="240" x2="326" y2="240" class="ln"/>
+<line x1="318.0" y1="240" x2="318.0" y2="266" class="thin"/>
+<line x1="310.0" y1="266" x2="326.0" y2="266" class="ln"/>
+<line x1="310.0" y1="272" x2="326.0" y2="272" class="ln"/>
+<line x1="318.0" y1="272" x2="318.0" y2="280" class="thin"/>
+<line x1="36" y1="280" x2="326" y2="280" class="dash"/>
+<text x="324" y="308" text-anchor="end" class="a">Wire delay ≈ 0.6 ns</text>
+<text x="324" y="332" text-anchor="end" class="m">+ 4 driver delays; proportional to length</text>
+</svg><figcaption class="fig-cap">Top: a 4 mm wire used as it is. Bottom: a repeater inserted every 1 mm. ▷ is a driver that sends the signal. □ is the wire's resistance, and the pair of short lines is its capacitance. In reality, both are spread finely along the whole length. The numbers are the delay of the wire alone (calculator defaults). Left out: the delay of the drivers themselves, and the effect of neighboring wires.</figcaption></figure>
+<p>If the section length stays fixed, a longer wire simply has more sections. So the delay no longer grows with the square of length, but roughly in proportion to it. The number and size of repeaters are chosen by balancing delay against power.</p>
+<p>Another common fix is to route long wires in the upper layers, which are thicker and wider. Their larger cross-section means lower resistance. In advanced chips, the wiring is stacked in 10 or more layers, and each layer has a different thickness ({{term:多層配線|multilevel interconnect}}).</p>
+</section>
+
+<section>
+<h2>Where it matters 5: new materials to lower R and C</h2>
+<h3>Copper wiring</h3>
+<p>To lower R, use a metal that conducts better. For a long time, chip wiring was made of aluminum. Then, in 1997, IBM announced a technology for making chips with copper wiring. At 20 °C, the resistivity of copper is about 1.7 µΩ·cm and that of aluminum about 2.7 µΩ·cm. That makes copper nearly 40% lower.</p>
+<p>For many years, copper could not be put to practical use. It easily creeps into silicon and insulating films, where it damages transistors. The fix is to wrap the copper in a thin film of another metal, which stops it from creeping in. This film is called a {{term:バリアメタル|barrier metal}}.</p>
+<p>Copper is also hard to shape by etching it away with gases. So the process was turned around. First, trenches are cut into the insulating film. Then copper fills them, and the excess is polished off. This method is called the {{term:ダマシン法|damascene process}} (<a href="{{home}}compare/damascene-vs-subtractive-etch-interconnect/">damascene vs. subtractive etch interconnects</a>).</p>
+<h3>Insulators with lower capacitance</h3>
+<p>To lower C, change the insulating film between wires to a material that stores charge less easily. This is measured by a number called the relative permittivity (k); the smaller it is, the smaller the capacitance. Silicon dioxide (SiO2), used for decades, has a k of about 4.</p>
+<p>An insulating film with a lower k is called a {{term:Low-k材料|low-k dielectric}}. These films came into use around 2000. Oxides that contain carbon have a k of around 3. Films filled with tiny pores, which bring k down to around 2.5, are also used in products.</p>
+<p>But the more pores a film has, the more fragile and harder to make it becomes. Another approach leaves part of the space between wires empty, as an {{term:エアギャップ|air gap}}. The k of air is almost exactly 1.</p>
+</section>
+
+<section>
+<h2>Where the same formula shows up</h2>
+<h3>RC filters</h3>
+<p>Connect a resistor and a capacitor, and take the output from the capacitor's voltage. Slow changes pass through, while fast changes are held back. A circuit that removes small, fast noise this way is called an RC filter. The {{term:カットオフ周波数|frequency at the boundary}} between passing and blocking is 1 ÷ (2π × τ). If τ is 1 millisecond, it is about 159 Hz (<a href="{{home}}tools/rc-time-constant-calculator/">RC time constant calculator</a>).</p>
+<h3>Reading a button</h3>
+<p>When you press a mechanical switch, its metal contacts bounce. In a very short time, they turn on and off many times. This is called {{term:チャタリング|contact bounce}}. Embedded-systems engineer Jack Ganssle measured many switches, and the bouncing lasted about 1.6 milliseconds on average.</p>
+<p>Left alone, a microcontroller would count one press as several. So the change is smoothed with a resistor and a capacitor before it is read. With 10 kΩ and 1 µF, for example, τ is 10 milliseconds, which smooths out the quick flickers during bouncing. Another way is for the program to wait a set time and then read again ("<a href="{{home}}learn/what-is-a-microcontroller/">What Is a Microcontroller?</a>").</p>
+<p>The receiving side often uses a {{term:シュミットトリガ|Schmitt trigger}}, a circuit whose output does not flicker even when the input changes slowly.</p>
+<h3>One step further: settling with a wobble</h3>
+<p>Add the behavior of a coil (a part that resists changes in current), and keep the resistance small. Then the voltage overshoots its target and wobbles before it settles. It moves much like a weight bouncing on a spring. This becomes a problem for power supplies outside the chip and for fast signal traces on circuit boards. Equations of the same form also appear in control engineering (<a href="{{home}}tools/pid-step-response-simulator/">PID step response simulator</a>).</p>
+</section>
+
+<section>
+<h2>Common misconceptions</h2>
+<div class="myth"><p class="myth-q">Myth: Electricity travels at the speed of light, so chip wires have no delay</p><p>In fact, in thin wires the delay is set by the time it takes to charge them. In the insulating film (SiO2), an electrical signal wave travels at about half the speed of light. It takes about 6.6 picoseconds to cover 1 mm. That is the lower limit on delay. But in the 1 mm wire from the example above, the delay set by RC is about 150 picoseconds, more than 20 times as long. Waves travel at close to that speed only in thick, low-resistance conductors and cables.</p></div>
+<div class="myth"><p class="myth-q">Myth: After one time constant τ, the capacitor is full</p><p>In fact, after τ it is only about 63% charged. Reaching about 99% takes 5τ, and even then it is not 100%. The word "constant" makes people think the charging ends after a fixed time. But τ is not "the time until it is done." It is a yardstick for how fast the change happens. Circuits that read values with high precision may wait longer than 5τ (7τ gives about 99.9%).</p></div>
+<div class="myth"><p class="myth-q">Myth: When transistors get smaller, wires get faster along with them</p><p>In fact, the thinner a wire gets, the more resistance it has per millimeter. So wires do not speed up as much as transistors. Short wires also get shorter, so their delay stays about the same as gate delay or grows only slowly. But long wires that cross the chip do not get shorter. Even with repeaters, they fall behind the ever-faster gates (an analysis by Ho and colleagues, 2001).</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Example</th><th>Resistance × capacitance</th><th>Time constant or delay</th></tr></thead>
+<tbody>
+<tr><td>One logic gate stage (illustrative example)</td><td>10 kΩ × 1 fF</td><td>τ = 10 picoseconds</td></tr>
+<tr><td>1 mm of copper wire (calculator defaults)</td><td>3.4 kΩ × 0.12 pF</td><td>About 150 picoseconds to reach half</td></tr>
+<tr><td>Reading a button</td><td>10 kΩ × 1 µF</td><td>τ = 10 milliseconds</td></tr>
+</tbody>
+</table>
+<p>The same idea, τ = RC, is used for times from picoseconds to milliseconds, a range of a billion times. Inside a chip, R and C are both tiny, so the times are in picoseconds. For reading a button, designers pick a large R and C on purpose.</p>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Terms: {{term:RC遅延|RC delay}} / {{term:クロックスキュー|clock skew}} / {{term:STA(静的タイミング解析)|STA (static timing analysis)}} / {{term:エレクトロマイグレーション|electromigration}}</li>
+<li>Try the numbers: <a href="{{home}}tools/rc-time-constant-calculator/">RC time constant calculator</a> / <a href="{{home}}tools/interconnect-rc-delay-calculator/">interconnect RC delay calculator</a></li>
+<li>Compare in a table: <a href="{{home}}compare/static-vs-dynamic-power/">static vs. dynamic power</a></li>
+<li>Related explainers: "<a href="{{home}}learn/diffusion-in-semiconductor-processing/">Dopant Diffusion in Silicon</a>" / "<a href="{{home}}learn/what-is-a-cpu/">What Is a CPU?</a>" / "<a href="{{home}}learn/what-does-2nm-mean/">What Does 2nm or 3nm Mean?</a>"</li>
+</ul>
+</section>

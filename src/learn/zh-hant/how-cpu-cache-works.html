@@ -1,0 +1,274 @@
+<!--
+{
+  "title": "CPU快取記憶體是什麼？讓CPU不必苦等記憶體的原理",
+  "description": "快取記憶體是和CPU放在同一顆晶片上的小而快的儲存空間。它以64位元組為單位複製記憶體的資料，減少等待時間。本文說明局部性、命中率與平均存取時間的計算、L1到L3，以及寫入的方式。",
+  "series": "computer-basics",
+  "order": 5,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["memory-hierarchy", "cpu", "sram-flash", "multicore-sync"],
+  "terms": ["キャッシュメモリ", "キャッシュライン", "時間的局所性", "空間的局所性", "平均メモリアクセス時間(AMAT)", "セットアソシアティブ方式", "ライトスルー方式", "LRU(Least Recently Used)"],
+  "sources": [
+    { "title": "J. L. Hennessy, D. A. Patterson: Computer Architecture: A Quantitative Approach, 6th ed., Morgan Kaufmann, 2017（教科書。局部性、平均記憶體存取時間、關聯度、置換、寫入方式、一致性、CPU與記憶體的速度差距）", "url": "https://shop.elsevier.com/books/computer-architecture/hennessy/978-0128119051" },
+    { "title": "Peter Norvig: Teach Yourself Programming in Ten Years（常被引用的延遲參考表。L1快取約0.5奈秒，主記憶體約100奈秒）", "url": "https://norvig.com/21-days.html" },
+    { "title": "Intel: Intel 64 and IA-32 Architectures Software Developer's Manuals（Vol. 3A 的快取章節。快取行為64位元組）", "url": "https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html" },
+    { "title": "Arm: Cortex-A7 MPCore Technical Reference Manual — About the L1 memory system（資料快取的快取行為64位元組）", "url": "https://developer.arm.com/documentation/ddi0464/latest/L1-Memory-System/About-the-L1-memory-system" },
+    { "title": "Go project: cpu: fix cpu cacheLineSize for arm64 darwin (a.k.a. M1)（Apple M1 上的 macOS 以 sysctl hw.cachelinesize 回報128位元組）", "url": "https://go.googlesource.com/sys/+/20c2bfdbfe249b02ea905477d7cff52673dadfa2" },
+    { "title": "P. J. Denning: The Locality Principle, Communications of the ACM 48(7), 2005", "url": "https://doi.org/10.1145/1070838.1070856" },
+    { "title": "AMD: AMD Ryzen 9 9950X（產品規格。L1 1,280 KB、L2 16 MB、L3 64 MB，16核心，2024年8月上市）", "url": "https://www.amd.com/en/products/processors/desktops/ryzen/9000-series/amd-ryzen-9-9950x.html" },
+    { "title": "AMD: AMD Ryzen 7 9800X3D（產品規格。L3 96 MB）", "url": "https://www.amd.com/en/products/processors/desktops/ryzen/9000-series/amd-ryzen-7-9800x3d.html" },
+    { "title": "AMD Newsroom: The Gaming Legend Continues — AMD Introduces Next-Generation AMD Ryzen 7 9800X3D Processor（2024年10月31日。把64 MB的快取疊在CPU晶片下方）", "url": "https://ir.amd.com/news-events/press-releases/detail/1225/the-gaming-legend-continues-amd-introduces-next-generation-amd-ryzen-7-9800x3d-processor" },
+    { "title": "Intel: Intel Core Ultra 9 Processor 285K — Product Specifications（Smart Cache 36 MB，L2合計40 MB，2024年第4季上市）", "url": "https://www.intel.com/content/www/us/en/products/sku/241060/intel-core-ultra-9-processor-285k-36m-cache-up-to-5-70-ghz/specifications.html" },
+    { "title": "Tom's Hardware: Intel's 15 Most Unforgettable x86 CPUs（486在晶片上有8 KB的L1快取，主機板上可加裝L2快取）", "url": "https://www.tomshardware.com/reviews/intel-cpu-history,1986-4.html" },
+    { "title": "IPA: 基本情報技術者試験(レベル2)シラバス Ver.9.1（日本資訊處理推進機構：基本資訊技術人員考試〈等級2〉課程大綱。電腦構成要素：快取記憶體。日文）", "url": "https://www.ipa.go.jp/shiken/syllabus/nl10bi0000007tf7-att/syllabus_fe_ver9_1.pdf" },
+    { "title": "明治大学 講義資料: 記憶装置（明治大學講義資料：記憶裝置。有效存取時間 T = h·Tc + (1−h)·Tm。日文）", "url": "https://www.isc.meiji.ac.jp/~kikn/CA/CA9-Storage.pdf" },
+    { "title": "IIT Kanpur CS610 講義資料: Writing cache-friendly code（C語言的陣列按列排列。依列的順序與依欄的順序讀取的差異）", "url": "https://www.cse.iitk.ac.in/users/swarnendu/courses/autumn2023-cs610/write-cache-friendly-code.pdf" },
+    { "title": "MDN Web Docs: HTTP caching（瀏覽器快取與共用快取）", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching" },
+    { "title": "Cloudflare: What is caching?（CDN把副本放在離使用者近的伺服器上）", "url": "https://www.cloudflare.com/learning/cdn/caching/" }
+  ]
+}
+-->
+<p class="lead">快取記憶體是和CPU放在同一顆晶片上的小而快的儲存空間。它把主記憶體的資料連同附近的部分一起複製過來，之後就從這裡讀取。程式常常接連使用同一筆資料或附近的資料，所以大多數讀取都能在快取完成，CPU等待記憶體的時間會大幅減少。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>CPU「等待」記憶體是怎麼回事，差距有多大</li>
+<li>小小的快取為什麼很有效（局部性），以及每次搬64位元組的原理</li>
+<li>命中率與平均存取時間的計算（考試也常出的觀念）</li>
+<li>L1、L2、L3的差別，放置位置的決定方式，以及寫入的方式</li>
+<li>瀏覽器快取和CDN也是同樣的想法</li>
+</ul><p class="muted">先備知識：只要知道CPU是「執行指令的零件」，記憶體是「放置工作中資料的地方」就夠了。可以接在「<a href="{{home}}learn/what-is-a-cpu/">CPU是什麼？</a>」「<a href="{{home}}learn/memory-vs-storage/">記憶體和儲存空間有什麼不同？</a>」之後閱讀。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>電腦用CPU的規格表上，會列出「L2快取 16 MB」「L3快取 64 MB」這樣的數字。這是AMD在2024年推出的Ryzen 9 9950X的例子。另一方面，瀏覽器的設定畫面裡，有「清除快取」的按鈕。</p>
+<p>兩者都是同一個想法：把常用東西的副本，放在使用的地方附近。這篇文章以CPU的快取為主來說明，最後也會談到CPU以外的快取。</p>
+</section>
+
+<section>
+<h2>CPU其實在「等」記憶體</h2>
+<p>CPU一邊從主記憶體（以下簡稱記憶體）讀取程式的指令和資料，一邊工作。記憶體使用的是一種叫DRAM的晶片。問題在於，和CPU的速度相比，從記憶體讀取非常慢。</p>
+<p>從向記憶體要求到資料送達，等待時間依產品而定，大約是數十到100奈秒（1奈秒是十億分之一秒）。另一方面，以4 GHz運作的CPU，推進處理的訊號（時脈）間隔是0.25奈秒。等記憶體100奈秒的期間，時脈就過了400次。</p>
+<p>對於每個時脈能推進好幾道指令的CPU來說，這是很長的停頓。而且多年來，記憶體等待時間的縮短，一直跟不上CPU速度的成長。</p>
+<p>因此，CPU會把記憶體資料的副本，放在自己身邊小而快的儲存空間裡。這就是{{term:キャッシュメモリ|快取記憶體}}。現在的快取和CPU在同一顆晶片上，最近的一層大約1奈秒就能讀到。</p>
+<p>快取使用的是一種叫SRAM的電路。多數用6個電晶體記住1位元，讀取比DRAM快。但它比較占面積，所以無法做得很大（「<a href="{{home}}compare/dram-vs-sram/">DRAM與SRAM的差異</a>」）。</p>
+</section>
+
+<section>
+<h2>小小的空間就夠用的原因：局部性</h2>
+<p>快取的容量只有記憶體的數百分之一以下。它還是有用，是因為程式使用資料的順序有固定的習性。這種習性稱為「局部性」，分成2種。</p>
+<p>第1種是，用過一次的資料，很快又會再用到。這稱為{{term:時間的局所性|時間局部性}}。例如，重複執行的迴圈裡，會一再使用計算次數的變數和同樣的指令。</p>
+<p>第2種是，用到某筆資料之後，很快也會用到它附近的資料。這稱為{{term:空間的局所性|空間局部性}}。程式的指令在記憶體裡依序排列，通常也依序執行。就像讀完書的一頁，接下來通常會讀下一頁。</p>
+</section>
+
+<section>
+<h2>每次搬64位元組：快取行</h2>
+<p>為了善用空間局部性，快取不只搬來要求的資料，也會把周圍的資料一起從記憶體搬來。這個搬運的單位稱為{{term:キャッシュライン|快取行}}（cache line）。在x86的CPU和許多Arm的CPU上，1個快取行是64位元組（在Apple的M系列上，macOS回報的是128位元組）。</p>
+<p>例如，假設記憶體裡排著一長串8位元組的數。1個快取行可以裝8個這樣的數。CPU要第1個數時，快取裡還沒有，所以要到記憶體去拿。這時，旁邊的7個數也會一起被複製過來。</p>
+<p>快取裡有要找的資料稱為「命中」，沒有則稱為「未命中」。在上面的例子中依序讀8個數，只有第1次未命中，其餘7次都命中。即使是第一次讀的資料，8次中也有7次，也就是87.5%命中。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 332" role="img"><title>未命中時，即使只想讀1個數，也會把64位元組的整個快取行複製到快取</title>
+<rect x="120" y="8" width="120" height="36" rx="8" class="ox"/>
+<text x="180" y="32" text-anchor="middle">CPU</text>
+<line x1="180" y1="74" x2="180" y2="53" class="ln"/><polygon points="180,45 175,54 185,54" class="ink"/>
+<text x="192" y="64" class="m">交給CPU</text>
+<text x="10" y="96">快取</text>
+<rect x="110" y="76" width="20" height="30" class="p"/>
+<rect x="130" y="76" width="20" height="30" class="n"/>
+<rect x="150" y="76" width="20" height="30" class="n"/>
+<rect x="170" y="76" width="20" height="30" class="n"/>
+<rect x="190" y="76" width="20" height="30" class="n"/>
+<rect x="210" y="76" width="20" height="30" class="n"/>
+<rect x="230" y="76" width="20" height="30" class="n"/>
+<rect x="250" y="76" width="20" height="30" class="n"/>
+<text x="110" y="132" class="a">①第1個未命中</text>
+<text x="110" y="154" class="m">②～⑧其餘都命中</text>
+<line x1="95" y1="206" x2="95" y2="114" class="ac"/><polygon points="95,105 90,115 100,115" class="fa"/>
+<text x="110" y="184" class="a">未命中時整個快取行一起複製</text>
+<text x="10" y="226">記憶體</text>
+<rect x="110" y="206" width="20" height="30" class="p"/>
+<rect x="130" y="206" width="20" height="30" class="n"/>
+<rect x="150" y="206" width="20" height="30" class="n"/>
+<rect x="170" y="206" width="20" height="30" class="n"/>
+<rect x="190" y="206" width="20" height="30" class="n"/>
+<rect x="210" y="206" width="20" height="30" class="n"/>
+<rect x="230" y="206" width="20" height="30" class="n"/>
+<rect x="250" y="206" width="20" height="30" class="n"/>
+<rect x="110" y="240" width="160" height="30" class="ok"/>
+<line x1="130" y1="240" x2="130" y2="270" class="thin"/><line x1="150" y1="240" x2="150" y2="270" class="thin"/><line x1="170" y1="240" x2="170" y2="270" class="thin"/><line x1="190" y1="240" x2="190" y2="270" class="thin"/><line x1="210" y1="240" x2="210" y2="270" class="thin"/><line x1="230" y1="240" x2="230" y2="270" class="thin"/><line x1="250" y1="240" x2="250" y2="270" class="thin"/>
+<rect x="110" y="274" width="160" height="30" class="ok"/>
+<line x1="130" y1="274" x2="130" y2="304" class="thin"/><line x1="150" y1="274" x2="150" y2="304" class="thin"/><line x1="170" y1="274" x2="170" y2="304" class="thin"/><line x1="190" y1="274" x2="190" y2="304" class="thin"/><line x1="210" y1="274" x2="210" y2="304" class="thin"/><line x1="230" y1="274" x2="230" y2="304" class="thin"/><line x1="250" y1="274" x2="250" y2="304" class="thin"/>
+<text x="180" y="326" text-anchor="middle" class="m">1格＝8位元組的數，1列＝64位元組</text>
+</svg><figcaption class="fig-cap">第1個數未命中時，整個64位元組的快取行會一起被複製，接下來的7個都命中。省略的部分：L1到L3的區分、預先讀取，以及標示這是哪個快取行副本的記號。</figcaption></figure>
+<p>實際的CPU還會預先讀取接下來可能用到的快取行（{{term:プリフェッチ|預取}}），這裡先省略。</p>
+</section>
+
+<section>
+<h2>命中率與平均存取時間</h2>
+<p>讀取當中命中的比例，稱為「命中率」。讀100次有95次命中，命中率就是95%，其餘的5%是「未命中率」。</p>
+<p>快取的效果，要用每次讀取所花時間的平均來比較。把命中和未命中時的時間，各自乘上發生的比例再相加。資訊類考試常用的有效存取時間公式如下。</p>
+<p><strong>有效存取時間 ＝ 命中率 × 快取的時間 ＋（1 − 命中率）× 記憶體的時間</strong></p>
+<h3>實際算算看</h3>
+<p>假設快取讀取要1奈秒，記憶體要100奈秒，命中率是95%。</p>
+<ul>
+<li>命中的部分：0.95 × 1奈秒 ＝ 0.95奈秒</li>
+<li>未命中的部分：0.05 × 100奈秒 ＝ 5奈秒</li>
+<li>平均：0.95 ＋ 5 ＝ 5.95奈秒</li>
+</ul>
+<p>沒有快取的話每次都要100奈秒，所以平均縮短到大約17分之1。不過，5.95奈秒當中有5奈秒，來自僅僅5%的未命中。</p>
+<p>教科書裡還有另一種形式，稱為{{term:平均メモリアクセス時間(AMAT)|平均記憶體存取時間（AMAT）}}。它是「命中時間＋未命中率×未命中時多花的時間」。未命中時，是在查快取的1奈秒之外，再加上記憶體的100奈秒。上面的例子是1＋0.05×100＝6奈秒。</p>
+<p>0.05奈秒的差距，來自未命中的時間是否包含查快取的部分。考試時，要依照題目給的公式和前提來計算。想換數字試試看，可以用「<a href="{{home}}tools/cache-address-amat-calculator/">平均存取時間計算器</a>」。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>快取就像把從遠方倉庫拿來的零件，放在工作台旁的小架子上。相似的地方是「把從遠處拿來的東西放在手邊，就能減少去拿的次數」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>零件拿出來後，倉庫裡就沒有了；但快取裡放的是副本，原本的資料還留在記憶體。因此改寫資料時，會發生副本和原本不一致的問題（後面的段落會說明）。另外，架子上放什麼是人決定的，快取的內容則由電路自動決定。</p></aside>
+</section>
+
+<section>
+<h2>L1、L2、L3：依速度和大小分層</h2>
+<p>快取做得越大，命中率越高。但儲存空間越大，找出並取出要的資料就越花時間。</p>
+<p>所以快取也分成好幾層。離運算電路最近、最小最快的一層，稱為「L1快取」。接著是L2、L3，編號越大，容量越大，速度也越慢。CPU從L1開始依序尋找，哪一層都沒有，才到記憶體去拿。</p>
+<p>以2024年推出的電腦用高階CPU，來看看大小的參考值。分層的方式和名稱，依產品而不同。</p>
+<table>
+<thead><tr><th>層</th><th>配置方式</th><th>大小的例子（2024年的產品）</th></tr></thead>
+<tbody>
+<tr><td>L1</td><td>每個核心各有一個，分成指令用和資料用</td><td>每個核心數十到數百KB（Ryzen 9 9950X為80 KB）</td></tr>
+<tr><td>L2</td><td>每個核心各有一個，或每幾個核心一組共用</td><td>每個核心1 MB以上（9950X合計16 MB，Core Ultra 9 285K合計40 MB）</td></tr>
+<tr><td>L3</td><td>多個核心共用</td><td>數十MB（9950X為64 MB，285K為36 MB）</td></tr>
+</tbody>
+</table>
+<p>9950X的L1，是把規格上的合計1,280 KB除以16個核心的值。各層的差異，整理在「<a href="{{home}}compare/l1-vs-l2-vs-l3-cache/">L1、L2、L3快取的差異</a>」的表格中。</p>
+</section>
+
+<section>
+<h2>放在哪裡：直接映射與集合關聯</h2>
+<p>因為快取很小，必須決定記憶體的哪個快取行，要放在快取的哪個位置。</p>
+<p>最簡單的方法，是由記憶體的位址，直接決定唯一的1個位置。例如快取有4個位置，就用快取行的編號除以4的餘數來決定。這稱為{{term:ダイレクトマップ方式|直接映射}}方式。只要查1個位置，所以很快，電路也簡單。</p>
+<p>缺點是，被分配到同一位置的2個快取行輪流使用時，會互相把對方擠出去。下圖的快取行0和4就是例子，即使其他位置空著，也會一直未命中。</p>
+<p>因此，現在多數CPU會把位置分成稱為「集合」的組。位址只決定集合，快取行可以放在集合中幾個位置的任一處。這稱為{{term:セットアソシアティブ方式|集合關聯}}方式（也稱組相聯）。集合裡的位置會同時檢查，所以尋找的時間不太會增加。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 332" role="img"><title>直接映射的放置位置只有1個，2路集合關聯可以在集合中的2個位置裡選擇</title>
+<text x="180" y="20" text-anchor="middle" class="m">把快取行0～7放進4個位置的例子</text>
+<text x="18" y="50" class="a">直接映射</text>
+<rect x="18" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="56" y="82" text-anchor="middle" class="m">位置0</text>
+<text x="56" y="106" text-anchor="middle">0或4</text>
+<rect x="100" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="138" y="82" text-anchor="middle" class="m">位置1</text>
+<text x="138" y="106" text-anchor="middle">1或5</text>
+<rect x="190" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="228" y="82" text-anchor="middle" class="m">位置2</text>
+<text x="228" y="106" text-anchor="middle">2或6</text>
+<rect x="272" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="310" y="82" text-anchor="middle" class="m">位置3</text>
+<text x="310" y="106" text-anchor="middle">3或7</text>
+<text x="18" y="142">0和4不能同時放</text>
+<text x="18" y="184" class="a">2路集合關聯</text>
+<rect x="12" y="194" width="168" height="98" rx="8" class="hole"/>
+<text x="96" y="214" text-anchor="middle">集合0</text>
+<rect x="18" y="222" width="76" height="62" rx="6" class="p"/>
+<text x="56" y="246" text-anchor="middle" class="m">位置0</text>
+<text x="56" y="272" text-anchor="middle">0,2,4,6</text>
+<rect x="100" y="222" width="76" height="62" rx="6" class="p"/>
+<text x="138" y="246" text-anchor="middle" class="m">位置1</text>
+<text x="138" y="272" text-anchor="middle">0,2,4,6</text>
+<rect x="184" y="194" width="168" height="98" rx="8" class="hole"/>
+<text x="268" y="214" text-anchor="middle">集合1</text>
+<rect x="190" y="222" width="76" height="62" rx="6" class="ox"/>
+<text x="228" y="246" text-anchor="middle" class="m">位置2</text>
+<text x="228" y="272" text-anchor="middle">1,3,5,7</text>
+<rect x="272" y="222" width="76" height="62" rx="6" class="ox"/>
+<text x="310" y="246" text-anchor="middle" class="m">位置3</text>
+<text x="310" y="272" text-anchor="middle">1,3,5,7</text>
+<text x="18" y="320">0和4可以同時放</text>
+</svg><figcaption class="fig-cap">格子下方的數字，是可以放在那裡的快取行編號。2路（1個集合有2個位置）的話，快取行0和4可以同時放。省略的部分：實際的位置數（數百到數千）、標示這是哪個快取行副本的記號，以及切分位址來決定位置的方法。</figcaption></figure>
+<p>也有可以放在任何位置的方式（完全關聯方式），但同時檢查所有位置的電路會變得很大。3種方式的比較，請看「<a href="{{home}}compare/direct-mapped-vs-set-associative-vs-fully-associative-cache/">直接映射、組相聯、全相聯的差異</a>」。</p>
+</section>
+
+<section>
+<h2>滿了怎麼辦：選出要逐出的快取行</h2>
+<p>集合裡滿了的話，為了放進新的快取行，就要逐出其中1個。代表性的做法，是逐出最久沒被使用的那一個，稱為{{term:LRU(Least Recently Used)|LRU}}（最近最少使用）。從時間局部性來看，一段時間沒用的資料，之後應該也不太會用到。實際的CPU很難精確記住順序，所以也常用接近LRU的簡化方式。</p>
+<p>作業系統把記憶體的內容移到儲存空間時，也是用同樣的想法（「<a href="{{home}}learn/what-is-an-operating-system/">作業系統（OS）是什麼？</a>」）。</p>
+</section>
+
+<section>
+<h2>寫入時：寫穿與寫回</h2>
+<p>只有讀取的話，快取裡的副本和記憶體裡的原本是一樣的。但CPU一改寫資料，副本和原本就不一致了。依何時反映到記憶體，大致分成2種方式。</p>
+<p>第1種是寫入快取的同時，也寫入記憶體。這稱為{{term:ライトスルー方式|寫穿}}（write-through）方式。記憶體永遠是最新的，所以機制很簡單。但每次寫入都要和慢速的記憶體往來。</p>
+<p>第2種是先只改寫快取，稱為「寫回（write-back）方式」。改寫過的快取行會加上記號，等到它被逐出時，再寫回記憶體。同一個位置改寫再多次，寫入記憶體也只有逐出時的1次。但有一段時間，記憶體的內容是舊的，所以管理比較複雜。</p>
+<p>現在電腦用CPU的資料快取，一般採用寫回。差異整理在「<a href="{{home}}compare/write-through-vs-write-back-cache/">寫穿與寫回的差異</a>」的表格中。</p>
+</section>
+
+<section>
+<h2>依序讀取的程式比較快的原因</h2>
+<p>了解快取行的原理，就能明白為什麼同樣的計算，寫法不同速度也會不同。舉例來說，要把1萬列×1萬欄的表格（二維陣列）裡的數全部加起來。每個數是8位元組。</p>
+<p>像C語言這樣把表格一列一列接著排的語言，會依第1列從左到右、再到第2列的順序排在記憶體裡。1列是8萬位元組，整個表格是800 MB，比任何一層快取都大得多。</p>
+<p>如果沿著每一列從左到右相加，就是依記憶體排列的順序讀取。1個快取行可以拿到8個數，所以每8次才未命中1次。</p>
+<p>另一方面，如果沿著每一欄從上到下相加，每讀1個就要跳到8萬位元組之後，每次都是不同的快取行。在最小的L1裡，幾乎都是未命中。搬來的快取行裡其餘的7個數，等到下一欄要用時，早已被逐出L1。相加的次數和答案都一樣，花的時間卻差很多。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 272" role="img"><title>依列的順序讀表格，就是依序讀記憶體；依欄的順序讀，則是跳著讀</title>
+<text x="92" y="22" text-anchor="middle" class="a">依列的順序讀</text>
+<text x="268" y="22" text-anchor="middle" class="a">依欄的順序讀</text>
+<rect x="20" y="36" width="144" height="36" class="n"/>
+<rect x="20" y="72" width="144" height="36" class="p"/>
+<rect x="20" y="108" width="144" height="36" class="n"/>
+<rect x="20" y="144" width="144" height="36" class="p"/>
+<line x1="56" y1="36" x2="56" y2="180" class="thin"/><line x1="92" y1="36" x2="92" y2="180" class="thin"/><line x1="128" y1="36" x2="128" y2="180" class="thin"/>
+<text x="38" y="60" text-anchor="middle">1</text><text x="74" y="60" text-anchor="middle">2</text><text x="110" y="60" text-anchor="middle">3</text><text x="146" y="60" text-anchor="middle">4</text>
+<text x="38" y="96" text-anchor="middle">5</text><text x="74" y="96" text-anchor="middle">6</text><text x="110" y="96" text-anchor="middle">7</text><text x="146" y="96" text-anchor="middle">8</text>
+<text x="38" y="132" text-anchor="middle">9</text><text x="74" y="132" text-anchor="middle">10</text><text x="110" y="132" text-anchor="middle">11</text><text x="146" y="132" text-anchor="middle">12</text>
+<text x="38" y="168" text-anchor="middle">13</text><text x="74" y="168" text-anchor="middle">14</text><text x="110" y="168" text-anchor="middle">15</text><text x="146" y="168" text-anchor="middle">16</text>
+<rect x="196" y="36" width="144" height="36" class="n"/>
+<rect x="196" y="72" width="144" height="36" class="p"/>
+<rect x="196" y="108" width="144" height="36" class="n"/>
+<rect x="196" y="144" width="144" height="36" class="p"/>
+<line x1="232" y1="36" x2="232" y2="180" class="thin"/><line x1="268" y1="36" x2="268" y2="180" class="thin"/><line x1="304" y1="36" x2="304" y2="180" class="thin"/>
+<text x="214" y="60" text-anchor="middle">1</text><text x="250" y="60" text-anchor="middle">5</text><text x="286" y="60" text-anchor="middle">9</text><text x="322" y="60" text-anchor="middle">13</text>
+<text x="214" y="96" text-anchor="middle">2</text><text x="250" y="96" text-anchor="middle">6</text><text x="286" y="96" text-anchor="middle">10</text><text x="322" y="96" text-anchor="middle">14</text>
+<text x="214" y="132" text-anchor="middle">3</text><text x="250" y="132" text-anchor="middle">7</text><text x="286" y="132" text-anchor="middle">11</text><text x="322" y="132" text-anchor="middle">15</text>
+<text x="214" y="168" text-anchor="middle">4</text><text x="250" y="168" text-anchor="middle">8</text><text x="286" y="168" text-anchor="middle">12</text><text x="322" y="168" text-anchor="middle">16</text>
+<text x="92" y="206" text-anchor="middle">依排列的順序讀</text>
+<text x="92" y="228" text-anchor="middle" class="a">每列只未命中1次</text>
+<text x="268" y="206" text-anchor="middle">每次都換到別列</text>
+<text x="268" y="228" text-anchor="middle" class="a">未命中很多</text>
+<text x="180" y="262" text-anchor="middle" class="m">表格一列一列排在記憶體裡（C語言等）</text>
+</svg><figcaption class="fig-cap">格子裡的數字是讀取的順序。這裡把表格的1列當作1個快取行。省略的部分：實際的大小（1個快取行有8個數，1列有1萬個）、預先讀取，以及多層的快取。</figcaption></figure>
+<p>這裡把情況簡化了。實際的差距，會因CPU和表格的大小而改變。即便如此，「依記憶體排列的順序讀取」仍是寫出快速程式的基本原則。「<a href="{{home}}compare/array-vs-linked-list/">陣列與鏈結串列的差異</a>」也和這個性質有關。</p>
+</section>
+
+<section>
+<h2>有多個核心時</h2>
+<p>現在的CPU有多個核心，各自擁有自己的L1和L2。這樣一來，2個核心可能持有同一筆資料的副本。一方改寫後，另一方的副本就舊了。因此，CPU會用電路自動通知，例如讓其他核心的副本失效。這種讓每個核心看到相同值的機制，稱為{{term:キャッシュコヒーレンシ|快取一致性}}。</p>
+</section>
+
+<section>
+<h2>CPU以外的快取</h2>
+<p>「把常用東西的副本放在附近」的想法，在CPU以外也有使用。例如，瀏覽器會把讀過的網頁圖片等存在裝置裡，下次不用到遠方的伺服器拿，直接用手邊的副本。這就是瀏覽器快取。</p>
+<p>從名稱查出IP位址的DNS，也會用快取把答案記住一段時間（「<a href="{{home}}learn/how-dns-works/">DNS是什麼？</a>」）。提供影片和圖片的服務，會把副本放在世界各地的伺服器，從離使用者近的伺服器送出。這種機制稱為{{term:CDN(コンテンツデリバリネットワーク)|CDN}}（內容傳遞網路）。</p>
+<p>副本會變舊這個問題也一樣。不同的是處理方式和速度。CPU由電路以奈秒為單位讓副本保持一致。瀏覽器和CDN則用軟體決定副本可以使用的期限，減少以毫秒（千分之一秒）為單位的通訊等待。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：快取越大的CPU，一定越快</p><p>實際上，效果依程式而有很大的差別。如果要用的資料已經放得下，再加大快取，命中率也幾乎不會提高。快取變大，讀取也會更花時間，這就是最近的L1要保持小容量的原因。AMD也把L3有96 MB的Ryzen 7 9800X3D，主要定位為遊戲用途來銷售。</p></div>
+<div class="myth"><p class="myth-q">誤解：快取是裝在主機板上的另一顆記憶體晶片</p><p>實際上，現在的CPU，快取通常和CPU在同一顆晶片上。像9800X3D這樣把快取晶片疊上去的產品，也還是在CPU這1個零件裡面。這個誤解來自以前的電腦。1989年推出的Intel 486，晶片上有8 KB的快取，還可以在主機板上加裝第2層快取。現在插在主機板上的記憶體，是主記憶體。</p></div>
+<div class="myth"><p class="myth-q">誤解：命中率有99%，就不必在意未命中</p><p>實際上，1%的未命中，有時就占了平均時間的一半。用上面例子的數字計算，99%時的平均是0.99＋1＝1.99奈秒。其中1奈秒，就是僅僅1%的未命中造成的。命中率降到98%，平均會變成約2.98奈秒，大約拉長為1.5倍。未命中1次的時間是命中1次的100倍，所以1%的差距影響很大。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>比較</th></tr></thead>
+<tbody>
+<tr><td>4 GHz的CPU的1次時脈</td><td>0.25奈秒</td><td>1秒40億次</td></tr>
+<tr><td>L1快取的讀取</td><td>約1奈秒</td><td>幾次時脈</td></tr>
+<tr><td>記憶體（DRAM）的讀取</td><td>數十到100奈秒</td><td>100奈秒是400次時脈</td></tr>
+<tr><td>1個快取行的大小</td><td>64位元組</td><td>8個8位元組的數（x86和許多Arm）</td></tr>
+<tr><td>L3快取的例子（2024年）</td><td>36～96 MB</td><td>Core Ultra 9 285K、Ryzen 9 9950X、Ryzen 7 9800X3D</td></tr>
+</tbody>
+</table>
+<p>等記憶體1次的期間，時脈會前進數百次。快取就是把大部分這種等待，縮短到幾次時脈的方法。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="{{home}}compare/write-allocate-vs-no-write-allocate/">寫入配置與不寫入配置的差異</a>（寫入未命中時的動作）、<a href="{{home}}compare/msi-vs-mesi-vs-moesi/">MSI、MESI、MOESI的差異</a>（核心之間讓副本一致的步驟）</li>
+<li>下一步的用語：{{term:ミスペナルティ|未命中代價}}、{{term:競合ミス|衝突未命中}}、{{term:容量ミス|容量未命中}}（未命中的種類）、{{term:偽共有|偽共享}}（核心之間搶同一個快取行的現象）、{{term:TLB(変換索引バッファ)|TLB}}（用於位址轉換的快取）</li>
+<li>記憶體的速度限制AI運算的故事：「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」</li>
+</ul>
+</section>

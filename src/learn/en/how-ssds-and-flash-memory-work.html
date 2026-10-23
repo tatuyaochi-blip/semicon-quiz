@@ -1,0 +1,250 @@
+<!--
+{
+  "title": "How Do SSDs Work? Inside NAND Flash Memory, Explained",
+  "description": "How do SSDs work? NAND flash stores data as electrons in cells. SLC vs TLC vs QLC, why SSDs wear out, what TBW means, and how 3D NAND stacks cells.",
+  "series": "everyday-chips",
+  "order": 9,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["sram-flash", "io-interface", "reliability", "memory-hierarchy"],
+  "terms": ["SSD", "SLC(シングルレベルセル)", "TLC(トリプルレベルセル)", "3D NAND", "ガベージコレクション", "TRIM", "書き込み増幅(ライトアンプリフィケーション)", "電荷トラップ型セル"],
+  "sources": [
+    { "title": "Society of Semiconductor Industry Specialists, Semiconductor History Museum of Japan: Japan Semiconductor Innovation 50 (D-10 Flash memory; presented by Fujio Masuoka at IEDM in 1984)", "url": "https://shmj.or.jp/innovation50/english/detail_D10E.htm" },
+    { "title": "Kioxia: フラッシュメモリの歴史 (History of flash memory, in Japanese; invention of NAND flash in 1987)", "url": "https://www.kioxia.com/ja-jp/rd/technology/history.html" },
+    { "title": "Kioxia: news release, February 1, 2023 (in Japanese; Yokkaichi and Kitakami plants)", "url": "https://www.kioxia.com/ja-jp/about/news/2023/20230201-1.html" },
+    { "title": "S. M. Sze, K. K. Ng, Physics of Semiconductor Devices, 3rd ed., Wiley (2006) (threshold-voltage shift in nonvolatile memory; damage to the insulating film from rewriting)", "url": "https://onlinelibrary.wiley.com/doi/book/10.1002/0470068329" },
+    { "title": "Seoul National University: 4190.568 lecture slides \"Flash\" (2026; the page is the unit of reading and writing, and an erase block is 64 to 512 pages)", "url": "https://csl.snu.ac.kr/courses/4190.568/2026-1/8-flash.pdf" },
+    { "title": "Kingston: Difference between SLC, MLC, TLC and 3D NAND (blog; rough rewrite counts of SLC 100,000, MLC 10,000 and TLC 3,000; checked October 2026)", "url": "https://www.kingston.com/en/blog/pc-performance/difference-between-slc-mlc-tlc-3d-nand" },
+    { "title": "Blocks & Files: YMTC extends QLC flash endurance to match TLC (April 2024; QLC survives about 1,000 rewrites, TLC about 4,000 to 5,000)", "url": "https://blocksandfiles.com/2024/04/03/ymtc-quad-level-cell-flash-endurance/" },
+    { "title": "Y. Cai et al.: Error Characterization, Mitigation, and Recovery in Flash-Memory-Based Solid-State Drives, Proceedings of the IEEE 105(9) (2017) (errors grow with more bits per cell and smaller cells; error correction and other fixes)", "url": "https://arxiv.org/abs/1706.08642" },
+    { "title": "JEDEC: JESD218 Solid-State Drive (SSD) Requirements and Endurance Test Method (definition of TBW; the latest version is JESD218C, May 2025)", "url": "https://www.jedec.org/standards-documents/results/JESD218" },
+    { "title": "AnandTech: The Truth About SSD Data Retention (2015; JESD218 table: powered-off data retention of 1 year at 30 °C for client drives and 3 months at 40 °C for enterprise drives)", "url": "https://www.anandtech.com/show/9248/the-truth-about-ssd-data-retention" },
+    { "title": "NVM Express: NVM Express Releases 1.2 Specification (November 2014; Host Memory Buffer allows SSD designs without their own DRAM)", "url": "https://nvmexpress.org/nvm-express-releases-1-2-specification/" },
+    { "title": "SATA-IO: SATA 6Gb/s: Fast Just Got Faster (May 2009; SATA 3.0 runs at 6 Gb/s)", "url": "https://www.sata-io.org/sites/default/files/documents/SATA-6Gbs-Fast-Just-Got-Faster_1.pdf" },
+    { "title": "Samsung Newsroom: Samsung Starts Mass Producing Industry's First 3D Vertical NAND Flash (August 6, 2013; charge trap method, up to 24 layers)", "url": "https://news.samsung.com/global/samsung-starts-mass-producing-industrys-first-3d-vertical-nand-flash" },
+    { "title": "Micron: Micron Ships World's First 232-Layer NAND, Extends Technology Leadership (July 26, 2022; start of volume production and shipping; Japanese-language PDF)", "url": "https://s25.q4cdn.com/621799436/files/doc_news/2022/07/jp-Micron-Ships-World-s-First-232-Layer-NAND-Extends-Technology-Leadership.pdf" },
+    { "title": "Tom's Hardware: SK hynix announces production of its 321-layer NAND flash (November 2024; start of mass production, with shipments from the first half of 2025)", "url": "https://www.tomshardware.com/pc-components/storage/sk-hynix-announces-production-of-its-321-layer-nand-flash-shipments-will-start-in-the-first-half-of-2025" },
+    { "title": "Samsung Semiconductor: NVMe SSD 990 PRO Data Sheet (1 TB model: 600 TBW, 5-year limited warranty)", "url": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_990_PRO_Datasheet_Rev.1.0_10129514072296.pdf" }
+  ]
+}
+-->
+<p class="lead">An SSD is a storage device that keeps data as amounts of electrons in semiconductor chips called flash memory. It has no moving parts, so it is faster than an HDD and handles bumps better. But each cell wears a little every time it is rewritten. So a controller chip inside the SSD extends its life with tricks such as spreading writes around.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>Which chips sit inside an SSD, and what each one does</li>
+<li>How a cell tells 0 from 1 by its amount of electrons</li>
+<li>How SLC, TLC and QLC differ, and what each is good and bad at</li>
+<li>Why SSDs wear out, how their life is extended, and how to read TBW</li>
+<li>What 3D NAND is, and why it stacks cells vertically</li>
+</ul><p class="muted">Prerequisites: It helps to have a rough picture of storage and flash memory from "<a href="{{home}}learn/memory-vs-storage/">Memory vs Storage: What's the Difference?</a>"</p></div>
+
+<section>
+<h2>In everyday life: why laptops got quiet and fast</h2>
+<p>Today's laptops start up almost as soon as you press the power button, and they make almost no noise. A big reason is that their storage changed from an HDD to an {{term:SSD|SSD}} (solid-state drive).</p>
+<p>An HDD (hard disk drive) records data magnetically on spinning disks. It moves a reading part around to find the right spot. An SSD has no moving parts, so it reaches any spot at once and makes no sound. On the other hand, an HDD is often cheaper for the same capacity. So HDDs are still used to keep large amounts of data (see the full list in "<a href="{{home}}compare/ssd-vs-hdd/">SSD vs. HDD</a>").</p>
+<p>Phone storage uses the same kind of chip as an SSD ("<a href="{{home}}learn/chips-inside-a-smartphone/">What Chips Are Inside a Smartphone?</a>").</p>
+</section>
+
+<section>
+<h2>What's inside an SSD?</h2>
+<p>On an SSD's circuit board, the most common part is the chip that stores data. It is {{term:NAND型フラッシュメモリ|NAND flash memory}}, which this article calls "flash" for short.</p>
+<p>The other key part is the controller. It is a small computer built just for the SSD. It takes "read" and "write" requests from the computer and gives orders to the flash. It runs many flash chips at once to gain speed. It also handles the life-extending tricks explained later.</p>
+<p>Many SSDs also carry DRAM, a fast memory that loses its contents when the power is off. It holds a lookup table. For each address the computer uses, the table records which flash chip holds the data, and where. Some cheaper SSDs have no DRAM and borrow a little of the computer's memory instead (this is called HMB, for Host Memory Buffer).</p>
+<p>There are two sets of rules for connecting an SSD to a computer. SATA was inherited from HDDs, and NVMe was designed for SSDs. A SATA SSD tops out at about 550 MB per second, even with version 3.0 from 2009. {{term:NVMe|NVMe}} uses a fast path inside the computer, {{term:PCI Express|PCI Express}}, so it can be much faster ("<a href="{{home}}compare/nvme-vs-sata-ssd/">NVMe vs. SATA SSDs</a>").</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>Inside an SSD: a controller runs the DRAM and several flash chips</title>
+<rect x="80" y="8" width="200" height="40" rx="6" class="ok"/>
+<text x="180" y="34" text-anchor="middle">PC (CPU and memory)</text>
+<line x1="180" y1="48" x2="180" y2="92" class="ac"/>
+<text x="192" y="76" class="a">SATA or NVMe</text>
+<rect x="10" y="92" width="340" height="226" rx="12" class="dash"/>
+<text x="20" y="114" class="m">SSD</text>
+<rect x="100" y="104" width="160" height="50" rx="6" class="metal"/>
+<text x="180" y="135" text-anchor="middle">Controller</text>
+<rect x="276" y="110" width="64" height="38" rx="4" class="p"/>
+<text x="308" y="135" text-anchor="middle">DRAM</text>
+<line x1="260" y1="129" x2="276" y2="129" class="ln"/>
+<line x1="120" y1="154" x2="120" y2="196" class="ln"/>
+<line x1="160" y1="154" x2="160" y2="196" class="ln"/>
+<line x1="200" y1="154" x2="200" y2="196" class="ln"/>
+<line x1="240" y1="154" x2="240" y2="196" class="ln"/>
+<line x1="56" y1="196" x2="304" y2="196" class="thin"/>
+<line x1="56" y1="196" x2="56" y2="214" class="ln"/>
+<line x1="136" y1="196" x2="136" y2="214" class="ln"/>
+<line x1="224" y1="196" x2="224" y2="214" class="ln"/>
+<line x1="304" y1="196" x2="304" y2="214" class="ln"/>
+<rect x="24" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="56" y="247" text-anchor="middle">NAND</text>
+<rect x="104" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="136" y="247" text-anchor="middle">NAND</text>
+<rect x="192" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="224" y="247" text-anchor="middle">NAND</text>
+<rect x="272" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="304" y="247" text-anchor="middle">NAND</text>
+<text x="180" y="300" text-anchor="middle" class="m">Run in parallel for speed</text>
+</svg><figcaption class="fig-cap">The controller checks the lookup table in DRAM and reads and writes many flash (NAND) chips in parallel. Some SSDs have no DRAM. What this figure leaves out: the power parts, the number of paths (channels) between the controller and the flash, and the real sizes and layout of the parts.</figcaption></figure>
+</section>
+
+<section>
+<h2>How it works ①: a cell remembers by shifting its turn-on voltage</h2>
+<p>The smallest unit of flash that stores data is called a cell. A cell is a single, slightly unusual transistor. A transistor is a switch: apply a voltage to its electrode, called the gate, and current flows (it turns on). See "<a href="{{home}}learn/what-is-a-transistor/">What Is a Transistor?</a>"</p>
+<p>A transistor starts to turn on once the gate voltage passes a certain value. This "turn-on voltage" is called the {{term:しきい値電圧|threshold voltage}}. What makes a flash cell special is that this value can be changed later.</p>
+<p>Under the cell's gate is a spot that stores electrons, wrapped in insulating film (see the figure in "<a href="{{home}}learn/memory-vs-storage/">Memory vs Storage: What's the Difference?</a>"). Electrons are tiny particles with a negative charge. When electrons are stored there, they weaken the effect of the gate's positive voltage. So a higher voltage is needed to turn the cell on. In other words, the more electrons are stored, the higher the threshold voltage.</p>
+<p>To read a cell, one "boundary" voltage is applied to the gate, and the chip checks whether current flows. If it flows, there are few electrons; if not, there are many. These two states are assigned to 1 and 0. The insulating film keeps electrons from escaping, so the data stays even with the power off.</p>
+<p>There are two kinds of electron store. One is a small plate that conducts electricity, called a {{term:フローティングゲート|floating gate}}. The other is an insulating film that traps electrons. Most high-capacity products today use the second kind, called a {{term:電荷トラップ型セル|charge-trap cell}}. How electrons are pushed through the insulating film is explained in "<a href="{{home}}learn/quantum-tunneling-in-chips/">Quantum Tunneling in Transistors and Flash Memory</a>."</p>
+</section>
+
+<section>
+<h2>How it works ②: how many bits per cell? SLC, TLC and QLC</h2>
+<p>If the amount of electrons is used in two steps, "few" and "many," one cell stores one bit. This is {{term:SLC(シングルレベルセル)|SLC}} (single-level cell). If the amount is split more finely, more bits fit into one cell.</p>
+<p>Each extra bit doubles the number of levels to tell apart. 2-bit MLC has 4 levels, 3-bit {{term:TLC(トリプルレベルセル)|TLC}} has 8, and 4-bit QLC has 16. The same number of cells then holds 2, 3 or 4 times as much as SLC. That lowers the price per unit of capacity.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 300" role="img"><title>SLC writes the turn-on voltage at 2 levels, and TLC at 8 levels</title>
+<text x="10" y="22" class="a">SLC: 2 levels (1 bit)</text>
+<path d="M30,110 C55,110 60,50 80,50 C100,50 105,110 130,110 Z" class="n"/>
+<path d="M210,110 C235,110 240,50 260,50 C280,50 285,110 310,110 Z" class="n"/>
+<line x1="170" y1="40" x2="170" y2="118" class="ac"/>
+<line x1="20" y1="110" x2="345" y2="110" class="thin"/>
+<text x="80" y="134" text-anchor="middle" class="m">Few electrons</text>
+<text x="260" y="134" text-anchor="middle" class="m">Many electrons</text>
+<text x="176" y="54" class="a">Boundary</text>
+<text x="10" y="176" class="a">TLC: 8 levels (3 bits)</text>
+<path d="M22,250 C30,250 32,206 38,206 C44,206 46,250 54,250 Z" class="n"/>
+<path d="M62,250 C70,250 72,206 78,206 C84,206 86,250 94,250 Z" class="n"/>
+<path d="M102,250 C110,250 112,206 118,206 C124,206 126,250 134,250 Z" class="n"/>
+<path d="M142,250 C150,250 152,206 158,206 C164,206 166,250 174,250 Z" class="n"/>
+<path d="M182,250 C190,250 192,206 198,206 C204,206 206,250 214,250 Z" class="n"/>
+<path d="M222,250 C230,250 232,206 238,206 C244,206 246,250 254,250 Z" class="n"/>
+<path d="M262,250 C270,250 272,206 278,206 C284,206 286,250 294,250 Z" class="n"/>
+<path d="M302,250 C310,250 312,206 318,206 C324,206 326,250 334,250 Z" class="n"/>
+<line x1="58" y1="194" x2="58" y2="256" class="ac"/>
+<line x1="98" y1="194" x2="98" y2="256" class="ac"/>
+<line x1="138" y1="194" x2="138" y2="256" class="ac"/>
+<line x1="178" y1="194" x2="178" y2="256" class="ac"/>
+<line x1="218" y1="194" x2="218" y2="256" class="ac"/>
+<line x1="258" y1="194" x2="258" y2="256" class="ac"/>
+<line x1="298" y1="194" x2="298" y2="256" class="ac"/>
+<line x1="20" y1="250" x2="345" y2="250" class="thin"/>
+<text x="180" y="286" text-anchor="middle" class="m">Turn-on voltage →</text>
+</svg><figcaption class="fig-cap">Each hump shows how the turn-on voltage spreads across many cells written with the same data. The thick lines are the boundary voltages used for reading. TLC has 7 boundaries, and the gaps between humps are narrow. What this figure leaves out: the real shapes and widths of the humps, and how 0s and 1s are assigned to each level.</figcaption></figure>
+<p>Even with the same data written, the cells' voltages vary a little and form humps like those in the figure. The finer the levels, the narrower the gaps between the humps. So writing takes more rounds of adding a few electrons and checking, which makes it slower. Reading also takes several checks at different boundary voltages. Even a tiny leak of electrons can make a level hard to tell from its neighbor, so the cell survives fewer rewrites.</p>
+<p>In short, going from SLC toward QLC makes flash cheaper and larger, but slower and quicker to wear out. That is why most PC SSDs today use TLC or QLC. Many of them also use part of their free cells as SLC for a while, to make up for slow writes ("<a href="{{home}}compare/slc-vs-mlc-vs-tlc-vs-qlc/">SLC vs. MLC vs. TLC vs. QLC</a>").</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>A multi-level cell is like showing a number by the height of water in a glass. With only two choices, "empty" or "full," you never get it wrong. With eight heights, you can say more, but a little lost water leads to a misreading. What they share is this: the finer the levels, the more a small change in amount causes errors.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> You cannot look directly at the amount of electrons in a cell. The chip finds the level by checking, many times and at different voltages, whether the cell turns on.</p></aside>
+</section>
+
+<section>
+<h2>How it works ③: why does flash wear out?</h2>
+<p>To write data to a cell, a high voltage pushes electrons through the insulating film. To erase it, a voltage in the opposite direction pulls them back out. One round of "write and erase" counts as one rewrite.</p>
+<p>Each time electrons pass through the film under a strong voltage, tiny defects form in it. When electrons get caught in these defects, the threshold voltage drifts little by little. More defects also open paths for stored electrons to leak out. The humps lose their shape, and the levels get harder to tell apart. This is how flash wears out.</p>
+<p>How many rewrites a cell can survive differs widely by cell type and product generation. Rough figures are about 100,000 for SLC, a few thousand for TLC, and around 1,000 for QLC. The sources are a guide from the memory maker Kingston and a 2024 industry news report.</p>
+<p>The controller fixes small misreadings. When writing, it adds extra check information. When reading, it uses that information to find and fix wrong bits. This is called {{term:ECC(誤り訂正符号)|error correction}}. The smaller the cell and the more levels it has, the more it is needed.</p>
+</section>
+
+<section>
+<h2>How it works ④: write by the page, erase by the block</h2>
+<p>Flash has one more quirk. It cannot overwrite a spot that already holds data; it must erase first and then write. Writes are done in groups of tens of thousands of cells, called "pages." Erases are done one "block" at a time, and each block holds many pages. One block is about 64 to 512 pages (2026 lecture slides from Seoul National University).</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>A block is like a bound notebook that you write in with a ballpoint pen. You can fill empty pages one at a time, but you cannot rub out a page you have written. The only way to get a blank notebook is to remake the whole thing. What they share is this: you write one page at a time, but erase the whole book at once.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> A remade notebook is brand new. A flash block wears a little with each erase, and the same block keeps being used. Also, you can write notebook pages in any order, but inside a flash block, pages are usually written only in a fixed order.</p></aside>
+<p>So what happens when part of a file is changed? The controller does not rewrite the old page in place. It writes the new content to another empty page. Then it updates the lookup table and marks the old page as "no longer used." In this way, unused pages slowly pile up across many blocks.</p>
+</section>
+
+<section>
+<h2>How it works ⑤: four tricks the controller uses</h2>
+<p>When empty pages run short, the controller starts tidying up. It picks a block with many unused pages and copies only the pages still needed to another block. Then it erases the whole original block, so it is free again. This tidying is called {{term:ガベージコレクション|garbage collection}}.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 314" role="img"><title>Garbage collection: copy only the needed pages, then erase the whole block</title>
+<text x="10" y="22">① Unneeded pages (×) build up in A</text>
+<text x="10" y="58" class="a">A</text>
+<rect x="40" y="36" width="36" height="34" class="n"/>
+<rect x="79" y="36" width="36" height="34" class="ng"/><text x="97" y="59" text-anchor="middle">×</text>
+<rect x="118" y="36" width="36" height="34" class="ng"/><text x="136" y="59" text-anchor="middle">×</text>
+<rect x="157" y="36" width="36" height="34" class="n"/>
+<rect x="196" y="36" width="36" height="34" class="ng"/><text x="214" y="59" text-anchor="middle">×</text>
+<rect x="235" y="36" width="36" height="34" class="ng"/><text x="253" y="59" text-anchor="middle">×</text>
+<rect x="274" y="36" width="36" height="34" class="n"/>
+<rect x="313" y="36" width="36" height="34" class="ng"/><text x="331" y="59" text-anchor="middle">×</text>
+<text x="10" y="104">② Copy only the needed pages to B</text>
+<text x="10" y="140" class="a">B</text>
+<rect x="40" y="118" width="36" height="34" class="n"/>
+<rect x="79" y="118" width="36" height="34" class="n"/>
+<rect x="118" y="118" width="36" height="34" class="n"/>
+<rect x="157" y="118" width="36" height="34" class="ok"/>
+<rect x="196" y="118" width="36" height="34" class="ok"/>
+<rect x="235" y="118" width="36" height="34" class="ok"/>
+<rect x="274" y="118" width="36" height="34" class="ok"/>
+<rect x="313" y="118" width="36" height="34" class="ok"/>
+<text x="10" y="186">③ Erase all of A to free it up</text>
+<text x="10" y="222" class="a">A</text>
+<rect x="40" y="200" width="36" height="34" class="ok"/>
+<rect x="79" y="200" width="36" height="34" class="ok"/>
+<rect x="118" y="200" width="36" height="34" class="ok"/>
+<rect x="157" y="200" width="36" height="34" class="ok"/>
+<rect x="196" y="200" width="36" height="34" class="ok"/>
+<rect x="235" y="200" width="36" height="34" class="ok"/>
+<rect x="274" y="200" width="36" height="34" class="ok"/>
+<rect x="313" y="200" width="36" height="34" class="ok"/>
+<rect x="40" y="254" width="16" height="16" class="n"/><text x="62" y="268" class="m">Needed</text>
+<rect x="134" y="254" width="16" height="16" class="ng"/><text x="156" y="268" class="m">Unneeded</text>
+<rect x="250" y="254" width="16" height="16" class="ok"/><text x="272" y="268" class="m">Free</text>
+<text x="180" y="302" text-anchor="middle" class="a">The copying in ② is extra writing</text>
+</svg><figcaption class="fig-cap">The 3 needed pages out of A's 8 are copied to the empty block B, and then A is erased. The writing in step ②, which the computer never asked for, is the source of write amplification. What this figure leaves out: the real page count (hundreds of pages per block), the lookup-table updates, and how the block to clean is chosen.</figcaption></figure>
+<p>The copying in step ② was not requested by the computer, but it still wears the cells. When the flash receives more writing than the computer sent, this is called {{term:書き込み増幅(ライトアンプリフィケーション)|write amplification}}. The more needed pages a block still holds when it is cleaned, the more must be copied. Write amplification then grows larger.</p>
+<p>To copy less, the controller needs to learn early which pages are no longer needed. But deleting a file usually changes only the computer's own records. So the OS (operating system) tells the SSD which places are "no longer used." This message is called {{term:TRIM|TRIM}}. It lets the SSD skip unneeded data when tidying up.</p>
+<p>On top of that, an SSD carries a little more flash than its stated capacity. It keeps the extra as working space that users cannot see. This is called over-provisioning. The more spare room there is, the more blocks the controller can choose from when tidying, and the less it has to copy.</p>
+<p>Finally, new writes go to less-worn blocks, and data that rarely changes is moved now and then. This trick makes all blocks wear at about the same rate. It is called {{term:ウェアレベリング|wear leveling}}.</p>
+</section>
+
+<section>
+<h2>How it works ⑥: 3D NAND stacks cells vertically</h2>
+<p>For a long time, flash capacity grew by making cells smaller. But shrinking cells on a flat surface leaves room for fewer electrons, and neighboring cells start to disturb each other. By the early 2010s, this approach was nearing its limit.</p>
+<p>So a way to stack cells vertically came into use. This is called {{term:3D NAND|3D NAND}}. In August 2013, Samsung announced mass production of a product with up to 24 layers. In July 2022, Micron announced mass production and shipping of a 232-layer product. In November 2024, SK hynix announced the start of mass production of a 321-layer product.</p>
+<p>Stacking adds cells without enlarging the chip, so an SSD of the same capacity can be made more cheaply. But the more layers there are, the harder some steps become, such as making deep holes precisely.</p>
+</section>
+
+<section>
+<h2>What happens if an SSD sits unpowered?</h2>
+<p>Even electrons wrapped in insulating film slowly leak out over a long time, and the threshold voltage drifts. Leaks happen faster at higher temperatures. They also happen more easily in cells whose film was worn by rewrites. (For how temperature sets the speed, see "<a href="{{home}}learn/arrhenius-equation-in-chips/">Arrhenius Equation in Chips</a>.")</p>
+<p>JEDEC, an industry standards group, sets how long an SSD must keep data in its standard JESD218. For home and office computers (client drives), it is 1 year powered off at 30 °C. For data centers (enterprise drives), it is 3 months at 40 °C. Both are minimums for the most worn state, after all of the guaranteed writes are used up. Even so, it is safer not to keep your only copy of data on an SSD left unpowered for years.</p>
+</section>
+
+<section>
+<h2>Reading lifespan figures: TBW and DWPD</h2>
+<p>An SSD's lifespan is given as the total amount you may write during the warranty period. This is TBW (terabytes written). Under the JEDEC standard, after that much writing, the drive must still meet set limits on errors and data retention.</p>
+<p>Another way to state it is DWPD (drive writes per day). It tells you how many times the full capacity you may write each day during the warranty period. For example, the 1 TB model of Samsung's 990 PRO is rated at 600 TBW with a 5-year warranty. 600 TB divided by about 1,800 days is about 330 GB a day, or about 0.33 DWPD.</p>
+<p>TBW is a warranty guide. A drive does not fail right after passing it, nor is it sure to last until then.</p>
+</section>
+
+<section>
+<h2>Flash memory's roots in Japan</h2>
+<p>Flash memory was invented in Japan. Fujio Masuoka and his colleagues at Toshiba, a Japanese electronics maker, presented NOR flash in 1984 and NAND flash in 1987. SSDs use the NAND type, which suits large capacities ("<a href="{{home}}compare/nand-vs-nor-flash/">NAND vs. NOR flash</a>").</p>
+<p>Kioxia is the company that took over Toshiba's memory business. As of 2026, it makes flash at its plants in Yokkaichi (Mie Prefecture) and Kitakami (Iwate Prefecture) in Japan.</p>
+</section>
+
+<section>
+<h2>Common misconceptions</h2>
+<div class="myth"><p class="myth-q">Myth: An SSD wears out and fails quickly, even with normal use</p><p>In fact, with normal use it takes many years to use up the guaranteed amount of writing. For example, writing 50 GB a day to a 600 TBW SSD would take over 30 years to reach 600 TB. When people hear only that "the number of rewrites is limited," it sounds as if the drive will fail soon. But SSDs can also fail for reasons other than wear, such as a broken part. Keep a copy of important data somewhere else too.</p></div>
+<div class="myth"><p class="myth-q">Myth: Deleting a file wipes its data from the chip right away</p><p>In fact, deleting a file does not pull the electrons out of its cells right away. Places reported by TRIM are erased, a whole block at a time, later when the controller tidies up. Until then, the data may stay in the cells. When you part with an SSD, the reliable way is to use a feature from the maker or the OS that erases the whole SSD.</p></div>
+<div class="myth"><p class="myth-q">Myth: Flash with more layers makes an SSD faster</p><p>In fact, the layer count mainly affects how much fits on one chip (capacity and price). An SSD's speed depends on its connection (SATA or NVMe), its controller, and how many chips it runs at once, among other things. When each chip holds more, an SSD of the same capacity needs fewer chips, so it may run fewer at once. New generations with more layers often get faster input and output too, which is why the two are easily confused.</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Item</th><th>Number</th><th>For comparison</th></tr></thead>
+<tbody>
+<tr><td>Rewrites a cell can survive, rough guide (SLC / TLC / QLC)</td><td>About 100,000 / a few thousand / around 1,000</td><td>QLC is about 1/100 of SLC (varies by product and generation)</td></tr>
+<tr><td>Layers in 3D NAND</td><td>24 (2013) → 232 (2022) → 321 (2024)</td><td>About 13 times in 11 years</td></tr>
+<tr><td>Data retention with the power off (JEDEC, client drives)</td><td>1 year at 30 °C</td><td>A minimum for a drive at the end of its rated life</td></tr>
+<tr><td>990 PRO 1 TB warranty (TBW)</td><td>600 TB, 5 years</td><td>About 0.33 DWPD (about 330 GB a day)</td></tr>
+</tbody>
+</table>
+<p>Layer counts are as of when each company announced mass production or shipping. Technologies with even more layers have been announced since 2025.</p>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Compare in a table: <a href="{{home}}compare/slc-vs-mlc-vs-tlc-vs-qlc/">SLC vs. MLC vs. TLC vs. QLC</a>, <a href="{{home}}compare/dram-vs-nand-flash/">DRAM vs. NAND flash</a>, <a href="{{home}}compare/ssd-vs-hdd/">SSD vs. HDD</a></li>
+<li>Terms for the next step: {{term:FNトンネル電流(ファウラー・ノルドハイム)|Fowler-Nordheim tunneling}} (how electrons are pushed in), {{term:不揮発性メモリ|nonvolatile memory}}</li>
+<li>Try the numbers: the <a href="{{home}}tools/media-data-size-calculator/">image, audio and video data size calculator</a> (a rough guide to how much you write each day)</li>
+<li>See it in figures: the layout of NAND cells (strings) and more are in the list of <a href="{{home}}figures/">figures</a></li>
+<li>Related explainers: "<a href="{{home}}learn/memory-vs-storage/">Memory vs Storage: What's the Difference?</a>" and "<a href="{{home}}learn/quantum-tunneling-in-chips/">Quantum Tunneling in Transistors and Flash Memory</a>"</li>
+</ul>
+</section>

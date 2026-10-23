@@ -1,0 +1,250 @@
+<!--
+{
+  "title": "SSDとは? フラッシュメモリがデータを覚えるしくみ",
+  "description": "SSDは、フラッシュメモリのチップと制御用のチップでデータを覚える記憶装置です。セルが電子の量で0と1を区別するしくみ、TLCやQLCの違い、すり減る理由と寿命を延ばす工夫、3D NANDまで解説します。",
+  "series": "everyday-chips",
+  "order": 9,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["sram-flash", "io-interface", "reliability", "memory-hierarchy"],
+  "terms": ["SSD", "SLC(シングルレベルセル)", "TLC(トリプルレベルセル)", "3D NAND", "ガベージコレクション", "TRIM", "書き込み増幅(ライトアンプリフィケーション)", "電荷トラップ型セル"],
+  "sources": [
+    { "title": "半導体産業人協会 日本半導体歴史館: Japan Semiconductor Innovation 50(D-10 フラッシュメモリ。1984年のIEDMで舛岡富士雄氏が発表)", "url": "https://shmj.or.jp/innovation50/english/detail_D10E.htm" },
+    { "title": "キオクシア: フラッシュメモリの歴史(1987年 NAND型フラッシュメモリの発明)", "url": "https://www.kioxia.com/ja-jp/rd/technology/history.html" },
+    { "title": "キオクシア: ニュースリリース 2023年2月1日(四日市工場・北上工場)", "url": "https://www.kioxia.com/ja-jp/about/news/2023/20230201-1.html" },
+    { "title": "S. M. Sze, K. K. Ng, Physics of Semiconductor Devices, 3rd ed., Wiley (2006)(不揮発性メモリのしきい値電圧の変化、書き換えによる絶縁膜の劣化)", "url": "https://onlinelibrary.wiley.com/doi/book/10.1002/0470068329" },
+    { "title": "Seoul National University: 4190.568 講義資料「Flash」(2026年。読み書きの単位はページ、消去の単位のブロックは64〜512ページ)", "url": "https://csl.snu.ac.kr/courses/4190.568/2026-1/8-flash.pdf" },
+    { "title": "Kingston: Difference between SLC, MLC, TLC and 3D NAND(ブログ。書き換え回数の目安 SLC 10万回・MLC 1万回・TLC 3,000回。2026年10月に確認)", "url": "https://www.kingston.com/en/blog/pc-performance/difference-between-slc-mlc-tlc-3d-nand" },
+    { "title": "Blocks & Files: YMTC extends QLC flash endurance to match TLC(2024年4月。QLCの書き換え回数は約1,000回、TLCは4,000〜5,000回ほど)", "url": "https://blocksandfiles.com/2024/04/03/ymtc-quad-level-cell-flash-endurance/" },
+    { "title": "Y. Cai ほか: Error Characterization, Mitigation, and Recovery in Flash-Memory-Based Solid-State Drives, Proceedings of the IEEE 105(9) (2017)(多値化と微細化で誤りが増えること、誤り訂正などの対策)", "url": "https://arxiv.org/abs/1706.08642" },
+    { "title": "JEDEC: JESD218 Solid-State Drive (SSD) Requirements and Endurance Test Method(TBWの定義。最新版は2025年5月のJESD218C)", "url": "https://www.jedec.org/standards-documents/results/JESD218" },
+    { "title": "AnandTech: The Truth About SSD Data Retention(2015年。JESD218の表: クライアント用は30℃で1年、エンタープライズ用は40℃で3か月の電源オフ時のデータ保持)", "url": "https://www.anandtech.com/show/9248/the-truth-about-ssd-data-retention" },
+    { "title": "NVM Express: NVM Express Releases 1.2 Specification(2014年11月。Host Memory Buffer で、SSD専用のDRAMなしの設計が可能に)", "url": "https://nvmexpress.org/nvm-express-releases-1-2-specification/" },
+    { "title": "SATA-IO: SATA 6Gb/s: Fast Just Got Faster(2009年5月。SATA 3.0で6Gb/s)", "url": "https://www.sata-io.org/sites/default/files/documents/SATA-6Gbs-Fast-Just-Got-Faster_1.pdf" },
+    { "title": "Samsung Newsroom: Samsung Starts Mass Producing Industry's First 3D Vertical NAND Flash(2013年8月6日。チャージトラップ方式、最大24層)", "url": "https://news.samsung.com/global/samsung-starts-mass-producing-industrys-first-3d-vertical-nand-flash" },
+    { "title": "Micron: Micron Ships World's First 232-Layer NAND, Extends Technology Leadership(2022年7月26日。量産と出荷の開始。日本語版PDF)", "url": "https://s25.q4cdn.com/621799436/files/doc_news/2022/07/jp-Micron-Ships-World-s-First-232-Layer-NAND-Extends-Technology-Leadership.pdf" },
+    { "title": "Tom's Hardware: SK hynix announces production of its 321-layer NAND flash(2024年11月。量産の開始、出荷は2025年前半から)", "url": "https://www.tomshardware.com/pc-components/storage/sk-hynix-announces-production-of-its-321-layer-nand-flash-shipments-will-start-in-the-first-half-of-2025" },
+    { "title": "Samsung Semiconductor: NVMe SSD 990 PRO Data Sheet(1TB の型は 600TBW・5年の限定保証)", "url": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_990_PRO_Datasheet_Rev.1.0_10129514072296.pdf" }
+  ]
+}
+-->
+<p class="lead">SSDは、フラッシュメモリという半導体のチップに、データを電子の量として覚えさせる記憶装置です。動く部品がないので、HDDより速く、衝撃にも強くなります。ただしセルは書き換えるたびに少しずつ傷むため、中の制御用のチップが、書く場所を散らすなどの工夫で寿命を延ばしています。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>SSDの中にどんなチップが入っていて、それぞれ何をしているか</li>
+<li>セルが電子の量で0と1を区別するしくみ</li>
+<li>SLC・TLC・QLCの違いと、それぞれの得意・不得意</li>
+<li>SSDがすり減る理由と寿命を延ばす工夫、TBWの読み方</li>
+<li>セルを縦に積む3D NANDとは何か</li>
+</ul><p class="muted">前提知識: 「<a href="{{home}}learn/memory-vs-storage/">メモリとストレージの違いは?</a>」で、ストレージとフラッシュメモリのおおまかな姿を知っていると読みやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは: パソコンが静かで速くなった理由</h2>
+<p>いまのノートパソコンは、電源を入れるとすぐに起動し、動作音もほとんどしません。大きな理由の一つは、ストレージがHDDから{{term:SSD}}に代わったことです。</p>
+<p>HDDは、回転する円盤に磁気でデータを記録し、読み書きする部品を動かして目的の場所を探します。SSDには動く部品がないので、読みたい場所にすぐ届き、音もしません。一方、同じ容量なら多くの場合HDDのほうが安く、大容量の保存用に使われ続けています(違いの一覧は「<a href="{{home}}compare/ssd-vs-hdd/">SSDとHDDの違い</a>」)。</p>
+<p>スマホのストレージも、SSDと同じ種類のチップです(「<a href="{{home}}learn/chips-inside-a-smartphone/">スマホの中の半導体</a>」)。</p>
+</section>
+
+<section>
+<h2>SSDの中には何が入っている?</h2>
+<p>SSDの基板でいちばん数が多い部品は、データを覚えるチップです。これは{{term:NAND型フラッシュメモリ}}で、この記事では「フラッシュ」と短く呼びます。</p>
+<p>もう一つの大事な部品が、コントローラです。パソコンからの「読んで」「書いて」という頼みを受けて、フラッシュに指示を出す、SSD専用の小さなコンピュータです。フラッシュを何個も同時に動かして速さを稼ぐのも、後で説明する寿命の工夫も、このチップの仕事です。</p>
+<p>多くのSSDには、DRAM(電源を切ると消える速いメモリ)も載っています。パソコンが指定する番地のデータが、どのフラッシュのどこにあるかを記した対応表を置くためです。DRAMを載せない安価なSSDには、パソコン側のメモリを少し借りるもの(HMB)もあります。</p>
+<p>パソコンとSSDをつなぐ決まりには、HDDから受け継いだSATAと、SSDのために作られたNVMeがあります。SATAのSSDは、2009年の3.0版でも毎秒約550MBが上限です。{{term:NVMe}}は、パソコンの中の高速な通り道({{term:PCI Express}})を使うので、ずっと速くできます(「<a href="{{home}}compare/nvme-vs-sata-ssd/">NVMeとSATAのSSDの違い</a>」)。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>SSDの中: コントローラが、DRAMと複数のフラッシュのチップを動かす</title>
+<rect x="80" y="8" width="200" height="40" rx="6" class="ok"/>
+<text x="180" y="34" text-anchor="middle">パソコン(CPU・メモリ)</text>
+<line x1="180" y1="48" x2="180" y2="92" class="ac"/>
+<text x="192" y="76" class="a">SATA または NVMe</text>
+<rect x="10" y="92" width="340" height="226" rx="12" class="dash"/>
+<text x="20" y="114" class="m">SSD</text>
+<rect x="100" y="104" width="160" height="50" rx="6" class="metal"/>
+<text x="180" y="135" text-anchor="middle">コントローラ</text>
+<rect x="276" y="110" width="64" height="38" rx="4" class="p"/>
+<text x="308" y="135" text-anchor="middle">DRAM</text>
+<line x1="260" y1="129" x2="276" y2="129" class="ln"/>
+<line x1="120" y1="154" x2="120" y2="196" class="ln"/>
+<line x1="160" y1="154" x2="160" y2="196" class="ln"/>
+<line x1="200" y1="154" x2="200" y2="196" class="ln"/>
+<line x1="240" y1="154" x2="240" y2="196" class="ln"/>
+<line x1="56" y1="196" x2="304" y2="196" class="thin"/>
+<line x1="56" y1="196" x2="56" y2="214" class="ln"/>
+<line x1="136" y1="196" x2="136" y2="214" class="ln"/>
+<line x1="224" y1="196" x2="224" y2="214" class="ln"/>
+<line x1="304" y1="196" x2="304" y2="214" class="ln"/>
+<rect x="24" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="56" y="247" text-anchor="middle">NAND</text>
+<rect x="104" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="136" y="247" text-anchor="middle">NAND</text>
+<rect x="192" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="224" y="247" text-anchor="middle">NAND</text>
+<rect x="272" y="214" width="64" height="56" rx="4" class="n"/>
+<text x="304" y="247" text-anchor="middle">NAND</text>
+<text x="180" y="300" text-anchor="middle" class="m">同時に動かして速さを稼ぐ</text>
+</svg><figcaption class="fig-cap">コントローラは、DRAMの対応表を見ながら、何個ものフラッシュ(NAND)を並行して読み書きします。DRAMのないSSDもあります。省略していること: 電源の部品、コントローラとフラッシュをつなぐ道(チャネル)の本数、実際の部品の大きさと並び。</figcaption></figure>
+</section>
+
+<section>
+<h2>しくみ① セルは「オンになる電圧」のずれで覚える</h2>
+<p>フラッシュのデータを覚える最小の単位を、セルと呼びます。セルは、少し変わったトランジスタ1個です。トランジスタは、ゲートと呼ぶ電極に電圧をかけると電流が流れる(オンになる)スイッチです(「<a href="{{home}}learn/what-is-a-transistor/">トランジスタとは?</a>」)。</p>
+<p>トランジスタは、ゲートの電圧がある値を超えると、オンになり始めます。この「オンになり始める電圧」を、{{term:しきい値電圧}}と呼びます。フラッシュのセルは、この値を後から変えられるところが特別です。</p>
+<p>セルのゲートの下には、絶縁膜で囲まれた、電子をためる場所があります(図は「<a href="{{home}}learn/memory-vs-storage/">メモリとストレージの違いは?</a>」)。ここに電子(マイナスの電気をもつ小さな粒)をためると、ゲートのプラスの電圧の効き目が弱まります。そのため、オンにするには、より高い電圧が要るようになります。つまり、ためた電子が多いほど、しきい値電圧が高くなるのです。</p>
+<p>読み出すときは、ゲートに「境目」の電圧を1つかけて、電流が流れるかどうかを調べます。流れれば電子が少ない状態、流れなければ多い状態です。この2つを1と0に割り当てます。電子は絶縁膜に囲まれて逃げにくいので、電源を切ってもデータが残ります。</p>
+<p>電子をためる場所には、電気を通す小さな板({{term:フローティングゲート}})と、電子をつかまえる絶縁性の膜があります。いまの大容量の製品の多くは後者で、{{term:電荷トラップ型セル}}と呼びます。電子を絶縁膜の向こうへ押し込むしくみは「<a href="{{home}}learn/quantum-tunneling-in-chips/">トンネル効果とは?</a>」で説明しています。</p>
+</section>
+
+<section>
+<h2>しくみ② 1つのセルに何ビット? SLC・TLC・QLC</h2>
+<p>電子の量を「少ない・多い」の2段階で使えば、1つのセルで1ビットを覚えられます。これが{{term:SLC(シングルレベルセル)|SLC}}です。電子の量をもっと細かく分けて書き分ければ、1つのセルにより多くのビットを詰められます。</p>
+<p>ビットを1つ増やすごとに、区別する段階の数は2倍になります。2ビットのMLCは4段階、3ビットの{{term:TLC(トリプルレベルセル)|TLC}}は8段階、4ビットのQLCは16段階です。同じ数のセルで覚えられる量は、SLCの2倍、3倍、4倍になります。そのため、容量あたりの値段を下げられます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 300" role="img"><title>SLCは2段階、TLCは8段階に、オンになる電圧を書き分ける</title>
+<text x="10" y="22" class="a">SLC: 2段階(1ビット)</text>
+<path d="M30,110 C55,110 60,50 80,50 C100,50 105,110 130,110 Z" class="n"/>
+<path d="M210,110 C235,110 240,50 260,50 C280,50 285,110 310,110 Z" class="n"/>
+<line x1="170" y1="40" x2="170" y2="118" class="ac"/>
+<line x1="20" y1="110" x2="345" y2="110" class="thin"/>
+<text x="80" y="134" text-anchor="middle" class="m">電子少ない</text>
+<text x="260" y="134" text-anchor="middle" class="m">電子多い</text>
+<text x="176" y="56" class="a">境目</text>
+<text x="10" y="176" class="a">TLC: 8段階(3ビット)</text>
+<path d="M22,250 C30,250 32,206 38,206 C44,206 46,250 54,250 Z" class="n"/>
+<path d="M62,250 C70,250 72,206 78,206 C84,206 86,250 94,250 Z" class="n"/>
+<path d="M102,250 C110,250 112,206 118,206 C124,206 126,250 134,250 Z" class="n"/>
+<path d="M142,250 C150,250 152,206 158,206 C164,206 166,250 174,250 Z" class="n"/>
+<path d="M182,250 C190,250 192,206 198,206 C204,206 206,250 214,250 Z" class="n"/>
+<path d="M222,250 C230,250 232,206 238,206 C244,206 246,250 254,250 Z" class="n"/>
+<path d="M262,250 C270,250 272,206 278,206 C284,206 286,250 294,250 Z" class="n"/>
+<path d="M302,250 C310,250 312,206 318,206 C324,206 326,250 334,250 Z" class="n"/>
+<line x1="58" y1="194" x2="58" y2="256" class="ac"/>
+<line x1="98" y1="194" x2="98" y2="256" class="ac"/>
+<line x1="138" y1="194" x2="138" y2="256" class="ac"/>
+<line x1="178" y1="194" x2="178" y2="256" class="ac"/>
+<line x1="218" y1="194" x2="218" y2="256" class="ac"/>
+<line x1="258" y1="194" x2="258" y2="256" class="ac"/>
+<line x1="298" y1="194" x2="298" y2="256" class="ac"/>
+<line x1="20" y1="250" x2="345" y2="250" class="thin"/>
+<text x="180" y="286" text-anchor="middle" class="m">オンになり始める電圧 →</text>
+</svg><figcaption class="fig-cap">山の一つひとつは、同じデータを書いた多くのセルの「オンになり始める電圧」のばらつきです。太い線が、読むときの境目の電圧です。TLCは境目が7本で、山の間が狭くなります。省略していること: 実際の山の形と幅、各段階への0と1の割り当て方。</figcaption></figure>
+<p>同じデータを書いても、セルの電圧は少しずつばらつき、図のような山になります。段階を細かく分けるほど、山と山のすき間は狭くなります。そのため、電子を少しずつ足しては確かめる手順が増え、書き込みが遅くなります。読むときも、境目の電圧を変えて何度も調べます。わずかな電子の漏れでも隣の段階と見分けにくくなるので、書き換えに耐えられる回数も減ります。</p>
+<p>まとめると、SLCからQLCへ進むほど、安く大容量になる代わりに、遅く、すり減りやすくなります。そこで、いまのパソコン用のSSDの多くはTLCかQLCを使います。そのうえで、空いているセルの一部を一時的にSLCとして使い、書き込みの速さを補う製品が多くあります(「<a href="{{home}}compare/slc-vs-mlc-vs-tlc-vs-qlc/">SLC・MLC・TLC・QLCの違い</a>」)。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>多値のセルは、コップの水の高さで数を伝えるのに似ています。「空か満杯か」の2通りなら間違えません。8通りの高さを使えば多くを伝えられますが、少し水が減るだけで読み違えます。似ているのは「段階を細かく分けるほど、量のわずかなずれに弱くなる」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> セルの中の電子の量は、目で見るように直接は測れません。電圧を変えながら「オンになるかどうか」を何度も確かめて、どの段階かを割り出します。</p></aside>
+</section>
+
+<section>
+<h2>しくみ③ なぜすり減るの?</h2>
+<p>セルにデータを書くときは、高い電圧で電子を絶縁膜の向こうへ押し込みます。消すときは、逆向きの電圧で電子を引き抜きます。この「書いて消す」1往復を、書き換えの1回と数えます。</p>
+<p>電子が強い電圧で絶縁膜を通るたびに、膜の中に小さな傷ができます。傷に電子が引っかかると、しきい値電圧が少しずつずれます。傷が増えると、ためた電子が漏れる道にもなります。こうして、山の形が崩れて段階を見分けにくくなるのが、フラッシュがすり減るしくみです。</p>
+<p>耐えられる書き換えの回数は、セルの方式や製品の世代で大きく違います。目安は、SLCが約10万回、TLCが数千回、QLCが1,000回前後です。出典はメーカーKingstonの解説と、2024年の業界誌の報道です。</p>
+<p>少しの読み違いは、コントローラが直します。書くときに確かめ用の余分な情報を足し、読むときに誤ったビットを見つけて直すのです。これを{{term:ECC(誤り訂正符号)|誤り訂正}}と呼び、多値で小さなセルほど欠かせません。</p>
+</section>
+
+<section>
+<h2>しくみ④ 「ページで書いて、ブロックで消す」</h2>
+<p>フラッシュには、もう一つ癖があります。データの入った場所には上書きできず、いったん消してから書く必要があるのです。書くときは、何万個ものセルを「ページ」というまとまりで書きます。消すときは、多くのページを含む「ブロック」ごとに消します。1ブロックは64〜512ページほどです(2026年のソウル大学の講義資料)。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>ブロックは、ボールペンで書く綴じたノートに似ています。空いたページには1枚ずつ書き足せますが、書いたページを消しゴムで消すことはできません。ノートを白紙に戻すには、1冊まるごと作り直すしかありません。似ているのは「書くのは1ページずつ、消すのは1冊まるごと」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 本物のノートは、作り直せば新品になります。フラッシュのブロックは消すたびに少し傷み、同じブロックを使い続けます。また、ノートのページは好きな順に書けますが、フラッシュのブロックの中は、ふつう決まった順にしか書けません。</p></aside>
+<p>では、ファイルの一部を書き直すとどうなるでしょう。コントローラは、古いページをその場で書き換えず、新しい内容を別の空いたページに書きます。そして対応表を書き換え、古いページには「もう使わない」という印をつけます。こうして、使わないページがあちこちのブロックに少しずつたまっていきます。</p>
+</section>
+
+<section>
+<h2>しくみ⑤ コントローラの4つの工夫</h2>
+<p>空いたページが足りなくなると、コントローラは片付けを始めます。使わないページの多いブロックを選び、まだ必要なページだけを別のブロックへ写します。そのうえで、元のブロックをまるごと消して空きに戻します。この片付けを、{{term:ガベージコレクション}}と呼びます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 314" role="img"><title>ガベージコレクション: 必要なページだけを写してから、ブロックをまるごと消す</title>
+<text x="10" y="22">① Aに不要なページ(×)が増えた</text>
+<text x="10" y="58" class="a">A</text>
+<rect x="40" y="36" width="36" height="34" class="n"/>
+<rect x="79" y="36" width="36" height="34" class="ng"/><text x="97" y="59" text-anchor="middle">×</text>
+<rect x="118" y="36" width="36" height="34" class="ng"/><text x="136" y="59" text-anchor="middle">×</text>
+<rect x="157" y="36" width="36" height="34" class="n"/>
+<rect x="196" y="36" width="36" height="34" class="ng"/><text x="214" y="59" text-anchor="middle">×</text>
+<rect x="235" y="36" width="36" height="34" class="ng"/><text x="253" y="59" text-anchor="middle">×</text>
+<rect x="274" y="36" width="36" height="34" class="n"/>
+<rect x="313" y="36" width="36" height="34" class="ng"/><text x="331" y="59" text-anchor="middle">×</text>
+<text x="10" y="104">② 必要なページだけをBへ写す</text>
+<text x="10" y="140" class="a">B</text>
+<rect x="40" y="118" width="36" height="34" class="n"/>
+<rect x="79" y="118" width="36" height="34" class="n"/>
+<rect x="118" y="118" width="36" height="34" class="n"/>
+<rect x="157" y="118" width="36" height="34" class="ok"/>
+<rect x="196" y="118" width="36" height="34" class="ok"/>
+<rect x="235" y="118" width="36" height="34" class="ok"/>
+<rect x="274" y="118" width="36" height="34" class="ok"/>
+<rect x="313" y="118" width="36" height="34" class="ok"/>
+<text x="10" y="186">③ Aをまるごと消して空きに戻す</text>
+<text x="10" y="222" class="a">A</text>
+<rect x="40" y="200" width="36" height="34" class="ok"/>
+<rect x="79" y="200" width="36" height="34" class="ok"/>
+<rect x="118" y="200" width="36" height="34" class="ok"/>
+<rect x="157" y="200" width="36" height="34" class="ok"/>
+<rect x="196" y="200" width="36" height="34" class="ok"/>
+<rect x="235" y="200" width="36" height="34" class="ok"/>
+<rect x="274" y="200" width="36" height="34" class="ok"/>
+<rect x="313" y="200" width="36" height="34" class="ok"/>
+<rect x="40" y="254" width="16" height="16" class="n"/><text x="62" y="268" class="m">必要</text>
+<rect x="120" y="254" width="16" height="16" class="ng"/><text x="142" y="268" class="m">不要</text>
+<rect x="200" y="254" width="16" height="16" class="ok"/><text x="222" y="268" class="m">空き</text>
+<text x="180" y="302" text-anchor="middle" class="a">②で写した分が、余分な書き込み</text>
+</svg><figcaption class="fig-cap">Aの8ページのうち必要な3ページを空いたBへ写してから、Aを消します。パソコンが頼んでいない②の書き込みが、書き込み増幅のもとです。省略していること: 実際のページ数(1ブロックに数百ページ)、対応表の書き換え、どのブロックを選ぶかの決め方。</figcaption></figure>
+<p>図の②の書き写しは、パソコンが頼んだものではありませんが、セルはすり減ります。このように、パソコンが書いた量より、フラッシュに実際に書く量が多くなることを{{term:書き込み増幅(ライトアンプリフィケーション)|書き込み増幅}}と呼びます。必要なページが多く残るブロックを片付けるほど、写す量が増え、書き込み増幅は大きくなります。</p>
+<p>写す量を減らすには、要らないページをコントローラが早く知ることが大事です。ところが、ファイルを削除しても、ふつうはパソコン側の管理情報が変わるだけです。そこでOSは、削除した場所を「もう使わない」とSSDに知らせます。この知らせを{{term:TRIM}}と呼び、要らないデータを片付けのときに写さずにすみます。</p>
+<p>さらに、SSDは表示の容量より少し多くのフラッシュを積み、余りを利用者から見えない作業用の空きにしています。これをオーバープロビジョニングと呼びます。空きに余裕があるほど、片付けのときに選べるブロックが増え、写す量を減らせます。</p>
+<p>最後に、新しく書くときは傷みの少ないブロックを選び、ほとんど変わらないデータもときどき移します。全部のブロックが同じくらいずつすり減るようにする、この工夫が{{term:ウェアレベリング}}です。</p>
+</section>
+
+<section>
+<h2>しくみ⑥ 3D NAND: セルを縦に積む</h2>
+<p>フラッシュの容量は、長いあいだセルを小さくして増やしてきました。しかし平面のまま小さくすると、ためられる電子が減り、隣のセルどうしも影響し合います。2010年代のはじめには、その限界が近づきました。</p>
+<p>そこで、セルを縦に積み重ねる方法が実用化されました。これを{{term:3D NAND}}と呼びます。Samsungは2013年8月、最大24層の製品の量産開始を発表しました。Micronは2022年7月、232層の製品の量産と出荷を発表しました。SK hynixは2024年11月、321層の製品の量産開始を発表しています。</p>
+<p>積み重ねると、チップの面積を広げずにセルの数を増やせるので、同じ容量のSSDを安く作れます。ただし、層を増やすほど、深い穴を正確にあける工程などが難しくなります。</p>
+</section>
+
+<section>
+<h2>電源を切ったまま置くとどうなる?</h2>
+<p>絶縁膜に囲まれた電子も、長い時間がたつと少しずつ漏れて、しきい値電圧がずれていきます。漏れは温度が高いほど速く進み、書き換えで膜が傷んだセルほど起きやすくなります(温度と速さの関係は「<a href="{{home}}learn/arrhenius-equation-in-chips/">アレニウスの式とは?</a>」)。</p>
+<p>業界団体JEDECの規格JESD218は、SSDに求める保持の期間を決めています。家庭や会社のパソコン向け(クライアント用)は、電源を切って30℃で1年です。データセンター向け(エンタープライズ用)は40℃で3か月です。どちらも、保証した書き込み量を使い切った、いちばん傷んだ状態での最低限の値です。それでも、何年も電源を入れないSSDを唯一の保存先にするのは避けるのが安全です。</p>
+</section>
+
+<section>
+<h2>寿命の数字の読み方: TBWとDWPD</h2>
+<p>SSDの寿命の目安は、保証期間中に書き込んでよい量の合計で示されます。これがTBW(テラバイト・リトン)です。JEDECの規格では、この量を書いた後も、決められた誤りの少なさと保持の期間を守ることが条件です。</p>
+<p>もう一つの書き方が、DWPD(1日あたりのドライブ書き込み回数)です。これは「保証期間のあいだ、毎日、全容量の何回分を書いてよいか」です。例えばSamsungの990 PROの1TBの型は、600TBW・保証5年です。600TBを約1,800日で割ると毎日約330GB、つまり約0.33 DWPDになります。</p>
+<p>TBWは保証の目安で、超えたらすぐ壊れるわけでも、それまで必ずもつわけでもありません。</p>
+</section>
+
+<section>
+<h2>日本とのかかわり</h2>
+<p>フラッシュメモリは、日本で生まれた技術です。東芝の舛岡富士雄さんらは、1984年にNOR型、1987年にNAND型のフラッシュメモリを発表しました。SSDに使われるのは、大容量に向くNAND型のほうです(「<a href="{{home}}compare/nand-vs-nor-flash/">NAND型とNOR型の違い</a>」)。</p>
+<p>東芝のメモリ事業を引き継いだのがキオクシアです。2026年時点で、四日市(三重県)と北上(岩手県)の工場で作っています。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: SSDは、ふつうに使っていてもすぐにすり減って壊れる</p><p>実際は、ふつうの使い方なら、保証された書き込み量を使い切るには長い年月がかかります。例えば600TBWのSSDに毎日50GBずつ書き込んでも、600TBに届くまで30年以上かかります。「回数に限りがある」という話だけが伝わると、すぐ壊れるように感じられます。ただしSSDは、部品の故障など、すり減り以外の理由でも壊れます。大事なデータは、別の場所にも写しておきましょう。</p></div>
+<div class="myth"><p class="myth-q">誤解: ファイルを削除すると、その場でチップからデータが消える</p><p>実際は、削除してもすぐにセルの電子が抜かれるわけではありません。TRIMで知らされた場所は、後でコントローラが片付けるときに、ブロックごと消されます。それまでは、データがセルに残っていることがあります。SSDを手放すときは、メーカーやOSが用意する、SSD全体を消去する機能を使うのが確実です。</p></div>
+<div class="myth"><p class="myth-q">誤解: 層の数が多いフラッシュほど、SSDが速い</p><p>実際は、層の数は主に、1個のチップにどれだけ詰め込めるか(容量と値段)に効く数字です。SSDの速さは、つなぎ方(SATAかNVMeか)、コントローラ、何個のチップを同時に動かすかなどで決まります。チップ1個の容量が増えると、同じ容量のSSDに載るチップが減り、同時に動かせる数が減ることもあります。層の多い新しい世代は入出力も改良されることが多く、混同されがちです。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>くらべると</th></tr></thead>
+<tbody>
+<tr><td>書き換えに耐える回数の目安(SLC / TLC / QLC)</td><td>約10万 / 数千 / 1,000回前後</td><td>QLCはSLCの約100分の1(製品と世代で違う)</td></tr>
+<tr><td>3D NANDの層の数</td><td>24層(2013年)→ 232層(2022年)→ 321層(2024年)</td><td>11年で13倍ほど</td></tr>
+<tr><td>電源を切ったときの保持(JEDEC、クライアント用)</td><td>30℃で1年</td><td>寿命の終わりの状態での最低限の値</td></tr>
+<tr><td>990 PRO 1TBの保証(TBW)</td><td>600TB・5年</td><td>約0.33 DWPD(毎日約330GB)</td></tr>
+</tbody>
+</table>
+<p>層の数は各社が量産や出荷を発表した時点のもので、2025年以降、さらに多い層の技術も発表されています。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="{{home}}compare/slc-vs-mlc-vs-tlc-vs-qlc/">SLC・MLC・TLC・QLCの違い</a>、<a href="{{home}}compare/dram-vs-nand-flash/">DRAMとNANDフラッシュの違い</a>、<a href="{{home}}compare/ssd-vs-hdd/">SSDとHDDの違い</a></li>
+<li>次の一歩の用語: {{term:FNトンネル電流(ファウラー・ノルドハイム)|FNトンネル電流}}(電子を押し込むしくみ)、{{term:不揮発性メモリ}}</li>
+<li>数字で試す: <a href="{{home}}tools/media-data-size-calculator/">画像・音声・動画のデータ量の計算ツール</a>(毎日どれくらい書き込むかの見当に)</li>
+<li>図で見る: NANDのセルの並び(ストリング)などは、<a href="{{home}}figures/">図解</a>の一覧にあります</li>
+<li>関連する解説: 「<a href="{{home}}learn/memory-vs-storage/">メモリとストレージの違いは?</a>」、「<a href="{{home}}learn/quantum-tunneling-in-chips/">トンネル効果とは?</a>」</li>
+</ul>
+</section>
