@@ -13027,5 +13027,726 @@
         "In supervised learning the correct output is given for each input, and the model learns to reduce the difference from it. In reinforcement learning no correct answer is given for each action; the only guide is an evaluation called the reward. Moreover, the reward often comes only after a whole sequence of actions, so the learner must work out for itself which actions were good. It also differs in that the learner collects its own training data through its actions."
       ]
     ]
+  },
+  "fir-vs-iir-filter": {
+    "title": "FIR vs IIR Filters: Structure, Stability, Phase, Filter Order and Computation",
+    "description": "FIR vs IIR digital filters compared in one table: difference equation and impulse response, stability, phase response, order needed for the same specification, computation, delay, coefficient quantization, design methods and typical uses.",
+    "lead": "Both are digital filters that shape the frequency response of a signal, but they differ in whether past outputs are used in the calculation. An FIR (finite impulse response) filter only multiplies the current and past inputs by coefficients and adds them up, so its impulse response ends after as many samples as it has taps. An IIR (infinite impulse response) filter also feeds past outputs back into the calculation, so in theory its impulse response goes on forever. An FIR filter is always stable and becomes linear phase if its coefficients are symmetric, but a sharp response needs many taps. An IIR filter achieves a sharp response with a low order, but its phase is not linear and it can become unstable depending on where its poles lie.",
+    "items": [
+      "FIR filter",
+      "IIR filter"
+    ],
+    "rows": [
+      [
+        "Difference equation and impulse response",
+        "y[n] = Σh[k]x[n − k]: a weighted sum of inputs only; the impulse response ends after N taps",
+        "y[n] = Σb[k]x[n − k] − Σa[k]y[n − k]: past outputs are fed back, and the impulse response decays but continues"
+      ],
+      [
+        "Transfer function H(z) and stability",
+        "No denominator; the only poles are at z = 0, so it is always stable whatever the coefficients",
+        "Has a denominator; stable only if all poles lie inside the unit circle"
+      ],
+      [
+        "Phase response",
+        "Linear phase if the coefficients are symmetric; the group delay is (N − 1)/2 samples at every frequency",
+        "Not linear phase; the group delay changes with frequency and grows near the cutoff"
+      ],
+      [
+        "Order needed for the same specification (example)",
+        "For a low-pass filter at fs = 48 kHz with a 4 kHz passband edge, a 5 kHz stopband edge, 60 dB attenuation and 0.5 dB passband ripple, an equiripple design needs about 110 taps",
+        "An elliptic filter meeting the same specification is 7th order (4 second-order sections)"
+      ],
+      [
+        "Computation per output sample",
+        "As many multiply-accumulates as taps: about 110 in the example (symmetry roughly halves the multiplications)",
+        "About 5 multiplications per second-order section: about 20 in the example"
+      ],
+      [
+        "Delay",
+        "Constant (N − 1)/2 samples: about 56 samples (about 1.2 ms) in the example",
+        "Varies with frequency: in the example about 9 samples at low frequencies and about 75 samples at the passband edge"
+      ],
+      [
+        "Coefficient quantization (fixed point)",
+        "The frequency response changes slightly, but stability is never lost",
+        "Implementing a high-order equation directly can move poles and cause instability; it is implemented as a cascade of second-order sections (biquads)"
+      ],
+      [
+        "Main design methods",
+        "Window method, equiripple (Parks-McClellan) method",
+        "Bilinear transform of an analog prototype (Butterworth, Chebyshev, elliptic and others)"
+      ],
+      [
+        "Typical uses",
+        "Communications and measurement where the waveform shape must be kept, audio and image processing, decimation and interpolation filters, adaptive filters",
+        "Embedded devices that must save computation and memory, audio equalizers, DC removal and exponential smoothing"
+      ]
+    ],
+    "when": [
+      [
+        "FIR filter",
+        "When the waveform shape must not be distorted (pulse shaping in communications, measurement, audio and image processing), for decimation and interpolation filters, and for adaptive filters that must stay stable while their coefficients change. It needs many multiply-accumulates, but DSPs and FPGAs can process them in parallel."
+      ],
+      [
+        "IIR filter",
+        "When computation, memory or delay must be kept small. In uses where phase distortion does not matter, it gives sharp responses, narrow notches and DC removal with little calculation."
+      ]
+    ],
+    "faq": [
+      [
+        "What do the names FIR and IIR describe?",
+        "The length of the impulse response, the output for an impulse (a signal that is 1 only at n = 0). An FIR (finite impulse response) filter's response returns to 0 after a finite length, which is N for N taps. An IIR (infinite impulse response) filter's response keeps going because of feedback: for y[n] = 0.2x[n] + 0.8y[n − 1], the impulse response is 0.2 × 0.8ⁿ, approaching 0 but never ending."
+      ],
+      [
+        "What is the benefit of linear phase?",
+        "All frequency components are delayed by the same time, so the shape of the waveform in the passband is preserved. For an N-tap FIR filter with symmetric coefficients, the delay is (N − 1)/2 samples at every frequency: 50 samples for 101 taps (about 1.04 ms at 48 kHz). An IIR filter delays different frequencies by different amounts, which distorts the shape of pulses and steps."
+      ],
+      [
+        "Why can an IIR filter become unstable?",
+        "Because it feeds the output back: if a pole (a value of z where the denominator of the transfer function is 0) lies outside the unit circle, the output grows without limit. A first-order filter such as y[n] = x[n] + 0.5y[n − 1] is stable because the feedback coefficient is smaller than 1 in magnitude, but in a sharp high-order filter the poles cluster near the unit circle, and rounding the coefficients alone can push one outside. That is why it is split into second-order sections."
+      ],
+      [
+        "Is there a way to remove the phase shift of an IIR filter?",
+        "If recorded data is processed afterwards, applying the same filter forward and then backward cancels the phase shift (zero-phase filtering). This is not possible in real time, because it needs future inputs, so real-time systems either correct the group delay with an all-pass filter or choose a linear-phase FIR filter."
+      ]
+    ]
+  },
+  "open-loop-vs-closed-loop-control": {
+    "title": "Open-Loop vs Closed-Loop Control: Structure, Disturbance Rejection, Stability, Sensors and Uses",
+    "description": "Open-loop vs closed-loop (feedback) control compared in one table: signal flow, need for a sensor, response to disturbances, robustness to plant changes, speed of response, stability, steady-state error, structure and cost, and examples.",
+    "lead": "Open-loop control decides the manipulated variable from the setpoint and applies it to the plant, without measuring the resulting controlled variable to check it. Closed-loop control measures the controlled variable with a sensor, compares it with the setpoint and keeps correcting the manipulated variable to make the difference (the error) smaller. Because the signal returns from the output to the input side and goes around a loop, it is also called feedback control. Open-loop control is simple and cheap, and with a stable plant the controller itself never causes oscillation, but it cannot correct deviations caused by disturbances or changes in the plant. Closed-loop control corrects them automatically, but it needs a sensor and oscillates or becomes unstable if the gain is raised too far.",
+    "items": [
+      "Open-loop control",
+      "Closed-loop control (feedback control)"
+    ],
+    "rows": [
+      [
+        "Signal flow",
+        "Setpoint → controller → plant → controlled variable; the output is not fed back",
+        "The controlled variable is measured by a sensor and the difference from the setpoint (the error) is fed back to the controller; the signal goes around a loop"
+      ],
+      [
+        "Sensor (measuring the controlled variable)",
+        "Not needed",
+        "Needed; the sensor's accuracy and noise limit the accuracy of control"
+      ],
+      [
+        "Response to disturbances",
+        "Cannot correct them; if the load or ambient temperature changes, the output stays off target",
+        "Corrects any deviation that appears as an error, whatever its cause"
+      ],
+      [
+        "Changes in the plant",
+        "Appear directly in the result: if the plant gain drops by 50%, the output drops by 50%",
+        "Their effect is reduced: with negative feedback, G = 100 and H = 0.1, halving G lowers the closed-loop gain by only about 8.3%"
+      ],
+      [
+        "Speed of response",
+        "Only the plant's own lag; it acts without waiting for an error to appear",
+        "There is a delay, because it corrects after an error appears; with a higher gain, however, it can respond faster than the plant alone"
+      ],
+      [
+        "Stability",
+        "With a stable plant, the controller never causes oscillation or divergence",
+        "Oscillates and diverges if the gain is too high or lags such as dead time are large; checked with gain margin and phase margin"
+      ],
+      [
+        "Steady-state error",
+        "Can be 0 if the model is accurate, but errors from model mismatch and disturbances remain as they are",
+        "Proportional action alone leaves an error (1/(1 + G(0)) for a step in a type-0 system); adding integral action makes it 0"
+      ],
+      [
+        "Structure and cost",
+        "Simple and cheap; accuracy depends on how accurate the model and parts are",
+        "Needs a sensor and a circuit or software that compares and corrects; the loop must be designed and tuned with stability in mind"
+      ],
+      [
+        "Examples",
+        "A toaster that browns bread by time alone, positioning a stepper motor by counting pulses, traffic lights that switch at fixed times",
+        "Room temperature in an air conditioner, cruise control in a car, the output voltage of a DC-DC converter, motor speed and position"
+      ]
+    ],
+    "when": [
+      [
+        "Open-loop control",
+        "When disturbances are small and the plant is well known and does not change much. It is also used when a sensor cannot be fitted or would be too expensive. With a stable plant there is no risk of oscillation and tuning is simple."
+      ],
+      [
+        "Closed-loop control (feedback control)",
+        "When the result must match the setpoint accurately despite disturbances, load changes, part-to-part variation and aging. Most control of temperature, speed, position and voltage is of this kind, with PID control as the typical example."
+      ]
+    ],
+    "faq": [
+      [
+        "Is feedforward control a kind of open-loop control?",
+        "Looking at the feedforward path alone, yes: it decides the manipulated variable from a model without measuring the controlled variable, so it has an open-loop structure. Because it measures disturbances or setpoint changes and adds a canceling action before an error appears, it responds quickly, but it cannot correct unmeasured disturbances or model errors. It is therefore usually combined with feedback control, which corrects what remains. The feedforward path lies outside the loop, so it does not change the loop's stability."
+      ],
+      [
+        "Why is closed-loop control robust to changes in the plant?",
+        "With negative feedback, forward gain G and feedback gain H, the closed-loop gain is G/(1 + GH). When GH is much larger than 1, this is about 1/H and hardly depends on G. With G = 100 and H = 0.1 the closed-loop gain is about 9.09, and even if G halves to 50 it is about 8.33, a drop of only about 8.3%. In open-loop control, halving G halves the result."
+      ],
+      [
+        "Why does closed-loop control become unstable?",
+        "Because of lags in the plant and sensor, corrective actions take effect late. With a high gain, the controller corrects a deviation so strongly that it overshoots in the opposite direction, and repeating this causes oscillation. If the loop gain is 1 (0 dB) or more at the frequency where the phase of the loop transfer function reaches −180°, the oscillation keeps growing and diverges. Designers check how far the loop is from instability with the gain margin and phase margin."
+      ]
+    ]
+  },
+  "p-vs-pi-vs-pid-control": {
+    "title": "P vs PI vs PID Control: Steady-State Error, Speed, Overshoot and Tuning",
+    "description": "P (proportional), PI and PID control compared in one table: control law, steady-state error, speed of response, overshoot and oscillation, a simulator example, noise sensitivity, actuator saturation, tuning parameters with Ziegler-Nichols starting values, and typical uses.",
+    "lead": "All three are feedback controllers that decide the manipulated variable from the error e between the setpoint and the controlled variable; they differ in how many terms they use. P control outputs an action proportional to the error, PI control adds the integral of the error, and PID control also adds the derivative of the error. P (proportional) handles speed of response, I (integral) removes steady-state error and D (derivative) suppresses overshoot and oscillation. For a plant without an integrator, P control alone leaves an error. PI control removes it, but the added phase lag makes oscillation more likely, and adding D helps suppress that oscillation.",
+    "items": [
+      "P control",
+      "PI control",
+      "PID control"
+    ],
+    "rows": [
+      [
+        "Control law",
+        "u = Kp·e",
+        "u = Kp·e + Ki∫e dt",
+        "u = Kp·e + Ki∫e dt + Kd·de/dt"
+      ],
+      [
+        "Steady-state error for a step setpoint (plant without an integrator)",
+        "Remains: 1/(1 + K·Kp) for a first-order plant K/(Ts + 1)",
+        "Becomes 0",
+        "Becomes 0"
+      ],
+      [
+        "Speed of response",
+        "Faster as Kp is raised",
+        "Raising the integral gain Ki speeds up the rise but increases overshoot",
+        "D adds damping, making it easier to raise the gain while keeping overshoot down"
+      ],
+      [
+        "Overshoot and oscillation",
+        "Too high a Kp makes the response oscillatory, and unstable for plants with large lags",
+        "The integral adds 90° of phase lag, so it oscillates more easily than P control",
+        "The derivative anticipates changes in the error and reduces oscillation"
+      ],
+      [
+        "Simulator example (first-order plant with dead time, K = 1, T = 10 s, L = 2 s, Kp = 4)",
+        "Steady-state error 0.2, overshoot about 30%",
+        "With Ki = 0.4: steady-state error 0, overshoot about 30%",
+        "Adding Kd = 4: steady-state error 0, overshoot about 7%"
+      ],
+      [
+        "Noise sensitivity",
+        "Noise is also multiplied by Kp",
+        "The high-frequency gain is Kp, about the same as P control",
+        "The derivative amplifies higher frequencies more, so it amplifies noise; it is combined with a low-pass filter (filtered derivative)"
+      ],
+      [
+        "Actuator saturation",
+        "No integrator, so nothing winds up while the output is at its limit",
+        "The integral keeps accumulating while the output is held at its limit (integral windup); countermeasures such as stopping the integration are needed",
+        "Needs windup countermeasures like PI control; also watch for derivative kick when the setpoint changes suddenly"
+      ],
+      [
+        "Tuning parameters and Ziegler-Nichols ultimate-gain starting values",
+        "One parameter, Kp: Kp = 0.5Ku",
+        "Two, Kp and Ti (or Ki): Kp = 0.45Ku, Ti ≈ 0.83Tu",
+        "Three, Kp, Ti and Td: Kp = 0.6Ku, Ti = 0.5Tu, Td = 0.125Tu"
+      ],
+      [
+        "Typical uses",
+        "Control that tolerates a small error, and position control of plants that contain an integrator (no error remains for a step)",
+        "Temperature, flow, pressure, motor speed and supply voltage; in practice, many control loops use PI without D",
+        "Temperature and position control with large lags where overshoot must be kept down"
+      ]
+    ],
+    "when": [
+      [
+        "P control",
+        "When the plant contains an integrator (such as a motor's position) or a small steady-state error is acceptable. It is the simplest, with only Kp to tune."
+      ],
+      [
+        "PI control",
+        "When the steady-state error for constant setpoints and disturbances must be 0. It is robust to noise and easy to tune, so it is the standard choice in many loops for temperature, flow, speed and supply voltage."
+      ],
+      [
+        "PID control",
+        "When dead time or lags are large and PI control gives too much overshoot or oscillation. Put a low-pass filter on the derivative, and keep the D gain modest when the sensor is noisy."
+      ]
+    ],
+    "faq": [
+      [
+        "Why does P control alone leave a steady-state error?",
+        "Because the action is proportional to the error, an error must remain for the controller to keep outputting an action. Under P control with unity feedback, a first-order plant K/(Ts + 1) settles at K·Kp/(1 + K·Kp) with an error of 1/(1 + K·Kp); with K = 1 and Kp = 4, the final value is 0.8 and the error is 0.2. Raising Kp makes the error smaller but never 0, and raising it too far causes oscillation."
+      ],
+      [
+        "Why does PI control bring the steady-state error to 0?",
+        "The integral term keeps changing as long as any error remains, so it can only settle where the error is 0. Even with zero error, the value accumulated in the integral term keeps supplying the needed action. In exchange, the integral adds 90° of phase lag, so making it too strong (the integral time Ti too short) increases overshoot and oscillation."
+      ],
+      [
+        "What should I watch out for when adding D (derivative)?",
+        "The derivative amplifies higher-frequency components more, so it amplifies sensor noise. It is therefore implemented as a filtered derivative with a first-order low-pass filter that limits the high-frequency gain to about N times (N is often around 8 to 20). To prevent derivative kick, the jump in the action at the moment the setpoint steps, the derivative is also often applied only to the measurement rather than the error (PI-D control)."
+      ],
+      [
+        "In what order should the gains be tuned?",
+        "The basic procedure is to raise Kp with P control alone until just before oscillation starts, then add I to remove the steady-state error, and add D if the overshoot is large. If the gain Ku at which proportional control sustains oscillation and the period Tu are known, the Ziegler-Nichols ultimate-gain method (for PID, Kp = 0.6Ku, Ti = 0.5Tu, Td = 0.125Tu) gives a starting point, but the resulting response is oscillatory, so the gains are then lowered from there."
+      ]
+    ]
+  },
+  "converter-vs-inverter": {
+    "title": "Converter vs Inverter: Rectifier, DC-DC Converter and Inverter Compared",
+    "description": "Rectifier (AC-DC converter), DC-DC converter and inverter compared in one table: direction of conversion, main switches, basic circuits, what sets the output, ideal output equations, what remains on the output, input-side issues and typical uses.",
+    "lead": "In power electronics, circuits that change the form of electric power are named by the direction of conversion. A rectifier (AC-DC converter) converts AC to DC, a DC-DC converter (chopper) converts DC to DC at another voltage, and an inverter converts DC to AC. In a broad sense, all of these are sometimes called power converters. Air conditioners and industrial motor drives commonly combine the two ends: a rectifier first turns AC into DC, and an inverter turns it back into AC with an adjustable frequency and voltage.",
+    "items": [
+      "Rectifier circuit (AC to DC)",
+      "DC-DC converter (DC to DC)",
+      "Inverter (DC to AC)"
+    ],
+    "rows": [
+      [
+        "Direction of conversion",
+        "AC → DC",
+        "DC → DC at another voltage",
+        "DC → AC with adjustable frequency and voltage"
+      ],
+      [
+        "Main switches",
+        "Diodes; thyristors if the output is to be controlled",
+        "A switch such as a MOSFET plus a diode (synchronous rectification replaces the diode with a MOSFET)",
+        "IGBTs or MOSFETs, each with an antiparallel diode"
+      ],
+      [
+        "Basic circuits",
+        "Single-phase bridge of 4 diodes, three-phase bridge of 6; followed by a smoothing capacitor",
+        "Buck, boost and buck-boost choppers built from a switch, inductor, diode and capacitor; transformer-based topologies (such as flyback) when isolation is needed",
+        "Half bridge (2 switches), full bridge (4), three-phase bridge (6)"
+      ],
+      [
+        "What sets the output",
+        "The input AC voltage (with thyristors, adjusted by the firing angle α)",
+        "The switch duty cycle D",
+        "The PWM modulation index m (voltage) and the frequency of the modulating wave (output frequency)"
+      ],
+      [
+        "Ideal output equations",
+        "Single-phase full-wave average is about 0.9 × RMS (about 90 V for 100 V); with a smoothing capacitor it approaches the peak of about 141 V",
+        "In continuous conduction mode, buck Vout = D·Vin and boost Vout = Vin/(1 − D)",
+        "With sinusoidal PWM, the fundamental amplitude of a leg output is m·E/2 (E is the DC voltage); the three-phase line-to-line RMS is about 0.61·m·E"
+      ],
+      [
+        "What remains on the output",
+        "Ripple at twice the line frequency (full-wave), reduced by the smoothing capacitor",
+        "Ripple at the switching frequency, reduced by the inductor and capacitor",
+        "Harmonics around the carrier frequency, reduced by the motor winding inductance or an LC filter"
+      ],
+      [
+        "Input-side issues",
+        "Capacitor charging current is concentrated near the voltage peaks, and the harmonic-rich current lowers the power factor; power factor correction (PFC) improves it",
+        "In a buck converter the input current is pulsed, so the input capacitor is important",
+        "Large ripple current flows on the DC side; braking a motor quickly returns power that raises the DC voltage"
+      ],
+      [
+        "Typical uses",
+        "The input stage of AC adapters and appliance power supplies, the front end of motor drives",
+        "CPU and SoC core supplies, rails derived from batteries or 12 V, LED drivers",
+        "Motor speed control (inverter air conditioners, trains, electric vehicles), solar power conditioners, uninterruptible power supplies (UPS)"
+      ]
+    ],
+    "when": [
+      [
+        "Rectifier circuit (AC to DC)",
+        "When making the DC that electronics and batteries need from AC mains. In equipment above a certain power, a power factor correction stage often follows to make the input current closer to a sine wave."
+      ],
+      [
+        "DC-DC converter (DC to DC)",
+        "When a DC voltage must be changed efficiently to another voltage. The typical example is making the low voltages ICs need from a battery or from a 12 V or 48 V supply."
+      ],
+      [
+        "Inverter (DC to AC)",
+        "When making AC from DC, especially to control motor speed by changing the frequency, or to connect power from solar cells or batteries to the AC grid."
+      ]
+    ],
+    "faq": [
+      [
+        "How are the names converter and inverter used?",
+        "In the narrow sense, a device that converts AC to DC is called a converter and a device that converts DC to AC is called an inverter; the converter and inverter sections of a motor drive use the names this way. On the other hand, circuits that change the form of power are also often called converters (power converters) as a group, as in DC-DC converter, so the meaning has to be judged from context."
+      ],
+      [
+        "Why can an inverter change the speed of a motor?",
+        "Because AC motors such as induction motors turn at a speed set by the frequency of the applied AC. The synchronous speed of a 4-pole induction motor is 1500 min⁻¹ at 50 Hz and 1800 min⁻¹ at 60 Hz (120f/number of poles), so lowering the frequency with an inverter slows the motor and raising it speeds the motor up. When changing the frequency, the voltage-to-frequency ratio (V/f) is kept roughly constant so that the magnetic flux in the motor stays constant."
+      ],
+      [
+        "Why is the output of a rectifier hard to use as DC on its own?",
+        "The output of a diode bridge that only aligns the direction pulsates between 0 and the peak at twice the line frequency. A smoothing capacitor fills in the dips and brings it close to DC. The ripple is roughly load current ÷ (ripple frequency × capacitance): for full-wave rectification at 50 Hz, 2 A and 10,000 µF, it is 2 ÷ (100 × 0.01) = 2 V."
+      ],
+      [
+        "Is the output of an inverter a sine wave?",
+        "The output voltage itself is a train of pulses made by switching the DC voltage on and off. Sinusoidal PWM compares a sinusoidal reference with a triangular carrier to vary the pulse widths, so the fundamental obtained by averaging the pulses is a sine wave. In a motor, the winding inductance smooths the current; where a sinusoidal voltage is required, an LC filter is added."
+      ]
+    ]
+  },
+  "synchronizer-vs-toggle-vs-handshake-vs-async-fifo": {
+    "title": "2-Flop Synchronizer vs Toggle Synchronizer vs Handshake vs Asynchronous FIFO: Clock Domain Crossing Methods",
+    "description": "Four clock domain crossing (CDC) methods compared in one table: the two-flip-flop synchronizer, toggle synchronizer, req/ack handshake and asynchronous FIFO, by what they can carry, how they work, which signals are synchronized, throughput, latency, main pitfalls, circuit size and typical uses.",
+    "lead": "Between asynchronous clock domains there will always be moments when the receiving flip-flop cannot meet its setup or hold time, so signals are passed through circuits designed on the assumption that metastability will occur. The basic one is the synchronizer, which receives a 1-bit level signal through two flip-flops. A toggle synchronizer carries short pulses, a handshake carries occasional multi-bit data, and an asynchronous FIFO carries continuous, high-volume data. All of them share one idea: only a 1-bit signal, or a Gray code that changes by only one bit per step, is ever synchronized.",
+    "items": [
+      "2-flop synchronizer",
+      "Toggle synchronizer",
+      "Handshake",
+      "Asynchronous FIFO"
+    ],
+    "rows": [
+      [
+        "What it can carry",
+        "A 1-bit level signal (a slowly changing control signal)",
+        "A 1-bit pulse (an event)",
+        "Multi-bit data, one word at a time, occasionally",
+        "A stream of multi-bit data (continuous, high volume)"
+      ],
+      [
+        "How it works",
+        "Passes the signal through two flip-flops on the receiving clock, giving any metastability in the first stage time to resolve before the second stage captures it",
+        "Turns each pulse into a level that flips on the sending side, synchronizes it, and recovers the pulse on the receiving side by XORing it with a one-stage-delayed copy",
+        "Holds the data, passes req through a synchronizer, and once the receiver has captured the data, returns ack through a synchronizer",
+        "Writes into a dual-port memory and synchronizes Gray-coded pointers into the other domain to decide full and empty"
+      ],
+      [
+        "Signals that are synchronized",
+        "The signal itself",
+        "The toggle signal (1 bit)",
+        "req and ack (1 bit each); the data is not synchronized",
+        "Gray-coded pointers (only 1 bit changes per step)"
+      ],
+      [
+        "Throughput",
+        "The signal must change much more slowly than the receiving clock period",
+        "Pulses must be spaced by more than the few receiving cycles needed to detect each change",
+        "Slow: one 4-phase transfer takes 8 or more cycles across both domains",
+        "Fast: one word can be written and read every cycle"
+      ],
+      [
+        "Typical latency to the receiver",
+        "About 2 receiving-clock cycles",
+        "About 2 to 3 receiving-clock cycles",
+        "About 2 cycles for req to arrive; sending the next word must also wait for ack to come back",
+        "About 2 to 3 cycles until a written word is visible on the read side"
+      ],
+      [
+        "Main pitfalls",
+        "Used on multi-bit data, bits can be captured in different cycles and an intermediate value appears; short pulses from a faster domain can be lost",
+        "If pulses come too close together, the toggle signal returns to its old value and two events are missed",
+        "The data must not change until ack returns",
+        "The depth is set from the burst length and the read/write rate difference, plus margin for the synchronization delay"
+      ],
+      [
+        "Circuit size",
+        "2 flip-flops (sometimes 3 stages for fast clocks)",
+        "A few flip-flops and an XOR",
+        "req/ack synchronizers and state machines on both sides",
+        "Memory, pointers with Gray-code conversion, synchronizers and full/empty logic"
+      ],
+      [
+        "Typical uses",
+        "Control signals such as enables, asynchronous external inputs",
+        "Done or interrupt notifications that last only one cycle in a fast domain",
+        "Passing configuration register values",
+        "Data transfer between buses or interfaces running on different clocks"
+      ]
+    ],
+    "when": [
+      [
+        "2-flop synchronizer",
+        "For a 1-bit level signal that stays stable much longer than the receiving clock period. It is the building block of every other method; use 3 stages when the clock is fast or a longer MTBF is needed."
+      ],
+      [
+        "Toggle synchronizer",
+        "When a short pulse in a fast domain must reach a slower domain without being lost, provided that consecutive pulses are spaced by more than a few receiving cycles."
+      ],
+      [
+        "Handshake",
+        "When multi-bit data such as configuration values must be passed reliably from time to time. It is safe for any frequency ratio, but each transfer takes many cycles."
+      ],
+      [
+        "Asynchronous FIFO",
+        "When data must be passed continuously or at a high rate. It absorbs rate differences and bursts, but it is the largest circuit of the four."
+      ]
+    ],
+    "faq": [
+      [
+        "Why not put a 2-flop synchronizer on each bit of multi-bit data?",
+        "Because for each bit it is undetermined whether a change is captured at this edge or the next. For example, when the value changes from 0111 to 1000, the receiver can see 1111 or 0000 for one cycle, with only some bits updated. Instead, keep the data itself unsynchronized and stable and synchronize only a 1-bit control signal (a handshake), or use an asynchronous FIFO. For counter values, another option is to convert them to Gray code so that only one bit changes at a time."
+      ],
+      [
+        "What changes when a synchronizer goes from 2 to 3 stages?",
+        "The time available for metastability to resolve grows by about one clock period, and the mean time between failures (MTBF) grows exponentially. MTBF is roughly e^(t_r/τ) ÷ (T_0 × f_clk × f_data); with τ = 20 ps, adding 1 ns to t_r multiplies the MTBF by e^50 (more than 10 to the 21st power). The cost is one more cycle of latency."
+      ],
+      [
+        "Why are asynchronous FIFO pointers converted to Gray code?",
+        "Because a binary pointer can change several bits at once, as from 0111 to 1000, and synchronizing the bits separately can produce a completely unrelated value. In Gray code only one bit changes per step, so even if that bit goes metastable and resolves either way, the result is the value before or after the step. The receiver only sees a slightly old value, so the full and empty decisions err on the safe side."
+      ],
+      [
+        "How is the depth of an asynchronous FIFO chosen?",
+        "From the largest amount that piles up during a write burst because reading cannot keep up. With a 100 MHz write side and an 80 MHz read side, writing a 100-word burst one word per cycle and reading one word per cycle, the depth is 100 × (1 − 80/100) = 20 words. Real designs add margin for the pointer synchronization delay."
+      ]
+    ]
+  },
+  "series-vs-parallel-circuit": {
+    "title": "Series vs Parallel Circuits: Current, Voltage, Equivalent Resistance, Capacitors and Batteries",
+    "description": "Series vs parallel connection compared in one table: the shared quantity, the divided quantity, equivalent resistance, capacitance and inductance, which part dissipates more power, what happens when one part opens, connecting batteries, and examples in electronics.",
+    "lead": "Connecting parts in a single line is a series connection; connecting them side by side with their ends joined is a parallel connection. In series, the same current flows through every part and the voltage is divided among them. In parallel, the same voltage appears across every part and the current is divided among them. That is why resistances add in series, while in parallel the equivalent resistance is the reciprocal of the sum of reciprocals, smaller even than the smallest resistor. Capacitors are the exception: their formulas are reversed, adding in parallel and combining as reciprocals in series.",
+    "items": [
+      "Series connection",
+      "Parallel connection"
+    ],
+    "rows": [
+      [
+        "Shared quantity",
+        "Current (the same current flows through every part)",
+        "Voltage (the same voltage appears across every part)"
+      ],
+      [
+        "Divided quantity",
+        "Voltage, divided in proportion to resistance (voltage divider): 2 kΩ and 1 kΩ on 12 V give 8 V and 4 V",
+        "Current, divided in inverse proportion to resistance (current divider): 3 A into 10 Ω and 20 Ω splits into 2 A and 1 A"
+      ],
+      [
+        "Equivalent resistance",
+        "R = R1 + R2 + …: 100 Ω, 200 Ω and 300 Ω give 600 Ω",
+        "1/R = 1/R1 + 1/R2 + …: 100 Ω, 200 Ω and 300 Ω give about 54.5 Ω; for two resistors, product over sum"
+      ],
+      [
+        "Equivalent capacitance",
+        "1/C = 1/C1 + 1/C2 + …, so it gets smaller: 10 µF and 22 µF give about 6.88 µF",
+        "C = C1 + C2 + …, so it adds: 10 µF and 22 µF give 32 µF"
+      ],
+      [
+        "Equivalent inductance (no magnetic coupling)",
+        "L = L1 + L2 + … (same form as resistors)",
+        "1/L = 1/L1 + 1/L2 + … (same form as resistors)"
+      ],
+      [
+        "Part that dissipates more power",
+        "The larger resistance, because the current is the same (P = I²R)",
+        "The smaller resistance, because the voltage is the same (P = V²/R); two equal resistors share the power equally, but the ratings still need margin (derating)"
+      ],
+      [
+        "When one part opens",
+        "Current stops in the whole circuit",
+        "Current keeps flowing through the other parts"
+      ],
+      [
+        "Connecting batteries",
+        "Voltages add (two 1.5 V cells give 3 V); the capacity (mAh) stays that of one cell",
+        "The voltage stays that of one cell; capacities add, so it lasts longer"
+      ],
+      [
+        "Examples in electronics",
+        "Voltage dividers, current-limiting resistors for LEDs, thermal resistances stacked from junction to case to heat sink",
+        "Paralleling power MOSFETs to lower on-resistance, many vias and power straps in parallel to reduce IR drop, decoupling capacitors, household outlets"
+      ]
+    ],
+    "when": [
+      [
+        "Series connection",
+        "To divide a voltage (a voltage divider), to pass the same current through every part (such as driving several LEDs at the same current), or to build a higher voltage from batteries."
+      ],
+      [
+        "Parallel connection",
+        "To apply the same voltage to every part and keep the others working if one fails (household wiring), or to lower resistance and increase current capacity or capacitance."
+      ]
+    ],
+    "faq": [
+      [
+        "Why does connecting resistors in parallel lower the resistance?",
+        "Because there are more paths for current, so for the same voltage more total current flows. From Ohm's law, R = V/I, more current means a lower equivalent resistance. Whatever resistor is added in parallel, the result is smaller than the smallest resistor: 6 Ω in parallel with 3 Ω gives 18 ÷ 9 = 2 Ω."
+      ],
+      [
+        "Why are the series and parallel formulas reversed for capacitors?",
+        "The capacitance of a parallel-plate capacitor is C = εS/d (S is the plate area and d the plate gap). Connecting capacitors in parallel is like enlarging the plate area, while connecting identical capacitors in series is like widening the gap. In equation form, every capacitor in series holds the same charge Q and the voltages Q/C1 + Q/C2 + … add up, giving 1/C = 1/C1 + 1/C2 + …."
+      ],
+      [
+        "Why does the output of a voltage divider drop when a load is connected?",
+        "The load is in parallel with the lower resistor, which lowers the resistance of that part. Dividing 10 V with 10 kΩ and 10 kΩ gives 5 V, but a 10 kΩ load across the lower resistor makes that part 5 kΩ, and the output drops to 10 × 5/15 ≈ 3.33 V. Either make the divider resistors much smaller than the load or buffer the output (with a voltage follower)."
+      ],
+      [
+        "What should I watch out for when connecting batteries in parallel?",
+        "If batteries with different voltages are connected in parallel, current flows from the higher-voltage battery into the lower one. Connect batteries of the same type with matched states of charge. When combining lithium-ion cells, in series or in parallel, use a protection circuit that monitors the voltage of each cell."
+      ]
+    ]
+  },
+  "wifi-vs-bluetooth-vs-lpwa": {
+    "title": "Wi-Fi vs Bluetooth vs LPWA: Range, Data Rate, Power, Frequency and Uses",
+    "description": "Wi-Fi (wireless LAN), Bluetooth (short-range wireless) and LPWA (IoT wide-area networks) compared in one table: standards, frequency bands, range, data rate, power consumption, topology, how they use the radio channel, licensing and service, and typical uses.",
+    "lead": "All three connect devices by radio, but they balance range, speed and power consumption differently. Wi-Fi is the IEEE 802.11 wireless LAN that connects PCs and smartphones to the internet at high speed. Bluetooth connects earphones, keyboards, wearables and similar devices directly over short distances of a few meters to tens of meters, and its low-power variant BLE (Bluetooth Low Energy) is also used in sensors that run on coin cells. LPWA is the umbrella term for IoT networks that give up speed to reach distances of several kilometers or more with battery life measured in years.",
+    "items": [
+      "Wi-Fi",
+      "Bluetooth",
+      "LPWA"
+    ],
+    "rows": [
+      [
+        "Standards",
+        "IEEE 802.11 (certified by the Wi-Fi Alliance)",
+        "Specified by the Bluetooth SIG; includes classic BR/EDR and low-power BLE (Bluetooth Low Energy)",
+        "An umbrella term: LoRaWAN and others in license-free bands, and LTE-M, NB-IoT and others in cellular bands"
+      ],
+      [
+        "Frequency bands",
+        "2.4 GHz and 5 GHz bands (also 6 GHz from Wi-Fi 6E)",
+        "2.4 GHz band",
+        "Mainly sub-GHz bands (920 MHz in Japan) or cellular bands"
+      ],
+      [
+        "Typical range",
+        "Tens of meters indoors",
+        "A few meters to tens of meters (over 100 m with some power levels and modes)",
+        "A few kilometers to more than ten kilometers (depending on line of sight and environment)"
+      ],
+      [
+        "Typical data rate",
+        "Tens of Mbps to several Gbps (depending on the generation and conditions)",
+        "Up to 1 to 2 Mbps for BLE (actual throughput is lower); up to 3 Mbps for BR/EDR",
+        "A few hundred bps to a few hundred kbps (up to about 1 Mbps for LTE-M)"
+      ],
+      [
+        "Power consumption",
+        "High; suited to devices on mains power or recharged often",
+        "Moderate for BR/EDR; BLE communicates briefly and sleeps, so some devices run for months to years on a coin cell",
+        "Very low; with little data to send, several years to about 10 years on a battery is typical"
+      ],
+      [
+        "Topology",
+        "Star around an access point, which connects to the LAN and the internet",
+        "Direct one-to-one or one-to-many links with a smartphone or similar; also beacons using advertising, and mesh",
+        "Star from devices to base stations (gateways); small amounts of data, mainly from devices to the cloud"
+      ],
+      [
+        "Use of the radio channel",
+        "Mainly OFDM (plus OFDMA from Wi-Fi 6) and MIMO; CSMA/CA coordinates transmissions, and RTS/CTS deals with hidden nodes",
+        "Frequency hopping (79 channels of 1 MHz for BR/EDR, 40 channels of 2 MHz for BLE)",
+        "Lowers the data rate so that signals near the noise level can still be received (LoRa chirp spread spectrum, narrowband modulation and others)"
+      ],
+      [
+        "Licensing and service",
+        "No license needed; you install your own access point",
+        "No license needed; devices connect directly",
+        "LoRaWAN and similar need no license and you can install your own gateway; LTE-M and NB-IoT use an operator's network under a service contract"
+      ],
+      [
+        "Typical uses",
+        "Internet access for PCs and smartphones, video streaming, networking appliances and cameras",
+        "Wireless earphones, keyboards and mice, smartwatches, beacons, healthcare devices",
+        "Reading electricity, gas and water meters, sensors on farms and equipment, asset tracking"
+      ]
+    ],
+    "when": [
+      [
+        "Wi-Fi",
+        "When large amounts of data must be sent quickly or devices must connect directly to the internet. It suits devices on mains power or devices that are recharged."
+      ],
+      [
+        "Bluetooth",
+        "When connecting peripherals right next to a smartphone or PC. For sensors and wearables that must run long on batteries, use BLE."
+      ],
+      [
+        "LPWA",
+        "When small amounts of data must be sent far, from places without power, on batteries for years. It does not suit real-time control or sending images and video."
+      ]
+    ],
+    "faq": [
+      [
+        "Do Wi-Fi and Bluetooth interfere with each other in the 2.4 GHz band?",
+        "They share the 2.4 GHz band, so they can interfere. Bluetooth reduces the impact by frequency hopping, changing frequency constantly, and by adaptive frequency hopping, which avoids busy channels. Using Wi-Fi in the 5 GHz band avoids congestion in the 2.4 GHz band. Microwave ovens also emit in the 2.4 GHz band, so communication can be disrupted near one."
+      ],
+      [
+        "Why can LPWA reach so far with so little power?",
+        "It greatly lowers the data rate to increase the energy per bit and narrows the receive bandwidth to reduce noise, so weak signals can still be received. In addition, a sub-GHz band such as 920 MHz in Japan has about 8 dB less free-space path loss than the 2.4 GHz band when antennas of the same gain are compared, and diffracts more easily around buildings. Power consumption is low because devices send little data and sleep almost all the time."
+      ],
+      [
+        "How does BLE differ from classic Bluetooth?",
+        "BLE cuts power by keeping communication very short and switching the circuits off the rest of the time, which suits sensors and beacons that send small amounts of data intermittently. Classic Bluetooth (BR/EDR) has been used for continuous streams such as audio. Both use the 2.4 GHz band, but their protocols differ, so they cannot talk to each other directly (some devices support both)."
+      ],
+      [
+        "How do Wi-Fi standard names map to generation names?",
+        "IEEE 802.11n is called Wi-Fi 4, 802.11ac Wi-Fi 5 and 802.11ax Wi-Fi 6; 802.11ax extended to the 6 GHz band is Wi-Fi 6E. 802.11ac uses only the 5 GHz band, while 802.11n and 802.11ax use both the 2.4 GHz and 5 GHz bands."
+      ]
+    ]
+  },
+  "superconducting-vs-trapped-ion-qubit": {
+    "title": "Superconducting vs Trapped-Ion Qubits: How They Work, Operating Environment, Gate Speed, Coherence and Connectivity",
+    "description": "Superconducting qubits (such as transmons) vs trapped-ion qubits compared in one table: what the qubit is, how it is made, operating environment, control method, gate speed, coherence time, connectivity, variation between qubits and scaling challenges.",
+    "lead": "Both are leading ways to build the qubits of a quantum computer. The superconducting approach uses a superconducting circuit made of Josephson junctions and capacitors (such as a transmon) as the qubit and controls it with microwave pulses. It can be made on a chip with the same lithography as semiconductors, but it must be cooled to about 10 mK in a dilution refrigerator. The trapped-ion approach uses energy levels of the electrons in ions held in vacuum by electric fields as the qubit and controls them with lasers or microwaves. In general, superconducting qubits have faster gates, while trapped-ion qubits have longer coherence times and connect to each other more freely.",
+    "items": [
+      "Superconducting qubit",
+      "Trapped-ion qubit"
+    ],
+    "rows": [
+      [
+        "What the qubit is",
+        "The two lowest energy levels of a superconducting circuit made of a Josephson junction and a capacitor (such as a transmon)",
+        "Two electronic energy levels of an ion (such as ytterbium or calcium) trapped in vacuum"
+      ],
+      [
+        "How it is made",
+        "Fabricated as a circuit on a chip by lithography",
+        "Atoms are ionized, then trapped and lined up by electric fields from electrodes"
+      ],
+      [
+        "Operating environment",
+        "Cooled to about 10 to 20 mK in a dilution refrigerator",
+        "Ultra-high vacuum, with the ions laser-cooled; no millikelvin refrigerator is needed (some systems cool to a few kelvin to improve the vacuum)"
+      ],
+      [
+        "Control method",
+        "Microwave pulses at a few GHz",
+        "Lasers (or microwaves)"
+      ],
+      [
+        "Typical gate speed",
+        "Fast: two-qubit gates take about tens to hundreds of ns",
+        "Slow: two-qubit gates take about a few µs to hundreds of µs, often 2 to 3 orders of magnitude slower than superconducting gates"
+      ],
+      [
+        "Typical coherence time",
+        "About tens to hundreds of µs",
+        "Long: seconds, and longer under some conditions"
+      ],
+      [
+        "Connectivity",
+        "Coupled through circuits on the chip, so mainly between neighboring qubits",
+        "Ions in the same trap share common vibrations, so two-qubit gates can be applied to any pair"
+      ],
+      [
+        "Variation between qubits",
+        "As fabricated circuits, small differences in the junctions spread the frequencies, so each qubit needs calibration",
+        "All ions of the same species are identical, so there is no fabrication variation"
+      ],
+      [
+        "Scaling challenges",
+        "The number of wires into the refrigerator and the heat they bring in, crosstalk between qubits, losses from material defects",
+        "The limited number of ions that fit in one trap, and slow gates; approaches that shuttle ions or link traps with light are being studied"
+      ]
+    ],
+    "when": [
+      [
+        "Superconducting qubit",
+        "When the fast gates should be used to run many circuits in a short time. Because it builds on semiconductor fabrication, it makes it easier to place many qubits on a chip."
+      ],
+      [
+        "Trapped-ion qubit",
+        "When long coherence times and free connectivity between qubits matter. Each gate is slow, but circuits with many qubit-to-qubit interactions are easier to run without extra rerouting operations."
+      ]
+    ],
+    "faq": [
+      [
+        "Why must superconducting qubits be cooled to about 10 mK?",
+        "Not only to make the aluminum of the circuit superconducting (below about 1.2 K), but also to make thermal excitation and noise small enough. The energy hf of a 5 GHz qubit corresponds to a temperature of about 0.24 K, so the temperature must be well below that, and the roughly 4 K of liquid helium is not enough."
+      ],
+      [
+        "Why can trapped-ion systems apply gates between distant qubits?",
+        "Ions lined up in the same trap push on each other through the Coulomb force, so they share the vibrations of the whole chain. By using lasers to couple each ion's internal state to these vibrations, a two-qubit gate can be applied between any two ions, not just neighbors. As the number of ions grows, however, the vibrational modes crowd together and gates become harder, so the number of ions in one trap is limited."
+      ],
+      [
+        "How should gate speed and coherence time be compared?",
+        "What matters is not only the absolute speed but how many gates fit within the coherence time, and the gate fidelity. Superconducting qubits have fast gates but shorter coherence, while trapped ions have slow gates but longer coherence, so the approaches cannot be compared by a single number. Real performance is judged together from fidelity, connectivity, readout errors and more, not just the number of qubits."
+      ]
+    ]
   }
 }
