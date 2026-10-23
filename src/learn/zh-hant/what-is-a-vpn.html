@@ -1,0 +1,203 @@
+<!--
+{
+  "title": "VPN是什麼？保護通訊的通道原理與做不到的事",
+  "description": "VPN會在自己的裝置與VPN伺服器之間建立加密的「通道」，把通訊包起來運送。本文淺顯說明公司VPN與個人VPN服務的差異、VPN保護不了的事，以及VPN設備為何成為攻擊目標。",
+  "series": "it-security-life",
+  "order": 5,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-04",
+  "cats": ["network", "security", "cyber-defense", "cryptography"],
+  "terms": ["VPN", "ゼロトラスト"],
+  "sources": [
+    { "title": "RFC 4301: Security Architecture for the Internet Protocol（IETF，2005年。IPsec的整體架構）", "url": "https://www.rfc-editor.org/rfc/rfc4301" },
+    { "title": "NIST SP 800-77 Rev. 1: Guide to IPsec VPNs（2020年。通道模式與VPN的使用方式）", "url": "https://csrc.nist.gov/pubs/sp/800/77/r1/final" },
+    { "title": "Kernel Newbies: Linux 5.6（2020年3月29日發布。WireGuard納入本體的版本）", "url": "https://kernelnewbies.org/Linux_5.6" },
+    { "title": "FTC Consumer Alert: Shopping for a VPN app? Read this.（2018年2月。通訊會經過VPN業者的伺服器，信任的對象只是轉移到業者，並不會完全匿名）", "url": "https://consumer.ftc.gov/consumer-alerts/2018/02/shopping-vpn-app-read" },
+    { "title": "CISA: CISA and NSA Release Guidance on Selecting and Hardening VPNs（2021年9月28日。VPN伺服器是網路的入口，容易成為目標）", "url": "https://www.cisa.gov/news-events/alerts/2021/09/28/cisa-and-nsa-release-guidance-selecting-and-hardening-vpns" },
+    { "title": "CISA: ED 24-01: Mitigate Ivanti Connect Secure and Ivanti Policy Secure Vulnerabilities（2024年1月19日的緊急指令）", "url": "https://www.cisa.gov/news-events/directives/ed-24-01-mitigate-ivanti-connect-secure-and-ivanti-policy-secure-vulnerabilities" },
+    { "title": "CISA: Supplemental Direction V1: ED 24-01（2024年1月31日。要求在2月2日前把相關設備從網路斷開的指示）", "url": "https://www.cisa.gov/news-events/directives/supplemental-direction-v1-ed-24-01-mitigate-ivanti-connect-secure-and-ivanti-policy-secure" },
+    { "title": "警察庁: 令和5年におけるサイバー空間をめぐる脅威の情勢等について（日本警察廳：2023年網路空間威脅情勢。日文。2024年3月14日。勒索軟體通報197件，感染途徑的有效回答115件中VPN設備73件）", "url": "https://www.npa.go.jp/publications/statistics/cybersecurity/data/R5/R05_cyber_jousei.pdf" },
+    { "title": "警察庁: 令和6年におけるサイバー空間をめぐる脅威の情勢等について（日本警察廳：2024年網路空間威脅情勢。日文。2025年3月13日。勒索軟體通報222件，感染途徑的有效回答100件中VPN設備55件、遠端桌面31件）", "url": "https://www.npa.go.jp/publications/statistics/cybersecurity/data/R6/R06_cyber_jousei.pdf" },
+    { "title": "警察庁: 令和7年におけるサイバー空間をめぐる脅威の情勢等について（日本警察廳：2025年網路空間威脅情勢。日文。2026年3月。勒索軟體通報226件，入侵途徑六成以上是VPN設備。刊載於奈良縣警察網站的副本）", "url": "https://www.police.pref.nara.jp/cmsfiles/contents/0000003/3629/R07_cyber_jousei.pdf" },
+    { "title": "NIST SP 800-207: Zero Trust Architecture（2020年8月）", "url": "https://csrc.nist.gov/pubs/sp/800/207/final" }
+  ]
+}
+-->
+<p class="lead">VPN是在自己的裝置與VPN伺服器之間，建立加密「通道」的機制。它把通訊整個包起來運送，所以在到達VPN伺服器之前的途中，別人看不到內容，也看不到真正的目的地。不過，VPN並不能讓你匿名，也擋不了假網站和病毒。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>VPN的「通道」實際上在做什麼</li>
+<li>公司的VPN與個人用VPN服務的差異</li>
+<li>用了VPN也保護不了的事，以及VPN本身的風險</li>
+<li>作為VPN的替代思維、逐漸普及的「零信任」</li>
+</ul><p class="muted">先備知識：不需要。先讀過「IP位址是什麼？」「HTTPS是什麼？」會更容易理解。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>進公司之後，可能會被告知：「在公司外工作時，要先連上VPN。」在旅途中的飯店或咖啡廳，也許會看到「用VPN安全上網」的App廣告。新聞裡也會出現「從VPN設備遭到入侵」這樣的說法。</p>
+<p>雖然都叫VPN，但在不同場合，目的都有些不同。這篇文章會依序看看VPN在做什麼。接著再把它做得到與做不到的事分開來思考。</p>
+</section>
+
+<section>
+<h2>VPN是什麼：在大家的道路上建立「專用通道」</h2>
+<p>很久以來，公司會用專線連接總公司與工廠這類相隔遙遠的地點。專線上沒有別人的通訊，所以安全，但費用很高。於是人們想出一種方法：借助加密，把大家都在用的網際網路當成專線來用。加密是指使用固定的步驟與「金鑰」，把資料轉換成沒有金鑰的人讀不懂的形式。</p>
+<p>這稱為{{term:VPN|VPN}}（Virtual Private Network，虛擬私人網路）。「虛擬」的意思是，並不是真的拉一條專線，而是靠機制上的設計，發揮類似的作用。實際的通訊，和其他人一樣走網際網路的線路。</p>
+</section>
+
+<section>
+<h2>使用VPN，通訊的路徑會改變</h2>
+<p>平常用手機開網頁時，通訊會經過Wi-Fi或行動網路，直接送到該網站。網站那一端看得到你的線路的IP位址（網路上的地址號碼）。IP位址的原理，請參考「<a href="{{home}}learn/what-is-an-ip-address/">IP位址是什麼？</a>」。</p>
+<p>使用VPN時，通訊會先送往VPN伺服器。VPN伺服器是位於通道出口的電腦。手機與VPN伺服器之間會被加密，再由VPN伺服器代替你和網站往來。網站看到的不是你的號碼，而是VPN伺服器的號碼。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 384" role="img"><title>不用VPN時，手機的通訊經過Wi-Fi或網路直接送到網站。使用VPN時，通訊經由加密的通道送到VPN伺服器，再由VPN伺服器與網站往來</title>
+<text x="90" y="22" text-anchor="middle" class="a">不用VPN</text>
+<text x="270" y="22" text-anchor="middle" class="a">使用VPN</text>
+<rect x="20" y="34" width="140" height="40" rx="8" class="n"/>
+<text x="90" y="59" text-anchor="middle">手機</text>
+<line x1="90" y1="74" x2="90" y2="106" class="ln"/><polygon points="90,116 85,106 95,106" class="ink"/>
+<rect x="20" y="116" width="140" height="40" rx="8" class="ox"/>
+<text x="90" y="141" text-anchor="middle">Wi-Fi／網路</text>
+<line x1="90" y1="156" x2="90" y2="270" class="ln"/><polygon points="90,280 85,270 95,270" class="ink"/>
+<rect x="200" y="34" width="140" height="40" rx="8" class="n"/>
+<text x="270" y="59" text-anchor="middle">手機</text>
+<rect x="200" y="92" width="140" height="88" rx="22" class="ac"/>
+<text x="270" y="122" text-anchor="middle" class="a">加密的</text>
+<text x="270" y="144" text-anchor="middle" class="a">通道</text>
+<text x="270" y="166" text-anchor="middle" class="m">走在網路線路中</text>
+<line x1="270" y1="74" x2="270" y2="92" class="ac"/>
+<line x1="270" y1="180" x2="270" y2="198" class="ac"/>
+<rect x="200" y="198" width="140" height="40" rx="8" class="metal"/>
+<text x="270" y="223" text-anchor="middle">VPN伺服器</text>
+<line x1="270" y1="238" x2="270" y2="270" class="ln"/><polygon points="270,280 265,270 275,270" class="ink"/>
+<rect x="20" y="280" width="140" height="40" rx="8" class="p"/>
+<text x="90" y="305" text-anchor="middle">網站</text>
+<rect x="200" y="280" width="140" height="40" rx="8" class="p"/>
+<text x="270" y="305" text-anchor="middle">網站</text>
+<text x="180" y="348" text-anchor="middle" class="m">網站看到的號碼</text>
+<text x="90" y="374" text-anchor="middle">自己的線路</text>
+<text x="270" y="374" text-anchor="middle">VPN伺服器</text>
+</svg><figcaption class="fig-cap">使用VPN時，通訊會經由通道先集中到VPN伺服器，再從那裡前往網站。省略的部分：途中的許多路由器；回覆的通訊也沿同一條路反向傳回。VPN伺服器與網站之間是一般的網際網路通訊（若是HTTPS網站，這一段由HTTPS保護）。</figcaption></figure>
+</section>
+
+<section>
+<h2>原理：把封包整個包起來運送</h2>
+<p>在網際網路上，資料會分成小塊傳送。這種小塊稱為{{term:パケット|封包}}，每個封包上都寫著目的地的號碼。詳細內容請參考「<a href="{{home}}learn/how-the-internet-delivers-data/">網際網路怎麼傳送資料？</a>」。</p>
+<p>在許多VPN中，軟體會把要送出的封包連同目的地的部分，整個加密。再把它當成內容，放進一個寄往VPN伺服器的新封包裡送出。像這樣把封包包進另一個封包裡，稱為「封裝」。</p>
+<p>VPN伺服器從收到的封包中取出內容，用金鑰還原。然後把原本的封包送往原本的目的地。途中的設備看得到的，只有「寄往VPN伺服器」這個外層的目的地。封包被包著運送的這一段，在VPN中稱為「通道」（也有人稱為「隧道」）。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 318" role="img"><title>把原本的封包（目的地與內容）整個加密，放進寄往VPN伺服器的新封包中。途中只看得到外層的目的地，由VPN伺服器取出後送往原本的目的地</title>
+<text x="180" y="20" text-anchor="middle" class="m">原本的封包</text>
+<rect x="10" y="30" width="340" height="56" rx="8" class="ok"/>
+<rect x="20" y="38" width="150" height="40" rx="6" class="ox"/>
+<text x="95" y="63" text-anchor="middle">目的地：網站</text>
+<rect x="180" y="38" width="160" height="40" rx="6" class="n"/>
+<text x="260" y="63" text-anchor="middle">內容</text>
+<line x1="180" y1="86" x2="180" y2="114" class="ln"/><polygon points="180,124 175,114 185,114" class="ink"/>
+<text x="192" y="110" class="a">加密後包起來</text>
+<rect x="10" y="126" width="340" height="96" rx="8" class="ok"/>
+<rect x="20" y="136" width="120" height="76" rx="6" class="ox"/>
+<text x="80" y="168" text-anchor="middle">目的地：</text>
+<text x="80" y="192" text-anchor="middle">VPN伺服器</text>
+<rect x="150" y="136" width="190" height="76" rx="6" class="metal"/>
+<text x="245" y="168" text-anchor="middle">原本的封包</text>
+<text x="245" y="192" text-anchor="middle" class="m">（已加密）</text>
+<text x="180" y="252" text-anchor="middle" class="a">途中只看得到外層的目的地</text>
+<text x="180" y="282" text-anchor="middle">VPN伺服器取出後，</text>
+<text x="180" y="306" text-anchor="middle">送往原本的目的地</text>
+</svg><figcaption class="fig-cap">VPN「通道」的真面目，就是這樣包起來的封包來回傳送。省略的部分：外層的寄件者（自己的號碼）、用來發現竄改的檢查值、各方式不同的標頭內容，以及回覆也同樣包起來傳回。</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>封裝就像把裝了信的信封，再放進更大的信封寄出。外層的信封只寫轉寄處的地址。轉寄處打開後，再把裡面的信封寄給真正的收件人。相似之處在於「途中看得到的只有外層的地址，真正的地址藏在裡面」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>真的信封只要撕開，就能讀到內容。VPN的內容經過加密，即使外層被打開，沒有金鑰也讀不懂。另外，「通道」這個名稱也是比喻。並不是在地底挖了一條專用道路，而是和其他通訊走同樣的線路。</p></aside>
+</section>
+
+<section>
+<h2>主要的方式</h2>
+<p>包裝的方法與決定金鑰的方法，有好幾種方式。這裡只介紹名稱與特色。加密與金鑰的原理，請參考「<a href="{{home}}learn/what-is-encryption/">加密是什麼？</a>」。</p>
+<ul>
+<li><strong>IPsec</strong>：在網際網路的基本規則（IP）上加入加密的標準方式。常用在連接各據點的VPN。</li>
+<li><strong>SSL VPN</strong>：使用與HTTPS相同的{{term:TLS|TLS}}的各種方式的統稱。名稱中留著TLS前身SSL的名字。</li>
+<li><strong>OpenVPN</strong>：原始碼公開的VPN軟體，使用TLS的機制。</li>
+<li><strong>WireGuard</strong>：把機制精簡到很小的新方式。從2020年3月發布的Linux 5.6起，被納入Linux的本體。Linux是廣泛用於伺服器等的作業系統。</li>
+</ul>
+</section>
+
+<section>
+<h2>用法1：公司的VPN（遠端存取VPN）</h2>
+<p>公司的檔案存放處和內部系統中，有些只能從公司內部網路使用。因為讓任何人都能從外部連線很危險。為了在家裡或出差地使用這些系統，員工會把電腦連到公司的VPN設備。這稱為「遠端存取VPN」。</p>
+<p>連上之後，電腦會被當成和在公司內一樣。公司的VPN多半是規定必須使用的。自行切斷，或改用其他VPN，都可能違反規定。另外，依公司的設定，連線期間所有的網頁瀏覽也會經過公司。這種情況下，公司可以留下通訊的紀錄。</p>
+<p>另一種是「站對站VPN」。它用設在建築物出入口的設備，把總公司與分公司的網路互相連接。員工不必意識到VPN，就能使用遠處據點的印表機或伺服器。</p>
+</section>
+
+<section>
+<h2>用法2：個人用的VPN服務</h2>
+<p>也有一種服務，是在手機或電腦上安裝App，連到業者的VPN伺服器。主要目的有兩個。一是在車站或咖啡廳的公共Wi-Fi上，讓通訊不容易從途中被看到。另一是讓連線看起來像是從VPN伺服器所在的其他地方連過來。</p>
+<p>不過，影音串流等服務有時會在使用條款中禁止第二種用法。也有服務會辨識VPN伺服器的號碼，阻擋連線。</p>
+<p>這裡的重點是，使用VPN只是改變「誰看得到什麼」。下表是開啟HTTPS網站時的大致情況。</p>
+<table>
+<thead><tr><th>觀看的人</th><th>不用VPN</th><th>使用VPN</th></tr></thead>
+<tbody>
+<tr><td>Wi-Fi或網路業者</td><td>對方的號碼、網站的名稱、流量與時間</td><td>正與VPN伺服器連線、流量與時間</td></tr>
+<tr><td>VPN業者</td><td>（無關）</td><td>對方的號碼、網站的名稱、流量與時間</td></tr>
+<tr><td>開啟的網站</td><td>自己線路的號碼</td><td>VPN伺服器的號碼</td></tr>
+</tbody>
+</table>
+<p>不論哪種情況，受HTTPS保護的網頁內容與輸入的內容，途中都讀不到。使用HTTPS時途中仍看得到的東西（網站名稱等），請參考「<a href="{{home}}learn/what-does-https-mean/">HTTPS是什麼？</a>」。把名稱換成號碼的查詢（{{term:DNS|DNS}}），多數VPN App也會讓它通過通道。不過依設定不同，查詢可能漏到通道外，讓網路業者看到網站的名稱。</p>
+</section>
+
+<section>
+<h2>VPN做不到的事</h2>
+<h3>1. 不會讓你匿名</h3>
+<p>如表所示，VPN業者處在看得到你何時、與哪個網站、通訊了多少的位置。美國聯邦貿易委員會（FTC）在給消費者的提醒中也說明：信任的對象只是轉移到VPN業者，並不會完全匿名。而且只要登入網站，即使號碼改變，網站也知道你是誰。有些業者宣傳不留紀錄，但使用者實際上很難從外部確認。</p>
+<h3>2. 擋不了假網站和病毒</h3>
+<p>VPN保護的，只是裝置與VPN伺服器之間「運送途中」這一段。假冒真實公司、在假網站騙人輸入密碼的{{term:フィッシング|網路釣魚}}，經過VPN也一樣會送到。裝有惡意程式的檔案，也會在加密的狀態下被送過來。裝置本身若感染病毒，資訊會在進入VPN之前就被偷走。</p>
+<h3>3. 不會讓通訊變快</h3>
+<p>使用VPN時，通訊要繞道經過VPN伺服器。為了包裝而加上的標頭也會增加，所以通常會稍微變慢。</p>
+</section>
+
+<section>
+<h2>VPN設備本身成為攻擊目標</h2>
+<p>公司的VPN設備為了讓員工能從外部連線，對網際網路是開放的。也就是說，從攻擊者的角度來看，它是通往公司內部的入口。設備的設計或製作若有缺陷，就可能從那裡被入侵。這種缺陷稱為「漏洞」。美國負責網路安全的機關CISA，在2021年9月與國家安全局（NSA）發布了指引。指引指出VPN伺服器是網路的入口，容易成為目標，並整理了挑選與強化防護的方法。</p>
+<p>實際的例子也有。2024年1月19日，CISA對美國聯邦政府機關發布了緊急指令。原因是Ivanti公司從公司外連進內部用的VPN產品等，其漏洞正被廣泛利用。1月31日又追加指示，要求在2月2日前把相關設備從網路上斷開。</p>
+<p>日本也可以看到同樣的趨勢。擅自把公司的檔案加密，再以還原為條件要求付錢的惡意程式，稱為{{term:ランサムウェア|勒索軟體}}。根據日本警察廳，2025年日本的勒索軟體受害通報為226件。向受害組織詢問感染途徑時，六成以上的回答是從VPN設備入侵。</p>
+<p>日本警察廳分析指出，被利用的是未更新設備的漏洞，以及外洩或容易被猜到的密碼等。防護的基本，是立刻套用設備的更新，以及刪除不用的帳號。再加上使用{{term:多要素認証|多因素驗證}}，也就是除了密碼之外，還用其他方式確認本人。</p>
+</section>
+
+<section>
+<h2>新的思維：零信任</h2>
+<p>公司的VPN在設計思維上也有弱點。一旦連上，就能到達公司內部網路的許多地方。如果有人用偷來的密碼連進來，攻擊者也會被當成「公司內部的人」。</p>
+<p>因此逐漸普及的，是名為{{term:ゼロトラスト|零信任}}的思維。它不以公司內或公司外的位置來決定信任。每次使用系統或資料時，都會確認是否為本人、裝置是否安全、用法是否必要。美國國家標準與技術研究院（NIST）在2020年8月公布了這種思維的指引（SP 800-207）。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>以往的做法，就像只要在公司大樓入口出示一次員工證，裡面的哪個房間都能進。零信任則是在每個房間確認員工證和來意，只打開需要的房間。相似之處在於「在哪裡確認」的差異。</p><p class="analogy-limit"><strong>比喻的限制：</strong>零信任確認的不只是人。使用中裝置的更新狀態、是否從與平常不同的地點連線等，也會用來判斷。情況改變時，也會重新檢視許可。另外，實際的公司常常一邊使用VPN，一邊把內部網路細分區隔，兩種方式並不能清楚分開。</p></aside>
+<p>零信任不是產品的名稱，而是逐步轉移的設計思維。與VPN的差異，整理在「<a href="{{home}}compare/zero-trust-vs-perimeter-security/">邊界防禦與零信任的差異</a>」的表格中。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：用了VPN，就能完全匿名</p><p>實際上，VPN業者看得到你在何時與哪個網站通訊。只要登入網站，網站就知道你是誰。網站看到的號碼改變，和隱藏身分是兩回事。廣告中強調「匿名」「隱藏身分」，是造成誤解的原因。</p></div>
+<div class="myth"><p class="myth-q">誤解：不論什麼網路，都一定要用VPN</p><p>實際上，現在網頁的通訊多半已由HTTPS保護內容。在家裡的Wi-Fi或行動網路使用VPN，看得到網站名稱等資訊的對象也只是換了人。原本是網路業者看得到，變成VPN業者看得到。如果能選到比網路業者更值得信任的VPN業者，就有意義。在公共Wi-Fi上，想連目的地也隱藏，或想保護HTTPS以外的通訊時，VPN很有用。公司的裝置，則依公司的規定使用。</p></div>
+<div class="myth"><p class="myth-q">誤解：用了VPN，也能防範病毒</p><p>實際上，VPN只保護運送途中，並不檢查運送的內容。假網站和危險的附件，經過VPN也一樣會送到。也有VPN App附帶封鎖危險網站的功能，但那是與VPN不同的功能。兩者常用「安全」一詞一起宣傳，所以容易混為一談。防毒與作業系統的更新，仍然需要另外做。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>時間、出處</th></tr></thead>
+<tbody>
+<tr><td>勒索軟體受害通報（日本）</td><td>197件→222件→226件</td><td>2023年→2025年，日本警察廳</td></tr>
+<tr><td>感染途徑中從VPN設備入侵（日本）</td><td>115件中73件（約63%）</td><td>2023年，日本警察廳</td></tr>
+<tr><td>同上</td><td>100件中55件（55%）</td><td>2024年，日本警察廳</td></tr>
+<tr><td>同上</td><td>六成以上</td><td>2025年，日本警察廳</td></tr>
+<tr><td>CISA因VPN產品漏洞發布緊急指令</td><td>2024年1月19日</td><td>CISA（ED 24-01）</td></tr>
+<tr><td>WireGuard納入Linux本體的版本</td><td>Linux 5.6</td><td>2020年3月發布</td></tr>
+<tr><td>零信任的指引</td><td>NIST SP 800-207</td><td>2020年8月</td></tr>
+</tbody>
+</table>
+<p>日本警察廳的感染途徑數字，來自對受害組織的問卷，只計算查明途徑的案例。它並不代表受害的全貌。即便如此，VPN設備連續3年都是最多的途徑。2024年緊接在後的，是從遠端桌面入侵的31件。遠端桌面是隔著網路、連同畫面操作遠處電腦的機制。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格比較VPN與零信任：<a href="{{home}}compare/zero-trust-vs-perimeter-security/">邊界防禦與零信任的差異</a></li>
+<li>公司網路的其他防護：<a href="{{home}}compare/ids-vs-ips-vs-waf-vs-firewall/">防火牆、IDS、IPS、WAF的差異</a></li>
+<li>公共Wi-Fi的加密與注意事項：「<a href="{{home}}learn/how-wi-fi-works/">Wi-Fi是怎麼運作的？</a>」</li>
+<li>名稱查詢與隱私：「<a href="{{home}}learn/how-dns-works/">DNS是什麼？</a>」（也介紹把查詢本身加密的方式）</li>
+<li>讓VPN的密碼不容易被破解：「<a href="{{home}}learn/how-passwords-get-cracked/">密碼為什麼會被破解？</a>」</li>
+</ul>
+</section>
