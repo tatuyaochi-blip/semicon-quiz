@@ -91,6 +91,28 @@ const beyondText = {
   'zh-hant': { nav: '微縮之後', card: 'GAA、3D封裝、光、新材料等技術的下一步', link: '微縮之後：半導體技術的下一步' },
 };
 const beyondCats = ['finfet', 'lithography', 'interconnect', 'advanced-packaging', 'package', 'photonics', 'power', 'compound', 'emerging-memory'];
+// やさしい解説(/learn/): 初心者が素朴な疑問から読む記事。本文は src/learn/{言語}/{slug}.html(先頭のコメントに JSON の情報)。
+// シリーズは data/learn.json。記事のある言語だけに一覧と記事のページを作る(企画: research/2026-10-23-articles-plan.md)
+const learnData = readOpt('data/learn.json', { series: [], extra: [] });
+const learnNames = code => (exists(`src/learn/${code}`) ? fs.readdirSync(path.join(root, `src/learn/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5)) : []);
+const learnText = {
+  ja: { nav: 'やさしい解説', card: '「半導体とは?」「CPUとは?」など、素朴な疑問から読む解説記事', title: 'やさしい解説: 半導体とコンピュータを素朴な疑問から',
+    description: '半導体・トランジスタ・CPU など、半導体とコンピュータの基本を、予備知識の少ない人向けに素朴な疑問から解説します。しくみ、身近な使われ方、よくある誤解まで。読んだあとは理解度チェックとクイズで確かめられます。',
+    lead: '「半導体って何?」「CPUは何をしているの?」といった素朴な疑問から、しくみと身近な使われ方までを、予備知識が少なくても読めるように解説します。シリーズの順に読むと、半導体からコンピュータまでが一続きでわかります。',
+    minutes: '約{n}分', updated: '更新: {d}', check: '理解度チェック', checkLead: '記事の内容で答えられる3問です。答えを開いて確かめてください。', quiz: 'この分野の問題に挑戦(10問)', topic: '分野「{name}」のページへ',
+    next: '次に読む', inSeries: 'シリーズ「{name}」の記事', sources: '参考にした資料', all: 'やさしい解説の一覧へ', termLink: 'やさしい解説で読む', catLink: 'はじめて学ぶ人へ', search: 'やさしい解説' },
+  en: { nav: 'Explainers', card: 'Beginner-friendly articles that start from simple questions', title: 'Explainers: semiconductors and computers from simple questions',
+    description: 'Beginner-friendly explainers on semiconductors, transistors, CPUs and more: how they work, where you meet them and common misconceptions, with a short check and quizzes.',
+    lead: 'Explainers that start from simple questions such as “What is a semiconductor?” and “What does a CPU do?”, written for readers with little background. Read a series in order to follow the path from semiconductors to computers.',
+    minutes: '{n} min read', updated: 'Updated: {d}', check: 'Check your understanding', checkLead: 'Three questions you can answer from this article. Open each answer to check.', quiz: 'Try 10 questions on this topic', topic: 'Go to the topic “{name}”',
+    next: 'Read next', inSeries: 'Articles in the series “{name}”', sources: 'Sources', all: 'All explainers', termLink: 'Read the beginner explainer', catLink: 'New to this topic?', search: 'Explainers' },
+  'zh-hant': { nav: '入門解說', card: '從「半導體是什麼？」等簡單的疑問讀起的解說文章', title: '入門解說：從簡單的疑問認識半導體與電腦',
+    description: '為背景知識不多的讀者，從簡單的疑問解說半導體、電晶體、CPU 等基礎：原理、生活中的應用與常見誤解，讀完可用小測驗確認。',
+    lead: '從「半導體是什麼？」「CPU 在做什麼？」等簡單的疑問出發，為背景知識不多的讀者解說原理與生活中的應用。依系列順序閱讀，就能從半導體一路了解到電腦。',
+    minutes: '約 {n} 分鐘', updated: '更新：{d}', check: '理解度確認', checkLead: '可以用本文內容回答的 3 題。展開答案確認。', quiz: '挑戰這個領域的題目（10 題）', topic: '前往領域「{name}」',
+    next: '接著閱讀', inSeries: '系列「{name}」的文章', sources: '參考資料', all: '入門解說一覽', termLink: '閱讀入門解說', catLink: '第一次學習的人', search: '入門解說' },
+};
+const learnFill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 // 用語の対訳クイズ(モード terms)の文言と、出題する言語の組(対訳表のある言語だけ)
 const termQuizText = {
   ja: { question: '「{term}」は{lang}で何と言いますか?', answer: '「{a}」は{lang}で「{b}」です。', langs: { ja: '日本語', en: '英語', 'zh-hant': '中国語(繁体字)' },
@@ -275,6 +297,23 @@ function buildLang(L) {
   // 検索結果用のタイトル・説明文(title・description)も言語ごと。書いてある語だけ、決まった形の代わりに使う
   // 別表記(aliases)も言語ごと。問題文が「CMOSイメージセンサ」のように別の書き方をしていても用語ページにつなぐ
   const terms = glossary.filter(g => isDef || gloT[g.term]).map(({ about, faq, title, description, aliases, ...g }) => ({ ...g, ...(isDef ? { about, faq, title, description, aliases } : {}), ...(gloT[g.term] || {}), key: g.term, reading: gloT[g.term] ? '' : g.reading }));
+  // やさしい解説の記事(情報だけ先に読む。本文はページ生成のところで組み立てる)。読む時間は本文の長さから出す
+  const LT = learnText[code];
+  const learnArts = (LT ? learnNames(code) : []).map(slug => {
+    const src = read(`src/learn/${code}/${slug}.html`);
+    const m = src.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/);
+    if (!m) throw new Error(`src/learn/${code}/${slug}.html: 先頭に JSON のコメントがありません`);
+    const a = { slug, ...JSON.parse(m[1]), body: src.slice(m[0].length) };
+    for (const k of ['title', 'description', 'series', 'order', 'updated', 'cats', 'check']) if (a[k] == null) throw new Error(`learn/${code}/${slug}: ${k} がありません`);
+    if (!learnData.series.some(s => s.id === a.series)) throw new Error(`learn/${code}/${slug}: data/learn.json にないシリーズ ${a.series}`);
+    for (const id of a.cats) if (!categories.some(c => c.id === id)) throw new Error(`learn/${code}/${slug}: 存在しない分野 ${id}`);
+    for (const k of a.terms ?? []) if (!glossary.some(g => g.term === k)) throw new Error(`learn/${code}/${slug}: 用語集にない語 ${k}`);
+    const plain = a.body.replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>|\{\{[^}]*\}\}/g, '');
+    a.minutes = Math.max(1, Math.round(['ja', 'zh-hant', 'ko'].includes(code) ? plain.replace(/\s/g, '').length / 500 : plain.split(/\s+/).length / 200));
+    return a;
+  }).sort((a, b) => learnData.series.findIndex(s => s.id === a.series) - learnData.series.findIndex(s => s.id === b.series) || a.order - b.order);
+  const learnByTerm = new Map(learnArts.flatMap(a => (a.terms ?? []).map(k => [k, a])).reverse());
+  const learnOfCat = id => learnArts.filter(a => a.cats.includes(id));
   const glossaryIndex = terms.map(g => ({ id: g.key, term: g.term, slug: termSlug[g.key], ...(g.aliases?.length ? { aliases: g.aliases } : {}), ...(g.noLinkIn ? { noLinkIn: g.noLinkIn } : {}), ...(g.linkOnlyIn ? { linkOnlyIn: g.linkOnlyIn } : {}) }));
   const matcher = termMatcher(glossaryIndex);
   // 別の意味で使う分野ではリンクしない用語(用語集の noLinkIn。例: 回路のハンドシェイクを、ネットワークの問題ではリンクしない)
@@ -354,6 +393,7 @@ function buildLang(L) {
   <h2 id="features-h" class="visually-hidden">${esc(t('home_feat_heading'))}</h2>
   <div class="feature-grid">
     ${feature('#topics', S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics')}
+    ${learnArts.length ? feature(`${home}learn/`, LT.nav, LT.card, 'home_feat_learn') : ''}
     ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses') : ''}
     ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary')}
     ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].nav, dictText[code].card, 'home_feat_dict') : ''}
@@ -581,6 +621,7 @@ function buildLang(L) {
 
   // ---- サイト内検索の索引(検索ページが最初に読み込む。動きは search.js) ----
   const searchItems = [
+    ...learnArts.map(a => ({ t: 'l', n: a.title, u: `learn/${a.slug}/`, x: a.description })),
     ...cmp.map(e => ({ t: 'c', n: e.title, u: `compare/${e.slug}/`, x: `${e.description} ${e.items.join(' ')}` })),
     ...terms.map(g => ({ t: 't', n: g.term, u: `term/${termSlug[g.key]}/`, x: `${g.desc} ${isDef ? '' : g.key}` })),
     ...live.map(c => ({ t: 'k', n: c.name, u: `c/${c.id}/`, x: c.description })),
@@ -588,7 +629,7 @@ function buildLang(L) {
     ...live.flatMap(c => qs[c.id].map(q => ({ t: 'q', n: q.question, u: `q/${c.id}/${q.id}/`, x: c.name }))),
   ];
   write(`data/${code}/search.json`, JSON.stringify({
-    strings: Object.fromEntries(['search_none', 'search_hint', 'search_more', 'search_count', 'search_g_c', 'search_g_t', 'search_g_k', 'search_g_f', 'search_g_q'].map(k => [k, S[k]])),
+    strings: { ...Object.fromEntries(['search_none', 'search_hint', 'search_more', 'search_count', 'search_g_c', 'search_g_t', 'search_g_k', 'search_g_f', 'search_g_q'].map(k => [k, S[k]])), ...(LT ? { search_g_l: LT.search } : {}) },
     items: searchItems,
   }));
 
@@ -665,7 +706,7 @@ function buildLang(L) {
     // ヘッダーのナビ(いまいるページには aria-current を付ける)。
     // PC: Topics / 用語集 / 比較 / 図解 / 計算ツール / Progress。スマートフォン: ホームを加えて Menu に縦に並べる
     const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
-    const resources = [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
+    const resources = [...(learnArts.length ? [['learn/', LT.nav]] : []), ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
       ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : []),
       ...(toolsIn(code).length ? [['tools/', S.nav_tools]] : [])];
     // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
@@ -705,6 +746,110 @@ function buildLang(L) {
     const jsonld = name === 'index' ? { '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, url: abs(L.path),
       alternateName: [...new Set(Object.values(config.siteName))].filter(x => x !== siteName), inLanguage: L.htmlLang } : null;
     page({ path: pagePath(L, name), alt, jsonld, ...JSON.parse(fill(m[1], common)), content: fill(src.slice(m[0].length), common) });
+  }
+
+  // やさしい解説: 一覧 /learn/ と記事 /learn/{slug}/。本文の {{fig:図のid}} は図に、{{term:日本語の用語名|表示}} は用語ページへのリンクにする
+  if (learnArts.length) {
+    const learnAlt = slug => Object.fromEntries(langs.filter(x => learnText[x.code] && learnNames(x.code).includes(slug)).map(x => [x.code, `${x.path}learn/${slug}/`]));
+    const seriesName = s => s.name[code] ?? s.name[defLang];
+    const seriesOf = a => learnData.series.find(s => s.id === a.series);
+    const learnUrl = `${home}learn/`;
+    const fmtDay = d => new Intl.DateTimeFormat(L.locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`));
+    // 一覧に載せる既存の読み物(「微細化の先へ」など src/pages のページ)
+    const extras = (learnData.extra ?? []).filter(x => pageNames(code).includes(x.page)).map(x => {
+      const meta = JSON.parse(fill(read(`src/pages/${code}/${x.page}.html`).match(/^<!--\s*(\{[\s\S]*?\})\s*-->/)[1], common));
+      return { ...x, title: meta.title, description: meta.description, href: `${home}${x.page}/` };
+    });
+    const items = [...learnArts.map(a => ({ ...a, href: `${home}learn/${a.slug}/` })), ...extras];
+    const seriesList = learnData.series.map(s => ({ s, list: items.filter(a => a.series === s.id).sort((a, b) => a.order - b.order) })).filter(x => x.list.length);
+    const card = (a, track) => `<li><a class="cmp-card" href="${a.href}" data-track="${track}"><strong>${esc(a.title)}</strong><span>${esc(short(a.description, 110))}</span>${a.minutes ? `<span class="learn-min">${esc(learnFill(LT.minutes, { n: a.minutes }))}</span>` : ''}</a></li>`;
+    page({
+      path: `${L.path}learn/`,
+      alt: Object.fromEntries(langs.filter(x => learnText[x.code] && learnNames(x.code).length).map(x => [x.code, `${x.path}learn/`])),
+      title: LT.title,
+      description: LT.description,
+      jsonld: [
+        crumbs([t('breadcrumb_top'), home], [LT.nav, learnUrl]),
+        { '@context': 'https://schema.org', '@type': 'ItemList', name: LT.nav,
+          itemListElement: items.map((a, i) => ({ '@type': 'ListItem', position: i + 1, name: a.title, url: abs(a.href) })) },
+      ],
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<h1>${esc(LT.nav)}</h1>
+<p class="lead">${esc(LT.lead)}</p>
+${seriesList.length > 1 ? `<nav class="topic-jump">${seriesList.map(({ s, list }) => `<a class="chip" href="#s-${s.id}">${esc(seriesName(s))} <small>${list.length}</small></a>`).join(' ')}</nav>` : ''}
+${seriesList.map(({ s, list }) => `<section class="learn-series" id="s-${s.id}">
+  <h2>${esc(seriesName(s))}</h2>
+  ${s.desc?.[code] ? `<p class="muted">${esc(s.desc[code])}</p>` : ''}
+  <ol class="cmp-list learn-list">${list.map(a => card(a, 'learn_index')).join('')}</ol>
+</section>`).join('\n')}
+<div data-ad="glossary"></div>`,
+    });
+    for (const a of learnArts) {
+      const where = `learn/${code}/${a.slug}`;
+      const body = fill(a.body
+        .replace(/\{\{fig:([\w-]+)\}\}/g, (m, id) => {
+          if (!figs[id]) throw new Error(`${where}: 存在しない図 ${id}`);
+          const svg = localizeFigure(figs[id], figT[id], isDef);
+          return svg ? figureHtml(svg, id) : '';
+        })
+        .replace(/\{\{term:([^}|]+)(?:\|([^}]+))?\}\}/g, (m, k, text) => {
+          const g = glossary.find(x => x.term === k) ?? glossary.find(x => (x.aliases ?? []).includes(k));
+          if (!g) throw new Error(`${where}: 用語集にない語 ${k}`);
+          const lg = terms.find(x => x.key === g.term);
+          const label = text ?? (isDef ? k : lg?.term ?? k);
+          return lg ? `<a class="term-link" href="${home}term/${termSlug[g.term]}/">${esc(label)}</a>` : esc(label);
+        }), common);
+      if (/\{\{/.test(body)) throw new Error(`${where}: 置き換えられない {{…}} があります`);
+      const checks = a.check.map(id => {
+        if (isDef && !qById.has(id)) throw new Error(`${where}: 存在しない問題 ${id}`);
+        return qById.get(id);
+      }).filter(Boolean);
+      const s = seriesOf(a);
+      const inSeries = items.filter(x => x.series === a.series).sort((x, y) => x.order - y.order);
+      const next = inSeries.find(x => x.order > a.order);
+      const main = catOf(a.cats[0]);
+      const url = `${home}learn/${a.slug}/`;
+      page({
+        path: `${L.path}learn/${a.slug}/`,
+        alt: learnAlt(a.slug),
+        title: a.title,
+        description: a.description,
+        scripts: ['answer.js'],
+        jsonld: [
+          crumbs([t('breadcrumb_top'), home], [LT.nav, learnUrl], [a.title, url]),
+          { '@context': 'https://schema.org', '@type': 'Article', headline: a.title, description: a.description, inLanguage: L.htmlLang,
+            datePublished: a.published ?? a.updated, dateModified: a.updated, mainEntityOfPage: abs(url),
+            author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+        ],
+        content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${learnUrl}">${esc(LT.nav)}</a> <span>›</span> <a href="${learnUrl}#s-${s.id}">${esc(seriesName(s))}</a></nav>
+<article class="prose learn-article">
+<h1>${esc(a.title)}</h1>
+<p class="learn-meta">${esc(learnFill(LT.minutes, { n: a.minutes }))} · ${esc(learnFill(LT.updated, { d: fmtDay(a.updated) }))}</p>
+${body}
+</article>
+${checks.length ? `<section class="learn-check">
+  <h2>${esc(LT.check)}</h2>
+  <p class="muted">${esc(LT.checkLead)}</p>${checks.map(q => `
+  <article class="q-mini"${qData(q)}>
+    <h3>${esc(q.question)}</h3>
+    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation, q.cat)}</p></details>
+  </article>`).join('')}
+  ${main && qs[main.id]?.length ? `<p><a class="btn btn-primary" href="${home}quiz/?mode=category&amp;c=${main.id}&amp;n=10" rel="nofollow" data-track="learn_quiz">${esc(LT.quiz)}</a> <a class="btn btn-ghost" href="${home}c/${main.id}/" data-track="learn_topic">${esc(learnFill(LT.topic, { name: main.name }))}</a></p>` : ''}
+</section>` : ''}
+${next ? `<section class="learn-next">
+  <h2>${esc(LT.next)}</h2>
+  <ul class="cmp-list">${card(next, 'learn_next')}</ul>
+</section>` : ''}
+${inSeries.length > 1 ? `<section>
+  <h2>${esc(learnFill(LT.inSeries, { name: seriesName(s) }))}</h2>
+  <ol class="learn-toc">${inSeries.map(x => `<li>${x.slug === a.slug ? `<strong aria-current="page">${esc(x.title)}</strong>` : `<a href="${x.href}" data-track="learn_series">${esc(x.title)}</a>`}</li>`).join('')}</ol>
+</section>` : ''}
+${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}</summary><ul>${a.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join('')}</ul></details>` : ''}
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="${learnUrl}">${esc(LT.all)}</a></p>`,
+      });
+    }
   }
 
   // 分野一覧 /c/: すべての分野を大分類ごとに開いて並べる(ヘッダーの Topics の行き先)
@@ -749,7 +894,9 @@ function buildLang(L) {
         count,
         keyPoints: esc(t('key_points', { name: c.name })),
         otherInGroup: esc(t('other_in_group', { group: g.name })),
-        intro: c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
+        // はじめて学ぶ人には、やさしい解説の記事を紹介文の前に案内する(この分野を主に扱う記事を先に)
+        intro: (learnOfCat(c.id).length ? `<p class="learn-link">${esc(LT.catLink)}: ${learnOfCat(c.id).sort((a, b) => (b.cats[0] === c.id) - (a.cats[0] === c.id)).slice(0, 2).map(a => `<a href="${home}learn/${a.slug}/" data-track="cat_learn">${esc(a.title)}</a>`).join(' / ')}</p>\n` : '')
+          + c.intro.split('\n').map(p => `<p>${esc(p)}</p>`).join('\n'),
         // 主ボタンは「10問練習」。全問・苦手問題はその横に並べる
         modes: count ? filter + modeCards(modes.filter(m => m.scope.includes('category')), c.id)
           .replace('<a class="mode-card primary"', '<a class="mode-card"')
@@ -2607,6 +2754,7 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
   <h1>${esc(t('term_heading', { term: g.term }))}</h1>
   ${g.reading ? `<p class="muted">${esc(g.reading)}</p>` : ''}
   <p class="lead">${esc(g.desc)}</p>
+  ${learnByTerm.has(g.key) ? `<p class="learn-link">${esc(LT.termLink)}: <a href="${home}learn/${learnByTerm.get(g.key).slug}/" data-track="term_learn">${esc(learnByTerm.get(g.key).title)}</a></p>` : ''}
   ${isDef ? '' : `<p class="muted">${esc(t('term_ja_name'))}: <span lang="ja">${esc(g.key)}</span></p>`}
   ${termSummary}
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
