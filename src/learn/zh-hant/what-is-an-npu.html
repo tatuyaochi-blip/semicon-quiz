@@ -1,0 +1,208 @@
+<!--
+{
+  "title": "NPU是什麼？手機和電腦裡的AI專用電路原理",
+  "description": "NPU是用很少的電力，大量進行AI計算核心「相乘再相加」的專用電路。它內建在手機和電腦的晶片裡，讓照片和語音的AI在裝置內執行。本文也說明TOPS數字的看法與限制。",
+  "series": "computer-basics",
+  "order": 6,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["ai-stack", "cpu", "computer-arithmetic", "machine-learning"],
+  "terms": ["NPU(ニューラルプロセッシングユニット)", "TOPS", "推論ランタイム"],
+  "sources": [
+    { "title": "Microsoft: Introducing Copilot+ PCs（2024年5月20日。搭載40 TOPS以上NPU的Windows電腦新類別）", "url": "https://blogs.microsoft.com/blog/2024/05/20/introducing-copilot-pcs/" },
+    { "title": "Microsoft: Copilot+ PC與其他Windows電腦的差異（40 TOPS以上的NPU、16 GB以上的記憶體、256 GB以上的SSD、Windows 11 24H2以後）", "url": "https://www.microsoft.com/en-us/windows/learning-center/copilot-plus-pcs-windows-pcs-differences" },
+    { "title": "Microsoft Support: Windows Studio Effects（搭載NPU的電腦的相機與麥克風效果）", "url": "https://support.microsoft.com/en-us/windows/ai/ai-features/windows-studio-effects" },
+    { "title": "Microsoft Support: Copilot+ PC的最低系統需求（支援的處理器一覽）", "url": "https://support.microsoft.com/help/5039678" },
+    { "title": "Qualcomm: Snapdragon X Elite（Hexagon NPU 45 TOPS，LPDDR5x記憶體頻寬最高135 GB/s）", "url": "https://www.qualcomm.com/products/mobile/snapdragon/pcs-and-tablets/snapdragon-x-elite" },
+    { "title": "Apple Newsroom: The future is here: iPhone X（2017年9月。A11 Bionic的Neural Engine，每秒最多6,000億次）", "url": "https://www.apple.com/newsroom/2017/09/the-future-is-here-iphone-x/" },
+    { "title": "Apple Support: iPhone 16 Pro - Tech Specs（16核心的Neural Engine）", "url": "https://support.apple.com/en-us/121031" },
+    { "title": "Electronics360（轉載TechInsights的拆解調查）: TechInsights Teardowns: Apple iPhone 16 Pro（2024年。Micron 8 GB LPDDR5）", "url": "https://electronics360.globalspec.com/article/22029/techinsights-teardowns-apple-iphone-16-pro" },
+    { "title": "NVIDIA: H100 GPU（產品頁面與規格。SXM版的功耗最高700 W）", "url": "https://www.nvidia.com/en-us/data-center/h100/" },
+    { "title": "Apple Newsroom: Apple unleashes M1（2020年11月。16核心的Neural Engine）", "url": "https://www.apple.com/newsroom/2020/11/apple-unleashes-m1/" },
+    { "title": "Huawei: HUAWEI Reveals the Future of Mobile AI at IFA 2017（Kirin 970，專用的NPU）", "url": "https://consumer.huawei.com/levant/press/news/2017/ifa2017-kirin970" },
+    { "title": "TechCrunch: With Tensor, Google bets on its own chip design for the Pixel 6（2021年10月）", "url": "https://techcrunch.com/2021/10/19/with-tensor-google-bets-on-its-own-chip-design-for-the-pixel-6" },
+    { "title": "Google: Build and train machine learning models on our new Google Cloud TPUs（2017年5月。第2代TPU可用於訓練與推論）", "url": "https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/google-cloud-offer-tpus-machine-learning/" },
+    { "title": "Google Cloud Blog: Google supercharges machine learning tasks with TPU custom chip（2016年5月。已在資料中心使用1年以上）", "url": "https://cloud.google.com/blog/products/ai-machine-learning/google-supercharges-machine-learning-tasks-with-custom-chip" },
+    { "title": "Google Cloud: Cloud TPU documentation（TPU是Google為了加速機器學習計算而自行開發的專用積體電路）", "url": "https://cloud.google.com/tpu/docs" },
+    { "title": "N. P. Jouppi et al.: In-Datacenter Performance Analysis of a Tensor Processing Unit, ISCA 2017（第一代TPU，8位元最高92 TOPS）", "url": "https://arxiv.org/abs/1704.04760" },
+    { "title": "M. Horowitz: Computing's energy problem (and what we can do about it), ISSCC 2014（45 nm世代的運算與記憶體讀取能量估計）", "url": "https://doi.org/10.1109/ISSCC.2014.6757323" },
+    { "title": "S. Han et al.: Learning both Weights and Connections for Efficient Neural Networks, NeurIPS 2015（圖1，45 nm的能量表：32位元小數乘法3.7 pJ，從DRAM讀取32位元640 pJ。依據Horowitz的估計）", "url": "https://arxiv.org/abs/1506.02626" },
+    { "title": "V. Sze et al.: Efficient Processing of Deep Neural Networks: A Tutorial and Survey, Proceedings of the IEEE, 2017（Horowitz 2014的45 nm表：8位元整數乘法0.2 pJ，32位元小數乘法3.7 pJ。搬運資料的能量比計算大）", "url": "https://arxiv.org/abs/1703.09039" },
+    { "title": "Android Developers: Gemini Nano（在裝置內執行的好處：資料不必傳出裝置、可離線使用、沒有通訊的等待時間。裝置與雲端的分工）", "url": "https://developer.android.com/ai/gemini-nano" },
+    { "title": "Apple Developer: MLComputeUnits（從CPU、GPU、Neural Engine中選擇Core ML模型所用零件的設定）", "url": "https://developer.apple.com/documentation/coreml/mlcomputeunits" },
+    { "title": "Apple Machine Learning Research: Introducing Apple's On-Device and Server Foundation Models（2024年。裝置內約30億個參數的模型，以及伺服器的模型）", "url": "https://machinelearning.apple.com/research/introducing-apple-foundation-models" }
+  ]
+}
+-->
+<p class="lead">NPU（神經網路處理單元）是專門用來處理AI計算大部分的「相乘再相加」，以很少的電力大量完成這種計算的電路。它內建在手機和電腦的核心晶片裡，讓修圖、聽寫語音等AI功能在裝置內執行。不過，它不是什麼都能變快的電路，速度也不只由效能數字「TOPS」決定。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>NPU負責的計算，以及它和CPU、GPU的分工差異</li>
+<li>用很少的電力執行AI的技巧（把數字變短、減少搬運量）</li>
+<li>手機、電腦、資料中心裡的AI用電路</li>
+<li>「TOPS」數字的意思，以及為什麼不能直接拿來比較</li>
+</ul><p class="muted">先備知識：如果知道AI的計算是把數字「相乘再相加」的重複，會比較容易閱讀。這在「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」中說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>在電腦賣場或規格表上，越來越常看到「AI PC」「搭載NPU」這類字眼。Microsoft在2024年5月，發表了名為「Copilot+ PC」的電腦類別。條件之一，是要有每秒能做40兆次以上運算的NPU。iPhone的規格表上，也列著「16核心Neural Engine」這樣的項目。</p>
+<p>把照片裡不小心入鏡的人消掉、把錄音轉成文字、在視訊會議中把背景模糊。這些功能的背後，常常是NPU在工作。這篇文章會依序來看NPU是做什麼的電路，以及為什麼要特地做出專用的電路。</p>
+</section>
+
+<section>
+<h2>NPU的工作是大量的「相乘再相加」</h2>
+<p>現在的AI，多半是由稱為神經網路的計算步驟構成的。內容是把輸入的數字乘上固定的數（權重）再相加，並且重複非常多次。</p>
+<p>1次乘法，加上把結果累加起來的1次加法，這個組合稱為乘積累加運算。也取英文字首寫成MAC。AI需要幾次乘積累加的算法，在「<a href="{{home}}learn/linear-algebra-for-ai-chips/">矩陣乘法要算幾次？</a>」中介紹。</p>
+<p>NPU是排了大量乘積累加電路、AI專用的計算零件。名稱是英文Neural Processing Unit的縮寫，意思是「處理神經網路的單元」。它多半不是獨立的晶片，而是和CPU、GPU一起，做在同一顆晶片裡。這種把機器主要電路整合成1顆的晶片，稱為{{term:SoC(システムオンチップ)|SoC（系統單晶片）}}（「<a href="{{home}}learn/chips-inside-a-smartphone/">手機裡有哪些半導體？</a>」）。</p>
+<p>各家公司的叫法不同。Apple稱為Neural Engine，Qualcomm稱為Hexagon NPU。這篇文章把手機和電腦裡AI專用的電路，統稱為NPU。</p>
+</section>
+
+<section>
+<h2>為什麼不用CPU或GPU，而要專用的電路？</h2>
+<p>CPU和GPU都能做AI的計算。問題在於電力。手機和筆電靠電池運作，沒有風扇的手機，散熱能力也有限。所以，同樣的電力能做多少計算（每單位電力的效能）就很重要。</p>
+<p>CPU什麼都能處理，但相對地，除了計算本身，也花了很多電力在其他地方。因為把指令一個一個取出、解讀，再決定下一步要做什麼的電路，一直在運作（「<a href="{{home}}learn/what-is-a-cpu/">CPU是什麼？</a>」）。NPU省去了這類機制的大部分，事先決定好計算的流程。AI的模型（把權重和計算步驟整合在一起的東西），要先轉換成給那個NPU用的步驟，再執行。</p>
+
+<h3>技巧1：把數字變短</h3>
+<p>在AI的計算中，就算稍微降低數字的精細度，答案也常常幾乎不變。所以，不用32位元（排成32個的0和1）的小數，而改用8位元的整數。這種格式稱為{{term:INT8|INT8}}，可以表示-128到127共256種整數。</p>
+<p>也就是把原本的小數，換成256個等級中最接近的值。這種替換，在AI領域稱為「量化」。乘法的電路處理的位數越少，就越小，用的電力也越少。根據2014年發表的估計，8位元整數乘法的電力，約是32位元小數乘法的18分之1。</p>
+<p>有些產品也會用16位元的小數（FP16），或更短的4位元整數。數字格式的差異，整理在「<a href="{{home}}compare/fp32-vs-fp16-vs-bf16-vs-int8/">FP32、FP16、BF16、INT8的差異</a>」的表格中。</p>
+
+<h3>技巧2：減少搬運量</h3>
+<p>其實，比計算本身更耗電的，是搬運數字。根據同一時期的估計，從晶片外的記憶體（DRAM）讀1個數字，要花1次乘法100倍以上的電力。所以NPU在計算電路的旁邊放了小型記憶體，把搬來一次的數字重複使用很多次。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 356" role="img"><title>NPU把從外部記憶體整批搬來的數字，放在旁邊的小記憶體裡重複使用</title>
+<rect x="40" y="8" width="260" height="52" rx="8" class="metal"/>
+<text x="170" y="31" text-anchor="middle">外部記憶體（DRAM）</text>
+<text x="170" y="52" text-anchor="middle" class="m">距離遠、搬運耗電大</text>
+<line x1="170" y1="60" x2="170" y2="88" class="ac2"/><polygon points="170,97 165,88 175,88" class="fa2"/>
+<text x="182" y="83" class="m">整批搬運</text>
+<rect x="6" y="100" width="328" height="212" rx="10" class="hole"/>
+<text x="16" y="122">NPU</text>
+<rect x="30" y="132" width="280" height="40" rx="6" class="ox"/>
+<text x="170" y="158" text-anchor="middle">旁邊的小記憶體</text>
+<line x1="90" y1="172" x2="90" y2="184" class="ac"/><polygon points="90,192 85,184 95,184" class="fa"/>
+<line x1="170" y1="172" x2="170" y2="184" class="ac"/><polygon points="170,192 165,184 175,184" class="fa"/>
+<line x1="250" y1="172" x2="250" y2="184" class="ac"/><polygon points="250,192 245,184 255,184" class="fa"/>
+<rect x="46" y="196" width="24" height="24" rx="3" class="p"/><rect x="78" y="196" width="24" height="24" rx="3" class="p"/><rect x="110" y="196" width="24" height="24" rx="3" class="p"/><rect x="142" y="196" width="24" height="24" rx="3" class="p"/><rect x="174" y="196" width="24" height="24" rx="3" class="p"/><rect x="206" y="196" width="24" height="24" rx="3" class="p"/><rect x="238" y="196" width="24" height="24" rx="3" class="p"/><rect x="270" y="196" width="24" height="24" rx="3" class="p"/>
+<rect x="46" y="228" width="24" height="24" rx="3" class="p"/><rect x="78" y="228" width="24" height="24" rx="3" class="p"/><rect x="110" y="228" width="24" height="24" rx="3" class="p"/><rect x="142" y="228" width="24" height="24" rx="3" class="p"/><rect x="174" y="228" width="24" height="24" rx="3" class="p"/><rect x="206" y="228" width="24" height="24" rx="3" class="p"/><rect x="238" y="228" width="24" height="24" rx="3" class="p"/><rect x="270" y="228" width="24" height="24" rx="3" class="p"/>
+<rect x="46" y="260" width="24" height="24" rx="3" class="p"/><rect x="78" y="260" width="24" height="24" rx="3" class="p"/><rect x="110" y="260" width="24" height="24" rx="3" class="p"/><rect x="142" y="260" width="24" height="24" rx="3" class="p"/><rect x="174" y="260" width="24" height="24" rx="3" class="p"/><rect x="206" y="260" width="24" height="24" rx="3" class="p"/><rect x="238" y="260" width="24" height="24" rx="3" class="p"/><rect x="270" y="260" width="24" height="24" rx="3" class="p"/>
+<text x="170" y="303" text-anchor="middle" class="m">大量的乘積累加電路</text>
+<text x="170" y="344" text-anchor="middle" class="a">搬一次，用很多次</text>
+</svg><figcaption class="fig-cap">把從外部記憶體搬來的權重等數字，放在計算電路旁邊的記憶體裡，一直計算到用完為止。和遠處記憶體之間的來回減少，所以電力比較省。圖中省略的部分：實際電路的數量和排列方式、處理乘積累加以外工作的電路、和CPU之間的交接。</figcaption></figure>
+<p>在AI的計算中，同一份權重可以用在影像的很多位置，或很多人份的輸入上。把放在旁邊記憶體裡的數字用完再換下一批，和遠處記憶體的來回就會減少。從記憶體搬運的速度在AI中有多重要，在「<a href="{{home}}learn/what-is-hbm/">HBM是什麼？</a>」中也有說明。</p>
+
+<h3>和GPU的差異</h3>
+<p>GPU也是排了大量計算電路的零件。不過GPU依程式不同，可以處理畫圖、訓練AI、科學技術計算等廣泛的工作。因為靈活，用的電力也大，資料中心用的GPU，有些1個就要用到數百瓦。</p>
+<p>手機和電腦的NPU，主要把工作集中在一件事上：用訓練時決定好的權重，對新的輸入給出答案。這種計算稱為{{term:推論|推論}}。決定權重的「訓練」，通常是在資料中心用GPU等零件進行。差異整理在「<a href="{{home}}compare/cpu-vs-gpu-vs-npu/">CPU、GPU、NPU的差異</a>」和「<a href="{{home}}compare/training-vs-inference/">AI訓練與推論的差異</a>」的表格中。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>NPU有點像廚房的削皮刀。菜刀可以削皮，也可以處理魚。削皮刀只能削皮，但如果是削皮，就能比菜刀更省力、更快完成。相似的是「工作範圍越窄的工具，越能用更少的力氣完成那件工作」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>削皮刀拿來就能用在任何蔬菜上。NPU則要先把AI的模型轉換成專用的步驟才能執行，不支援的計算會交給CPU等零件。另外，NPU能省電的一大原因，在於「減少搬運數字的量」，這個比喻表現不出來。</p></aside>
+</section>
+
+<section>
+<h2>在裝置內執行的好處</h2>
+<p>AI的計算，也可以在網路另一端的資料中心進行（「<a href="{{home}}learn/what-is-cloud-computing/">雲端運算是什麼？</a>」）。儘管如此，在裝置內執行還是有它的理由。Google給開發者的資料，列出了以下幾個主要好處。</p>
+<ul>
+<li>照片、聲音等資料，不必傳到裝置外</li>
+<li>沒有連上網路也能使用</li>
+<li>不用等待通訊的來回</li>
+<li>提供服務的一方，計算的費用會減少</li>
+</ul>
+<p>像這樣不在資料中心，而在手邊的機器上執行AI，稱為「邊緣AI」或「裝置端AI」。邊緣，指的是位在網路末端的機器。要靠電池長時間運作，每單位電力效能高的NPU很適合。</p>
+</section>
+
+<section>
+<h2>NPU裝在哪裡？</h2>
+<h3>手機</h3>
+<p>2017年，內建AI專用電路的手機SoC接連發表。Huawei在9月發表了Kirin 970，並說明它有專用的NPU。同一個月Apple發表的A11 Bionic，則放入了該公司第一個Neural Engine。現在，Apple的A系列、Qualcomm的Snapdragon等，很多手機的SoC都有AI用的電路。Google也從2021年的Pixel 6開始，使用自家的SoC「Tensor」。</p>
+<h3>電腦</h3>
+<p>Apple從Mac用的M1（2020年）開始，在SoC裡放入Neural Engine。在Windows電腦上，前面提到的Copilot+ PC成為NPU普及的契機。2024年推出的第一批Copilot+ PC，使用了Qualcomm的Snapdragon X系列。依Qualcomm的規格，它的NPU是45 TOPS。之後，也加入了使用AMD和Intel晶片的產品。</p>
+<h3>資料中心</h3>
+<p>Google在2016年5月，公開了自家為AI打造的晶片「TPU」（張量處理單元）。當時Google說明，已經在資料中心使用1年以上。TPU也是專門做矩陣乘積累加的晶片，但它是資料中心用的大型零件，從第2代（2017年）起也用於訓練。這類零件常被稱為「AI加速器」（讓AI計算變快的專用零件）。NPU這個名稱，主要用在手機和電腦裡的電路。原理在「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」中介紹。</p>
+</section>
+
+<section>
+<h2>TOPS是什麼？數字的看法</h2>
+<p>NPU的效能，常用「1秒能做幾兆次運算」來表示。這個單位稱為{{term:TOPS|TOPS}}（每秒兆次運算）。T是代表「兆」的tera，OPS是「每秒運算次數」的英文縮寫。40 TOPS就是1秒40兆次。</p>
+<p>這個數字通常是理論上的最大值。計算方式是把乘積累加電路的數量，乘上2（乘法和加法算成2次），再乘上電路1秒運作的次數。這是所有電路都不休息地工作時的值，實際的AI幾乎不可能達到。</p>
+<p>而且，就算是同一顆晶片，數字也會因計算條件而改變。主要的條件如下。</p>
+<ul>
+<li><strong>數字的格式</strong>：數字越短，一次能算的越多，所以用4位元來算，數字可能比8位元大。用16位元的小數來算，則會變小。</li>
+<li><strong>跳過0的技巧</strong>：有些數值會省略權重中0的部分的計算，再把省略的部分也算成「計算過了」。0很多的狀態稱為「稀疏」，所以也寫成稀疏時的數值。</li>
+<li><strong>搬運的速度</strong>：TOPS不包含從記憶體搬運數字的速度。搬運得慢，電路就只能等數字送來。</li>
+<li><strong>軟體的支援</strong>：NPU不支援的計算，會交給CPU等零件。</li>
+</ul>
+<p>因此，不能只用TOPS比較不同廠商或不同世代的NPU。比較時，最可靠的是看實際執行想用的App或模型所測得的結果（基準測試）。</p>
+</section>
+
+<section>
+<h2>NPU常用在哪些工作</h2>
+<p>在手機上，NPU常用於照片的處理，例如辨識拍到的物體和人、減少暗處照片的雜訊、把背景模糊。也有把說的話轉成文字、翻譯外語這類聲音和語言的處理。在電腦上，則有在視訊會議中把相機背景模糊等功能。Windows的「Windows Studio Effects」，就是給搭載NPU的電腦用的功能。</p>
+<p>最近，也出現了在裝置內執行小型文字生成AI（「<a href="{{home}}learn/how-large-language-models-work/">生成式AI怎麼運作？</a>」）的例子。Apple在2024年說明，會在裝置內執行約30億個參數的模型。參數是指權重等在訓練中決定的數字。不過，哪些功能在NPU上執行，依產品和App而不同。</p>
+</section>
+
+<section>
+<h2>NPU的限制</h2>
+<h3>軟體不支援，就不會被使用</h3>
+<p>NPU的構造，依廠商和機種而不同。所以，需要一種軟體，載入訓練好的模型，轉換成能在該硬體上執行的形式再執行。這種軟體稱為{{term:推論ランタイム|推論執行環境}}。如果App或作業系統沒有設計成使用NPU，NPU就不會工作。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 400" role="img"><title>軟體把App的AI功能，分配給NPU、GPU、CPU或雲端</title>
+<rect x="60" y="8" width="220" height="40" rx="8" class="n"/>
+<text x="170" y="33" text-anchor="middle">App的AI功能</text>
+<line x1="170" y1="48" x2="170" y2="70" class="ln"/><polygon points="170,79 165,70 175,70" class="ink"/>
+<rect x="40" y="80" width="260" height="56" rx="8" class="ox"/>
+<text x="170" y="104" text-anchor="middle">負責分配的軟體</text>
+<text x="170" y="127" text-anchor="middle" class="m">作業系統、函式庫</text>
+<rect x="6" y="166" width="328" height="108" rx="10" class="dash"/>
+<text x="87" y="188" class="m">裝置內</text>
+<line x1="64" y1="136" x2="64" y2="194" class="ac"/><polygon points="64,203 59,194 69,194" class="fa"/>
+<line x1="170" y1="136" x2="170" y2="194" class="ac"/><polygon points="170,203 165,194 175,194" class="fa"/>
+<line x1="276" y1="136" x2="276" y2="194" class="ac"/><polygon points="276,203 271,194 281,194" class="fa"/>
+<rect x="18" y="204" width="92" height="52" rx="6" class="p"/>
+<text x="64" y="236" text-anchor="middle">NPU</text>
+<rect x="124" y="204" width="92" height="52" rx="6" class="p"/>
+<text x="170" y="236" text-anchor="middle">GPU</text>
+<rect x="230" y="204" width="92" height="52" rx="6" class="p"/>
+<text x="276" y="236" text-anchor="middle">CPU</text>
+<line x1="170" y1="274" x2="170" y2="310" class="ac2"/><polygon points="170,319 165,310 175,310" class="fa2"/>
+<text x="182" y="300" class="m">透過網路傳送</text>
+<rect x="90" y="320" width="160" height="44" rx="8" class="metal"/>
+<text x="170" y="348" text-anchor="middle">雲端的伺服器</text>
+<text x="170" y="390" text-anchor="middle" class="a">在哪裡執行，由軟體決定</text>
+</svg><figcaption class="fig-cap">App的AI功能，會透過作業系統或函式庫（共用零件的軟體），在NPU、GPU、CPU其中之一執行。大型的處理，也可能傳到網路另一端的伺服器。圖中省略的部分：把1個功能分給多個零件執行的情況、記憶體。</figcaption></figure>
+<h3>大型模型放不進去</h3>
+<p>NPU旁邊的記憶體很小，所以模型的權重通常放在裝置的記憶體裡。手機的記憶體，例如iPhone 16 Pro（2024年）是8 GB（根據拆解調查）。這要和作業系統及其他App共用（「<a href="{{home}}learn/memory-vs-storage/">記憶體和儲存空間有什麼不同？</a>」）。在資料中心執行的大型模型，直接是放不進去的。給裝置用的，要選參數較少的模型，再把數字變短，讓模型變小。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：有了NPU，電腦或手機做什麼都會變快</p><p>實際上，NPU負責的，只有AI推論中為NPU設計的部分。試算表、遊戲的畫面、網頁的顯示等，還是和以前一樣由CPU和GPU處理。如果App沒有設計成使用NPU，NPU就不會被用到。「AI PC」這個名稱，容易讓人覺得整台電腦都會變快，這就是誤解的來源。</p></div>
+<div class="myth"><p class="myth-q">誤解：TOPS的數字越大，AI就越快</p><p>實際上，TOPS是條件不一致的理論最大值，會隨數字的格式和跳過0的技巧而改變。另外，在文字生成AI中，從記憶體搬運數字的速度，常常會先成為上限（見下一節「從數字來看」）。因為它是規格表上容易比較的數字，所以常被拿來當作唯一的判斷依據。</p></div>
+<div class="myth"><p class="myth-q">誤解：手機的AI功能，都是在NPU上執行</p><p>實際上，要用CPU、GPU、NPU哪一個來執行，是由App或作業系統的軟體選擇的。例如在Apple的AI用軟體（Core ML）中，開發者可以指定要用的零件。如果沒有指定，Core ML會從能用的零件中選擇。大型的處理，也可能在網路另一端的伺服器進行。Apple在2024年說明，會分別使用裝置內的模型和伺服器的模型。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>補充</th></tr></thead>
+<tbody>
+<tr><td>A11 Bionic的Neural Engine（2017年）</td><td>每秒最多6,000億次</td><td>Apple的發表</td></tr>
+<tr><td>第一代TPU（2016年公開）</td><td>最高92 TOPS</td><td>8位元整數。資料中心用（2017年的論文）</td></tr>
+<tr><td>Snapdragon X Elite的NPU</td><td>45 TOPS</td><td>8位元整數。Qualcomm的規格（2024年）</td></tr>
+<tr><td>Copilot+ PC的條件（2024年）</td><td>NPU達40 TOPS以上</td><td>記憶體16 GB以上、儲存空間256 GB以上也是條件</td></tr>
+<tr><td>1次乘法的電力</td><td>8位元整數約0.2 pJ，32位元小數約3.7 pJ</td><td>pJ（皮焦耳）是1兆分之1焦耳</td></tr>
+<tr><td>從外部記憶體（DRAM）讀取1個32位元數字的電力</td><td>約640 pJ</td><td>約是32位元小數乘法的170倍</td></tr>
+</tbody>
+</table>
+<p>上面4列的計算條件並不一致，所以不是可以互相比較的數字。電力的2列，是Horowitz在2014年提出、針對45 nm這個舊世代的估計（依據Han等人、Sze等人論文中的表）。製程世代進步，數值本身也會改變。即使如此，Sze等人2017年的解說，仍把「搬運數字的電力比計算大」當作AI晶片設計的出發點。</p>
+<p>我們粗略估算一下搬運速度的影響。假設要執行有30億個權重的文字AI，並把每個權重縮成4位元。8位元是1位元組，所以每個是0.5位元組。權重全部約1.5 GB。文字生成AI每產生1個詞（精確來說是token），幾乎都要把所有權重讀出來一次。</p>
+<p>即使是每秒能從記憶體搬運135 GB的晶片（Snapdragon X Elite的規格），讀1次也要約0.011秒。所以1秒最多約90個詞。另一方面，計算是每個權重做乘法和加法共2次，每個詞約60億次。用45 TOPS計算約0.00013秒，只要讀取時間的約80分之1。在這種情況下，就算把TOPS加倍，速度也幾乎不變。這裡為了簡化，省略了其他資料的讀寫，以及數字格式的差異。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="{{home}}compare/cpu-vs-gpu-vs-npu/">CPU、GPU、NPU的差異</a>、<a href="{{home}}compare/training-vs-inference/">AI訓練與推論的差異</a>、<a href="{{home}}compare/ddr-vs-lpddr-vs-gddr-vs-hbm/">DDR、LPDDR、GDDR、HBM的差異</a></li>
+<li>用數字試試看：<a href="{{home}}tools/memory-bandwidth-calculator/">記憶體頻寬計算器</a>（可以計算記憶體1秒能搬運的量）</li>
+<li>下一步的用語：{{term:学習後量子化|訓練後量化}}（把訓練完成的模型的數字變短的方法）、{{term:構造化スパース|結構化稀疏}}（把0排成固定的形式，省略計算）、{{term:シストリックアレイ|脈動陣列}}（乘積累加電路的一種排列方式）</li>
+<li>計算計算量：「<a href="{{home}}learn/linear-algebra-for-ai-chips/">矩陣乘法要算幾次？</a>」</li>
+<li>相關的文章：「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」、「<a href="{{home}}learn/what-is-hbm/">HBM是什麼？</a>」</li>
+</ul>
+</section>
