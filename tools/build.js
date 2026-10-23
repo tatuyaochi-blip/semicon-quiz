@@ -105,7 +105,7 @@ const learnText = {
     description: 'Beginner-friendly explainers on semiconductors, transistors, CPUs and more: how they work, where you meet them and common misconceptions, with a short check and quizzes.',
     lead: 'Explainers that start from simple questions such as “What is a semiconductor?” and “What does a CPU do?”, written for readers with little background. Read a series in order to follow the path from semiconductors to computers.',
     minutes: '{n} min read', updated: 'Updated: {d}', quizLine: 'Questions on this topic:',
-    next: 'Read next', inSeries: 'Articles in the series “{name}”', sources: 'Sources', all: 'All explainers', termLink: 'Read the beginner explainer', catLink: 'New to this topic?', search: 'Explainers', courseFirst: 'Read first: explainers' },
+    next: 'Read next', inSeries: 'Articles in the series “{name}”', sources: 'Sources', all: 'All explainers', termLink: 'Read the beginner explainer', catLink: 'New to this topic? Start with', search: 'Explainers', courseFirst: 'Read first: explainers' },
   'zh-hant': { nav: '入門解說', card: '從「半導體是什麼？」等簡單的疑問讀起的解說文章', title: '入門解說：從簡單的疑問認識半導體與電腦',
     description: '為背景知識不多的讀者，從簡單的疑問解說半導體、電晶體、CPU 等基礎：原理、生活中的應用與常見誤解，讀完可用小測驗確認。',
     lead: '從「半導體是什麼？」「CPU 在做什麼？」等簡單的疑問出發，為背景知識不多的讀者解說原理與生活中的應用。依系列順序閱讀，就能從半導體一路了解到電腦。',
