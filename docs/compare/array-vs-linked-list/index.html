@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配列と連結リストの違い：読み出し・挿入と削除・メモリの並び・キャッシュ・計算量を比較 | 半導体教室</title>
+<meta name="description" content="配列と連結リストを、メモリ上の並び方・i番目の要素の読み出し・値の探索・途中への挿入と削除・末尾への追加・大きさの変更・使うメモリ・キャッシュの効きやすさ・主な用途の観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/array-vs-linked-list/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/array-vs-linked-list/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/array-vs-linked-list/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/array-vs-linked-list/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/array-vs-linked-list/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="配列と連結リストの違い：読み出し・挿入と削除・メモリの並び・キャッシュ・計算量を比較 | 半導体教室">
+<meta property="og:description" content="配列と連結リストを、メモリ上の並び方・i番目の要素の読み出し・値の探索・途中への挿入と削除・末尾への追加・大きさの変更・使うメモリ・キャッシュの効きやすさ・主な用途の観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/array-vs-linked-list/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"配列と連結リストの違い：読み出し・挿入と削除・メモリの並び・キャッシュ・計算量を比較","item":"https://semiconroom.com/compare/array-vs-linked-list/"}]},{"@context":"https://schema.org","@type":"Article","headline":"配列と連結リストの違い：読み出し・挿入と削除・メモリの並び・キャッシュ・計算量を比較","description":"配列と連結リストを、メモリ上の並び方・i番目の要素の読み出し・値の探索・途中への挿入と削除・末尾への追加・大きさの変更・使うメモリ・キャッシュの効きやすさ・主な用途の観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/compare/array-vs-linked-list/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"計算量では連結リストの挿入が O(1) なのに、実際には配列の方が速いことがあるのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"理由は2つあります。1つは、挿入する位置を先頭から探すなら、その探索に O(n) かかり、挿入が O(1) でも全体では配列と同じ O(n) になることです。もう1つは、配列の要素をずらす処理は連続したメモリのコピーで、キャッシュがよく効いて非常に速い一方、連結リストのたどる処理は、要素ごとに離れた番地を読むので、キャッシュに当たりにくいことです。計算量は、データが多くなったときの増え方を表すもので、実際の速さは測って確かめます。"}},{"@type":"Question","name":"単方向リストと双方向リストは、どう違いますか？","acceptedAnswer":{"@type":"Answer","text":"単方向リストは、各要素が次の要素へのポインタだけを持ち、先頭から後ろへしかたどれません。双方向リストは、前の要素へのポインタも持つので、後ろから前へもたどれ、ある要素へのポインタさえあれば、その要素を O(1) で削除できます。その代わり、要素ごとにポインタが1つ増え、付け替えるポインタも増えます。"}},{"@type":"Question","name":"可変長配列(動的配列)とは何ですか？","acceptedAnswer":{"@type":"Answer","text":"要素が増えて容量が足りなくなったら、より大きな領域を確保して全体をコピーし、大きさを変えられるようにした配列です。容量を2倍ずつ増やすと、コピーの総数は要素数の約1倍で済むので、末尾への追加は平均すると O(1) になります。番号での読み出しは、普通の配列と同じく O(1) です。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/array-vs-linked-list/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/array-vs-linked-list/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/array-vs-linked-list/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>配列と連結リストの違い：読み出し・挿入と削除・メモリの並び・キャッシュ・計算量を比較</h1>
+  <p class="lead">配列は、同じ型の要素をメモリ上に隙間なく連続して並べ、要素番号(添字)から位置を計算して、どの要素も一定の時間で読み書きできるデータ構造です。連結リストは、各要素が値と次の要素の位置を指すポインタを持ち、それをたどってつながるデータ構造で、要素はメモリ上の離れた場所に置けます。配列は読み出しが速い代わりに、途中への挿入や削除では後ろの要素をずらす必要があります。連結リストは、位置が分かっていればポインタの付け替えだけで挿入や削除ができる代わりに、i番目の要素を読むには先頭から順にたどる必要があります。番号で読むことが多いなら配列、決まった位置での挿入や削除が多いなら連結リスト、というのが基本の使い分けです。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">配列</th><th scope="col">連結リスト</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">メモリ上の並び方</th><td>要素が、連続した領域に隙間なく並ぶ</td><td>要素はばらばらの場所に置かれ、ポインタでつながる</td></tr>
+        <tr><th scope="row">i番目の要素の読み出し</th><td>O(1)。先頭の番地 + i × 要素の大きさ で位置を計算できる</td><td>O(n)。先頭から i 回ポインタをたどる</td></tr>
+        <tr><th scope="row">値の探索</th><td>整列していなければ O(n) の線形探索。整列済みなら、二分探索で O(log n)</td><td>整列していても O(n)。途中の要素へ一度に移れないので、二分探索は使えない</td></tr>
+        <tr><th scope="row">途中への挿入・削除</th><td>O(n)。後ろの要素を1つずつずらす</td><td>挿入する位置(直前の要素)が分かっていれば O(1)。ポインタの付け替えだけで済む</td></tr>
+        <tr><th scope="row">末尾への追加</th><td>空きがあれば O(1)。可変長配列で容量を2倍ずつ増やす方式では、ときどき全体をコピーするが、平均すると O(1)(償却)</td><td>末尾の要素を指すポインタを持っていれば O(1)</td></tr>
+        <tr><th scope="row">大きさの変更</th><td>固定長の配列は、作るときに大きさを決める。広げるには、新しい領域を確保してコピーする</td><td>要素ごとに領域を確保するので、必要な分だけ増やせる</td></tr>
+        <tr><th scope="row">使うメモリ</th><td>要素の分だけで済む(可変長配列では、予備の容量を持つ)</td><td>要素ごとに、ポインタの分が余計にかかる(双方向リストなら2つ分)</td></tr>
+        <tr><th scope="row">キャッシュの効きやすさ</th><td>効きやすい。連続して並ぶので、順に読むとキャッシュやプリフェッチがよく働く</td><td>効きにくい。要素が散らばりやすいので、同じ O(n) の走査でも、配列より大幅に遅くなることがある</td></tr>
+        <tr><th scope="row">主な用途</th><td>添字で読み書きする表、行列や画像、ソートや二分探索の対象、スタックやキューの実装</td><td>挿入や削除が頻繁な列、ハッシュテーブルのチェイン法、空き領域の管理</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>配列</dt><dd>要素を番号で読み書きしたり、先頭から順に読んだりすることが多いときに向きます。キャッシュがよく効くので、今のコンピュータでは、多くの場面で配列(可変長配列を含む)の方が速くなります。</dd>
+    <dt>連結リスト</dt><dd>途中への挿入や削除が多く、その位置をすでにポインタで持っているときに向きます。要素を動かさずにつなぎ替えられるので、要素の番地が変わっては困るときにも使います。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>計算量では連結リストの挿入が O(1) なのに、実際には配列の方が速いことがあるのはなぜですか？</h3>
+  <p>理由は2つあります。1つは、挿入する位置を先頭から探すなら、その探索に O(n) かかり、挿入が O(1) でも全体では配列と同じ O(n) になることです。もう1つは、配列の要素をずらす処理は連続したメモリのコピーで、キャッシュがよく効いて非常に速い一方、連結リストのたどる処理は、要素ごとに離れた番地を読むので、キャッシュに当たりにくいことです。計算量は、データが多くなったときの増え方を表すもので、実際の速さは測って確かめます。</p>
+  <h3>単方向リストと双方向リストは、どう違いますか？</h3>
+  <p>単方向リストは、各要素が次の要素へのポインタだけを持ち、先頭から後ろへしかたどれません。双方向リストは、前の要素へのポインタも持つので、後ろから前へもたどれ、ある要素へのポインタさえあれば、その要素を O(1) で削除できます。その代わり、要素ごとにポインタが1つ増え、付け替えるポインタも増えます。</p>
+  <h3>可変長配列(動的配列)とは何ですか？</h3>
+  <p>要素が増えて容量が足りなくなったら、より大きな領域を確保して全体をコピーし、大きさを変えられるようにした配列です。容量を2倍ずつ増やすと、コピーの総数は要素数の約1倍で済むので、末尾への追加は平均すると O(1) になります。番号での読み出しは、普通の配列と同じく O(1) です。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="algorithms-004" data-cat="algorithms" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/algorithms/algorithms-004/">配列と比べたときの連結リスト(各要素が次の要素の位置を指すポインタを持つリスト)の特徴として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">挿入する位置の直前の要素が分かっていれば、ほかの要素を動かさずにポインタの付け替えだけで挿入できるが、i 番目の要素を読むには先頭から順にたどる必要がある</span></li><li><span class="choice-mark">B</span><span class="choice-text">i 番目の要素の位置を計算で求められるので、どの要素も一定の時間 O(1) で読み出せる</span></li><li><span class="choice-mark">C</span><span class="choice-text">要素がメモリ上に隙間なく連続して並ぶので、順に読むときにキャッシュやプリフェッチが効きやすい</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. 挿入する位置の直前の要素が分かっていれば、ほかの要素を動かさずにポインタの付け替えだけで挿入できるが、i 番目の要素を読むには先頭から順にたどる必要がある</p><p class="explanation"><a class="term-link" href="/term/linked-list/">連結リスト</a>では、挿入や削除の位置が分かっていれば、前後の<a class="term-link" href="/term/pointer/">ポインタ</a>を書き換えるだけで O(1) で済みます。一方、i 番目の要素を読むには先頭から i 回ポインタをたどる必要があり、O(n) かかります。<a class="term-link" href="/term/array/">配列</a>は先頭の番地と要素の大きさから i 番目の番地を計算できるので O(1) で読めますが、途中への挿入には後ろの要素をずらす O(n) の手間がかかります。また、配列は要素が連続して並ぶためキャッシュや<a class="term-link" href="/term/prefetching/">プリフェッチ</a>が効きやすく、メモリ上に散らばりやすい連結リストは、同じ O(n) の走査でも大幅に遅くなることがあります。</p></details>
+  </article>
+  <article class="q-mini" data-qid="algorithms-038" data-cat="algorithms" data-answer="1" data-correct="正解！" data-incorrect="不正解… 正解は B">
+    <h3><a href="/q/algorithms/algorithms-038/">可変長配列で、容量が満杯のときに要素を追加すると、2倍の容量の領域を新たに確保して全要素をコピーする。容量1の空の配列に要素を1つずつ1,000個追加したとき、コピーされる要素の総数はいくつか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">10</span></li><li><span class="choice-mark">B</span><span class="choice-text">1,023</span></li><li><span class="choice-mark">C</span><span class="choice-text">499,500</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：B. 1,023</p><p class="explanation">容量は1、2、4、…、512と満杯になるたびに2倍になり、そのたびにその時点の要素をコピーするので、コピーの総数は 1 + 2 + 4 + … + 512 = 1,023 です。1,000個の追加に対してコピーは要素数の約1倍なので、追加1回あたりの手間は平均すると一定、つまり償却 O(1) になります。容量を1ずつしか増やさないと、コピーは 1 + 2 + … + 999 = 499,500 となり O(n²) です。10は領域を確保し直した回数で、コピーされる要素の数ではありません。</p></details>
+  </article>
+  <article class="q-mini" data-qid="algorithms-010" data-cat="algorithms" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/algorithms/algorithms-010/">ハッシュテーブルの衝突を処理する方法として、チェイン法(同じ位置の要素を連結リストでつなぐ)とオープンアドレス法(表の中の空いている別の位置を探す)を比べた説明として正しいものはどれか。負荷率は、格納した要素数を表の大きさで割った値とする。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">チェイン法では負荷率が1を超えても格納できるが、オープンアドレス法では表の大きさを超えて格納できず、負荷率が1に近づくと探索の回数が急に増える</span></li><li><span class="choice-mark">B</span><span class="choice-text">オープンアドレス法では衝突が起こらないので、負荷率によらず探索は1回で済む</span></li><li><span class="choice-mark">C</span><span class="choice-text">チェイン法では、負荷率がいくら高くなっても探索の手間は変わらない</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. チェイン法では負荷率が1を超えても格納できるが、オープンアドレス法では表の大きさを超えて格納できず、負荷率が1に近づくと探索の回数が急に増える</p><p class="explanation">チェイン法は同じ位置の要素をリストにつなぐので、要素数が表の大きさを超えても格納できますが、平均のリストの長さは負荷率に比例して伸び、探索の手間も増えます。オープンアドレス法は表の中だけに格納するので要素数は表の大きさまでで、負荷率が1に近づくと空きを探す回数が急に増えます。どちらの方法でも、負荷率が決めた値(例えば0.5〜0.75程度)を超えたら表を大きくして全要素を入れ直す(リハッシュ)のが普通です。オープンアドレス法でも衝突は起こり、空いた位置を探すことで対処しています。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/q/algorithms/algorithms-039/">要素数が多く、負荷率を0.5程度に保ったハッシュテーブルで、線形探査のオープンアドレス法が、チェイン法(連結リストでつなぐ方法)より速くなりやすい理由として最も適切なものはどれか。</a></li>
+  <li data-level="1"><a href="/q/algorithms/algorithms-011/">配列の中央の要素と比べて、探す範囲を半分ずつに絞っていく二分探索を使うための前提条件として正しいものはどれか。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/algorithms/">データ構造とアルゴリズムの練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/array/">配列</a></dt><dd>同じ型の値を並べて記憶し、要素番号(添字)で個々の要素を指定するデータ構造。メモリ上で連続して置かれるので、要素番号から位置を計算して、どの要素も一定の時間で読み書きできる。要素番号が0から始まる言語と、1から始まる書き方がある。</dd></div>
+    <div class="term"><dt><a href="/term/linked-list/">連結リスト</a></dt><dd>各要素が、値と次の要素の位置を指すポインタを持ち、それをたどってつながるデータ構造。位置が分かっていれば挿入や削除はポインタの付け替えで O(1) だが、i 番目の要素を読むには先頭からたどる O(n) が必要。要素がメモリ上に散らばりやすく、配列よりキャッシュが効きにくい。</dd></div>
+    <div class="term"><dt><a href="/term/pointer/">ポインタ</a></dt><dd>変数や配列の要素、関数などが置かれているメモリの番地を値として持つ変数。C言語では int *p のように宣言し、&amp;x で x の番地を取り出し、*p で p が指す先の値を読み書きする。ポインタに整数を足すと、指す型の大きさを単位に進む。配列の名前は多くの式で先頭の要素へのポインタに変換され、a[i] は *(a + i) と同じ意味になる。どこも指さないことを表す値を NULL ポインタという。</dd></div>
+    <div class="term"><dt><a href="/term/time-complexity/">計算量</a></dt><dd>アルゴリズムが必要とする手間(時間計算量)や記憶領域(空間計算量)が、データの数 n に対してどのように増えるかを表したもの。O(n) や O(n log n)、O(n²) のようなオーダー記法(ビッグO記法)で、係数や低い次数の項を省いて書く。</dd></div>
+    <div class="term"><dt><a href="/term/binary-search/">二分探索</a></dt><dd>整列済みのデータで、中央の要素と比べて探す範囲を半分ずつに絞っていく探索の方法。n 個のデータから最大でも ⌊log₂ n⌋ + 1 回の比較で見つかり、計算量は O(log n)。データが整列されていることが前提になる。</dd></div>
+    <div class="term"><dt><a href="/term/hash-table/">ハッシュテーブル</a></dt><dd>キーからハッシュ関数で格納する位置を計算し、平均 O(1) で探索・挿入・削除ができるデータ構造。異なるキーが同じ位置になる衝突を、チェイン法やオープンアドレス法で処理する。ハッシュ表ともいう。</dd></div>
+    <div class="term"><dt><a href="/term/spatial-locality/">空間的局所性</a></dt><dd>あるアドレスにアクセスすると、その近くのアドレスにもまもなくアクセスしやすい性質。配列を順に読む処理が例で、キャッシュラインの単位でまとめて読み込む理由になる。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/bfs-vs-dfs/"><strong>幅優先探索と深さ優先探索の違い：訪れる順・データ構造・最短経路・メモリ・用途を比較</strong><span>幅優先探索(BFS)と深さ優先探索(DFS)を、訪れる順・使うデータ構造・最短経路・計算量・使うメモリ・解が見つかるか・木をたどる順・主な用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/fixed-vs-floating-point/"><strong>固定小数点と浮動小数点の違い：表現・範囲と精度・演算器の規模・オーバーフロー・用途を比較</strong><span>固定小数点と浮動小数点を、表現のしかた・表せる範囲と精度・演算器の規模と電力・オーバーフローの扱い・プログラミングの手間・使われる場所の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/fp32-vs-fp16-vs-bf16-vs-int8/"><strong>FP32・FP16・BF16・INT8の違い：ビット構成・範囲・精度・用途を比較</strong><span>FP32・FP16・BF16・INT8を、ビット構成(符号・指数・仮数)・表せる範囲・精度・FP32からの変換・メモリ・演算器の効率・学習と推論での用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/supervised-vs-unsupervised-vs-reinforcement-learning/"><strong>教師あり学習・教師なし学習・強化学習の違い：データ・正解の与え方・目的・手法・例を比較</strong><span>教師あり学習・教師なし学習・強化学習を、学習に使うデータ・正解の与え方・学習の目的・主な課題・代表的な手法・評価のしかた・難しさ・使われる例の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/dram-vs-sram/"><strong>DRAMとSRAMの違い：構造・速度・コスト・用途を比較</strong><span>DRAMとSRAMを、セル構造・リフレッシュ・速度・集積度・コスト・消費電力・用途の観点で表にまとめて比較。どちらをどんなときに使うかも解説します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/nand-vs-nor-flash/"><strong>NAND型とNOR型フラッシュメモリの違い：速度・容量・用途を比較</strong><span>NAND型とNOR型のフラッシュメモリを、セルの接続・読み出し速度・消去単位・容量・コスト・信頼性・用途の観点で表にして比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

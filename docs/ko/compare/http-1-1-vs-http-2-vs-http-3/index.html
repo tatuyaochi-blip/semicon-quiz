@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ko" data-lang="ko" data-base="/" data-home="/ko/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP/1.1·HTTP/2·HTTP/3의 차이: 전송 방식·다중화·HOL 블로킹·헤더 압축·암호화 비교 | 반도체 교실</title>
+<meta name="description" content="HTTP/1.1, HTTP/2, HTTP/3를 한 장의 표로 비교합니다. 사양, 전송 방식(트랜스포트), 메시지 형식, 다중화, HOL 블로킹, 헤더 압축, 암호화, 연결 수립까지의 왕복 횟수, 네트워크가 바뀔 때의 동작을 정리합니다.">
+<link rel="canonical" href="https://semiconroom.com/ko/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="ko" href="https://semiconroom.com/ko/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="de" href="https://semiconroom.com/de/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="nl" href="https://semiconroom.com/nl/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="fr" href="https://semiconroom.com/fr/compare/http-1-1-vs-http-2-vs-http-3/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/http-1-1-vs-http-2-vs-http-3/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTTP/1.1·HTTP/2·HTTP/3의 차이: 전송 방식·다중화·HOL 블로킹·헤더 압축·암호화 비교 | 반도체 교실">
+<meta property="og:description" content="HTTP/1.1, HTTP/2, HTTP/3를 한 장의 표로 비교합니다. 사양, 전송 방식(트랜스포트), 메시지 형식, 다중화, HOL 블로킹, 헤더 압축, 암호화, 연결 수립까지의 왕복 횟수, 네트워크가 바뀔 때의 동작을 정리합니다.">
+<meta property="og:url" content="https://semiconroom.com/ko/compare/http-1-1-vs-http-2-vs-http-3/">
+<meta property="og:site_name" content="반도체 교실">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/ko/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://semiconroom.com/ko/"},{"@type":"ListItem","position":2,"name":"비교","item":"https://semiconroom.com/ko/compare/"},{"@type":"ListItem","position":3,"name":"HTTP/1.1·HTTP/2·HTTP/3의 차이: 전송 방식·다중화·HOL 블로킹·헤더 압축·암호화 비교","item":"https://semiconroom.com/ko/compare/http-1-1-vs-http-2-vs-http-3/"}]},{"@context":"https://schema.org","@type":"Article","headline":"HTTP/1.1·HTTP/2·HTTP/3의 차이: 전송 방식·다중화·HOL 블로킹·헤더 압축·암호화 비교","description":"HTTP/1.1, HTTP/2, HTTP/3를 한 장의 표로 비교합니다. 사양, 전송 방식(트랜스포트), 메시지 형식, 다중화, HOL 블로킹, 헤더 압축, 암호화, 연결 수립까지의 왕복 횟수, 네트워크가 바뀔 때의 동작을 정리합니다.","inLanguage":"ko","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/ko/compare/http-1-1-vs-http-2-vs-http-3/","author":{"@type":"Organization","name":"반도체 교실"},"publisher":{"@type":"Organization","name":"반도체 교실"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"HTTP/2에서 HOL 블로킹이 없어진 것 아닌가요?","acceptedAnswer":{"@type":"Answer","text":"HTTP 계층에서는 없어졌지만 TCP 계층에는 남아 있습니다. HTTP/2는 하나의 TCP 연결 위에서 여러 스트림을 다중화하지만, TCP는 데이터가 어느 스트림의 것인지 모르고 바이트를 엄격히 순서대로 전달합니다. 그래서 패킷 하나가 손실되면 관계없는 스트림의 데이터도 재전송이 도착할 때까지 수신 애플리케이션에 넘겨지지 않습니다. HTTP/3에서는 QUIC이 스트림마다 순서를 관리하므로, 손실된 데이터가 있는 스트림만 기다리면 됩니다."}},{"@type":"Question","name":"클라이언트는 서버가 HTTP/3를 지원한다는 것을 어떻게 아나요?","acceptedAnswer":{"@type":"Answer","text":"HTTP/3는 UDP를 쓰므로 TCP 연결과는 따로 시작해야 합니다. 보통 클라이언트가 먼저 TCP 위의 HTTP/1.1이나 HTTP/2로 접속하고, 서버가 Alt-Svc 응답 헤더로 HTTP/3(h3)를 쓸 수 있다고 알립니다. 그 뒤의 연결에서 클라이언트는 QUIC을 씁니다. 이와 별개로, TLS 위에서 HTTP/1.1과 HTTP/2 중 무엇을 쓸지는 TLS 핸드셰이크 중의 ALPN으로 정합니다."}},{"@type":"Question","name":"HTTP/3의 0-RTT에 주의할 점이 있나요?","acceptedAnswer":{"@type":"Answer","text":"있습니다. 0-RTT로 보낸 데이터는 공격자가 기록해 다시 보낼 수 있습니다(재전송 공격). 그래서 0-RTT에서는 여러 번 받아도 해가 없는 GET 같은 요청만 보내는 등의 주의가 필요합니다."}},{"@type":"Question","name":"HTTP/2나 HTTP/3를 위해 웹 애플리케이션을 다시 만들어야 하나요?","acceptedAnswer":{"@type":"Answer","text":"대부분은 그렇지 않습니다. 메서드, 상태 코드, 헤더 필드의 의미는 세 버전이 공유하며(RFC 9110), 다른 것은 운반 방식뿐입니다. 버전은 연결마다 정해지므로, 리버스 프록시나 CDN이 브라우저로부터 HTTP/2나 HTTP/3를 받고 뒤의 애플리케이션 서버와는 HTTP/1.1로 통신하는 구성이 흔합니다."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/ko/"><span class="logo-mark" aria-hidden="true"></span><span>반도체 교실<small></small></span></a>
+    <nav class="header-nav"><a href="/ko/c/">분야</a><a href="/ko/glossary/">용어집</a><a href="/ko/compare/">비교</a><a href="/ko/figures/">도해</a><a href="/ko/tools/">계산 도구</a><a href="/ko/stats/">성적</a></nav>
+    <form class="site-search" role="search" action="/ko/search/" method="get"><input type="search" name="q" placeholder="검색 (예: MOSFET)" aria-label="사이트 내 검색" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/ko/search/" aria-label="사이트 내 검색"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="언어: 한국어"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">한국어</span><span class="lang-short" aria-hidden="true">한국어</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="언어"><a href="/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><span aria-current="true" lang="ko">한국어</span><a href="/de/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="de" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="nl" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/http-1-1-vs-http-2-vs-http-3/" hreflang="fr" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>메뉴</summary>
+      <nav class="menu-panel"><a href="/ko/">홈</a><a href="/ko/c/">분야</a><a href="/ko/glossary/">용어집</a><a href="/ko/compare/">비교</a><a href="/ko/figures/">도해</a><a href="/ko/tools/">계산 도구</a><a href="/ko/stats/">성적</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/ko/">홈</a> <span>›</span> <a href="/ko/compare/">비교</a></nav>
+<article class="compare-page">
+  <h1>HTTP/1.1·HTTP/2·HTTP/3의 차이: 전송 방식·다중화·HOL 블로킹·헤더 압축·암호화 비교</h1>
+  <p class="lead">세 버전은 메서드, 상태 코드, 헤더 필드 같은 HTTP의 의미(RFC 9110)를 공유하며, 다른 것은 그것을 운반하는 형식과 트랜스포트입니다. HTTP/1.1(RFC 9112)은 TCP 위에서 텍스트 메시지를 보내고, 각 연결에서 응답을 하나씩 돌려줍니다. HTTP/2(RFC 9113)는 메시지를 바이너리 프레임으로 나누고, 하나의 TCP 연결 위에서 여러 스트림을 다중화합니다. HTTP/3(RFC 9114)는 UDP 위에서 동작하는 QUIC(RFC 9000)을 쓰며, 스트림 다중화와 TLS 1.3 암호화를 트랜스포트에서 처리합니다. 이로써 패킷 하나의 손실이 모든 스트림을 멈추게 하는 TCP의 HOL 블로킹(head-of-line blocking)을 피합니다.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="복사했어요!">표 복사</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="링크를 복사했어요">공유</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">비교 항목</th><th scope="col">HTTP/1.1</th><th scope="col">HTTP/2</th><th scope="col">HTTP/3</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">사양</th><td>RFC 9112(의미는 세 버전 공통인 RFC 9110)</td><td>RFC 9113</td><td>RFC 9114(QUIC은 RFC 9000)</td></tr>
+        <tr><th scope="row">트랜스포트</th><td>TCP</td><td>TCP</td><td>QUIC(UDP 위에서 동작)</td></tr>
+        <tr><th scope="row">메시지 형식</th><td>텍스트: 요청 줄과 헤더 필드를 한 줄에 하나씩 씁니다</td><td>바이너리 프레임</td><td>바이너리 프레임(QUIC 스트림 위)</td></tr>
+        <tr><th scope="row">다중화</th><td>없음. 한 연결은 한 번에 요청과 응답 하나만 처리하므로, 병렬로 가져오려면 여러 연결을 열어야 합니다</td><td>하나의 TCP 연결 위에서 여러 스트림을 병렬로 보냅니다</td><td>여러 QUIC 스트림을 병렬로 보냅니다. 스트림은 트랜스포트가 관리합니다</td></tr>
+        <tr><th scope="row">HOL 블로킹</th><td>HTTP 계층에서 일어납니다. 같은 연결에서는 앞의 응답이 끝날 때까지 다음 응답을 보낼 수 없습니다(파이프라이닝을 써도 응답은 요청 순서대로 돌아옵니다)</td><td>HTTP 계층에서는 해소되었지만, TCP가 바이트를 엄격히 순서대로 전달하므로 패킷 하나가 손실되면 모든 스트림이 재전송을 기다립니다</td><td>QUIC이 스트림마다 순서를 관리하므로, 손실은 데이터를 잃은 스트림에만 영향을 줍니다</td></tr>
+        <tr><th scope="row">헤더 압축</th><td>없음(본문은 압축할 수 있지만 헤더는 평문 텍스트로 보냅니다)</td><td>HPACK(RFC 7541)</td><td>QPACK(RFC 9204). 스트림이 순서대로 도착하지 않아도 동작하도록 HPACK을 고친 방식</td></tr>
+        <tr><th scope="row">암호화</th><td>선택. https는 TLS를 쓰고, http는 평문으로 보냅니다</td><td>사양은 TLS 위(h2)와 평문(h2c)을 모두 정의하며, TLS 위에서는 TLS 1.2 이상을 요구합니다. 주요 브라우저는 TLS 위의 HTTP/2에만 대응합니다</td><td>필수. TLS 1.3이 QUIC에 내장되어 있으며 평문 모드는 없습니다</td></tr>
+        <tr><th scope="row">연결 수립까지의 왕복 횟수</th><td>TCP에 1왕복, TLS 1.3이면 1왕복이 더해져 모두 2왕복 뒤에 요청을 보냅니다</td><td>HTTP/1.1과 같음(TCP와 TLS로 2왕복)</td><td>QUIC은 트랜스포트와 암호 핸드셰이크를 합쳐 1왕복으로 끝냅니다. 이전에 접속한 서버에는 첫 송신에 데이터를 싣는 0-RTT도 쓸 수 있습니다</td></tr>
+        <tr><th scope="row">네트워크가 바뀔 때</th><td>TCP 연결은 출발지·목적지의 주소와 포트로 식별되므로, IP 주소가 바뀌면 새 연결이 필요합니다</td><td>HTTP/1.1과 같음</td><td>QUIC은 연결 ID로 연결을 식별하므로, 무선 LAN에서 모바일 네트워크로 바뀌어도 같은 연결을 이어 갈 수 있습니다(연결 마이그레이션)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">수치는 대략적인 자릿수 기준이며, 공정 세대와 제품에 따라 달라져요.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>상황별 선택 기준</h2>
+  <dl class="compare-when">
+    <dt>HTTP/1.1</dt><dd>모든 클라이언트와 서버가 쓸 수 있는 기본 버전. 서버 시스템 내부의 통신이나 기기 설정 화면 같은 간단한 웹 인터페이스에도 쓰입니다.</dd>
+    <dt>HTTP/2</dt><dd>작은 파일을 많이 불러오는 웹 페이지를 하나의 연결로 효율적으로 전송하고 싶을 때. UDP를 막는 네트워크에서도 동작하므로, HTTP/3를 지원하는 사이트에서도 대체 수단이 됩니다.</dd>
+    <dt>HTTP/3</dt><dd>모바일 네트워크처럼 손실이 있고 지연이 큰 회선에서 스트림끼리 서로 멈추게 하지 않고 싶을 때나, 연결 수립을 빠르게 하고 싶을 때. UDP를 막는 네트워크도 있으므로 사이트는 보통 HTTP/2나 HTTP/1.1도 함께 지원합니다.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>자주 묻는 질문</h2>
+  <h3>HTTP/2에서 HOL 블로킹이 없어진 것 아닌가요?</h3>
+  <p>HTTP 계층에서는 없어졌지만 TCP 계층에는 남아 있습니다. HTTP/2는 하나의 TCP 연결 위에서 여러 스트림을 다중화하지만, TCP는 데이터가 어느 스트림의 것인지 모르고 바이트를 엄격히 순서대로 전달합니다. 그래서 패킷 하나가 손실되면 관계없는 스트림의 데이터도 재전송이 도착할 때까지 수신 애플리케이션에 넘겨지지 않습니다. HTTP/3에서는 QUIC이 스트림마다 순서를 관리하므로, 손실된 데이터가 있는 스트림만 기다리면 됩니다.</p>
+  <h3>클라이언트는 서버가 HTTP/3를 지원한다는 것을 어떻게 아나요?</h3>
+  <p>HTTP/3는 UDP를 쓰므로 TCP 연결과는 따로 시작해야 합니다. 보통 클라이언트가 먼저 TCP 위의 HTTP/1.1이나 HTTP/2로 접속하고, 서버가 Alt-Svc 응답 헤더로 HTTP/3(h3)를 쓸 수 있다고 알립니다. 그 뒤의 연결에서 클라이언트는 QUIC을 씁니다. 이와 별개로, TLS 위에서 HTTP/1.1과 HTTP/2 중 무엇을 쓸지는 TLS 핸드셰이크 중의 ALPN으로 정합니다.</p>
+  <h3>HTTP/3의 0-RTT에 주의할 점이 있나요?</h3>
+  <p>있습니다. 0-RTT로 보낸 데이터는 공격자가 기록해 다시 보낼 수 있습니다(재전송 공격). 그래서 0-RTT에서는 여러 번 받아도 해가 없는 GET 같은 요청만 보내는 등의 주의가 필요합니다.</p>
+  <h3>HTTP/2나 HTTP/3를 위해 웹 애플리케이션을 다시 만들어야 하나요?</h3>
+  <p>대부분은 그렇지 않습니다. 메서드, 상태 코드, 헤더 필드의 의미는 세 버전이 공유하며(RFC 9110), 다른 것은 운반 방식뿐입니다. 버전은 연결마다 정해지므로, 리버스 프록시나 CDN이 브라우저로부터 HTTP/2나 HTTP/3를 받고 뒤의 애플리케이션 서버와는 HTTP/1.1로 통신하는 구성이 흔합니다.</p>
+</section>
+<section>
+  <h2>이해도 확인</h2>
+  <article class="q-mini" data-qid="web-tech-001" data-cat="web-tech" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
+    <h3><a href="/ko/q/web-tech/web-tech-001/">HTTP/1.1 요청의 첫 줄(요청 라인)에 나열되는 요소의 조합으로 올바른 것은?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">메서드, 요청 대상(경로 등), HTTP 버전</span></li><li><span class="choice-mark">B</span><span class="choice-text">HTTP 버전, 상태 코드, 이유를 나타내는 짧은 문구</span></li><li><span class="choice-mark">C</span><span class="choice-text">출발지 IP 주소, 목적지 포트 번호, 메서드</span></li></ol>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 메서드, 요청 대상(경로 등), HTTP 버전</p><p class="explanation"><a class="term-link" href="/ko/term/http/">HTTP</a> 요청은 요청 라인, 헤더(한 줄에 하나씩 &#39;이름: 값&#39;), 빈 줄, 본문의 순서로 나열됩니다. 예를 들어 &#39;GET /docs/index.html HTTP/1.1&#39;은 GET 메서드로 /docs/index.html을 요구하는 줄입니다. HTTP/1.1에서는 Host 헤더도 반드시 보내, 같은 <a class="term-link" href="/ko/term/ip-address/">IP 주소</a>로 여러 사이트를 운영하더라도 어느 사이트에 대한 요청인지 서버가 판단할 수 있게 합니다. 응답의 첫 줄은 상태 라인으로, &#39;HTTP/1.1 200 OK&#39;처럼 버전, <a class="term-link" href="/ko/term/http-status-code/">상태 코드</a>, 이유 구문이 나열됩니다.</p></details>
+  </article>
+  <article class="q-mini" data-qid="web-tech-007" data-cat="web-tech" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
+    <h3><a href="/ko/q/web-tech/web-tech-007/">HTTP/2와 HTTP/3에 대한 설명으로 올바른 것은?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">HTTP/2는 하나의 TCP 연결로 여러 요청을 병렬로 처리할 수 있지만 패킷 손실로 다른 스트림도 기다리게 되는 경우가 있으며, HTTP/3은 UDP 위의 QUIC으로 이를 줄였다</span></li><li><span class="choice-mark">B</span><span class="choice-text">HTTP/2는 HTTP/1.1과 같은 텍스트 형식의 메시지를 사용하고, 요청마다 새로운 TCP 연결을 병렬로 만들어 여러 리소스를 동시에 받을 수 있게 한 버전이다</span></li><li><span class="choice-mark">C</span><span class="choice-text">HTTP/3은 HTTP/2와 마찬가지로 TCP 위에서 동작하며 헤더를 압축하는 방식만 고친 버전으로, 패킷 손실의 영향은 HTTP/2와 다르지 않고 UDP는 사용하지 않는다</span></li></ol>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. HTTP/2는 하나의 TCP 연결로 여러 요청을 병렬로 처리할 수 있지만 패킷 손실로 다른 스트림도 기다리게 되는 경우가 있으며, HTTP/3은 UDP 위의 QUIC으로 이를 줄였다</p><p class="explanation"><a class="term-link" href="/ko/term/http/">HTTP</a>/1.1에서도 지속 연결(keep-alive)로 하나의 <a class="term-link" href="/ko/term/tcp/">TCP</a> 연결을 재사용할 수 있지만, 하나의 연결에서는 응답을 하나씩 차례로 받기 때문에 브라우저는 여러 연결을 병렬로 열었습니다. HTTP/2는 메시지를 바이너리 프레임으로 나누고, 하나의 TCP 연결 위에 여러 스트림을 다중화하여 병렬로 보냅니다. 다만 TCP는 바이트열을 순서대로 전달하므로, <a class="term-link" href="/ko/term/packet/">패킷</a>이 하나 손실되면 재전송이 도착할 때까지 관계없는 스트림의 데이터도 기다리게 됩니다(HOL 블로킹, head-of-line blocking). HTTP/3은 <a class="term-link" href="/ko/term/udp/">UDP</a> 위에서 동작하는 <a class="term-link" href="/ko/term/quic/">QUIC</a>을 사용하여 스트림마다 순서를 관리하므로, 손실의 영향이 그 스트림에만 머뭅니다.</p></details>
+  </article>
+  <article class="q-mini" data-qid="web-tech-008" data-cat="web-tech" data-answer="0" data-correct="정답이에요!" data-incorrect="오답이에요. 정답은 A예요.">
+    <h3><a href="/ko/q/web-tech/web-tech-008/">RTT가 40 ms인 웹 서버에서 HTML 하나와 거기서 참조하는 이미지 4개를 하나씩 차례로 가져온다. TCP 연결 설정에 1왕복, 각 요청과 응답에 1왕복이 걸린다고 하고, 데이터 전송 시간, 서버의 처리 시간, TLS, 연결 종료는 고려하지 않는다. 객체마다 새로운 TCP 연결을 여는 경우와 하나의 TCP 연결을 재사용하는 지속 연결의 경우에 걸리는 시간의 차이는?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">160 ms</span></li><li><span class="choice-mark">B</span><span class="choice-text">200 ms</span></li><li><span class="choice-mark">C</span><span class="choice-text">400 ms</span></li></ol>
+    <details class="q-answer"><summary>정답과 해설 보기</summary><p class="verdict ok">정답: A. 160 ms</p><p class="explanation">객체는 모두 5개입니다. 매번 새로 연결하는 경우에는 객체마다 연결 설정과 요청·응답의 2왕복이 걸려 5 × 2 × 40 = 400 ms입니다. 지속 연결에서는 처음에 한 번만 연결을 설정하고 그 후에는 5번의 요청과 응답뿐이므로 (1 + 5) × 40 = 240 ms입니다. 차이는 400 − 240 = 160 ms이며, 줄일 수 있는 것은 4번분의 연결 설정입니다. <a class="term-link" href="/ko/term/http/">HTTP</a>/1.1에서는 지속 연결이 표준 동작으로 되어 있습니다.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="3"><a href="/ko/q/network/network-023/">RTT(왕복 시간)가 100 ms인 웹 서버에 HTTPS(TCP 위의 TLS 1.3)로 새로 접속하여, 첫 요청을 보내고 응답을 받기 시작할 때까지 걸리는 시간에 가장 가까운 것은? DNS 이름 해석은 끝났으며, 서버의 처리 시간과 데이터 전송 시간은 무시한다.</a></li>
+  <li data-level="2"><a href="/ko/q/network/network-032/">HTTPS(HTTP를 TLS로 보호한 통신)로 보호되는 것으로 올바른 것은?</a></li></ol>
+  <p><a class="btn btn-primary" href="/ko/c/web-tech/">웹 기술 기초 문제 풀기</a></p>
+</section>
+<section>
+  <h2>주요 용어 설명</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/ko/term/http/">HTTP(하이퍼텍스트 전송 프로토콜)</a></dt><dd>웹 브라우저와 웹 서버 등의 사이에서 HTML이나 이미지, 데이터를 주고받기 위한 응용 계층의 프로토콜. 클라이언트가 메서드, URL, 헤더, 본문으로 이루어진 요청을 보내고, 서버가 상태 코드, 헤더, 본문으로 이루어진 응답을 돌려준다. 프로토콜로서는 무상태이며, 로그인 같은 상태는 Cookie 등을 사용하여 유지한다. HTTP/1.1은 텍스트 형식으로 지속 연결을 사용하고, HTTP/2는 하나의 TCP 연결 위에서 여러 스트림을 다중화하며, HTTP/3은 UDP 위의 QUIC을 사용한다. TLS로 보호한 것을 HTTPS라고 한다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/tls/">TLS</a></dt><dd>Transport Layer Security의 약자. 통신의 암호화, 변조 검출, 인증서에 의한 서버 인증을 수행하는 프로토콜. HTTPS는 HTTP를 TLS로 보호한 것이다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/three-way-handshake/">3-way 핸드셰이크(Three-way Handshake)</a></dt><dd>TCP에서 연결을 설정하는 절차. 클라이언트의 SYN, 서버의 SYN+ACK, 클라이언트의 ACK의 세 번의 교환으로 서로의 초기 시퀀스 번호를 확인한다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/http-method/">HTTP 메서드(HTTP Method)</a></dt><dd>HTTP 요청에서 리소스에 대해 수행하려는 조작을 나타내는 말. GET(조회), HEAD(헤더만 조회), POST(처리나 생성), PUT(교체), PATCH(일부 갱신), DELETE(삭제), OPTIONS(사용할 수 있는 기능 문의) 등이 있다. 서버의 상태를 바꾸지 않는 것을 &#39;안전&#39;, 몇 번 보내도 한 번 보냈을 때와 같은 상태가 되는 것을 &#39;멱등&#39;이라고 한다. GET은 안전하고 멱등이며, PUT과 DELETE는 멱등이지만 안전하지 않고, POST는 일반적으로 어느 쪽도 아니다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/http-status-code/">HTTP 상태 코드(HTTP Status Code)</a></dt><dd>HTTP 응답의 첫 줄에 들어가는 3자리 수로, 요청의 결과를 나타낸다. 백의 자리로 분류하며, 1xx는 정보, 2xx는 성공(200 OK, 201 Created, 204 No Content), 3xx는 리다이렉트(301 Moved Permanently, 302 Found, 304 Not Modified), 4xx는 클라이언트 측 오류(400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found), 5xx는 서버 측 오류(500 Internal Server Error, 503 Service Unavailable)를 나타낸다. 401은 인증 정보가 없거나 올바르지 않을 때, 403은 인증되었더라도 권한이 없을 때 사용한다.</dd></div>
+    <div class="term"><dt><a href="/ko/term/reverse-proxy/">리버스 프록시(Reverse Proxy)</a></dt><dd>웹 서버 앞에 놓여, 이용자로부터의 요청을 서버 대신 받아 뒤에 있는 한 대 또는 여러 대의 서버로 중계하는 서버. HTTPS 암호 처리를 한곳에서 모아 수행하는 것(TLS 종료), 자주 사용되는 응답을 저장해 두었다가 돌려주는 것, 여러 서버에 부하를 나누는 것, 뒤쪽 서버의 구성을 숨기는 것과 같은 역할을 담당한다. 이용자 쪽에 놓여 이용자 대신 외부 사이트에 접속하는 포워드 프록시와는 놓이는 장소와 지키는 대상이 다르다.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>관련 비교</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/ko/compare/tcp-vs-udp/"><strong>TCP와 UDP의 차이: 연결·신뢰성·순서·혼잡 제어·헤더·지연·용도 비교</strong><span>TCP와 UDP를 한 장의 표로 비교합니다. 연결 수립, 확인 응답과 재전송, 순서, 데이터 경계, 흐름 제어와 혼잡 제어, 헤더 크기, 지연, 전송 대상의 종류와 대표 용도를 정리합니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/ids-vs-ips-vs-waf-vs-firewall/"><strong>방화벽·IDS·IPS·WAF의 차이: 검사 범위·차단 또는 경보·보호 대상 비교</strong><span>방화벽, IDS(침입 탐지 시스템), IPS(침입 방지 시스템), WAF를 한 장의 표로 비교합니다. 검사하는 계층, 인라인 또는 수동 배치, 탐지 시 동작, 탐지 방식, 보호 대상, 오탐의 영향…</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/zero-trust-vs-perimeter-security/"><strong>경계형 방어와 제로 트러스트의 차이: 신뢰의 전제·인증 빈도·원격 접속 비교</strong><span>경계형 방어와 제로 트러스트를 한 장의 표로 비교합니다. 신뢰의 전제, 통제 지점, 인증·인가의 빈도, 원격 접속(VPN과 ZTNA), 침입 후 측면 이동, 가시성과 로그, 클라우드와의 궁합, 전…</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/snmp-vs-syslog-vs-netflow/"><strong>SNMP·syslog·NetFlow의 차이: 감시로 알 수 있는 것·수집 방식·데이터 형식·프로토콜 비교</strong><span>네트워크 감시에 쓰는 SNMP, syslog, NetFlow(IPFIX)를 한 장의 표로 비교합니다. 알 수 있는 것, 수집 방식, 데이터 형식, 시간 단위, 알 수 없는 것, 기기와 회선의 부하…</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/secure-boot-vs-measured-boot/"><strong>보안 부팅과 측정 부팅의 차이: 서명 검증·TPM 기록·증명 비교</strong><span>보안 부팅과 측정 부팅을 한 장의 표로 비교합니다. 무엇을 확인하는지, 멈추는지 기록하는지, 신뢰의 근간, 변조되었을 때의 동작, 필요한 것, 결과의 활용, 한계와 조합 방법을 정리합니다.</span></a></li>
+  <li><a class="cmp-card" href="/ko/compare/tpm-vs-hsm-vs-secure-element/"><strong>TPM·HSM·시큐어 엘리먼트의 차이: 위치·용도·키 보호 방식·인증 비교</strong><span>TPM, HSM, 시큐어 엘리먼트를 한 장의 표로 비교합니다. 위치, 주된 목적, 대표 사용자, 키 보호 방식, 암호 처리 성능, 내탬퍼성과 인증(FIPS 140-3, Common Criteria…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">개인이 운영하는 반도체 학습 사이트입니다.</p>
+    <p class="footer-request"><a href="/ko/contact/">요청이나 의견은 언제든 환영해요. 문의 페이지에서 보내 주세요 →</a></p>
+    <nav class="footer-nav">
+      <a href="/ko/about/">사이트 소개</a>
+      <a href="/ko/figures/">도해</a>
+      <a href="/ko/privacy/">개인정보 처리방침</a>
+      <a href="/ko/disclaimer/">면책 사항</a>
+      <a href="/ko/contact/">문의</a>
+    </nav>
+    <p class="copyright">© 2026 반도체 교실</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>

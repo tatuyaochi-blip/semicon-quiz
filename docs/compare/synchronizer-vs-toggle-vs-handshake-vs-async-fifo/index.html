@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2段同期化回路・トグル同期・ハンドシェイク・非同期FIFOの違い：渡せる信号・転送の速さ・制約を比較 | 半導体教室</title>
+<meta name="description" content="クロックドメインをまたいで信号を渡す2段フリップフロップの同期化回路・トグル同期・ハンドシェイク(req/ack)・非同期FIFOを、渡せるもの・しくみ・同期化する信号・転送の速さ・届くまでの遅れ・主な注意・回路の規模・用途の観点で表にして比較します。">
+<link rel="canonical" href="https://semiconroom.com/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2段同期化回路・トグル同期・ハンドシェイク・非同期FIFOの違い：渡せる信号・転送の速さ・制約を比較 | 半導体教室">
+<meta property="og:description" content="クロックドメインをまたいで信号を渡す2段フリップフロップの同期化回路・トグル同期・ハンドシェイク(req/ack)・非同期FIFOを、渡せるもの・しくみ・同期化する信号・転送の速さ・届くまでの遅れ・主な注意・回路の規模・用途の観点で表にして比較します。">
+<meta property="og:url" content="https://semiconroom.com/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/compare/"},{"@type":"ListItem","position":3,"name":"2段同期化回路・トグル同期・ハンドシェイク・非同期FIFOの違い：渡せる信号・転送の速さ・制約を比較","item":"https://semiconroom.com/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/"}]},{"@context":"https://schema.org","@type":"Article","headline":"2段同期化回路・トグル同期・ハンドシェイク・非同期FIFOの違い：渡せる信号・転送の速さ・制約を比較","description":"クロックドメインをまたいで信号を渡す2段フリップフロップの同期化回路・トグル同期・ハンドシェイク(req/ack)・非同期FIFOを、渡せるもの・しくみ・同期化する信号・転送の速さ・届くまでの遅れ・主な注意・回路の規模・用途の観点で表にして比較します。","inLanguage":"ja","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"マルチビットのデータに、ビットごとに2段同期化回路を付けてはいけないのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"ビットごとに、変化を今回のエッジで取り込むか次のエッジで取り込むかが決まらないからです。例えば0111から1000に変わるとき、一部のビットだけが新しい値になった1111や0000を1サイクル受け取ることがあります。データ自体は同期化せずに保持しておき、1ビットの制御信号だけを同期化するハンドシェイクか、非同期FIFOを使います。カウンタの値なら、グレイコードにして1ビットずつしか変わらないようにする方法もあります。"}},{"@type":"Question","name":"同期化回路を2段から3段にすると、何が変わりますか？","acceptedAnswer":{"@type":"Answer","text":"メタステーブルが収まるのに使える時間が約1周期延び、故障の平均間隔(MTBF)が指数関数的に長くなります。MTBFはおおよそe^(t_r/τ) ÷ (T_0 × f_clk × f_data)で表され、例えばτ = 20 psでt_rが1 ns延びれば、MTBFはe^50倍(10の21乗倍以上)になります。その代わり、受け側に届くまでの遅れが1サイクル増えます。"}},{"@type":"Question","name":"非同期FIFOのポインタを、グレイコードにするのはなぜですか？","acceptedAnswer":{"@type":"Answer","text":"バイナリのポインタは、0111から1000のように複数のビットが同時に変わるので、別々に同期化するとまったく関係のない値を受け取ることがあるからです。グレイコードなら1つ進むごとに変わるのは1ビットだけなので、そのビットがメタステーブルになって新旧どちらに決まっても、結果は進む前か進んだ後の値です。少し古い値を見るだけなので、fullやemptyの判定は安全側に働きます。"}},{"@type":"Question","name":"非同期FIFOの深さは、どう決めますか？","acceptedAnswer":{"@type":"Answer","text":"書き込みのバーストの間に、読み出しが追いつかずにたまる最大の量で決めます。書き込み側100 MHz、読み出し側80 MHzで、100語のバーストを毎サイクル書き込み、毎サイクル読み出すなら、100 × (1 − 80/100) = 20語です。実際の設計では、ポインタの同期化の遅れの分の余裕を加えます。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/compare/synchronizer-vs-toggle-vs-handshake-vs-async-fifo/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>2段同期化回路・トグル同期・ハンドシェイク・非同期FIFOの違い：渡せる信号・転送の速さ・制約を比較</h1>
+  <p class="lead">非同期のクロックドメインの間では、受け側のフリップフロップがセットアップ時間やホールド時間を満たせない瞬間が必ず来るので、メタステーブルが起こることを前提にした回路で信号を渡します。基本は、2段のフリップフロップで1ビットのレベル信号を受ける同期化回路です。短いパルスを渡すにはトグル同期、マルチビットのデータをときどき渡すにはハンドシェイク、データを連続して大量に渡すには非同期FIFOを使います。どれも、同期化するのは1ビットの信号か、1つ進むごとに1ビットだけ変わるグレイコードに限る、という考え方は共通です。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="コピーしました">表をコピー</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="リンクをコピーしました">共有</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">2段同期化回路</th><th scope="col">トグル同期</th><th scope="col">ハンドシェイク</th><th scope="col">非同期FIFO</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">渡せるもの</th><td>1ビットのレベル信号(ゆっくり変わる制御信号)</td><td>1ビットのパルス(事象の発生)</td><td>マルチビットのデータ(ときどき1語ずつ)</td><td>マルチビットのデータの流れ(連続して大量)</td></tr>
+        <tr><th scope="row">しくみ</th><td>受け側のクロックで2段のフリップフロップに通し、1段目のメタステーブルが2段目に取り込まれるまでに収まるのを待つ</td><td>送り側でパルスごとに反転するレベル信号を作って同期化し、受け側で1段遅らせた値とのXORをとってパルスに戻す</td><td>データを保持したままreqを同期化して渡し、受け側が取り込んだらackを同期化して返す</td><td>デュアルポートのメモリに書き込み、グレイコードにしたポインタを相手のドメインに同期化してfullとemptyを判定する</td></tr>
+        <tr><th scope="row">同期化する信号</th><td>その信号そのもの</td><td>トグル信号(1ビット)</td><td>reqとack(各1ビット)。データは同期化しない</td><td>グレイコードのポインタ(1つ進むと1ビットだけ変わる)</td></tr>
+        <tr><th scope="row">転送の速さ</th><td>信号の変化は、受け側の周期より十分ゆっくりである必要がある</td><td>パルスの間隔を、受け側が変化を検出し終える数サイクル以上あける必要がある</td><td>遅い。4相では1回の転送に、両方のドメインで合わせて8サイクル以上かかる</td><td>速い。毎サイクル1語ずつ書き込み・読み出しできる</td></tr>
+        <tr><th scope="row">受け側に届くまでの遅れの目安</th><td>受け側のクロックで約2サイクル</td><td>受け側のクロックで約2〜3サイクル</td><td>reqが届くまで約2サイクル。ackが戻って次を送れるまでは、さらに往復分かかる</td><td>書いた語が読み出し側に見えるまで約2〜3サイクル</td></tr>
+        <tr><th scope="row">主な注意</th><td>マルチビットに使うと、ビットごとに取り込むサイクルがずれて途中の値が見える。速いドメインからの短いパルスは消えることがある</td><td>パルスの間隔が短いと、トグル信号が元に戻って2回分の事象を見落とす</td><td>データはackが返るまで変えてはいけない</td><td>深さはバーストの長さと読み書きの速さの差から決め、同期化の遅れの分の余裕を加える</td></tr>
+        <tr><th scope="row">回路の規模</th><td>フリップフロップ2個(高速なクロックでは3段にすることも)</td><td>フリップフロップ数個とXOR</td><td>req/ackの同期化回路と、両側の状態機械</td><td>メモリ、ポインタとグレイコードの変換、同期化回路、fullとemptyの判定回路</td></tr>
+        <tr><th scope="row">主な用途</th><td>イネーブルなどの制御信号、非同期の外部入力</td><td>速いドメインで1サイクルだけ出る完了や割り込みの通知</td><td>制御レジスタの設定値の受け渡し</td><td>異なるクロックで動くバスやインターフェースの間のデータ転送</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">数値は代表的な目安で、世代や製品によって異なります。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>どんなときに使うか</h2>
+  <dl class="compare-when">
+    <dt>2段同期化回路</dt><dd>1ビットのレベル信号で、受け側の周期より十分長く保たれるとき。すべての方式の土台で、クロックが速いときやMTBFをさらに長くしたいときは3段にします。</dd>
+    <dt>トグル同期</dt><dd>速いドメインで出る短いパルスを、取りこぼさずに遅いドメインへ伝えたいとき。次のパルスまでに、受け側の数サイクル以上の間隔がある場合に限ります。</dd>
+    <dt>ハンドシェイク</dt><dd>設定値のようなマルチビットのデータを、ときどき確実に渡したいとき。周波数の比を問わず安全ですが、1回の転送に何サイクルもかかります。</dd>
+    <dt>非同期FIFO</dt><dd>データを連続して、または高い頻度で渡したいとき。速さの違いやバーストを吸収できますが、回路は最も大きくなります。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>よくある質問</h2>
+  <h3>マルチビットのデータに、ビットごとに2段同期化回路を付けてはいけないのはなぜですか？</h3>
+  <p>ビットごとに、変化を今回のエッジで取り込むか次のエッジで取り込むかが決まらないからです。例えば0111から1000に変わるとき、一部のビットだけが新しい値になった1111や0000を1サイクル受け取ることがあります。データ自体は同期化せずに保持しておき、1ビットの制御信号だけを同期化するハンドシェイクか、非同期FIFOを使います。カウンタの値なら、グレイコードにして1ビットずつしか変わらないようにする方法もあります。</p>
+  <h3>同期化回路を2段から3段にすると、何が変わりますか？</h3>
+  <p>メタステーブルが収まるのに使える時間が約1周期延び、故障の平均間隔(MTBF)が指数関数的に長くなります。MTBFはおおよそe^(t_r/τ) ÷ (T_0 × f_clk × f_data)で表され、例えばτ = 20 psでt_rが1 ns延びれば、MTBFはe^50倍(10の21乗倍以上)になります。その代わり、受け側に届くまでの遅れが1サイクル増えます。</p>
+  <h3>非同期FIFOのポインタを、グレイコードにするのはなぜですか？</h3>
+  <p>バイナリのポインタは、0111から1000のように複数のビットが同時に変わるので、別々に同期化するとまったく関係のない値を受け取ることがあるからです。グレイコードなら1つ進むごとに変わるのは1ビットだけなので、そのビットがメタステーブルになって新旧どちらに決まっても、結果は進む前か進んだ後の値です。少し古い値を見るだけなので、fullやemptyの判定は安全側に働きます。</p>
+  <h3>非同期FIFOの深さは、どう決めますか？</h3>
+  <p>書き込みのバーストの間に、読み出しが追いつかずにたまる最大の量で決めます。書き込み側100 MHz、読み出し側80 MHzで、100語のバーストを毎サイクル書き込み、毎サイクル読み出すなら、100 × (1 − 80/100) = 20語です。実際の設計では、ポインタの同期化の遅れの分の余裕を加えます。</p>
+</section>
+<section>
+  <h2>理解度チェック</h2>
+  <article class="q-mini" data-qid="sta-cdc-027" data-cat="sta-cdc" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/sta-cdc/sta-cdc-027/">2段フリップフロップの同期化回路を3段に増やしたときの、メタステーブルによる故障の平均間隔(MTBF)の変化として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">メタステーブルが収まるのに使える時間が約1周期増え、MTBFは指数関数的に長くなる</span></li><li><span class="choice-mark">B</span><span class="choice-text">段数に比例して、MTBFが1.5倍になる</span></li><li><span class="choice-mark">C</span><span class="choice-text">メタステーブルの起こりやすさは入力側で決まるので、MTBFは変わらない</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. メタステーブルが収まるのに使える時間が約1周期増え、MTBFは指数関数的に長くなる</p><p class="explanation"><a class="term-link" href="/term/synchronizer/">同期化回路</a>の<a class="term-link" href="/term/mtbf/">MTBF</a>は、おおよそ MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data) で表されます。t_r は<a class="term-link" href="/term/metastability/">メタステーブル</a>が収まるのに使える時間、τ と T_0 は<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>の特性で決まる定数です。段を1つ増やすと t_r が約1周期(正確には1周期からフリップフロップの出力遅延と<a class="term-link" href="/term/setup-time/">セットアップ時間</a>を引いた分)延びます。例えば τ = 20 ps で t_r が 1 ns 増えれば、MTBFは e^50 倍、つまり10の21乗倍以上に延びます。1段目がメタステーブルになる確率は変わりませんが、その先へ伝わる前に収まる確率が大きく上がるのです。</p></details>
+  </article>
+  <article class="q-mini" data-qid="sta-cdc-031" data-cat="sta-cdc" data-answer="0" data-correct="正解！" data-incorrect="不正解… 正解は A">
+    <h3><a href="/q/sta-cdc/sta-cdc-031/">4ビットのデータの各ビットに、それぞれ2段の同期化回路を付けて別のクロックドメインに渡した。データが 0111 から 1000 に変わるときに起こりうる問題として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">ビットごとに取り込まれるサイクルがずれ、1111 や 0000 のような途中の値を受け取ることがある</span></li><li><span class="choice-mark">B</span><span class="choice-text">同期化回路を通すと、すべてのビットが同じサイクルでそろうので問題は起きない</span></li><li><span class="choice-mark">C</span><span class="choice-text">4ビットすべてがメタステーブルになり、そのまま0にも1にも戻らなくなる</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：A. ビットごとに取り込まれるサイクルがずれ、1111 や 0000 のような途中の値を受け取ることがある</p><p class="explanation">2段<a class="term-link" href="/term/synchronizer/">同期化回路</a>は1ビットごとに、変化を取り込むのが今回のエッジか次のエッジかが確定しません。0111 から 1000 への変化では4ビットすべてが変わるので、一部のビットだけが新しい値になった 1111 や 0000、0100 などを1サイクル受け取ることがあります。受け側がその値を使うと誤動作します。<a class="term-link" href="/term/metastability/">メタステーブル</a>は時間がたてば0か1に収まります。カウンタの値なら<a class="term-link" href="/term/gray-code/">グレイコード</a>に変換して1ビットだけが変わるようにし、任意のデータなら<a class="term-link" href="/term/handshake/">ハンドシェイク</a>や<a class="term-link" href="/term/asynchronous-fifo/">非同期FIFO</a>を使います。</p></details>
+  </article>
+  <article class="q-mini" data-qid="sta-cdc-035" data-cat="sta-cdc" data-answer="2" data-correct="正解！" data-incorrect="不正解… 正解は C">
+    <h3><a href="/q/sta-cdc/sta-cdc-035/">トグル同期(送り側でパルスが来るたびに反転するレベル信号を作って渡す方式)で、受け側でもとのパルスを取り出す方法として正しいものはどれか。</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">同期化したトグル信号を、そのままパルスとして使う</span></li><li><span class="choice-mark">B</span><span class="choice-text">同期化したトグル信号と受け側のクロックのANDをとって、1サイクル幅のパルスにする</span></li><li><span class="choice-mark">C</span><span class="choice-text">同期化したトグル信号と、それをさらに1段遅らせた信号のXORをとる</span></li></ol>
+    <details class="q-answer"><summary>答えと解説を見る</summary><p class="verdict ok">正解：C. 同期化したトグル信号と、それをさらに1段遅らせた信号のXORをとる</p><p class="explanation"><a class="term-link" href="/term/toggle-synchronizer/">トグル同期</a>では、送り側でパルスが来るたびに<a class="term-link" href="/term/flip-flop/">フリップフロップ</a>の値を反転させ、0から1、1から0への変化として事象を表します。レベル信号なので、受け側の周期より短いパルスでも消えません。受け側では2段で同期化した後、もう1段遅らせた値とのXORをとると、変化があったサイクルだけ1になる1サイクル幅のパルスが得られます。トグル信号をそのまま使うと、2回目の事象で0に戻ったときに見落とします。クロックとの論理演算は<a class="term-link" href="/term/glitch/">グリッチ</a>の原因になります。</p></details>
+  </article>
+  <ol class="q-list">
+  <li><a href="/q/sta-cdc/sta-cdc-038/">ハンドシェイクによるクロックドメイン間のデータ転送の欠点として正しいものはどれか。</a></li>
+  <li><a href="/q/sta-cdc/sta-cdc-039/">非同期FIFOで、書き込みポインタと読み出しポインタをグレイコードに変換してから相手のドメインに同期化する理由として正しいものはどれか。</a></li>
+  <li><a href="/q/sta-cdc/sta-cdc-044/">書き込み側 100 MHz、読み出し側 80 MHz の非同期FIFOで、書き込み側は100語のバーストを毎サイクル1語ずつ書き込み、読み出し側は毎サイクル1語ずつ読み出す。バーストの間には十分な休みがある。あふれないために必要な最小の深さはいくらか(同期化による遅れは無視する)。</a></li></ol>
+  <p><a class="btn btn-primary" href="/c/sta-cdc/">タイミング解析とCDCの練習問題へ</a></p>
+</section>
+<section>
+  <h2>関連する用語の解説</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/term/synchronizer/">同期化回路</a></dt><dd>非同期の信号を受け側のクロックにそろえる回路で、シンクロナイザとも呼ぶ。2段のフリップフロップを直列につなぐ構成が基本で、1段目がメタステーブルになっても次のエッジまでに収まる確率を高める。</dd></div>
+    <div class="term"><dt><a href="/term/toggle-synchronizer/">トグル同期</a></dt><dd>送り側でパルスが来るたびに反転するレベル信号をつくって受け側へ同期化し、受け側で1サイクル前の値とのXORをとってパルスに戻す方式。受け側の周期より短いパルスも取りこぼさないが、パルスの間隔は受け側の数サイクル以上あける必要がある。</dd></div>
+    <div class="term"><dt><a href="/term/handshake/">ハンドシェイク</a></dt><dd>送り側の要求(req)と受け側の応答(ack)をやり取りして、データを確実に受け渡す方式。クロックドメインの間ではreqとackだけを同期化し、その間データを止めておくので安全だが、1回の転送に数サイクル以上かかる。</dd></div>
+    <div class="term"><dt><a href="/term/asynchronous-fifo/">非同期FIFO</a></dt><dd>書き込みと読み出しを別々のクロックで行うFIFOで、クロックドメインの間でマルチビットのデータを渡すのに使う。ポインタをグレイコードに変換して相手のドメインに同期化し、満杯(full)と空(empty)を判定する。ポインタはアドレスより1ビット多くして周回を区別する。</dd></div>
+    <div class="term"><dt><a href="/term/clock-domain/">クロックドメイン</a></dt><dd>同じクロック、または周波数と位相の関係が決まったクロックで動くフリップフロップの集まり。非同期の関係にあるクロックドメインの間で信号を渡すときは、同期化回路が必要になる。</dd></div>
+    <div class="term"><dt><a href="/term/metastability/">メタステーブル</a></dt><dd>フリップフロップでセットアップ時間やホールド時間が守られないとき、出力がしばらく0とも1とも定まらない状態。非同期信号は2段のフリップフロップで同期化して対策する。</dd></div>
+    <div class="term"><dt><a href="/term/gray-code/">グレイコード</a></dt><dd>隣り合う値の間で1ビットだけが変化する符号。ロータリーエンコーダや、異なるクロック間でのカウンタ値の受け渡しで、読み取りの誤りを防ぐのに使われる。</dd></div>
+    <div class="term"><dt><a href="/term/mtbf/">MTBF(平均故障間隔)</a></dt><dd>故障が起きる平均の間隔。同期化回路では、メタステーブルが収まらずに後段へ伝わる平均の間隔を指し、MTBF = e^(t_r/τ) ÷ (T_0 × f_clk × f_data) で表される。段数を増やして収まるまでの時間t_rを延ばすと、指数関数的に長くなる。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>関連する比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/compare/setup-vs-hold-time/"><strong>セットアップ時間とホールド時間の違い：定義・遅延・周波数・直し方を比較</strong><span>フリップフロップのセットアップ時間とホールド時間を、定義・チェックに使う遅延(maxかminか)・クロック周波数との関係・クロックスキューの影響・違反の直し方・確認するコーナーの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/synchronous-vs-asynchronous-reset/"><strong>同期リセットと非同期リセットの違い：タイミング・クロック・解除の注意を比較</strong><span>同期リセットと非同期リセットを、効くタイミング・クロックが必要か・グリッチへの強さ・タイミング解析・リセット解除時の同期化・面積・Verilogの書き方の観点で表にして比較し、それぞれが向く回路も説明します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/asic-vs-fpga-vs-soc/"><strong>ASIC・FPGA・SoCの違い：柔軟性・コスト・用途を比較</strong><span>ASIC、FPGA、SoCを、それぞれが何か、柔軟性・性能・初期費用と単価・開発期間・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/2-5d-vs-3d-packaging/"><strong>2.5Dと3D実装の違い：チップの集積方法を比較</strong><span>2.5D実装と3D実装を、構造・接続・帯域・熱・複雑さ・HBMやCoWoSなどの例・使い分けの観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/hybrid-bonding-vs-microbump/"><strong>ハイブリッドボンディングとマイクロバンプの違い：ピッチ・接続密度・平坦度を比較</strong><span>チップを積み重ねるハイブリッドボンディングとマイクロバンプを、はんだの有無・接続ピッチ・接続密度・表面の平坦度・工程・電気特性・用途の観点で表にして比較します。</span></a></li>
+  <li><a class="cmp-card" href="/compare/fan-in-vs-fan-out-wlp/"><strong>ファンイン型とファンアウト型WLPの違い：再配線・面積・端子数・再構成ウエハ・用途を比較</strong><span>ファンイン型とファンアウト型のウエハレベルパッケージを、再配線の範囲・パッケージとチップの面積・端子数・製造方法・反りなどの課題・コスト・用途の観点で比較します。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
