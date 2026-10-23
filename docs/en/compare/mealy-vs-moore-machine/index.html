@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" data-lang="en" data-base="/" data-home="/en/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mealy vs Moore Machine: Outputs, Timing, State Count and HDL Style | Semiconductor Room</title>
+<meta name="description" content="Mealy vs Moore state machines compared in a table: what determines the output, how outputs appear in a state diagram, response to inputs, state count in a sequence detector and in general, glitches and noise, timing paths, HDL coding style and where each fits.">
+<link rel="canonical" href="https://semiconroom.com/en/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/mealy-vs-moore-machine/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/mealy-vs-moore-machine/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mealy vs Moore Machine: Outputs, Timing, State Count and HDL Style | Semiconductor Room">
+<meta property="og:description" content="Mealy vs Moore state machines compared in a table: what determines the output, how outputs appear in a state diagram, response to inputs, state count in a sequence detector and in general, glitches and noise, timing paths, HDL coding style and where each fits.">
+<meta property="og:url" content="https://semiconroom.com/en/compare/mealy-vs-moore-machine/">
+<meta property="og:site_name" content="Semiconductor Room">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/en/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://semiconroom.com/en/"},{"@type":"ListItem","position":2,"name":"Comparisons","item":"https://semiconroom.com/en/compare/"},{"@type":"ListItem","position":3,"name":"Mealy vs Moore Machine: Outputs, Timing, State Count and HDL Style","item":"https://semiconroom.com/en/compare/mealy-vs-moore-machine/"}]},{"@context":"https://schema.org","@type":"Article","headline":"Mealy vs Moore Machine: Outputs, Timing, State Count and HDL Style","description":"Mealy vs Moore state machines compared in a table: what determines the output, how outputs appear in a state diagram, response to inputs, state count in a sequence detector and in general, glitches and noise, timing paths, HDL coding style and where each fits.","inLanguage":"en","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/en/compare/mealy-vs-moore-machine/","author":{"@type":"Organization","name":"Semiconductor Room"},"publisher":{"@type":"Organization","name":"Semiconductor Room"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does \"one cycle later\" mean concretely?","acceptedAnswer":{"@type":"Answer","text":"Take a \"101\" detector. A Mealy machine in the \"matched 10\" state sets its output to 1 during the same cycle in which the input becomes 1. A Moore machine sets its output to 1 only after it captures that 1 on the clock edge and moves to the \"101 detected\" state, so the output is 1 in the next cycle. Both detect the same input sequences, but the Moore output is shifted one cycle later than the Mealy output."}},{"@type":"Question","name":"Can Mealy and Moore machines be converted into each other?","acceptedAnswer":{"@type":"Answer","text":"Yes. Splitting each Mealy state by the output of the transitions entering it gives a Moore machine with the same input-output behavior, although the state count may grow and the outputs appear one cycle later. Conversely, writing each Moore state's output on the transitions entering that state gives a Mealy machine whose outputs appear one cycle earlier, and sometimes states can then be merged."}},{"@type":"Question","name":"In HDL code, what makes a machine Mealy or Moore?","acceptedAnswer":{"@type":"Answer","text":"The output expressions. When the code is split into a block that updates the state register and a combinational block that decides the next state and outputs, the machine is Mealy if the output expressions include inputs and Moore if they depend only on the state. In the combinational block, assign every output under every condition to avoid creating unintended latches."}},{"@type":"Question","name":"Does a Moore machine never glitch at its outputs?","acceptedAnswer":{"@type":"Answer","text":"Input changes and noise do not reach the outputs, but if combinational logic decodes the state into outputs, several state bits changing at once can cause a glitch. Encoding the states so outputs come straight from state-register bits, or registering the outputs, gives glitch-free outputs."}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/en/"><span class="logo-mark" aria-hidden="true"></span><span>Semiconductor Room<small></small></span></a>
+    <nav class="header-nav"><a href="/en/c/">Topics</a><a href="/en/glossary/">Glossary</a><a href="/en/compare/">Compare</a><a href="/en/figures/">Diagrams</a><a href="/en/numbers/">Key numbers</a><a href="/en/tools/">Calculators</a><a href="/en/stats/">Progress</a></nav>
+    <form class="site-search" role="search" action="/en/search/" method="get"><input type="search" name="q" placeholder="Search (e.g. MOSFET)" aria-label="Search the site" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/en/search/" aria-label="Search the site"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="Language: English"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">English</span><span class="lang-short" aria-hidden="true">EN</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="Language"><a href="/compare/mealy-vs-moore-machine/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><span aria-current="true" lang="en">English</span><a href="/zh-hant/compare/mealy-vs-moore-machine/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>Menu</summary>
+      <nav class="menu-panel"><a href="/en/">Home</a><a href="/en/c/">Topics</a><a href="/en/glossary/">Glossary</a><a href="/en/compare/">Compare</a><a href="/en/figures/">Diagrams</a><a href="/en/numbers/">Key numbers</a><a href="/en/tools/">Calculators</a><a href="/en/stats/">Progress</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/en/">Home</a> <span>›</span> <a href="/en/compare/">Comparisons</a></nav>
+<article class="compare-page">
+  <h1>Mealy vs Moore Machine: Outputs, Timing, State Count and HDL Style</h1>
+  <p class="lead">A state machine consists of a register that holds the current state, combinational logic that decides the next state and combinational logic that decides the outputs. Mealy and Moore machines differ in what determines the outputs. In a Mealy machine, the outputs depend on both the current state and the current inputs, so an input change shows up at the output within the same cycle. In a Moore machine, the outputs depend only on the current state, so an input change reaches the output only after the clock updates the state, one cycle later. Mealy machines need fewer states and respond faster; Moore machines give stable outputs and more predictable timing.</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="Copied!">Copy table</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="Link copied">Share</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">Aspect</th><th scope="col">Mealy machine</th><th scope="col">Moore machine</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">What determines the output</th><td>Current state and current inputs</td><td>Current state only</td></tr>
+        <tr><th scope="row">Output in a state diagram</th><td>Written on the transition arrows as &quot;input/output&quot;</td><td>Written inside the state circle with the state name</td></tr>
+        <tr><th scope="row">Response to inputs</th><td>When an input changes, the output changes within the same cycle without waiting for the clock</td><td>The output changes after the next clock updates the state, one cycle later than a Mealy machine</td></tr>
+        <tr><th scope="row">State count (overlapping &quot;101&quot; detector)</th><td>3 states (no match, matched 1, matched 10)</td><td>4 states (an extra &quot;101 detected&quot; state is needed to output 1)</td></tr>
+        <tr><th scope="row">State count (in general)</th><td>Equal to or fewer than a Moore machine for the same behavior</td><td>Mealy states must be split by the output of their incoming transitions, so it tends to need more</td></tr>
+        <tr><th scope="row">Glitches and noise</th><td>Input glitches and noise pass through the combinational logic straight to the output</td><td>Input noise does not reach the output; encoding states so outputs come directly from state-register bits also removes output glitches</td></tr>
+        <tr><th scope="row">Timing paths</th><td>Combinational logic connects inputs to outputs, lengthening paths that include surrounding logic; connecting Mealy machines together can create combinational loops</td><td>Outputs depend only on the state after the clock edge, so paths are broken by registers and timing is easier to analyze</td></tr>
+        <tr><th scope="row">HDL style</th><td>The combinational output block reads the inputs as well as the state</td><td>Output expressions read only the state (for example, a case statement setting outputs per state); outputs are often driven from registers</td></tr>
+        <tr><th scope="row">Where it fits</th><td>Control that must respond with no cycle of delay, or when fewer states are wanted</td><td>Control signals that need clean outputs (such as signals to another clock domain or off chip), or when predictable timing matters</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">Figures are typical orders of magnitude and vary by process generation and product.</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>When to use which</h2>
+  <dl class="compare-when">
+    <dt>Mealy machine</dt><dd>Suited to responding to inputs in the same cycle or keeping the state count low. Synchronize inputs to the clock first, and use the outputs where a brief glitch does no harm, for example by capturing them in flip-flops on the same clock. Registering the outputs removes glitches but adds the same one-cycle delay as a Moore machine.</dd>
+    <dt>Moore machine</dt><dd>Suited to designs that put output stability and predictable timing first. Input noise does not reach the outputs, which makes it a good fit for important control signals and signals leaving the chip. Weigh the one-cycle-later response and the tendency to need more states. Real designs often choose Mealy or Moore per output, or combine the two.</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>FAQ</h2>
+  <h3>What does &quot;one cycle later&quot; mean concretely?</h3>
+  <p>Take a &quot;101&quot; detector. A Mealy machine in the &quot;matched 10&quot; state sets its output to 1 during the same cycle in which the input becomes 1. A Moore machine sets its output to 1 only after it captures that 1 on the clock edge and moves to the &quot;101 detected&quot; state, so the output is 1 in the next cycle. Both detect the same input sequences, but the Moore output is shifted one cycle later than the Mealy output.</p>
+  <h3>Can Mealy and Moore machines be converted into each other?</h3>
+  <p>Yes. Splitting each Mealy state by the output of the transitions entering it gives a Moore machine with the same input-output behavior, although the state count may grow and the outputs appear one cycle later. Conversely, writing each Moore state&#39;s output on the transitions entering that state gives a Mealy machine whose outputs appear one cycle earlier, and sometimes states can then be merged.</p>
+  <h3>In HDL code, what makes a machine Mealy or Moore?</h3>
+  <p>The output expressions. When the code is split into a block that updates the state register and a combinational block that decides the next state and outputs, the machine is Mealy if the output expressions include inputs and Moore if they depend only on the state. In the combinational block, assign every output under every condition to avoid creating unintended latches.</p>
+  <h3>Does a Moore machine never glitch at its outputs?</h3>
+  <p>Input changes and noise do not reach the outputs, but if combinational logic decodes the state into outputs, several state bits changing at once can cause a glitch. Encoding the states so outputs come straight from state-register bits, or registering the outputs, gives glitch-free outputs.</p>
+</section>
+<section>
+  <h2>Check your understanding</h2>
+  <article class="q-mini" data-qid="hdl-verification-022" data-cat="hdl-verification" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
+    <h3><a href="/en/q/hdl-verification/hdl-verification-022/">What characterizes a Mealy state machine?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Outputs depend only on the state and do not change until the next clock</span></li><li><span class="choice-mark">B</span><span class="choice-text">Outputs depend on both current state and inputs, so input changes appear at the output within the same cycle</span></li><li><span class="choice-mark">C</span><span class="choice-text">It is combinational logic with no state</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Outputs depend on both current state and inputs, so input changes appear at the output within the same cycle</p><p class="explanation">In a <a class="term-link" href="/en/term/mealy-machine/">Mealy machine</a> the output logic looks at inputs as well as the current state, so outputs change with inputs without waiting for a clock, reacting one cycle sooner. It may also need fewer states. But a combinational path runs from inputs to outputs, so input glitches can appear at outputs and timing paths get longer. Outputs are sometimes re-registered through flip-flops.</p></details>
+  </article>
+  <article class="q-mini" data-qid="logic-018" data-cat="logic" data-answer="1" data-correct="Correct!" data-incorrect="Incorrect. The answer is B.">
+    <h3><a href="/en/q/logic/logic-018/">Which type of sequential circuit (state machine) has outputs determined only by the current state?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Mealy machine</span></li><li><span class="choice-mark">B</span><span class="choice-text">Moore machine</span></li><li><span class="choice-mark">C</span><span class="choice-text">Harvard machine</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: B. Moore machine</p><p class="explanation">In a Moore machine, outputs depend only on the current state; in a <a class="term-link" href="/en/term/mealy-machine/">Mealy machine</a>, they depend on both state and inputs. Moore outputs change only after a clock edge and input changes or glitches do not pass straight to them, so they are stable and predictable, but they respond a clock later and often need more states. Mealy machines need fewer states and react immediately, but input changes pass directly to the outputs. Real designs mix both styles.</p></details>
+  </article>
+  <article class="q-mini" data-qid="hdl-verification-020" data-cat="hdl-verification" data-answer="2" data-correct="Correct!" data-incorrect="Incorrect. The answer is C.">
+    <h3><a href="/en/q/hdl-verification/hdl-verification-020/">What is the basic structure of a state machine written in an HDL?</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">Only memory to remember the state, with no logic</span></li><li><span class="choice-mark">B</span><span class="choice-text">Only output logic, with no memory of state</span></li><li><span class="choice-mark">C</span><span class="choice-text">A register holding the current state, combinational logic choosing the next state, and combinational logic producing outputs</span></li></ol>
+    <details class="q-answer"><summary>Show answer and explanation</summary><p class="verdict ok">Answer: C. A register holding the current state, combinational logic choosing the next state, and combinational logic producing outputs</p><p class="explanation">A state machine keeps the current state in a <a class="term-link" href="/en/term/flip-flop/">flip-flop</a> register, determines the next state from the current state and inputs with combinational logic, and updates the state at the clock edge. Outputs are produced from the current state (and inputs) by combinational logic. Many circuits that follow a procedure, such as protocol controllers, vending machines and traffic lights, are written as state machines.</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/en/q/hdl-verification/hdl-verification-023/">What is a characteristic of one-hot encoding for state machine states?</a></li>
+  <li data-level="1"><a href="/en/q/hdl-verification/hdl-verification-024/">For a state machine with three states, how many flip-flops are needed to store the state (binary encoding / one-hot encoding)?</a></li>
+  <li><a href="/en/q/logic/logic-006/">Which correctly describes a sequential circuit?</a></li></ol>
+  <p><a class="btn btn-primary" href="/en/c/hdl-verification/">Practice HDL &amp; Verification questions</a></p>
+</section>
+<section>
+  <h2>Key terms explained</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/en/term/mealy-machine/">Mealy machine</a></dt><dd>A state machine whose outputs depend on both the current state and the inputs. Input changes reach outputs within the same cycle, but so can input glitches. A Moore machine&#39;s outputs depend only on state.</dd></div>
+    <div class="term"><dt><a href="/en/term/sequential-circuit/">Sequential circuit</a></dt><dd>A logic circuit that stores state in flip-flops and the like, so its output depends on both inputs and past state. Examples include counters and registers.</dd></div>
+    <div class="term"><dt><a href="/en/term/combinational-circuit/">Combinational circuit</a></dt><dd>A logic circuit whose output depends only on its current inputs. Examples include adders, multiplexers and decoders.</dd></div>
+    <div class="term"><dt><a href="/en/term/flip-flop/">Flip-flop</a></dt><dd>The basic element of sequential circuits that stores one bit. A D flip-flop captures its input at a clock edge.</dd></div>
+    <div class="term"><dt><a href="/en/term/glitch/">Glitch</a></dt><dd>An unwanted momentary pulse on an output, caused for example by differing delays along signal paths. In combinational logic it is also called a hazard; in DACs it appears when the code changes.</dd></div>
+    <div class="term"><dt><a href="/en/term/one-hot-encoding/">One-hot encoding</a></dt><dd>State encoding that assigns one flip-flop per state with exactly one set at a time. Logic tends to be simple and fast, and it is common on FPGAs.</dd></div>
+    <div class="term"><dt><a href="/en/term/combinational-loop/">Combinational loop</a></dt><dd>A structure in which combinational output feeds back to its own input without a flip-flop. It can oscillate or fail to settle and defeats timing analysis, so it is avoided.</dd></div>
+    <div class="term"><dt><a href="/en/term/unintended-latch/">Unintended latch</a></dt><dd>A latch created by synthesis when a description intended as combinational logic fails to assign an output under some condition, so the value must be held.</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>Related comparisons</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/en/compare/synchronous-vs-asynchronous-reset/"><strong>Synchronous vs Asynchronous Reset: Key Differences Explained</strong><span>Synchronous vs asynchronous reset compared: when reset acts, clock needs, glitch immunity, timing analysis, r…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/combinational-vs-sequential-logic/"><strong>Combinational vs Sequential Logic: Differences Explained</strong><span>Combinational vs sequential logic compared in a table: what the output depends on, memory elements, clock, fe…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/verilog-vs-vhdl/"><strong>Verilog vs VHDL: Differences Between the Two HDLs</strong><span>Verilog vs VHDL compared in a table: origin, syntax, typing, case sensitivity, verification features, who use…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/blocking-vs-nonblocking-assignment/"><strong>Blocking vs Non-Blocking Assignment in Verilog: Key Differences</strong><span>Verilog blocking (=) vs non-blocking (&lt;=) assignment compared: update timing, order dependence, where to use …</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/latch-vs-flip-flop/"><strong>Latch vs Flip-Flop: Differences Explained</strong><span>Latch vs flip-flop compared in a table: triggering, output behavior, construction, size, timing analysis, gli…</span></a></li>
+  <li><a class="cmp-card" href="/en/compare/cpu-vs-gpu/"><strong>CPU vs GPU: Differences in Architecture and Use</strong><span>CPU vs GPU compared in a table: design goal, core count, execution model, caches, memory bandwidth, branching…</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">This is a semiconductor learning site run by an individual.</p>
+    <p class="footer-request"><a href="/en/contact/">Requests and feedback are welcome. Send them via Contact →</a></p>
+    <nav class="footer-nav">
+      <a href="/en/about/">About</a>
+      <a href="/en/figures/">Diagrams</a>
+      <a href="/en/privacy/">Privacy policy</a>
+      <a href="/en/disclaimer/">Disclaimer</a>
+      <a href="/en/contact/">Contact</a>
+    </nav>
+    <p class="copyright">© 2026 Semiconductor Room</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
