@@ -11868,5 +11868,508 @@
         "In most cases, no. The meaning of methods, status codes and header fields is shared by all three versions (RFC 9110); only the way they are carried differs. Because the version is chosen per connection, a common setup has a reverse proxy or CDN accept HTTP/2 or HTTP/3 from browsers and talk HTTP/1.1 to the application servers behind it."
       ]
     ]
+  },
+  "distance-vector-vs-link-state": {
+    "title": "Distance-Vector vs Link-State Routing Protocols: RIP and OSPF Compared on Route Calculation, Convergence and Scale",
+    "description": "Distance-vector (such as RIP) vs link-state (such as OSPF) routing protocols compared in one table: what each router knows, route calculation, metric, how updates are sent, convergence speed and loops, network size, resources and configuration, and examples.",
+    "lead": "A routing protocol lets routers exchange route information and build their routing tables automatically. Protocols used inside an organization (IGPs) follow one of two main approaches. In a distance-vector protocol, each router hears from its neighbors \"how far it is to each destination\" and picks routes by adding its distance to that neighbor. RIP, the classic example, uses the number of routers passed through (the hop count) as the distance. In a link-state protocol, each router advertises the state of its own links so that all routers share a map of the network (the topology), and each one computes shortest paths with Dijkstra's algorithm. OSPF, the classic example, picks routes by the sum of costs assigned to each link. Distance-vector protocols are simple and easy to configure, but routes settle (converge) slowly after a failure, so they do not suit large networks. Link-state protocols need more computation and memory, but they react to changes quickly and scale to large networks.",
+    "items": [
+      "Distance-vector (such as RIP)",
+      "Link-state (such as OSPF)"
+    ],
+    "rows": [
+      [
+        "What each router knows",
+        "Only the distance and next hop for each destination, as heard from its neighbors; it does not know the layout of the whole network",
+        "Every router and link in its area and their costs; all routers in the area hold the same map (the link-state database)"
+      ],
+      [
+        "Route calculation",
+        "Adds the distance to a neighbor to the distance heard from it and picks the smallest (the Bellman-Ford idea)",
+        "Computes a shortest-path tree rooted at itself from the map, using Dijkstra's algorithm"
+      ],
+      [
+        "Metric (value expressing how good a route is)",
+        "RIP uses hop count, up to 15; 16 means \"unreachable\"",
+        "OSPF uses the sum of per-link costs; the cost can be set by the administrator and is commonly derived from bandwidth"
+      ],
+      [
+        "How updates are sent",
+        "RIP sends the contents of its routing table to neighbors at a fixed interval (30 seconds in RFC 2453), and also sends changes right away (triggered updates)",
+        "When something changes, link-state information (LSAs) is spread through the whole area (flooding); otherwise Hellos check that neighbors are alive and LSAs are only refreshed at a long interval (30 minutes)"
+      ],
+      [
+        "Convergence speed and loops",
+        "Slow; after a failure, distances can creep upward step by step (count to infinity); split horizon and similar techniques limit this",
+        "Fast; once a change has spread, each router recomputes right away, and since all routers compute from the same map, loops are unlikely"
+      ],
+      [
+        "Network size",
+        "Suited to small networks; RIP cannot handle destinations 16 or more hops away",
+        "Suits large networks too; the network is split into areas arranged around the backbone area (area 0)"
+      ],
+      [
+        "Resources and configuration",
+        "Light on CPU and memory; simple to configure",
+        "Needs more CPU and memory to hold the map and compute shortest paths; configuration, such as area design, is more complex"
+      ],
+      [
+        "Examples",
+        "RIP (RIPv1, RIPv2, and RIPng for IPv6)",
+        "OSPF (OSPFv2 for IPv4, OSPFv3 for IPv6), IS-IS"
+      ]
+    ],
+    "when": [
+      [
+        "Distance-vector (such as RIP)",
+        "Small networks with few routers and an almost fixed layout, where ease of configuration comes first. Slow convergence and the hop-count limit make it a poor fit for large or redundant networks."
+      ],
+      [
+        "Link-state (such as OSPF)",
+        "Networks with many routers and redundant paths, such as in companies and data centers, where routes should switch quickly after a failure. In large networks, splitting into areas keeps the amount of computation and information down."
+      ]
+    ],
+    "faq": [
+      [
+        "What is count to infinity?",
+        "In a distance-vector protocol, when a destination becomes unreachable, neighboring routers can keep teaching each other stale information, so the distance grows by one at a time and the route takes a long time to disappear. Meanwhile, packets for that destination bounce between the routers. RIP caps this by defining 16 as \"unreachable\". It also makes the problem less likely with split horizon (not advertising a route back to the neighbor it was learned from), poison reverse (advertising it back to that neighbor with distance 16, unreachable) and triggered updates (sending changes right away)."
+      ],
+      [
+        "How is the OSPF cost decided?",
+        "RFC 2328 treats the cost of each interface as a value set by the administrator. Many devices use a reference bandwidth divided by the link bandwidth as the default cost. If the reference bandwidth is left at 100 Mbps, every link of 100 Mbps or faster gets a cost of 1 and fast links cannot be told apart, so the reference bandwidth is set to a larger value consistently on all routers."
+      ],
+      [
+        "Which type is BGP?",
+        "BGP uses an approach called path vector: it attaches the sequence of ASes a route has passed through (AS_PATH) and passes it to neighbors. Choosing routes from what neighbors report resembles distance vector, but because it carries the path itself rather than a distance, it can prevent loops by discarding routes that contain its own AS number. BGP is used between organizations (between ASes), while OSPF and similar protocols are used inside an organization."
+      ],
+      [
+        "If a router learns a route to the same destination from both RIP and OSPF, which one does it use?",
+        "Hop count and cost mean different things, so the metrics cannot be compared directly. For routes to the same destination with the same prefix length, the router installs the one with the lower administrative distance, a per-source preference. The values differ between equipment vendors, but on a device that uses 110 for OSPF and 120 for RIP, the OSPF route is chosen."
+      ]
+    ]
+  },
+  "ospf-vs-bgp": {
+    "title": "OSPF vs BGP: IGP and EGP, Route Selection, Neighbor Relationships and Scale",
+    "description": "OSPF vs BGP compared in one table: classification and scope (IGP and EGP), protocol type, route selection, loop prevention, how neighbors connect, how updates are sent, convergence speed and the number of routes handled.",
+    "lead": "The internet is made up of interconnected ASes (autonomous systems), networks managed by organizations such as service providers, universities and companies. A protocol that exchanges routes inside an AS is called an IGP, and one that exchanges routes between ASes is called an EGP; OSPF is the typical IGP and BGP the typical EGP. OSPF automatically finds the shortest route from the link costs inside an AS and aims to switch quickly after a failure. BGP chooses routes between ASes based on attributes such as the sequence of ASes passed through (AS_PATH) and on each organization's policy, such as which neighbor to prefer. Because it handles routes for the entire internet, it is designed for stability and control rather than speed.",
+    "items": [
+      "OSPF",
+      "BGP"
+    ],
+    "rows": [
+      [
+        "Classification and scope",
+        "IGP; inside one AS (organization)",
+        "EGP; between ASes; also used between BGP routers inside the same AS (iBGP)"
+      ],
+      [
+        "Protocol type",
+        "Link-state",
+        "Path vector"
+      ],
+      [
+        "Route selection",
+        "Finds the route with the lowest total link cost using Dijkstra's algorithm",
+        "Compares attributes such as LOCAL_PREF, AS_PATH length and MED in a fixed order; attributes can be set to apply the organization's policy"
+      ],
+      [
+        "Loop prevention",
+        "All routers in an area compute shortest paths from the same map",
+        "Discards a received route whose AS_PATH contains its own AS number"
+      ],
+      [
+        "How neighbors connect",
+        "Runs directly over IP (protocol number 89); sends Hellos by multicast and discovers neighbors automatically",
+        "Connects over TCP port 179; each peer is configured by the administrator one by one"
+      ],
+      [
+        "How updates are sent",
+        "When something changes, LSAs are spread through the area; Hellos check that neighbors are alive (every 10 seconds in the RFC 2328 example)",
+        "Sends the full set of routes first, then only changes in UPDATE messages; routes are not resent periodically, and KEEPALIVEs keep the session up"
+      ],
+      [
+        "Convergence speed",
+        "Generally fast; recomputes right away once it notices a link failure",
+        "Generally slower; detecting a failure can mean waiting for the hold time (90 seconds suggested in RFC 4271), and there are many more routes"
+      ],
+      [
+        "Number of routes and scale",
+        "Routes inside the organization; large networks are split into areas to limit computation and information",
+        "Can handle the very large number of routes of the whole internet; used between providers and by organizations connected to several providers"
+      ]
+    ],
+    "when": [
+      [
+        "OSPF",
+        "Inside one organization's network, when the shortest route should be chosen automatically among redundant paths and switched quickly after a failure. It suits routing within sites and data centers."
+      ],
+      [
+        "BGP",
+        "When connecting to several providers (multihoming) and controlling which link to prefer, or when exchanging routes with other ASes as a provider. It gives fine control, by policy, over which routes are announced outside the organization and which are accepted."
+      ]
+    ],
+    "faq": [
+      [
+        "Why is OSPF used inside an organization and BGP between organizations?",
+        "Because the goals differ. Inside an organization, the whole network is run by the same administrators, so what matters is choosing the best route automatically and switching quickly after a failure. Between organizations, each neighbor has its own policies and does not reveal its internal layout. Which neighbor's routes to prefer and which routes to announce must be decided by contracts and policies, and BGP is built to express this with attributes and filters."
+      ],
+      [
+        "What is the difference between iBGP and eBGP?",
+        "eBGP is a BGP session between routers in different ASes; iBGP is one between routers in the same AS. When announcing a route to another AS over eBGP, a router adds its own AS number to the AS_PATH. Over iBGP, within the same AS, the AS number is not added, so to prevent loops a route learned over iBGP is not passed on to other iBGP peers. iBGP routers are therefore either all connected to each other (full mesh) or use route reflectors."
+      ],
+      [
+        "Are OSPF and BGP ever used together?",
+        "Yes. In providers and large organizations, a common design uses an IGP such as OSPF to find routes to the addresses of devices inside the AS, runs BGP sessions on top of that, and carries external routes in BGP. The IGP tells routers how to reach the next hop (NEXT_HOP) of BGP routes. Some large data centers instead exchange routes with BGP alone, without an IGP (RFC 7938)."
+      ],
+      [
+        "Is there also a protocol called EGP?",
+        "Yes. EGP (Exterior Gateway Protocol) is also the name of an old protocol used between ASes before BGP. It is no longer used, and \"EGP\" now refers to the class of protocols that exchange routes between ASes, of which BGP is the typical example."
+      ]
+    ]
+  },
+  "stp-vs-rstp": {
+    "title": "STP vs RSTP: Port States and Roles, Convergence Speed, BPDUs and Compatibility",
+    "description": "STP (IEEE 802.1D) vs RSTP (IEEE 802.1w) compared in one table: standard, port states, port roles, recovery time after a failure, how fast switchover works, how BPDUs are sent and failures detected, how topology changes are signaled, ports for end devices, and compatibility.",
+    "lead": "When switches are connected with redundant paths, broadcast frames keep circling the loop and cause a broadcast storm. STP (Spanning Tree Protocol) has switches exchange messages called BPDUs and blocks some ports so that the network forms a loop-free tree rooted at the root bridge. Classic STP (IEEE 802.1D), however, moves ports to the forwarding state while waiting on timers so that no loop forms, so with default values recovery after a failure takes 30 to 50 seconds. RSTP (Rapid STP, IEEE 802.1w) keeps the same root bridge election and the same idea of blocking ports, but cuts the switchover to generally a few seconds or less, using a proposal-and-agreement exchange with the neighboring switch and alternate ports chosen in advance. RSTP was incorporated into the 2004 edition of IEEE 802.1D and has replaced classic STP as the standard.",
+    "items": [
+      "STP",
+      "RSTP"
+    ],
+    "rows": [
+      [
+        "Standard",
+        "IEEE 802.1D (up to the 1998 edition)",
+        "IEEE 802.1w; incorporated into the 2004 edition of IEEE 802.1D"
+      ],
+      [
+        "Port states",
+        "Five: disabled, blocking, listening, learning, forwarding",
+        "Three: discarding, learning, forwarding"
+      ],
+      [
+        "Port roles",
+        "Root port and designated port; ports that are neither are blocked",
+        "Root and designated ports, plus the alternate port (a stand-in for the root port) and the backup port (a spare for a designated port)"
+      ],
+      [
+        "Recovery time after a failure",
+        "30 to 50 seconds with default timers (max age 20 s + forward delay 15 s × 2)",
+        "Generally a few seconds or less"
+      ],
+      [
+        "Fast switchover mechanism",
+        "None; waits on timers and passes through listening and learning before forwarding",
+        "On point-to-point links, exchanges a proposal and an agreement with the neighbor and starts forwarding without waiting for timers; if the root port fails, an alternate port takes over immediately"
+      ],
+      [
+        "How BPDUs are sent and failures detected",
+        "Each switch relays the BPDUs sent by the root bridge; a failure is assumed when BPDU information is not refreshed for the max age (20 s by default)",
+        "Each switch sends its own BPDUs every hello time (2 s by default); a failure is assumed when three in a row are missed"
+      ],
+      [
+        "How topology changes are signaled",
+        "The switch that notices the change tells the root bridge with a TCN BPDU, and the root bridge spreads it to all; MAC address tables drop old entries by shortening the aging time to the forward delay (15 s)",
+        "The switch that notices the change tells its neighbors directly, and switches that receive it flush old MAC address table entries immediately"
+      ],
+      [
+        "Ports for end devices",
+        "Not distinguished by the standard; a device plugged in waits about 30 seconds before forwarding starts",
+        "A port configured as an edge port starts forwarding immediately; if it receives a BPDU, it is treated as a normal port"
+      ],
+      [
+        "Compatibility",
+        "Keeps running as STP when connected to RSTP switches",
+        "On ports facing STP switches, switches to STP-compatible behavior (switchover on that port becomes slow)"
+      ]
+    ],
+    "when": [
+      [
+        "STP",
+        "Kept for compatibility where old switches that do not support RSTP are present. There is almost no reason to choose classic STP for a new network."
+      ],
+      [
+        "RSTP",
+        "The standard choice for networks with redundantly connected switches. Configuring ports for end devices as edge ports and using full-duplex point-to-point links between switches gets the full benefit of fast switchover."
+      ]
+    ],
+    "faq": [
+      [
+        "Why does STP take 30 to 50 seconds to switch over?",
+        "Because it advances ports cautiously so that no loop forms. For a failure elsewhere in the network, it first waits the max age of 20 seconds for the stale BPDU information to expire. It then waits a forward delay of 15 seconds in each of the listening and learning states, for up to 20 + 15 × 2 = 50 seconds in total. When a link on the switch's own port fails, it does not need to wait for the max age, so it takes about 30 seconds."
+      ],
+      [
+        "Can RSTP and STP switches be mixed?",
+        "Yes. An RSTP switch switches to STP-compatible behavior on a port where it receives classic STP BPDUs. On that port, however, the proposal-and-agreement exchange is not available and the switch relies on timers, so switchover is slower. To get fast switchover, run RSTP on all switches in the network."
+      ],
+      [
+        "Is the root bridge chosen differently in STP and RSTP?",
+        "No, it is the same. The switch with the lowest bridge ID, made of the priority followed by the MAC address, becomes the root bridge. The default priority is 32768, so without configuration the switch with the lowest MAC address wins; it is therefore common to set a lower priority on the switch meant to be at the center."
+      ],
+      [
+        "What if I want a separate tree for each VLAN?",
+        "STP and RSTP build one tree for the whole network, so a blocked link is unused for every VLAN. MSTP (IEEE 802.1s, now part of IEEE 802.1Q) can build a separate tree (instance) for each group of VLANs, so different VLANs can use different links and redundant links are put to use."
+      ]
+    ]
+  },
+  "static-vs-dynamic-routing": {
+    "title": "Static vs Dynamic Routing: Configuration, Failover, Load, Scale and When to Use Each",
+    "description": "Static vs dynamic routing compared in one table: how routes are set, behavior on failure, router load and bandwidth, configuration effort and scale, predictability, security, administrative distance and where each fits.",
+    "lead": "A router looks up its routing table to decide where to send each packet next. Routes can enter the table in two ways: static routing, where an administrator configures them by hand, and dynamic routing, where routers exchange information with a routing protocol and build the table automatically. Static routing is simple, puts no extra load on the router and behaves predictably, but it does not switch over automatically after a failure, and configuration and management grow as the network grows. Dynamic routing finds routes automatically with protocols such as OSPF and BGP and switches to another path after a failure. Real networks usually combine the two, for example a static default route at a site with a single exit and dynamic routing where there are redundant paths.",
+    "items": [
+      "Static routing",
+      "Dynamic routing"
+    ],
+    "rows": [
+      [
+        "How routes are set",
+        "The administrator configures the destination network and the next hop on each router",
+        "Routers exchange information with a routing protocol (OSPF, BGP, RIP, etc.) and find routes automatically"
+      ],
+      [
+        "Behavior on failure",
+        "Does not switch over automatically; it does not notice failures beyond the neighboring router and can keep using a route that no longer works",
+        "When a failure is detected, it recomputes and switches to another route"
+      ],
+      [
+        "Router load and bandwidth",
+        "Exchanges no route information, so it uses no CPU, memory or link bandwidth for that",
+        "Uses CPU, memory and bandwidth to exchange route information and compute routes"
+      ],
+      [
+        "Configuration effort and scale",
+        "The amount of configuration and the risk of mistakes grow with the number of networks and routes; every change means editing all the routers involved",
+        "Additions and changes spread automatically, so even large networks are easy to manage; but designing and configuring the protocol takes knowledge"
+      ],
+      [
+        "Predictability",
+        "Behaves exactly as configured, so it is easy to predict",
+        "The route used can change depending on the protocol's calculations"
+      ],
+      [
+        "Security",
+        "Receives no route information, so there is no risk of being fed false routes",
+        "Needs neighbor authentication and limits (filters) on accepted routes to avoid accepting false routes"
+      ],
+      [
+        "Administrative distance",
+        "Generally a low value, preferred over dynamic routes (the value varies by device, for example 1)",
+        "Set per protocol (some devices use, for example, 110 for OSPF and 120 for RIP)"
+      ],
+      [
+        "Where it fits",
+        "Small networks, the default route at a site with one exit, the exit to a service provider",
+        "Networks with redundant paths, enterprise networks with many sites, and between ASes on the internet (BGP)"
+      ]
+    ],
+    "when": [
+      [
+        "Static routing",
+        "Networks with few routers and an almost fixed layout, or sites such as branch offices with only one exit, where configuring a single 0.0.0.0/0 default route is enough."
+      ],
+      [
+        "Dynamic routing",
+        "Networks with many routers, or with redundant paths that should switch over automatically after a failure. It also suits networks where routes are often added or changed."
+      ]
+    ],
+    "faq": [
+      [
+        "Can static routing switch to a backup route after a failure?",
+        "To some extent. If you configure a backup static route with a higher administrative distance than the normal route (a floating static route), it is used only when the normal route disappears from the routing table. However, the normal route disappears only in cases such as the router noticing that its own link went down, so failures further away go unnoticed. For that reason it is sometimes combined with a feature that periodically checks reachability and removes the route."
+      ],
+      [
+        "What is a default route?",
+        "A route such as 0.0.0.0/0 (::/0 in IPv6) that matches every destination. A router picks the matching route with the longest prefix (longest prefix match), so the default route is used only when no other route matches. At a site with only one exit, it is common to configure a single static default route instead of a route for each destination."
+      ],
+      [
+        "If a static route and a dynamic route exist for the same destination, which is used?",
+        "Routes with different prefix lengths are treated as different routes, and forwarding picks the longest one by longest prefix match. When both have a route to the same destination with the same prefix length, the one with the lower administrative distance goes into the routing table. Static routes generally have a lower value than dynamic ones, so the static route wins. The actual values differ between equipment vendors."
+      ],
+      [
+        "Can static and dynamic routing be used together?",
+        "Yes, and many networks combine them. For example, the head office and branches exchange routes with OSPF, while a static default route is configured at the internet exit and that default route is advertised to the other routers through OSPF."
+      ]
+    ]
+  },
+  "dhcpv6-vs-slaac": {
+    "title": "DHCPv6 vs SLAAC: How IPv6 Addresses Are Assigned, State, Gateway and DNS, and When to Use Each",
+    "description": "DHCPv6 vs SLAAC (stateless address autoconfiguration), the two ways to configure IPv6 addresses automatically, compared in one table: who decides the address, state, what is required, messages used, default gateway, DNS server, interface ID, prefix length and delegation, and how easy it is to track addresses.",
+    "lead": "An IPv6 host can obtain an address automatically in two ways: DHCPv6 and SLAAC. With SLAAC (stateless address autoconfiguration, RFC 4862), the host learns the link's prefix from the router advertisements (RAs) that routers send, creates its own interface ID and assembles the address. No server keeps track of which host uses which address, which is why it is called \"stateless\". With DHCPv6 (RFC 8415), as with DHCP for IPv4, a server chooses an address, leases it for a limited time and keeps a record of it. Either way, the default gateway is learned from RAs. There is also a combination called stateless DHCPv6, in which the address is formed by SLAAC and only other information, such as the DNS server address, comes from DHCPv6.",
+    "items": [
+      "DHCPv6",
+      "SLAAC"
+    ],
+    "rows": [
+      [
+        "Who decides the address",
+        "The DHCPv6 server, which picks one from the range it manages and leases it for a limited time",
+        "The host itself, which combines the prefix learned from RAs with an interface ID it creates"
+      ],
+      [
+        "State",
+        "Stateful: the server records which address it leased to which host",
+        "Stateless: no server records address assignments"
+      ],
+      [
+        "What is required",
+        "A DHCPv6 server (and a relay agent if it is on another link), plus RAs telling hosts to use DHCPv6",
+        "A router sending RAs that announce the prefix"
+      ],
+      [
+        "Messages used",
+        "UDP (port 546 for clients, 547 for servers and relay agents); the basic exchange is Solicit, Advertise, Request and Reply",
+        "Router Solicitation (RS) and Router Advertisement (RA) from ICMPv6 Neighbor Discovery (NDP)"
+      ],
+      [
+        "Default gateway",
+        "Not provided by DHCPv6; the link-local address of the router that sent the RA is used",
+        "The link-local address of the router that sent the RA is used"
+      ],
+      [
+        "DNS server address",
+        "Provided in a DHCPv6 option",
+        "Provided in an RA option (RDNSS) or by stateless DHCPv6"
+      ],
+      [
+        "Interface ID (lower 64 bits)",
+        "Chosen by the server",
+        "EUI-64 format derived from the MAC address, or a value based on random numbers; for privacy, many operating systems use random-based values"
+      ],
+      [
+        "Prefix length and delegation",
+        "Assigns addresses one at a time, so it also works with prefixes other than /64; it can also delegate whole prefixes to routers (DHCPv6-PD)",
+        "Generally assumes a /64 prefix; cannot delegate prefixes"
+      ],
+      [
+        "How easy it is to track addresses",
+        "The server's records show which host uses which address; clients are identified by an identifier called a DUID",
+        "There are no server records, so finding a host's address means checking, for example, the router's neighbor cache"
+      ]
+    ],
+    "when": [
+      [
+        "DHCPv6",
+        "Enterprise networks that want to manage and record which address was assigned to which host, and provider lines that hand out prefixes to routers (DHCPv6-PD). Some host operating systems cannot obtain an address via DHCPv6, so check support."
+      ],
+      [
+        "SLAAC",
+        "When addresses should be handed out simply without running a server, as in homes and many LANs. DNS server information is supplied by the RA RDNSS option or by stateless DHCPv6."
+      ]
+    ],
+    "faq": [
+      [
+        "Are router advertisements (RAs) still needed when using DHCPv6?",
+        "Yes. DHCPv6 has no way to provide a default gateway; hosts use the link-local address of the router that sent the RA as their default gateway. RAs also tell hosts, with the M flag (Managed), to get addresses from DHCPv6, and with the O flag (Other), to get other information such as DNS servers from DHCPv6."
+      ],
+      [
+        "What is stateless DHCPv6?",
+        "A setup in which hosts form their own addresses with SLAAC and get only non-address information, such as DNS server addresses, from a DHCPv6 server. The server does not record which address belongs to which host, hence \"stateless\". Hosts are told to use it by an RA with the M flag set to 0 and the O flag set to 1."
+      ],
+      [
+        "How does SLAAC avoid duplicate addresses?",
+        "Before using an address it has formed, the host uses Neighbor Discovery to check that no other device is using the same address. This is called duplicate address detection (DAD). An address found to be a duplicate is not used. Addresses obtained via DHCPv6 are checked the same way."
+      ],
+      [
+        "Can a host be tracked from its SLAAC address?",
+        "With an EUI-64 interface ID derived from the MAC address, the lower 64 bits are the same on every network, which makes the host easier to track. For that reason, interface IDs that look random and differ per network (RFC 7217) and temporary addresses that change over time (RFC 8981) are used."
+      ]
+    ]
+  },
+  "snmp-vs-syslog-vs-netflow": {
+    "title": "SNMP vs syslog vs NetFlow: What Each Tells You in Monitoring, How Data Is Collected, Data Format and Protocols",
+    "description": "SNMP vs syslog vs NetFlow (IPFIX) for network monitoring compared in one table: what each tells you, how data is collected, data format, time granularity, what it cannot tell you, load on devices and links, standards and port numbers, security and main uses.",
+    "lead": "Running a network means monitoring the state of devices and traffic, noticing problems early and investigating their causes. SNMP, syslog and NetFlow all collect information from devices, but they tell you different things. With SNMP, a managing system (the manager) queries devices (agents) for values such as interface traffic and CPU usage, which tells you \"how much\". With syslog, devices send events such as links going down, logins and configuration changes as text messages to a logging server, which tells you \"what happened when\". NetFlow (and IPFIX, the standard based on it) summarizes traffic per group of packets that share the same source, destination and so on (a flow) and exports the summaries, which tells you \"who talked to whom, and how much\". In practice, all three are used together.",
+    "items": [
+      "SNMP",
+      "syslog",
+      "NetFlow (IPFIX)"
+    ],
+    "rows": [
+      [
+        "What it tells you",
+        "Device state and quantities: interface traffic and error counts, CPU and memory usage, link status",
+        "Events: links going down, successful and failed logins, configuration changes, errors",
+        "A breakdown of traffic: which source and destination pairs, using which protocol and ports, sent how much"
+      ],
+      [
+        "How data is collected",
+        "The manager queries at a fixed interval (polling); devices can also report problems with notifications (traps)",
+        "The device sends a message to the server when an event happens",
+        "The device aggregates flows and exports them to a collecting server (collector) when a flow ends or at fixed intervals"
+      ],
+      [
+        "Data format",
+        "Values defined in MIBs (counters and states), addressed by object identifiers (OIDs)",
+        "Severity (0 to 7), source type (facility), timestamp and a text message",
+        "Per-flow records: addresses, port numbers, protocol, packet and byte counts, start and end times and more; the fields are defined by templates"
+      ],
+      [
+        "Time granularity",
+        "An average over each polling interval (for example 5 minutes)",
+        "Per event, arriving almost immediately",
+        "Per flow; long-lived flows are cut into pieces and exported at fixed intervals"
+      ],
+      [
+        "What it cannot tell you",
+        "Whose traffic it is",
+        "Traffic volume",
+        "Packet contents (data); nor device values such as CPU usage"
+      ],
+      [
+        "Load on devices and links",
+        "Small",
+        "Small, though messages can surge during a failure",
+        "Larger; on fast links, sampling that examines only some of the packets is sometimes used"
+      ],
+      [
+        "Standards and port numbers",
+        "SNMPv3 is RFC 3411 to 3418; UDP port 161 (queries) and 162 (traps)",
+        "RFC 5424; UDP port 514, or 6514 when using TLS",
+        "NetFlow v9 is described in RFC 3954 (an informational RFC); the standardized IPFIX is RFC 7011, port 4739"
+      ],
+      [
+        "Security",
+        "In v1 and v2c, the community string travels unencrypted; v3 adds authentication and encryption",
+        "Over UDP there is neither encryption nor delivery confirmation; TLS can protect it",
+        "NetFlow v9 has no built-in protection; IPFIX can be protected with TLS or DTLS"
+      ],
+      [
+        "Main uses",
+        "Traffic graphs, tracking link utilization, detecting device failures",
+        "Investigating the causes of failures, recording who did what, security monitoring (collected into a SIEM)",
+        "Finding hosts and applications that use a lot of bandwidth, detecting unusual traffic, planning link upgrades"
+      ]
+    ],
+    "when": [
+      [
+        "SNMP",
+        "When you want to watch link and device utilization continuously as graphs. To notice device failures and link outages right away, combine it with traps."
+      ],
+      [
+        "syslog",
+        "When failures and security-related events should be recorded with timestamps so they can be investigated later. To correlate logs from several devices, keep device clocks synchronized with NTP."
+      ],
+      [
+        "NetFlow (IPFIX)",
+        "When a link is congested and you want to find which hosts or applications are using the bandwidth, or when you want to spot unusual traffic patterns."
+      ]
+    ],
+    "faq": [
+      [
+        "How do you get a traffic rate from SNMP counters?",
+        "Read an interface's received or transmitted byte counter at a fixed interval, convert the difference from the previous reading to bits and divide by the interval in seconds. For example, if the counter grew by 3,750,000,000 in 5 minutes (300 seconds), 3.75×10⁹ × 8 ÷ 300 = 1×10⁸ bit/s, an average of 100 Mbps. A 32-bit counter wraps to 0 after about 4.3 billion and quickly goes around on fast links, so 64-bit counters are used. The result is an average over the interval, so short bursts are not visible."
+      ],
+      [
+        "When should SNMP polling and traps be used?",
+        "Polling, in which the manager reads values at a fixed interval, suits continuous records of change such as traffic graphs. Traps, sent by the device when something like a link failure occurs, let you notice right away, but because they are sent over UDP they can be lost. There are also acknowledged notifications (informs). In most cases both are combined."
+      ],
+      [
+        "What is syslog message severity?",
+        "RFC 5424 expresses the severity of a message in eight levels, from 0 (Emergency: system is unusable) to 7 (Debug: debug-level messages). Lower numbers are more important, and each device can be configured to send only messages at or above a chosen severity to the server."
+      ],
+      [
+        "How does NetFlow differ from packet capture?",
+        "Packet capture records the packets themselves, including their contents, so it allows detailed analysis but produces a very large amount of data. NetFlow does not record packet contents and exports only summaries such as packet and byte counts per flow, so it greatly reduces the amount of data and suits looking at long-term trends. Even for encrypted traffic, the addresses, port numbers and volume are visible."
+      ]
+    ]
   }
 }
