@@ -27602,7 +27602,7 @@
    },
    {
     "h": "Routeurs et commutateurs, et l'intérieur d'un routeur",
-    "p": "Un commutateur de couche 2 transmet les trames au sein d'un même réseau d'après l'adresse MAC. Un routeur achemine le trafic entre réseaux différents d'après l'adresse IP et ne laisse pas passer la diffusion générale : il sépare donc aussi les réseaux les uns des autres. Un commutateur qui réalise le routage en matériel s'appelle un commutateur de couche 3. Les gros routeurs séparent la partie qui calcule les routes (le plan de contrôle, confié à un CPU) de la partie qui achemine les paquets (le plan de données), laquelle utilise des ASIC dédiés et des mémoires de recherche comme la TCAM, qui trouve le plus long préfixe correspondant en une seule recherche, pour traiter les paquets à grande vitesse."
+    "p": "Un commutateur de couche 2 transmet les trames au sein d'un même réseau d'après l'adresse MAC. Un routeur achemine le trafic entre réseaux différents d'après l'adresse IP et ne laisse pas passer la diffusion générale : il sépare donc aussi les réseaux les uns des autres. Un commutateur qui réalise le routage en matériel s'appelle un commutateur de couche 3. Les gros routeurs séparent la partie qui calcule les routes (le plan de contrôle, confié à un CPU) de la partie qui achemine les paquets (le plan de données), laquelle utilise des ASIC dédiés et des mémoires de recherche comme la TCAM, qui effectue la correspondance du plus long préfixe en une seule recherche, pour traiter les paquets à grande vitesse."
    }
   ],
   "faq": [
@@ -28403,5 +28403,226 @@
   "aliases": [
    "transformateurs"
   ]
+ },
+ "スパニングツリープロトコル(STP)": {
+  "term": "Spanning Tree Protocol (STP)",
+  "title": "Spanning Tree Protocol (STP) : prévention des boucles, pont racine et RSTP",
+  "description": "STP bloque les ports de commutateur redondants pour que les chemins Ethernet forment un arbre sans boucle. Pourquoi les boucles sont nuisibles, comment le pont racine et les rôles des ports sont choisis, et comment RSTP converge plus vite.",
+  "desc": "Protocole (IEEE 802.1D) qui, dans un réseau où les commutateurs sont reliés par des chemins redondants, bloque logiquement certains ports pour que les chemins forment un arbre sans boucle, ce qui empêche les tempêtes de diffusion. Si un chemin utilisé tombe en panne, il bascule en mettant en service un port bloqué. RSTP (Rapid Spanning Tree Protocol) en est une version améliorée qui bascule plus vite.",
+  "about": [
+   {
+    "h": "Pourquoi les boucles posent problème",
+    "p": "Les trames Ethernet n'ont pas de mécanisme comparable au TTL d'IP, qui compte les sauts et détruit la trame. Si des commutateurs sont reliés en boucle, les diffusions et les trames destinées à des adresses inconnues tournent sans fin et se multiplient chaque fois qu'un commutateur les inonde (tempête de diffusion, broadcast storm). Des trames d'une même source arrivent en outre sur des ports différents, ce qui perturbe l'apprentissage des adresses MAC. En même temps, les chemins doivent être redondants pour que la panne d'une liaison ou d'un commutateur n'interrompe pas les communications ; on utilise donc STP pour rompre la boucle logiquement tout en conservant la boucle physique."
+   },
+   {
+    "h": "Le pont racine et les rôles des ports",
+    "p": "En STP, les commutateurs échangent des messages appelés BPDU et élisent d'abord comme pont racine (root bridge) le commutateur dont l'identifiant de pont (priorité et adresse MAC) est le plus petit. Chaque autre commutateur fait du port de plus faible coût de chemin vers le pont racine son port racine. Sur chaque liaison, le port situé du côté le plus proche du pont racine devient le port désigné, et les ports qui ne sont ni port racine ni port désigné sont bloqués. Plus une liaison est rapide, plus son coût de chemin est faible, et les égalités sont départagées en comparant les identifiants de pont et des valeurs analogues."
+   },
+   {
+    "h": "RSTP et VLAN multiples",
+    "p": "Le STP classique fait passer les ports à l'état de transmission en attendant l'expiration de temporisateurs, si bien que le basculement après une panne prenait environ 30 à 50 secondes. RSTP (créé sous le nom IEEE 802.1w, puis intégré à 802.1D) utilise un échange de proposition et d'accord entre commutateurs voisins ainsi que des ports alternatifs choisis à l'avance, et bascule dans bien des cas en quelques secondes. MSTP (Multiple Spanning Tree), qui peut construire un arbre distinct pour chaque groupe de VLAN, permet à des VLAN différents d'emprunter des liaisons différentes, si bien que les liaisons redondantes sont elles aussi mises à profit."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Avec STP, n'a-t-on plus à se soucier des boucles ?",
+    "a": "STP empêche les boucles formées entre commutateurs qui échangent des BPDU, mais pas celles qui passent par des ports où STP est désactivé ou par des équipements qui ne traitent pas les BPDU. On le combine couramment avec une fonction qui désactive un port de terminal dès qu'il reçoit une BPDU et avec une limitation du volume de trafic de diffusion."
+   },
+   {
+    "q": "Les liaisons bloquées par STP ne sont-elles pas gaspillées ?",
+    "a": "Avec un seul arbre, les liaisons bloquées restent en attente et ne transportent normalement aucun trafic. Pour exploiter aussi leur bande passante, les réseaux utilisent l'agrégation de liens, qui regroupe plusieurs liaisons en une seule (STP la voit comme une seule liaison), MSTP, qui construit un arbre distinct par groupe de VLAN, ou des architectures qui routent en couche 3."
+   }
+  ],
+  "aliases": [
+   "spanning tree",
+   "RSTP"
+  ]
+ },
+ "リンクアグリゲーション": {
+  "term": "Agrégation de liens",
+  "desc": "Technique (IEEE 802.1AX) qui regroupe plusieurs liaisons physiques pour qu'elles soient traitées comme une seule liaison logique. Elle augmente la bande passante, et si une liaison tombe en panne, les autres continuent d'acheminer le trafic. Les trames sont affectées à une liaison par flux (par exemple par combinaison de source et de destination) : un même flux est donc limité à la vitesse d'une liaison. LACP est le protocole qui harmonise automatiquement les réglages de regroupement aux deux extrémités.",
+  "aliases": [
+   "link aggregation",
+   "LACP",
+   "LAG"
+  ]
+ },
+ "ブロードキャストドメイン": {
+  "term": "Domaine de diffusion (broadcast domain)",
+  "desc": "Zone qu'atteint une trame de diffusion. Les commutateurs et les hubs transmettent les diffusions et appartiennent donc à la même zone, dont les routeurs (ou le routage d'un commutateur L3) marquent les limites. Avec les VLAN, un même commutateur peut être divisé en un domaine de diffusion distinct par VLAN. Si la zone est trop étendue, les diffusions comme celles d'ARP se multiplient et l'efficacité du réseau baisse.",
+  "aliases": [
+   "domaines de diffusion"
+  ]
+ },
+ "OSPF": {
+  "term": "OSPF (Open Shortest Path First)",
+  "title": "OSPF : routage à état de liens, coût et zones",
+  "description": "OSPF est un protocole de routage à état de liens utilisé au sein d'une organisation. Comment les routeurs partagent l'état des liens et exécutent l'algorithme de Dijkstra, comment fonctionnent le coût et la bande passante de référence, et pourquoi on divise les réseaux en zones.",
+  "desc": "Protocole de routage à état de liens utilisé au sein d'une organisation. Chaque routeur diffuse l'état de ses propres liens pour que tous les routeurs partagent la topologie du réseau, et calcule avec l'algorithme de Dijkstra le chemin dont le coût total est le plus faible. Les coûts sont généralement déduits de la bande passante des liaisons, et la division du réseau en plusieurs zones (areas) lui permet de s'adapter aux grands réseaux.",
+  "about": [
+   {
+    "h": "Fonctionnement du routage à état de liens",
+    "p": "Les routeurs OSPF établissent des adjacences avec leurs voisins au moyen de paquets Hello et diffusent à tous les routeurs de la même zone des informations décrivant l'état de leurs liens (LSA). À partir des LSA collectées, chaque routeur construit la même carte de la topologie (la base de données d'état des liens), calcule avec l'algorithme de Dijkstra un arbre des plus courts chemins dont il est la racine, et installe le résultat dans sa table de routage. Lorsqu'une liaison tombe en panne, le changement est diffusé aussitôt et chaque routeur refait son calcul : OSPF converge donc vers de nouvelles routes plus vite que RIP, protocole à vecteur de distance."
+   },
+   {
+    "h": "Coût et bande passante de référence",
+    "p": "Le coût de chaque interface est généralement fixé à « bande passante de référence ÷ bande passante de l'interface », et le coût d'une route est la somme des coûts des interfaces qu'elle traverse. Si la bande passante de référence reste à 100 Mbit/s, longtemps la valeur par défaut de nombreux équipements, toute liaison de 100 Mbit/s ou plus coûte 1, et l'on ne distingue plus 1 Gbit/s de 10 Gbit/s. Les réseaux à liaisons rapides règlent donc la bande passante de référence sur une valeur plus grande, la même sur tous les routeurs. Les coûts peuvent aussi être fixés à la main, interface par interface."
+   },
+   {
+    "h": "Hiérarchie par zones",
+    "p": "À mesure que le nombre de routeurs augmente, le volume des LSA et la charge de calcul de l'algorithme de Dijkstra augmentent aussi. OSPF divise le réseau en plusieurs zones (areas) : l'état détaillé des liens n'est partagé qu'à l'intérieur d'une zone, et seules des informations de routes circulent entre les zones. Toute zone doit être reliée à la zone fédératrice centrale (backbone, zone 0), et les routeurs situés à la frontière des zones (ABR) peuvent aussi transmettre les routes sous forme agrégée (agrégation de routes)."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Quelle est la différence entre OSPF et RIP ?",
+    "a": "RIP est un protocole à vecteur de distance qui choisit les routes uniquement d'après le nombre de routeurs traversés (le nombre de sauts, 15 au maximum) : il ignore donc la vitesse des liaisons. OSPF est un protocole à état de liens qui choisit les routes d'après le coût total déduit de la bande passante, réagit plus vite aux changements et peut s'adapter aux grands réseaux en les divisant en zones."
+   },
+   {
+    "q": "Quand utilise-t-on OSPF et quand BGP ?",
+    "a": "OSPF est un protocole (un IGP) qui sert à trouver rapidement les plus courts chemins au sein d'une seule organisation (AS). BGP est un protocole qui sert à échanger des routes entre organisations en fonction des attributs des routes et de politiques. Les grandes organisations combinent souvent les deux : OSPF à l'intérieur et BGP vers leurs fournisseurs d'accès."
+   }
+  ]
+ },
+ "BGP": {
+  "term": "BGP (Border Gateway Protocol)",
+  "title": "BGP : le routage entre systèmes autonomes sur Internet",
+  "description": "BGP échange des routes entre systèmes autonomes (AS) sur Internet. Comment fonctionne le routage à vecteur de chemins, quels attributs comme AS_PATH et LOCAL_PREF guident le choix des routes, et ce que sont eBGP, iBGP et les fuites de routes.",
+  "desc": "Protocole de routage qui échange des informations de routage entre AS (systèmes autonomes, unités de réseau gérées par des organisations comme les fournisseurs d'accès) sur Internet. Il choisit les routes en fonction des attributs qui leur sont attachés, comme la suite d'AS qu'elles ont traversés (AS_PATH), et de la politique de chaque organisation. Les routeurs se connectent entre eux sur le port TCP 179 pour échanger les informations.",
+  "about": [
+   {
+    "h": "AS et vecteurs de chemins",
+    "p": "Internet est constitué de nombreux AS (systèmes autonomes) interconnectés, chacun géré par un fournisseur d'accès ou une grande organisation et identifié par un numéro d'AS. Les routeurs BGP se connectent par TCP aux routeurs des AS voisins et s'annoncent mutuellement des routes de la forme « ce réseau est joignable par cette suite d'AS ». Un routeur qui reçoit une route la rejette comme boucle si la suite contient son propre numéro d'AS. Comme il transmet le chemin suivi et non une distance, BGP est appelé protocole à vecteur de chemins (path vector)."
+   },
+   {
+    "h": "Attributs et choix des routes",
+    "p": "Les routes portent des attributs comme la suite d'AS traversés (AS_PATH), le prochain saut (NEXT_HOP), la préférence au sein de l'AS (LOCAL_PREF) et le MED, qui indique à un AS voisin par quelle entrée il est préférable d'entrer dans l'AS. Lorsqu'il existe plusieurs routes vers la même destination, ces attributs sont comparés dans un ordre défini pour en choisir une, et la longueur de l'AS_PATH n'est qu'un des critères. La grande différence avec les protocoles utilisés au sein d'une organisation pour choisir les routes est que celle-ci peut décider, selon des politiques comme les contrats et les coûts, quelles routes de quels voisins privilégier et quelles routes annoncer à qui."
+   },
+   {
+    "h": "eBGP, iBGP et précautions d'exploitation",
+    "p": "Le BGP entre routeurs d'AS différents s'appelle eBGP, et le BGP entre routeurs d'un même AS s'appelle iBGP ; ce dernier sert à propager dans l'AS les routes apprises de l'extérieur. Les erreurs de configuration de BGP ont des effets étendus : annoncer par erreur les adresses d'une autre organisation peut attirer de partout le trafic destiné à ces adresses (détournements et fuites de routes). Parmi les contre-mesures figurent des filtres qui limitent les routes annoncées et acceptées, et RPKI, qui vérifie au moyen de signatures électroniques le titulaire légitime des adresses."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Pourquoi BGP est-il indispensable à Internet ?",
+    "a": "Aucune organisation ne gère Internet dans son ensemble. Les routes qui atteignent toutes les destinations du monde sont construites par de nombreux AS indépendants qui s'annoncent mutuellement des routes avec BGP. Les erreurs de configuration ou les pannes de BGP peuvent donc affecter les communications à grande échelle."
+   },
+   {
+    "q": "BGP choisit-il la route la plus courte ?",
+    "a": "Pas forcément. BGP fait passer la politique d'une organisation, exprimée dans des attributs comme LOCAL_PREF, avant la seule longueur de l'AS_PATH. Par exemple, une route qui passe par un voisin moins cher peut être préférée même si elle traverse davantage d'AS."
+   }
+  ]
+ },
+ "ロンゲストマッチ(最長一致)": {
+  "term": "Correspondance du plus long préfixe (longest prefix match)",
+  "desc": "Règle par laquelle un routeur, lorsque plusieurs routes de sa table de routage correspondent à une adresse IP de destination, choisit celle dont le préfixe est le plus long (le plus spécifique). Par exemple, une destination qui correspond à la fois à 10.0.0.0/8 et à 10.1.0.0/16 utilise la route /16. La route par défaut (0.0.0.0/0), utilisée lorsque rien d'autre ne correspond, est la route la plus courte possible, de longueur 0.",
+  "aliases": [
+   "longest-prefix match"
+  ]
+ },
+ "アドミニストレーティブディスタンス": {
+  "term": "Distance administrative (administrative distance)",
+  "desc": "Valeur de préférence attribuée à chaque source de routes, qui sert à décider quelle route installer dans la table de routage lorsque des routes vers la même destination, avec la même longueur de préfixe, sont apprises de plusieurs sources, comme les routes statiques, OSPF et RIP. Les valeurs les plus petites sont préférées. Elle ne sert pas à choisir entre des routes de longueurs de préfixe différentes, ce que tranche la correspondance du plus long préfixe. Le nom et les valeurs par défaut varient selon les fabricants d'équipements."
+ },
+ "経路集約": {
+  "term": "Agrégation de routes (route summarization)",
+  "desc": "Regroupement des routes de plusieurs réseaux consécutifs en une seule route de préfixe plus court. Par exemple, les 4 réseaux 10.0.4.0/24 à 10.0.7.0/24 s'agrègent en 10.0.4.0/22. Elle permet de garder des tables de routage petites et évite de propager vers l'extérieur les petits changements internes, mais si la plage agrégée inclut des adresses qui n'existent pas, elle attire aussi des paquets qui n'ont nulle part où aller.",
+  "aliases": [
+   "résumé de routes",
+   "supernetting"
+  ]
+ },
+ "VRRP": {
+  "term": "VRRP (Virtual Router Redundancy Protocol)",
+  "desc": "Protocole qui rend la passerelle par défaut redondante : plusieurs routeurs partagent une adresse IP virtuelle et une adresse MAC virtuelle, le routeur maître achemine normalement le trafic, et un routeur de secours prend le relais si le maître tombe en panne. Les hôtes qui utilisent l'adresse IP virtuelle comme passerelle par défaut n'ont rien à modifier lorsque les routeurs basculent. Les mécanismes qui ont le même objectif sont appelés collectivement FHRP.",
+  "aliases": [
+   "FHRP"
+  ]
+ },
+ "ACL(アクセス制御リスト)": {
+  "term": "ACL (liste de contrôle d'accès)",
+  "title": "ACL (liste de contrôle d'accès) : première correspondance, refus implicite et placement",
+  "description": "Une ACL énumère des règles qui autorisent ou refusent un accès. Comment les ACL réseau sont évaluées à partir du haut, avec la première correspondance et le refus implicite, où les appliquer, et quel rapport avec les ACL des systèmes de fichiers.",
+  "desc": "Liste de règles qui indique, pour chaque objet, quels accès sont autorisés et lesquels sont refusés. Sur les équipements réseau, elle décide de laisser passer ou de détruire les paquets selon des conditions comme les adresses source et destination, le protocole et les numéros de port ; les règles sont examinées à partir du haut, et la première qui correspond l'emporte. Ce qui ne correspond à aucune règle est en général refusé (le refus implicite, implicit deny). Dans les systèmes de fichiers, une liste de droits par utilisateur s'appelle aussi une ACL.",
+  "about": [
+   {
+    "h": "Examinée à partir du haut, décidée par la première correspondance",
+    "p": "Une ACL réseau compare un paquet à ses règles à partir du haut, décide selon l'« autoriser » ou le « refuser » de la première règle qui correspond, et ignore toutes les règles suivantes. L'ordre des règles est donc important : les exceptions étroites, comme n'autoriser qu'un serveur particulier, doivent être écrites au-dessus des règles plus larges. On considère qu'une règle non écrite « tout refuser » figure à la fin (le refus implicite, implicit deny), si bien que tout trafic qui ne correspond à aucune règle d'autorisation est détruit."
+   },
+   {
+    "h": "Où et dans quel sens l'appliquer",
+    "p": "Une ACL se configure sur une interface de routeur ou de commutateur, pour les paquets entrants ou pour les paquets sortants. Une ACL qui précise en détail la source, la destination et les numéros de port se place de préférence près de la source, pour que le trafic indésirable soit détruit tôt et ne gaspille pas les liaisons traversées. Une ACL qui ne porte que sur la source bloquerait aussi, placée près de la source, le trafic vers d'autres destinations ; on la place donc normalement près de la destination. Une ACL examine chaque paquet isolément : pour ne laisser passer que le trafic de retour des connexions ouvertes depuis l'intérieur, on utilise les fonctions avec état d'un pare-feu, qui mémorisent l'état des connexions."
+   },
+   {
+    "h": "Les ACL des systèmes de fichiers",
+    "p": "Le terme ACL s'emploie aussi pour les droits d'accès aux fichiers et aux dossiers. Les permissions de base de Linux ne peuvent exprimer que trois ensembles de droits, pour le propriétaire, le groupe et tous les autres, mais les ACL permettent d'ajouter des droits de lecture et d'écriture pour des utilisateurs ou des groupes particuliers. NTFS sous Windows utilise lui aussi des ACL par fichier pour définir des droits détaillés. Les objets diffèrent, mais l'idée d'« une liste de ce qui est permis à qui (ou à quoi) » est la même."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Faut-il écrire « tout refuser » à la fin d'une ACL ?",
+    "a": "La plupart des équipements ont un refus implicite à la fin : le trafic non autorisé est donc détruit même si vous ne l'écrivez pas. Toutefois, si vous voulez enregistrer le trafic refusé, vous pouvez écrire une règle explicite « tout refuser » avec la journalisation activée. À l'inverse, appliquer une ACL qui ne contient que des règles de refus bloque tout le trafic à cause du refus implicite : il faut donc être prudent."
+   },
+   {
+    "q": "Quelle est la différence entre une ACL et un pare-feu ?",
+    "a": "Une ACL autorise ou refuse les paquets un par un selon des règles ; c'est une fonction de base des routeurs et des commutateurs. Un pare-feu est un équipement ou un logiciel dédié qui, en plus de règles comparables à celles d'une ACL, offre des fonctions comme l'inspection avec état, qui mémorise l'état des connexions et laisse passer automatiquement le trafic de retour, et l'identification des applications."
+   }
+  ],
+  "aliases": [
+   "listes de contrôle d'accès"
+  ]
+ },
+ "SLAAC(ステートレスアドレス自動設定)": {
+  "term": "SLAAC (autoconfiguration d'adresse sans état)",
+  "desc": "Mécanisme d'IPv6 par lequel un hôte apprend le préfixe du réseau (normalement un /64) grâce aux annonces de routeur (RA) envoyées par les routeurs, et le combine avec un identifiant d'interface qu'il crée lui-même pour configurer automatiquement une adresse. L'identifiant d'interface est soit au format EUI-64 dérivé de l'adresse MAC, soit fondé sur une valeur aléatoire pour empêcher le suivi. Avant d'utiliser l'adresse, l'hôte vérifie par la détection d'adresse dupliquée (DAD) qu'aucun autre équipement ne l'utilise."
+ },
+ "traceroute": {
+  "term": "traceroute",
+  "desc": "Commande qui découvre un par un les routeurs du chemin vers une destination. Elle envoie des paquets en augmentant le TTL de l'en-tête IP, 1, 2, 3, etc., et, à partir des messages ICMP Time Exceeded renvoyés par les routeurs où le TTL atteint 0, affiche l'adresse et le temps aller-retour de chaque routeur. Sous Windows, la commande s'appelle tracert. Les routeurs qui ne renvoient pas d'ICMP s'affichent sous la forme « * », ce qui ne signifie pas à lui seul qu'il y a une panne de communication.",
+  "aliases": [
+   "tracert"
+  ]
+ },
+ "経路MTU探索": {
+  "term": "Découverte de la MTU du chemin (PMTUD)",
+  "desc": "Mécanisme qui détermine la plus petite MTU du chemin entre la source et la destination (la MTU du chemin) et envoie des paquets qui ne la dépassent pas. La source envoie des paquets dont la fragmentation est interdite, et un routeur qui détruit un paquet trop grand pour passer indique par ICMP (Fragmentation Needed en IPv4, Packet Too Big en IPv6) la taille qui peut passer. Si cet ICMP est détruit en cours de route, seuls les gros paquets n'arrivent plus (trou noir de la MTU du chemin).",
+  "aliases": [
+   "path MTU discovery"
+  ]
+ },
+ "QoS": {
+  "term": "QoS (Quality of Service)",
+  "title": "QoS (Quality of Service) : marquage DSCP, files d'attente et lissage",
+  "description": "La QoS accorde priorité et bande passante aux types de trafic lorsqu'un réseau est congestionné. Comment les paquets sont classés et marqués avec DSCP, comment les files d'attente prioritaires et pondérées se partagent une liaison, et ce que font le lissage et la limitation.",
+  "desc": "Mécanismes qui, lorsqu'un réseau est congestionné, fixent des priorités et une bande passante par type de trafic pour limiter le délai et les pertes de la voix et du trafic métier important. Les paquets reçoivent une marque de leur type au moyen de DSCP et de champs analogues (marquage), et les équipements du chemin adaptent en conséquence l'affectation aux files d'attente, l'ordre d'envoi et l'ordre d'abandon. La QoS n'ajoute pas de bande passante.",
+  "about": [
+   {
+    "h": "Classification et marquage",
+    "p": "La QoS commence par classer les paquets en types (classes) selon l'adresse, le numéro de port, l'application, etc. Le résultat est inscrit sous forme de valeur dans le champ DSCP de l'en-tête IP (6 bits) ou dans la priorité de l'étiquette VLAN (PCP, 3 bits) (marquage). Les équipements du chemin peuvent alors décider du traitement en regardant seulement cette valeur, sans réexaminer le paquet en détail. La voix reçoit couramment EF (valeur 46), acheminé en priorité, et le reste du trafic métier des classes AF, entre autres."
+   },
+   {
+    "h": "Files d'attente et ordonnancement",
+    "p": "Lorsqu'une liaison sortante est congestionnée, les paquets qui ne peuvent pas être envoyés patientent dans une file d'attente. La priorité stricte (strict priority queuing), qui envoie toujours d'abord depuis la file de plus haute priorité, donne le délai le plus faible, mais en cas de fort trafic prioritaire, les autres files ne peuvent plus rien envoyer. Le round robin pondéré et la file d'attente équitable pondérée (WFQ) partagent la bande passante en proportion de poids, si bien que chaque classe dispose d'une certaine bande passante garantie. Une combinaison courante accorde la priorité stricte à la seule voix, avec un plafond de bande passante, et répartit le reste selon des poids."
+   },
+   {
+    "h": "Lissage, limitation et prévention de la congestion",
+    "p": "Il existe deux façons de maintenir le rythme d'envoi dans les limites d'une bande passante contractuelle ou d'une limite analogue : le lissage (shaping), qui met l'excédent en file d'attente et l'envoie progressivement, et la limitation (policing), qui détruit l'excédent ou le marque à nouveau. En outre, tout détruire d'un coup lorsqu'une file déborde fait ralentir en même temps de nombreux flux TCP ; des méthodes comme RED (random early detection) détruisent donc au hasard quelques paquets dès qu'une file commence à s'allonger, pour signaler tôt la congestion à TCP. La QoS n'est efficace que si la même politique est appliquée de façon cohérente sur les équipements du chemin."
+   }
+  ],
+  "faq": [
+   {
+    "q": "Configurer la QoS rend-il la ligne plus rapide ?",
+    "a": "Non. La QoS décide quel trafic peut utiliser en premier une bande passante limitée lorsque le réseau est congestionné. Si la bande passante manque en permanence, il faut augmenter le débit de la ligne. En l'absence de congestion, les réglages de QoS ne changent presque rien à la vitesse."
+   },
+   {
+    "q": "La QoS fonctionne-t-elle pour le trafic qui traverse Internet ?",
+    "a": "Elle fonctionne au sein des équipements de votre propre organisation, mais les équipements des fournisseurs d'accès sur Internet ne respectent pas forcément les valeurs DSCP que vous fixez. Pour garantir la qualité entre des sites, on utilise couramment un service de réseau privé dont la qualité peut être garantie par contrat."
+   }
+  ]
+ },
+ "SNMP": {
+  "term": "SNMP (Simple Network Management Protocol)",
+  "desc": "Protocole qui sert à surveiller et à gérer l'état d'équipements comme les routeurs et les commutateurs. Le côté qui gère (le gestionnaire, manager) interroge l'agent de l'équipement sur des valeurs définies dans la MIB, comme les compteurs de trafic des interfaces et l'utilisation du CPU, et l'équipement signale les problèmes par des traps. Le trafic se calcule en lisant les valeurs des compteurs à intervalles réguliers et en en faisant la différence. SNMPv3, qui prend en charge l'authentification et le chiffrement, est recommandé."
  }
 }
