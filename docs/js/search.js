@@ -5,8 +5,8 @@ const root = document.documentElement;
 const input = document.getElementById('site-q');
 const out = document.getElementById('search-results');
 const countEl = document.getElementById('search-count');
-const ORDER = ['c', 't', 'k', 'f', 'q'];
-const LIMIT = { c: 8, t: 12, k: 6, f: 6, q: 20 };
+const ORDER = ['l', 'c', 't', 'k', 'f', 'q'];
+const LIMIT = { l: 5, c: 8, t: 12, k: 6, f: 6, q: 20 };
 const expanded = new Set();
 
 let S, index;
