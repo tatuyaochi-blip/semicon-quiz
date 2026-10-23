@@ -1,0 +1,203 @@
+<!--
+{
+  "title": "VPNとは? 通信を守るトンネルのしくみと、できないこと",
+  "description": "VPNは、自分の端末とVPNサーバの間に暗号化した「トンネル」を作り、通信を包んで運ぶしくみです。会社のVPNと個人向けサービスの違い、守れないこと、VPN機器が狙われる理由をやさしく解説します。",
+  "series": "it-security-life",
+  "order": 5,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-04",
+  "cats": ["network", "security", "cyber-defense", "cryptography"],
+  "terms": ["VPN", "ゼロトラスト"],
+  "sources": [
+    { "title": "RFC 4301: Security Architecture for the Internet Protocol(IETF, 2005年。IPsecの全体の構成)", "url": "https://www.rfc-editor.org/rfc/rfc4301" },
+    { "title": "NIST SP 800-77 Rev. 1: Guide to IPsec VPNs(2020年。トンネルモードとVPNの使われ方)", "url": "https://csrc.nist.gov/pubs/sp/800/77/r1/final" },
+    { "title": "Kernel Newbies: Linux 5.6(2020年3月29日公開。WireGuardが本体に入った版)", "url": "https://kernelnewbies.org/Linux_5.6" },
+    { "title": "FTC Consumer Alert: Shopping for a VPN app? Read this.(2018年2月。通信はVPNの事業者のサーバを通り、信頼する相手がそちらに移るだけで、完全な匿名にはならないこと)", "url": "https://consumer.ftc.gov/consumer-alerts/2018/02/shopping-vpn-app-read" },
+    { "title": "CISA: CISA and NSA Release Guidance on Selecting and Hardening VPNs(2021年9月28日。VPNサーバはネットワークの入口で、狙われやすい)", "url": "https://www.cisa.gov/news-events/alerts/2021/09/28/cisa-and-nsa-release-guidance-selecting-and-hardening-vpns" },
+    { "title": "CISA: ED 24-01: Mitigate Ivanti Connect Secure and Ivanti Policy Secure Vulnerabilities(2024年1月19日の緊急指令)", "url": "https://www.cisa.gov/news-events/directives/ed-24-01-mitigate-ivanti-connect-secure-and-ivanti-policy-secure-vulnerabilities" },
+    { "title": "CISA: Supplemental Direction V1: ED 24-01(2024年1月31日。2月2日までに対象の機器をネットワークから切り離す指示)", "url": "https://www.cisa.gov/news-events/directives/supplemental-direction-v1-ed-24-01-mitigate-ivanti-connect-secure-and-ivanti-policy-secure" },
+    { "title": "警察庁: 令和5年におけるサイバー空間をめぐる脅威の情勢等について(2024年3月14日。ランサムウェアの報告197件、感染経路は有効回答115件のうちVPN機器73件)", "url": "https://www.npa.go.jp/publications/statistics/cybersecurity/data/R5/R05_cyber_jousei.pdf" },
+    { "title": "警察庁: 令和6年におけるサイバー空間をめぐる脅威の情勢等について(2025年3月13日。ランサムウェアの報告222件、感染経路は有効回答100件のうちVPN機器55件、リモートデスクトップ31件)", "url": "https://www.npa.go.jp/publications/statistics/cybersecurity/data/R6/R06_cyber_jousei.pdf" },
+    { "title": "警察庁: 令和7年におけるサイバー空間をめぐる脅威の情勢等について(2026年3月。ランサムウェアの報告226件、侵入経路の6割以上がVPN機器。奈良県警察のサイトに載っている写し)", "url": "https://www.police.pref.nara.jp/cmsfiles/contents/0000003/3629/R07_cyber_jousei.pdf" },
+    { "title": "NIST SP 800-207: Zero Trust Architecture(2020年8月)", "url": "https://csrc.nist.gov/pubs/sp/800/207/final" }
+  ]
+}
+-->
+<p class="lead">VPNは、自分の端末とVPNサーバの間に、暗号化した「トンネル」を作るしくみです。通信をまとめて包んで運ぶので、VPNサーバまでの途中では、中身も本当の行き先も見えません。ただし、VPNで匿名になれるわけではなく、偽サイトやウイルスも防げません。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>VPNの「トンネル」が、実際には何をしているのか</li>
+<li>会社のVPNと、個人向けのVPNサービスの違い</li>
+<li>VPNを使っても守れないことと、VPN自体の危険</li>
+<li>VPNに代わる考え方として広がる「ゼロトラスト」</li>
+</ul><p class="muted">前提知識: 特にありません。「IPアドレスとは?」「HTTPSとは?」を読んでいると、よりわかりやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>会社に入ると、「社外で仕事をするときは、VPNにつないでから」と言われることがあります。旅行先のホテルやカフェでは、「VPNで安全に」というアプリの広告を見かけるかもしれません。ニュースでは、「VPN機器から侵入された」という言葉も出てきます。</p>
+<p>同じVPNという言葉ですが、場面ごとに目的が少しずつ違います。この記事では、VPNが何をしているのかを順に見ていきます。そのうえで、できることとできないことを分けて考えます。</p>
+</section>
+
+<section>
+<h2>VPNとは: みんなの道の上に作る「専用の通り道」</h2>
+<p>昔から会社は、本社と工場のような離れた場所を、専用の回線で結んできました。ほかの人の通信が通らないので安全ですが、費用が高くつきます。そこで、誰もが使うインターネットの上で、暗号の力を借りて専用の回線のように使う方法が考えられました。暗号とは、決まった手順と「鍵」を使い、鍵を持たない人には読めない形にデータを変えることです。</p>
+<p>これを{{term:VPN}}(Virtual Private Network、仮想の専用ネットワーク)と呼びます。「仮想」とは、本物の専用線を引くのではなく、しくみの工夫で同じような働きをさせる、という意味です。実際の通信は、ほかの人と同じインターネットの回線を通ります。</p>
+</section>
+
+<section>
+<h2>VPNを使うと、通信の通り道が変わる</h2>
+<p>ふだんスマホでWebページを開くと、通信はWi-Fiや携帯の回線を通って、直接そのサイトに届きます。サイトの側には、あなたの回線のIPアドレス(ネットの宛先の番号)が見えます。IPアドレスのしくみは「<a href="{{home}}learn/what-is-an-ip-address/">IPアドレスとは?</a>」で説明しています。</p>
+<p>VPNを使うと、通信はまずVPNサーバに向かいます。VPNサーバとは、トンネルの出口になるコンピュータです。スマホとVPNサーバの間は暗号化され、VPNサーバが代わりにサイトとやり取りします。サイトから見えるのは、あなたの番号ではなくVPNサーバの番号です。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 384" role="img"><title>VPNなしでは、スマホの通信はWi-Fiや回線を通って直接サイトに届く。VPNありでは、暗号化したトンネルでVPNサーバまで運ばれ、VPNサーバがサイトとやり取りする</title>
+<text x="90" y="22" text-anchor="middle" class="a">VPNなし</text>
+<text x="270" y="22" text-anchor="middle" class="a">VPNあり</text>
+<rect x="20" y="34" width="140" height="40" rx="8" class="n"/>
+<text x="90" y="59" text-anchor="middle">スマホ</text>
+<line x1="90" y1="74" x2="90" y2="106" class="ln"/><polygon points="90,116 85,106 95,106" class="ink"/>
+<rect x="20" y="116" width="140" height="40" rx="8" class="ox"/>
+<text x="90" y="141" text-anchor="middle">Wi-Fi・回線</text>
+<line x1="90" y1="156" x2="90" y2="270" class="ln"/><polygon points="90,280 85,270 95,270" class="ink"/>
+<rect x="200" y="34" width="140" height="40" rx="8" class="n"/>
+<text x="270" y="59" text-anchor="middle">スマホ</text>
+<rect x="200" y="92" width="140" height="88" rx="22" class="ac"/>
+<text x="270" y="122" text-anchor="middle" class="a">暗号化した</text>
+<text x="270" y="144" text-anchor="middle" class="a">トンネル</text>
+<text x="270" y="166" text-anchor="middle" class="m">回線の中を通る</text>
+<line x1="270" y1="74" x2="270" y2="92" class="ac"/>
+<line x1="270" y1="180" x2="270" y2="198" class="ac"/>
+<rect x="200" y="198" width="140" height="40" rx="8" class="metal"/>
+<text x="270" y="223" text-anchor="middle">VPNサーバ</text>
+<line x1="270" y1="238" x2="270" y2="270" class="ln"/><polygon points="270,280 265,270 275,270" class="ink"/>
+<rect x="20" y="280" width="140" height="40" rx="8" class="p"/>
+<text x="90" y="305" text-anchor="middle">サイト</text>
+<rect x="200" y="280" width="140" height="40" rx="8" class="p"/>
+<text x="270" y="305" text-anchor="middle">サイト</text>
+<text x="180" y="348" text-anchor="middle" class="m">サイトに見える番号</text>
+<text x="90" y="374" text-anchor="middle">自分の回線</text>
+<text x="270" y="374" text-anchor="middle">VPNサーバ</text>
+</svg><figcaption class="fig-cap">VPNを使うと、通信はトンネルを通っていったんVPNサーバに集まり、そこからサイトへ向かいます。省略していること: 途中の多くのルータ。返事の通信も同じ道を逆にたどること。VPNサーバとサイトの間は、ふつうのインターネットの通信です(HTTPSのサイトなら、そこはHTTPSで守られます)。</figcaption></figure>
+</section>
+
+<section>
+<h2>しくみ: パケットを丸ごと包んで運ぶ</h2>
+<p>インターネットでは、データは小さなかたまりに分けて送られます。このかたまりを{{term:パケット}}と呼び、それぞれに宛先の番号が書かれています。くわしくは「<a href="{{home}}learn/how-the-internet-delivers-data/">インターネットはどうやってデータを届けるの?</a>」で説明しています。</p>
+<p>多くのVPNでは、ソフトが送りたいパケットを、宛先の部分まで含めて丸ごと暗号化します。それを、VPNサーバ宛ての新しいパケットの中身として入れて送ります。このように、パケットを別のパケットの中に包むことを「カプセル化」と呼びます。</p>
+<p>VPNサーバは、届いたパケットから中身を取り出し、鍵を使って元に戻します。そして、元のパケットを本来の宛先へ送り出します。途中の機器から見えるのは「VPNサーバ宛て」という外側の宛先だけです。この、包まれたまま運ばれる区間を、VPNでは「トンネル」と呼んでいます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 318" role="img"><title>元のパケット(宛先と中身)を丸ごと暗号化し、VPNサーバ宛ての新しいパケットの中に入れる。途中から見えるのは外側の宛先だけで、VPNサーバが取り出して元の宛先へ送る</title>
+<text x="180" y="20" text-anchor="middle" class="m">元のパケット</text>
+<rect x="10" y="30" width="340" height="56" rx="8" class="ok"/>
+<rect x="20" y="38" width="150" height="40" rx="6" class="ox"/>
+<text x="95" y="63" text-anchor="middle">宛先: サイト</text>
+<rect x="180" y="38" width="160" height="40" rx="6" class="n"/>
+<text x="260" y="63" text-anchor="middle">中身</text>
+<line x1="180" y1="86" x2="180" y2="114" class="ln"/><polygon points="180,124 175,114 185,114" class="ink"/>
+<text x="192" y="110" class="a">暗号化して包む</text>
+<rect x="10" y="126" width="340" height="96" rx="8" class="ok"/>
+<rect x="20" y="136" width="120" height="76" rx="6" class="ox"/>
+<text x="80" y="168" text-anchor="middle">宛先:</text>
+<text x="80" y="192" text-anchor="middle">VPNサーバ</text>
+<rect x="150" y="136" width="190" height="76" rx="6" class="metal"/>
+<text x="245" y="168" text-anchor="middle">元のパケット</text>
+<text x="245" y="192" text-anchor="middle" class="m">(暗号化ずみ)</text>
+<text x="180" y="252" text-anchor="middle" class="a">途中から見えるのは外側の宛先</text>
+<text x="180" y="282" text-anchor="middle">VPNサーバが取り出して、</text>
+<text x="180" y="306" text-anchor="middle">元の宛先へ送る</text>
+</svg><figcaption class="fig-cap">VPNの「トンネル」の正体は、このように包んだパケットの行き来です。省略していること: 外側の差出人(自分の番号)、書き換えを見つけるための確認用の値、方式ごとに違う見出しの中身、返事も同じように包まれて戻ること。</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>カプセル化は、手紙を入れた封筒を、さらに大きな封筒に入れて送るのに似ています。外側の封筒には転送する事務所の住所だけを書き、事務所が開けて中の封筒を本来の相手に出し直します。似ているのは「途中で見えるのは外側の宛先だけで、本当の宛先は中に隠れている」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 本物の封筒は、破れば中が読めます。VPNの中身は暗号化されているので、外側を開けられても、鍵がなければ読めません。また「トンネル」という呼び名もたとえです。地面の下に専用の道が掘られるわけではなく、ほかの通信と同じ回線を通ります。</p></aside>
+</section>
+
+<section>
+<h2>主な方式</h2>
+<p>包み方や鍵の決め方には、いくつかの方式があります。ここでは名前と特徴だけを紹介します。暗号や鍵のしくみは「<a href="{{home}}learn/what-is-encryption/">暗号とは?</a>」で説明しています。</p>
+<ul>
+<li><strong>IPsec</strong>: インターネットの基本の決まりごと(IP)に、暗号化を加える標準の方式。拠点どうしを結ぶVPNでよく使われます。</li>
+<li><strong>SSL-VPN</strong>: HTTPSと同じ{{term:TLS}}を使う方式をまとめた呼び名です。TLSの前身のSSLという名前が残っています。</li>
+<li><strong>OpenVPN</strong>: 中身が公開されているVPNのソフトで、TLSのしくみを使います。</li>
+<li><strong>WireGuard</strong>: しくみを小さく絞った新しい方式。2020年3月に公開されたLinux 5.6から、サーバなどで広く使われるOSであるLinuxの本体に組み込まれました。</li>
+</ul>
+</section>
+
+<section>
+<h2>使われ方1: 会社のVPN(リモートアクセスVPN)</h2>
+<p>会社のファイル置き場や社内向けのシステムには、社内のネットワークからしか使えないものがあります。外から誰でもつなげると危ないからです。自宅や出張先からそれらを使うために、社員のパソコンを会社のVPN装置につなぎます。これを「リモートアクセスVPN」と呼びます。</p>
+<p>つながると、パソコンは社内にいるのと同じように扱われます。会社のVPNは、使うことが規則で決められている場合が多くあります。勝手に切ったり、別のVPNを使ったりすると、規則違反になることがあります。また会社の設定によっては、つないでいる間はWebの閲覧もすべて会社を経由します。その場合、会社は通信の記録を取れます。</p>
+<p>もう1つ、本社と支社のネットワークどうしを、建物の出入口に置いた装置でつなぐ「拠点間VPN」もあります。社員はVPNを意識せず、離れた拠点のプリンタやサーバを使えます。</p>
+</section>
+
+<section>
+<h2>使われ方2: 個人向けのVPNサービス</h2>
+<p>スマホやパソコンにアプリを入れて、事業者のVPNサーバにつなぐサービスもあります。主な目的は2つです。1つは、駅やカフェの公衆Wi-Fiで、通信を途中から見られにくくすることです。もう1つは、VPNサーバのある別の場所から接続しているように見せることです。</p>
+<p>ただし、2つ目の使い方は、動画配信などのサービスが利用規約で禁じていることがあります。VPNサーバの番号を見分けて、接続を止めるサービスもあります。</p>
+<p>ここで大事なのは、VPNを使うと「誰に何が見えるか」が入れかわるだけだという点です。次の表は、HTTPSのサイトを開く場合の目安です。</p>
+<table>
+<thead><tr><th>見る人</th><th>VPNなし</th><th>VPNあり</th></tr></thead>
+<tbody>
+<tr><td>Wi-Fiや回線の事業者</td><td>相手の番号、サイトの名前、量と時刻</td><td>VPNサーバとつないでいること、量と時刻</td></tr>
+<tr><td>VPNの事業者</td><td>(関係しない)</td><td>相手の番号、サイトの名前、量と時刻</td></tr>
+<tr><td>開いたサイト</td><td>自分の回線の番号</td><td>VPNサーバの番号</td></tr>
+</tbody>
+</table>
+<p>どちらの場合も、HTTPSで守られたページの中身や入力した内容は、途中からは読めません。HTTPSでも途中から見えるもの(サイトの名前など)は、「<a href="{{home}}learn/what-does-https-mean/">HTTPSとは?</a>」で説明しています。名前を番号に変える問い合わせ({{term:DNS}})も、多くのVPNアプリはトンネルに通します。ただし設定によってはトンネルの外に漏れ、回線の事業者にサイトの名前が見えてしまいます。</p>
+</section>
+
+<section>
+<h2>VPNでできないこと</h2>
+<h3>1. 匿名にはならない</h3>
+<p>表のとおり、VPNの事業者は、どのサイトといつ、どれだけ通信したかを見られる立場にあります。米国の連邦取引委員会(FTC)も利用者向けの注意で、信頼する相手がVPNの事業者に移るだけで、完全な匿名にはならないと説明しています。さらに、サイトにログインすれば、番号が変わっても誰なのかはサイトにわかります。記録を残さないと宣伝する事業者もありますが、利用者が外から確かめるのは難しいのが実情です。</p>
+<h3>2. 偽サイトやウイルスは防げない</h3>
+<p>VPNが守るのは、端末とVPNサーバの間の「運ぶ途中」だけです。実在の会社を装った偽のサイトでパスワードを入力させる{{term:フィッシング}}は、VPNを通しても同じように届きます。悪いプログラムが入ったファイルも、暗号化されたまま運ばれてきます。端末そのものがウイルスに感染していれば、VPNの手前で情報が盗まれます。</p>
+<h3>3. 通信が速くなるわけではない</h3>
+<p>VPNでは、通信がVPNサーバを回り道します。包むための見出しも増えるので、ふつうは少し遅くなります。</p>
+</section>
+
+<section>
+<h2>VPN機器そのものが狙われる</h2>
+<p>会社のVPN装置は、社員が外からつなげるように、インターネットに向けて開いています。つまり、攻撃する側から見れば、会社の中への入口です。装置の設計や作りに欠陥があると、そこから入り込まれます。このような欠陥を「脆弱性(ぜいじゃくせい)」と呼びます。米国でサイバー安全保障を担う機関CISAは、国家安全保障局(NSA)と2021年9月に手引きを出しました。VPNサーバはネットワークの入口なので狙われやすいとして、選び方と守り方をまとめたものです。</p>
+<p>実際の例もあります。2024年1月19日、CISAは米国の連邦政府の機関に緊急指令を出しました。Ivanti社の、社外から社内につなぐためのVPN製品などの脆弱性が、広く悪用されていたためです。1月31日には、2月2日までに対象の装置をネットワークから切り離すよう求める指示も加えました。</p>
+<p>日本でも同じ傾向が見られます。会社のファイルを勝手に暗号化し、元に戻す代わりにお金を要求する悪いプログラムを{{term:ランサムウェア}}と呼びます。警察庁によると、2025年(令和7年)の被害の報告は226件でした。被害にあった組織に感染の経路をたずねると、答えの6割以上がVPN機器からの侵入でした。</p>
+<p>警察庁は、更新されていない機器の脆弱性や、漏れたり推測されやすかったりするパスワードなどが悪用されたと分析しています。守りの基本は、装置の更新をすぐに当てることと、使っていないアカウントを消すことです。さらに、パスワードに加えて別の手段でも本人を確かめる{{term:多要素認証}}を使います。</p>
+</section>
+
+<section>
+<h2>新しい考え方: ゼロトラスト</h2>
+<p>会社のVPNには、考え方の上での弱さもあります。一度つながると、社内のネットワークの多くの場所に届いてしまうことです。盗んだパスワードで入られると、攻撃者も「社内の人」として扱われます。</p>
+<p>そこで広がっているのが、{{term:ゼロトラスト}}という考え方です。社内か社外かという場所では信頼を決めず、システムやデータを使うたびに、本人か、端末は安全か、必要な使い方かを確かめます。米国の国立標準技術研究所(NIST)は、2020年8月に考え方の指針(SP 800-207)を公表しています。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>これまでのやり方は、会社の建物の入口で一度だけ社員証を見せれば、中のどの部屋にも入れる方式に似ています。ゼロトラストは、部屋ごとに社員証と用件を確かめ、必要な部屋だけを開ける方式です。似ているのは「どこで確かめるか」の違いです。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> ゼロトラストで確かめるのは、人だけではありません。使う端末の更新の状態や、いつもと違う場所からの接続かなども判断に使い、状況が変われば許可を見直します。また実際の会社では、VPNを使いながら社内も細かく区切っていることが多く、2つの方式はきれいに分かれません。</p></aside>
+<p>ゼロトラストは製品の名前ではなく、少しずつ移っていく設計の考え方です。VPNとの違いは「<a href="{{home}}compare/zero-trust-vs-perimeter-security/">境界型防御とゼロトラストの違い</a>」で表にしています。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: VPNを使えば、完全に匿名になれる</p><p>実際は、VPNの事業者には、いつどのサイトと通信したかが見えます。サイトにログインすれば、誰なのかはサイトにわかります。サイトから見える番号が変わることと、身元が隠れることは別の話です。広告で「匿名」「身元を隠す」と強調されることが、誤解のもとになっています。</p></div>
+<div class="myth"><p class="myth-q">誤解: どんなネットワークでも、VPNは必ず使うべき</p><p>実際は、今のWebの通信の多くはHTTPSで中身が守られています。家のWi-Fiや携帯の回線でVPNを使っても、サイトの名前などを見られる相手は入れかわるだけです。回線の事業者の代わりに、VPNの事業者が見られるようになります。回線の事業者より信頼できるVPNの事業者を選べるなら、意味はあります。公衆Wi-Fiでは、行き先も隠したいときやHTTPS以外の通信を守りたいときに役立ちます。会社の端末では、会社の決まりに従います。</p></div>
+<div class="myth"><p class="myth-q">誤解: VPNを使えば、ウイルスも防げる</p><p>実際は、VPNは運ぶ途中を守るだけで、運ぶ中身は調べません。偽サイトや危ない添付ファイルは、VPNを通っても届きます。危ないサイトをふさぐ機能を付けたVPNアプリもありますが、それはVPNとは別の機能です。「安全」という言葉で一緒に宣伝されるため混同されがちですが、ウイルス対策やOSの更新は別に必要です。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>時点・出典</th></tr></thead>
+<tbody>
+<tr><td>ランサムウェアの被害の報告</td><td>197件→222件→226件</td><td>2023年→2025年、警察庁</td></tr>
+<tr><td>感染経路のうちVPN機器からの侵入</td><td>115件中73件(約63%)</td><td>2023年、警察庁</td></tr>
+<tr><td>同上</td><td>100件中55件(55%)</td><td>2024年、警察庁</td></tr>
+<tr><td>同上</td><td>6割以上</td><td>2025年、警察庁</td></tr>
+<tr><td>CISAがVPN製品の脆弱性で緊急指令</td><td>2024年1月19日</td><td>CISA(ED 24-01)</td></tr>
+<tr><td>WireGuardがLinuxの本体に入った版</td><td>Linux 5.6</td><td>2020年3月公開</td></tr>
+<tr><td>ゼロトラストの指針</td><td>NIST SP 800-207</td><td>2020年8月</td></tr>
+</tbody>
+</table>
+<p>警察庁の感染経路の数字は、被害にあった組織へのアンケートで、経路がわかったものだけを数えています。被害の全体を表す数ではありません。それでも3年続けて、VPN機器が経路のいちばん多くを占めています。2024年は、離れたパソコンを画面ごと操作するしくみ(リモートデスクトップ)からの侵入31件が続きました。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>VPNとゼロトラストを表で比べる: <a href="{{home}}compare/zero-trust-vs-perimeter-security/">境界型防御とゼロトラストの違い</a></li>
+<li>会社のネットワークのほかの守り: <a href="{{home}}compare/ids-vs-ips-vs-waf-vs-firewall/">ファイアウォール・IDS・IPS・WAFの違い</a></li>
+<li>公衆Wi-Fiの暗号と注意点: 「<a href="{{home}}learn/how-wi-fi-works/">Wi-Fiのしくみとは?</a>」</li>
+<li>名前の問い合わせとプライバシー: 「<a href="{{home}}learn/how-dns-works/">DNSとは?</a>」(問い合わせそのものを暗号化する方式も)</li>
+<li>VPNのパスワードを破られにくくする: 「<a href="{{home}}learn/how-passwords-get-cracked/">パスワードはなぜ破られる?</a>」</li>
+</ul>
+</section>
