@@ -1,0 +1,217 @@
+<!--
+{
+  "title": "CPUとは? パソコンやスマホの中で何をしているのか",
+  "description": "CPU(中央処理装置)は、プログラムの命令を1つずつ取り出して計算や比較をくり返す部品です。クロック周波数やコア数の意味、GPUとの違い、x86とArmの違いまで、やさしく解説します。",
+  "series": "computer-basics",
+  "order": 2,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["cpu", "isa-assembly", "performance", "memory-hierarchy"],
+  "terms": ["ノイマン型アーキテクチャ", "命令セットアーキテクチャ(ISA)", "IPC", "SoC(システムオンチップ)", "マイコン(マイクロコントローラ)"],
+  "check": ["cpu-034", "cpu-032", "isa-assembly-001"],
+  "sources": [
+    { "title": "Intel: Fun Facts — Intel 4004 Processor Celebrates 40th Anniversary", "url": "https://download.intel.com/newsroom/kits/40thanniversary/pdfs/40_years_of_processors_facts.pdf" },
+    { "title": "Computer History Museum: Who Invented the Microprocessor?", "url": "https://computerhistory.org/blog/who-invented-the-microprocessor/" },
+    { "title": "Computer History Museum: 1971: Microprocessor Integrates CPU Function onto a Single Chip", "url": "https://www.computerhistory.org/siliconengine/microprocessor-integrates-cpu-function-onto-a-single-chip/" },
+    { "title": "Intel Newsroom: What is x86 Architecture? A Primer to the Foundation of Modern Computing", "url": "https://newsroom.intel.com/tech101/x86-architecture-foundation-of-modern-computing" },
+    { "title": "Apple Newsroom: Apple unleashes M1 (2020年11月)", "url": "https://www.apple.com/newsroom/2020/11/apple-unleashes-m1/" },
+    { "title": "Apple Support: iPhone 15 Pro - Tech Specs", "url": "https://support.apple.com/en-us/111829" },
+    { "title": "Apple Support: If you need to install Rosetta on Mac", "url": "https://support.apple.com/en-us/102527" },
+    { "title": "Apple Developer: Building a universal macOS binary", "url": "https://developer.apple.com/documentation/apple-silicon/building-a-universal-macos-binary" },
+    { "title": "Arm Holdings plc: Form 20-F(2024年3月期の年次報告、米SEC)", "url": "https://www.sec.gov/Archives/edgar/data/1973239/000197323924000012/arm-20240331.htm" },
+    { "title": "Arm Newsroom: What is IPC and why it matters to mobile", "url": "https://newsroom.arm.com/blog/what-is-ipc-and-why-it-matters-to-mobile" },
+    { "title": "J. L. Hennessy, D. A. Patterson: A New Golden Age for Computer Architecture, Communications of the ACM 62(2), 2019", "url": "https://doi.org/10.1145/3282307" },
+    { "title": "NVIDIA Blog: What's the Difference Between a CPU and a GPU?", "url": "https://blogs.nvidia.com/blog/whats-the-difference-between-a-cpu-and-a-gpu/" },
+    { "title": "IEEE Spectrum: How Software Is Eating the Car (2021年)", "url": "https://spectrum.ieee.org/software-eating-car" }
+  ]
+}
+-->
+<p class="lead">CPU(中央処理装置)は、プログラムに書かれた命令を1つずつ取り出し、そのとおりに計算やデータの読み書きをする部品です。1つの命令は「足す」「比べる」のような単純なものですが、これを1秒間に数十億回という速さでくり返します。パソコンやスマホのアプリも、車や家電の制御も、この単純なくり返しの積み重ねで動いています。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>CPUが実際にしていること(命令を取り出して実行する、のくり返し)</li>
+<li>「3GHz」「8コア」などの数字の意味と、数字だけで速さが決まらない理由</li>
+<li>CPUとメモリ・ストレージ・GPUの役割の違い</li>
+<li>パソコン用のアプリがスマホでそのまま動かない理由(命令セットの違い)</li>
+</ul><p class="muted">前提知識: 特にありません。トランジスタを「電気で切り替わる小さなスイッチ」と知っていると、後半が読みやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>スマホで写真をタップして拡大する。表計算ソフトで合計を出す。エアコンが部屋の温度に合わせて風を弱める。こうした動作の裏では、どれもCPUが働いています。</p>
+<p>パソコンやスマホの仕様表には、「最大3.5GHz」「8コア」のような数字が並びます。ニュースでは「x86」「Arm」という言葉も出てきます。この記事では、CPUが実際に何をしているかを順に見ながら、これらの数字や言葉の意味を説明します。</p>
+</section>
+
+<section>
+<h2>CPUの仕事は「命令」を実行すること</h2>
+<p>CPUの仕事を一言でいうと、プログラムを実行することです。プログラムとは、コンピュータにさせたい作業を、ごく小さな手順に分けて並べたものです。この1つ1つの手順を「命令」と呼びます。</p>
+<p>CPUが直接こなせる命令は、意外なほど単純です。代表的なのは次のような種類です。</p>
+<ul>
+<li><strong>読み込む・書き込む</strong>: メモリから数を持ってくる。メモリへ数をしまう</li>
+<li><strong>計算する</strong>: 2つの数を足す、引く など</li>
+<li><strong>比べる</strong>: 2つの数のどちらが大きいか、等しいかを調べる</li>
+<li><strong>飛ぶ</strong>: 比べた結果に応じて、次に実行する命令の場所を変える</li>
+</ul>
+<p>例えば「ボタンが押されたら、画面の数字を1増やす」という作業を考えます。CPUの中では、これが「数を読み込む」「1を足す」「書き戻す」という命令の列になります。「押されたかどうか」の判断は、「比べる」と「飛ぶ」の組み合わせで作ります。写真の加工もゲームも、元をたどればこうした命令の膨大な組み合わせです。</p>
+<p>CPUが受け取る命令は、文字ではなく0と1の並びで書かれています。この形のプログラムを「機械語」と呼びます。人が書いたプログラムは、機械語に変換してからCPUに実行させます。なお、ここでは話を簡単にするため、命令の種類は代表的なものだけを挙げました。</p>
+</section>
+
+<section>
+<h2>「取り出す→解読する→実行する」のくり返し</h2>
+<p>命令の列は、メモリという部品に置かれています。メモリは、たくさんの数を、番地(場所の番号)をつけて記憶しておく部品です。CPUは番地を指定して、メモリの中身を読んだり書いたりします。</p>
+<p>プログラムの命令も、計算に使うデータも、同じメモリに並べて置きます。プログラムを入れ替えるだけで、同じ機械がまったく別の仕事をできるのは、このためです。この方式を{{term:ノイマン型アーキテクチャ|ノイマン型}}と呼び、今のほとんどのコンピュータがこの考え方で作られています。</p>
+<p>CPUは、次の3つの段階をひたすらくり返します。</p>
+<ol>
+<li><strong>取り出す(フェッチ)</strong>: 次に実行する命令を、メモリから持ってくる</li>
+<li><strong>解読する(デコード)</strong>: その0と1の並びが、何をせよという命令なのかを読み解く</li>
+<li><strong>実行する</strong>: 計算や比較をする。必要ならメモリのデータを読み書きする</li>
+</ol>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 410" role="img"><title>CPUがメモリから命令を取り出し、解読し、実行するくり返し</title>
+<text x="18" y="24">CPU</text>
+<rect x="8" y="34" width="364" height="124" rx="10" class="hole"/>
+<rect x="18" y="46" width="104" height="58" rx="8" class="ox"/>
+<text x="70" y="68" text-anchor="middle">① 取り出す</text>
+<text x="70" y="94" text-anchor="middle" class="m">フェッチ</text>
+<rect x="138" y="46" width="104" height="58" rx="8" class="ox"/>
+<text x="190" y="68" text-anchor="middle">② 解読する</text>
+<text x="190" y="94" text-anchor="middle" class="m">デコード</text>
+<rect x="258" y="46" width="104" height="58" rx="8" class="ox"/>
+<text x="310" y="68" text-anchor="middle">③ 実行する</text>
+<text x="310" y="94" text-anchor="middle" class="m">計算・比較</text>
+<line x1="122" y1="75" x2="131" y2="75" class="ln"/><polygon points="138,75 130,70 130,80" class="ink"/>
+<line x1="242" y1="75" x2="251" y2="75" class="ln"/><polygon points="258,75 250,70 250,80" class="ink"/>
+<polyline points="310,104 310,122 70,122 70,113" class="ln"/><polygon points="70,105 65,114 75,114" class="ink"/>
+<text x="190" y="146" text-anchor="middle" class="m">①に戻ってくり返す</text>
+<line x1="100" y1="236" x2="100" y2="168" class="ac"/><polygon points="100,159 95,168 105,168" class="fa"/>
+<text x="110" y="192" class="m">命令を読む</text>
+<line x1="310" y1="168" x2="310" y2="227" class="ac2"/><polygon points="310,159 305,168 315,168" class="fa2"/><polygon points="310,236 305,227 315,227" class="fa2"/>
+<text x="300" y="216" text-anchor="end" class="m">データの読み書き</text>
+<text x="18" y="228">メモリ</text>
+<rect x="8" y="236" width="364" height="130" rx="10" class="hole"/>
+<rect x="18" y="248" width="170" height="30" rx="4" class="n"/>
+<text x="103" y="268" text-anchor="middle">命令: 読み込む</text>
+<rect x="18" y="284" width="170" height="30" rx="4" class="n"/>
+<text x="103" y="304" text-anchor="middle">命令: 1を足す</text>
+<rect x="18" y="320" width="170" height="30" rx="4" class="n"/>
+<text x="103" y="340" text-anchor="middle">命令: 書き戻す</text>
+<rect x="200" y="248" width="162" height="30" rx="4" class="p"/>
+<text x="281" y="268" text-anchor="middle">データ: 41</text>
+<rect x="200" y="284" width="162" height="30" rx="4" class="p"/>
+<text x="281" y="304" text-anchor="middle">データ: 7</text>
+<text x="190" y="396" text-anchor="middle" class="a">①〜③を1秒に数十億回くり返す</text>
+</svg><figcaption class="fig-cap">CPUはメモリから命令を1つ取り出し(①)、解読し(②)、実行します(③)。実行のときに必要ならデータを読み書きし、また①に戻ります。省略していること: 次の命令の場所を覚える仕組み、CPUの中の小さな記憶場所、複数の命令を重ねて進める工夫。</figcaption></figure>
+<p>次にどの番地の命令を取り出すかは、CPUの中の小さな記憶場所が覚えています。これを「プログラムカウンタ」と呼びます。ふだんは1つ実行するごとに次の番地へ進み、「飛ぶ」命令のときだけ別の番地に書き換わります。くり返しや、条件による分かれ道は、このしくみで作られています。</p>
+<p>実際のCPUは、この3段階を1命令ずつ待つのではなく、流れ作業のように重ねて進めます。これを{{term:パイプライン処理}}と呼びます。さらに、複数の命令を同時に進めるCPUも普通です。それでも結果は、プログラムの順番どおりに1つずつ実行したときと同じになるように作られています。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>CPUは、手順書を1行ずつ読んで作業する、とても速くて正確な作業係に似ています。作業係は「いま何行目か」をしおりで覚えています。1行読んでは作業し、しおりを次の行へ進めます。手順書に「3行目に戻る」とあれば、しおりを戻します。似ているのは「書かれた手順を、決まった順番で1つずつこなす」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 人の作業係は手順の意味を理解し、おかしな指示に気づくこともできます。CPUは命令の意味を理解しません。手順が間違っていても、気づかずにそのとおり実行します。また、CPUの「1行」は「足す」「比べる」程度のとても小さな作業で、人の手順書の1行よりはるかに細かいものです。</p></aside>
+</section>
+
+<section>
+<h2>クロック周波数: 「3GHz」は何の数字?</h2>
+<p>CPUの中の回路は、一定の間隔で来る合図に合わせて、少しずつ処理を進めます。この合図を「クロック」と呼びます。オンとオフを規則正しくくり返す電気の信号です。</p>
+<p>クロック周波数は、この合図が1秒間に何回来るかを表します。単位のHz(ヘルツ)は「1秒あたりの回数」で、G(ギガ)は10億です。つまり3GHzは、1秒間に30億回の合図が来るという意味です。合図の間隔は、約0.33ナノ秒(1ナノ秒は10億分の1秒)しかありません。</p>
+<p>ただし、合図1回でいくつの命令を終えられるかは、CPUの設計によって違います。この「1クロックあたりに実行できる命令の数」を{{term:IPC}}(Instructions Per Cycleの略)と呼びます。1秒間に実行できる命令の数は、大まかに言えば「クロック周波数 × IPC」です。周波数が同じでも、IPCが2倍なら、同じ時間に2倍の命令を実行できます。</p>
+<p>また、今のCPUは、仕事の量や温度に応じて周波数を細かく上げ下げしています。仕様表の「最大〇GHz」は条件がよいときの上限で、いつもその速さで動くわけではありません。</p>
+</section>
+
+<section>
+<h2>コア: 命令を実行する部分が、いくつもある</h2>
+<p>命令を取り出して実行する、ひとそろいの回路を「コア」と呼びます。昔のCPUは、1つのチップ(シリコンの小さな板に回路を作り込んだ部品)にコアが1つでした。今は、ほとんどのCPUが複数のコアを持っています。8コアのCPUなら、8つの作業(命令の列)を同時に進められます。</p>
+<p>コアが増えたのは、クロック周波数を上げ続けることが難しくなったからです。周波数を上げるには電圧も上げる必要があり、消費電力と発熱が急に増えます。2000年代の半ばには、パソコン用CPUの周波数は数GHzで伸び悩みました。そこで各社は、周波数を上げる代わりにコアを増やす方向へ進みました。</p>
+<p>スマホのCPUには、性能の高い大きなコアと、電力の少ない小さなコアを組み合わせたものが多くあります。例えばiPhone 15 Pro(2023年)のCPUは6コアです。Appleの仕様では、高性能コア2つと高効率コア4つです。メールの受信のような軽い仕事は小さなコアに任せ、電池の減りを抑えます。</p>
+</section>
+
+<section>
+<h2>CPU・メモリ・ストレージの役割の違い</h2>
+<p>CPUの中にも記憶する場所はありますが、量はごくわずかです。CPUが作業する間、プログラムとデータは主にメモリ(メインメモリ)に置かれます。仕様表で「メモリ 8GB」などと書かれているのが、これです。今のメモリはふつう{{term:DRAM(ダイナミックRAM)|DRAM}}という部品で、速く読み書きできますが、電源を切ると中身が消えます。</p>
+<p>一方、写真やアプリを、電源を切っても残しておく場所が「ストレージ」です。スマホの「256GB」や、パソコンの{{term:SSD}}がこれにあたります。アプリを起動すると、その中身がストレージからメモリへ読み込まれ、CPUはメモリ上の命令を実行します。</p>
+<p>CPUから見ると、メモリでさえ遠く、読み出しを待つ時間がかかります。そこでCPUは、よく使うデータの写しを、自分のすぐそばの小さく速い記憶場所に置いています。これを{{term:キャッシュメモリ|キャッシュ}}と呼びます。メモリとストレージの違いは、別の記事でくわしく説明する予定です。</p>
+</section>
+
+<section>
+<h2>CPUはどこにある?</h2>
+<p>パソコンでは、CPUが独立した1つのチップとして作られていることがよくあります。ただし、最近はスマホと同じ作り方のパソコンも増えています。</p>
+<p>スマホでは、CPUは単独の部品ではありません。CPU、画像を描く回路、通信の回路などを1つのチップにまとめた{{term:SoC(システムオンチップ)|SoC}}の一部として入っています。1つにまとめると、小さく、電力も少なくできます。Appleが2020年からMacに使っているM1などのチップも、このSoCです。</p>
+<p>車や家電の中にもCPUがあります。多くは、CPUに小さなメモリや入出力の回路を足して1チップにした{{term:マイコン(マイクロコントローラ)|マイコン}}という形です。炊飯器の火加減、エアコンの風量、車のエンジンやブレーキの制御などを受け持ちます。技術誌IEEE Spectrum(2021年)によると、高級車では、こうした制御用のコンピュータが150個以上のものもあります。</p>
+<p>マイコンとパソコン用のCPUの違いは「<a href="{{home}}compare/mcu-vs-mpu/">MCUとMPUの違い</a>」で表にまとめています。</p>
+</section>
+
+<section>
+<h2>CPUとGPUの違い</h2>
+<p>パソコンやスマホには、CPUのほかに{{term:GPU}}という計算用の部品もあります。GPUは、もともと画面の絵を描くために作られました。画面の何百万個もの点の色を、同じ手順でいっせいに計算する仕事です。</p>
+<p>CPUとGPUの違いは、得意な仕事の形にあります。CPUは比較的少ない数の高性能なコアで、分かれ道の多いさまざまな仕事を、1つずつ素早く片付けるのが得意です。GPUは単純な計算の回路を数千個も並べ、同じ計算を大量のデータにまとめて行うのが得意です。AIの計算にGPUがよく使われるのは、その多くが「同じ計算の大量のくり返し」だからです。</p>
+<p>どちらが上というわけではなく、役割分担です。ふつうはCPUが全体の段取りをして、向いた計算をGPUに任せます。違いは「<a href="{{home}}compare/cpu-vs-gpu/">CPUとGPUの違い</a>」で表にまとめています。</p>
+</section>
+
+<section>
+<h2>CPUはトランジスタでできている</h2>
+<p>CPUの回路は、トランジスタという、電気で切り替わる小さなスイッチを大量につないで作られています。スイッチを組み合わせると、「2つの入力がどちらも1なら1を出す」のような簡単な判断をする回路ができます。これを「論理回路」と呼びます。</p>
+<p>論理回路をさらに組み合わせると、0と1で表した数(2進数)を足す回路や、数を覚えておく回路ができます。それらを何段にも組み合わせたものが、命令を取り出し、解読し、実行するCPUです。トランジスタのしくみは「<a href="{{home}}learn/what-is-a-transistor/">トランジスタとは?</a>」で説明しています。論理回路は「<a href="{{home}}tools/logic-circuit-simulator/">論理回路シミュレーター</a>」で、実際に組んで試せます。</p>
+<p>CPUに使われるトランジスタの数は、時代とともに大きく増えました。1971年に発売されたIntelの4004は、1つのチップに収めた最初期のCPU(マイクロプロセッサ)です。そのトランジスタは約2,300個でした。2020年に発表されたAppleのM1は、約160億個です。ただし、M1の数はCPUの部分だけでなく、GPUなどを含むチップ全体の数です。</p>
+</section>
+
+<section>
+<h2>命令セット: x86とArmの違い</h2>
+<p>CPUがどんな命令を持ち、それぞれを0と1のどんな並びで表すか。この取り決めを{{term:命令セットアーキテクチャ(ISA)|命令セット}}と呼びます。正式には「命令セットアーキテクチャ(ISA)」といいます。命令セットは、ソフトウェアとCPUの間の約束ごとです。同じ命令セットのCPUなら、中の回路の作りや速さが違っても、同じ機械語のプログラムを実行できます。</p>
+<p>広く使われている命令セットの代表は2つです。1つは、Intelが1978年に発表した8086から続く「x86」です。多くのWindowsパソコンやサーバーで使われています。もう1つは「Arm」です。Arm社の2024年3月期の年次報告によると、スマホ向けのCPUでのArmの割合は、長年99%を超えています。</p>
+<p>パソコン用のアプリがスマホでそのまま動かない理由の1つが、この違いです。人が書いたプログラムは、変換用のソフトで機械語にしてから配るのが一般的です。このとき、どの命令セット用の機械語にするかを決めます。x86用の機械語は、ArmのCPUにとっては意味の通らない0と1の並びです。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 296" role="img"><title>同じプログラムでも、命令セットごとに別の機械語になる</title>
+<rect x="40" y="8" width="300" height="40" rx="8" class="metal"/>
+<text x="190" y="33" text-anchor="middle">人が書いたプログラム</text>
+<line x1="90" y1="48" x2="90" y2="93" class="ln"/><polygon points="90,102 85,93 95,93" class="ink"/>
+<line x1="290" y1="48" x2="290" y2="93" class="ln"/><polygon points="290,102 285,93 295,93" class="ink"/>
+<text x="190" y="80" text-anchor="middle" class="m">命令セットごとに変換</text>
+<rect x="10" y="102" width="160" height="40" rx="6" class="n"/>
+<text x="90" y="127" text-anchor="middle">x86の機械語</text>
+<rect x="210" y="102" width="160" height="40" rx="6" class="p"/>
+<text x="290" y="127" text-anchor="middle">Armの機械語</text>
+<line x1="90" y1="142" x2="90" y2="185" class="ac"/><polygon points="90,194 85,185 95,185" class="fa"/>
+<line x1="290" y1="142" x2="290" y2="185" class="ac"/><polygon points="290,194 285,185 295,185" class="fa"/>
+<text x="100" y="174" class="a">動く</text>
+<text x="300" y="174" class="a">動く</text>
+<line x1="150" y1="142" x2="250" y2="194" class="dash"/>
+<line x1="191" y1="159" x2="209" y2="177" class="ac"/><line x1="209" y1="159" x2="191" y2="177" class="ac"/>
+<rect x="10" y="194" width="160" height="40" rx="6" class="ox"/>
+<text x="90" y="219" text-anchor="middle">x86のCPU</text>
+<rect x="210" y="194" width="160" height="40" rx="6" class="ox"/>
+<text x="290" y="219" text-anchor="middle">ArmのCPU</text>
+<text x="190" y="262" text-anchor="middle" class="m">x86の機械語は、ArmのCPUでは</text>
+<text x="190" y="284" text-anchor="middle" class="m">そのままでは動かない</text>
+</svg><figcaption class="fig-cap">同じプログラムでも、命令セットごとに別の機械語に変換します。省略していること: OSの違い、別の命令セットの機械語を変換して動かす仕組み、実行の直前に機械語へ変換する方式。</figcaption></figure>
+<p>ただし、これは話を単純にした説明です。実際には、コンピュータ全体を管理する基本ソフト(OS)の違いもあります。同じCPUでも、WindowsのアプリはそのままではAndroidで動きません。逆に、変換の仕組みを使えば、別の命令セット用のアプリを動かすこともできます。</p>
+<p>例えばAppleは2020年から、MacのCPUをIntel製からArm系の自社チップに切り替えました。その際、Intel用のアプリを変換して動かす「Rosetta 2」という仕組みを用意しました。また、1つのアプリに両方の機械語を入れて配る方法もあり、Appleはアプリの作り手にこちらを勧めています。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: CPUはコンピュータの「脳」で、自分で考えている</p><p>実際は、CPUは命令の意味を理解せず、書かれた命令を書かれたとおりに実行するだけです。アプリが賢く見えるのは、人が作ったプログラムがよくできているからです。AIの場合も、大量のデータから作られた計算の手順を、CPUやGPUが実行しています。また、プログラムやデータの大部分は、CPUの外のメモリやストレージにあります。「脳」というたとえは、考えたり覚えたりしているという誤解を生みやすいので、この記事では使っていません。</p></div>
+<div class="myth"><p class="myth-q">誤解: GHzの数字が大きいCPUほど速い</p><p>実際は、速さはクロック周波数だけでは決まりません。1クロックで終えられる命令の数(IPC)、コアの数、メモリを待つ時間などが大きく影響します。設計の違うCPUどうしでは、周波数の低いほうが速いこともよくあります。同じシリーズの製品どうしなら、周波数も目安になります。メーカーや世代が違うときは、用途に近いプログラムで実際に測った結果(ベンチマーク)で比べるのが確実です。</p></div>
+<div class="myth"><p class="myth-q">誤解: コアが2倍になれば、何でも2倍速くなる</p><p>実際は、速くなるのは、同時に進められる形に分けられる部分だけです。前の計算の結果を待たないと次に進めない部分は、コアを増やしても速くなりません。この限界を{{term:アムダールの法則}}と呼びます。「<a href="{{home}}tools/amdahl-law-speedup-calculator/">アムダールの法則の計算ツール</a>」で、分けられる割合とコア数を変えて確かめられます。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>くらべると</th></tr></thead>
+<tbody>
+<tr><td>3GHzのクロック1回の間隔</td><td>約0.33ナノ秒</td><td>光でも約10cmしか進めない時間</td></tr>
+<tr><td>Intel 4004のクロック(1971年)</td><td>最大740kHz(1秒に74万回)</td><td>今の数GHzのCPUは、その数千倍</td></tr>
+<tr><td>トランジスタの数</td><td>4004は約2,300個、M1(2020年)は約160億個</td><td>約50年で約700万倍</td></tr>
+<tr><td>iPhone 15 Pro(2023年)のCPUのコア</td><td>6コア</td><td>高性能2つ+高効率4つ</td></tr>
+<tr><td>スマホ向けのCPUでのArmの割合</td><td>99%超</td><td>Arm社の2024年3月期の年次報告</td></tr>
+</tbody>
+</table>
+<p>光は1秒に約30万km進みます。それを30億回に分けると、1回あたり約10cmです。CPUの中の信号は、この短い時間のうちに回路を通り抜けなければなりません。</p>
+<p>表を見ると、クロックが数千倍になった間に、トランジスタの数は約700万倍になっています。CPUが速くなった理由は、周波数だけではありません。増えたトランジスタを使って、コアやキャッシュを増やし、1クロックでこなせる命令を増やしてきたことが大きいのです。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>問題で確かめる: <a href="{{home}}c/cpu/">CPU・アーキテクチャ</a>(基本の問題から)、<a href="{{home}}c/isa-assembly/">命令セット・アセンブリ</a>、<a href="{{home}}c/performance/">性能評価・プロファイリング</a>、<a href="{{home}}c/memory-hierarchy/">メモリ階層と性能</a></li>
+<li>違いを表で見る: <a href="{{home}}compare/risc-vs-cisc/">RISCとCISCの違い</a>(命令セットの設計の考え方)、<a href="{{home}}compare/asic-vs-fpga-vs-soc/">ASIC・FPGA・SoCの違い</a></li>
+<li>次の一歩の用語: {{term:分岐予測}}、{{term:スーパースカラ}}(CPUが速く動くための工夫)</li>
+<li>図で見る: 命令を重ねて進めるパイプラインやメモリの階層は、<a href="{{home}}figures/">図解</a>の一覧にあります</li>
+<li>順番に学ぶ: 学習コース「<a href="{{home}}course/transistor-to-software/">トランジスタからソフトまで</a>」</li>
+<li>土台から読む: 「<a href="{{home}}learn/what-is-a-semiconductor/">半導体とは?</a>」</li>
+</ul>
+</section>
