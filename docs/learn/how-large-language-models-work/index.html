@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>生成AIはどう動く? 大規模言語モデルのしくみ | 半導体教室</title>
+<meta name="description" content="文章を作る生成AIの中心は大規模言語モデルです。文章の続きを1トークンずつ確率で予測して書き足します。学習の3段階、Transformerとアテンション、間違える理由と安全な使い方をやさしく解説します。">
+<link rel="canonical" href="https://semiconroom.com/learn/how-large-language-models-work/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/learn/how-large-language-models-work/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/learn/how-large-language-models-work/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/learn/how-large-language-models-work/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/learn/how-large-language-models-work/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="生成AIはどう動く? 大規模言語モデルのしくみ | 半導体教室">
+<meta property="og:description" content="文章を作る生成AIの中心は大規模言語モデルです。文章の続きを1トークンずつ確率で予測して書き足します。学習の3段階、Transformerとアテンション、間違える理由と安全な使い方をやさしく解説します。">
+<meta property="og:url" content="https://semiconroom.com/learn/how-large-language-models-work/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"やさしい解説","item":"https://semiconroom.com/learn/"},{"@type":"ListItem","position":3,"name":"生成AIはどう動く? 大規模言語モデルのしくみ","item":"https://semiconroom.com/learn/how-large-language-models-work/"}]},{"@context":"https://schema.org","@type":"Article","headline":"生成AIはどう動く? 大規模言語モデルのしくみ","description":"文章を作る生成AIの中心は大規模言語モデルです。文章の続きを1トークンずつ確率で予測して書き足します。学習の3段階、Transformerとアテンション、間違える理由と安全な使い方をやさしく解説します。","inLanguage":"ja","datePublished":"2026-10-23","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/learn/how-large-language-models-work/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/learn/how-large-language-models-work/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/learn/how-large-language-models-work/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/learn/how-large-language-models-work/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/" lang="ko" data-lang="ko">한국어</a><a href="/de/" lang="de" data-lang="de">Deutsch</a><a href="/nl/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/learn/">やさしい解説</a> <span>›</span> <a href="/learn/#s-it-security-life">セキュリティと暮らしの IT</a></nav>
+<article class="prose learn-article">
+<h1>生成AIはどう動く? 大規模言語モデルのしくみ</h1>
+<p class="learn-meta">約14分 · 更新: 2026年10月23日</p>
+
+<p class="lead">文章を作る生成AIの中心にあるのは、「大規模言語モデル」と呼ばれる計算のしくみです。していることは、それまでの文章に続く「次のひと区切り」を予測して書き足す、というくり返しです。学んだ文章の傾向をもとに書くので、流れるような文でも事実と違うことがあり、大事な内容は確かめる必要があります。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>大規模言語モデルが実際にしていること(続きの予測)と、トークンという単位</li>
+<li>1トークンずつ文章を作るしくみと、答えが毎回変わる理由</li>
+<li>パラメータの意味と、学習のよくある3つの段階</li>
+<li>Transformerとアテンション、一度に見られる長さの上限</li>
+<li>もっともらしい間違いが起きる理由と、安全な使い方</li>
+</ul><p class="muted">前提知識: 特にありません。AIの計算の中身(数を掛けて足すくり返し)は「<a href="/learn/why-gpus-for-ai/">なぜAIにGPUが使われるの?</a>」で説明しています。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>質問を打ち込むと、AIが文章で答えを返してくれます。メールの下書き、長い文書の要約、外国語の翻訳にも使われています。このように、文章や画像などを新しく作るAIを「生成AI」と呼びます。</p>
+<p>この記事では、生成AIのうち文章を作るものを扱います。その中心にあるのが「大規模言語モデル」です。英語の頭文字をとって、LLMとも呼ばれます。ニュースでは製品の名前が先に出てきますが、中のしくみの基本は共通しています。</p>
+<p>製品ごとの細かな作りは、公開されていないことも多くあります。そこでこの記事では、論文や公的な資料で確かめられる、多くのモデルに共通する考え方に絞って説明します。</p>
+</section>
+
+<section>
+<h2>していることは「続きを当てる」</h2>
+<p>言語モデルとは、文章の続きに何が来やすいかを、確率で表す計算のしくみです。確率は、その候補がどのくらい来やすいかを0〜100%で表した数です。「大規模」の意味は、後で説明します。</p>
+<p>例えば「今日はとても天気が」と入力されたとします。モデルは、次に来うる候補の1つ1つに確率をつけます。「いい」は高く、「悪い」はそれより低く、関係のない言葉はほぼ0です。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 372" role="img"><title>「今日はとても天気が」に続く候補に、確率がつく</title>
+<rect x="30" y="8" width="300" height="40" rx="8" class="n"/>
+<text x="180" y="34" text-anchor="middle">今日はとても天気が</text>
+<line x1="180" y1="48" x2="180" y2="68" class="ln"/><polygon points="180,77 175,68 185,68" class="ink"/>
+<rect x="100" y="80" width="160" height="40" rx="8" class="ox"/>
+<text x="180" y="106" text-anchor="middle">言語モデル</text>
+<line x1="180" y1="120" x2="180" y2="140" class="ln"/><polygon points="180,149 175,140 185,140" class="ink"/>
+<text x="20" y="174" class="m">次に来る候補と確率</text>
+<text x="20" y="201">いい</text>
+<rect x="100" y="186" width="176" height="22" rx="3" class="fa"/>
+<text x="284" y="202" class="a">55%</text>
+<text x="20" y="233">よく</text>
+<rect x="100" y="218" width="64" height="22" rx="3" class="p"/>
+<text x="172" y="234">20%</text>
+<text x="20" y="265">悪い</text>
+<rect x="100" y="250" width="38" height="22" rx="3" class="p"/>
+<text x="146" y="266">12%</text>
+<text x="20" y="297">変わり</text>
+<rect x="100" y="282" width="26" height="22" rx="3" class="p"/>
+<text x="134" y="298">8%</text>
+<text x="20" y="329">その他</text>
+<rect x="100" y="314" width="16" height="22" rx="3" class="p"/>
+<text x="124" y="330">5%</text>
+<text x="180" y="364" text-anchor="middle" class="a">1つを選んで書き足し、くり返す</text>
+</svg><figcaption class="fig-cap">入力の続きに来る候補に、モデルが確率をつけます。確率に応じて1つを選び(ここでは「いい」)、文の最後に書き足して、同じことをくり返します。省略していること: 候補と確率の数字は説明のために作ったものです。実際は、モデルが使う全部の区切り(Llama 3では約12万8千種類)に確率がつきます。</figcaption></figure>
+<p>この確率は、だれかが表に書き込んだものではありません。大量の文章から学ぶうちに、計算のしかたが少しずつ決まっていった結果です。どう学ぶかは、後の「学習のよくある3つの段階」で説明します。</p>
+</section>
+
+<section>
+<h2>トークン: 文章を区切る単位</h2>
+<p>図の候補は、単語とは限りません。言語モデルは、文章を小さな区切りに分けて扱います。この区切りを「トークン」と呼びます。1文字のことも、数文字のまとまりのこともあります。</p>
+<p>例えば「今日は晴れです」は、「今日」「は」「晴れ」「です」のように分けられることがあります。ただし、これは説明のための例です。区切り方はモデルごとに決まっていて、同じ文でもモデルが違えば、トークンの数は変わります。</p>
+<p>モデルが一度に扱える文章の長さや、サービスの利用料金は、トークンの数で数えられることがよくあります。文字数とは一致しないので、目安として考えるのがよいでしょう。</p>
+</section>
+
+<section>
+<h2>1トークンずつ書き足していく</h2>
+<p>答えの文章は、一度にまとめて作られるわけではありません。まず次の1トークンを選び、文章の最後に書き足します。書き足した文章全体を手がかりに、また次の1トークンを選びます。これを、「ここで終わり」を表す特別なトークンが選ばれるか、決めた長さに達するまでくり返します。</p>
+<p>次のトークンは、いちばん確率の高いものが選ばれるとは限りません。多くの場合、確率に応じた当たりやすさのくじ引きのように選びます。この選び方を「サンプリング」と呼びます。同じ質問をしても答えが毎回少し違うのは、主にこのためです。</p>
+<p>いつも1位だけを選ぶと、文章が単調になったり、同じ言い回しをくり返したりしやすくなります。Holtzmanらの研究(2019年発表)はこの問題を調べ、確率の低い候補を切り捨ててからくじを引く方法を提案しました。また、くじの偏り方は「温度」という設定で変えられます。温度を低くすると上位の候補がさらに選ばれやすくなり、答えのばらつきが小さくなります。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>スマホで文字を打つと、次に続きそうな言葉の候補が出てきます(予測変換)。言語モデルの働きは、これに似ています。似ているのは、それまでの文字から、次に来やすいものを出すという点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 予測変換では、候補から選ぶのは人です。言語モデルは自分で選んで書き足し続け、長い文章を作ります。また、言語モデルは直前の数文字だけでなく、質問や会話の長い流れ全体を手がかりにします。</p></aside>
+</section>
+
+<section>
+<h2>パラメータ: 学習で調整される大量の数</h2>
+<p>文字はそのままでは計算できないので、モデルはトークンを数の並びに直してから計算します。その数に、決まった数を掛けて足す計算を、何段も重ねます。この計算で、どの入力をどれだけ重く見るかなどを決める数を「パラメータ」と呼びます。</p>
+<p>パラメータは、人が1つずつ決めるのではありません。学習の始めはでたらめな値で、予測が当たるように少しずつ直していきます。直し終えたパラメータの値の組に、モデルが学んだことが詰まっています。掛けて足す計算の中身は「<a href="/learn/why-gpus-for-ai/">なぜAIにGPUが使われるの?</a>」で説明しています。</p>
+<p>大規模言語モデルの「大規模」は、主にこのパラメータがとても多いことを指します。例えば、Metaが2024年に公開したLlama 3.1の最大のモデルは、パラメータが約4,050億個です。中身を公開していないモデルも多く、その数は外から確かめられないため、ここでは公開されたモデルを例にしました。</p>
+</section>
+
+<section>
+<h2>学習のよくある3つの段階</h2>
+<p>大規模言語モデルは、ふつう何段階かに分けて学習します。ここでは、よく使われる3段階の流れを紹介します。段階の分け方や方法は、開発元によって違います。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 322" role="img"><title>大規模言語モデルの学習の、よくある3つの段階</title>
+<rect x="10" y="8" width="340" height="70" rx="10" class="n"/>
+<text x="24" y="36">① 事前学習</text>
+<text x="24" y="63" class="m">大量の文章で、続きを当てる練習</text>
+<line x1="180" y1="78" x2="180" y2="94" class="ln"/><polygon points="180,103 175,94 185,94" class="ink"/>
+<rect x="10" y="106" width="340" height="70" rx="10" class="p"/>
+<text x="24" y="134">② 手本で追加の学習</text>
+<text x="24" y="161" class="m">質問と、よい答えの手本の組を見せる</text>
+<line x1="180" y1="176" x2="180" y2="192" class="ln"/><polygon points="180,201 175,192 185,192" class="ink"/>
+<rect x="10" y="204" width="340" height="70" rx="10" class="ox"/>
+<text x="24" y="232">③ 人の好みに合わせる調整</text>
+<text x="24" y="259" class="m">答えを比べた評価で、好まれる答えに</text>
+<text x="180" y="306" text-anchor="middle" class="a">分け方や方法は開発元で違う</text>
+</svg><figcaption class="fig-cap">よく使われる学習の流れです。①で文章の続きを書く力をつけ、②と③で質問に答える形に整えます。省略していること: 各段階の細かな方法、安全のための調整、段階をくり返す場合があること。</figcaption></figure>
+<p>1つめは「事前学習」です。インターネット上の文章や本など、大量の文章を用意します。文章の途中までを見せて次のトークンを予測させ、外れたらパラメータを少し直します。正解は文章そのものの中にあるので、人が正解を書く必要はありません。Llama 3では、約15兆トークンの文章が使われました(2024年の論文)。</p>
+<p>事前学習を終えたモデルは、文章の続きを書くのは得意です。でも、質問に答えてくれるとは限りません。質問の続きとして、似た質問を書き並べてしまうこともあります。</p>
+<p>そこで2つめに、すでに学習したモデルを、目的に合わせて少し追加で学習させます。これを「ファインチューニング」と呼びます。ここでは、質問と、よい答えの手本(人が書いたものなど)の組を見せます。正解の手本から学ぶので、「教師あり」ファインチューニングと呼ばれます。</p>
+<p>3つめに、人の好みに合わせます。同じ質問への答えを複数作り、どれがよいかを人が比べます。この評価を手がかりに、好まれる答えを出しやすくします。よく知られたやり方は、結果につく評価から学ぶ<a class="term-link" href="/term/reinforcement-learning/">強化学習</a>を使うもので、RLHF(人のフィードバックによる強化学習)と呼ばれます。</p>
+<p>この3段階の流れは、OpenAIの研究者による2022年の論文で、まとまった形で示されました。一方、Metaは2024年の論文で、3つめにDPOという方法を選んだと説明しています。強化学習を使わず、比べた結果から直接学ぶ方法です。大きなモデルでは計算が少なく、成績もよかったためです。必ずこの3段階というわけではありません。</p>
+</section>
+
+<section>
+<h2>Transformerとアテンション</h2>
+<p>今の大規模言語モデルの多くは、「Transformer」という計算の組み立て方を使っています。2017年に、Googleの研究者らが「Attention Is All You Need」という論文で発表しました。もとは、文章を別の言語に訳すために考えられたものです。</p>
+<p>それまでの文章のAIでは、トークンを先頭から1つずつ順に読む方式が主流でした。前の結果を待たないと次に進めないので、計算を同時に進めにくいという弱点がありました。Transformerは、すでにある文章のトークンをまとめて同時に計算できます。大勢の計算回路で同時に計算するGPUと、相性がよいのです。ただし答えを書き足すときは、やはり1トークンずつです。</p>
+<p>Transformerの中心にあるのが<a class="term-link" href="/term/attention-mechanism/">アテンション</a>です。英語で「注意」という意味です。文章を作るモデルでは、各トークンが、それより前のどのトークンにどれだけ注目するかを計算します。そして、注目した相手の情報を、その度合いに応じて取り込みます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 292" role="img"><title>「それ」が、前の文のどのトークンに注目するか</title>
+<text x="10" y="24" class="m">前の文</text>
+<rect x="10" y="34" width="80" height="36" rx="6" class="n"/>
+<text x="50" y="58" text-anchor="middle">鈴木さん</text>
+<rect x="98" y="34" width="36" height="36" rx="6" class="n"/>
+<text x="116" y="58" text-anchor="middle">に</text>
+<rect x="142" y="34" width="56" height="36" rx="6" class="n"/>
+<text x="170" y="58" text-anchor="middle">ペン</text>
+<rect x="206" y="34" width="36" height="36" rx="6" class="n"/>
+<text x="224" y="58" text-anchor="middle">を</text>
+<rect x="250" y="34" width="72" height="36" rx="6" class="n"/>
+<text x="286" y="58" text-anchor="middle">借りた</text>
+<line x1="90" y1="200" x2="50" y2="72" class="thin"/>
+<line x1="90" y1="200" x2="116" y2="72" class="thin"/>
+<line x1="90" y1="200" x2="170" y2="72" class="ac"/>
+<line x1="90" y1="200" x2="224" y2="72" class="thin"/>
+<line x1="90" y1="200" x2="286" y2="72" class="thin"/>
+<text x="10" y="192" class="m">後の文</text>
+<rect x="60" y="202" width="60" height="36" rx="6" class="ox"/>
+<text x="90" y="226" text-anchor="middle">それ</text>
+<rect x="128" y="202" width="36" height="36" rx="6" class="n"/>
+<text x="146" y="226" text-anchor="middle">は</text>
+<rect x="172" y="202" width="88" height="36" rx="6" class="n"/>
+<text x="216" y="226" text-anchor="middle">青かった</text>
+<text x="180" y="276" text-anchor="middle" class="a">太い線ほど強く注目</text>
+</svg><figcaption class="fig-cap">「それ」が前の文のトークンにどれだけ注目するかを、線の太さで表しました。「ペン」に強く注目すれば、「それ」がペンを指すことを答えに生かせます。省略していること: 実際は全部のトークンが同じ計算をし、それが何段も重なります(Llama 3.1の最大のモデルでは126段)。区切り方と注目の強さは、説明のために作った例です。</figcaption></figure>
+<p>例えば「鈴木さんにペンを借りた。それは青かった。」では、「それ」が何を指すかが大事です。図のように「それ」が「ペン」に強く注目できれば、意味に合った続きを書きやすくなります。ただし、図は説明のために単純化した例です。実際のモデルの中で、どの段が何に注目しているかを人が読み解くのは、簡単ではありません。</p>
+</section>
+
+<section>
+<h2>コンテキストウィンドウ: 一度に見られる長さ</h2>
+<p>答えを作るとき、手がかりにできる文章の長さには上限があります。質問、それまでの会話、書きかけの答えを合わせたトークンの数の上限です。これを「コンテキストウィンドウ」と呼びます。</p>
+<p>上限はモデルによって違います。例えばLlama 3.1は、最大128K(約13万)トークンを扱えます(2024年)。上限を超えた分は、モデルからは見えません。そのため、サービスによっては、長い会話の古い部分を省いたり、要約して渡したりします。</p>
+<p>会話の中で教えた内容は、その場の手がかりとして使われます。でも、会話をしても、モデルのパラメータがその場で書き換わるわけではありません。ただし、入力された内容を保存して、後の学習に使うサービスもあります。この点は「安全に使うために」で説明します。</p>
+</section>
+
+<section>
+<h2>なぜもっともらしい間違いをするのか</h2>
+<p>言語モデルは、もっともらしい続きを書くように学習しています。書いた内容が事実かどうかを確かめるしくみは、モデルそのものにはありません。そのため、流れるような文章で、根拠のない内容を書くことがあります。これを「ハルシネーション」(幻覚)と呼びます。</p>
+<p>米国の国立標準技術研究所(NIST)の2024年の手引きは、この現象を「自信を持って述べられた、誤った内容の生成」と説明しています。例えば、実在しない本の題や、どこにも出ていない数字が、それらしく出てくることがあります。</p>
+<p>モデルは、答えの書かれた辞書を引いているわけではありません。学習した文章の傾向が、パラメータの値に溶け込んでいるだけです。学習に使った文章が集められた時点より後のできごとは、そのままでは知りません。</p>
+<p>そこで、検索などの外の道具とつなぎ、見つけた資料を読ませてから答えさせる方法があります。Lewisらの2020年の論文では、これを「検索拡張生成(RAG)」と名づけています。間違いは減らせますが、資料そのものの誤りや読み違いもあるので、なくなるわけではありません。</p>
+</section>
+
+<section>
+<h2>学習と推論: 計算と電力</h2>
+<p>パラメータを決める学習は、開発元が大量のGPUを長い期間動かして行います。一方、できあがったモデルで答えを作る計算を、<a class="term-link" href="/term/ai-inference/">推論</a>と呼びます。推論は、だれかが使うたびに行われます。2つの違いは「<a href="/compare/training-vs-inference/">AIの学習と推論の違い</a>」で表にまとめています。</p>
+<p>推論では、1トークンを作るたびに、大量のパラメータをメモリから読み出して計算します。そのため、計算の速さだけでなく、メモリからデータを運ぶ速さも大事です。AI用のGPUが特別なメモリを使う理由は、「<a href="/learn/what-is-hbm/">HBMとは?</a>」で説明しています。</p>
+<p>こうした計算は、データセンターという専用の建物で、大量の電気を使って行われます。国際エネルギー機関(IEA)の2025年の報告では、2024年のデータセンターの電力は世界全体の約1.5%でした。AI以外の用途も含む数字ですが、IEAは、データセンターの電力が増える最大の要因をAIとしています。データセンターについては「<a href="/learn/what-is-cloud-computing/">クラウドとは?</a>」で説明しています。</p>
+</section>
+
+<section>
+<h2>安全に使うために</h2>
+<p>大事な内容は、元の資料で確かめましょう。特に、数字・日付・法律・健康・お金に関わる答えは、公式の資料などで裏づけをとります。答えに資料の名前やURLが書かれていても、実在するか、本当にそう書いてあるかを開いて確かめます。</p>
+<p>入力する内容にも注意が要ります。サービスによっては、利用規約や設定しだいで、入力した文章が後の学習に使われることがあります。会社の秘密や他人の個人情報は、扱いを確かめないまま入力しないようにしましょう。個人情報保護委員会も2023年6月に、入力した個人情報がAIの学習に使われるおそれがあるとして、注意を呼びかけました。</p>
+<p>会社で使うときは、会社の決まりと、入力の扱いが契約で定められたサービスを使います。データを外の事業者に預けるという点で、クラウドを使うときと同じ考え方です。AIの答えを使うときも、内容を確かめて使うかどうかを決めるのは人です。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: AIは、答えのデータベースを検索して答えている</p><p>実際は、言語モデルそのものは答えの一覧を引いているのではなく、パラメータを使って次のトークンを1つずつ予測しています。だから、同じ質問でも言い回しが変わり、どこにも書かれていない間違いを作ることもあります。検索とつないだサービスでも、検索結果を読んだ後に文章を作る部分のしくみは同じです。答えがすらすら出てくるので、どこかに正解がしまってあるように見えるのが、誤解のもとです。</p></div>
+<div class="myth"><p class="myth-q">誤解: 人のように話せるのだから、人と同じように理解し、意識もある</p><p>実際は、はっきりしているのは、言語モデルが続きを予測するように学習し、調整された計算のしくみだということです。人が書いたような文章を作れるので、人のように考えているように見えます。ただ、言語モデルが何らかの意味で「理解」しているといえるかは、研究者の間でも意見が分かれています。この議論は、MitchellとKrakauerの2023年の解説にまとめられています。意識の有無も、この記事で説明したしくみからは答えが出ない問いです。少なくとも、話し方が自然なことは、内容が正しいことの保証にはなりません。</p></div>
+<div class="myth"><p class="myth-q">誤解: 大きなモデルほど、必ず正しく答える</p><p>実際は、パラメータが多いほど多くのことをうまく扱える傾向はありますが、正しさの保証にはなりません。2022年のOpenAIの研究者による論文では、指示に従うよう調整した13億パラメータのモデルが、人の評価で好まれました。比べた相手は、調整していない1,750億パラメータのモデルです。大きなモデルでもハルシネーションは起きます。大きさだけでなく、学習のしかたと、使う側が確かめることが大事です。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>補足</th></tr></thead>
+<tbody>
+<tr><td>Transformerの発表</td><td>2017年</td><td>論文「Attention Is All You Need」</td></tr>
+<tr><td>Llama 3.1の最大のモデルのパラメータ</td><td>約4,050億個</td><td>2024年、Metaの公表</td></tr>
+<tr><td>Llama 3の事前学習に使った文章</td><td>約15兆トークン</td><td>2024年の論文</td></tr>
+<tr><td>Llama 3.1のコンテキストウィンドウ</td><td>最大128K(約13万)トークン</td><td>2024年</td></tr>
+<tr><td>人の評価で調整したモデル</td><td>13億パラメータ</td><td>1,750億パラメータのモデルより答えが好まれた(2022年の論文)</td></tr>
+<tr><td>世界のデータセンターの電力</td><td>世界全体の約1.5%</td><td>2024年、IEA。AI以外も含む</td></tr>
+</tbody>
+</table>
+<p>モデルの大きさや上限の長さは年ごとに変わるので、数字は「その時点の一例」として読んでください。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="/compare/training-vs-inference/">AIの学習と推論の違い</a>、<a href="/compare/supervised-vs-unsupervised-vs-reinforcement-learning/">教師あり学習・教師なし学習・強化学習の違い</a>(事前学習やRLHFの土台になる学び方)</li>
+<li>学び方の用語: <a class="term-link" href="/term/transfer-learning/">転移学習</a>(学習済みのモデルを別の目的に生かす考え方)</li>
+<li>しくみの用語: <a class="term-link" href="/term/kv-cache/">KVキャッシュ</a>(推論で、前のトークンの計算結果をとっておくメモリ)、<a class="term-link" href="/term/recurrent-neural-network/">RNN</a>(Transformerの前に主流だった、順に読む方式)</li>
+<li>計算の量を数える: 「<a href="/learn/linear-algebra-for-ai-chips/">行列の積は何回の計算?</a>」</li>
+<li>部品から読む: 「<a href="/learn/why-gpus-for-ai/">なぜAIにGPUが使われるの?</a>」、「<a href="/learn/what-is-hbm/">HBMとは?</a>」</li>
+</ul>
+</section>
+
+</article>
+
+<section>
+  <h2>シリーズ「セキュリティと暮らしの IT」の記事</h2>
+  <ol class="learn-toc"><li><a href="/learn/how-passwords-get-cracked/" data-track="learn_series">パスワードはなぜ破られる? 長さと使い回しが大事な理由</a></li><li><a href="/learn/what-is-cloud-computing/" data-track="learn_series">クラウドとは? データやアプリが「どこか」で動くしくみ</a></li><li><a href="/learn/what-is-encryption/" data-track="learn_series">暗号とは? 共通鍵と公開鍵のしくみをやさしく</a></li><li><strong aria-current="page">生成AIはどう動く? 大規模言語モデルのしくみ</strong></li></ol>
+</section>
+<p class="learn-quiz muted">この分野の問題: <a href="/c/machine-learning/" data-track="learn_topic">機械学習の基礎</a></p>
+<details class="news-sources"><summary>参考にした資料</summary><ul><li><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">A. Vaswani et al.: Attention Is All You Need, NeurIPS 2017(Transformerの発表。再帰と畳み込みを使わず、並列に計算しやすい)</a></li><li><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">Llama Team, AI @ Meta: The Llama 3 Herd of Models(2024年。最大のモデルは4,050億パラメータ・126層で、Llama 3.1として公開。最大128Kトークン、語彙は128Kトークン、事前学習は約15兆トークン。事後学習はSFT・リジェクションサンプリング・DPOで、PPOより計算が少なく成績もよかったためDPOを選んだ)</a></li><li><a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">L. Ouyang et al.: Training language models to follow instructions with human feedback, NeurIPS 2022(人の手本による調整と人の評価による強化学習。13億パラメータのモデルの出力が1,750億パラメータのGPT-3より好まれた)</a></li><li><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">A. Holtzman et al.: The Curious Case of Neural Text Degeneration, ICLR 2020(2019年発表。確率が最大のものを選び続けると単調・くり返しになる。確率の低い候補を切ってから選ぶ方法)</a></li><li><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">P. Lewis et al.: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks, NeurIPS 2020(検索拡張生成 RAG)</a></li><li><a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf" target="_blank" rel="noopener">NIST AI 600-1: Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile(2024年7月。confabulation = 自信を持って述べられた誤った内容の生成。俗に hallucination と呼ばれる)</a></li><li><a href="https://doi.org/10.1073/pnas.2215907120" target="_blank" rel="noopener">M. Mitchell, D. C. Krakauer: The debate over understanding in AI&#39;s large language models, PNAS 120(13), 2023</a></li><li><a href="https://www.ppc.go.jp/news/careful_information/230602_AI_utilize_alert/" target="_blank" rel="noopener">個人情報保護委員会: 生成AIサービスの利用に関する注意喚起等について(2023年6月2日。入力した個人情報が機械学習に使われるおそれ、応答に不正確な内容が含まれうること)</a></li><li><a href="https://www.iea.org/reports/energy-and-ai/executive-summary" target="_blank" rel="noopener">IEA: Energy and AI — Executive summary(2025年。2024年のデータセンターの電力は約415TWhで世界の約1.5%。その増加の最大の要因はAI)</a></li></ul></details>
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="/learn/">やさしい解説の一覧へ</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
