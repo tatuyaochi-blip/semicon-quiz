@@ -100,17 +100,17 @@ const learnText = {
     description: '半導体・トランジスタ・CPU など、半導体とコンピュータの基本を、予備知識の少ない人向けに素朴な疑問から解説します。しくみ、身近な使われ方、よくある誤解まで。読んだあとは理解度チェックとクイズで確かめられます。',
     lead: '「半導体って何?」「CPUは何をしているの?」といった素朴な疑問から、しくみと身近な使われ方までを、予備知識が少なくても読めるように解説します。シリーズの順に読むと、半導体からコンピュータまでが一続きでわかります。',
     minutes: '約{n}分', updated: '更新: {d}', check: '理解度チェック', checkLead: '記事の内容で答えられる3問です。答えを開いて確かめてください。', quiz: 'この分野の問題に挑戦(10問)', topic: '分野「{name}」のページへ',
-    next: '次に読む', inSeries: 'シリーズ「{name}」の記事', sources: '参考にした資料', all: 'やさしい解説の一覧へ', termLink: 'やさしい解説で読む', catLink: 'はじめて学ぶ人へ', search: 'やさしい解説' },
+    next: '次に読む', inSeries: 'シリーズ「{name}」の記事', sources: '参考にした資料', all: 'やさしい解説の一覧へ', termLink: 'やさしい解説で読む', catLink: 'はじめて学ぶ人へ', search: 'やさしい解説', courseFirst: 'まず読む: やさしい解説' },
   en: { nav: 'Explainers', card: 'Beginner-friendly articles that start from simple questions', title: 'Explainers: semiconductors and computers from simple questions',
     description: 'Beginner-friendly explainers on semiconductors, transistors, CPUs and more: how they work, where you meet them and common misconceptions, with a short check and quizzes.',
     lead: 'Explainers that start from simple questions such as “What is a semiconductor?” and “What does a CPU do?”, written for readers with little background. Read a series in order to follow the path from semiconductors to computers.',
     minutes: '{n} min read', updated: 'Updated: {d}', check: 'Check your understanding', checkLead: 'Three questions you can answer from this article. Open each answer to check.', quiz: 'Try 10 questions on this topic', topic: 'Go to the topic “{name}”',
-    next: 'Read next', inSeries: 'Articles in the series “{name}”', sources: 'Sources', all: 'All explainers', termLink: 'Read the beginner explainer', catLink: 'New to this topic?', search: 'Explainers' },
+    next: 'Read next', inSeries: 'Articles in the series “{name}”', sources: 'Sources', all: 'All explainers', termLink: 'Read the beginner explainer', catLink: 'New to this topic?', search: 'Explainers', courseFirst: 'Read first: explainers' },
   'zh-hant': { nav: '入門解說', card: '從「半導體是什麼？」等簡單的疑問讀起的解說文章', title: '入門解說：從簡單的疑問認識半導體與電腦',
     description: '為背景知識不多的讀者，從簡單的疑問解說半導體、電晶體、CPU 等基礎：原理、生活中的應用與常見誤解，讀完可用小測驗確認。',
     lead: '從「半導體是什麼？」「CPU 在做什麼？」等簡單的疑問出發，為背景知識不多的讀者解說原理與生活中的應用。依系列順序閱讀，就能從半導體一路了解到電腦。',
     minutes: '約 {n} 分鐘', updated: '更新：{d}', check: '理解度確認', checkLead: '可以用本文內容回答的 3 題。展開答案確認。', quiz: '挑戰這個領域的題目（10 題）', topic: '前往領域「{name}」',
-    next: '接著閱讀', inSeries: '系列「{name}」的文章', sources: '參考資料', all: '入門解說一覽', termLink: '閱讀入門解說', catLink: '第一次學習的人', search: '入門解說' },
+    next: '接著閱讀', inSeries: '系列「{name}」的文章', sources: '參考資料', all: '入門解說一覽', termLink: '閱讀入門解說', catLink: '第一次學習的人', search: '入門解說', courseFirst: '先讀這些入門解說' },
 };
 const learnFill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 // 用語の対訳クイズ(モード terms)の文言と、出題する言語の組(対訳表のある言語だけ)
@@ -990,6 +990,12 @@ ${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}
 
   // 学習コースのページ /course/{id}/
   const solveMode = modes.find(m => m.id === 'category');
+  // コースの前に読む、やさしい解説の記事(data/courses.json の learn。この言語に記事があるものだけ)
+  const courseLearn = co => {
+    if (isDef) for (const slug of co.learn ?? []) if (!learnNames(defLang).includes(slug)) throw new Error(`course ${co.id}: 存在しない記事 ${slug}`);
+    const list = (co.learn ?? []).map(slug => learnArts.find(a => a.slug === slug)).filter(Boolean);
+    return list.length ? `<div class="learn-box"><p class="learn-box-h">${esc(LT.courseFirst)}</p><ul>${list.map(a => `<li><a href="${home}learn/${a.slug}/" data-track="course_learn">${esc(a.title)}</a> <span class="muted">(${esc(learnFill(LT.minutes, { n: a.minutes }))})</span></li>`).join('')}</ul></div>\n` : '';
+  };
   for (const co of liveCourses) {
     const name = loc(co.name, code);
     page({
@@ -1001,7 +1007,7 @@ ${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}#courses">${esc(t('course_heading'))}</a></nav>
 <h1>${esc(name)}</h1>
 <p class="lead">${esc(loc(co.desc, code))}</p>
-<div class="course-progress" data-course-progress="${esc(t('course_progress'))}">
+${courseLearn(co)}<div class="course-progress" data-course-progress="${esc(t('course_progress'))}">
   <p class="course-progress-text"></p>
   <span class="meter"><span class="meter-bar" style="width:0%"></span></span>
 </div>
