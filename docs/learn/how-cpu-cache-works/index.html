@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ja" data-lang="ja" data-base="/" data-home="/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>キャッシュメモリとは? CPUがメモリを待たずに済むしくみ | 半導体教室</title>
+<meta name="description" content="キャッシュメモリは、CPUと同じチップの上にある小さく速い記憶場所です。メモリのデータを64バイトずつ写しておき、待ち時間を減らします。局所性、ヒット率と平均アクセス時間の計算、L1〜L3、書き込みの方式まで解説します。">
+<link rel="canonical" href="https://semiconroom.com/learn/how-cpu-cache-works/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/learn/how-cpu-cache-works/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/learn/how-cpu-cache-works/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/learn/how-cpu-cache-works/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/learn/how-cpu-cache-works/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="キャッシュメモリとは? CPUがメモリを待たずに済むしくみ | 半導体教室">
+<meta property="og:description" content="キャッシュメモリは、CPUと同じチップの上にある小さく速い記憶場所です。メモリのデータを64バイトずつ写しておき、待ち時間を減らします。局所性、ヒット率と平均アクセス時間の計算、L1〜L3、書き込みの方式まで解説します。">
+<meta property="og:url" content="https://semiconroom.com/learn/how-cpu-cache-works/">
+<meta property="og:site_name" content="半導体教室">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://semiconroom.com/"},{"@type":"ListItem","position":2,"name":"やさしい解説","item":"https://semiconroom.com/learn/"},{"@type":"ListItem","position":3,"name":"キャッシュメモリとは? CPUがメモリを待たずに済むしくみ","item":"https://semiconroom.com/learn/how-cpu-cache-works/"}]},{"@context":"https://schema.org","@type":"Article","headline":"キャッシュメモリとは? CPUがメモリを待たずに済むしくみ","description":"キャッシュメモリは、CPUと同じチップの上にある小さく速い記憶場所です。メモリのデータを64バイトずつ写しておき、待ち時間を減らします。局所性、ヒット率と平均アクセス時間の計算、L1〜L3、書き込みの方式まで解説します。","inLanguage":"ja","datePublished":"2026-10-23","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/learn/how-cpu-cache-works/","author":{"@type":"Organization","name":"半導体教室"},"publisher":{"@type":"Organization","name":"半導体教室"}}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/learn/how-cpu-cache-works/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span><span>半導体教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/search/" method="get"><input type="search" name="q" placeholder="検索(例：MOSFET)" aria-label="サイト内を検索" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/search/" aria-label="サイト内を検索"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">日本語</span><span class="lang-short" aria-hidden="true">日本語</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="言語"><span aria-current="true" lang="ja">日本語</span><a href="/en/learn/how-cpu-cache-works/" hreflang="en" lang="en" data-lang="en">English</a><a href="/zh-hant/learn/how-cpu-cache-works/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a><a href="/ko/" lang="ko" data-lang="ko">한국어</a><a href="/de/" lang="de" data-lang="de">Deutsch</a><a href="/nl/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>メニュー</summary>
+      <nav class="menu-panel"><a href="/">ホーム</a><a href="/c/">分野</a><a href="/learn/">やさしい解説</a><a href="/glossary/">用語集</a><a href="/compare/">比較</a><a href="/figures/">図解集</a><a href="/tools/">計算ツール</a><a href="/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/">トップ</a> <span>›</span> <a href="/learn/">やさしい解説</a> <span>›</span> <a href="/learn/#s-computer-basics">コンピュータのしくみ</a></nav>
+<article class="prose learn-article">
+<h1>キャッシュメモリとは? CPUがメモリを待たずに済むしくみ</h1>
+<p class="learn-meta">約13分 · 更新: 2026年10月23日</p>
+
+<p class="lead">キャッシュメモリは、CPUと同じチップの上に置いた、小さくて速い記憶場所です。メインメモリのデータを近くの分までまとめて写しておき、次からはそこから読みます。プログラムは同じデータや近くのデータを続けて使うことが多いので、多くの読み出しがキャッシュで済み、CPUがメモリを待つ時間が大きく減ります。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>CPUがメモリを「待つ」とはどういうことで、どれくらいの差があるのか</li>
+<li>小さなキャッシュがよく効く理由(局所性)と、64バイトずつ運ぶしくみ</li>
+<li>ヒット率と平均アクセス時間の計算(試験でもよく問われる考え方)</li>
+<li>L1・L2・L3の違い、置き場所の決め方、書き込みの方式</li>
+<li>ブラウザのキャッシュやCDNも同じ考え方であること</li>
+</ul><p class="muted">前提知識: CPUは「命令を実行する部品」、メモリは「作業中のデータを置く場所」と知っていれば十分です。「<a href="/learn/what-is-a-cpu/">CPUとは?</a>」「<a href="/learn/memory-vs-storage/">メモリとストレージの違いは?</a>」の続きとして読めます。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>パソコン用のCPUの仕様表には、「L2キャッシュ 16MB」「L3キャッシュ 64MB」のような数字が並びます。これはAMDが2024年に発売したRyzen 9 9950Xの例です。一方、ブラウザの設定画面には「キャッシュを削除」というボタンがあります。</p>
+<p>どちらも「よく使うものの写しを、使う場所の近くに置く」という同じ考え方です。この記事ではCPUのキャッシュを中心に説明し、最後にCPUの外のキャッシュにも触れます。</p>
+</section>
+
+<section>
+<h2>CPUはメモリを「待っている」</h2>
+<p>CPUは、プログラムの命令とデータをメインメモリ(以下、メモリ)から読みながら仕事をします。メモリには、DRAMという種類のチップが使われています。問題は、CPUの速さに比べて、メモリからの読み出しがとても遅いことです。</p>
+<p>メモリに頼んでからデータが届くまでの待ち時間は、製品によって数十〜100ナノ秒ほどです(1ナノ秒は10億分の1秒)。一方、4GHzで動くCPUでは、処理を進める合図(クロック)の間隔は0.25ナノ秒です。メモリを100ナノ秒待つ間に、合図は400回も来てしまいます。</p>
+<p>合図1回でいくつもの命令を進められるCPUにとって、これは大きな足踏みです。しかも、CPUの速さの伸びに、メモリの待ち時間の短縮は長年追いついていません。</p>
+<p>そこでCPUは、メモリのデータの写しを、自分のすぐそばの小さく速い記憶場所に置きます。これが<a class="term-link" href="/term/cache-memory/">キャッシュメモリ</a>です。今のキャッシュはCPUと同じチップの上にあり、いちばん近い段なら1ナノ秒前後で読めます。</p>
+<p>キャッシュには、SRAMという種類の回路が使われます。多くは1ビットを6個のトランジスタで覚え、DRAMより速く読めます。その代わり場所をとるので、大容量にはできません(「<a href="/compare/dram-vs-sram/">DRAMとSRAMの違い</a>」)。</p>
+</section>
+
+<section>
+<h2>小さな置き場で足りる理由: 局所性</h2>
+<p>キャッシュの容量は、メモリの数百分の1以下しかありません。それでも役に立つのは、プログラムがデータを使う順番に、決まったくせがあるからです。このくせを「局所性」と呼び、2種類あります。</p>
+<p>1つ目は、一度使ったデータを、すぐにまた使いやすいという性質です。これを<a class="term-link" href="/term/temporal-locality/">時間的局所性</a>と呼びます。例えば、くり返しの処理では、回数を数える変数や同じ命令を何度も使います。</p>
+<p>2つ目は、あるデータを使うと、その近くのデータもすぐに使いやすいという性質です。これを<a class="term-link" href="/term/spatial-locality/">空間的局所性</a>と呼びます。プログラムの命令はメモリに順に並び、たいてい順番に実行されます。本を1ページ読んだら、次に読むのはたいてい次のページなのと似ています。</p>
+</section>
+
+<section>
+<h2>64バイトずつまとめて運ぶ: キャッシュライン</h2>
+<p>空間的局所性を生かすため、キャッシュは、頼まれたデータだけでなく、その周りもまとめてメモリから持ってきます。この運ぶ単位を<a class="term-link" href="/term/cache-line/">キャッシュライン</a>(以下、ライン)と呼びます。x86のCPUや多くのArmのCPUでは、1ラインは64バイトです(AppleのMシリーズでは、macOSが128バイトと報告します)。</p>
+<p>例えば、8バイトの数がメモリにずらりと並んでいるとします。1ラインには、この数が8個入ります。CPUが1つ目の数を頼むと、キャッシュにはまだないので、メモリまで取りに行きます。このとき、隣の7個も一緒に写されます。</p>
+<p>キャッシュに目当てのデータがあることを「ヒット」、ないことを「ミス」と呼びます。上の例で数を順に8個読むと、ミスは最初の1回だけで、残りの7回はヒットです。初めて読むデータでも、8回中7回、つまり87.5%がヒットになります。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 332" role="img"><title>ミスのとき、1つ読みたいだけでも64バイトの1行をまとめてキャッシュに写す</title>
+<rect x="120" y="8" width="120" height="36" rx="8" class="ox"/>
+<text x="180" y="32" text-anchor="middle">CPU</text>
+<line x1="180" y1="74" x2="180" y2="53" class="ln"/><polygon points="180,45 175,54 185,54" class="ink"/>
+<text x="192" y="64" class="m">CPUへ渡す</text>
+<text x="10" y="96">キャッシュ</text>
+<rect x="110" y="76" width="20" height="30" class="p"/>
+<rect x="130" y="76" width="20" height="30" class="n"/>
+<rect x="150" y="76" width="20" height="30" class="n"/>
+<rect x="170" y="76" width="20" height="30" class="n"/>
+<rect x="190" y="76" width="20" height="30" class="n"/>
+<rect x="210" y="76" width="20" height="30" class="n"/>
+<rect x="230" y="76" width="20" height="30" class="n"/>
+<rect x="250" y="76" width="20" height="30" class="n"/>
+<text x="110" y="132" class="a">①最初の1つはミス</text>
+<text x="110" y="154" class="m">②〜⑧残りはヒット</text>
+<line x1="95" y1="206" x2="95" y2="114" class="ac"/><polygon points="95,105 90,115 100,115" class="fa"/>
+<text x="110" y="184" class="a">ミスのとき1行まとめて写す</text>
+<text x="10" y="226">メモリ</text>
+<rect x="110" y="206" width="20" height="30" class="p"/>
+<rect x="130" y="206" width="20" height="30" class="n"/>
+<rect x="150" y="206" width="20" height="30" class="n"/>
+<rect x="170" y="206" width="20" height="30" class="n"/>
+<rect x="190" y="206" width="20" height="30" class="n"/>
+<rect x="210" y="206" width="20" height="30" class="n"/>
+<rect x="230" y="206" width="20" height="30" class="n"/>
+<rect x="250" y="206" width="20" height="30" class="n"/>
+<rect x="110" y="240" width="160" height="30" class="ok"/>
+<line x1="130" y1="240" x2="130" y2="270" class="thin"/><line x1="150" y1="240" x2="150" y2="270" class="thin"/><line x1="170" y1="240" x2="170" y2="270" class="thin"/><line x1="190" y1="240" x2="190" y2="270" class="thin"/><line x1="210" y1="240" x2="210" y2="270" class="thin"/><line x1="230" y1="240" x2="230" y2="270" class="thin"/><line x1="250" y1="240" x2="250" y2="270" class="thin"/>
+<rect x="110" y="274" width="160" height="30" class="ok"/>
+<line x1="130" y1="274" x2="130" y2="304" class="thin"/><line x1="150" y1="274" x2="150" y2="304" class="thin"/><line x1="170" y1="274" x2="170" y2="304" class="thin"/><line x1="190" y1="274" x2="190" y2="304" class="thin"/><line x1="210" y1="274" x2="210" y2="304" class="thin"/><line x1="230" y1="274" x2="230" y2="304" class="thin"/><line x1="250" y1="274" x2="250" y2="304" class="thin"/>
+<text x="180" y="326" text-anchor="middle" class="m">1マス=8バイトの数、1行=64バイト</text>
+</svg><figcaption class="fig-cap">1つ目の数でミスすると、64バイトの行がまとめて写され、続く7つはヒットします。省略していること: L1〜L3の区別、先回りの読み込み、どの行の写しかを示す印。</figcaption></figure>
+<p>実際のCPUは、次に使いそうなラインを先回りして読む工夫(<a class="term-link" href="/term/prefetching/">プリフェッチ</a>)もしますが、ここでは省きます。</p>
+</section>
+
+<section>
+<h2>ヒット率と平均アクセス時間</h2>
+<p>読み出しのうち、ヒットした割合を「ヒット率」と呼びます。100回読んで95回ヒットなら、ヒット率は95%、残りの5%が「ミス率」です。</p>
+<p>キャッシュの効果は、1回の読み出しにかかる時間の平均で比べます。ヒットしたときとミスしたときの時間に、それぞれ起こる割合をかけて足します。基本情報技術者試験では、この平均を「実効アクセス時間」と呼び、次の式で求めます。</p>
+<p><strong>実効アクセス時間 = ヒット率 × キャッシュの時間 + (1 − ヒット率) × メモリの時間</strong></p>
+<h3>計算してみよう</h3>
+<p>キャッシュの読み出しが1ナノ秒、メモリが100ナノ秒、ヒット率が95%とします。</p>
+<ul>
+<li>ヒットの分: 0.95 × 1ナノ秒 = 0.95ナノ秒</li>
+<li>ミスの分: 0.05 × 100ナノ秒 = 5ナノ秒</li>
+<li>平均: 0.95 + 5 = 5.95ナノ秒</li>
+</ul>
+<p>キャッシュがなければ毎回100ナノ秒なので、平均は約17分の1です。ただし、5.95ナノ秒のうち5ナノ秒は、わずか5%のミスから来ています。</p>
+<p>教科書には、<a class="term-link" href="/term/average-memory-access-time/">平均メモリアクセス時間(AMAT)</a>という別の形もあります。「ヒットの時間+ミス率×ミスで余分にかかる時間」です。ミスのときは、キャッシュを調べる1ナノ秒に、メモリの100ナノ秒が加わると考えます。上の例では1+0.05×100=6ナノ秒です。</p>
+<p>0.05ナノ秒の差は、ミスの時間にキャッシュを調べる分を含めるかどうかの違いです。試験では、問題文が示す式と前提に合わせて計算します。数字を変えて試すなら「<a href="/tools/cache-address-amat-calculator/">平均アクセス時間の計算ツール</a>」が使えます。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>キャッシュは、遠くの倉庫から取ってきた部品を、作業台の横の小さな棚に置いておくことに似ています。似ているのは「遠くから取ってきたものを手元に置くと、取りに行く回数が減る」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 部品は持ち出すと倉庫からなくなりますが、キャッシュに置くのは写しで、元はメモリに残ります。そのため、書き換えると写しと元が食い違う問題が起きます(後の節)。また、棚に何を置くかは人が選びますが、キャッシュの中身は回路が自動で決めます。</p></aside>
+</section>
+
+<section>
+<h2>L1・L2・L3: 速さと大きさで段を分ける</h2>
+<p>キャッシュを大きくすれば、ヒット率は上がります。しかし、大きな記憶場所ほど、目当てのデータを探して取り出すのに時間がかかります。</p>
+<p>そこで、キャッシュも何段かに分けます。計算する回路にいちばん近く、小さく速い段を「L1キャッシュ」と呼びます。次がL2、その次がL3で、番号が大きいほど大きく、遅くなります。CPUはL1から順に探し、どこにもなければメモリへ取りに行きます。</p>
+<p>2024年に発売されたパソコン用の上位のCPUで、大きさの目安を見てみます。段の分け方や呼び方は製品によって違います。</p>
+<table>
+<thead><tr><th>段</th><th>持ち方</th><th>大きさの例(2024年の製品)</th></tr></thead>
+<tbody>
+<tr><td>L1</td><td>コアごと。命令用とデータ用に分かれる</td><td>1コアあたり数十〜数百KB(Ryzen 9 9950Xは80KB)</td></tr>
+<tr><td>L2</td><td>コアごと、または数コアの組ごと</td><td>1コアあたり1MB以上(9950Xは合計16MB、Core Ultra 9 285Kは合計40MB)</td></tr>
+<tr><td>L3</td><td>多くのコアで共有</td><td>数十MB(9950Xは64MB、285Kは36MB)</td></tr>
+</tbody>
+</table>
+<p>9950XのL1は、仕様の合計1,280KBを16コアで割った値です。各段の違いは「<a href="/compare/l1-vs-l2-vs-l3-cache/">L1・L2・L3キャッシュの違い</a>」で表にまとめています。</p>
+</section>
+
+<section>
+<h2>どこに置くか: ダイレクトマップとセットアソシアティブ</h2>
+<p>キャッシュは小さいので、メモリのどのラインをキャッシュのどこに置くかを決める必要があります。</p>
+<p>いちばん単純なのは、メモリの住所(番地)から、置き場所を1か所に決めてしまう方法です。例えば4か所のキャッシュなら、ラインの番号を4で割った余りで場所を決めます。これを<a class="term-link" href="/term/direct-mapped-cache/">ダイレクトマップ方式</a>と呼びます。探すのは1か所だけなので速く、回路も簡単です。</p>
+<p>弱点は、同じ場所に決まった2つのラインを交互に使うと、互いに追い出し合うことです。下の図のライン0と4がその例で、ほかの場所が空いていてもミスが続きます。</p>
+<p>そこで今のCPUの多くは、置き場所を「セット」という組に分けます。番地からはセットだけを決め、その中の数か所のどこに置いてもよいことにします。これを<a class="term-link" href="/term/set-associative-cache/">セットアソシアティブ方式</a>と呼びます。セットの中は同時に調べるので、探す時間はあまり増えません。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 332" role="img"><title>ダイレクトマップは置き場所が1か所、2ウェイのセットアソシアティブはセットの中の2か所から選べる</title>
+<text x="180" y="20" text-anchor="middle" class="m">メモリのライン0〜7を4か所に置く例</text>
+<text x="18" y="50" class="a">ダイレクトマップ</text>
+<rect x="18" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="56" y="82" text-anchor="middle" class="m">場所0</text>
+<text x="56" y="106" text-anchor="middle">0か4</text>
+<rect x="100" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="138" y="82" text-anchor="middle" class="m">場所1</text>
+<text x="138" y="106" text-anchor="middle">1か5</text>
+<rect x="190" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="228" y="82" text-anchor="middle" class="m">場所2</text>
+<text x="228" y="106" text-anchor="middle">2か6</text>
+<rect x="272" y="60" width="76" height="56" rx="6" class="n"/>
+<text x="310" y="82" text-anchor="middle" class="m">場所3</text>
+<text x="310" y="106" text-anchor="middle">3か7</text>
+<text x="18" y="142">0と4は同時に置けない</text>
+<text x="18" y="184" class="a">2ウェイ・セットアソシアティブ</text>
+<rect x="12" y="194" width="168" height="98" rx="8" class="hole"/>
+<text x="96" y="214" text-anchor="middle">セット0</text>
+<rect x="18" y="222" width="76" height="62" rx="6" class="p"/>
+<text x="56" y="246" text-anchor="middle" class="m">場所0</text>
+<text x="56" y="272" text-anchor="middle">0,2,4,6</text>
+<rect x="100" y="222" width="76" height="62" rx="6" class="p"/>
+<text x="138" y="246" text-anchor="middle" class="m">場所1</text>
+<text x="138" y="272" text-anchor="middle">0,2,4,6</text>
+<rect x="184" y="194" width="168" height="98" rx="8" class="hole"/>
+<text x="268" y="214" text-anchor="middle">セット1</text>
+<rect x="190" y="222" width="76" height="62" rx="6" class="ox"/>
+<text x="228" y="246" text-anchor="middle" class="m">場所2</text>
+<text x="228" y="272" text-anchor="middle">1,3,5,7</text>
+<rect x="272" y="222" width="76" height="62" rx="6" class="ox"/>
+<text x="310" y="246" text-anchor="middle" class="m">場所3</text>
+<text x="310" y="272" text-anchor="middle">1,3,5,7</text>
+<text x="18" y="320">0と4を同時に置ける</text>
+</svg><figcaption class="fig-cap">マスの下の数は、そこに置けるラインの番号です。2ウェイ(1セットに2か所)なら、ライン0と4を同時に置けます。省略していること: 実際の場所の数(数百〜数千)、どのラインの写しかを示す印、番地を区切って場所を決める方法。</figcaption></figure>
+<p>どこにでも置ける方式(フルアソシアティブ方式)もありますが、全部を同時に調べる回路が大きくなります。3つの方式は「<a href="/compare/direct-mapped-vs-set-associative-vs-fully-associative-cache/">置き方の3方式の違い</a>」で比べています。</p>
+</section>
+
+<section>
+<h2>いっぱいになったら: 追い出すラインを選ぶ</h2>
+<p>セットの中がいっぱいなら、新しいラインを入れるためにどれか1つを追い出します。代表的なのは、いちばん長い間使われていないものを追い出す方式で、<a class="term-link" href="/term/lru-replacement/">LRU</a>と呼びます。時間的局所性から考えると、しばらく使っていないものは、この先も使われにくいはずだからです。実際のCPUでは、順番を正確に覚えるのが大変なので、LRUに近い簡単な方式もよく使われます。</p>
+<p>OSがメモリの中身をストレージへ移すときも、同じ考え方を使います(「<a href="/learn/what-is-an-operating-system/">OSとは?</a>」)。</p>
+</section>
+
+<section>
+<h2>書き込むとき: ライトスルーとライトバック</h2>
+<p>読むだけなら、キャッシュの写しとメモリの元は同じです。しかし、CPUがデータを書き換えると、写しと元が食い違います。いつメモリに反映するかで、大きく2つの方式があります。</p>
+<p>1つは、キャッシュに書くと同時に、メモリにも書く方式です。これを<a class="term-link" href="/term/write-through/">ライトスルー方式</a>と呼びます。メモリがいつも最新なので、しくみは簡単です。その代わり、書き込みのたびに遅いメモリとのやりとりが発生します。</p>
+<p>もう1つは、ひとまずキャッシュだけを書き換えておく方式で、「ライトバック方式」と呼びます。書き換えたラインには印をつけておき、そのラインが追い出されるときに、メモリへ書き戻します。同じ場所を何度書き換えても、メモリに書くのは追い出すときの1回で済みます。その代わり、しばらくはメモリの中身が古いままなので、管理は複雑になります。</p>
+<p>今のパソコン用のCPUのデータ用キャッシュでは、ライトバックが一般的です。違いは「<a href="/compare/write-through-vs-write-back-cache/">ライトスルーとライトバックの違い</a>」で表にまとめています。</p>
+</section>
+
+<section>
+<h2>順番に読むプログラムが速い理由</h2>
+<p>ラインのしくみを知ると、同じ計算でも書き方で速さが変わる理由がわかります。例として、1万行×1万列の表(2次元の配列)の数を、すべて足す処理を考えます。数は1つ8バイトとします。</p>
+<p>C言語のように、表を行ごとに続けて並べる言語では、1行目の左から右へ、次に2行目へ、という順でメモリに並びます。1行は8万バイト、表全体は800MBで、どのキャッシュよりずっと大きくなります。</p>
+<p>行ごとに左から右へ足していくと、メモリを並んだ順に読むことになります。1つのラインで8個の数が手に入るので、ミスは8回に1回で済みます。</p>
+<p>一方、列ごとに上から下へ足すと、1つ読むごとに8万バイト先へ飛び、毎回別のラインになります。いちばん小さなL1では、ほとんどがミスです。運んだラインの残り7個は、次の列で使うころにはL1から追い出されています。足し算の回数も答えも同じなのに、かかる時間は大きく違います。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 272" role="img"><title>表を行の順に読むとメモリを順に読み、列の順に読むと飛び飛びに読む</title>
+<text x="92" y="22" text-anchor="middle" class="a">行の順に読む</text>
+<text x="268" y="22" text-anchor="middle" class="a">列の順に読む</text>
+<rect x="20" y="36" width="144" height="36" class="n"/>
+<rect x="20" y="72" width="144" height="36" class="p"/>
+<rect x="20" y="108" width="144" height="36" class="n"/>
+<rect x="20" y="144" width="144" height="36" class="p"/>
+<line x1="56" y1="36" x2="56" y2="180" class="thin"/><line x1="92" y1="36" x2="92" y2="180" class="thin"/><line x1="128" y1="36" x2="128" y2="180" class="thin"/>
+<text x="38" y="60" text-anchor="middle">1</text><text x="74" y="60" text-anchor="middle">2</text><text x="110" y="60" text-anchor="middle">3</text><text x="146" y="60" text-anchor="middle">4</text>
+<text x="38" y="96" text-anchor="middle">5</text><text x="74" y="96" text-anchor="middle">6</text><text x="110" y="96" text-anchor="middle">7</text><text x="146" y="96" text-anchor="middle">8</text>
+<text x="38" y="132" text-anchor="middle">9</text><text x="74" y="132" text-anchor="middle">10</text><text x="110" y="132" text-anchor="middle">11</text><text x="146" y="132" text-anchor="middle">12</text>
+<text x="38" y="168" text-anchor="middle">13</text><text x="74" y="168" text-anchor="middle">14</text><text x="110" y="168" text-anchor="middle">15</text><text x="146" y="168" text-anchor="middle">16</text>
+<rect x="196" y="36" width="144" height="36" class="n"/>
+<rect x="196" y="72" width="144" height="36" class="p"/>
+<rect x="196" y="108" width="144" height="36" class="n"/>
+<rect x="196" y="144" width="144" height="36" class="p"/>
+<line x1="232" y1="36" x2="232" y2="180" class="thin"/><line x1="268" y1="36" x2="268" y2="180" class="thin"/><line x1="304" y1="36" x2="304" y2="180" class="thin"/>
+<text x="214" y="60" text-anchor="middle">1</text><text x="250" y="60" text-anchor="middle">5</text><text x="286" y="60" text-anchor="middle">9</text><text x="322" y="60" text-anchor="middle">13</text>
+<text x="214" y="96" text-anchor="middle">2</text><text x="250" y="96" text-anchor="middle">6</text><text x="286" y="96" text-anchor="middle">10</text><text x="322" y="96" text-anchor="middle">14</text>
+<text x="214" y="132" text-anchor="middle">3</text><text x="250" y="132" text-anchor="middle">7</text><text x="286" y="132" text-anchor="middle">11</text><text x="322" y="132" text-anchor="middle">15</text>
+<text x="214" y="168" text-anchor="middle">4</text><text x="250" y="168" text-anchor="middle">8</text><text x="286" y="168" text-anchor="middle">12</text><text x="322" y="168" text-anchor="middle">16</text>
+<text x="92" y="206" text-anchor="middle">並んだ順に読む</text>
+<text x="92" y="228" text-anchor="middle" class="a">ミスは1行に1回</text>
+<text x="268" y="206" text-anchor="middle">毎回別の行へ</text>
+<text x="268" y="228" text-anchor="middle" class="a">ミスが多い</text>
+<text x="180" y="262" text-anchor="middle" class="m">表は1行ずつメモリに並ぶ(C言語など)</text>
+</svg><figcaption class="fig-cap">マスの数字は読む順番です。ここでは表の1行を1ラインとみなしています。省略していること: 実際の大きさ(1ラインに8個、1行は1万個)、先回りの読み込み、複数の段のキャッシュ。</figcaption></figure>
+<p>ここでは話を単純にしました。実際の差は、CPUや表の大きさによって変わります。それでも「メモリに並んだ順に読む」は、速いプログラムの基本です。「<a href="/compare/array-vs-linked-list/">配列と連結リストの違い</a>」にも、この性質が関係します。</p>
+</section>
+
+<section>
+<h2>コアが複数あるとき</h2>
+<p>今のCPUにはコアが複数あり、それぞれが自分のL1やL2を持っています。すると、2つのコアが同じデータの写しを持つことがあります。片方が書き換えると、もう片方の写しは古くなります。そこでCPUは、ほかのコアの写しを無効にするなどの連絡を、回路で自動的に行います。どのコアから見ても同じ値に見えるよう保つこのしくみを、<a class="term-link" href="/term/cache-coherency/">キャッシュコヒーレンシ</a>と呼びます。</p>
+</section>
+
+<section>
+<h2>CPUの外にもあるキャッシュ</h2>
+<p>「よく使うものの写しを近くに置く」考え方は、CPUの外でも使われています。例えばブラウザは、一度読み込んだページの画像などを端末に保存しておき、次は遠くのサーバまで取りに行かずに手元の写しを使います。これがブラウザのキャッシュです。</p>
+<p>名前からIPアドレスを調べるDNSでも、答えをしばらく覚えておくキャッシュが使われます(「<a href="/learn/how-dns-works/">DNSとは?</a>」)。動画や画像を配るサービスは、世界各地のサーバに写しを置き、利用者に近いサーバから届けます。このしくみを<a class="term-link" href="/term/cdn/">CDN</a>と呼びます。</p>
+<p>写しが古くなる問題がある点も同じです。違うのは対処の仕方と速さです。CPUは回路がナノ秒単位で写しをそろえます。ブラウザやCDNは、写しを使ってよい期限をソフトウェアで決め、ミリ秒(1,000分の1秒)単位の通信の待ちを減らします。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: キャッシュが大きいCPUほど、必ず速い</p><p>実際は、効き目はプログラムによって大きく違います。使うデータがすでに収まっていれば、増やしてもヒット率はほとんど上がりません。大きくすると読み出しに時間がかかる面もあり、いちばん近いL1が小さくとどめられているのはこのためです。AMDも、L3が96MBのRyzen 7 9800X3Dを、主にゲーム向けとして売り出しています。</p></div>
+<div class="myth"><p class="myth-q">誤解: キャッシュは、マザーボードに載った別のメモリのチップ</p><p>実際は、今のCPUでは、キャッシュはふつうCPUと同じチップの上にあります。9800X3Dのようにキャッシュのチップを重ねる製品も、CPUという1つの部品の中です。誤解のもとは昔のパソコンです。1989年に登場したIntelの486は、チップの上に8KBのキャッシュを持ち、マザーボードに2段目のキャッシュを足すこともできました。今のマザーボードに差すメモリは、メインメモリです。</p></div>
+<div class="myth"><p class="myth-q">誤解: ヒット率が99%なら、ミスは気にしなくてよい</p><p>実際は、1%のミスが、平均の時間の半分を占めることもあります。上の例の数字で計算すると、99%のときの平均は0.99+1=1.99ナノ秒です。このうち1ナノ秒は、たった1%のミスの分です。ヒット率が98%に下がると、平均は約2.98ナノ秒になり、約1.5倍に延びます。ミス1回がヒット1回の100倍重いため、1%の差が効くのです。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th><th>くらべると</th></tr></thead>
+<tbody>
+<tr><td>4GHzのCPUのクロック1回</td><td>0.25ナノ秒</td><td>1秒に40億回</td></tr>
+<tr><td>L1キャッシュの読み出し</td><td>約1ナノ秒</td><td>クロック数回分</td></tr>
+<tr><td>メモリ(DRAM)の読み出し</td><td>数十〜100ナノ秒</td><td>100ナノ秒ならクロック400回分</td></tr>
+<tr><td>1ラインの大きさ</td><td>64バイト</td><td>8バイトの数が8個(x86や多くのArm)</td></tr>
+<tr><td>L3キャッシュの例(2024年)</td><td>36〜96MB</td><td>Core Ultra 9 285K、Ryzen 9 9950X、Ryzen 7 9800X3D</td></tr>
+</tbody>
+</table>
+<p>メモリを1回待つ間に、クロックは数百回進みます。キャッシュは、この待ちの多くをクロック数回分に縮める工夫です。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="/compare/write-allocate-vs-no-write-allocate/">ライトアロケートとノーライトアロケートの違い</a>(書き込みでミスしたときの動き)、<a href="/compare/msi-vs-mesi-vs-moesi/">MSI・MESI・MOESIの違い</a>(コア間で写しをそろえる手順)</li>
+<li>次の一歩の用語: <a class="term-link" href="/term/miss-penalty/">ミスペナルティ</a>、<a class="term-link" href="/term/conflict-miss/">競合ミス</a>、<a class="term-link" href="/term/capacity-miss/">容量ミス</a>(ミスの種類)、<a class="term-link" href="/term/false-sharing/">偽共有</a>(コアどうしでラインを取り合う現象)、<a class="term-link" href="/term/tlb/">TLB</a>(番地の変換のためのキャッシュ)</li>
+<li>メモリの速さがAIの計算をしばる話: 「<a href="/learn/why-gpus-for-ai/">なぜAIにGPUが使われるの?</a>」</li>
+</ul>
+</section>
+
+</article>
+
+<section>
+  <h2>シリーズ「コンピュータのしくみ」の記事</h2>
+  <ol class="learn-toc"><li><a href="/learn/how-computers-calculate-with-0-and-1/" data-track="learn_series">コンピュータは0と1でどう計算するの? 2進数と足し算の回路</a></li><li><a href="/learn/what-is-a-cpu/" data-track="learn_series">CPUとは? パソコンやスマホの中で何をしているのか</a></li><li><a href="/learn/why-gpus-for-ai/" data-track="learn_series">なぜAIにGPUが使われるの? 大量の掛け算を同時にこなすしくみ</a></li><li><a href="/learn/what-is-an-operating-system/" data-track="learn_series">OSとは? パソコンやスマホで何をしているソフトなのか</a></li><li><strong aria-current="page">キャッシュメモリとは? CPUがメモリを待たずに済むしくみ</strong></li></ol>
+</section>
+<p class="learn-quiz muted">この分野の問題: <a href="/c/memory-hierarchy/" data-track="learn_topic">メモリ階層と性能</a></p>
+<details class="news-sources"><summary>参考にした資料</summary><ul><li><a href="https://shop.elsevier.com/books/computer-architecture/hennessy/978-0128119051" target="_blank" rel="noopener">J. L. Hennessy, D. A. Patterson: Computer Architecture: A Quantitative Approach, 6th ed., Morgan Kaufmann, 2017(教科書。局所性、平均メモリアクセス時間、連想度、置き換え、書き込みの方式、コヒーレンシ、CPUとメモリの速さの差)</a></li><li><a href="https://norvig.com/21-days.html" target="_blank" rel="noopener">Peter Norvig: Teach Yourself Programming in Ten Years(よく引用される待ち時間の目安の表。L1キャッシュ約0.5ナノ秒、メインメモリ約100ナノ秒)</a></li><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html" target="_blank" rel="noopener">Intel: Intel 64 and IA-32 Architectures Software Developer&#39;s Manuals(Vol. 3A のキャッシュの章。ラインは64バイト)</a></li><li><a href="https://developer.arm.com/documentation/ddi0464/latest/L1-Memory-System/About-the-L1-memory-system" target="_blank" rel="noopener">Arm: Cortex-A7 MPCore Technical Reference Manual — About the L1 memory system(データ用キャッシュのラインは64バイト)</a></li><li><a href="https://go.googlesource.com/sys/+/20c2bfdbfe249b02ea905477d7cff52673dadfa2" target="_blank" rel="noopener">Go project: cpu: fix cpu cacheLineSize for arm64 darwin (a.k.a. M1)(Apple M1のmacOSは、sysctl hw.cachelinesize で128バイトと報告する)</a></li><li><a href="https://doi.org/10.1145/1070838.1070856" target="_blank" rel="noopener">P. J. Denning: The Locality Principle, Communications of the ACM 48(7), 2005</a></li><li><a href="https://www.amd.com/en/products/processors/desktops/ryzen/9000-series/amd-ryzen-9-9950x.html" target="_blank" rel="noopener">AMD: AMD Ryzen 9 9950X(製品仕様。L1 1,280KB・L2 16MB・L3 64MB、16コア、2024年8月発売)</a></li><li><a href="https://www.amd.com/en/products/processors/desktops/ryzen/9000-series/amd-ryzen-7-9800x3d.html" target="_blank" rel="noopener">AMD: AMD Ryzen 7 9800X3D(製品仕様。L3 96MB)</a></li><li><a href="https://ir.amd.com/news-events/press-releases/detail/1225/the-gaming-legend-continues-amd-introduces-next-generation-amd-ryzen-7-9800x3d-processor" target="_blank" rel="noopener">AMD Newsroom: The Gaming Legend Continues — AMD Introduces Next-Generation AMD Ryzen 7 9800X3D Processor(2024年10月31日。64MBのキャッシュをCPUのチップの下に重ねる)</a></li><li><a href="https://www.intel.com/content/www/us/en/products/sku/241060/intel-core-ultra-9-processor-285k-36m-cache-up-to-5-70-ghz/specifications.html" target="_blank" rel="noopener">Intel: Intel Core Ultra 9 Processor 285K — Product Specifications(Smart Cache 36MB、L2 合計40MB、2024年第4四半期発売)</a></li><li><a href="https://www.tomshardware.com/reviews/intel-cpu-history,1986-4.html" target="_blank" rel="noopener">Tom&#39;s Hardware: Intel&#39;s 15 Most Unforgettable x86 CPUs(486はチップ上に8KBのL1キャッシュを持ち、マザーボードにL2キャッシュを載せられた)</a></li><li><a href="https://www.ipa.go.jp/shiken/syllabus/nl10bi0000007tf7-att/syllabus_fe_ver9_1.pdf" target="_blank" rel="noopener">IPA: 基本情報技術者試験(レベル2)シラバス Ver.9.1(コンピュータ構成要素: キャッシュメモリ)</a></li><li><a href="https://www.isc.meiji.ac.jp/~kikn/CA/CA9-Storage.pdf" target="_blank" rel="noopener">明治大学 講義資料: 記憶装置(実効アクセス時間 T = h·Tc + (1−h)·Tm)</a></li><li><a href="https://www.cse.iitk.ac.in/users/swarnendu/courses/autumn2023-cs610/write-cache-friendly-code.pdf" target="_blank" rel="noopener">IIT Kanpur CS610 講義資料: Writing cache-friendly code(C言語の配列は行ごとに並ぶ。行の順と列の順の読み方の違い)</a></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching" target="_blank" rel="noopener">MDN Web Docs: HTTP caching(ブラウザのキャッシュと共有キャッシュ)</a></li><li><a href="https://www.cloudflare.com/learning/cdn/caching/" target="_blank" rel="noopener">Cloudflare: What is caching?(CDNは利用者に近いサーバに写しを置く)</a></li></ul></details>
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="/learn/">やさしい解説の一覧へ</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">当サイトは個人が運営する半導体の学習サイトです。</p>
+    <p class="footer-request"><a href="/contact/">サイトへのご要望は、お問い合わせから受け付けています →</a></p>
+    <nav class="footer-nav">
+      <a href="/about/">サイトについて</a>
+      <a href="/figures/">図解集</a>
+      <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/disclaimer/">免責事項</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+    <p class="copyright">© 2026 半導体教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
