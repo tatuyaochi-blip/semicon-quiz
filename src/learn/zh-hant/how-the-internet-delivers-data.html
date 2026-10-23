@@ -1,0 +1,254 @@
+<!--
+{
+  "title": "網際網路怎麼傳送資料？封包與路由器的運作",
+  "description": "網際網路把資料分成小封包，由路由器看目的地的IP位址一站一站轉送。本文淺顯說明網頁顯示出來前的流程、DNS、TCP、HTTPS的角色，以及距離遙遠卻依然很快的原因。",
+  "series": "internet",
+  "order": 1,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["network", "web-tech", "network-advanced", "wireless"],
+  "terms": ["パケット", "IPアドレス", "ルータ", "IP(インターネットプロトコル)", "ルーティング(経路制御)", "DNS", "RTT(往復遅延時間)"],
+  "sources": [
+    { "title": "RFC 791: Internet Protocol(IETF, 1981年)", "url": "https://www.rfc-editor.org/rfc/rfc791" },
+    { "title": "RFC 1122: Requirements for Internet Hosts — Communication Layers(IETF, 1989年。リンク層・IP層・トランスポート層の整理)", "url": "https://www.rfc-editor.org/rfc/rfc1122" },
+    { "title": "RFC 9293: Transmission Control Protocol (TCP)(IETF, 2022年)", "url": "https://www.rfc-editor.org/rfc/rfc9293" },
+    { "title": "RFC 768: User Datagram Protocol(IETF, 1980年)", "url": "https://www.rfc-editor.org/rfc/rfc768" },
+    { "title": "RFC 1034: Domain Names — Concepts and Facilities(IETF, 1987年)", "url": "https://www.rfc-editor.org/rfc/rfc1034" },
+    { "title": "RFC 9000: QUIC: A UDP-Based Multiplexed and Secure Transport(IETF, 2021年)", "url": "https://www.rfc-editor.org/rfc/rfc9000" },
+    { "title": "RFC 9114: HTTP/3(IETF, 2022年)", "url": "https://www.rfc-editor.org/rfc/rfc9114" },
+    { "title": "RFC 1918: Address Allocation for Private Internets(IETF, 1996年)", "url": "https://www.rfc-editor.org/rfc/rfc1918" },
+    { "title": "RFC 3022: Traditional IP Network Address Translator (Traditional NAT)(IETF, 2001年)", "url": "https://www.rfc-editor.org/rfc/rfc3022" },
+    { "title": "RFC 894: A Standard for the Transmission of IP Datagrams over Ethernet Networks(IETF, 1984年。最大1,500バイト。本文の誤記は正誤表で訂正)", "url": "https://www.rfc-editor.org/rfc/inline-errata/rfc894.html" },
+    { "title": "Internet Society: A Brief History of the Internet(パケット交換の始まり)", "url": "https://www.internetsociety.org/internet/history-internet/brief-history-internet/" },
+    { "title": "I. N. Bozkurt et al.: Dissecting Latency in the Internet's Fiber Infrastructure(arXiv:1811.10737, 2018年)", "url": "https://arxiv.org/abs/1811.10737" },
+    { "title": "Verizon Business: IP Latency Statistics(Trans Pacificの往復遅延の月平均。2026年2月は約111ミリ秒)", "url": "https://www.verizon.com/business/terms/latency/" },
+    { "title": "Verizon Business: Global Latency SLA(Trans Pacificは東京とロサンゼルスの拠点ルータの間)", "url": "https://www.verizon.com/business/terms/global_latency_sla/" },
+    { "title": "TeleGeography: Do Submarine Cables Account For Over 99% of Intercontinental Data Traffic?(2023年)", "url": "https://blog.telegeography.com/2023-mythbusting-part-3" },
+    { "title": "Chromium Blog: An Update on the Lock Icon(2023年5月)", "url": "https://blog.chromium.org/2023/05/an-update-on-lock-icon.html" }
+  ]
+}
+-->
+<p class="lead">網際網路會把資料分成稱為「封包」的小塊來傳送。每個封包都寫著目的地的號碼（IP位址），途中稱為「路由器」的設備看了號碼，就一站一站轉送下去。封包抵達後，接收端會依正確順序重新排列，還原成原本的資料。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>打開網頁時，背後依序發生了哪些事</li>
+<li>封包、IP位址、路由器各自在做什麼</li>
+<li>把通訊的工作分成4個「層」來思考的理由</li>
+<li>經過好幾台設備卻還是很快的原因，以及等待時間從哪裡產生</li>
+</ul><p class="muted">先備知識：不需要。只要用手機看過網頁就夠了。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>用手機點一下新聞的連結，多半不到幾秒，頁面就會顯示出來。這些資料，是從遠方某台電腦送來的。像這樣依要求提供資料的電腦，稱為「伺服器」。</p>
+<p>這篇文章會依序說明，打開1個網頁時背後發生的事。大致的流程如下。</p>
+<ol>
+<li>從網站的名稱（例：www.example.com），查出伺服器的號碼</li>
+<li>和伺服器之間，做好開始交換資料的準備</li>
+<li>送出「請給我這個頁面」的請求</li>
+<li>頁面的資料分成許多小塊送過來</li>
+<li>在手機端重新組合，顯示在畫面上</li>
+</ol>
+</section>
+
+<section>
+<h2>資料要分成「封包」來傳送</h2>
+<p>在網際網路上，照片和網頁的文字，都是當作0和1的排列來傳送。大的資料，不會整塊直接傳送。而是切成小塊，一塊一塊地送。這些小塊稱為{{term:パケット|封包}}。</p>
+<p>封包的開頭，會加上寫著目的地和來源號碼等資訊的部分。這稱為「標頭」。接收端以標頭為線索收集片段，再組合回原本的資料。</p>
+<p>1個封包的大小有上限。家用的有線網路和Wi-Fi，通常最多1,500位元組（1位元組是8個0或1排在一起的量）。1 MB（100萬位元組）的照片，算起來大約會分成700個封包。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 286" role="img"><title>把1份資料分成小片段，各自加上標頭，成為封包</title>
+<text x="180" y="22" text-anchor="middle">要傳送的資料（例：照片）</text>
+<rect x="20" y="34" width="320" height="36" rx="6" class="p"/>
+<line x1="100" y1="34" x2="100" y2="70" class="dash"/>
+<line x1="180" y1="34" x2="180" y2="70" class="dash"/>
+<line x1="260" y1="34" x2="260" y2="70" class="dash"/>
+<text x="60" y="58" text-anchor="middle">1</text>
+<text x="140" y="58" text-anchor="middle">2</text>
+<text x="220" y="58" text-anchor="middle">3</text>
+<text x="300" y="58" text-anchor="middle">4</text>
+<line x1="60" y1="74" x2="60" y2="96" class="ln"/><polygon points="60,104 55,95 65,95" class="ink"/>
+<line x1="140" y1="74" x2="140" y2="96" class="ln"/><polygon points="140,104 135,95 145,95" class="ink"/>
+<line x1="220" y1="74" x2="220" y2="96" class="ln"/><polygon points="220,104 215,95 225,95" class="ink"/>
+<line x1="300" y1="74" x2="300" y2="96" class="ln"/><polygon points="300,104 295,95 305,95" class="ink"/>
+<rect x="24" y="110" width="32" height="34" rx="4" class="ox"/><rect x="56" y="110" width="40" height="34" rx="4" class="p"/><text x="76" y="133" text-anchor="middle">1</text>
+<rect x="104" y="110" width="32" height="34" rx="4" class="ox"/><rect x="136" y="110" width="40" height="34" rx="4" class="p"/><text x="156" y="133" text-anchor="middle">2</text>
+<rect x="184" y="110" width="32" height="34" rx="4" class="ox"/><rect x="216" y="110" width="40" height="34" rx="4" class="p"/><text x="236" y="133" text-anchor="middle">3</text>
+<rect x="264" y="110" width="32" height="34" rx="4" class="ox"/><rect x="296" y="110" width="40" height="34" rx="4" class="p"/><text x="316" y="133" text-anchor="middle">4</text>
+<text x="180" y="170" text-anchor="middle" class="a">加上標頭，成為封包</text>
+<text x="180" y="200" text-anchor="middle" class="m">1個封包的內容</text>
+<rect x="20" y="210" width="130" height="40" rx="6" class="ox"/>
+<text x="85" y="235" text-anchor="middle">標頭</text>
+<rect x="150" y="210" width="190" height="40" rx="6" class="p"/>
+<text x="245" y="235" text-anchor="middle">資料的片段</text>
+<text x="85" y="274" text-anchor="middle">目的地、來源等</text>
+<text x="245" y="274" text-anchor="middle">原本資料的一部分</text>
+</svg><figcaption class="fig-cap">把大的資料分成小片段，各自加上標頭，就是封包。圖中省略的部分：標頭會依層重疊加上（後面「層」的段落）、實際的片段數量多得多。</figcaption></figure>
+<p>特地切開的理由，主要有2個。第1個是1條線路能由許多人共用。封包很小，就能把不同人的通訊一點一點輪流傳送。第2個是途中即使遺失一部分，也只要重送那個片段就好。</p>
+<p>以前的市內電話，是相反的想法。通話期間，會整條占住通往對方的線路。即使沒有在說話，其他人也不能使用那條線路。把資料分開、共用線路的方式，是在1960年代想出來的，成為網際網路的基礎。</p>
+</section>
+
+<section>
+<h2>IP位址：封包目的地的號碼</h2>
+<p>封包的目的地，要寫上代表對方設備的號碼。這個號碼稱為{{term:IPアドレス|IP位址}}。手機、電腦和伺服器，只要是連上網際網路的設備，都會分配到IP位址。</p>
+<p>在廣泛使用的格式裡，IP位址寫成「192.0.2.10」這樣。這是用點隔開4個0～255的數字。用0和1表示是32位，所以能做出的號碼只有約43億個。這不夠全世界的設備使用，所以正逐步改用位數大幅增加的新格式（IPv6）。兩者的差異整理在「<a href="{{home}}compare/ipv4-vs-ipv6/">IPv4與IPv6的差異</a>」的表格中。</p>
+<p>用IP位址把封包送到對方的規則，稱為{{term:IP(インターネットプロトコル)|IP}}。IP專心把封包朝目的地送出去。確認有沒有送到，不是IP的工作。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>封包很像寫了收件地址的信封。郵差送信時，只看信封上的地址決定送到哪裡，不會讀裡面的信。途中的設備也一樣，只看封包的標頭決定去向。相似的是「目的地寫在外面，和內容分開處理」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>郵寄地址是地名，所以知道寫的是哪裡。IP位址只是號碼，無法從中知道精確的位置。手機改連別的Wi-Fi時，號碼也常常會改變。另外，和封好的信不同，沒有加密的封包，途中可能被人讀到內容。</p></aside>
+</section>
+
+<section>
+<h2>路由器只選「下一站」來轉送</h2>
+<p>網際網路是由許多小網路連接起來的。有家裡的網路、公司的網路、電信業者的網路等。位在網路交界處、把封包交給隔壁網路的設備，稱為{{term:ルータ|路由器}}。</p>
+<p>路由器會從收到的封包標頭，讀出目的地的IP位址。再對照自己手上的表，決定交給隔壁哪一台路由器。這個表稱為{{term:ルーティング(経路制御)|路由表}}。路由表裡寫著「這個範圍的號碼，交給那邊的鄰居」這樣的對應。</p>
+<p>重要的是，每台路由器都不知道通往對方的完整路線。它只知道「下一步該交給誰」。並不是在傳送前就先決定好整條路線。封包是從路由器到路由器，像接力傳水桶一樣送過去。</p>
+<p>路由表會由路由器之間交換資訊，自動重新建立。某處線路故障時，路由表會改寫成避開那條路。送往同一個對象的封包，平常大多走幾乎相同的路。不過，通訊途中路徑也可能改變，之後封包仍會繼續送達。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>封包從手機到伺服器，依序經過路由器。發生故障時改走別的路徑</title>
+<rect x="8" y="16" width="84" height="34" rx="6" class="metal"/>
+<text x="50" y="38" text-anchor="middle">手機</text>
+<line x1="50" y1="50" x2="50" y2="100" class="dash"/>
+<text x="58" y="80">Wi-Fi</text>
+<rect x="4" y="100" width="92" height="34" rx="6" class="ox"/>
+<text x="50" y="122" text-anchor="middle">家用路由器</text>
+<rect x="116" y="16" width="236" height="218" rx="12" class="dash"/>
+<text x="234" y="38" text-anchor="middle" class="m">電信業者等的路由器</text>
+<line x1="96" y1="117" x2="134" y2="117" class="thin"/>
+<line x1="150" y1="117" x2="225" y2="66" class="thin"/>
+<line x1="150" y1="117" x2="225" y2="190" class="thin"/>
+<line x1="225" y1="66" x2="305" y2="117" class="thin"/>
+<line x1="225" y1="190" x2="305" y2="117" class="thin"/>
+<line x1="225" y1="66" x2="225" y2="190" class="thin"/>
+<polyline points="96,112 150,112 225,61 305,112" class="ac"/>
+<polyline points="96,122 150,122 225,195 290,250" class="ac2"/>
+<line x1="305" y1="117" x2="305" y2="250" class="ac"/>
+<line x1="256" y1="78" x2="272" y2="94" class="ln"/><line x1="272" y1="78" x2="256" y2="94" class="ln"/>
+<circle cx="150" cy="117" r="16" class="n"/>
+<circle cx="225" cy="66" r="16" class="n"/>
+<circle cx="225" cy="190" r="16" class="n"/>
+<circle cx="305" cy="117" r="16" class="n"/>
+<text x="150" y="122" text-anchor="middle">R</text>
+<text x="225" y="71" text-anchor="middle">R</text>
+<text x="225" y="195" text-anchor="middle">R</text>
+<text x="305" y="122" text-anchor="middle">R</text>
+<rect x="246" y="250" width="100" height="34" rx="6" class="metal"/>
+<text x="296" y="272" text-anchor="middle">伺服器</text>
+<line x1="12" y1="304" x2="44" y2="304" class="ac"/>
+<text x="52" y="309">平常的路徑</text>
+<line x1="160" y1="304" x2="192" y2="304" class="ac2"/>
+<text x="200" y="309">故障時的路徑</text>
+<text x="40" y="186" text-anchor="middle">R = 路由器</text>
+</svg><figcaption class="fig-cap">每台路由器看了目的地，只選「下一個鄰居」。途中的線路故障時（×），路由表會改寫，改走別的路徑。圖中省略的部分：實際路由器的數量（多得多）、海底電纜等長距離線路。</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>路由器的工作，很像道路路口的方向指示牌。開車的人在每個路口，看「往台中請走這邊」的指示決定轉彎方向。出發前不必先用地圖查好整條路線，跟著指示牌走就能到達目的地。相似的是「在每個地點，只決定下一步的方向」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>道路的指示牌很少改變，路由表卻會配合故障等狀況自動改寫。另外，道路塞車時車子不會消失，但路由器太擁擠時，會丟掉處理不完的封包。被丟掉的部分，由接下來要說明的TCP重送來補上。</p></aside>
+</section>
+
+<section>
+<h2>把工作分成4個「層」來思考</h2>
+<p>到目前為止的說明裡，混著好幾種工作。把訊號送到隔壁設備的工作、尋找通往遠方對象路徑的工作、防止遺漏的工作等。網際網路把這些工作分成「層」，每一層訂出通訊的規則。這些規則稱為「協定」。</p>
+<p>層一般用下面4個來說明（稱為TCP/IP的4層模型）。表中越上面的層越接近App，越下面的層越接近電波和纜線。</p>
+<table>
+<thead><tr><th>層</th><th>主要的協定</th><th>負責的工作</th></tr></thead>
+<tbody>
+<tr><td>應用層</td><td>HTTP、HTTPS、DNS</td><td>瀏覽器和伺服器之間對話的內容</td></tr>
+<tr><td>傳輸層</td><td>TCP、UDP</td><td>修正遺漏和順序錯亂（TCP）</td></tr>
+<tr><td>網際網路層</td><td>IP</td><td>跨越網路，送到對方</td></tr>
+<tr><td>連結層</td><td>Wi-Fi、乙太網路</td><td>用電波、電或光的訊號，送到隔壁的設備</td></tr>
+</tbody>
+</table>
+<p>最下面的連結層，只負責送到相連的隔壁設備。如果是手機的Wi-Fi，負責的範圍到家用路由器為止。再往前，則由{{term:イーサネット|乙太網路}}（有線網路的規格）或光纖線路，再送到下一台設備。</p>
+<p>在最上層決定網頁交換方式的，是{{term:HTTP|HTTP}}。它規定了「請給我這個頁面」「好，給你」這樣的對話形式。這段對話由下面的層依序接手，送到對方。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 290" role="img"><title>手機、路由器、伺服器的層。傳送端由上往下，接收端由下往上傳遞。路由器只處理到IP層</title>
+<text x="62" y="20" text-anchor="middle">手機</text>
+<text x="180" y="20" text-anchor="middle">路由器</text>
+<text x="298" y="20" text-anchor="middle">伺服器</text>
+<rect x="24" y="30" width="76" height="36" rx="6" class="metal"/><text x="62" y="54" text-anchor="middle">HTTP</text>
+<rect x="24" y="72" width="76" height="36" rx="6" class="n"/><text x="62" y="96" text-anchor="middle">TCP</text>
+<rect x="24" y="114" width="76" height="36" rx="6" class="ox"/><text x="62" y="138" text-anchor="middle">IP</text>
+<rect x="24" y="156" width="76" height="36" rx="6" class="p"/><text x="62" y="180" text-anchor="middle">Wi-Fi</text>
+<rect x="142" y="114" width="76" height="36" rx="6" class="ox"/><text x="180" y="138" text-anchor="middle">IP</text>
+<rect x="142" y="156" width="76" height="36" rx="6" class="p"/><text x="180" y="180" text-anchor="middle">連結</text>
+<rect x="260" y="30" width="76" height="36" rx="6" class="metal"/><text x="298" y="54" text-anchor="middle">HTTP</text>
+<rect x="260" y="72" width="76" height="36" rx="6" class="n"/><text x="298" y="96" text-anchor="middle">TCP</text>
+<rect x="260" y="114" width="76" height="36" rx="6" class="ox"/><text x="298" y="138" text-anchor="middle">IP</text>
+<rect x="260" y="156" width="76" height="36" rx="6" class="p"/><text x="298" y="180" text-anchor="middle">有線網路</text>
+<line x1="12" y1="40" x2="12" y2="180" class="ac"/><polygon points="12,190 7,180 17,180" class="fa"/>
+<polyline points="62,192 62,212 150,212 150,134" class="ac"/><polygon points="150,124 145,134 155,134" class="fa"/>
+<polyline points="210,126 210,212 298,212 298,203" class="ac"/><polygon points="298,194 293,203 303,203" class="fa"/>
+<line x1="348" y1="190" x2="348" y2="50" class="ac"/><polygon points="348,40 343,50 353,50" class="fa"/>
+<text x="62" y="240" text-anchor="middle">由上往下</text>
+<text x="180" y="240" text-anchor="middle">只看到IP層</text>
+<text x="298" y="240" text-anchor="middle">由下往上</text>
+<text x="180" y="274" text-anchor="middle" class="m">每一層加上標頭，再一層層拆下</text>
+</svg><figcaption class="fig-cap">傳送端從上層開始依序疊加標頭，接收端從下層開始依序拆下。途中的路由器通常只看到IP層。圖中省略的部分：途中的許多路由器、家用路由器進行的號碼改寫（後面說明的NAT）、HTTPS的加密層。</figcaption></figure>
+<p>分成層之後，即使替換某一層，其他層也能照樣使用。例如，把Wi-Fi換成有線網路，也不必重做瀏覽器或IP。</p>
+<p>準備證照考試時，也常會看到把同樣的想法分成7層整理的{{term:OSI参照モデル|OSI參考模型}}。它只是分得比較細，「依工作分層」的想法是一樣的。大致來說，連結層（也稱為網路介面層）對應OSI的第1～2層，網際網路層對應第3層。傳輸層是第4層，應用層是第5～7層。</p>
+</section>
+
+<section>
+<h2>DNS：從名稱查出號碼</h2>
+<p>人是用「www.example.com」這樣的名稱來記網站。但是，封包的目的地能寫的是號碼（IP位址）。所以，要用把名稱轉成號碼的機制。這稱為{{term:DNS|DNS}}（網域名稱系統）。</p>
+<p>瀏覽器會先問DNS伺服器：「這個名稱的號碼是多少？」拿到答案後，才能把封包送到網頁的伺服器。開頭流程的第1步就是這個。答案會記住一段時間，所以不是每次都重新詢問。</p>
+</section>
+
+<section>
+<h2>TCP與UDP：要確實，還是要輕快</h2>
+<p>IP的工作，只到把封包送出去為止。途中太擁擠的路由器可能丟掉封包，抵達的順序也可能對調。即使如此，網頁還是能完整顯示，靠的是{{term:TCP|TCP}}這個規則。</p>
+<p>在TCP中，傳送端會替資料加上流水號。接收端會回覆「已收到這裡為止」。沒收到回覆的部分，傳送端會再送一次。接收端看號碼，把資料排回正確的順序。</p>
+<p>另外，TCP在開始傳送資料前，會和對方簡短打個招呼做準備。開頭流程的第2步就是這個。這個招呼要花1次來回的時間。</p>
+<p>另一方面，{{term:UDP|UDP}}不管理號碼、也不重送，封包送出去就不管了。步驟比較少，所以能縮短等待時間。它用在視訊通話和對戰遊戲這類「現在」的資料比晚到的資料更重要的用途。DNS的查詢，也主要使用UDP。</p>
+<p>新的HTTP/3，在UDP之上再加上{{term:QUIC|QUIC}}這個規則，由QUIC負責重送等工作。差異整理在「<a href="{{home}}compare/tcp-vs-udp/">TCP與UDP的差異</a>」和「<a href="{{home}}compare/http-1-1-vs-http-2-vs-http-3/">HTTP/1.1、HTTP/2、HTTP/3的差異</a>」的表格中。</p>
+</section>
+
+<section>
+<h2>家用路由器與號碼改寫（NAT）</h2>
+<p>家裡的Wi-Fi設備，多半是把Wi-Fi基地台和路由器合成1台。家裡的手機和電腦，會分配到只在家裡通用的號碼。常用的是以「192.168.」開頭的號碼。用這個號碼，網際網路另一端無法把回覆送回來。</p>
+<p>所以，家用路由器會把送出去的封包的來源號碼，改寫成網際網路用的號碼。路由器會記下哪個通訊屬於哪台設備，再把回來的封包改回原本的號碼送達。這種改寫稱為{{term:NAT|NAT}}。這是讓只有約43億個的號碼，能由許多設備共用的方法。</p>
+</section>
+
+<section>
+<h2>HTTPS與鎖頭圖示</h2>
+<p>途中的設備，只要想讀，就讀得到封包的內容。所以，要先把資料轉成只有持有鑰匙的對方才能還原的形式，再傳送。這稱為「加密」。</p>
+<p>把網頁的交換加密後傳送的方式，就是{{term:HTTPS|HTTPS}}。HTTPS也會確認通訊對象是不是真正的伺服器。</p>
+<p>為此，伺服器會出示稱為「憑證」的電子身分證。憑證是受信任的發行機構，確認網站名稱的擁有者後所做的保證。瀏覽器會先確認這個保證，再開始通訊。</p>
+<p>網址列的鎖頭圖示，一直用來表示已完成這種確認和加密。不過，鎖頭圖示並不代表「經營者值得信任的網站」。因為詐騙網站也能取得憑證。Chrome從2023年的117版起，為了避免這種誤解，把鎖頭圖示換成了別的圖示。</p>
+</section>
+
+<section>
+<h2>經過好幾台設備，為什麼還是很快</h2>
+<p>長距離的通訊，主要使用光纖。光纖是讓光通過像頭髮一樣細的玻璃線，來傳送訊號的纜線。光在裡面每秒約前進20萬km。大約是真空中光速（約30萬km）的3分之2。</p>
+<p>換算成每1 km，大約是5微秒（1微秒是100萬分之1秒）。從送出資料到回覆回來的時間，稱為{{term:RTT(往復遅延時間)|RTT}}。東京和大阪直線距離約400 km，所以RTT最短也要約4毫秒（1毫秒是1000分之1秒）。實際的纜線不是直線，所以路程更長。</p>
+<p>東京和洛杉磯，沿地球表面的最短距離約8,800 km。用光纖來回一趟，光是距離就要約88毫秒。根據美國電信業者Verizon公布的數值，兩個城市據點之間的來回，2026年初的月平均約110毫秒。差距約20毫秒，來自纜線繞遠路，以及途中設備的處理和排隊等待。</p>
+<p>路由器的處理，如果不擁擠，很短的時間就能完成。和遠方對象通訊時，等待時間大部分是訊號跑完距離的時間。跨海的通訊，大部分會經過鋪設在海底的光纖纜線。調查公司TeleGeography在2023年的驗證中指出，洲際資料有99%以上是如此。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：自己和伺服器之間，有1條專用的線連著</p><p>實際上，線路由許多人共用，自己的封包會和其他人的封包混在一起傳送。路線也不是事先決定好的。路由器隨時選擇下一個去向，途中路徑也可能改變。這個誤解，容易來自電話「線路接通」的印象。</p></div>
+<div class="myth"><p class="myth-q">誤解：Wi-Fi和網際網路是同一件事</p><p>實際上，{{term:Wi-Fi|Wi-Fi}}只是用電波連接手機和家用路由器（基地台）的機制。再往前，是用光纖等線路連到電信業者的網路。所以才會發生「Wi-Fi有連上，卻不能上網」的情況。</p></div>
+<div class="myth"><p class="myth-q">誤解：網路速度的數字越大，反應也越快</p><p>實際上，「1 Gbps」這類數字，是1秒能傳送的資料量（頻寬）。這和回覆回來的時間（RTT）是不同的東西。例如100 KB的小資料，100 Mbps約8毫秒、1 Gbps約0.8毫秒就能送完。但如果對方在美國，光是來回就要100毫秒以上。</p><p>所以，小量的交換即使把頻寬提高10倍，等待時間也不太會縮短。頻寬的差距最有效的，是下載大檔案（這裡省略TCP的細部運作，做了簡化）。可以用「<a href="{{home}}tools/data-transfer-time-calculator/">資料傳輸時間計算工具</a>」試算看看。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>比較</th></tr></thead>
+<tbody>
+<tr><td>1個封包的大小（有線網路、Wi-Fi）</td><td>通常最大1,500位元組</td><td>1 MB的照片約700個</td></tr>
+<tr><td>IPv4的位址數量</td><td>約43億（2乘32次的數）</td><td>比全世界人口少</td></tr>
+<tr><td>光纖中的光速</td><td>約20萬km/秒</td><td>每1 km約5微秒</td></tr>
+<tr><td>東京－大阪（直線約400 km）的來回</td><td>約4毫秒</td><td>只由距離決定的下限</td></tr>
+<tr><td>東京－洛杉磯（最短約8,800 km）的來回</td><td>約88毫秒（下限）</td><td>實測約110毫秒（Verizon，2026年初的月平均）</td></tr>
+<tr><td>洲際資料經過海底電纜的比例</td><td>99%以上</td><td>TeleGeography的驗證（2023年）</td></tr>
+</tbody>
+</table>
+<p>「下限」是以光纖中的速度，來回最短距離所需的時間。實際的來回時間，不會比這更短。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="{{home}}compare/hub-vs-switch-vs-router/">集線器、交換器、路由器的差異</a>（家裡和公司網路的設備）</li>
+<li>用計算試試看：<a href="{{home}}tools/ip-subnet-calculator/">IP位址與子網路計算</a>（把IP位址分成「網路部分」和「設備部分」的計算）</li>
+<li>下一步的名詞：{{term:MACアドレス|MAC位址}}、{{term:デフォルトゲートウェイ|預設閘道}}、{{term:DHCP|DHCP}}（家用網路的運作方式）</li>
+<li>進一步認識HTTPS：{{term:認証局|憑證機構}}（發行憑證的機構）、{{term:TLS|TLS}}（HTTPS加密的規則）</li>
+<li>自己看看路徑：{{term:traceroute|traceroute}}（列出封包經過的路由器的指令）</li>
+<li>從基礎讀起：伺服器和手機裡面，都是由CPU執行指令。「<a href="{{home}}learn/what-is-a-cpu/">CPU是什麼？</a>」</li>
+</ul>
+</section>

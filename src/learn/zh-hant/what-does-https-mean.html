@@ -1,0 +1,204 @@
+<!--
+{
+  "title": "HTTPS是什麼？鎖頭圖示能保護與不能保護的事",
+  "description": "HTTPS會把網頁的交換加密，偵測竄改，並用憑證確認對方。本文淺顯說明金鑰的共享、憑證與憑證機構的運作，以及即使有鎖頭圖示也保護不了的事。",
+  "series": "internet",
+  "order": 4,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["security", "web-tech", "cryptography", "network"],
+  "terms": ["HTTPS", "TLS", "認証局", "フィッシング"],
+  "sources": [
+    { "title": "RFC 9110: HTTP Semantics(IETF, 2022年。http と https の定義)", "url": "https://www.rfc-editor.org/rfc/rfc9110" },
+    { "title": "RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3(IETF, 2018年)", "url": "https://www.rfc-editor.org/rfc/rfc8446" },
+    { "title": "RFC 2246: The TLS Protocol Version 1.0(IETF, 1999年)", "url": "https://www.rfc-editor.org/rfc/rfc2246" },
+    { "title": "RFC 6101: The Secure Sockets Layer (SSL) Protocol Version 3.0(IETF, 2011年に記録として公開。Netscapeが作ったSSL 3.0)", "url": "https://www.rfc-editor.org/rfc/rfc6101" },
+    { "title": "RFC 7568: Deprecating Secure Sockets Layer Version 3.0(IETF, 2015年)", "url": "https://www.rfc-editor.org/rfc/rfc7568" },
+    { "title": "RFC 6066: TLS Extensions(IETF, 2011年。SNI の定義)", "url": "https://www.rfc-editor.org/rfc/rfc6066" },
+    { "title": "RFC 9849: TLS Encrypted Client Hello(IETF, 2026年3月)", "url": "https://www.rfc-editor.org/rfc/rfc9849" },
+    { "title": "RFC 8484: DNS Queries over HTTPS (DoH)(IETF, 2018年)", "url": "https://www.rfc-editor.org/rfc/rfc8484" },
+    { "title": "W. Diffie, M. E. Hellman: New Directions in Cryptography(IEEE Transactions on Information Theory, 1976年)", "url": "https://ee.stanford.edu/~hellman/publications/24.pdf" },
+    { "title": "Chromium Blog: An Update on the Lock Icon(2023年5月。Chrome 117での変更と、2021年の調査の11%)", "url": "https://blog.chromium.org/2023/05/an-update-on-lock-icon.html" },
+    { "title": "Google: A milestone for Chrome security: marking HTTP as “not secure”(2018年)", "url": "https://blog.google/products/chrome/milestone-chrome-security-marking-http-not-secure/" },
+    { "title": "Google Online Security Blog: HTTPS by default(2025年10月。HTTPSの割合の推移とChrome 154の計画)", "url": "https://security.googleblog.com/2025/10/https-by-default.html" },
+    { "title": "Google Transparency Report: HTTPS encryption on the web", "url": "https://transparencyreport.google.com/https/overview" },
+    { "title": "Let's Encrypt: ISRG's 10th Anniversary(2023年。ISRGの設立と最初の証明書の年表)", "url": "https://letsencrypt.org/2023/05/24/isrg-10th-anniversary.html" },
+    { "title": "Let's Encrypt: A Note from our Executive Director(2025年12月。2025年に7億6,200万サイト)", "url": "https://letsencrypt.org/2025/12/29/eoy-letter-2025/" },
+    { "title": "CA/Browser Forum: Ballot SC-081v3(2025年4月。証明書の有効期間を2026年3月から200日、2027年3月から100日、2029年3月から47日に短縮)", "url": "https://cabforum.org/2025/04/11/ballot-sc081v3-introduce-schedule-of-reducing-validity-and-data-reuse-periods/" },
+    { "title": "APWG: Phishing Activity Trends Report, 4th Quarter 2018", "url": "https://docs.apwg.org/reports/apwg_trends_report_q4_2018.pdf" },
+    { "title": "Help Net Security: Phishers shift efforts to attack SaaS and webmail services(2019年3月。APWGの2018年第4四半期の報告、HTTPSのフィッシングサイト約47%)", "url": "https://www.helpnetsecurity.com/2019/03/05/apwg-phishing-q4-2018/" },
+    { "title": "APWG: Phishing Activity Trends Report, 3rd Quarter 2020(フィッシングサイトの約80%がSSL/TLSを使用。PhishLabsの調べ)", "url": "https://docs.apwg.org/reports/apwg_trends_report_q3_2020.pdf" },
+    { "title": "CISA: NSA Releases Cyber Advisory: Managing Risk from Transport Layer Security Inspection(2019年)", "url": "https://www.cisa.gov/news-events/alerts/2019/11/19/nsa-releases-cyber-advisory-managing-risk-transport-layer-security" }
+  ]
+}
+-->
+<p class="lead">HTTPS是把網頁的交換（HTTP）用密碼技術保護起來再傳送的方式。它保護3件事：途中不會被偷看、被竄改時能發現、能確認對方是真正的網站。不過，鎖頭圖示只是「通訊受到保護」的標記，並不代表網站值得信任。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>HTTP和HTTPS的差異，以及HTTPS保護的3件事</li>
+<li>初次見面的瀏覽器和伺服器，共享秘密金鑰的方法</li>
+<li>憑證和憑證機構確認對方是不是本尊的方法</li>
+<li>即使有鎖頭圖示也保護不了的事</li>
+</ul><p class="muted">先備知識：不需要。如果知道「網際網路怎麼傳送資料」，會更容易閱讀。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>用瀏覽器打開網頁，網址有時會以「https://」開頭。在網路上購物或登入時，應該有人被教過「要確認鎖頭圖示」。</p>
+<p>可是最近的Chrome，網址列上的鎖頭圖示已經不見了。另一方面，被有鎖頭圖示的假網站欺騙的受害事件也一再發生。鎖頭圖示到底保護了什麼，又沒有保護什麼呢？這篇文章會依序看看它的運作方式。</p>
+</section>
+
+<section>
+<h2>HTTP是什麼：「請給我頁面」這段對話的規則</h2>
+<p>瀏覽器要顯示頁面時，會向伺服器送出請求。伺服器是依要求提供資料的電腦。規定「請給我這個頁面」「好，給你」這種對話形式的規則，稱為{{term:HTTP|HTTP}}。</p>
+<p>HTTP的對話，直接傳送的話，任何人都讀得懂。在網際網路上，資料會分成小塊，經過許多設備轉送才送達。途中的設備，或連在同一個Wi-Fi的人，只要想讀，就讀得到內容。轉送的方式，在「<a href="{{home}}learn/how-the-internet-delivers-data/">網際網路怎麼傳送資料？</a>」中說明。</p>
+<p>HTTPS的「S」，是Secure（安全）的第一個字母。對話的內容和HTTP一樣，只是把這段對話包成別人讀不懂的形式再傳送。負責包起來的規則，稱為{{term:TLS|TLS}}。也就是說，HTTPS是「用TLS保護的HTTP」。</p>
+<p>TLS的前身，是1990年代Netscape公司做的SSL。SSL被發現弱點後就不再使用，由一再改良的TLS取代。像「SSL憑證」這樣，舊名稱到現在還留著。</p>
+</section>
+
+<section>
+<h2>HTTPS保護的3件事</h2>
+<p>通訊上令人擔心的事，大致可分成3種。在資訊安全領域，常稱為「竊聽、竄改、冒充」。HTTPS對這3種，各有對應的對策。</p>
+<table>
+<thead><tr><th>擔心的事</th><th>例子</th><th>HTTPS的對策</th></tr></thead>
+<tbody>
+<tr><td>竊聽（偷看）</td><td>輸入的密碼被讀到</td><td>加密</td></tr>
+<tr><td>竄改（改寫）</td><td>畫面上的匯款帳號被改掉</td><td>偵測改寫</td></tr>
+<tr><td>冒充</td><td>假伺服器假裝成真的</td><td>用憑證確認</td></tr>
+</tbody>
+</table>
+<p>加密，是用固定的步驟和「金鑰」，把資料轉成看不出意思的形式。只有持有正確金鑰的對方，才能還原。金鑰的真面目，是非常長的數字（這裡省略計算的內容）。</p>
+<p>偵測改寫的方法，是在送出的每一段資料後面，附上用金鑰算出的簡短確認值。途中只要被改了1個字，接收端的計算就會對不上。這時，連線本身就會中斷。</p>
+<p>第3件事「對方是不是本尊」，要用後面說明的憑證來確認。我們先來看看，加密用的金鑰要怎麼準備。</p>
+</section>
+
+<section>
+<h2>怎麼和初次見面的對象共享金鑰</h2>
+<p>加密和還原都使用同一把金鑰的方式，稱為{{term:共通鍵暗号|對稱式加密}}。計算很輕，大的資料也能快速加密。不過，瀏覽器和伺服器是初次見面。如果直接把金鑰送過去，途中就會被偷看。</p>
+<p>解決這個問題的，是{{term:公開鍵暗号|公開金鑰加密}}的想法。使用成對的2把金鑰，一把是給誰看都沒關係的「公開金鑰」，另一把是只有本人持有的「私密金鑰」。從公開金鑰推算出私密金鑰，被設計成以現在的電腦無法在合理的時間內做到。</p>
+<p>現在HTTPS的主要方法，不傳送金鑰本身。瀏覽器和伺服器，各自在手邊產生用完即丟的秘密數字。這相當於私密金鑰。只有從它算出的「可以給人看的材料」（相當於公開金鑰），會互相傳送。把對方的材料和自己的秘密組合起來，雙方就會做出相同的金鑰。</p>
+<p>即使途中偷看了材料，沒有手邊的秘密，也做不出相同的金鑰。這個方法以想出它的2人命名，稱為{{term:ディフィー・ヘルマン鍵交換|迪菲-赫爾曼金鑰交換}}。它的基礎，是1976年發表的想法。做出的金鑰，會用在之後的對稱式加密。也就是只在一開始做繁重的計算，正式的通訊則用輕量的對稱式加密進行。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>金鑰交換常被比喻成混合顏料。2人先決定一個被誰看到都沒關係的共同顏色。各自混入只有自己知道的秘密顏色後送給對方，再把收到的顏色混入自己的秘密顏色一次。這樣，2人手上就會得到相同的顏色。相似的是「混合很簡單，但要把混好的顏色分回原來的顏色很難」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>顏料只要看顏色，就能大概猜到成分。實際的計算，則設計成從互相傳送的材料中，幾乎得不到秘密的線索。另外，這個比喻和金鑰交換本身，都不會確認對方是不是本尊。如果中間有人分別和兩邊交換顏色，就能和兩邊各自共享金鑰。防止這件事的，就是接下來的憑證。</p></aside>
+</section>
+
+<section>
+<h2>憑證與憑證機構：確認對方是不是本尊</h2>
+<p>要怎麼確認，正在對話的是真正的「example.com」呢？這時用的就是「憑證」。憑證是寫著網站名稱和該網站公開金鑰這一組資料的電子身分證。</p>
+<p>憑證上，蓋有發行機構的電子印章。這稱為{{term:デジタル署名|數位簽章}}。簽章只能用發行機構的私密金鑰做出來，任何人都能用該機構的公開金鑰來確認。憑證的內容只要改了1個字，確認時就會對不上。</p>
+<p>發行憑證的機構，稱為{{term:認証局|憑證機構}}（CA）。憑證機構會先確認申請者真的管理那個網域（網站的名稱），才發行憑證。瀏覽器和作業系統裡，一開始就內建了信任的憑證機構清單。瀏覽器會依序追溯簽章，確認能不能追到這份清單。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>根憑證機構發行憑證給中繼憑證機構，中繼憑證機構再發行給網站。瀏覽器由下往上依序追溯簽章來確認</title>
+<rect x="30" y="14" width="250" height="62" rx="8" class="metal"/>
+<text x="155" y="40" text-anchor="middle">根憑證機構</text>
+<text x="155" y="64" text-anchor="middle" class="m">內建於作業系統、瀏覽器</text>
+<line x1="155" y1="76" x2="155" y2="114" class="ln"/><polygon points="155,124 150,114 160,114" class="ink"/>
+<text x="166" y="104" class="m">簽章後發行</text>
+<rect x="30" y="126" width="250" height="44" rx="8" class="ox"/>
+<text x="155" y="154" text-anchor="middle">中繼憑證機構</text>
+<line x1="155" y1="170" x2="155" y2="208" class="ln"/><polygon points="155,218 150,208 160,208" class="ink"/>
+<text x="166" y="198" class="m">簽章後發行</text>
+<rect x="30" y="220" width="250" height="62" rx="8" class="n"/>
+<text x="155" y="246" text-anchor="middle">網站的憑證</text>
+<text x="155" y="270" text-anchor="middle" class="m">名稱 + 公開金鑰</text>
+<line x1="318" y1="262" x2="318" y2="56" class="ac"/><polygon points="318,44 312,58 324,58" class="fa"/>
+<text x="180" y="314" text-anchor="middle" class="a">瀏覽器由下往上依序確認</text>
+</svg><figcaption class="fig-cap">憑證從作為信任起點的根憑證機構開始，透過簽章的串連來保證。瀏覽器會從網站的憑證往上追溯簽章。圖中省略的部分：有效期限和已撤銷憑證的確認、中繼憑證機構有2層以上的情況。</figcaption></figure>
+<p>不過，憑證是任何人都看得到的公開資訊。所以伺服器不只出示憑證，還要證明自己持有成對的私密金鑰。具體來說，就是用私密金鑰替當下的交換內容簽章後送出。瀏覽器也會確認打開的網址和憑證上的名稱是否相符、是否過期。只要有任何問題，就會顯示警告並停止連線。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>憑證很像駕照這類公家發的身分證件。櫃台人員即使不認識對方，也因為信任發證單位，而用駕照認定本人。瀏覽器也因為信任憑證機構，而認定初次連線的伺服器是本尊。相似的是「透過可信任的第三方保證，來確認不認識的對象」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>駕照是確認姓名和住址後才發行的。另一方面，很多網站的憑證只確認「管理這個網域」這件事。不會確認公司名稱，也不會確認經營者是否正派。憑證保證的是「這是這個名稱的網站」，而不是「這是好網站」。</p></aside>
+<p>以前的憑證大多要付費，手續也很麻煩。因此，出現了免費且自動發行憑證的憑證機構「Let's Encrypt」。它在2015年9月發出第一張憑證。營運者是美國的非營利組織ISRG。它報告說，到2025年底，約有7億6,200萬個網站使用它的憑證。</p>
+</section>
+
+<section>
+<h2>連線之前的流程</h2>
+<p>把到目前為止的內容整理一下，用HTTPS連線時，會發生下面這些事。圖中是2018年成為標準的TLS 1.3版本，經過簡化後的樣子。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 330" role="img"><title>瀏覽器和伺服器互相傳送金鑰的材料和憑證，確認憑證，算出相同的金鑰後，開始加密的通訊</title>
+<rect x="10" y="8" width="100" height="34" rx="6" class="metal"/>
+<text x="60" y="30" text-anchor="middle">瀏覽器</text>
+<rect x="250" y="8" width="100" height="34" rx="6" class="metal"/>
+<text x="300" y="30" text-anchor="middle">伺服器</text>
+<line x1="60" y1="42" x2="60" y2="300" class="dash"/>
+<line x1="300" y1="42" x2="300" y2="300" class="dash"/>
+<text x="180" y="72" text-anchor="middle">① 金鑰的材料</text>
+<line x1="60" y1="82" x2="290" y2="82" class="ln"/><polygon points="300,82 290,77 290,87" class="ink"/>
+<text x="180" y="116" text-anchor="middle">② 憑證與金鑰的材料</text>
+<line x1="300" y1="126" x2="70" y2="126" class="ln"/><polygon points="60,126 70,121 70,131" class="ink"/>
+<text x="180" y="150" text-anchor="middle" class="m">（附伺服器的簽章）</text>
+<rect x="14" y="166" width="200" height="36" rx="6" class="ox"/>
+<text x="114" y="190" text-anchor="middle">③ 確認憑證</text>
+<rect x="14" y="214" width="332" height="36" rx="6" class="n"/>
+<text x="180" y="238" text-anchor="middle">④ 雙方算出相同的金鑰</text>
+<text x="180" y="276" text-anchor="middle" class="a">⑤ 用這把金鑰加密後通訊</text>
+<line x1="72" y1="290" x2="288" y2="290" class="ac"/>
+<polygon points="60,290 74,283 74,297" class="fa"/><polygon points="300,290 286,283 286,297" class="fa"/>
+<text x="180" y="320" text-anchor="middle" class="m">金鑰本身不傳送</text>
+</svg><figcaption class="fig-cap">①～④的準備，1次來回的交換就能完成。圖中省略的部分：準備之前TCP的招呼、決定使用哪種加密方式的交換、①裡面包含的網站名稱（後面說明的SNI）。實際上④的計算在②的途中就完成，憑證也會用這把金鑰加密後送達。</figcaption></figure>
+<p>準備完成後，「請給我這個頁面」的HTTP請求和回應，會用做好的金鑰加密後傳送。並不是每次打開頁面，都要從頭做一次這個準備。也有重複使用之前做好的資訊，來縮短準備的方法。</p>
+</section>
+
+<section>
+<h2>即使有鎖頭圖示也保護不了的事</h2>
+<h3>1. 網站值不值得信任</h3>
+<p>鎖頭圖示表示的，只是「正在和這個名稱的網站，進行受密碼保護的通訊」。即使是以詐騙為目的的網站，只要是自己申請的網域，也拿得到憑證。假冒真實的公司等，用假網站讓人輸入密碼等資料的詐騙，稱為{{term:フィッシング|網路釣魚}}。</p>
+<p>根據反網路釣魚組織APWG的報告，使用HTTPS的釣魚網站，在2018年10～12月約占47%。到了2020年7～9月，增加到約80%。該看的不是鎖頭圖示，而是網址列的網域名稱是不是真的。不要從電子郵件或簡訊的連結打開，從書籤或官方App進入比較安全。</p>
+<h3>2. 送來的內容安不安全</h3>
+<p>HTTPS只保護傳送的途中，不檢查傳送的內容。病毒等惡意程式，也會在加密的狀態下送達。另外，資料送達之後怎麼處理，取決於經營者。個人資料從伺服器外洩的事故，HTTPS無法防止。</p>
+<h3>3. 正在看哪個網站</h3>
+<p>HTTPS會隱藏的，是頁面的內容，以及網址中網域名稱之後的部分。例如「example.com/account/」，「/account/」的部分會被加密。輸入的密碼，以及用來維持登入狀態的小資料（Cookie），也受到保護。</p>
+<p>另一方面，通訊對象的IP位址（設備的號碼），為了送達，會維持看得到的狀態。通訊的量和時間也看得出來。而且，網站的名稱（網域名稱），在很多情況下也能從途中讀到。理由有2個。</p>
+<p>第1個，是從名稱查號碼的{{term:DNS|DNS}}查詢。這個查詢，用傳統的方式不會加密就送出。</p>
+<p>第2個，是在準備加密時，瀏覽器會告知「想連線的網站名稱」。因為1台伺服器有時會負責許多網站，所以需要這個資訊。這個欄位稱為SNI，過去一直是不加密就送出。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 316" role="img"><title>即使是HTTPS，途中也可能看得到的（IP位址、網站名稱、量和時間），與會隱藏的（頁面內容、網址後半、輸入內容）</title>
+<text x="180" y="22" text-anchor="middle" class="m">從途中的設備來看</text>
+<rect x="10" y="34" width="340" height="128" rx="8" class="ox"/>
+<text x="26" y="62" class="a">可能看得到的</text>
+<text x="26" y="92">• 對方的IP位址</text>
+<text x="26" y="120">• 網站名稱（DNS、SNI）</text>
+<text x="26" y="148">• 通訊的量和時間</text>
+<rect x="10" y="176" width="340" height="128" rx="8" class="n"/>
+<text x="26" y="204" class="a">HTTPS會隱藏的</text>
+<text x="26" y="234">• 頁面的內容</text>
+<text x="26" y="262">• 網址中網域名稱之後的部分</text>
+<text x="26" y="290">• 輸入的密碼等</text>
+</svg><figcaption class="fig-cap">即使有鎖頭圖示，「正在和哪裡通訊」在很多情況下仍看得出來。圖中省略的部分：使用加密DNS或SNI的新機制時（正文）、有公司檢查設備時（正文）。</figcaption></figure>
+<p>兩者都有隱藏的技術。把DNS查詢加密的方式，有DNS over HTTPS等。把SNI加密的ECH，也在2026年3月成為標準。不過，會不會使用，取決於瀏覽器、網站和網路的設定。目前還不能說「只要是HTTPS，就沒有人知道你看了哪個網站」。</p>
+<p>公司的網路，還有一個要注意的地方。有些公司會在員工電腦的「信任的憑證機構清單」裡，加入公司自己的憑證機構。然後在途中放置一台設備，先解開HTTPS再檢查內容。目的是找出病毒或資料外流。這時，即使出現鎖頭圖示，公司的設備也讀得到內容。</p>
+</section>
+
+<section>
+<h2>瀏覽器的顯示也在改變</h2>
+<p>Google在2023年5月宣布，要把Chrome網址列的鎖頭圖示換成別的圖示。那是排列著滑桿的形狀、代表設定的圖示。從2023年9月的Chrome 117開始，改成這種顯示。理由之一，是鎖頭圖示一直被誤解。在Google 2021年的調查中，正確理解鎖頭圖示意思的參與者只有11%。</p>
+<p>另一個理由，是HTTPS已經變得理所當然。現在，告知「不是HTTPS」比告知「是HTTPS」更有用。Chrome會在HTTP的頁面上顯示「不安全」。此外，Google在2025年10月宣布了一項計畫，要讓某個設定預設啟用。這個設定會在第一次打開不是HTTPS的公開網站前，先要求確認。預定從2026年10月的Chrome 154開始，對所有使用者啟用。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：有鎖頭圖示的網站，就是安全、值得信任的</p><p>實際上，鎖頭圖示表示的只是「正在和這個名稱的網站，進行受保護的通訊」。假網站也拿得到憑證。在HTTPS網站還很少的年代，曾廣泛呼籲「要確認鎖頭圖示」，這成了誤解的來源。</p></div>
+<div class="myth"><p class="myth-q">誤解：只要是HTTPS，就沒有人知道你看了哪個網站</p><p>實際上，對方的IP位址看得到，網站的名稱也常能從DNS或SNI讀到。會隱藏的是頁面的內容、網址的後半和輸入的內容。在公司內部的網路，公司的設備也可能連內容都檢查。</p></div>
+<div class="myth"><p class="myth-q">誤解：HTTPS是用伺服器的公開金鑰，把對稱金鑰加密後送出</p><p>實際上，那是TLS 1.2以前的版本能用的方法之一。TLS 1.3已經沒有這個方法了。用公開金鑰技術準備金鑰時，只剩下互相傳送材料、做出相同金鑰的方法。因為舊方法在伺服器的私密金鑰日後被偷時，連被記錄下來的過去通訊都可能被讀到。</p><p>不過，這不代表考試的答案變成錯的。「用公開金鑰技術準備金鑰，正式傳送用對稱式加密」的組合，在資訊類考試中常稱為「混合式加密」。教科書常見的「用對方的公開金鑰把對稱金鑰加密後送出」，作為它的基本形式，是正確的說明。改變的是現在HTTPS準備金鑰的方式。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>時間、出處</th></tr></thead>
+<tbody>
+<tr><td>在Chrome中以HTTPS打開的頁面比例</td><td>2015年約30～45%，2020年前後起約95～99%（依作業系統等而異）</td><td>Google（2025年10月的發表）</td></tr>
+<tr><td>使用Let's Encrypt憑證的網站</td><td>約7億6,200萬</td><td>2025年底，ISRG</td></tr>
+<tr><td>使用HTTPS的釣魚網站</td><td>約47%→約80%</td><td>2018年10～12月→2020年7～9月，APWG</td></tr>
+<tr><td>正確理解鎖頭圖示意思的參與者</td><td>11%</td><td>Google 2021年的調查</td></tr>
+<tr><td>憑證有效期間的上限</td><td>200天→100天→47天</td><td>從2026年3月、2027年3月、2029年3月起，CA/Browser Forum的決定（2025年）</td></tr>
+<tr><td>TLS 1.3準備所需的交換</td><td>1次來回</td><td>TLS 1.3的標準（2018年）</td></tr>
+</tbody>
+</table>
+<p>在幾乎所有頁面都以HTTPS打開的現在，鎖頭圖示能分辨的，只有剩下少數的HTTP頁面。正因如此，比起有沒有鎖頭圖示，養成確認網域名稱的習慣更重要。</p><p>憑證期限縮短的理由之一，是撤銷有問題憑證的機制，並不是每次都能確實運作。期限短的話，即使私密金鑰被偷，或網域的擁有者換人，舊憑證能被使用的期間也會比較短。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看公開金鑰加密的種類：<a href="{{home}}compare/rsa-vs-ecc-vs-pqc/">RSA加密、橢圓曲線密碼學、後量子密碼的差異</a>（也包括對量子電腦的準備）</li>
+<li>HTTP版本的差異：<a href="{{home}}compare/http-1-1-vs-http-2-vs-http-3/">HTTP/1.1、HTTP/2、HTTP/3的差異</a>（HTTP/3把加密納入了通訊的規則）</li>
+<li>減少假網站的受害：{{term:多要素認証|多因素驗證}}（除了密碼，還用手機等其他東西來確認本人的方法）</li>
+<li>用計算試試密碼的強度：<a href="{{home}}tools/password-brute-force-time/">密碼暴力破解時間計算工具</a></li>
+<li>公司網路的防護：<a href="{{home}}compare/ids-vs-ips-vs-waf-vs-firewall/">防火牆、IDS、IPS、WAF的差異</a>、{{term:VPN|VPN}}（把整個通訊加密的虛擬專用通道。從公司外連進公司網路時等情況使用）</li>
+</ul>
+</section>
