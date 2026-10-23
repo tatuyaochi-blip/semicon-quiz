@@ -1,0 +1,228 @@
+<!--
+{
+  "title": "IP位址是什麼？網路地址的運作與IPv4、IPv6",
+  "description": "IP位址是在網際網路上傳送資料時的目的地號碼。本文淺顯說明IPv4的形式與不夠用的原因、家用路由器共用號碼的NAPT、DHCP、IPv6，以及從號碼能知道與不能知道的事。",
+  "series": "internet",
+  "order": 2,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-04",
+  "cats": ["network", "network-advanced", "web-tech", "security"],
+  "terms": ["IPアドレス", "IPv4", "IPv6", "NAT", "DHCP", "サブネットマスク"],
+  "sources": [
+    { "title": "RFC 791: Internet Protocol(IETF, 1981年。IPv4の32ビットのアドレス)", "url": "https://www.rfc-editor.org/rfc/rfc791" },
+    { "title": "RFC 1918: Address Allocation for Private Internets(IETF, 1996年。プライベートアドレスの3つの範囲)", "url": "https://www.rfc-editor.org/rfc/rfc1918" },
+    { "title": "RFC 3022: Traditional IP Network Address Translator (Traditional NAT)(IETF, 2001年。NAPTを含む)", "url": "https://www.rfc-editor.org/rfc/rfc3022" },
+    { "title": "RFC 6598: IANA-Reserved IPv4 Prefix for Shared Address Space(IETF, 2012年。通信事業者のNAT(CGN)用の範囲)", "url": "https://www.rfc-editor.org/rfc/rfc6598" },
+    { "title": "RFC 2131: Dynamic Host Configuration Protocol(IETF, 1997年。期限つきの貸し出し)", "url": "https://www.rfc-editor.org/rfc/rfc2131" },
+    { "title": "RFC 4632: Classless Inter-domain Routing (CIDR)(IETF, 2006年。/24 のような書き方)", "url": "https://www.rfc-editor.org/rfc/rfc4632" },
+    { "title": "RFC 8200: Internet Protocol, Version 6 (IPv6) Specification(IETF, 2017年)", "url": "https://www.rfc-editor.org/rfc/rfc8200" },
+    { "title": "RFC 4291: IP Version 6 Addressing Architecture(IETF, 2006年。16進数の書き方と「::」の決まり)", "url": "https://www.rfc-editor.org/rfc/rfc4291" },
+    { "title": "RFC 5952: A Recommendation for IPv6 Address Text Representation(IETF, 2010年)", "url": "https://www.rfc-editor.org/rfc/rfc5952" },
+    { "title": "RFC 8981: Temporary Address Extensions for Stateless Address Autoconfiguration in IPv6(IETF, 2021年。一時アドレス)", "url": "https://www.rfc-editor.org/rfc/rfc8981" },
+    { "title": "RFC 6302: Logging Recommendations for Internet-Facing Servers(IETF, 2011年。ポート番号と正確な時刻の記録)", "url": "https://www.rfc-editor.org/rfc/rfc6302" },
+    { "title": "RFC 5737: IPv4 Address Blocks Reserved for Documentation(IETF, 2010年。例に使う 203.0.113.0/24 など)", "url": "https://www.rfc-editor.org/rfc/rfc5737" },
+    { "title": "RFC 3849: IPv6 Address Prefix Reserved for Documentation(IETF, 2004年。例に使う 2001:db8::/32)", "url": "https://www.rfc-editor.org/rfc/rfc3849" },
+    { "title": "ARIN: The IANA IPv4 Free Pool has Depleted(2011年2月3日)", "url": "https://www.arin.net/blog/2011/02/03/iana-ipv4-free-pool-depletion" },
+    { "title": "総務省: IPv4アドレスのアジア太平洋地域共通在庫枯渇への対応(2011年4月。APNICの在庫枯渇とJPNICの通常分配の終了)", "url": "https://www.soumu.go.jp/menu_news/s-news/01kiban04_01000007.html" },
+    { "title": "@IT: IPv4アドレス在庫がついに枯渇、APNICとJPNICが発表(2011年4月15日)", "url": "https://atmarkit.itmedia.co.jp/news/201104/15/ipv4.html" },
+    { "title": "@IT: ついに来た?「真のIPv4アドレス在庫枯渇」移転・売買・返却〜枯渇問題の現状(2012年)", "url": "https://atmarkit.itmedia.co.jp/ait/articles/1205/14/news149.html" },
+    { "title": "United Nations: Day of Eight Billion(2022年11月15日に世界人口が80億人)", "url": "https://www.un.org/en/dayof8billion" },
+    { "title": "Google: IPv6 Statistics(GoogleにIPv6で接続する利用者の割合)", "url": "https://www.google.com/intl/en/ipv6/statistics.html" },
+    { "title": "Internet Society Pulse: 18 Years Later, IPv6 Reaches Majority(2026年4月。2026年3月28日に50.10%)", "url": "https://pulse.internetsociety.org/en/blog/18-years-later-ipv6-reaches-majority/" },
+    { "title": "The Register: GoogleへのIPv6接続が50%に到達との記事(2026年4月17日。Cloudflareの測定では約40%)", "url": "https://www.theregister.com/2026/04/17/ipv6_50_percent_google/" },
+    { "title": "APNIC Blog: Google hits 50% IPv6(2026年4月28日。APNICの測定では約42%)", "url": "https://blog.apnic.net/2026/04/28/google-hits-50-ipv6/" },
+    { "title": "MaxMind: Restrictions on IP geolocation(世帯・個人・番地は特定できない)", "url": "https://support.maxmind.com/hc/en-us/articles/4408927779227" },
+    { "title": "総務省: インターネット上の違法・有害情報に対する対応(情報流通プラットフォーム対処法)", "url": "https://www.soumu.go.jp/main_sosiki/joho_tsusin/d_syohi/ihoyugai.html" },
+    { "title": "総務省: 令和7年版 情報通信白書「情報流通プラットフォーム対処法の施行」(2025年4月1日施行)", "url": "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r07/html/nd123210.html" },
+    { "title": "NTT東日本: IPoEとは?PPPoEやIPv6、IPv4との違いを比較(網終端装置を通らない接続方式)", "url": "https://business.ntt-east.co.jp/column/service/flets-hikari/ipv6_ipoe.html" },
+    { "title": "NTT東日本: MAP-EとDS-Liteはどう違う?IPv4 over IPv6の実装技術を比較して解説", "url": "https://business.ntt-east.co.jp/column/service/flets-hikari/what-is-map-e.html" }
+  ]
+}
+-->
+<p class="lead">IP位址是在網際網路上傳送資料時，表示目的地和寄件者的號碼。廣泛使用的IPv4只有約43億個號碼，全世界最上游的庫存在2011年就已用完。因此，家用路由器讓多台設備共用1個號碼，同時號碼多得多的IPv6也在逐步普及。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>IP位址的形式（IPv4、IPv6），以及數字的讀法</li>
+<li>IPv4不夠用的原因，以及家用路由器讓設備共用號碼的方式（NAPT）</li>
+<li>自動分配號碼的機制（DHCP），以及號碼「前半」和「後半」的作用</li>
+<li>從IP位址能知道與不能知道的事</li>
+</ul><p class="muted">先備知識：不需要。如果知道「網際網路怎麼傳送資料」（封包與路由器），會更容易閱讀。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>打開手機Wi-Fi的詳細設定，會看到像「192.168.1.10」這樣的數字。另一方面，在顯示「你的IP位址」的網站上，出現的卻是完全不同的數字。明明是同一支手機，為什麼會有2個號碼呢？</p>
+<p>新聞裡也常聽到「從IP位址查出發文者」的說法。光纖網路的廣告上，則寫著「支援IPv6」。這篇文章會依序說明這些場景背後的號碼運作方式。</p>
+</section>
+
+<section>
+<h2>IP位址是「封包的目的地號碼」</h2>
+<p>在網際網路上，資料會分成小塊再傳送。這種小塊稱為{{term:パケット|封包}}。封包上寫著表示目的地和寄件者的號碼。這個號碼就是{{term:IPアドレス|IP位址}}。</p>
+<p>途中的路由器（在網路之間轉送封包的設備），會看目的地的號碼，選擇下一個去處。轉送的方式，在「<a href="{{home}}learn/how-the-internet-delivers-data/">網際網路怎麼傳送資料？</a>」中說明。這篇文章則把焦點放在號碼本身。</p>
+<p>IP位址不是分配給人，而是分配給每一個連上網路的連接點。以手機來說，用Wi-Fi時和用行動網路時，會使用不同的號碼。即使是同一台設備，連線的地方改變，號碼也會跟著改變。</p>
+</section>
+
+<section>
+<h2>IPv4的形式：4個0～255的數</h2>
+<p>現在廣泛使用的形式稱為{{term:IPv4|IPv4}}。IPv4位址寫成「203.0.113.25」這樣，用點隔開4個數。每個數都在0到255之間。</p>
+<p>為什麼到255為止呢？在電腦裡，數是用0和1的排列來表示。這種0或1的1位數，稱為「位元」。8個位元能表示的，是2連乘8次的256種，也就是0～255（0和1的說明請看「<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">電腦怎麼用0和1計算？</a>」）。</p>
+<p>IPv4位址由4個8位元的數組成，合計32位元。能做出的號碼是2連乘32次，約43億個。其中一部分保留給特殊用途，所以能分配給設備的號碼還更少。</p>
+</section>
+
+<section>
+<h2>IPv4為什麼不夠用？</h2>
+<p>IPv4的規則整理成文件，是在1981年。當時連線的主要是研究機構等單位的電腦，43億是很大的數字。但現在，世界人口（依聯合國資料，2022年為80億人）遠比號碼的數量多。如果1個人同時有手機和電腦，就更不夠了。</p>
+<p>提供網際網路連線的公司，稱為網際網路服務供應商（ISP）。號碼會經過管理機構一層一層分配到ISP。最上層是負責全世界的IANA，下面是各地區的機構，例如負責亞太地區的APNIC。以日本為例，一般的順序是IANA、APNIC，再到日本的JPNIC。</p>
+<p>2011年2月，IANA把最後剩下的號碼分配給各地區的機構，手上的庫存就沒有了。接著在2011年4月15日，APNIC（以及日本的JPNIC）也結束了一般的分配。因為剩下的只有最後一批（約1,677萬個），之後只能非常少量地分配。</p>
+<p>從那之後，就靠回收不再使用的號碼、在組織之間轉讓等方式勉強應付。根本的解決辦法是IPv6，但在那之前，先來看看支撐現在家庭上網的巧思。</p>
+</section>
+
+<section>
+<h2>只在家中使用的號碼：私有IP位址</h2>
+<p>節省號碼的第1個巧思，是規定只在家裡或公司內部使用的號碼。這稱為「私有IP位址」。1996年的規則（RFC 1918）訂出了下面3個範圍。</p>
+<ul>
+<li>10.0.0.0 ～ 10.255.255.255</li>
+<li>172.16.0.0 ～ 172.31.255.255</li>
+<li>192.168.0.0 ～ 192.168.255.255</li>
+</ul>
+<p>私有IP位址在任何家庭或公司都能自由使用。你家的手機和隔壁家的手機，都是「192.168.1.10」也沒關係。不過，這些號碼不能當作網際網路上的目的地。</p>
+<p>相對於此，在網際網路上不會重複、一個一個分配的號碼，稱為「公有IP位址」（也稱全球位址）。家庭的情況，多半由ISP分配1個給家用路由器（也有和其他用戶共用的方式）。開頭提到的「你的IP位址」網站顯示的，就是這個對外的號碼。有時也會顯示後面說明的IPv6號碼。</p>
+</section>
+
+<section>
+<h2>大家共用1個號碼：NAPT</h2>
+<p>家中的設備只有私有IP位址的話，無法和網際網路通訊。因此，家用路由器會把送出去的封包上寄件者的號碼，改寫成公有IP位址。這種改寫稱為{{term:NAT|NAT}}。</p>
+<p>不過，只改寫號碼的話，回覆的封包回來時，就不知道該送回哪台設備。所以路由器還會用另一個號碼。這是在設備內部區分「哪一條通訊」的號碼，稱為{{term:ポート番号|連接埠號碼}}。</p>
+<p>路由器會為每一條往外的通訊加上不同的連接埠號碼，並把對應關係記在表上。回覆送到時，就查表改回原本的設備和號碼。這種把IP位址和連接埠號碼成對改寫的方式，稱為NAPT。家用路由器說的「NAT」，通常就是指NAPT。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 392" role="img"><title>家中的手機和電腦使用私有IP位址，家用路由器把每條通訊的連接埠號碼記在對照表上，對外只用1個公有IP位址</title>
+<text x="180" y="20" text-anchor="middle" class="m">家中（私有IP位址）</text>
+<rect x="10" y="32" width="160" height="56" rx="6" class="metal"/>
+<text x="90" y="55" text-anchor="middle">手機</text>
+<text x="90" y="78" text-anchor="middle">192.168.1.10</text>
+<rect x="190" y="32" width="160" height="56" rx="6" class="metal"/>
+<text x="270" y="55" text-anchor="middle">電腦</text>
+<text x="270" y="78" text-anchor="middle">192.168.1.11</text>
+<line x1="90" y1="88" x2="130" y2="124" class="thin"/>
+<line x1="270" y1="88" x2="230" y2="124" class="thin"/>
+<rect x="30" y="124" width="300" height="100" rx="8" class="ox"/>
+<text x="180" y="148" text-anchor="middle" class="a">家用路由器的對照表</text>
+<text x="180" y="176" text-anchor="middle">手機的通訊 ⇔ 50001號</text>
+<text x="180" y="204" text-anchor="middle">電腦的通訊 ⇔ 50002號</text>
+<line x1="0" y1="246" x2="360" y2="246" class="dash"/>
+<text x="14" y="272" class="m">網際網路端</text>
+<line x1="180" y1="224" x2="180" y2="290" class="ac"/>
+<polygon points="180,300 174,288 186,288" class="fa"/>
+<rect x="50" y="302" width="260" height="56" rx="6" class="p"/>
+<text x="180" y="325" text-anchor="middle">從外部看到的寄件者</text>
+<text x="180" y="348" text-anchor="middle">只有 203.0.113.5</text>
+<text x="180" y="384" text-anchor="middle" class="m">回覆送到這個號碼，再依表分送</text>
+</svg><figcaption class="fig-cap">家中的設備使用私有IP位址，往外送時，路由器把寄件者改寫成公有IP位址和連接埠號碼。圖中省略的部分：設備端的連接埠號碼、1台設備同時進行的多條通訊（實際上每條通訊1列）、IPv6的通訊。號碼是說明用的例子。</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>NAPT很像公司的總機號碼和分機。外面的人看到的只有總機號碼，公司裡的每個人則各有分機號碼。相似的是「對外只顯示1個號碼，找裡面的誰則在內部分配」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>如果是總機，外面的人可以說「請轉分機123」，請總機幫忙轉接。NAPT則因為從外部發起的通訊不在對照表上，通常到不了裡面的設備（設定連接埠轉送時除外）。不過，這不能取代專門負責安全的功能（防火牆）。另外，和分機不同，連接埠號碼不是每台設備固定的號碼，而是每次通訊時分配的。</p></aside>
+<p>在行動網路等線路上，電信業者那一端有時也會做同樣的改寫。這稱為電信級NAT。這種情況下，1個公有IP位址會同時被許多用戶使用。</p>
+</section>
+
+<section>
+<h2>號碼由誰分配？DHCP</h2>
+<p>朋友的手機連上家裡的Wi-Fi後，馬上就能上網。不需要手動設定號碼，是因為家用路由器會自動分配號碼。這個機制稱為{{term:DHCP|DHCP}}。</p>
+<p>手機一連上，就會發出「請給我號碼」的請求。路由器選出還沒人用的號碼，加上可以使用的期限後借出。同時，也會告訴手機作為網路出口的路由器號碼，以及把名稱轉成號碼的伺服器號碼。</p>
+<p>因為借出有期限，一段時間沒用的號碼，可能會轉給別的設備。即使是同一支手機，家中的號碼也可能改變，就是這個原因。家用路由器拿到的公有IP位址，也多半是ISP自動分配的號碼。重新連線時可能會改變（也有出租固定號碼的服務）。</p>
+</section>
+
+<section>
+<h2>號碼的前半與後半：網路部分與主機部分</h2>
+<p>IP位址的前半和後半，作用不同。前半表示「哪一個網路」，後半表示「其中的哪一台設備」。前半稱為網路部分，後半稱為主機部分（主機是指連上網路的設備）。</p>
+<p>分界的位置，用「/24」這樣表示從前面算起幾個位元是網路部分。這種寫法稱為{{term:CIDR|CIDR}}表示法。家裡常用的 /24，就是前面24個位元，也就是前3個數是網路部分。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 290" role="img"><title>在 192.168.1.25/24 中，前3個數是網路部分，最後的數是主機部分。目的地的前半相同就直接傳送，不同就交給路由器</title>
+<text x="180" y="22" text-anchor="middle" class="a">192.168.1.25 /24</text>
+<rect x="10" y="38" width="76" height="44" rx="6" class="ox"/>
+<rect x="94" y="38" width="76" height="44" rx="6" class="ox"/>
+<rect x="178" y="38" width="76" height="44" rx="6" class="ox"/>
+<rect x="274" y="38" width="76" height="44" rx="6" class="p"/>
+<text x="48" y="66" text-anchor="middle">192</text>
+<text x="132" y="66" text-anchor="middle">168</text>
+<text x="216" y="66" text-anchor="middle">1</text>
+<text x="312" y="66" text-anchor="middle">25</text>
+<polyline points="10,92 10,100 254,100 254,92" class="ln"/>
+<polyline points="274,92 274,100 350,100 350,92" class="ln"/>
+<text x="132" y="124" text-anchor="middle">網路部分</text>
+<text x="132" y="146" text-anchor="middle" class="m">前面24位元</text>
+<text x="312" y="124" text-anchor="middle">主機部分</text>
+<text x="312" y="146" text-anchor="middle" class="m">8位元</text>
+<line x1="10" y1="166" x2="350" y2="166" class="thin"/>
+<text x="180" y="190" text-anchor="middle" class="m">比較目的地的前3個數</text>
+<text x="14" y="222">192.168.1.10</text>
+<text x="346" y="222" text-anchor="end">相同 → 直接傳送</text>
+<text x="14" y="254">192.168.2.10</text>
+<text x="346" y="254" text-anchor="end">不同 → 交給路由器</text>
+<text x="180" y="284" text-anchor="middle" class="m">用最後的數（1～254）區分設備</text>
+</svg><figcaption class="fig-cap">在 /24 中，前3個數相同的號碼，屬於同一個網路。圖中省略的部分：分界落在某個數中間的情況（例如 /26）、實際的判斷是用二進位的位元進行。</figcaption></figure>
+<p>例如「192.168.1.0/24」中，192.168.1.1～192.168.1.254 可以分配給設備。結尾是0和255的號碼，分別代表網路本身和「給所有人」，所以不分配給設備。能分配的號碼，包含路由器自己在內共254個。</p>
+<p>如果目的地的網路部分和自己相同，手機就直接傳給對方。如果不同，就交給網路出口的路由器。這個出口稱為{{term:デフォルトゲートウェイ|預設閘道}}。</p>
+<p>把同樣的分界寫成「255.255.255.0」的形式，就是{{term:サブネットマスク|子網路遮罩}}。在Wi-Fi的詳細設定裡常常看到。改變分界時的計算，可以用「<a href="{{home}}tools/ip-subnet-calculator/">IP位址與子網路計算</a>」試試看。</p>
+</section>
+
+<section>
+<h2>IPv6：把號碼擴大到128位元</h2>
+<p>為了從根本解決IPv4的不足而設計的，就是{{term:IPv6|IPv6}}。它把位址的長度從32位元擴大到128位元。能做出的號碼約有3.4×10<sup>38</sup>個，是「1兆的1兆倍的1兆倍」再乘上約340倍。</p>
+<p>因為位數很多，寫法也改變了。IPv6使用十六進位。十六進位是用0～9和a～f共16種符號來寫數的方法（a代表10，f代表15）。</p>
+<p>把128位元每16位元分成1組，共8組，每組寫成4位數的十六進位，再用冒號（:）連起來。直接寫會很長，所以有省略的規則。每組開頭的0可以省略（0db8 → db8）。另外，連續全是0的組，可以合併寫成「::」。</p>
+<ul>
+<li>不省略：2001:0db8:0000:0000:0000:0000:0000:0001</li>
+<li>省略開頭的0：2001:db8:0:0:0:0:0:1</li>
+<li>用「::」合併：2001:db8::1</li>
+</ul>
+<p>「::」在1個位址中只能用1次。如果有2處，就無法知道每一處各代表幾組0。</p>
+<p>IPv6和IPv4的封包形式不同，直接的話無法互相通訊。所以現在一般的做法是，1台設備同時擁有兩種號碼，配合對方分開使用。差異整理在「<a href="{{home}}compare/ipv4-vs-ipv6/">IPv4與IPv6的差異</a>」的表格中。</p>
+<p>依Google的統計，用IPv6連到Google的使用者比例，在2026年3月28日達到50.1%。這是2008年開始記錄以來，第一次超過一半的日子。不過這是單日的數值，用其他方法測量，也有約4成的結果。各國的差異也很大，只能用IPv4的設備和網站仍然很多。</p>
+</section>
+
+<section>
+<h2>DNS：從名稱查出號碼</h2>
+<p>平常我們不會直接輸入IP位址。像「www.example.com」這樣的名稱，會先透過{{term:DNS|DNS}}這個機制轉成號碼，再開始通訊。1個名稱常常同時登記了IPv4和IPv6的號碼，這時設備會選擇能用的那一個。</p>
+</section>
+
+<section>
+<h2>IP位址能知道與不能知道的事</h2>
+<h3>能知道的：哪個組織的號碼、大概的地區</h3>
+<p>每個號碼範圍分配給哪個組織，都是公開的。所以從號碼，大多能知道是哪家ISP或公司的號碼。也有從號碼推測位置的服務，國家或大致的地區常常是準的。</p>
+<h3>不能知道的：姓名或住址</h3>
+<p>從號碼無法知道使用者的姓名或住址。美國的MaxMind公司，是販賣位置推測資料的公司。連這家公司也說明，它的資料沒有準確到能特定出住戶、門牌或個人。如果使用經由別處伺服器傳送通訊的{{term:VPN|VPN}}，對方看到的會是中繼伺服器的號碼。</p>
+<h3>可以追查紀錄的情況</h3>
+<p>另一方面，ISP會記錄在什麼時候、把哪個號碼分配給哪個用戶（保存期間有限）。只要有依法進行的程序，有時就能從這些紀錄查出用戶。以日本為例，在網路上權利受到侵害的人，符合條件時，可以要求揭露發文所用線路的申辦人資料等。依據是日本的《資訊流通平台處理法》（2025年4月由《網路服務提供者責任限制法》改名）。</p>
+<p>多人共用1個號碼時，除了時間，還需要連接埠號碼的紀錄。因此，制定網際網路技術標準的組織IETF，在2011年發表了關於記錄方式的文件。文件建議伺服器也要記下對方的連接埠號碼和正確的時間。另外，能追查到的是線路的申辦人，不一定是實際操作的人。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：IP位址是一直跟著人或設備的號碼</p><p>實際上，它是連上網路時，分配給連接點的號碼。連線的地方改變，號碼就會改變；DHCP借出期限到了，或和ISP重新連線時，也可能改變。在電信級NAT下，1個號碼會同時被許多人使用。</p><p>即使是IPv6，很多手機和電腦為了不容易被追蹤，也會定期改變號碼的後半。這稱為暫時位址。因為「網路上的地址」這種說法，常被以為像住家地址一樣不會變，但實際上它是經常改變的號碼。</p></div>
+<div class="myth"><p class="myth-q">誤解：IPv6是IPv4的高速版</p><p>實際上，主要的差異在於號碼的數量和形式。它是和IPv4無法直接互通的另一套規則。改用IPv6，不一定會讓通訊變快。</p><p>以日本為例，使用NTT「FLET'S光」等光纖服務的人，常覺得「改用IPv6就變快了」，多半是因為連線方式不同。傳統的PPPoE方式，會經過晚上等使用人數多時容易壅塞的設備。新的IPoE方式，則不必經過那些設備。連往IPv4網站的通訊，也有放到IPoE路徑上傳送的方式，因此也可能變快。變快的原因不是號碼的形式，而是路徑改變了。</p></div>
+<div class="myth"><p class="myth-q">誤解：像 192.168.x.x 這樣的號碼，在全世界只有1個</p><p>實際上，私有IP位址在全世界數不清的家庭和公司中，都使用同樣的號碼。你家的「192.168.1.10」和隔壁家的「192.168.1.10」是不同的設備。所以，從網際網路的另一端，無法把封包送到這個號碼。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>比較</th></tr></thead>
+<tbody>
+<tr><td>IPv4的長度和數量</td><td>32位元，約43億</td><td>比世界人口（2022年80億人）還少</td></tr>
+<tr><td>IPv6的長度和數量</td><td>128位元，約3.4×10<sup>38</sup></td><td>IPv4的約7.9×10<sup>28</sup>倍</td></tr>
+<tr><td>IPv4中1個數的範圍</td><td>0～255</td><td>8位元有256種</td></tr>
+<tr><td>/24 能分配給設備的號碼</td><td>254個</td><td>256個扣掉2個</td></tr>
+<tr><td>私有IP位址 10.0.0.0/8</td><td>約1,677萬個</td><td>最大的範圍</td></tr>
+<tr><td>IANA庫存用完的時間</td><td>2011年2月</td><td>對各地區的最後一次分配</td></tr>
+<tr><td>APNIC、JPNIC結束一般分配</td><td>2011年4月15日</td><td>亞太地區和日本</td></tr>
+<tr><td>用IPv6連到Google的使用者</td><td>50.1%</td><td>2026年3月28日的單日數值。第一次超過一半</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="{{home}}compare/dhcpv6-vs-slaac/">DHCPv6與SLAAC的差異</a>（IPv6自動決定號碼的2種方法）</li>
+<li>用計算試試看：<a href="{{home}}tools/base-converter-twos-complement/">進位轉換與二補數</a>（二進位、十六進位、十進位的轉換。試著用二進位看IP位址的數）</li>
+<li>下一步的名詞：{{term:MACアドレス|MAC位址}}（送到相鄰設備用的號碼）、{{term:ARP|ARP}}（查詢MAC位址的機制）</li>
+<li>安全相關的名詞：{{term:ファイアウォール|防火牆}}（限制通訊進出的機制。NAT不能取代它）</li>
+<li>接下來閱讀：號碼把資料送到之後，通訊的內容要怎麼保護？「<a href="{{home}}learn/what-does-https-mean/">HTTPS是什麼？鎖頭圖示能保護與不能保護的事</a>」</li>
+</ul>
+</section>
