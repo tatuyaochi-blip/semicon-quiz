@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P控制、PI控制與PID控制的差異：穩態誤差、響應速度、過衝、調整比較 | 半導體教室</title>
+<meta name="description" content="從操作量的式子、穩態誤差、響應速度、過衝與振盪、模擬器的例子、對雜訊的耐受度、操作量飽和、要調整的參數與Ziegler–Nichols法的參考值、用途等面向，以表格比較P控制（比例控制）、PI控制與PID控制。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/compare/p-vs-pi-vs-pid-control/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/compare/p-vs-pi-vs-pid-control/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/compare/p-vs-pi-vs-pid-control/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/compare/p-vs-pi-vs-pid-control/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/compare/p-vs-pi-vs-pid-control/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="P控制、PI控制與PID控制的差異：穩態誤差、響應速度、過衝、調整比較 | 半導體教室">
+<meta property="og:description" content="從操作量的式子、穩態誤差、響應速度、過衝與振盪、模擬器的例子、對雜訊的耐受度、操作量飽和、要調整的參數與Ziegler–Nichols法的參考值、用途等面向，以表格比較P控制（比例控制）、PI控制與PID控制。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/compare/p-vs-pi-vs-pid-control/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"比較","item":"https://semiconroom.com/zh-hant/compare/"},{"@type":"ListItem","position":3,"name":"P控制、PI控制與PID控制的差異：穩態誤差、響應速度、過衝、調整比較","item":"https://semiconroom.com/zh-hant/compare/p-vs-pi-vs-pid-control/"}]},{"@context":"https://schema.org","@type":"Article","headline":"P控制、PI控制與PID控制的差異：穩態誤差、響應速度、過衝、調整比較","description":"從操作量的式子、穩態誤差、響應速度、過衝與振盪、模擬器的例子、對雜訊的耐受度、操作量飽和、要調整的參數與Ziegler–Nichols法的參考值、用途等面向，以表格比較P控制（比例控制）、PI控制與PID控制。","inLanguage":"zh-Hant","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/zh-hant/compare/p-vs-pi-vs-pid-control/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"為什麼只用P控制會殘留穩態誤差？","acceptedAnswer":{"@type":"Answer","text":"因為操作量與誤差成正比，要持續輸出操作量就必須保留誤差。以單位回授對一階受控體K/(Ts + 1)做P控制時，最終值為K·Kp/(1 + K·Kp)，誤差為1/(1 + K·Kp)；K = 1、Kp = 4時最終值為0.8，誤差為0.2。提高Kp誤差會變小但不會為0，調得太高則會振盪。"}},{"@type":"Question","name":"為什麼PI控制能讓穩態誤差為0？","acceptedAnswer":{"@type":"Answer","text":"因為只要還有一點誤差，積分項的值就會持續改變，所以只有在誤差為0時才會穩定下來。即使誤差為0，積分項中累積的值仍會持續輸出所需的操作量。相對地，積分會使相位落後90°，積分太強（積分時間Ti太短）時，過衝與振盪會增加。"}},{"@type":"Question","name":"加入D（微分）時要注意什麼？","acceptedAnswer":{"@type":"Answer","text":"微分對越高頻的成分放大越多，因此會放大感測器的雜訊。所以會搭配一階低通濾波器做成不完全微分，把高頻的增益限制在約N倍（N多取8至20左右）。另外，為了防止目標值步階變化瞬間操作量暴衝的微分衝擊，也常將微分只作用在量測值而非誤差上（PI-D控制）。"}},{"@type":"Question","name":"增益要依什麼順序調整？","acceptedAnswer":{"@type":"Answer","text":"基本流程是先只用P控制，把Kp提高到即將開始振盪之前，再加入I消除穩態誤差，若過衝大再加入D。若已知比例控制產生持續振盪時的增益Ku與週期Tu，可用Ziegler–Nichols極限增益法（PID控制為Kp = 0.6Ku、Ti = 0.5Tu、Td = 0.125Tu）作為起點，但得到的響應偏振盪，因此要再從那裡降低增益來調整。"}}]}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/compare/p-vs-pi-vs-pid-control/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/c/">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">繁體中文</span><span class="lang-short" aria-hidden="true">繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/compare/p-vs-pi-vs-pid-control/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/compare/p-vs-pi-vs-pid-control/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/compare/" lang="ko" data-lang="ko">한국어</a><a href="/de/compare/" lang="de" data-lang="de">Deutsch</a><a href="/nl/compare/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/compare/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/c/">領域</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/compare/">比較</a></nav>
+<article class="compare-page">
+  <h1>P控制、PI控制與PID控制的差異：穩態誤差、響應速度、過衝、調整比較</h1>
+  <p class="lead">三者都是由目標值與控制量的差（誤差）e決定操作量的回授控制，差別在於使用的項數。P控制輸出與誤差成正比的操作量，PI控制再加上誤差的積分，PID控制則進一步加上誤差的微分。P（比例）負責響應速度，I（積分）負責消除穩態誤差，D（微分）負責抑制過衝與振盪。對於不含積分的受控體，只用P控制會殘留誤差。PI控制能消除誤差，但相位落後而容易振盪，加入D就能抑制這種振盪。</p>
+  <div class="cmp-tools">
+    <button type="button" class="btn btn-ghost" data-copy-table data-done="已複製">複製表格</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="已複製連結">分享</button>
+  </div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th scope="col">項目</th><th scope="col">P控制</th><th scope="col">PI控制</th><th scope="col">PID控制</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">操作量的式子</th><td>u = Kp·e</td><td>u = Kp·e + Ki∫e dt</td><td>u = Kp·e + Ki∫e dt + Kd·de/dt</td></tr>
+        <tr><th scope="row">對步階目標值的穩態誤差（不含積分的受控體）</th><td>會殘留。一階系統K/(Ts + 1)時為1/(1 + K·Kp)</td><td>變為0</td><td>變為0</td></tr>
+        <tr><th scope="row">響應速度</th><td>Kp越高越快</td><td>提高積分增益Ki時上升變快，但過衝增加</td><td>D增加阻尼，因此容易在抑制過衝的同時提高增益</td></tr>
+        <tr><th scope="row">過衝與振盪</th><td>Kp太高時響應變得振盪，延遲大的受控體會變得不穩定</td><td>積分使相位落後90°，因此比P控制容易振盪</td><td>微分預先抑制誤差的變化，減少振盪</td></tr>
+        <tr><th scope="row">模擬器的例子（含時間延遲的一階系統K = 1、T = 10 s、L = 2 s、Kp = 4）</th><td>穩態誤差0.2，過衝約30%</td><td>Ki = 0.4時穩態誤差0，過衝約30%</td><td>再加上Kd = 4時穩態誤差0，過衝約7%</td></tr>
+        <tr><th scope="row">對雜訊的耐受度</th><td>雜訊也會乘上Kp倍</td><td>高頻的增益為Kp，與P控制差不多</td><td>微分頻率越高放大越多，因此會放大雜訊。搭配低通濾波器做成不完全微分</td></tr>
+        <tr><th scope="row">操作量飽和</th><td>沒有積分，即使停在上限也不會發生積分累積</td><td>停在上限期間積分持續累積，發生積分飽和。需要停止積分等對策</td><td>與PI控制一樣需要積分飽和的對策。也要注意目標值急遽變化造成的微分衝擊</td></tr>
+        <tr><th scope="row">要調整的參數與Ziegler–Nichols極限增益法的參考值</th><td>只有Kp。Kp = 0.5Ku</td><td>Kp與Ti（或Ki）兩個。Kp = 0.45Ku、Ti ≈ 0.83Tu</td><td>Kp、Ti、Td三個。Kp = 0.6Ku、Ti = 0.5Tu、Td = 0.125Tu</td></tr>
+        <tr><th scope="row">主要用途</th><td>可容許少許誤差的控制，以及受控體含積分的位置控制（對步階不會殘留誤差）</td><td>溫度、流量、壓力、馬達速度、電源電壓等。實際的控制迴路多半是不使用D的PI控制</td><td>延遲大、想抑制過衝的溫度或位置控制</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted compare-note">數值為具代表性的大致參考值，會因世代或產品而異。</p>
+</article>
+<div data-ad="compare"></div>
+<section>
+  <h2>適用於什麼情況</h2>
+  <dl class="compare-when">
+    <dt>P控制</dt><dd>受控體含積分（例如馬達的位置），或可容許少許穩態誤差時。最簡單，只需調整Kp。</dd>
+    <dt>PI控制</dt><dd>對固定的目標值或干擾，想讓穩態誤差為0時。對雜訊的耐受度高、也容易調整，因此是溫度、流量、速度、電源電壓等許多控制迴路的標準選擇。</dd>
+    <dt>PID控制</dt><dd>時間延遲或其他延遲大，PI控制的過衝或振盪太大時。微分要加上低通濾波器，感測器雜訊大時要把D的增益調低。</dd>
+  </dl>
+</section>
+<section class="faq">
+  <h2>常見問題</h2>
+  <h3>為什麼只用P控制會殘留穩態誤差？</h3>
+  <p>因為操作量與誤差成正比，要持續輸出操作量就必須保留誤差。以單位回授對一階受控體K/(Ts + 1)做P控制時，最終值為K·Kp/(1 + K·Kp)，誤差為1/(1 + K·Kp)；K = 1、Kp = 4時最終值為0.8，誤差為0.2。提高Kp誤差會變小但不會為0，調得太高則會振盪。</p>
+  <h3>為什麼PI控制能讓穩態誤差為0？</h3>
+  <p>因為只要還有一點誤差，積分項的值就會持續改變，所以只有在誤差為0時才會穩定下來。即使誤差為0，積分項中累積的值仍會持續輸出所需的操作量。相對地，積分會使相位落後90°，積分太強（積分時間Ti太短）時，過衝與振盪會增加。</p>
+  <h3>加入D（微分）時要注意什麼？</h3>
+  <p>微分對越高頻的成分放大越多，因此會放大感測器的雜訊。所以會搭配一階低通濾波器做成不完全微分，把高頻的增益限制在約N倍（N多取8至20左右）。另外，為了防止目標值步階變化瞬間操作量暴衝的微分衝擊，也常將微分只作用在量測值而非誤差上（PI-D控制）。</p>
+  <h3>增益要依什麼順序調整？</h3>
+  <p>基本流程是先只用P控制，把Kp提高到即將開始振盪之前，再加入I消除穩態誤差，若過衝大再加入D。若已知比例控制產生持續振盪時的增益Ku與週期Tu，可用Ziegler–Nichols極限增益法（PID控制為Kp = 0.6Ku、Ti = 0.5Tu、Td = 0.125Tu）作為起點，但得到的響應偏振盪，因此要再從那裡降低增益來調整。</p>
+</section>
+<section>
+  <h2>理解度檢測</h2>
+  <article class="q-mini" data-qid="control-015" data-cat="control" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/control/control-015/">在單位回授系統中，前向轉移函數為 G(s) = 9/(1 + 2s)。對大小為1的步階目標值，穩態誤差為下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">0</span></li><li><span class="choice-mark">B</span><span class="choice-text">0.1</span></li><li><span class="choice-mark">C</span><span class="choice-text">約0.11</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 0.1</p><p class="explanation">單位回授系統對步階的<a class="term-link" href="/zh-hant/term/steady-state-error/">穩態誤差</a>為 1/(1 + Kp)，Kp = G(0) 稱為位置誤差常數。此處 Kp = 9，因此穩態誤差為 1/(1 + 9) = 0.1。在前向路徑不含積分的（0型）系統中，提高增益可使誤差變小，但不會變成0。要使誤差為0，需以<a class="term-link" href="/zh-hant/term/pid-control/">PI控制</a>等加入積分。</p></details>
+  </article>
+  <article class="q-mini" data-qid="control-028" data-cat="control" data-answer="0" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 A">
+    <h3><a href="/zh-hant/q/control/control-028/">以比例（P）控制不含積分元件的（0型）受控體。加大比例增益 Kp 時的一般變化，正確的是下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">穩態誤差變小但不會變成0，增益太大時響應會變得振盪或不穩定</span></li><li><span class="choice-mark">B</span><span class="choice-text">穩態誤差正好變成0，無論增益加到多大，響應都不會振盪，一定保持穩定</span></li><li><span class="choice-mark">C</span><span class="choice-text">響應的快慢不變，只有穩態誤差持續變大</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：A. 穩態誤差變小但不會變成0，增益太大時響應會變得振盪或不穩定</p><p class="explanation">比例控制是輸出與誤差成正比的操作量、最基本的控制。加大 Kp 會使響應變快，對步階的<a class="term-link" href="/zh-hant/term/steady-state-error/">穩態誤差</a> 1/(1 + Kp·K)（K 為受控體的穩態增益）也變小，但沒有誤差時操作量也會變成0，因此誤差不會變成0（偏移）。此外，提高增益會使<a class="term-link" href="/zh-hant/term/phase-margin/">相位邊限</a>減少、<a class="term-link" href="/zh-hant/term/overshoot/">過衝</a>變大，延遲大的系統會變得不穩定。要消除穩態誤差，需加入積分動作。</p></details>
+  </article>
+  <article class="q-mini" data-qid="control-029" data-cat="control" data-answer="1" data-correct="答對了！" data-incorrect="答錯了… 正確答案是 B">
+    <h3><a href="/zh-hant/q/control/control-029/">在PI控制中，加入積分（I）動作的主要目的與其副作用的組合，正確的是下列何者？</a></h3>
+    <ol class="q-choices"><li><span class="choice-mark">A</span><span class="choice-text">目的是去除高頻的雜訊，副作用是穩態誤差變大</span></li><li><span class="choice-mark">B</span><span class="choice-text">目的是消除對固定目標值或擾動的穩態誤差，副作用是相位落後而容易振盪</span></li><li><span class="choice-mark">C</span><span class="choice-text">目的是預先察覺誤差的變化以加快響應並抑制超越，副作用是大幅放大高頻的雜訊</span></li></ol>
+    <details class="q-answer"><summary>查看答案與解析</summary><p class="verdict ok">正確答案：B. 目的是消除對固定目標值或擾動的穩態誤差，副作用是相位落後而容易振盪</p><p class="explanation">積分動作把誤差隨時間累積成操作量，因此只要還殘留一點誤差，就會持續改變操作量，最後使<a class="term-link" href="/zh-hant/term/steady-state-error/">穩態誤差</a>為0。另一方面，積分元件會使相位落後90°，因此<a class="term-link" href="/zh-hant/term/phase-margin/">相位邊限</a>減少，容易發生<a class="term-link" href="/zh-hant/term/overshoot/">過衝</a>與振盪。所以要調整積分時間 Ti，避免設得太短。加快響應、抑制超越並容易放大雜訊，是微分動作的特徵。</p></details>
+  </article>
+  <ol class="q-list">
+  <li data-level="2"><a href="/zh-hant/q/control/control-030/">PID控制的微分（D）動作的性質與實作上的對策，正確的組合是下列何者？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/control/control-031/">在PID控制中，防止目標值以步階改變的瞬間操作量大幅跳升（微分衝擊）的方法，正確的是下列何者？</a></li>
+  <li data-level="3"><a href="/zh-hant/q/control/control-032/">在Ziegler–Nichols的極限增益法中，只用比例控制提高增益，由出現持續振盪時的增益 Ku 與振盪週期 Tu，以 Kp = 0.6Ku、Ti = 0.5Tu、Td = 0.125Tu 決定PID控制的參數。Ku = 8、Tu = 2 s 時的值為下列何者？</a></li></ol>
+  <p><a class="btn btn-primary" href="/zh-hant/c/control/">前往控制工程基礎的練習題</a></p>
+</section>
+<section>
+  <h2>相關名詞的解說</h2>
+  <dl class="glossary">
+    <div class="term"><dt><a href="/zh-hant/term/pid-control/">PID控制</a></dt><dd>把與誤差 e 成正比的項（P）、與誤差的積分成正比的項（I）、與誤差的微分成正比的項（D）相加，以決定操作量的回授控制。寫成 u = Kp(e + (1/Ti)∫e dt + Td·de/dt)，Kp 稱為比例增益，Ti 稱為積分時間，Td 稱為微分時間。比例負責速度，積分負責消除穩態誤差，微分負責抑制振盪。結構簡單，用於溫度、馬達、電源、化學製程等大部分的工業控制迴路。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/steady-state-error/">穩態誤差</a></dt><dd>控制系統的響應穩定下來之後，仍殘留的目標值與受控量之差，也稱為偏移。在單位回授系統中，對步階目標值為 1/(1 + Kp)（Kp = G(0) 為位置誤差常數），在前向路徑不含積分的（0型）系統中不會變成0。在含有1個積分的1型系統中，對步階的穩態誤差為0，對斜坡目標值則殘留 1/Kv（Kv 為速度誤差常數）的誤差。PI控制的積分動作就是用來消除這個誤差的。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/overshoot/">過衝</a></dt><dd>在步階響應等情況下，輸出超過終值的現象，也指其最大的超越量。在控制工程中以相對於終值的比例（%）表示，在沒有零點的二階系統中為只由阻尼比 ζ 決定的 exp(−πζ/√(1 − ζ²))。在回授控制系統中，相位邊限越小，過衝越大。在電子電路中，訊號或電壓的波形因導線電感或反射而暫時超過最終位準的現象，也同樣稱為過衝。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/integral-windup/">積分飽和</a></dt><dd>在操作量於致動器的上限或下限飽和的期間，PID控制的積分項仍持續累積誤差而變得過大的現象。即使誤差的正負號改變，在累積的積分值減少之前，操作量仍維持飽和，造成大幅的過衝與長時間的振盪。以抗積分飽和（anti-windup）的方法防止，例如在飽和期間停止積分的條件積分（箝制）、把限制前與限制後的差回饋到積分的反算法（back-calculation），以及使用速度型的PID等。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/settling-time/">安定時間</a></dt><dd>施加步階輸入後，輸出進入終值的指定範圍（±2%或±5%等）並且之後不再離開該範圍所需的時間。它同時表示響應的快慢與穩定程度；二階系統的±2%安定時間約可估計為 4/(ζωn)，±5%則約為 3/(ζωn)。一階系統的±2%安定時間約為3.9T（T 為時間常數）。在AD轉換器或運算放大器的規格中，輸出穩定到指定精度所需的時間，也稱為安定時間。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/first-order-system/">一階系統</a></dt><dd>轉移函數以 G(s) = K/(1 + Ts) 表示的系統。K 為穩態增益，T 為時間常數。對步階輸入的輸出為 K(1 − e^(−t/T))，在 t = T 時達到終值的約63.2%，3T 時約95%，5T 時約99.3%，沒有過衝。RC電路、熱系統、液位系統等許多常見的系統，都能以這個形式近似。在頻率響應中，以角頻率 1/T 為轉折點，增益以 −20 dB/dec 下降。</dd></div>
+    <div class="term"><dt><a href="/zh-hant/term/feedback-control/">回授控制</a></dt><dd>以感測器量測受控量並與目標值比較，改變操作量使兩者之差（誤差）變小的控制。訊號沿迴路繞行一圈，因此也稱為閉迴路控制。無論原因為何都修正結果的偏差，因此對擾動與受控體的變化很強，但在誤差出現後才修正，因此有延遲，增益太高則會造成振盪或不穩定。PID控制是代表，廣泛用於溫度、速度、電壓、位置等的控制。</dd></div>
+  </dl>
+</section>
+<section>
+  <h2>相關的比較</h2>
+  <ul class="cmp-list">
+  <li><a class="cmp-card" href="/zh-hant/compare/open-loop-vs-closed-loop-control/"><strong>開迴路控制與閉迴路控制的差異：運作方式、抗干擾能力、穩定性、感測器、用途比較</strong><span>從訊號的流向、是否需要感測器、對干擾的處理、對受控體變化的耐受度、響應速度、穩定性、穩態誤差、構成與成本、實例等面向，以表格比較開迴路控制與閉迴路控制（回授控制）。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/bjt-vs-mosfet/"><strong>BJT 與 MOSFET 的差異：控制方式、速度、用途比較</strong><span>從控制方式、輸入電流、載子、速度、導通狀態、溫度特性、積體度與用途等面向，以表格比較雙極性電晶體（BJT）與 MOSFET。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/sar-vs-delta-sigma-vs-pipeline-vs-flash-adc/"><strong>SAR、ΔΣ、管線式、快閃式ADC的差異：架構比較</strong><span>以機制、解析度、速度、延遲、耗電量、面積與用途等面向，用表格比較快閃式、SAR式、管線式、ΔΣ式的ADC。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/latch-vs-flip-flop/"><strong>閂鎖器與正反器的差異：比較動作與使用時機</strong><span>以觸發方式、輸出的動作、構成、尺寸、時序分析、突波與數位設計中的使用時機等面向，用表格比較閂鎖器與正反器。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/jfet-vs-mosfet/"><strong>JFET與MOSFET的差異：比較閘極結構與使用時機</strong><span>以閘極的結構、常開或常關、閘極電流、雜訊、抗靜電能力、整合度與用途等面向，用表格比較JFET與MOSFET。</span></a></li>
+  <li><a class="cmp-card" href="/zh-hant/compare/combinational-vs-sequential-logic/"><strong>組合邏輯電路與循序邏輯電路的差異：比較輸出的決定方式</strong><span>以輸出由什麼決定、記憶元件、時脈、回授、範例、時序與 HDL 寫法等面向，用表格比較組合邏輯電路與循序邏輯電路。</span></a></li></ul>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script type="module" src="/js/compare.js"></script>
+<script type="module" src="/js/answer.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");</script>
+</body>
+</html>
