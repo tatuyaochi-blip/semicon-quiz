@@ -1,6 +1,6 @@
 // Service Worker の元(tools/build.js が版・保存するファイルの一覧を埋めて docs/sw.js に出力する)
 // ネットワークを優先し、つながらないときだけキャッシュを使う。最初の訪問時に問題データなどを保存しておく。
-const CACHE = 'sq-bc2877a6e5';
+const CACHE = 'sq-6a60792856';
 const BASE = "/";
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = ["/zh-hant/","/en/","/ko/","/de/","/nl/","/fr/","/"];
@@ -19,6 +19,7 @@ const PRECACHE = [
   "/data/ja/q/automotive.json",
   "/data/ja/q/bjt.json",
   "/data/ja/q/c-language.json",
+  "/data/ja/q/circuit-analysis.json",
   "/data/ja/q/circuits.json",
   "/data/ja/q/cleanroom.json",
   "/data/ja/q/cloud-container.json",
@@ -106,6 +107,7 @@ const PRECACHE = [
   "/data/en/q/automotive.json",
   "/data/en/q/bjt.json",
   "/data/en/q/c-language.json",
+  "/data/en/q/circuit-analysis.json",
   "/data/en/q/circuits.json",
   "/data/en/q/cleanroom.json",
   "/data/en/q/cloud-container.json",
@@ -193,6 +195,7 @@ const PRECACHE = [
   "/data/zh-hant/q/automotive.json",
   "/data/zh-hant/q/bjt.json",
   "/data/zh-hant/q/c-language.json",
+  "/data/zh-hant/q/circuit-analysis.json",
   "/data/zh-hant/q/circuits.json",
   "/data/zh-hant/q/cleanroom.json",
   "/data/zh-hant/q/cloud-container.json",
@@ -279,6 +282,7 @@ const PRECACHE = [
   "/data/ko/q/automotive.json",
   "/data/ko/q/bjt.json",
   "/data/ko/q/c-language.json",
+  "/data/ko/q/circuit-analysis.json",
   "/data/ko/q/circuits.json",
   "/data/ko/q/cleanroom.json",
   "/data/ko/q/cloud-container.json",
@@ -365,6 +369,7 @@ const PRECACHE = [
   "/data/de/q/automotive.json",
   "/data/de/q/bjt.json",
   "/data/de/q/c-language.json",
+  "/data/de/q/circuit-analysis.json",
   "/data/de/q/circuits.json",
   "/data/de/q/cleanroom.json",
   "/data/de/q/cloud-container.json",
@@ -451,6 +456,7 @@ const PRECACHE = [
   "/data/nl/q/automotive.json",
   "/data/nl/q/bjt.json",
   "/data/nl/q/c-language.json",
+  "/data/nl/q/circuit-analysis.json",
   "/data/nl/q/circuits.json",
   "/data/nl/q/cleanroom.json",
   "/data/nl/q/cloud-container.json",
@@ -537,6 +543,7 @@ const PRECACHE = [
   "/data/fr/q/automotive.json",
   "/data/fr/q/bjt.json",
   "/data/fr/q/c-language.json",
+  "/data/fr/q/circuit-analysis.json",
   "/data/fr/q/circuits.json",
   "/data/fr/q/cleanroom.json",
   "/data/fr/q/cloud-container.json",
