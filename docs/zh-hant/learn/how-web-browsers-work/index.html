@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hant" data-lang="zh-hant" data-base="/" data-home="/zh-hant/" data-adsense-client="ca-pub-2325130884595699" data-adsense-slots="{&quot;default&quot;:&quot;7663691929&quot;}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>瀏覽器是怎麼運作的？從輸入網址到顯示網頁的過程 | 半導體教室</title>
+<meta name="description" content="瀏覽器會從網址找到伺服器、建立加密連線，再把收到的HTML、CSS、JavaScript組合起來畫在畫面上。本文淺顯說明顯示的流程、快取與Cookie、引擎的差異、佔用記憶體的原因與安全的使用方式。">
+<link rel="canonical" href="https://semiconroom.com/zh-hant/learn/how-web-browsers-work/">
+<link rel="alternate" hreflang="ja" href="https://semiconroom.com/learn/how-web-browsers-work/">
+<link rel="alternate" hreflang="en" href="https://semiconroom.com/en/learn/how-web-browsers-work/">
+<link rel="alternate" hreflang="zh-Hant" href="https://semiconroom.com/zh-hant/learn/how-web-browsers-work/">
+<link rel="alternate" hreflang="x-default" href="https://semiconroom.com/en/learn/how-web-browsers-work/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="瀏覽器是怎麼運作的？從輸入網址到顯示網頁的過程 | 半導體教室">
+<meta property="og:description" content="瀏覽器會從網址找到伺服器、建立加密連線，再把收到的HTML、CSS、JavaScript組合起來畫在畫面上。本文淺顯說明顯示的流程、快取與Cookie、引擎的差異、佔用記憶體的原因與安全的使用方式。">
+<meta property="og:url" content="https://semiconroom.com/zh-hant/learn/how-web-browsers-work/">
+<meta property="og:site_name" content="半導體教室">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://semiconroom.com/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="/zh-hant/manifest.json">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://semiconroom.com/zh-hant/"},{"@type":"ListItem","position":2,"name":"入門解說","item":"https://semiconroom.com/zh-hant/learn/"},{"@type":"ListItem","position":3,"name":"瀏覽器是怎麼運作的？從輸入網址到顯示網頁的過程","item":"https://semiconroom.com/zh-hant/learn/how-web-browsers-work/"}]},{"@context":"https://schema.org","@type":"Article","headline":"瀏覽器是怎麼運作的？從輸入網址到顯示網頁的過程","description":"瀏覽器會從網址找到伺服器、建立加密連線，再把收到的HTML、CSS、JavaScript組合起來畫在畫面上。本文淺顯說明顯示的流程、快取與Cookie、引擎的差異、佔用記憶體的原因與安全的使用方式。","inLanguage":"zh-Hant","datePublished":"2026-10-23","dateModified":"2026-10-23","mainEntityOfPage":"https://semiconroom.com/zh-hant/learn/how-web-browsers-work/","author":{"@type":"Organization","name":"半導體教室"},"publisher":{"@type":"Organization","name":"半導體教室"}}]</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2325130884595699" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TWRR3S3QDD"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); } gtag('js', new Date()); gtag('config', 'G-TWRR3S3QDD');</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d64c8">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="lang-banner" lang="en" hidden><div class="wrap"><a href="/en/learn/how-web-browsers-work/" hreflang="en">This page is also available in English →</a><button type="button" aria-label="Close">×</button></div></div>
+<script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="/zh-hant/"><span class="logo-mark" aria-hidden="true"></span><span>半導體教室<small>Semiconductor Room</small></span></a>
+    <nav class="header-nav"><a href="/zh-hant/c/">領域</a><a href="/zh-hant/learn/">入門解說</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    <form class="site-search" role="search" action="/zh-hant/search/" method="get"><input type="search" name="q" placeholder="搜尋（例：MOSFET）" aria-label="搜尋站內內容" autocomplete="off"></form>
+    <a class="icon-btn search-link" href="/zh-hant/search/" aria-label="搜尋站內內容"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4.2-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+    <details class="menu lang-menu">
+      <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lang-long">繁體中文</span><span class="lang-short" aria-hidden="true">繁體中文</span></summary>
+      <nav class="menu-panel lang-switch" aria-label="語言"><a href="/learn/how-web-browsers-work/" hreflang="ja" lang="ja" data-lang="ja">日本語</a><a href="/en/learn/how-web-browsers-work/" hreflang="en" lang="en" data-lang="en">English</a><span aria-current="true" lang="zh-Hant">繁體中文</span><a href="/ko/" lang="ko" data-lang="ko">한국어</a><a href="/de/" lang="de" data-lang="de">Deutsch</a><a href="/nl/" lang="nl" data-lang="nl">Nederlands</a><a href="/fr/" lang="fr" data-lang="fr">Français</a></nav>
+    </details>
+    <details class="menu nav-menu">
+      <summary>選單</summary>
+      <nav class="menu-panel"><a href="/zh-hant/">首頁</a><a href="/zh-hant/c/">領域</a><a href="/zh-hant/learn/">入門解說</a><a href="/zh-hant/glossary/">名詞解釋</a><a href="/zh-hant/compare/">比較</a><a href="/zh-hant/figures/">圖解集</a><a href="/zh-hant/tools/">計算工具</a><a href="/zh-hant/stats/">成績</a></nav>
+    </details>
+  </div>
+</header>
+<script>(() => { const menus = () => document.querySelectorAll('details.menu[open]'); document.addEventListener('click', e => menus().forEach(d => d.contains(e.target) || (d.open = false))); document.addEventListener('keydown', e => e.key === 'Escape' && menus().forEach(d => (d.open = false))); })();</script>
+<script>(() => {
+  // 言語の選択を覚える。既定言語のトップ(/)に来たときだけ、選んだ言語のトップへ移る(言語別のURLはそのまま表示する)
+  const k = 'langChoice', h = document.documentElement;
+  let pref; try { pref = localStorage.getItem(k); } catch {}
+  document.querySelectorAll('.lang-switch [data-lang]').forEach(a => a.addEventListener('click', () => { try { localStorage.setItem(k, a.dataset.lang); } catch {} }));
+  const own = document.querySelector('.lang-switch [aria-current]');
+  own && own.addEventListener('click', () => { try { localStorage.setItem(k, h.dataset.lang); } catch {} });
+  if (pref && pref !== h.dataset.lang && h.dataset.home === h.dataset.base && location.pathname === h.dataset.home) {
+    const a = document.querySelector(`.lang-switch [data-lang="${pref}"]`);
+    if (a) location.replace(a.href);
+  }
+  // 学習の入口のクリック数を計る(GA4。data-track を付けたリンク)
+  document.addEventListener('click', e => { const a = e.target.closest('[data-track]'); if (a && typeof gtag === 'function') gtag('event', 'cta_click', { cta: a.dataset.track, page_lang: h.dataset.lang }); });
+})();</script>
+
+<main class="wrap">
+<nav class="breadcrumb"><a href="/zh-hant/">首頁</a> <span>›</span> <a href="/zh-hant/learn/">入門解說</a> <span>›</span> <a href="/zh-hant/learn/#s-internet">網路與網際網路</a></nav>
+<article class="prose learn-article">
+<h1>瀏覽器是怎麼運作的？從輸入網址到顯示網頁的過程</h1>
+<p class="learn-meta">約 10 分鐘 · 更新：2026年10月23日</p>
+
+<p class="lead">瀏覽器是把網頁取回來、顯示在畫面上的App。輸入網址後，它會查出相當於伺服器地址的號碼，建立加密連線，再接收網頁的材料。接著把HTML、CSS、JavaScript這些材料組合起來畫到畫面上，多數情況下在幾秒內就完成。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>從輸入網址到顯示網頁的6個階段</li>
+<li>HTML、CSS、JavaScript各自負責的工作</li>
+<li>第2次打開比較快的原因（快取），以及Cookie的運作方式</li>
+<li>瀏覽器「引擎」的差異，以及佔用大量記憶體的原因</li>
+<li>安全使用瀏覽器的基本做法</li>
+</ul><p class="muted">先備知識：不需要。只要用手機或電腦看過網頁就夠了。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>Chrome、Safari、Edge、Firefox都是瀏覽器。在App裡打開連結時看到的畫面，很多也用到了瀏覽器的元件。</p>
+<p>網頁的資料放在遠方的電腦裡。依照要求提供資料的電腦，稱為「伺服器」。瀏覽器的工作，是向伺服器要來資料，再整理成人看得懂的畫面。</p>
+<p>這篇文章會依序追蹤從輸入網址到顯示網頁的過程。網路的細部運作，交給其他文章說明。</p>
+</section>
+
+<section>
+<h2>從輸入網址到顯示網頁的流程</h2>
+<p>表示網頁位置的字串，稱為<a class="term-link" href="/zh-hant/term/url/">URL（網址）</a>。它的樣子像「https://www.example.com/news/」。開頭的「https」是通訊的方式，「www.example.com」是網站的名稱，後面的部分是網站裡的位置。</p>
+<p>輸入網址後，瀏覽器大致會經過6個階段。為了讓說明簡單，這裡只列出常見的流程。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 420" role="img"><title>從輸入網址到顯示網頁的6個階段，以及各階段交換資料的對象</title>
+<text x="118" y="18" text-anchor="middle" class="m">瀏覽器做的事</text>
+<text x="290" y="18" text-anchor="middle" class="m">對象</text>
+<rect x="8" y="30" width="220" height="38" rx="6" class="metal"/><text x="20" y="55">① 讀取網址</text>
+<text x="292" y="55" text-anchor="middle">裝置內部</text>
+<line x1="118" y1="68" x2="118" y2="80" class="ln"/><polygon points="118,88 113,79 123,79" class="ink"/>
+<rect x="8" y="90" width="220" height="38" rx="6" class="n"/><text x="20" y="115">② 用名稱查出號碼</text>
+<text x="292" y="115" text-anchor="middle">DNS伺服器</text>
+<line x1="118" y1="128" x2="118" y2="140" class="ln"/><polygon points="118,148 113,139 123,139" class="ink"/>
+<rect x="8" y="150" width="220" height="38" rx="6" class="n"/><text x="20" y="175">③ 建立加密連線</text>
+<text x="292" y="175" text-anchor="middle">網頁伺服器</text>
+<line x1="118" y1="188" x2="118" y2="200" class="ln"/><polygon points="118,208 113,199 123,199" class="ink"/>
+<rect x="8" y="210" width="220" height="38" rx="6" class="n"/><text x="20" y="235">④ 接收HTML</text>
+<text x="292" y="235" text-anchor="middle">網頁伺服器</text>
+<line x1="118" y1="248" x2="118" y2="260" class="ln"/><polygon points="118,268 113,259 123,259" class="ink"/>
+<rect x="8" y="270" width="220" height="38" rx="6" class="n"/><text x="20" y="295">⑤ 再取得CSS、圖片等</text>
+<text x="292" y="295" text-anchor="middle">多個伺服器</text>
+<line x1="118" y1="308" x2="118" y2="320" class="ln"/><polygon points="118,328 113,319 123,319" class="ink"/>
+<rect x="8" y="330" width="220" height="38" rx="6" class="metal"/><text x="20" y="355">⑥ 組合並繪製</text>
+<text x="292" y="355" text-anchor="middle">裝置內部</text>
+<line x1="235" y1="96" x2="235" y2="302" class="ac"/>
+<text x="170" y="390" text-anchor="middle" class="a">第2次打開時，②～⑤</text>
+<text x="170" y="412" text-anchor="middle" class="a">有時可以靠快取省略</text>
+</svg><figcaption class="fig-cap">藍色的階段是透過網路的交換，灰色是在裝置（手機或電腦）內部進行的工作。省略的部分：⑤和⑥會同時進行、③裡面的細部步驟、重新導向（被引導到另一個網址）。</figcaption></figure>
+<p>在②，瀏覽器會用網站的名稱，查出通訊要用的號碼。這個號碼稱為<a class="term-link" href="/zh-hant/term/ip-address/">IP位址</a>，查詢的機制稱為<a class="term-link" href="/zh-hant/term/dns/">DNS（網域名稱系統）</a>。詳細內容在「<a href="/zh-hant/learn/how-dns-works/">DNS是什麼？</a>」中說明。</p>
+<p>在③，瀏覽器會先和伺服器接通通訊的路徑，接著商定加密用的金鑰。現在很多網站都使用HTTPS，用加密防止資料在途中被讀取。這些準備步驟在「<a href="/zh-hant/learn/tcp-vs-udp/">TCP與UDP的差異是什麼？</a>」和「<a href="/zh-hant/learn/what-does-https-mean/">HTTPS是什麼？</a>」中介紹。</p>
+</section>
+
+<section>
+<h2>「請給我頁面」「給你」：HTTP的對話</h2>
+<p>連線之後，瀏覽器會送出「請給我這個頁面」的請求。伺服器會附上表示結果的號碼，把頁面的資料送回來。規定這段對話形式的規則，稱為<a class="term-link" href="/zh-hant/term/http/">HTTP（超文字傳輸協定）</a>。</p>
+<p>回覆開頭的3位數號碼，稱為<a class="term-link" href="/zh-hant/term/http-status-code/">HTTP狀態碼</a>。「200」代表成功，「404」代表找不到那個頁面。</p>
+<p>最先送到的，通常是HTML（下一節說明）。瀏覽器會一邊讀，一邊在發現「這張圖片也要用」之類的記載時，再送出新的請求。一個頁面送出幾十次請求並不少見。廣告或影片等，也可能來自別家公司的伺服器。資料送達的機制本身，在「<a href="/zh-hant/learn/how-the-internet-delivers-data/">網際網路怎麼傳送資料？</a>」中說明。</p>
+</section>
+
+<section>
+<h2>HTML、CSS、JavaScript：3種材料的角色</h2>
+<p>網頁的材料，主要是3種文字檔案。寫法的規則，由國際性的團體公開。</p>
+<h3>HTML：內容與結構</h3>
+<p>HTML用來寫文件的內容和各部分的角色，例如「這裡是標題」「這裡是段落」「這裡放圖片」。角色用角括號圍起來的標記表示。例如下面這一行，表示「公告」是標題。</p>
+<p><strong>&lt;h1&gt;公告&lt;/h1&gt;</strong></p>
+<h3>CSS：指定外觀</h3>
+<p>CSS用來指定外觀，例如文字的顏色、大小和排列方式。下面這一行是「標題用藍色文字顯示」的指定。</p>
+<p><strong>h1 { color: blue; }</strong></p>
+<p>把內容和外觀分開，就容易切換版面。例如同樣的內容，在手機上排成直的一欄，在電腦上可以橫向並排。</p>
+<h3>JavaScript：加上動作的程式</h3>
+<p>JavaScript是在網頁上執行的程式。它負責按下按鈕時的反應，以及不重新載入網頁就替換內容等動作。下面這一行，是把標題文字改寫成「歡迎」的指令。</p>
+<p><strong>document.querySelector("h1").textContent = "歡迎";</strong></p>
+<p>瀏覽器會在執行時，把JavaScript常用的部分翻譯成CPU的指令來加快速度。這種翻譯方式稱為<a class="term-link" href="/zh-hant/term/jit-compilation/">JIT編譯（即時編譯）</a>。翻譯的機制在「<a href="/zh-hant/learn/how-compilers-work/">編譯器是什麼？</a>」中說明。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>HTML和CSS的關係，就像文書處理軟體裡的「內文」和「格式設定」。內文不動，只要換格式，就能一次改變顏色和配置。相似的地方，是把內容和外觀分開處理。</p><p class="analogy-limit"><strong>比喻的限制：</strong>在文書處理軟體裡，內文和格式通常放在同一個檔案。網頁則是分開的檔案，還可能來自不同的伺服器。這個比喻裡，也沒有相當於JavaScript的東西。</p></aside>
+</section>
+
+<section>
+<h2>組合網頁，畫到畫面上</h2>
+<p>材料到齊後，瀏覽器就開始把畫面畫出來。這裡分成4個階段說明（實際上分得更細，而且會同時進行）。</p>
+<ol>
+<li><strong>把HTML整理成樹狀</strong>：把「頁面裡有標題和段落，段落裡有連結」這種上下層的關係，做成樹狀的資料。</li>
+<li><strong>決定外觀</strong>：把CSS的指定套用到每個元件上，決定顏色和大小。</li>
+<li><strong>計算位置</strong>：配合畫面的寬度，決定每個元件放在哪裡、多大。</li>
+<li><strong>繪製</strong>：把文字和圖片轉成點（像素）的集合，畫到畫面上。疊合的工作，也會用到擅長影像處理的GPU。</li>
+</ol>
+<p>第1步的樹狀資料，稱為<a class="term-link" href="/zh-hant/term/dom/">文件物件模型（DOM）</a>。JavaScript「改寫標題」時，改寫的就是這個DOM。DOM一改變，瀏覽器就只重做第2～4步中需要的部分。</p>
+<p>要讓動作看起來流暢，許多螢幕需要每秒重畫60次左右。換算成每次，約16.7毫秒（1毫秒是千分之一秒）。如果JavaScript用繁重的計算把這段時間用完，捲動就會卡卡的。</p>
+</section>
+
+<section>
+<h2>第2次打開比較快的原因：快取</h2>
+<p>收到過的材料，會在裝置裡保存一段時間。這份備份稱為「快取」。再次打開時如果能用這份備份，就不必再到伺服器去拿。</p>
+<p>備份可以用到什麼時候，由伺服器在回覆中指定。在期限內，瀏覽器不問伺服器就直接使用備份。</p>
+<p>過期的備份不會馬上丟掉。瀏覽器會問伺服器：「和我手上的版本相比，有變嗎？」如果沒變，伺服器只回一個附上「304」號碼的簡短回覆，不送內容。收到的資料少很多，所以會比較快。</p>
+<p>用DNS查到的號碼也會記住，所以有時也能省略②。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>快取就像把常用的食材買來放在家裡的冰箱。在期限內，不必去店裡就能馬上使用。過了期限，就先確認還能不能用。相似的地方，是把備份放在身邊，看期限決定要不要用。</p><p class="analogy-limit"><strong>比喻的限制：</strong>食材放久了會自然變質，但資料的備份不會。它會變舊，是因為原本伺服器上的內容被改寫了。而且決定期限的不是使用的一方，而是送出資料的伺服器。</p></aside>
+</section>
+
+<section>
+<h2>Cookie：網站寄放在瀏覽器裡的小紙條</h2>
+<p>HTTP的對話，每一次都是獨立的。這樣下去，伺服器無法知道「剛才登入的人」和「現在的請求」是同一個人。所以伺服器會在回覆中附上一小段文字資料，讓瀏覽器保存。</p>
+<p>瀏覽器下次向同一個網站送出請求時，會自動附上這段資料。這個機制稱為<a class="term-link" href="/zh-hant/term/cookie/">Cookie</a>。它用來記住登入狀態、購物車的內容等。</p>
+<h3>第一方與第三方</h3>
+<p>正在瀏覽的網站本身寄放的Cookie，稱為第一方Cookie。相對地，由嵌在頁面裡的廣告等、別家公司寄放的Cookie，稱為第三方Cookie。</p>
+<p>假設同一家廣告公司的廣告，嵌在許多網站裡。廣告公司在每個網站都能收到同一個Cookie。這樣一來，就能把「看了新聞網站和食譜網站的是同一個人」連起來。像這樣一路跟著別人的瀏覽行動，稱為「追蹤」。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 262" role="img"><title>嵌在2個網站裡的同一家廣告公司，用同一個Cookie把瀏覽紀錄連起來的機制</title>
+<rect x="8" y="8" width="152" height="96" rx="8" class="dep"/>
+<text x="84" y="32" text-anchor="middle">新聞網站</text>
+<rect x="30" y="50" width="108" height="36" rx="6" class="ox"/>
+<text x="84" y="74" text-anchor="middle">X的廣告</text>
+<rect x="180" y="8" width="152" height="96" rx="8" class="dep"/>
+<text x="256" y="32" text-anchor="middle">食譜網站</text>
+<rect x="202" y="50" width="108" height="36" rx="6" class="ox"/>
+<text x="256" y="74" text-anchor="middle">X的廣告</text>
+<line x1="84" y1="86" x2="146" y2="160" class="ac"/>
+<line x1="256" y1="86" x2="194" y2="160" class="ac"/>
+<text x="64" y="134" text-anchor="middle" class="a">ID 123</text>
+<text x="276" y="134" text-anchor="middle" class="a">ID 123</text>
+<rect x="100" y="162" width="140" height="38" rx="6" class="metal"/>
+<text x="170" y="186" text-anchor="middle">廣告公司X</text>
+<text x="170" y="228" text-anchor="middle">因為ID相同</text>
+<text x="170" y="252" text-anchor="middle">就知道是同一個人</text>
+</svg><figcaption class="fig-cap">不論嵌在哪個網站，廣告公司X都能收到寄放在瀏覽器裡的同一個Cookie（這裡是「ID 123」）。省略的部分：實際的ID是很長的字串、Cookie以外的追蹤方法。</figcaption></figure>
+<h3>瀏覽器限制追蹤的歷程</h3>
+<p>為了防止這種追蹤，瀏覽器一直在限制第三方Cookie。Safari在2020年3月，預設封鎖了所有第三方Cookie。Firefox在2022年6月，把Cookie按網站分別存放在不同盒子的方式，設為電腦版的預設。盒子不同，在其他網站寄放的ID就不會出現。</p>
+<p>Chrome在2020年1月，宣布了將來取消第三方Cookie的計畫。但是一再延期，在2024年7月放棄了這個計畫。2025年4月，又決定繼續由使用者在現有的設定畫面中選擇是否封鎖。預設會接受，在無痕模式（不留下瀏覽紀錄的視窗）中則會封鎖（2026年10月時）。</p>
+</section>
+
+<section>
+<h2>瀏覽器的「引擎」：裡面分成3個系統</h2>
+<p>瀏覽器中讀取HTML和CSS、組合出畫面的核心部分，稱為「瀏覽器引擎」。即使外面的畫面各家公司不同，引擎有時是共用的。現在廣泛使用的，是下面3個系統。</p>
+<table>
+<thead><tr><th>引擎</th><th>主要的瀏覽器</th><th>開發的核心</th></tr></thead>
+<tbody>
+<tr><td>Blink</td><td>Chrome、Edge等</td><td>Google（任何人都能看到原始碼的開發計畫Chromium）</td></tr>
+<tr><td>WebKit</td><td>Safari</td><td>Apple</td></tr>
+<tr><td>Gecko</td><td>Firefox</td><td>Mozilla</td></tr>
+</tbody>
+</table>
+<p>Blink是在2013年從WebKit分出來的。Microsoft在2020年1月，把Edge的核心換成以Chromium為基礎的版本。所以Chrome和Edge雖然外觀不同，組合網頁的方式幾乎一樣。</p>
+<p>在iPhone和iPad上，依照Apple的規定，瀏覽器原則上要使用WebKit。iPhone版的Chrome，通常裡面也是WebKit。例外是歐盟和日本：為了配合當地法律，只要符合條件，也能使用其他引擎。歐盟從iOS 17.4起；日本從iOS 26.2起，依據日本的《智慧型手機軟體競爭促進法》（2026年10月時）。</p>
+<p>引擎的差異之所以重要，有2個原因。同一個網頁，可能因引擎不同，顯示或動作略有差異。另外，某個引擎被發現弱點時，所有使用它的瀏覽器都會受到影響。</p>
+</section>
+
+<section>
+<h2>瀏覽器佔用大量記憶體的原因</h2>
+<p>瀏覽器佔用大量<a href="/zh-hant/learn/memory-vs-storage/">記憶體</a>的主要原因，在於把網頁安全地分開執行的設計。作業系統以「行程」為單位管理執行中的程式，並分別借給各自的記憶體（「<a href="/zh-hant/learn/what-is-an-operating-system/">作業系統（OS）是什麼？</a>」）。Chrome從2008年推出時起，就把負責顯示網頁的部分，按分頁等分成不同的行程。即使一個分頁當掉，其他分頁也能繼續運作。</p>
+<p>2018年，一種利用CPU設計上弱點的攻擊廣為人知。這種攻擊稱為<a class="term-link" href="/zh-hant/term/spectre/">Spectre</a>。在同一個行程裡，可能會偷看到其他網站的資料。因此Chrome從2018年的Chrome 67起，把電腦版按網站分開行程的方式設為預設。Firefox也在2021年，發表了相同概念的方式。</p>
+<p>此外，顯示網頁的行程，會在嚴格限制能做的事的狀態下執行。也就是讓它不能直接碰觸檔案或設備。這種封閉的做法稱為「沙箱」。即使惡意網頁利用了引擎的弱點，損害也比較容易被擋在裡面。</p>
+<p>分開行程後，每個行程都需要同樣元件的備份，所以記憶體用量會增加。瀏覽器是為了穩定和安全，才多用了一些記憶體。記憶體不夠時，關掉沒在用的分頁很有效。</p>
+</section>
+
+<section>
+<h2>安全使用瀏覽器的基本做法</h2>
+<p>瀏覽器是每天執行陌生對象送來的程式的App。所以引擎的弱點容易成為攻擊的入口，修正也經常發布。Chrome從2021年起，每4週推出一個新版本。</p>
+<p>多數瀏覽器會自動接收更新，但有些像電腦版的Chrome，要重新啟動才會生效。看到「更新」或「重新啟動」的提示，基本上要盡早照做。在手機上，不要停用作業系統和App的更新。iPhone的瀏覽器大多是透過作業系統的更新，來取得WebKit的修正。</p>
+<p>為瀏覽器增加功能的附加程式，稱為「擴充功能」。其中有些會要求讀取所有瀏覽中網頁內容的權限。只從官方商店安裝，並確認它要求的權限和功能相符，製作者也值得信任。</p>
+<p>也要小心和真的一模一樣的假網站。分辨和防範的方法，在「<a href="/zh-hant/learn/what-is-phishing/">網路釣魚是什麼？</a>」中說明。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：iPhone上的Chrome和Safari，裡面是完全不同的瀏覽器</p><p>實際上，iPhone上的Chrome原則上也和Safari一樣，用WebKit組合網頁。不同的是畫面設計、書籤同步等外圍的功能。同樣叫Chrome，電腦版和iPhone版用的引擎也不一樣。</p></div>
+<div class="myth"><p class="myth-q">誤解：Cookie是會自己執行的危險程式</p><p>實際上，Cookie是伺服器寄放的一小段文字資料，本身不會當作程式執行。它也負責維持登入等，許多網站不可或缺的工作。需要注意的是第三方Cookie造成的追蹤，以及登入用的Cookie被偷。</p></div>
+<div class="myth"><p class="myth-q">誤解：用無痕模式，就能在沒人看得到的情況下瀏覽</p><p>實際上，無痕模式不會留下的，是那台裝置裡的瀏覽紀錄和Cookie等。根據Google的說明，瀏覽內容仍可能被以下對象看到：正在瀏覽的網站本身、學校或公司的管理者、網路服務供應商。這是為了不讓共用同一台裝置的人看到紀錄的功能。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>補充</th></tr></thead>
+<tbody>
+<tr><td>流暢顯示的1個影格</td><td>約16.7毫秒</td><td>每秒重畫60次時（MDN）</td></tr>
+<tr><td>1個Cookie大小的參考值</td><td>約4 KB（4,096位元組）</td><td>RFC 6265（2011年）要求瀏覽器至少要能處理的大小。實際的上限也大約如此</td></tr>
+<tr><td>Safari預設封鎖所有第三方Cookie的年份</td><td>2020年</td><td>Safari 13.1、iOS 13.4</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="/zh-hant/compare/http-1-1-vs-http-2-vs-http-3/">HTTP/1.1、HTTP/2、HTTP/3的差異</a></li>
+<li>用表格看差異：<a href="/zh-hant/compare/process-vs-thread/">行程與執行緒的差異</a>、<a href="/zh-hant/compare/compiler-vs-interpreter-vs-jit/">編譯器、直譯器、JIT 的差異</a></li>
+<li>用數字試試看：<a href="/zh-hant/tools/data-transfer-time-calculator/">資料傳輸時間計算工具</a>（估算網頁送達需要的時間）</li>
+<li>下一步的用語：<a class="term-link" href="/zh-hant/term/same-origin-policy/">同源政策</a>（不讓網站讀取其他網站資料的規則）、<a class="term-link" href="/zh-hant/term/cross-site-scripting/">跨網站指令碼（XSS）</a>（利用網站弱點的攻擊）</li>
+<li>更快送達的方法：<a class="term-link" href="/zh-hant/term/cdn/">CDN（內容傳遞網路）</a>（把備份放在使用者附近來發送的機制）</li>
+</ul>
+</section>
+
+</article>
+
+<section>
+  <h2>系列「網路與網際網路」的文章</h2>
+  <ol class="learn-toc"><li><a href="/zh-hant/learn/how-the-internet-delivers-data/" data-track="learn_series">網際網路怎麼傳送資料？封包與路由器的運作</a></li><li><a href="/zh-hant/learn/what-is-an-ip-address/" data-track="learn_series">IP位址是什麼？網路地址的運作與IPv4、IPv6</a></li><li><a href="/zh-hant/learn/how-wi-fi-works/" data-track="learn_series">Wi-Fi是怎麼運作的？用電波傳送資料的方法與速度不同的原因</a></li><li><a href="/zh-hant/learn/what-does-https-mean/" data-track="learn_series">HTTPS是什麼？鎖頭圖示能保護與不能保護的事</a></li><li><a href="/zh-hant/learn/how-dns-works/" data-track="learn_series">DNS是什麼？從網域名稱查出IP位址的運作</a></li><li><a href="/zh-hant/learn/what-is-5g/" data-track="learn_series">5G是什麼？和4G有什麼不同？速度與延遲的原理</a></li><li><a href="/zh-hant/learn/tcp-vs-udp/" data-track="learn_series">TCP與UDP的差異是什麼？要確實送達，還是要速度</a></li><li><a href="/zh-hant/learn/how-bluetooth-works/" data-track="learn_series">藍牙是什麼？無線耳機和智慧手錶連線的原理</a></li><li><a href="/zh-hant/learn/what-is-iot/" data-track="learn_series">物聯網（IoT）是什麼？物品連上網路的原理與注意事項</a></li><li><a href="/zh-hant/learn/what-is-ethernet/" data-track="learn_series">乙太網路是什麼？有線區域網路傳送資料的原理</a></li><li><a href="/zh-hant/learn/what-is-an-api/" data-track="learn_series">API是什麼？程式之間的約定與「API串接」</a></li><li><strong aria-current="page">瀏覽器是怎麼運作的？從輸入網址到顯示網頁的過程</strong></li></ol>
+</section>
+<p class="learn-quiz muted">這個領域的題目： <a href="/zh-hant/c/web-tech/" data-track="learn_topic">Web技術基礎</a></p>
+<details class="news-sources"><summary>參考資料</summary><ul><li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_browsers_load_websites" target="_blank" rel="noopener">MDN Web Docs: How browsers load websites（給初學者的整體流程）</a></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work" target="_blank" rel="noopener">MDN Web Docs: Populating the page: how browsers work（DOM、CSSOM、版面配置、繪製。1個影格約16.67毫秒的參考值）</a></li><li><a href="https://developer.chrome.com/blog/inside-browser-part1" target="_blank" rel="noopener">Chrome for Developers: Inside look at modern web browser (part 1)（Mariko Kosaka，2018年。行程的分工方式）</a></li><li><a href="https://html.spec.whatwg.org/" target="_blank" rel="noopener">WHATWG: HTML Living Standard</a></li><li><a href="https://www.w3.org/Style/CSS/" target="_blank" rel="noopener">W3C: Cascading Style Sheets（CSS規格的入口）</a></li><li><a href="https://tc39.es/ecma262/" target="_blank" rel="noopener">Ecma International TC39: ECMAScript Language Specification（JavaScript的規格）</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9110" target="_blank" rel="noopener">RFC 9110: HTTP Semantics（IETF，2022年。請求、回應、狀態碼）</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9111" target="_blank" rel="noopener">RFC 9111: HTTP Caching（IETF，2022年）</a></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching" target="_blank" rel="noopener">MDN Web Docs: HTTP caching（用304 Not Modified確認）</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc6265" target="_blank" rel="noopener">RFC 6265: HTTP State Management Mechanism（IETF，2011年。Cookie的規格。第6.1節規定，瀏覽器應能處理每個至少4,096位元組的Cookie）</a></li><li><a href="https://developer.mozilla.org/en-US/docs/Web/Privacy/Guides/Third-party_cookies" target="_blank" rel="noopener">MDN Web Docs: Third-party cookies（第三方Cookie的定義）</a></li><li><a href="https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/" target="_blank" rel="noopener">WebKit Blog: Full Third-Party Cookie Blocking and More（2020年3月。Safari 13.1、iOS 13.4）</a></li><li><a href="https://blog.mozilla.org/en/products/firefox/firefox-rolls-out-total-cookie-protection-by-default-to-all-users/" target="_blank" rel="noopener">Mozilla Blog: Firefox rolls out Total Cookie Protection by default to more users worldwide（2022年6月的發表，之後經過修訂的文章。電腦版預設把Cookie按網站分開）</a></li><li><a href="https://blog.chromium.org/2020/01/building-more-private-web-path-towards.html" target="_blank" rel="noopener">Chromium Blog: Building a more private web: A path towards making third party cookies obsolete（2020年1月）</a></li><li><a href="https://privacysandbox.google.com/blog/privacy-sandbox-update" target="_blank" rel="noopener">Privacy Sandbox: A new path for Privacy Sandbox on the web（2024年7月。不再取消第三方Cookie，改為重視使用者選擇的方針）</a></li><li><a href="https://privacysandbox.google.com/blog/privacy-sandbox-next-steps" target="_blank" rel="noopener">Privacy Sandbox: Next steps for Privacy Sandbox and tracking protections in Chrome（2025年4月22日。不推出新的確認畫面，繼續由使用者在現有設定中選擇。無痕模式預設封鎖）</a></li><li><a href="https://support.google.com/chrome/answer/95647?hl=en&amp;co=GENIE.Platform%3DDesktop" target="_blank" rel="noopener">Google Chrome Help: Delete, allow and manage cookies in Chrome（無痕模式預設封鎖第三方Cookie）</a></li><li><a href="https://support.google.com/chrome/answer/95464?hl=en&amp;co=GENIE.Platform%3DDesktop" target="_blank" rel="noopener">Google Chrome Help: Browse in Incognito mode（無痕模式不會留下的東西，以及仍會被看到的東西）</a></li><li><a href="https://blog.chromium.org/2013/04/blink-rendering-engine-for-chromium.html" target="_blank" rel="noopener">Chromium Blog: Blink: A rendering engine for the Chromium project（2013年4月。從WebKit分出）</a></li><li><a href="https://blogs.windows.com/windowsexperience/2020/01/15/new-year-new-browser-the-new-microsoft-edge-is-out-of-preview-and-now-available-for-download/" target="_blank" rel="noopener">Windows Experience Blog: New year, new browser – The new Microsoft Edge is out of preview（2020年1月。以Chromium為基礎的新版Edge）</a></li><li><a href="https://developer.apple.com/app-store/review/guidelines/" target="_blank" rel="noopener">Apple Developer: App Review Guidelines（2.5.6 瀏覽網頁的App須使用WebKit。歐盟與日本可申請例外）</a></li><li><a href="https://developer.apple.com/support/alternative-browser-engines/" target="_blank" rel="noopener">Apple Developer: Using alternative browser engines in the European Union（iOS 17.4以後）</a></li><li><a href="https://developer.apple.com/support/alternative-browser-engines-jp/" target="_blank" rel="noopener">Apple Developer: Using alternative browser engines in Japan（iOS 26.2以後）</a></li><li><a href="https://www.jftc.go.jp/msca/index.html" target="_blank" rel="noopener">公正取引委員会: スマートフォンソフトウェア競争促進法（日本公平交易委員會：智慧型手機軟體競爭促進法。日文。2025年12月18日全面施行）</a></li><li><a href="https://blog.chromium.org/2008/09/multi-process-architecture.html" target="_blank" rel="noopener">Chromium Blog: Multi-process Architecture（2008年9月）</a></li><li><a href="https://chromium.googlesource.com/chromium/src/+/HEAD/docs/design/sandbox.md" target="_blank" rel="noopener">Chromium Docs: Sandbox（限制負責繪製網頁的行程權限的設計）</a></li><li><a href="https://security.googleblog.com/2018/07/mitigating-spectre-with-site-isolation.html" target="_blank" rel="noopener">Google Security Blog: Mitigating Spectre with Site Isolation in Chrome（2018年7月。從Chrome 67起成為預設）</a></li><li><a href="https://blog.mozilla.org/security/2021/05/18/introducing-site-isolation-in-firefox/" target="_blank" rel="noopener">Mozilla Security Blog: Introducing Site Isolation in Firefox（2021年5月）</a></li><li><a href="https://blog.chromium.org/2021/03/speeding-up-release-cycle.html" target="_blank" rel="noopener">Chromium Blog: Speeding up Chrome&#39;s release cycle（2021年3月。從Chrome 94起每4週一次）</a></li><li><a href="https://support.google.com/chrome/answer/95414?hl=en&amp;co=GENIE.Platform%3DDesktop" target="_blank" rel="noopener">Google Chrome Help: Update Google Chrome（重新啟動後更新才會生效）</a></li><li><a href="https://support.google.com/chrome_webstore/answer/2664769?hl=en" target="_blank" rel="noopener">Chrome Web Store Help: Install and manage extensions（只允許可信任的擴充功能）</a></li><li><a href="https://support.mozilla.org/en-US/kb/tips-assessing-safety-extension" target="_blank" rel="noopener">Mozilla Support: Tips for assessing the safety of an extension</a></li></ul></details>
+<div data-ad="term"></div>
+<p><a class="btn btn-ghost" href="/zh-hant/learn/">入門解說一覽</a></p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="unofficial">本站是由個人經營的半導體學習網站。</p>
+    <p class="footer-request"><a href="/zh-hant/contact/">對本站有任何建議，歡迎透過聯絡我們提出 →</a></p>
+    <nav class="footer-nav">
+      <a href="/zh-hant/about/">關於本站</a>
+      <a href="/zh-hant/figures/">圖解集</a>
+      <a href="/zh-hant/privacy/">隱私權政策</a>
+      <a href="/zh-hant/disclaimer/">免責聲明</a>
+      <a href="/zh-hant/contact/">聯絡我們</a>
+    </nav>
+    <p class="copyright">© 2026 半導體教室</p>
+  </div>
+</footer>
+<script type="module" src="/js/ads.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready).then(r => r.active && r.active.postMessage({ lang: document.documentElement.dataset.lang })).catch(() => {});</script>
+</body>
+</html>
