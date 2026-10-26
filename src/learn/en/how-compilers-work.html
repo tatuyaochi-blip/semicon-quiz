@@ -1,0 +1,235 @@
+<!--
+{
+  "title": "How Compilers Work: From Source Code to Machine Code",
+  "description": "A compiler translates your program into machine code the CPU can run. Follow one line through parsing, optimization and linking, and compare it with JIT.",
+  "series": "computer-basics",
+  "order": 10,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["compiler", "linker-loader", "isa-assembly", "programming"],
+  "terms": ["字句解析", "構文解析", "抽象構文木(AST)", "定数畳み込み", "JITコンパイル", "アセンブラ", "リンカ", "ローダ"],
+  "sources": [
+    { "title": "J. W. Backus et al.: The FORTRAN Automatic Coding System (1957, Western Joint Computer Conference; the project began in summer 1954 and took two and a half years and 18 person-years)", "url": "https://www.softwarepreservation.org/projects/FORTRAN/paper/BackusEtAl-FortranAutomaticCodingSystem-1957.pdf" },
+    { "title": "J. W. Backus: Automatic Programming: Properties and Performance of FORTRAN Systems I and II (1958; made available to all 704 installations in April 1957)", "url": "https://www.softwarepreservation.org/projects/FORTRAN/paper/Backus-AutomaticProgramming-1958.pdf" },
+    { "title": "F. E. Allen: A Technological Review of the FORTRAN I Compiler (1982; the goal of producing code nearly as efficient as hand-written code, its achievement, and how it became the basis of today's compiler technology)", "url": "https://www.softwarepreservation.org/projects/FORTRAN/paper/Allen-technological_review_FORTRAN-1982.pdf" },
+    { "title": "Engineering and Technology History Wiki: Milestones: A-0 Compiler and Initial Development of Automatic Programming, 1951-1952 (IEEE Milestone; A-0 was a set of specifications that worked as a linker and loader)", "url": "https://ethw.org/Milestones:A-0_Compiler_and_Initial_Development_of_Automatic_Programming,_1951-1952" },
+    { "title": "Penn Engineering: Recognizing a Pioneer: The IEEE Dedicates Milestone to Grace Hopper at Penn Engineering (installation of the commemorative plaque in 2024)", "url": "https://www.engineering.upenn.edu/stories/recognizing-a-pioneer-the-ieee-dedicates-milestone-to-grace-hopper-at-penn-engineering/" },
+    { "title": "Computer History Museum: Oral History of Captain Grace Hopper (on A-0 and the later FLOW-MATIC)", "url": "https://archive.computerhistory.org/resources/text/Oral_History/Hopper_Grace/102702026.05.01.pdf" },
+    { "title": "GCC Manual: Options That Control Optimization (-O0 is the default; it reduces compilation time and makes debugging produce the expected results)", "url": "https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html" },
+    { "title": "Oracle: Java Virtual Machine Guide (Java SE 21), Java Virtual Machine Technology Overview (the HotSpot VM starts with an interpreter and compiles frequently run parts)", "url": "https://docs.oracle.com/en/java/javase/21/vm/java-virtual-machine-technology-overview.html" },
+    { "title": "V8 blog: Firing up the Ignition interpreter (2016; V8's bytecode interpreter and its optimizing compiler)", "url": "https://v8.dev/blog/ignition-interpreter" },
+    { "title": "PEP 744 – JIT Compilation (CPython has long compiled source code to bytecode and run that; the experimental JIT in 3.13)", "url": "https://peps.python.org/pep-0744/" },
+    { "title": "Python documentation: What's New In Python 3.13 (the experimental JIT is disabled by default)", "url": "https://docs.python.org/3.13/whatsnew/3.13.html" },
+    { "title": "NumPy User Guide 2.2 (chapter \"What is NumPy?\"; element-by-element operations on arrays run in pre-compiled C code)", "url": "https://numpy.org/doc/2.2/numpy-user.pdf" }
+  ]
+}
+-->
+<p class="lead">A compiler is software that translates a program written by people into the 0-and-1 instructions a CPU can run (machine code). It translates the whole program at once, before the program runs. Along the way, it also finds some mistakes and rewrites the code to get the same result with less work (optimization). A CPU can only run machine code, so this translation step is essential.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>Why a CPU cannot run a program exactly as people write it</li>
+<li>The steps that turn one line of code into machine code (split into words → build a tree → check → optimize → make instructions → link)</li>
+<li>How compilers, interpreters and JIT differ, and what Java, JavaScript and Python actually do</li>
+<li>Which mistakes a compiler can catch, and which it cannot</li>
+</ul><p class="muted">Prerequisites: none. It helps to know that a CPU is "the part that runs simple instructions written in 0s and 1s, one after another."</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>When you install an app on a PC, most of what you download is a program already translated into machine code. The same game often comes as separate files for PCs and for phones. Programmers often say things like "the build passed" or "I got a compile error."</p>
+<p>Behind all of this is a compiler. This article follows a compiler's work step by step, using one line of code as the example.</p>
+</section>
+
+<section>
+<h2>Why translation is needed</h2>
+<p>The only thing a CPU can run directly is instructions written as patterns of 0s and 1s. A program in this form is called "machine code." Each instruction is a tiny task, such as "load a number," "add" or "compare." "<a href="{{home}}learn/what-is-a-cpu/">What Is a CPU?</a>" explains this in more detail.</p>
+<p>Machine code is hard for people to read and hard to write. So people write programs in a form closer to English words and math formulas. The set of rules for writing this way is called a "programming language." Examples include C, Java, JavaScript and Python.</p>
+<p>The text of a program written by a person is called "source code." Source code is just a string of characters, and it means nothing to a CPU. So something has to translate it into machine code.</p>
+<p>Software that translates a whole program into machine code before it runs is called a "compiler." The kinds of machine instructions, and how they are encoded, differ from one type of CPU to another. So a compiler first decides which CPU it is translating for. This is one reason PC and phone versions of an app come as different files.</p>
+</section>
+
+<section>
+<h2>From one line of code to machine code</h2>
+<p>As an example, we will use the line below, which converts hours h into seconds s. The "*" means multiply, and ";" marks the end of a statement.</p>
+<p><strong>s = 60 * 60 * h;</strong></p>
+<p>To keep things simple, we use a compiler for a C-like language and split its work into seven steps. Real compilers divide and name the steps a little differently.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 470" role="img"><title>How one line of code becomes an executable file in seven steps</title>
+<text x="2" y="18" class="m">Source code</text>
+<rect x="2" y="26" width="326" height="36" rx="6" class="hole"/>
+<text x="165" y="50" text-anchor="middle">s = 60 * 60 * h;</text>
+<text x="2" y="90" class="a">① Split into words</text>
+<rect x="11" y="98" width="34" height="28" rx="4" class="p"/><text x="28" y="117" text-anchor="middle">s</text>
+<rect x="50" y="98" width="34" height="28" rx="4" class="p"/><text x="67" y="117" text-anchor="middle">=</text>
+<rect x="89" y="98" width="34" height="28" rx="4" class="p"/><text x="106" y="117" text-anchor="middle">60</text>
+<rect x="128" y="98" width="34" height="28" rx="4" class="p"/><text x="145" y="117" text-anchor="middle">*</text>
+<rect x="167" y="98" width="34" height="28" rx="4" class="p"/><text x="184" y="117" text-anchor="middle">60</text>
+<rect x="206" y="98" width="34" height="28" rx="4" class="p"/><text x="223" y="117" text-anchor="middle">*</text>
+<rect x="245" y="98" width="34" height="28" rx="4" class="p"/><text x="262" y="117" text-anchor="middle">h</text>
+<rect x="284" y="98" width="34" height="28" rx="4" class="p"/><text x="301" y="117" text-anchor="middle">;</text>
+<text x="2" y="146" class="a">② Check grammar, build a tree</text>
+<text x="14" y="172">(60 × 60) × h, put into s</text>
+<text x="2" y="202" class="a">③ Check meaning</text>
+<text x="14" y="228">Has h been set up?</text>
+<text x="2" y="258" class="a">④ Optimize</text>
+<text x="14" y="284">60 × 60 → </text><text x="104" y="284" class="a">3600</text>
+<text x="2" y="314" class="a">⑤ Make instructions</text>
+<rect x="2" y="322" width="80" height="30" rx="4" class="n"/><text x="42" y="342" text-anchor="middle">Load h</text>
+<line x1="84" y1="337" x2="102" y2="337" class="ln"/><polygon points="110,337 102,332 102,342" class="ink"/>
+<rect x="112" y="322" width="110" height="30" rx="4" class="n"/><text x="167" y="342" text-anchor="middle">× 3600</text>
+<line x1="224" y1="337" x2="240" y2="337" class="ln"/><polygon points="248,337 240,332 240,342" class="ink"/>
+<rect x="250" y="322" width="78" height="30" rx="4" class="n"/><text x="289" y="342" text-anchor="middle">Store in s</text>
+<text x="2" y="380" class="a">⑥ Turn into 0s and 1s</text>
+<text x="14" y="406">Machine code (0s and 1s)</text>
+<text x="2" y="436" class="a">⑦ Link with other parts</text>
+<text x="14" y="462">An executable file is ready</text>
+</svg><figcaption class="fig-cap">Steps ①–⑤ are the compiler's job, ⑥ is the assembler's, and ⑦ is the linker's. The step ⑤ instructions are written in plain words to show the idea. Left out: how real instructions are written (it depends on the CPU type), that some compilers do ⑤ and ⑥ in one program, and the in-between forms used along the way.</figcaption></figure>
+
+<h3>① Split into words (lexical analysis)</h3>
+<p>To a compiler, source code starts out as nothing but a string of characters. So first, it cuts the string into meaningful pieces. "60" is one number, "*" is one symbol, and so on. This step is called {{term:字句解析|lexical analysis}}. The spaces are dropped, and the example line becomes eight words.</p>
+
+<h3>② Check the grammar and build a tree (parsing)</h3>
+<p>Next, the compiler checks whether the words follow the grammar of the language. For example, two symbols in a row, as in "60 * * h," are reported as a grammar error. This step is called {{term:構文解析|parsing}}.</p>
+<p>If the grammar is correct, the compiler arranges the calculation into a tree shape. Multiplication is done from left to right. So 60 × 60 comes first, and that result is then multiplied by h. The "=" at the top means to put the result of the right side into s. This tree is called a {{term:抽象構文木(AST)|syntax tree}}. Its formal name is "abstract syntax tree" (AST).</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 258" role="img"><title>Optimization replaces the "60 × 60" part of the syntax tree with 3600</title>
+<text x="80" y="18" text-anchor="middle" class="m">Before</text>
+<text x="245" y="18" text-anchor="middle" class="m">After</text>
+<line x1="104" y1="56" x2="205" y2="56" class="ac"/><polygon points="214,56 205,51 205,61" class="fa"/>
+<line x1="80" y1="56" x2="35" y2="116" class="ln"/>
+<line x1="80" y1="56" x2="125" y2="116" class="ln"/>
+<line x1="125" y1="116" x2="95" y2="176" class="ln"/>
+<line x1="125" y1="116" x2="155" y2="176" class="ln"/>
+<line x1="95" y1="176" x2="65" y2="234" class="ln"/>
+<line x1="95" y1="176" x2="125" y2="234" class="ln"/>
+<rect x="40" y="155" width="108" height="100" rx="10" class="dash"/>
+<circle cx="80" cy="56" r="17" class="hole"/><text x="80" y="61" text-anchor="middle">=</text>
+<circle cx="35" cy="116" r="17" class="hole"/><text x="35" y="121" text-anchor="middle">s</text>
+<circle cx="125" cy="116" r="17" class="hole"/><text x="125" y="121" text-anchor="middle">×</text>
+<circle cx="95" cy="176" r="17" class="hole"/><text x="95" y="181" text-anchor="middle">×</text>
+<circle cx="155" cy="176" r="17" class="hole"/><text x="155" y="181" text-anchor="middle">h</text>
+<circle cx="65" cy="234" r="17" class="hole"/><text x="65" y="239" text-anchor="middle">60</text>
+<circle cx="125" cy="234" r="17" class="hole"/><text x="125" y="239" text-anchor="middle">60</text>
+<line x1="240" y1="56" x2="200" y2="116" class="ln"/>
+<line x1="240" y1="56" x2="275" y2="116" class="ln"/>
+<line x1="275" y1="116" x2="245" y2="176" class="ln"/>
+<line x1="275" y1="116" x2="305" y2="176" class="ln"/>
+<circle cx="240" cy="56" r="17" class="hole"/><text x="240" y="61" text-anchor="middle">=</text>
+<circle cx="200" cy="116" r="17" class="hole"/><text x="200" y="121" text-anchor="middle">s</text>
+<circle cx="275" cy="116" r="17" class="hole"/><text x="275" y="121" text-anchor="middle">×</text>
+<rect x="217" y="159" width="56" height="34" rx="8" class="ox"/><text x="245" y="181" text-anchor="middle" class="a">3600</text>
+<circle cx="305" cy="176" r="17" class="hole"/><text x="305" y="181" text-anchor="middle">h</text>
+</svg><figcaption class="fig-cap">Left: the syntax tree of "s = 60 * 60 * h;" before optimization. The values at the bottom of the tree are calculated first, and the "=" at the top finally puts the result into s. The part inside the dotted box has a known answer before the program runs, so it is replaced with 3600, as on the right (after optimization). Left out: other information a real tree records, such as the type of each value.</figcaption></figure>
+
+<h3>③ Check the meaning</h3>
+<p>Even when the grammar is correct, the code may not make sense. For example, h is a named container for a value (a variable). If h was never set up anywhere, the calculation cannot be done. The compiler checks that every name used in the program has been set up.</p>
+<p>The kind of a value, such as a number or text, is called its "type." The compiler also checks for calculations where the types do not match. One example is multiplying a number by a string of characters like "abc."</p>
+
+<h3>④ Rewrite it to do less work (optimization)</h3>
+<p>The compiler rewrites the program to make it faster or smaller, without changing the result. This is called "optimization."</p>
+<p>In the example, the answer to "60 × 60" is known to be 3600 before the program even runs. So the compiler replaces this part of the tree with 3600. This kind of optimization is called {{term:定数畳み込み|constant folding}}.</p>
+
+<h3>⑤ Turn it into CPU instructions (code generation)</h3>
+<p>The optimized result is then turned into a sequence of CPU instructions. For the example line, the instructions do roughly three things: load the value of h, multiply it by 3600, and write the result to where s is kept. The actual number and form of the instructions depend on the type of CPU.</p>
+<p>The output of this step is often machine instructions written as short symbols, shortened from English words. This way of writing is called "assembly language."</p>
+
+<h3>⑥ Turn it into 0s and 1s (the assembler)</h3>
+<p>An {{term:アセンブラ|assembler}} is software that replaces assembly language instructions with the patterns of 0s and 1s a CPU can read. Usually, a single compiler command runs steps ⑥ and ⑦ automatically as well.</p>
+
+<h3>⑦ Connect the parts (the linker)</h3>
+<p>Large programs are written in many separate files. Common tasks, such as showing text on the screen, use ready-made collections of code. Such a collection is called a "library."</p>
+<p>A {{term:リンカ|linker}} is software that connects already translated parts into one executable file. It fills in where each task is found, such as "this task is at this place in that part". A library can be built into the executable file, or loaded when the program runs. "<a href="{{home}}compare/static-vs-dynamic-linking/">Static vs Dynamic Linking</a>" compares the two in a table.</p>
+
+<h3>Running the program is the OS's job</h3>
+<p>The finished executable is a file saved in storage. On PCs and phones, a program is placed in memory before it runs. When you tap an icon, the OS loads the file's contents into memory. It also prepares the libraries the program needs while running, then has the CPU start at the first instruction. The part of the OS that does this loading and setup is called the {{term:ローダ|loader}}. "<a href="{{home}}learn/what-is-an-operating-system/">What Is an Operating System?</a>" explains what an OS does.</p>
+</section>
+
+<section>
+<h2>Why optimization matters</h2>
+<p>If the line runs only once, saving one multiplication makes no noticeable difference. But many programs have parts that repeat millions of times. If the example line repeats 100 million times, constant folding alone saves 100 million multiplications.</p>
+<p>Compilers do many other optimizations too. They remove calculations whose results are never used. They move a calculation that gives the same result on every pass of a loop out of the loop. By stacking dozens of tricks like these, they make the whole program faster.</p>
+<p>On the other hand, optimization makes translation take longer. It also makes it harder to stop the program line by line and inspect it. So GCC, a compiler widely used for C and other languages, does almost no optimization unless you ask for it. When building the finished product, people usually turn optimization on with an option such as "-O2."</p>
+</section>
+
+<section>
+<h2>Compiler vs interpreter vs JIT</h2>
+<p>There are also ways to run source code without turning it into a machine code file. An "interpreter" is software that reads a program and runs it piece by piece on the spot. Its advantage is that you can write code and try it right away, without waiting for translation. The downside is that it has to work out the meaning again every time the same part runs. So it tends to be slower.</p>
+<p>{{term:JITコンパイル|JIT compilation}} is a method that combines the strengths of both. JIT stands for "just in time" (at the moment it is needed). In a common form, it starts by running the program like an interpreter and finds the parts that run often. It then translates only those parts into machine code while the program is running.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 316" role="img"><title>When a compiler, an interpreter and a JIT turn code into machine code</title>
+<text x="2" y="20" class="a">Compiler</text>
+<rect x="2" y="30" width="148" height="36" rx="6" class="n"/><text x="76" y="54" text-anchor="middle">Translate it all</text>
+<line x1="152" y1="48" x2="170" y2="48" class="ln"/><polygon points="178,48 170,43 170,53" class="ink"/>
+<rect x="180" y="30" width="148" height="36" rx="6" class="p"/><text x="254" y="54" text-anchor="middle">Run machine code</text>
+<text x="76" y="88" text-anchor="middle" class="m">Before running</text>
+<text x="2" y="122" class="a">Interpreter</text>
+<rect x="2" y="132" width="326" height="36" rx="6" class="ox"/><text x="165" y="156" text-anchor="middle">Read and run one piece at a time</text>
+<text x="2" y="204" class="a">JIT</text>
+<rect x="2" y="214" width="148" height="52" rx="6" class="ox"/><text x="76" y="246" text-anchor="middle">Read and run</text>
+<line x1="152" y1="240" x2="170" y2="240" class="ln"/><polygon points="178,240 170,235 170,245" class="ink"/>
+<rect x="180" y="214" width="148" height="52" rx="6" class="p"/><text x="254" y="236" text-anchor="middle">Often-used parts</text><text x="254" y="256" text-anchor="middle">as machine code</text>
+<line x1="2" y1="292" x2="310" y2="292" class="thin"/><polygon points="320,292 310,287 310,297" class="ink"/>
+<text x="300" y="312" text-anchor="end" class="m">Time</text>
+</svg><figcaption class="fig-cap">The horizontal direction is time. A compiler finishes translating before the program runs. A JIT starts partway through the run and translates only the often-used parts into machine code. Left out: the earlier step that turns code into an in-between form called bytecode, and how a JIT can undo the parts it translated.</figcaption></figure>
+<p>Note that "compiled" and "interpreted" describe the software that runs a language, not the language itself. In practice, many languages combine these methods.</p>
+<ul>
+<li><strong>Java</strong>: The developer compiles the source code in advance into a form called "bytecode" and ships that. Bytecode is not the machine code of any particular CPU. It is a set of instructions for a virtual machine designed for Java. When the program runs, Java's runtime software interprets the bytecode and uses JIT to turn the often-used parts into machine code.</li>
+<li><strong>JavaScript</strong>: V8, the software used in Chrome and other programs, first turns source code into bytecode and runs it with an interpreter. Parts that run often are turned into machine code by an optimizing compiler.</li>
+<li><strong>Python</strong>: CPython, the standard software, also first compiles source code into bytecode and then runs it with an interpreter. Python 3.13, released in 2024, added an experimental JIT, but it is disabled by default.</li>
+</ul>
+<p>"<a href="{{home}}compare/compiler-vs-interpreter-vs-jit/">Compiler vs Interpreter vs JIT</a>" sums up the three methods in a table.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>A compiler is like a translator who translates a whole book before it is published. An interpreter is like an interpreter at a meeting, who translates while listening. What they share is the question of "when to translate." If the book is translated in advance, readers can read it smoothly without waiting. Translating on the spot needs no preparation, but if you hear the same talk 10 times, it gets translated 10 times.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> A human translator guesses what the writer meant, fills in unclear parts and fixes obvious typos. A compiler does not understand intent. It just translates by strict, fixed rules, and returns anything that breaks the rules as an error instead of translating it. Also, translating a book does not make it faster to read. But a compiler, through optimization, turns code into instructions that do less work than the original.</p></aside>
+</section>
+
+<section>
+<h2>Errors a compiler can and cannot catch</h2>
+<p>A compiler finds many errors before the program runs. Examples are grammar errors, using a name that was never set up, and calculations with mismatched types. Some compilers also give warnings about code that is not wrong but looks suspicious.</p>
+<p>Other errors only show up when the program runs. For example, a program that divides by a number the user enters cannot calculate if the user enters 0. A missing file that the program expects to read is also found only at run time. Errors like these, which happen while the program is running, are called "runtime errors."</p>
+<p>Worse still are errors where the program keeps running, but the results are not what the programmer meant. If you write "subtract" when you meant "add," the compiler simply translates it as written. The only way to find such errors is to run the program and check its results. This is called "testing."</p>
+<p>Which errors can be found in advance also depends on the language. In Python, for example, many type mismatches become errors only when that line runs.</p>
+</section>
+
+<section>
+<h2>A short history of compilers</h2>
+<p>Until the early 1950s, people wrote programs in machine code or something close to it. In 1951–1952, Grace Hopper created a system called "A-0" for a computer called UNIVAC I. You picked ready-made calculation parts by number, and it joined them together into a machine code program.</p>
+<p>A-0 was already called a "compiler" at the time. But what it did was different from a compiler in today's sense. The IEEE, a professional society for electrical and electronics engineering, chose A-0 as a milestone in the history of technology. In 2024 it installed a plaque to mark it. Its description, too, calls A-0 "a set of specifications that worked as a linker and loader."</p>
+<p>FORTRAN was built by John Backus and his team at IBM. It is credited with laying the groundwork for how today's compilers divide their work, and for their core methods. It translated source code, written much like math formulas, into the machine code of a computer called the IBM 704. The project started in the summer of 1954. In April 1957, the compiler was delivered to every site that used a 704.</p>
+<p>If a compiler's machine code had been much slower than code written by hand, no one would have used it. So the FORTRAN team aimed for nearly hand-written speed and put great effort into optimization. A review paper written in 1982 judged that this goal had been met to a surprising degree.</p>
+</section>
+
+<section>
+<h2>Hardware has its own kind of "compiler"</h2>
+<p>A similar idea is used in designing the circuits of semiconductor chips. Today, large circuits are usually written as text, not drawn as diagrams. A language for writing circuits is called a {{term:ハードウェア記述言語|hardware description language}}. Verilog and VHDL are examples.</p>
+<p>{{term:論理合成|Logic synthesis}} automatically turns a written description of a circuit's behavior into a combination of basic logic circuits, such as AND and OR. Its flow of reading, checking, optimizing and producing output is very similar to a compiler's.</p>
+<p>The big difference is the output. It is not a sequence of instructions run in order. It is a network of circuits that all work at the same time. The finished circuit is written into a chip that can be reprogrammed later, or manufactured as a dedicated chip. The first kind is explained in "<a href="{{home}}learn/what-is-an-fpga/">What Is an FPGA?</a>"</p>
+</section>
+
+<section>
+<h2>Common misconceptions</h2>
+<div class="myth"><p class="myth-q">Myth: Languages compiled to machine code are always fast</p><p>In fact, whether code is compiled is only one of the things that decide speed. If the steps of the calculation itself take a long way around, no amount of optimization will make it fast. A JIT can optimize based on how the program behaves while it runs. So for long-running programs, it can come close to the speed of code translated in advance. Also, NumPy, a collection of math code widely used from Python, does its core calculations in pre-compiled C code. When the same task is compared, compiled code is often faster, which is why people tend to think it is "always fast."</p></div>
+<div class="myth"><p class="myth-q">Myth: A compiler understands what the programmer wants to do</p><p>In fact, a compiler only translates by fixed rules and knows nothing about the programmer's intent. An error message like "missing ; here" looks helpful because it reports where the rules were broken. Optimization, too, happens only where the language rules say the result will not change. In C, code whose result the rules leave undefined can produce machine code you did not expect. This is called {{term:未定義動作|undefined behavior}}. Code that compiles is not necessarily correct.</p></div>
+<div class="myth"><p class="myth-q">Myth: Python is not compiled; it runs each line as written, one by one</p><p>In fact, the standard CPython turns the whole file into bytecode before running it, and then runs that with an interpreter. So if there is a grammar error anywhere in the file, you get an error before even the first line runs. Still, by default it does not produce machine code, so calling Python "a language run by an interpreter" is not wrong either. The misconception comes from thinking that "compile" only means "turn into machine code."</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Item</th><th>Number / date</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>A-0</td><td>1951–1952</td><td>Grace Hopper. For the UNIVAC I</td></tr>
+<tr><td>Start of the FORTRAN project</td><td>Summer 1954</td><td>IBM, John Backus's team</td></tr>
+<tr><td>FORTRAN compiler delivered</td><td>April 1957</td><td>To every IBM 704 site</td></tr>
+<tr><td>Effort to build FORTRAN</td><td>About 18 person-years</td><td>The work of one person for 18 years. From the 1957 paper</td></tr>
+<tr><td>GCC default setting</td><td>-O0</td><td>Almost no optimization. Use -O2 or similar for speed</td></tr>
+<tr><td>Python's experimental JIT</td><td>2024 (3.13)</td><td>Disabled by default in 3.13</td></tr>
+</tbody>
+</table>
+<p>Nearly 70 years after FORTRAN, the basic idea of translating in stages has not changed much. What has grown is the number of kinds of optimization, and methods like JIT that translate while the program runs.</p>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Compare in a table: <a href="{{home}}compare/compiler-vs-interpreter-vs-jit/">Compiler vs Interpreter vs JIT</a>, <a href="{{home}}compare/static-vs-dynamic-linking/">Static vs Dynamic Linking</a></li>
+<li>Try it: the <a href="{{home}}tools/reverse-polish-notation-converter/">Reverse Polish notation converter</a> (shows an expression's syntax tree and the order of calculation)</li>
+<li>Terms for your next step: {{term:中間表現|intermediate representation}}, {{term:インライン展開|function inlining}}, {{term:LLVM|LLVM}}, {{term:オブジェクトファイル|object file}}, {{term:動的リンク|dynamic linking}}</li>
+<li>Read the basics: "<a href="{{home}}learn/what-is-a-cpu/">What Is a CPU?</a>", "<a href="{{home}}learn/what-is-an-operating-system/">What Is an Operating System?</a>", "<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">How Do Computers Use Binary?</a>"</li>
+</ul>
+</section>

@@ -1,0 +1,235 @@
+<!--
+{
+  "title": "コンパイラとは? プログラムが機械語になるまで",
+  "description": "コンパイラは、人が書いたプログラムを、CPUが実行できる機械語に実行前にまとめて翻訳するソフトです。字句解析・構文木・最適化・リンクまでを1行の例でたどり、インタプリタやJITとの違いも解説します。",
+  "series": "computer-basics",
+  "order": 10,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["compiler", "linker-loader", "isa-assembly", "programming"],
+  "terms": ["字句解析", "構文解析", "抽象構文木(AST)", "定数畳み込み", "JITコンパイル", "アセンブラ", "リンカ", "ローダ"],
+  "sources": [
+    { "title": "J. W. Backus ほか: The FORTRAN Automatic Coding System(1957年、Western Joint Computer Conference。計画は1954年夏に開始、2年半・18人年)", "url": "https://www.softwarepreservation.org/projects/FORTRAN/paper/BackusEtAl-FortranAutomaticCodingSystem-1957.pdf" },
+    { "title": "J. W. Backus: Automatic Programming: Properties and Performance of FORTRAN Systems I and II(1958年。1957年4月にすべての704の設置先で使えるようにした)", "url": "https://www.softwarepreservation.org/projects/FORTRAN/paper/Backus-AutomaticProgramming-1958.pdf" },
+    { "title": "F. E. Allen: A Technological Review of the FORTRAN I Compiler(1982年。手書きに近い効率の機械語を出す目標と、その達成。今のコンパイラの技術の土台になったこと)", "url": "https://www.softwarepreservation.org/projects/FORTRAN/paper/Allen-technological_review_FORTRAN-1982.pdf" },
+    { "title": "Engineering and Technology History Wiki: Milestones: A-0 Compiler and Initial Development of Automatic Programming, 1951-1952(IEEE マイルストーン。A-0 はリンカ・ローダとして働く仕様の集まり)", "url": "https://ethw.org/Milestones:A-0_Compiler_and_Initial_Development_of_Automatic_Programming,_1951-1952" },
+    { "title": "Penn Engineering: Recognizing a Pioneer: The IEEE Dedicates Milestone to Grace Hopper at Penn Engineering(2024年の記念の銘板の設置)", "url": "https://www.engineering.upenn.edu/stories/recognizing-a-pioneer-the-ieee-dedicates-milestone-to-grace-hopper-at-penn-engineering/" },
+    { "title": "Computer History Museum: Oral History of Captain Grace Hopper(A-0 と、その後の FLOW-MATIC について)", "url": "https://archive.computerhistory.org/resources/text/Oral_History/Hopper_Grace/102702026.05.01.pdf" },
+    { "title": "GCC Manual: Options That Control Optimization(-O0 が標準で、コンパイルの時間を短くし、デバッグで期待どおりの結果を得るための設定)", "url": "https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html" },
+    { "title": "Oracle: Java Virtual Machine Guide (Java SE 21), Java Virtual Machine Technology Overview(HotSpot VM はインタプリタで始め、よく実行される部分をコンパイルする)", "url": "https://docs.oracle.com/en/java/javase/21/vm/java-virtual-machine-technology-overview.html" },
+    { "title": "V8 blog: Firing up the Ignition interpreter(2016年。V8 のバイトコードのインタプリタと、最適化するコンパイラ)", "url": "https://v8.dev/blog/ignition-interpreter" },
+    { "title": "PEP 744 – JIT Compilation(CPython はソースコードをバイトコードにコンパイルして実行してきた。3.13 の試験的な JIT)", "url": "https://peps.python.org/pep-0744/" },
+    { "title": "Python documentation: What's New In Python 3.13(試験的な JIT は標準では無効)", "url": "https://docs.python.org/3.13/whatsnew/3.13.html" },
+    { "title": "NumPy User Guide 2.2(「What is NumPy?」の章。配列の要素ごとの計算は、コンパイル済みの C のコードで行う)", "url": "https://numpy.org/doc/2.2/numpy-user.pdf" }
+  ]
+}
+-->
+<p class="lead">コンパイラは、人が書いたプログラムを、CPUが実行できる0と1の命令(機械語)に、実行の前にまとめて翻訳するソフトです。翻訳の途中で書き間違いを見つけたり、同じ結果をより少ない手間で出せる形に直したり(最適化)もします。CPUは機械語しか実行できないので、こうした翻訳役が欠かせません。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>人が書いたプログラムを、CPUがそのまま実行できない理由</li>
+<li>1行のプログラムが機械語になるまでの段階(単語に分ける→木にする→確かめる→最適化→命令にする→つなぐ)</li>
+<li>コンパイラ・インタプリタ・JITの違いと、Java・JavaScript・Pythonの場合</li>
+<li>コンパイラが見つけられる誤りと、見つけられない誤り</li>
+</ul><p class="muted">前提知識: 特にありません。CPUを「0と1で書かれた単純な命令を、1つずつ実行する部品」と知っていると読みやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>パソコンにアプリを入れるとき、受け取るファイルの中身の多くは、すでに機械語に翻訳されたプログラムです。同じゲームでも、パソコン版とスマホ版で配るファイルが別々なことがあります。プログラムを作る人の会話では、「ビルドが通った」「コンパイルエラーが出た」という言葉がよく出てきます。</p>
+<p>こうした場面の裏で働いているのがコンパイラです。この記事では、1行のプログラムを例に、コンパイラの仕事を順に追っていきます。</p>
+</section>
+
+<section>
+<h2>なぜ「翻訳」が必要なのか</h2>
+<p>CPUが直接実行できるのは、0と1の並びで書かれた命令だけです。この形のプログラムを「機械語」と呼びます。1つの命令は「数を読み込む」「足す」「比べる」のような、とても小さな作業です。くわしくは「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」で説明しています。</p>
+<p>機械語は、人には読みにくく、書くのも大変です。そこで人は、英単語や数式に近い書き方でプログラムを書きます。この書き方の決まりを「プログラミング言語」と呼びます。C、Java、JavaScript、Pythonなどがあります。</p>
+<p>人が書いたプログラムの文章を「ソースコード」と呼びます。ソースコードは文字の並びにすぎず、CPUにとっては意味がありません。そのため、機械語に直す翻訳役が必要になります。</p>
+<p>実行する前に、プログラム全体をまとめて機械語に直すソフトを「コンパイラ」と呼びます。機械語の命令の種類と表し方は、CPUの種類ごとに違います。そのためコンパイラは、どのCPU向けの機械語にするかを決めてから翻訳します。パソコン版とスマホ版で配るファイルが違う理由の1つは、これです。</p>
+</section>
+
+<section>
+<h2>1行のプログラムが機械語になるまで</h2>
+<p>例として、時間 h を秒 s に直す、次の1行を使います。「*」は掛け算、「;」は文の終わりを表す記号です。</p>
+<p><strong>s = 60 * 60 * h;</strong></p>
+<p>ここでは話を簡単にするため、C言語に近い言語のコンパイラを例にして、段階を7つに分けます。実際のコンパイラでは、段階の分け方や名前が少しずつ違います。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 470" role="img"><title>1行のプログラムが、7つの段階を経て実行できるファイルになるまで</title>
+<text x="2" y="18" class="m">ソースコード</text>
+<rect x="2" y="26" width="326" height="36" rx="6" class="hole"/>
+<text x="165" y="50" text-anchor="middle">s = 60 * 60 * h;</text>
+<text x="2" y="90" class="a">① 単語に分ける</text>
+<rect x="11" y="98" width="34" height="28" rx="4" class="p"/><text x="28" y="117" text-anchor="middle">s</text>
+<rect x="50" y="98" width="34" height="28" rx="4" class="p"/><text x="67" y="117" text-anchor="middle">=</text>
+<rect x="89" y="98" width="34" height="28" rx="4" class="p"/><text x="106" y="117" text-anchor="middle">60</text>
+<rect x="128" y="98" width="34" height="28" rx="4" class="p"/><text x="145" y="117" text-anchor="middle">*</text>
+<rect x="167" y="98" width="34" height="28" rx="4" class="p"/><text x="184" y="117" text-anchor="middle">60</text>
+<rect x="206" y="98" width="34" height="28" rx="4" class="p"/><text x="223" y="117" text-anchor="middle">*</text>
+<rect x="245" y="98" width="34" height="28" rx="4" class="p"/><text x="262" y="117" text-anchor="middle">h</text>
+<rect x="284" y="98" width="34" height="28" rx="4" class="p"/><text x="301" y="117" text-anchor="middle">;</text>
+<text x="2" y="146" class="a">② 文法を確かめ、木にする</text>
+<text x="14" y="172">(60 × 60) × h を s へ</text>
+<text x="2" y="202" class="a">③ 意味を確かめる</text>
+<text x="14" y="228">h は用意された数か?</text>
+<text x="2" y="258" class="a">④ 最適化</text>
+<text x="14" y="284">60 × 60 → </text><text x="104" y="284" class="a">3600</text>
+<text x="2" y="314" class="a">⑤ 命令の列にする</text>
+<rect x="2" y="322" width="80" height="30" rx="4" class="n"/><text x="42" y="342" text-anchor="middle">h を読む</text>
+<line x1="84" y1="337" x2="102" y2="337" class="ln"/><polygon points="110,337 102,332 102,342" class="ink"/>
+<rect x="112" y="322" width="110" height="30" rx="4" class="n"/><text x="167" y="342" text-anchor="middle">3600を掛ける</text>
+<line x1="224" y1="337" x2="240" y2="337" class="ln"/><polygon points="248,337 240,332 240,342" class="ink"/>
+<rect x="250" y="322" width="78" height="30" rx="4" class="n"/><text x="289" y="342" text-anchor="middle">s に書く</text>
+<text x="2" y="380" class="a">⑥ 0と1に直す</text>
+<text x="14" y="406">機械語(0と1の並び)</text>
+<text x="2" y="436" class="a">⑦ 部品とつなぐ</text>
+<text x="14" y="462">実行できるファイルの完成</text>
+</svg><figcaption class="fig-cap">①〜⑤がコンパイラ、⑥がアセンブラ、⑦がリンカの仕事です。⑤の命令は、日本語で書いたイメージです。省略していること: 実際の命令の書き方(CPUの種類で違う)、⑤と⑥を1つのソフトで行うコンパイラもあること、途中で使う中間の形。</figcaption></figure>
+
+<h3>① 単語に分ける(字句解析)</h3>
+<p>コンパイラから見ると、ソースコードは最初、ただの文字の列です。そこでまず、意味のあるひとかたまりごとに区切ります。「60」で1つの数、「*」で1つの記号、という具合です。この段階を{{term:字句解析}}と呼びます。例の行は、空白を取り除いて、8個の単語に分かれます。</p>
+
+<h3>② 文法を確かめて、木の形にする(構文解析)</h3>
+<p>次に、単語の並びが言語の文法に合っているかを確かめます。例えば「60 * * h」のように記号が続くと、文法の誤りとして知らせます。この段階を{{term:構文解析}}と呼びます。</p>
+<p>文法に合っていれば、計算の組み立てを木の形に整理します。掛け算は左から順に計算する決まりなので、まず「60 × 60」、その結果に「× h」という形になります。一番上の「=」は、「右の計算の結果を s にしまう」という意味です。この木を{{term:抽象構文木(AST)|構文木}}と呼びます。正式には「抽象構文木」(AST)といいます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 258" role="img"><title>構文木の「60 × 60」の部分を、最適化で3600に置きかえる</title>
+<text x="80" y="18" text-anchor="middle" class="m">最適化の前</text>
+<text x="245" y="18" text-anchor="middle" class="m">最適化の後</text>
+<line x1="104" y1="56" x2="205" y2="56" class="ac"/><polygon points="214,56 205,51 205,61" class="fa"/>
+<line x1="80" y1="56" x2="35" y2="116" class="ln"/>
+<line x1="80" y1="56" x2="125" y2="116" class="ln"/>
+<line x1="125" y1="116" x2="95" y2="176" class="ln"/>
+<line x1="125" y1="116" x2="155" y2="176" class="ln"/>
+<line x1="95" y1="176" x2="65" y2="234" class="ln"/>
+<line x1="95" y1="176" x2="125" y2="234" class="ln"/>
+<rect x="40" y="155" width="108" height="100" rx="10" class="dash"/>
+<circle cx="80" cy="56" r="17" class="hole"/><text x="80" y="61" text-anchor="middle">=</text>
+<circle cx="35" cy="116" r="17" class="hole"/><text x="35" y="121" text-anchor="middle">s</text>
+<circle cx="125" cy="116" r="17" class="hole"/><text x="125" y="121" text-anchor="middle">×</text>
+<circle cx="95" cy="176" r="17" class="hole"/><text x="95" y="181" text-anchor="middle">×</text>
+<circle cx="155" cy="176" r="17" class="hole"/><text x="155" y="181" text-anchor="middle">h</text>
+<circle cx="65" cy="234" r="17" class="hole"/><text x="65" y="239" text-anchor="middle">60</text>
+<circle cx="125" cy="234" r="17" class="hole"/><text x="125" y="239" text-anchor="middle">60</text>
+<line x1="240" y1="56" x2="200" y2="116" class="ln"/>
+<line x1="240" y1="56" x2="275" y2="116" class="ln"/>
+<line x1="275" y1="116" x2="245" y2="176" class="ln"/>
+<line x1="275" y1="116" x2="305" y2="176" class="ln"/>
+<circle cx="240" cy="56" r="17" class="hole"/><text x="240" y="61" text-anchor="middle">=</text>
+<circle cx="200" cy="116" r="17" class="hole"/><text x="200" y="121" text-anchor="middle">s</text>
+<circle cx="275" cy="116" r="17" class="hole"/><text x="275" y="121" text-anchor="middle">×</text>
+<rect x="217" y="159" width="56" height="34" rx="8" class="ox"/><text x="245" y="181" text-anchor="middle" class="a">3600</text>
+<circle cx="305" cy="176" r="17" class="hole"/><text x="305" y="181" text-anchor="middle">h</text>
+</svg><figcaption class="fig-cap">左は「s = 60 * 60 * h;」の構文木です。木の下の材料から順に計算し、最後に一番上の「=」で s にしまいます。点線で囲んだ部分は、実行する前から答えが決まっているので、右のように3600に置きかえます。省略していること: 実際の木に記録される値の種類などの情報。</figcaption></figure>
+
+<h3>③ 意味を確かめる</h3>
+<p>文法が正しくても、意味が通らないことがあります。例えば、h という名前の値の入れ物(変数)を、どこにも用意していなければ計算できません。コンパイラは、使われている名前がすべて用意されているかを確かめます。</p>
+<p>値が数なのか文字なのかといった、値の種類を「型」と呼びます。コンパイラは、数と「abc」のような文字の並びを掛けるような、型の合わない計算がないかも確かめます。</p>
+
+<h3>④ もっと手間の少ない形に直す(最適化)</h3>
+<p>コンパイラは、結果を変えない範囲で、プログラムがより速く、あるいはより小さくなるように直します。これを「最適化」と呼びます。</p>
+<p>例の「60 × 60」は、実行する前から答えが3600と決まっています。そこでコンパイラは、木のこの部分を3600に置きかえます。この最適化を{{term:定数畳み込み}}と呼びます。</p>
+
+<h3>⑤ CPUの命令の列にする(コード生成)</h3>
+<p>最適化した結果を、CPUの命令の列に直します。例の行は、「h の値を読み込む」「3600を掛ける」「結果を s の場所に書き込む」というイメージの命令になります。実際の命令の数や形は、CPUの種類によって違います。</p>
+<p>この段階の出力は、機械語の命令を、英単語を縮めた短い記号で書いたものであることがよくあります。この書き方を「アセンブリ言語」と呼びます。</p>
+
+<h3>⑥ 0と1に直す(アセンブラ)</h3>
+<p>アセンブリ言語の命令を、CPUが読める0と1の並びに置きかえるソフトが{{term:アセンブラ}}です。ふだんはコンパイラのコマンド1つで、⑥や⑦まで自動で続けて進みます。</p>
+
+<h3>⑦ 部品をつなぐ(リンカ)</h3>
+<p>大きなプログラムは、たくさんのファイルに分けて書きます。また、画面に文字を出すような、よく使う処理は、あらかじめ用意された部品集を使います。この部品集を「ライブラリ」と呼びます。</p>
+<p>翻訳済みの部品どうしをつなぎ、1つの実行できるファイルにまとめるソフトが{{term:リンカ}}です。「この処理は、あの部品のこの場所にある」という対応を埋めていきます。ライブラリを実行ファイルに入れてしまう方法と、実行するときに読み込む方法があります。違いは「<a href="{{home}}compare/static-vs-dynamic-linking/">静的リンクと動的リンクの違い</a>」で表にしています。</p>
+
+<h3>実行するのはOSの仕事</h3>
+<p>できあがった実行ファイルは、ストレージに保存されたファイルです。パソコンやスマホでは、プログラムはメモリに置いてから実行します。アイコンをタップすると、OSがファイルの中身をメモリに読み込みます。実行中に使うライブラリも用意してから、CPUに最初の命令から実行を始めさせます。この読み込みと準備を受け持つOSの機能を{{term:ローダ}}と呼びます。OSの仕事は「<a href="{{home}}learn/what-is-an-operating-system/">OSとは?</a>」で説明しています。</p>
+</section>
+
+<section>
+<h2>最適化はなぜ大事なのか</h2>
+<p>1回だけなら、掛け算が1つ減っても違いは感じられません。しかし多くのプログラムには、同じ部分を何百万回もくり返すところがあります。例の行が1億回くり返されるなら、定数畳み込みだけで掛け算が1億回減ります。</p>
+<p>コンパイラは、ほかにもさまざまな最適化をします。結果に使われない計算を消す。くり返しの中で毎回同じになる計算を、くり返しの外に出す。こうした工夫を何十種類も重ねて、全体を速くします。</p>
+<p>一方で、最適化をすると翻訳に時間がかかり、プログラムを1行ずつ止めて調べる作業もしにくくなります。そのため、C言語などで広く使われるコンパイラGCCは、指定しなければほとんど最適化しません。完成品を作るときは、「-O2」のような指定で最適化を有効にするのが一般的です。</p>
+</section>
+
+<section>
+<h2>コンパイラ・インタプリタ・JITの違い</h2>
+<p>ソースコードを、機械語のファイルに直さずに動かす方法もあります。プログラムを読みながら、その場で1つずつ実行していくソフトを「インタプリタ」と呼びます。翻訳を待たずに、書いてすぐ試せるのが利点です。その代わり、同じ部分を何度も実行するときも、そのたびに読み解く手間がかかるので、遅くなりがちです。</p>
+<p>両方のよいところを取り入れた方式が{{term:JITコンパイル}}です。JITは「ジャストインタイム」(必要になったその時に)の略です。よくある形では、最初はインタプリタのように実行しながら、よく実行される部分を見つけます。その部分だけを実行中に機械語に直します。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 316" role="img"><title>コンパイラ・インタプリタ・JITで、機械語に直す時期の違い</title>
+<text x="2" y="20" class="a">コンパイラ</text>
+<rect x="2" y="30" width="148" height="36" rx="6" class="n"/><text x="76" y="54" text-anchor="middle">全部を機械語に</text>
+<line x1="152" y1="48" x2="170" y2="48" class="ln"/><polygon points="178,48 170,43 170,53" class="ink"/>
+<rect x="180" y="30" width="148" height="36" rx="6" class="p"/><text x="254" y="54" text-anchor="middle">機械語を実行</text>
+<text x="76" y="88" text-anchor="middle" class="m">実行の前</text>
+<text x="2" y="122" class="a">インタプリタ</text>
+<rect x="2" y="132" width="326" height="36" rx="6" class="ox"/><text x="165" y="156" text-anchor="middle">1つずつ読み解きながら実行</text>
+<text x="2" y="204" class="a">JIT</text>
+<rect x="2" y="214" width="148" height="52" rx="6" class="ox"/><text x="76" y="246" text-anchor="middle">読みながら実行</text>
+<line x1="152" y1="240" x2="170" y2="240" class="ln"/><polygon points="178,240 170,235 170,245" class="ink"/>
+<rect x="180" y="214" width="148" height="52" rx="6" class="p"/><text x="254" y="236" text-anchor="middle">よく使う所だけ</text><text x="254" y="256" text-anchor="middle">機械語で実行</text>
+<line x1="2" y1="292" x2="310" y2="292" class="thin"/><polygon points="320,292 310,287 310,297" class="ink"/>
+<text x="300" y="312" text-anchor="end" class="m">時間</text>
+</svg><figcaption class="fig-cap">横は時間の流れです。コンパイラは実行の前に訳し終えます。JITは実行の途中から、よく使う部分だけを機械語に直します。省略していること: 前もってバイトコードという中間の形に直す段階、JITで直した部分を元に戻すこと。</figcaption></figure>
+<p>注意したいのは、「コンパイラ型」「インタプリタ型」が、言語ではなく、それを動かすソフトの性質だということです。実際の多くの言語は、これらを組み合わせています。</p>
+<ul>
+<li><strong>Java</strong>: 作る側が、ソースコードを前もって「バイトコード」という形にコンパイルして配ります。バイトコードは、特定のCPUの機械語ではなく、Java用の仮想的な機械のための命令です。実行するときは、Java用の実行ソフトがそれを解釈して動かし、よく使う部分をJITで機械語に直します。</li>
+<li><strong>JavaScript</strong>: Chromeなどで使われるV8というソフトは、ソースコードをまずバイトコードに直し、インタプリタで実行します。よく実行される部分は、最適化するコンパイラで機械語に直します。</li>
+<li><strong>Python</strong>: 標準のCPythonというソフトも、ソースコードをまずバイトコードにコンパイルし、それをインタプリタで実行します。2024年のPython 3.13では試験的なJITが加わりましたが、標準では無効です。</li>
+</ul>
+<p>3つの方式は「<a href="{{home}}compare/compiler-vs-interpreter-vs-jit/">コンパイラ・インタプリタ・JITの違い</a>」で表にまとめています。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>コンパイラは、本を出す前に1冊まるごと訳しておく翻訳者に似ています。インタプリタは、話を聞きながらその場で訳す通訳に似ています。似ているのは「いつ訳すか」という点です。前もって訳しておけば、読む人は待たずにすらすら読めます。その場で訳すなら準備はいりませんが、同じ話を10回聞けば、10回訳すことになります。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 人の翻訳者は、書き手の意図をくんで、あいまいな所を補ったり、明らかな書き間違いを直したりします。コンパイラは意図を理解しません。決められた規則に厳密に従って訳すだけで、規則に合わない所は訳さずに、誤りとして返します。また、翻訳しても本が速く読めるようにはなりませんが、コンパイラは最適化で、元の書き方より手間の少ない命令に直します。</p></aside>
+</section>
+
+<section>
+<h2>コンパイラが見つける誤り、見つけられない誤り</h2>
+<p>コンパイラは、実行する前に多くの誤りを見つけます。文法の誤り、用意していない名前の使用、型の合わない計算などです。誤りではないけれど怪しい書き方に、注意(警告)を出すコンパイラもあります。</p>
+<p>一方、実行してみないとわからない誤りもあります。例えば、入力された数で割り算をするプログラムは、0が入力されると計算できません。読み込むはずのファイルがない、といった問題も、実行のときに初めてわかります。こうした実行中に起きる誤りを「実行時エラー」と呼びます。</p>
+<p>もっとやっかいなのは、止まらずに動くのに、結果が作った人の意図と違う誤りです。「足す」つもりで「引く」と書いても、コンパイラは文法どおりに訳すだけです。こうした誤りは、実際に動かして結果を確かめる「テスト」で見つけるしかありません。</p>
+<p>どの誤りを前もって見つけられるかは、言語によっても違います。例えばPythonでは、型の合わない計算の多くは、その行を実行したときに初めて誤りになります。</p>
+</section>
+
+<section>
+<h2>コンパイラの歴史</h2>
+<p>1950年代の初めまで、プログラムは機械語か、それに近い形で人が書いていました。1951〜1952年、グレース・ホッパーは、UNIVAC Iという計算機のために「A-0」というシステムを作りました。あらかじめ用意した計算の部品を番号で指定すると、それらをつなぎ合わせて、機械語のプログラムにするものです。</p>
+<p>A-0は当時から「コンパイラ」と呼ばれていました。ただし、働きは今の意味のコンパイラとは違います。電気・電子分野の学会IEEEは、A-0を技術史の記念(マイルストーン)に選び、2024年に記念の銘板を設けました。その説明でも、A-0を「リンカ・ローダとして働く仕様の集まり」と書いています。</p>
+<p>今のコンパイラの仕事の分け方や技術の土台を作ったとされるのが、IBMのジョン・バッカスたちが作ったFORTRANです。数式に近い書き方のソースコードを、IBM 704という計算機の機械語に翻訳しました。1954年の夏に始まった計画で、1957年4月に、704を使うすべての場所へ配られました。</p>
+<p>コンパイラが作る機械語が、人が手で書いたものより大幅に遅ければ、使ってもらえません。そこでFORTRANのチームは、手書きに近い速さを目標にして、最適化に力を入れました。1982年に書かれた振り返りの論文は、その目標が驚くほど達成されたと評価しています。</p>
+</section>
+
+<section>
+<h2>ハードウェアにも「コンパイラ」に似たものがある</h2>
+<p>半導体チップの回路の設計でも、似た考え方が使われています。今の大きな回路は、図を描くのではなく、文章のような形で書くのが一般的です。回路を書くための言語を{{term:ハードウェア記述言語}}と呼び、VerilogやVHDLがあります。</p>
+<p>書いた回路の動きを、「かつ」「または」のような基本の論理回路の組み合わせに自動で直す作業を、{{term:論理合成}}と呼びます。読む、確かめる、最適化する、出力するという流れは、コンパイラとよく似ています。</p>
+<p>大きな違いは、出力が「順に実行する命令の列」ではなく、「同時に働く回路のつながり」であることです。作った回路は、あとから書き換えられるチップに書き込んだり、専用のチップとして製造したりします。前者は「<a href="{{home}}learn/what-is-an-fpga/">FPGAとは?</a>」で説明しています。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: コンパイラで機械語にする言語は、いつも速い</p><p>実際は、コンパイルするかどうかは、速さを決める要素の1つにすぎません。計算の手順そのものが遠回りなら、どれだけ最適化しても遅いままです。JITは実行中の様子を見て最適化できるので、長く動くプログラムでは、前もって訳したものに近い速さになることもあります。また、Pythonでよく使われる計算用の部品集NumPyは、中心の計算をコンパイル済みのCのコードで行っています。同じ処理を比べればコンパイルしたほうが速いことが多いので、「いつも速い」と思われやすいのです。</p></div>
+<div class="myth"><p class="myth-q">誤解: コンパイラは、書いた人がしたいことを理解してくれる</p><p>実際は、コンパイラは決められた規則に従って訳すだけで、作った人の意図は知りません。エラーの表示が「ここに ; がありません」と親切に見えるのは、規則に合わない場所を報告しているからです。最適化も、言語の決まりの上で結果が変わらない範囲でしか行いません。C言語では、決まりで結果が定められていない書き方をすると、予想と違う機械語になることがあります。この書き方を{{term:未定義動作}}と呼びます。コンパイルが通っても、プログラムが正しいとは限りません。</p></div>
+<div class="myth"><p class="myth-q">誤解: Pythonはコンパイルせず、1行ずつそのまま実行している</p><p>実際は、標準のCPythonは、実行の前にファイル全体をバイトコードに直し、それをインタプリタで実行します。そのため、ファイルのどこかに文法の誤りがあると、1行目も実行されずに誤りになります。ただし、標準では機械語には直さないので、「インタプリタで動く言語」という説明も間違いではありません。「コンパイル」という言葉を、機械語に直すことだけだと思うと、この誤解が生まれます。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字・時期</th><th>メモ</th></tr></thead>
+<tbody>
+<tr><td>A-0</td><td>1951〜1952年</td><td>グレース・ホッパー。UNIVAC I用</td></tr>
+<tr><td>FORTRANの計画の開始</td><td>1954年夏</td><td>IBM、ジョン・バッカスのチーム</td></tr>
+<tr><td>FORTRANのコンパイラの配布</td><td>1957年4月</td><td>IBM 704のすべての設置先へ</td></tr>
+<tr><td>FORTRANの開発の手間</td><td>約18人年</td><td>1人で18年かかる作業量。1957年の論文</td></tr>
+<tr><td>GCCの標準の設定</td><td>-O0</td><td>ほとんど最適化しない。速さ重視なら -O2 など</td></tr>
+<tr><td>Pythonの試験的なJIT</td><td>2024年(3.13)</td><td>3.13では標準で無効</td></tr>
+</tbody>
+</table>
+<p>FORTRANから70年近くたった今も、翻訳の段階の考え方は大きくは変わっていません。増えたのは最適化の種類と、JITのように実行中に訳す方式です。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="{{home}}compare/compiler-vs-interpreter-vs-jit/">コンパイラ・インタプリタ・JITの違い</a>、<a href="{{home}}compare/static-vs-dynamic-linking/">静的リンクと動的リンクの違い</a></li>
+<li>試してみる: <a href="{{home}}tools/reverse-polish-notation-converter/">逆ポーランド記法の変換ツール</a>(式の構文木と、計算する順番を表示)</li>
+<li>次の一歩の用語: {{term:中間表現}}、{{term:インライン展開}}、{{term:LLVM}}、{{term:オブジェクトファイル}}、{{term:動的リンク}}</li>
+<li>土台から読む: 「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」、「<a href="{{home}}learn/what-is-an-operating-system/">OSとは?</a>」、「<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">コンピュータは0と1でどう計算するの?</a>」</li>
+</ul>
+</section>

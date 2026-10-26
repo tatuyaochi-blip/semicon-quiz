@@ -1,0 +1,294 @@
+<!--
+{
+  "title": "論理ゲートとは? AND・OR・NOTで計算できるしくみ",
+  "description": "論理ゲートは、0と1を入れると決まった規則で0か1を返す小さな回路です。NOT・AND・OR・NAND・NOR・XORの真理値表、トランジスタでの作り方、NANDだけで何でも作れる理由、遅れとクロックの関係まで解説します。",
+  "series": "computer-basics",
+  "order": 11,
+  "minutes": 12,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["logic", "mosfet", "computer-arithmetic", "sta-cdc"],
+  "terms": ["真理値表", "組み合わせ回路", "ド・モルガンの定理", "ノイズマージン"],
+  "sources": [
+    { "title": "MIT OpenCourseWare 6.004 Computation Structures(2017年春): 3.2 CMOS Gates(CMOSでのゲートの作り方)", "url": "https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/resources/cmos-gates-3-40-" },
+    { "title": "MIT OpenCourseWare 6.004 Computation Structures(2017年春): 4. Combinational Logic(NANDとNORが万能であること、CMOSは反転するゲートが得意なこと)", "url": "https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/pages/c4/c4s1" },
+    { "title": "Texas Instruments: SN74HC00(2入力NANDゲート4個入りのIC)製品ページ", "url": "https://www.ti.com/product/SN74HC00" },
+    { "title": "Texas Instruments: SNx4HC00 Quadruple 2-Input NAND Gates データシート(SCLS181。入力・出力の電圧の範囲、伝搬遅延)", "url": "https://www.ti.com/lit/ds/symlink/sn74hc00.pdf" },
+    { "title": "C. E. Shannon: A symbolic analysis of relay and switching circuits(MIT修士論文。DSpace@MIT)", "url": "https://dspace.mit.edu/handle/1721.1/11173" },
+    { "title": "Ken Shirriff: A computer built from NOR gates: inside the Apollo Guidance Computer(2019年)", "url": "https://www.righto.com/2019/09/a-computer-built-from-nor-gates-inside.html" },
+    { "title": "Smithsonian National Air and Space Museum: Integrated Circuit, Dual 3 Input, Apollo Guidance Computer", "url": "https://si.edu/object/integrated-circuit-dual-3-input-apollo-guidance-computer:nasm_A20170004000" },
+    { "title": "E. C. Hall (MIT Instrumentation Laboratory): A Case History of the AGC Integrated Logic Circuits(E-1880, 1965年。論理をすべて1種類の単純なICで作った理由)", "url": "https://www.klabs.org/history/history_docs/mit_docs/integrated_circuits_reliability.htm" },
+    { "title": "Intel Marks 50th Anniversary of the Intel 4004 (Intel Newsroom, 2021)", "url": "https://download.intel.com/newsroom/archive/2025/en-us-2021-11-15-intel-marks-50th-anniversary-of-the-intel-4004.pdf" },
+    { "title": "Apple unveils iPhone 15 Pro and iPhone 15 Pro Max (Apple Newsroom, 2023-09-12; A17 Pro chip)", "url": "https://www.apple.com/newsroom/2023/09/apple-unveils-iphone-15-pro-and-iphone-15-pro-max/" },
+    { "title": "Apple introduces the first 3nm smartphone chipset, the A17 Pro (PhoneArena, 2023; 19 billion transistors as announced at Apple's event)", "url": "https://phonearena.com/news/a17-pro-chip-announced_id150617" }
+  ]
+}
+-->
+<p class="lead">論理ゲートは、0か1の入力を受け取り、決まった規則で0か1を出す小さな回路です。「両方1なら1」のAND、「どちらか1なら1」のOR、「反対にする」のNOTなどがあります。どれもトランジスタを数個から十数個つないで作ります。ゲートを組み合わせると、足し算も、CPUの複雑な計算もできます。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>論理ゲートが何をする回路か、6種類のゲート(NOT・AND・OR・NAND・NOR・XOR)の規則</li>
+<li>スイッチの直列・並列とANDとORの関係</li>
+<li>トランジスタ4個でNANDゲートができるしくみ</li>
+<li>NANDだけでどんな回路も作れる理由と、ゲートの遅れがクロックの速さを決めるわけ</li>
+</ul><p class="muted">前提知識: 「トランジスタは電気で切り替えるスイッチ」「コンピュータは電圧の高い・低いを1と0に見立てる」の2つを知っていると読みやすくなります。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>電子レンジは、ドアが閉まっていて、しかもスタートボタンが押されたときだけ温めはじめます。車は、どれか1つでもドアが開いていれば、警告のランプをつけます。階段の照明は、上と下のどちらのスイッチでも、つけたり消したりできます。</p>
+<p>この3つは、どれも「いくつかの条件から、するかしないかを決める」決まりです。1つ目は「両方そろったら」、2つ目は「どれか1つでも」、3つ目は「2つのスイッチの向きが同じか、違うか」です。このような決まりを、0と1で計算する小さな回路が論理ゲートです。</p>
+<p>実際の電子レンジや車には、こうした判断をマイコン(小さなコンピュータのチップ)にさせているものも多くあります。そのマイコンの中も、論理ゲートの集まりです。</p>
+</section>
+
+<section>
+<h2>論理ゲートは「0と1の決まりを守る回路」</h2>
+<p>コンピュータの回路では、電圧が高い状態を1、低い状態を0とします。論理ゲートは、入り口(入力)で0か1を受け取り、出口(出力)から0か1を出します。入力の数は、1つのものも2つ以上のものもあります。どの入力でどの出力を出すかは、ゲートの種類ごとに決まっていて、変わりません。</p>
+<p>ゲートの決まりは、表で書くとはっきりします。入力のすべての組み合わせと、そのときの出力を並べた表を{{term:真理値表}}と呼びます。入力が2つなら、組み合わせは00・01・10・11の4通りなので、表は4行で足ります。</p>
+<p>なお、ここでの「ゲート」は、0と1を処理する回路の1単位のことです。トランジスタの電極(電気の出入り口)の1つも「ゲート」と呼びますが、別の意味です。</p>
+</section>
+
+<section>
+<h2>基本の3つ: NOT・AND・OR</h2>
+<h3>NOT: 反対にする</h3>
+<p>NOTゲートは入力が1つだけで、0なら1を、1なら0を出します。入力をひっくり返すので、インバータ(反転するもの)とも呼ばれます。</p>
+<table>
+<thead><tr><th>入力A</th><th>NOTの出力</th></tr></thead>
+<tbody><tr><td>0</td><td>1</td></tr><tr><td>1</td><td>0</td></tr></tbody>
+</table>
+<h3>AND: 両方1のときだけ1</h3>
+<p>ANDゲートは、入力が両方とも1のときだけ1を出します。1つでも0があれば0です。電子レンジの「ドアが閉まっている」かつ「ボタンが押された」の判断にあたります。</p>
+<h3>OR: どちらか1つでも1なら1</h3>
+<p>ORゲートは、入力のどちらか1つでも1なら1を出します。両方とも0のときだけ0です。車の「どれか1つでもドアが開いていたら警告」にあたります。</p>
+<table>
+<thead><tr><th>A</th><th>B</th><th>AND</th><th>OR</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+</tbody>
+</table>
+<p>ANDやORの入力は、2つとは限りません。3入力のANDなら、3つとも1のときだけ1を出します。</p>
+</section>
+
+<section>
+<h2>反転つきの仲間と、XOR</h2>
+<p>ANDの出力をNOTでひっくり返したものをNAND(ナンド)と呼びます。Not ANDを縮めた名前です。同じように、ORを反転したものがNOR(ノア)です。NANDは「両方1のときだけ0」、NORは「両方0のときだけ1」になります。</p>
+<p>もう1つよく使うのがXOR(エックスオア)です。2つの入力が違うとき、つまり片方だけが1のときに1を出します。階段の照明は、このXORと同じ性質を使っています。どちらかのスイッチを切り替えると、2つの向きが「同じ」と「違う」の間で入れ替わり、明かりがついたり消えたりするからです。</p>
+<table>
+<thead><tr><th>A</th><th>B</th><th>NAND</th><th>NOR</th><th>XOR</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+</tbody>
+</table>
+<p>NANDの列は、さきほどのANDの列の0と1をすべて入れ替えたものです。NORの列も、ORの列を入れ替えたものになっています。</p>
+</section>
+
+<section>
+<h2>スイッチの直列と並列で考える</h2>
+<p>ANDとORは、電池と電球とスイッチの回路で考えるとイメージしやすくなります。スイッチを2つ一列につなぐ形を直列、2つの道に分けて並べる形を並列と呼びます。下の図で、スイッチを入れた状態を1、電球がつくことを1と読みかえてみてください。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 266" role="img"><title>スイッチの直列はAND、並列はORと同じ動きをする</title>
+<text x="8" y="22">直列: 両方入れるとつく(AND)</text>
+<rect x="14" y="58" width="40" height="28" rx="4" class="ox"/>
+<text x="34" y="77" text-anchor="middle" class="sm">電池</text>
+<line x1="54" y1="72" x2="100" y2="72" class="ln"/>
+<circle cx="100" cy="72" r="4" class="hole"/>
+<circle cx="140" cy="72" r="4" class="hole"/>
+<line x1="102" y1="70" x2="136" y2="50" class="ln"/>
+<text x="84" y="58" text-anchor="middle" class="a">A</text>
+<line x1="144" y1="72" x2="180" y2="72" class="ln"/>
+<circle cx="180" cy="72" r="4" class="hole"/>
+<circle cx="220" cy="72" r="4" class="hole"/>
+<line x1="182" y1="70" x2="216" y2="50" class="ln"/>
+<text x="164" y="58" text-anchor="middle" class="a">B</text>
+<line x1="224" y1="72" x2="268" y2="72" class="ln"/>
+<circle cx="284" cy="72" r="16" class="hole"/>
+<line x1="273" y1="61" x2="295" y2="83" class="thin"/>
+<line x1="295" y1="61" x2="273" y2="83" class="thin"/>
+<line x1="300" y1="72" x2="322" y2="72" class="ln"/>
+<line x1="322" y1="72" x2="322" y2="108" class="ln"/>
+<line x1="322" y1="108" x2="34" y2="108" class="ln"/>
+<line x1="34" y1="108" x2="34" y2="86" class="ln"/>
+<text x="284" y="44" text-anchor="middle" class="sm m">電球</text>
+<text x="8" y="134">並列: どちらか入れるとつく(OR)</text>
+<rect x="14" y="180" width="40" height="28" rx="4" class="ox"/>
+<text x="34" y="199" text-anchor="middle" class="sm">電池</text>
+<line x1="54" y1="194" x2="80" y2="194" class="ln"/>
+<circle cx="80" cy="194" r="4" class="ink"/>
+<line x1="80" y1="168" x2="80" y2="222" class="ln"/>
+<line x1="80" y1="168" x2="120" y2="168" class="ln"/>
+<circle cx="120" cy="168" r="4" class="hole"/>
+<circle cx="160" cy="168" r="4" class="hole"/>
+<line x1="122" y1="166" x2="156" y2="150" class="ln"/>
+<text x="102" y="158" text-anchor="middle" class="a">A</text>
+<line x1="164" y1="168" x2="210" y2="168" class="ln"/>
+<line x1="80" y1="222" x2="120" y2="222" class="ln"/>
+<circle cx="120" cy="222" r="4" class="hole"/>
+<circle cx="160" cy="222" r="4" class="hole"/>
+<line x1="122" y1="220" x2="156" y2="204" class="ln"/>
+<text x="102" y="212" text-anchor="middle" class="a">B</text>
+<line x1="164" y1="222" x2="210" y2="222" class="ln"/>
+<line x1="210" y1="168" x2="210" y2="222" class="ln"/>
+<circle cx="210" cy="194" r="4" class="ink"/>
+<line x1="210" y1="194" x2="268" y2="194" class="ln"/>
+<circle cx="284" cy="194" r="16" class="hole"/>
+<line x1="273" y1="183" x2="295" y2="205" class="thin"/>
+<line x1="295" y1="183" x2="273" y2="205" class="thin"/>
+<line x1="300" y1="194" x2="322" y2="194" class="ln"/>
+<line x1="322" y1="194" x2="322" y2="250" class="ln"/>
+<line x1="322" y1="250" x2="34" y2="250" class="ln"/>
+<line x1="34" y1="250" x2="34" y2="208" class="ln"/>
+</svg><figcaption class="fig-cap">上は直列、下は並列。図のスイッチはどれも切れた状態です。直列では両方を入れたときだけ、並列ではどちらか一方を入れれば電球がつきます。省略していること: 実際の回路図の記号、電球に流れる電流の大きさ。</figcaption></figure>
+<p>直列では、電気はAとBの両方を通らないと電球まで届きません。そのため、両方を入れたときだけ電球がつきます。これはANDの真理値表と同じです。並列では、電気はどちらの道を通ってもよいので、どちらか一方を入れればつきます。これはORと同じです。</p>
+<p>スイッチの回路と、0と1の論理の計算は対応しています。これを1930年代に論文にまとめたのが、のちに情報理論を作ったクロード・シャノンです。電話の交換機に使われていたリレー(電磁石で動くスイッチ)の回路を、式で整理して設計できることを示したのです。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>ANDゲートは直列の2つのスイッチ、ORゲートは並列の2つのスイッチに似ています。似ているのは「どの組み合わせで出力が1になるか」という、入力と出力の対応の決まりです。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> スイッチの回路では、電池からの電気が、スイッチを通り抜けてそのまま電球に届きます。論理ゲートでは、入力の電気が出力に流れ出るわけではありません。入力の電圧はゲートの中のトランジスタを切り替えるだけで、出力の電圧は、ゲートが電源から新しく作り直します。また、スイッチは指で動かし、電球は光るだけなので、電球で次のスイッチを動かすことはできません。ゲートは、出力の電圧でそのまま次のゲートを動かせます。</p></aside>
+</section>
+
+<section>
+<h2>トランジスタでゲートを作る</h2>
+<p>チップの中のゲートは、MOSFETというトランジスタで作ります。MOSFETは、ゲートの電極にかける電圧で、電流の通り道をつないだり切ったりするスイッチです。このしくみは「<a href="{{home}}learn/what-is-a-transistor/">トランジスタとは?</a>」で説明しています。</p>
+<p>MOSFETには、正反対に動く2種類があります。nMOSは入力が1のときにつながり、pMOSは入力が0のときにつながります。この2種類を組み合わせてゲートを作る方式をCMOSと呼び、今のチップのほとんどがこの方式です。いちばん簡単なNOTゲートは、pMOSとnMOSを1つずつ、合わせて2個で作れます。</p>
+<h3>NANDゲートはトランジスタ4個</h3>
+<p>2入力のNANDゲートは、pMOS2個とnMOS2個、合わせて4個のトランジスタでできています。出力を1にする電源の＋側には、pMOSを2つ並列につなぎます。出力を0にする0 Vの側には、nMOSを2つ直列につなぎます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 296" role="img"><title>CMOSのNANDゲート: 上のpMOSは並列、下のnMOSは直列</title>
+<text x="170" y="18" text-anchor="middle">電源の＋側(1)</text>
+<line x1="110" y1="32" x2="230" y2="32" class="ln"/>
+<line x1="170" y1="24" x2="170" y2="32" class="ln"/>
+<line x1="110" y1="32" x2="110" y2="50" class="ln"/>
+<line x1="230" y1="32" x2="230" y2="50" class="ln"/>
+<rect x="78" y="50" width="64" height="40" rx="4" class="p"/>
+<text x="110" y="75" text-anchor="middle">pMOS</text>
+<rect x="198" y="50" width="64" height="40" rx="4" class="p"/>
+<text x="230" y="75" text-anchor="middle">pMOS</text>
+<text x="170" y="75" text-anchor="middle" class="sm a">並列</text>
+<line x1="44" y1="70" x2="78" y2="70" class="ln"/>
+<text x="34" y="75" text-anchor="middle" class="a">A</text>
+<line x1="262" y1="70" x2="296" y2="70" class="ln"/>
+<text x="306" y="75" text-anchor="middle" class="a">B</text>
+<line x1="110" y1="90" x2="110" y2="116" class="ln"/>
+<line x1="230" y1="90" x2="230" y2="116" class="ln"/>
+<line x1="110" y1="116" x2="230" y2="116" class="ln"/>
+<circle cx="170" cy="116" r="4" class="ink"/>
+<line x1="230" y1="116" x2="282" y2="116" class="ac"/>
+<text x="288" y="121">出力</text>
+<line x1="170" y1="116" x2="170" y2="134" class="ln"/>
+<rect x="138" y="134" width="64" height="40" rx="4" class="n"/>
+<text x="170" y="159" text-anchor="middle">nMOS</text>
+<line x1="170" y1="174" x2="170" y2="194" class="ln"/>
+<rect x="138" y="194" width="64" height="40" rx="4" class="n"/>
+<text x="170" y="219" text-anchor="middle">nMOS</text>
+<line x1="104" y1="154" x2="138" y2="154" class="ln"/>
+<text x="94" y="159" text-anchor="middle" class="a">A</text>
+<line x1="104" y1="214" x2="138" y2="214" class="ln"/>
+<text x="94" y="219" text-anchor="middle" class="a">B</text>
+<text x="214" y="160" class="sm a">直列</text>
+<text x="214" y="196" class="sm">両方1のときだけ</text>
+<text x="214" y="214" class="sm">出力が0 Vの側と</text>
+<text x="214" y="232" class="sm">つながる</text>
+<line x1="170" y1="234" x2="170" y2="254" class="ln"/>
+<line x1="152" y1="254" x2="188" y2="254" class="ln"/>
+<line x1="159" y1="261" x2="181" y2="261" class="ln"/>
+<line x1="166" y1="268" x2="174" y2="268" class="ln"/>
+<text x="170" y="290" text-anchor="middle" class="sm">0 V(0)</text>
+</svg><figcaption class="fig-cap">左右と下の「A」「B」は、そのトランジスタを切り替える入力です。Aは左上のpMOSと上のnMOSに、Bは右上のpMOSと下のnMOSに入ります。省略していること: 実際の回路記号、入力の配線、チップの中での並び方。</figcaption></figure>
+<p>AとBが両方とも1のときは、直列の2つのnMOSがどちらもつながります。出力は0 Vの側とつながって0になります。このとき2つのpMOSはどちらも切れています。</p>
+<p>AかBのどちらかが0のときは、直列のnMOSのうち1つが切れるので、0 Vの側への道はなくなります。かわりに、0が入ったほうのpMOSがつながり、出力は電源の＋側とつながって1になります。こうして「両方1のときだけ0」というNANDの決まりができあがります。</p>
+<p>どの入力のときも、上と下のどちらか一方の道が必ず切れています。電源から0 Vの側へ電流が流れ続けないので、出力を保っている間はほとんど電力を使いません。これがCMOSのよいところです。</p>
+<h3>ANDはNANDより手間がかかる</h3>
+<p>CMOSでは、入力が1になるとnMOSがつながり、出力を0 Vの側へ引き下げます。そのため、pMOSとnMOSを上下に1組並べただけで作れるのは、入力が1になると出力が0に向かうゲートだけです。NOT・NAND・NORがこの形です。ANDはNANDの後ろにNOTをつけて、4個＋2個の6個で作るのがふつうです。ORも同じで、NORにNOTをつけて作ります。</p>
+</section>
+
+<section>
+<h2>NANDだけで、どんな回路も作れる</h2>
+<p>NANDゲートには、おもしろい性質があります。NANDだけをたくさん組み合わせれば、NOT・AND・ORをはじめ、どんな決まりの回路でも作れるのです。このような性質を持つゲートを、万能なゲートと呼びます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 250" role="img"><title>NANDだけでNOTとANDを作る</title>
+<text x="8" y="22">NOTを作る: 2つの入力をつなぐ</text>
+<text x="22" y="72" text-anchor="middle" class="a">A</text>
+<line x1="34" y1="67" x2="80" y2="67" class="ln"/>
+<circle cx="80" cy="67" r="4" class="ink"/>
+<line x1="80" y1="57" x2="80" y2="77" class="ln"/>
+<line x1="80" y1="57" x2="120" y2="57" class="ln"/>
+<line x1="80" y1="77" x2="120" y2="77" class="ln"/>
+<path d="M120,45 H140 A22,22 0 0 1 140,89 H120 Z" class="ln"/>
+<circle cx="167" cy="67" r="5" class="hole"/>
+<line x1="172" y1="67" x2="216" y2="67" class="ac"/>
+<text x="224" y="72" class="a">Aの反対</text>
+<text x="142" y="110" text-anchor="middle" class="sm m">NAND</text>
+<text x="8" y="142">ANDを作る: NANDの後ろで反転</text>
+<text x="22" y="178" text-anchor="middle" class="a">A</text>
+<text x="22" y="202" text-anchor="middle" class="a">B</text>
+<line x1="34" y1="173" x2="80" y2="173" class="ln"/>
+<line x1="34" y1="197" x2="80" y2="197" class="ln"/>
+<path d="M80,163 H98 A22,22 0 0 1 98,207 H80 Z" class="ln"/>
+<circle cx="125" cy="185" r="5" class="hole"/>
+<line x1="130" y1="185" x2="160" y2="185" class="ln"/>
+<circle cx="160" cy="185" r="4" class="ink"/>
+<line x1="160" y1="175" x2="160" y2="195" class="ln"/>
+<line x1="160" y1="175" x2="190" y2="175" class="ln"/>
+<line x1="160" y1="195" x2="190" y2="195" class="ln"/>
+<path d="M190,163 H208 A22,22 0 0 1 208,207 H190 Z" class="ln"/>
+<circle cx="235" cy="185" r="5" class="hole"/>
+<line x1="240" y1="185" x2="276" y2="185" class="ac"/>
+<text x="284" y="190" class="a">AND</text>
+<text x="100" y="232" text-anchor="middle" class="sm m">NAND</text>
+<text x="212" y="232" text-anchor="middle" class="sm m">NOTの役</text>
+</svg><figcaption class="fig-cap">半円の形に小さな丸がついた記号がNANDです。小さな丸は「反転する」という意味の印です。上は、NANDの2つの入力に同じ信号を入れてNOTにした形。下は、NANDの出力をもう1つのNANDで反転してANDにした形です。省略していること: ORやXORの作り方、トランジスタの数。</figcaption></figure>
+<p>まず、NOTの作り方です。NANDの2つの入力に同じ信号Aを入れます。真理値表の「0と0」の行では出力が1、「1と1」の行では出力が0です。つまり、Aの反対が出てくるので、NOTとして働きます。</p>
+<p>次に、ANDです。NANDは「ANDを反転したもの」なので、その出力をもう一度反転すれば、ANDに戻ります。反転には、今作ったNANDのNOTを使います。NANDを2個使えば、ANDができるわけです。</p>
+<p>ORは、AとBをそれぞれNOTで反転してから、NANDに入れると作れます。AもBも0なら、反転して両方1になるので、NANDの出力は0です。それ以外のときは、反転した入力のどれかが0になり、出力は1です。これは「両方0のときだけ0」というORの決まりそのものです。このように「反転を組み合わせると、ANDとORを入れかえられる」という規則を、{{term:ド・モルガンの定理}}と呼びます。NOT・AND・ORが作れれば、どんな真理値表の回路も組み立てられます。</p>
+<p>同じことは、NORゲートでも成り立ちます。1969年に月に着陸したアポロ宇宙船の誘導コンピュータは、この性質を利用しました。使ったIC(集積回路)は約2,800個で、そのほとんどが「3入力のNORゲートを2つ入れたIC」という1種類です。当時のICは新しく、使った実績がまだ少ない部品でした。高い信頼性が必要だったため、単純な1種類にそろえて、信頼性を確かめやすくしたのです。</p>
+<p>ただし、今のチップをNANDだけで作るわけではありません。NANDだけでは、同じ働きの回路でも部品が増え、遅くもなりやすいからです。実際の設計では、NAND・NOR・NOTのほか、よく使う組み合わせを1つにまとめた部品を、目的に合わせて使い分けます。</p>
+</section>
+
+<section>
+<h2>ゲートを組み合わせて計算する</h2>
+<p>ゲートの出力を、次のゲートの入力につないでいくと、もっと複雑な決まりを作れます。たとえば、2進数の1桁どうしの足し算は、XORとANDを1つずつ並べるだけでできます。XORが「その桁の答え」を、ANDが「上の桁への繰り上がり」を出すのです。この回路を半加算器と呼びます。</p>
+<p>半加算器を広げて何桁でも足せるようにする方法は、「<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">コンピュータは0と1でどう計算するの?</a>」で詳しく説明しています。また、<a href="{{home}}tools/logic-circuit-simulator/">論理回路シミュレーター</a>では、ゲートを並べてスイッチを切り替え、真理値表を作って確かめられます。「NANDだけでつくるXOR」の例も読み込めます。</p>
+<p>足し算の回路のように、出力がそのときの入力だけで決まる回路を、{{term:組み合わせ回路}}と呼びます。一方、ゲートの出力を自分の入力に戻すようにつなぐと、前の状態を覚えておく回路も作れます。こちらは順序回路と呼ばれ、CPUの中で計算の途中の数を覚えておくのに使われます。2つの違いは「<a href="{{home}}compare/combinational-vs-sequential-logic/">組み合わせ回路と順序回路の違い</a>」の表で比べられます。</p>
+</section>
+
+<section>
+<h2>ゲートには「遅れ」がある</h2>
+<p>ゲートの入力を切り替えても、出力はその瞬間には変わりません。トランジスタが切り替わり、次のゲートの入力に電気をためるまで、少し時間がかかるからです。入力が変わってから出力が変わるまでの時間を、{{term:伝搬遅延}}と呼びます。</p>
+<p>たとえば、部品として売られているNANDゲートのIC「74HC00」の説明書(データシート)を見てみます。電源4.5 Vで使い、決められた試験の条件で測った遅れは、標準で9ナノ秒(ナノは10億分の1)です。チップの中のゲートはずっと小さく、つなぐ先も近いので、遅れはピコ秒(1兆分の1秒)の単位になります。</p>
+<p>CPUは、クロックという一定の間隔の合図に合わせて、計算を一歩ずつ進めます。1回の合図の間に、信号は何段ものゲートを順に通り、次の合図までに答えが落ち着いていなければなりません。そのため、通るゲートの数がいちばん多く、遅れがいちばん大きい道筋が、クロックをどこまで速くできるかを決めます。この道筋を{{term:クリティカルパス}}と呼びます。</p>
+<p>数字で考えてみます。3 GHzのクロックなら、合図の間隔は約333ピコ秒です。説明のために1段の遅れを10ピコ秒とすると、つなげられるのは多くても約33段です。実際には、配線の遅れや、答えを覚える回路の時間も差し引く必要があります。配線の遅れのしくみは「<a href="{{home}}learn/rc-time-constant-in-chips/">時定数RCとは?</a>」で説明しています。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: 論理ゲートは、手で切り替えるような小さなスイッチが中で動いている</p><p>実際は、動く部品はまったくありません。ゲートの中のトランジスタは、前のゲートが出した電圧によって、電気的につながったり切れたりします。人が切り替えるのは、キーボードのような入り口の部分だけです。チップの中では、ゲートの出力が次のゲートを切り替える連鎖が、1秒に何十億回もの速さで起きています。スイッチのたとえや、昔のリレー(電磁石で金属の接点を動かすスイッチ)の計算機のイメージから生まれやすい誤解です。</p></div>
+<div class="myth"><p class="myth-q">誤解: 0はちょうど0 V、1はちょうど1 V(または電源と同じ電圧)</p><p>実際は、0と1はそれぞれ電圧の「範囲」で決まっています。74HC00を電源4.5 Vで使う場合、入力は1.35 V以下なら0、3.15 V以上なら1と読まれます。その間の電圧は、どちらに読まれるか決まっていません。一方、出力は0なら0.1 V以下、1なら4.4 V以上を出すと保証されています(出力の電流が小さいとき)。たとえば1の出力は4.4 V以上なので、雑音で1.25 V下がっても、まだ1と読まれる3.15 Vに収まります。0の側も同じく1.25 Vの余裕があります。この余裕を{{term:ノイズマージン}}と呼び、配線に雑音が少し乗っても0と1を読み違えないのはこのおかげです。チップの内部ではもっと低い電圧で動きますが、範囲で読むという考え方は同じです。</p></div>
+<div class="myth"><p class="myth-q">誤解: ANDやORが基本の部品で、NANDやNORはそれに部品を足した複雑なもの</p><p>実際は、CMOSのチップでは逆です。2入力のNANDとNORはトランジスタ4個で作れますが、ANDとORは反転のための2個を足して6個かかります。真理値表で習う順番(ANDが先、NANDが後)と、回路で作りやすい順番は同じではありません。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>もの</th><th>数</th></tr></thead>
+<tbody>
+<tr><td>CMOSのNOTゲート</td><td>トランジスタ2個</td></tr>
+<tr><td>CMOSの2入力NAND・NOR</td><td>トランジスタ4個</td></tr>
+<tr><td>CMOSの2入力AND・OR</td><td>トランジスタ6個</td></tr>
+<tr><td>IC「74HC00」1個</td><td>2入力NANDゲート4個</td></tr>
+<tr><td>アポロ誘導コンピュータ(1960年代)</td><td>IC約2,800個(ほとんどがNORゲート2個入り)</td></tr>
+<tr><td>インテル4004(1971年)</td><td>トランジスタ約2,300個</td></tr>
+<tr><td>Apple A17 Pro(2023年)</td><td>トランジスタ約190億個</td></tr>
+</tbody>
+</table>
+<p>チップの設計では、回路の大きさを「2入力NANDゲート何個分」で表すことがあります。A17 Proの約190億個をNANDの4個で単純に割ると、約48億個分になります(当サイトのおおまかな計算)。ただし、実際のチップには、記憶のための回路など、ゲートとは形の違う部分もたくさんあります。この数は大きさの見当をつけるための目安です。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>試してみる: <a href="{{home}}tools/logic-circuit-simulator/">論理回路シミュレーター</a>(ゲートをつないで動かす)、<a href="{{home}}tools/karnaugh-map-solver/">カルノー図・論理式の簡単化ツール</a>(同じ働きを、より少ないゲートで作る)</li>
+<li>違いを表で見る: <a href="{{home}}compare/cmos-vs-ttl/">CMOSとTTLの違い</a>(ゲートを作る2つの方式)、<a href="{{home}}compare/nmos-vs-pmos/">nMOSとpMOSの違い</a></li>
+<li>次の一歩の用語: {{term:マルチプレクサ}}(入力を選んで通す回路)、{{term:フリップフロップ}}(1ビットを覚える回路)、{{term:グリッチ}}(遅れの差で一瞬出るまちがった出力)</li>
+<li>図で見る: NOTゲートのトランジスタの並びは、図解「<a href="{{home}}figures/cmos-inverter/">CMOSインバータ</a>」で見られます</li>
+<li>続けて読む: ゲートの集まりが命令を実行するしくみは「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」で説明しています</li>
+</ul>
+</section>
