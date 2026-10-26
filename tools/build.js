@@ -684,7 +684,8 @@ function buildLang(L) {
     if (noindex) noindexPaths.add(p);
     else if (alts.length) hreflangPages.push({ file: file || `${p}index.html`, targets: alts.map(x => alt[x.code]) });
     const head = [
-      noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${url}">`,
+      // 登録してよいページでは、検索結果や Discover に大きな画像を出してよいことを伝える
+      noindex ? '<meta name="robots" content="noindex">' : `<meta name="robots" content="max-image-preview:large">\n<link rel="canonical" href="${url}">`,
       ...(noindex ? [] : alts.map(x => `<link rel="alternate" hreflang="${x.htmlLang}" href="${baseUrl}${alt[x.code]}">`)),
       !noindex && alt[mainLang] != null ? `<link rel="alternate" hreflang="x-default" href="${baseUrl}${alt[mainLang]}">` : '',
       `<meta property="og:type" content="${p === L.path ? 'website' : 'article'}">`,
@@ -747,8 +748,11 @@ function buildLang(L) {
     const m = src.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/);
     const alt = Object.fromEntries(langs.filter(x => pageNames(x.code).includes(name)).map(x => [x.code, pagePath(x, name)]));
     // トップ: 検索結果のサイト名になる WebSite(各言語のサイト名を別名として添える)
-    const jsonld = name === 'index' ? { '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, url: abs(L.path),
-      alternateName: [...new Set(Object.values(config.siteName))].filter(x => x !== siteName), inLanguage: L.htmlLang } : null;
+    // あわせて運営者の Organization(サイト名で検索した人にトップを示し、ロゴを伝える)
+    const altNames = [...new Set(Object.values(config.siteName))].filter(x => x !== siteName);
+    const jsonld = name === 'index' ? [{ '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, url: abs(L.path),
+      alternateName: altNames, inLanguage: L.htmlLang },
+      { '@context': 'https://schema.org', '@type': 'Organization', name: siteName, alternateName: altNames, url: abs(''), logo: abs('icon-512.png') }] : null;
     page({ path: pagePath(L, name), alt, jsonld, ...JSON.parse(fill(m[1], common)), content: fill(src.slice(m[0].length), common) });
   }
 
@@ -2792,17 +2796,24 @@ const pageKey = url => url.slice(baseUrl.length) || '/';
 const lastmod = Object.fromEntries(sitemap.map(({ url, hash }) =>
   [pageKey(url), lastmodOld[pageKey(url)]?.hash === hash ? lastmodOld[pageKey(url)] : { hash, date: today }]));
 fs.writeFileSync(lastmodFile, '{\n' + Object.entries(lastmod).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n') + '\n}\n');
-// サイトマップは言語ごとのファイル(sitemaps/{言語}.xml)に分け、/sitemap.xml をその目次(サイトマップインデックス)にする。
-// 1ファイルは5万URLまでなので、1言語が SITEMAP_MAX を超えたら sitemaps/{言語}-2.xml … と続ける。
+// サイトマップは言語×ページの種類ごとのファイル(sitemaps/{言語}-{種類}.xml)に分け、/sitemap.xml をその目次(サイトマップインデックス)にする。
+// Search Console ではサイトマップごとに登録数が見えるので、どの種類のページが登録されにくいかが分かる。
+// 1ファイルは5万URLまでなので、SITEMAP_MAX を超えたら sitemaps/{言語}-{種類}-2.xml … と続ける。
 // /sitemap.xml の場所は変えないので、Search Console と robots.txt はそのままでよい
 const SITEMAP_MAX = 40000;
 const langOfUrl = url => [...langs].sort((a, b) => b.path.length - a.path.length).find(x => pageKey(url).startsWith(x.path)).code; // 既定言語(path が空)は最後に当たる
+const SITEMAP_TYPES = ['term', 'compare', 'q', 'learn', 'tools']; // これ以外(トップ・分野・図解集など)は other にまとめる
+const typeOfUrl = url => {
+  const L = langs.find(x => x.code === langOfUrl(url));
+  const first = pageKey(url).slice(L.path.length).split('/')[0];
+  return SITEMAP_TYPES.includes(first) ? first : 'other';
+};
 const sitemapFiles = [];
-for (const L of langs) {
-  const list = sitemap.filter(({ url }) => langOfUrl(url) === L.code);
+for (const L of langs) for (const type of [...SITEMAP_TYPES, 'other']) {
+  const list = sitemap.filter(({ url }) => langOfUrl(url) === L.code && typeOfUrl(url) === type);
   for (let i = 0; i < list.length; i += SITEMAP_MAX) {
     const part = list.slice(i, i + SITEMAP_MAX);
-    const name = `sitemaps/${L.code}${i ? `-${i / SITEMAP_MAX + 1}` : ''}.xml`;
+    const name = `sitemaps/${L.code}-${type}${i ? `-${i / SITEMAP_MAX + 1}` : ''}.xml`;
     write(name, `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${part.map(({ url }) => `  <url><loc>${url}</loc><lastmod>${lastmod[pageKey(url)].date}</lastmod></url>`).join('\n')}
