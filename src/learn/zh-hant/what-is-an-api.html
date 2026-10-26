@@ -1,0 +1,254 @@
+<!--
+{
+  "title": "API是什麼？程式之間的約定與「API串接」",
+  "description": "API是一支程式向另一支程式請求功能或資料時，事先約定好的請求方式。從天氣App、「使用Google帳戶登入」的例子，到Web API的請求與回應（JSON）、API金鑰、次數限制和「API串接」，用淺顯的方式說明。",
+  "series": "internet",
+  "order": 11,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["web-tech", "software-dev", "security", "cloud-container", "network"],
+  "terms": ["API", "JSON", "HTTPステータスコード", "OAuth"],
+  "sources": [
+    { "title": "RFC 9110: HTTP Semantics（IETF，2022年6月。方法、狀態碼、Retry-After）", "url": "https://www.rfc-editor.org/rfc/rfc9110" },
+    { "title": "RFC 8259: The JavaScript Object Notation (JSON) Data Interchange Format（IETF，2017年12月）", "url": "https://www.rfc-editor.org/rfc/rfc8259" },
+    { "title": "RFC 6585: Additional HTTP Status Codes（IETF，2012年4月。429 Too Many Requests）", "url": "https://www.rfc-editor.org/rfc/rfc6585" },
+    { "title": "RFC 6749: The OAuth 2.0 Authorization Framework（IETF，2012年10月）", "url": "https://www.rfc-editor.org/rfc/rfc6749" },
+    { "title": "OpenID Foundation: OpenID Connect Core 1.0（2014年）", "url": "https://openid.net/specs/openid-connect-core-1_0.html" },
+    { "title": "RFC 2606: Reserved Top Level DNS Names（IETF，1999年。example.com是保留給說明用的名稱）", "url": "https://www.rfc-editor.org/rfc/rfc2606" },
+    { "title": "R. T. Fielding: Architectural Styles and the Design of Network-based Software Architectures（加州大學爾灣分校博士論文，2000年。提出REST）", "url": "https://ics.uci.edu/~fielding/pubs/dissertation/top.htm" },
+    { "title": "MDN Web Docs: Introduction to web APIs（瀏覽器內建的API，以及外部服務的API）", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Client-side_APIs/Introduction" },
+    { "title": "Google Cloud: Best practices for managing API keys（不把金鑰放進用戶端程式碼或儲存庫，由伺服器附上金鑰發出請求；設定限制、刪除不需要的金鑰、定期更換）", "url": "https://docs.cloud.google.com/docs/authentication/api-keys-best-practices" },
+    { "title": "Google Maps Platform: Embed a map | Maps Embed API（嵌入地圖時使用API金鑰，並限制可以使用的網站）", "url": "https://developers.google.com/maps/documentation/embed/embedding-map" },
+    { "title": "Google for Developers: OpenID Connect（Google的OAuth 2.0 API符合OpenID Connect，以ID權杖傳遞使用者資訊）", "url": "https://developers.google.com/identity/openid-connect/openid-connect" },
+    { "title": "Apple Developer: Get started with WeatherKit（Swift API與REST API。每個Apple Developer Program會員每月最多50萬次。2026年10月26日確認）", "url": "https://developer.apple.com/weatherkit/" },
+    { "title": "GitHub Docs: Rate limits for the REST API（未驗證每小時60次，已驗證5,000次。2026年10月確認）", "url": "https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api" },
+    { "title": "GitHub Docs: Troubleshooting the REST API（超過上限時回傳403或429）", "url": "https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api" },
+    { "title": "GitGuardian: The State of Secrets Sprawl 2025（2025年3月。2024年在公開的GitHub上約2,380萬件；2022年外洩的機密約70%仍然有效）", "url": "https://blog.gitguardian.com/the-state-of-secrets-sprawl-2025/" },
+    { "title": "金融庁: 「銀行法等の一部を改正する法律案」に関する説明資料（日本金融廳：《銀行法等部分修正法案》說明資料。日文。2017年3月。電子支付代理業者制度，以及推動金融機構的開放式創新）", "url": "https://www.fsa.go.jp/common/diet/193/01/setsumei.pdf" },
+    { "title": "参議院: 銀行法等の一部を改正する法律案（日本參議院：《銀行法等部分修正法案》。日文。第193屆國會內閣提出法案第38號。2017年5月26日於全體會議通過，6月2日公布）", "url": "https://www.sangiin.go.jp/japanese/joho1/kousei/gian/193/meisai/m193080193038.htm" },
+    { "title": "金融庁: 電子決済等代行業を営むみなさまへ（日本金融廳：致經營電子支付代理業的業者。日文。新制度自2018年6月1日開始）", "url": "https://www.fsa.go.jp/common/shinsei/dendai/index.html" }
+  ]
+}
+-->
+<p class="lead">API是一支程式向另一支程式說「請做這件事」「請給我這筆資料」時，事先約定好的請求方式。請求的一方就算不知道對方內部怎麼運作，只要照約定請求，就能拿到回答。天氣App的預報、商店網站上的地圖，也常常是透過API，從別家公司的服務送過來的。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>API是「什麼和什麼之間的、什麼樣的約定」</li>
+<li>天氣App、地圖、「使用Google帳戶登入」背後發生的事</li>
+<li>Web API的請求與回應的內容，以及JSON的讀法</li>
+<li>API金鑰必須保密的理由，以及次數的限制</li>
+<li>工作上聽到的「API串接」是什麼意思，以及串接前要確認的事</li>
+</ul><p class="muted">先備知識：不需要。日本IT Passport等資訊考試會出現的用語，也會用平常的話說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>打開手機的天氣App，馬上就會出現所在地點的預報。不過，做這個App的公司，不一定自己在觀測天氣。它常常是向擁有氣象資料的公司的伺服器詢問：「請給我這個地點的預報。」伺服器是應要求提供資料的電腦。</p>
+<p>同樣的事，也發生在其他地方。商店的網站上，有時嵌著Google地圖。登入畫面上，有時排著「使用Google帳戶登入」的按鈕。這些都是一支程式在請別家公司的程式做事。</p>
+<p>這時，如果每個人的請求方式都不一樣，就麻煩了。要請求什麼、用什麼寫法請求、回答會以什麼形式回來？把這些事先決定並公開的約定，稱為{{term:API|API（應用程式介面）}}。它是Application Programming Interface的縮寫。</p>
+</section>
+
+<section>
+<h2>API是「請求方式」的約定</h2>
+<p>Interface（介面）是「接觸的地方」「接合處」的意思。也就是說，API是程式和程式接合處所用的約定。重點在於，它不是給人看著畫面操作的約定，而是給程式使用的約定。</p>
+<p>約定裡主要寫著下面這些事。</p>
+<ul>
+<li>可以請求的工作名稱（例：「查詢預報」）</li>
+<li>請求時要附上的資訊（例：地點和日期）</li>
+<li>回答的形式（例：氣溫用數字，單位是℃）</li>
+<li>失敗時的回覆（例：「找不到這個地點」）</li>
+</ul>
+<p>請求的一方不必知道對方怎麼計算預報，也能拿到回答。反過來，接受請求的一方只要不改變約定，就能重新打造內部的運作方式。請求的一方可以照常使用。</p>
+<p>約定通常會整理成文件。這份文件稱為「規格書」或「API文件」。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 334" role="img"><title>天氣App用API這種固定的請求方式發出請求，並收到固定形式的回應。API後面的計算和資料庫，從外面看不到</title>
+<rect x="70" y="12" width="220" height="46" rx="8" class="metal"/>
+<text x="180" y="41" text-anchor="middle">天氣App</text>
+<line x1="130" y1="58" x2="130" y2="110" class="ln"/><polygon points="130,120 125,110 135,110" class="ink"/>
+<text x="118" y="94" text-anchor="end">請求</text>
+<line x1="230" y1="120" x2="230" y2="68" class="ac"/><polygon points="230,58 224,70 236,70" class="fa"/>
+<text x="242" y="94" class="a">回應</text>
+<rect x="40" y="122" width="280" height="46" rx="8" class="ox"/>
+<text x="180" y="151" text-anchor="middle">API（固定的請求方式）</text>
+<rect x="16" y="186" width="328" height="108" rx="8" class="dash"/>
+<text x="180" y="210" text-anchor="middle" class="m">內部的運作（從外面看不到）</text>
+<rect x="34" y="226" width="136" height="50" rx="6" class="metal"/>
+<text x="102" y="256" text-anchor="middle">預報的計算</text>
+<rect x="190" y="226" width="136" height="50" rx="6" class="metal"/>
+<text x="258" y="256" text-anchor="middle">資料庫</text>
+<text x="180" y="322" text-anchor="middle" class="a">約定不變，內部就能重新打造</text>
+</svg><figcaption class="fig-cap">請求的一方只知道API這個「窗口」的用法。省略的部分：辨識使用者的鑰匙（後面說明的API金鑰）、途中的通訊、接受請求那一方內部的許多程式。</figcaption></figure>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>API很像餐廳的「點菜單」。客人只要把菜單上的品項，寫在固定的欄位交出去就好。廚房裡是誰、怎麼做菜，客人不知道，也不需要知道。相似之處是：「只要用固定的形式請求，不知道內部做法也能拿到結果」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>如果是真人店員，有時會察覺寫錯的地方並幫忙改正。程式通常不會接受偏離約定的請求，就算只差1個字也一樣。另外，回來的不是像料理那樣的成品，而是資料。要怎麼顯示在畫面上，由發出請求的App決定。</p></aside>
+</section>
+
+<section>
+<h2>Web API：透過網際網路請求</h2>
+<p>像天氣或地圖這樣，向網際網路另一端的伺服器請求的API，稱為Web API。現在說到「API」，多半是指這種Web API。</p>
+<p>大多數Web API，和瀏覽器開啟網頁時一樣，用{{term:HTTP|HTTP}}這套規則交換資料。在HTTP中，請求的一方送出「請求（request）」，伺服器傳回「回應（response）」。HTTP本身在「<a href="{{home}}learn/what-does-https-mean/">HTTPS是什麼？</a>」也有說明。</p>
+<p>和網頁不同的地方，在於回應的內容。網頁會傳回給人閱讀的文字和圖片。Web API則傳回程式容易讀取的資料。</p>
+<p>我們用一個虛構的天氣API，看看請求和回應的例子。對方的名稱「api.example.com」是保留給說明用的名稱，不是真實的服務。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 392" role="img"><title>向天氣API請求的例子（用GET要求東京的預報，並附上API金鑰），以及伺服器的回應（200 OK和JSON資料）</title>
+<text x="10" y="22" class="a">請求（請求方 → 伺服器）</text>
+<rect x="6" y="32" width="348" height="108" rx="8" class="n"/>
+<text x="18" y="60">GET /forecast?city=tokyo HTTP/1.1</text>
+<text x="18" y="90">Host: api.example.com</text>
+<text x="342" y="90" text-anchor="end" class="m">對方的名稱</text>
+<text x="18" y="120">X-API-Key: (秘密金鑰)</text>
+<text x="342" y="120" text-anchor="end" class="m">是誰請求</text>
+<text x="10" y="172" class="a">回應（伺服器 → 請求方）</text>
+<rect x="6" y="182" width="348" height="198" rx="8" class="ox"/>
+<text x="18" y="210">HTTP/1.1 200 OK</text>
+<text x="342" y="210" text-anchor="end" class="m">200 = 成功</text>
+<text x="18" y="238">Content-Type: application/json</text>
+<text x="18" y="268">{</text>
+<text x="40" y="294">"city": "東京",</text>
+<text x="40" y="320">"weather": "晴天",</text>
+<text x="40" y="346">"high": 22</text>
+<text x="342" y="320" text-anchor="end" class="m">名稱與值的組合</text>
+<text x="18" y="370">}</text>
+</svg><figcaption class="fig-cap">這是虛構API的例子。傳送金鑰的欄位名稱和請求方式，每個服務都不一樣。省略的部分：其他許多欄位，以及HTTPS的加密。</figcaption></figure>
+<p>請求第1行的「GET」，表示「想取得資料」這種請求的種類。這個種類稱為{{term:HTTPメソッド|HTTP方法}}。接著的「/forecast?city=tokyo」是想請求的內容。這裡是在說「預報，關於東京」。</p>
+<p>第2行的「Host」是對方伺服器的名稱。從名稱查出機器編號的運作方式，在「<a href="{{home}}learn/how-dns-works/">DNS是什麼？</a>」中說明。第3行是表示誰在請求的金鑰（後面說明）。</p>
+<p>回應第1行的「200」，是表示「成功了」的數字。這個3位數的數字稱為{{term:HTTPステータスコード|HTTP狀態碼}}。找不到要求的東西時是404，請求太多時是429，每種結果都有固定的編號。</p>
+<p>設計Web API時，廣泛使用一種叫REST的想法。2000年，參與制定HTTP規格的羅伊·菲爾丁（Roy Fielding）在博士論文中為它命名。常見的做法是替每種處理對象（例如預報、訂單）各給一個位址，再用HTTP方法表示取得或刪除等操作。這樣的API稱為{{term:REST API|REST API}}。</p>
+</section>
+
+<section>
+<h2>JSON：程式容易讀取的資料形式</h2>
+<p>回應後半用「{ }」括起來的部分，是名為{{term:JSON|JSON}}的寫法。回應第2行的「application/json」，就是表示內容用這種寫法的記號。它用「:」把「名稱」和「值」連成一組，組和組之間用「,」隔開。名稱和文字的值用「" "」括起來，數字則直接寫。</p>
+<p>把例子中的回應整理成表格，就是下面這樣。</p>
+<table>
+<thead><tr><th>名稱</th><th>值</th><th>意義</th></tr></thead>
+<tbody>
+<tr><td>city</td><td>"東京"</td><td>地點（文字）</td></tr>
+<tr><td>weather</td><td>"晴天"</td><td>天氣（文字）</td></tr>
+<tr><td>high</td><td>22</td><td>最高氣溫（數字）</td></tr>
+</tbody>
+</table>
+<p>請注意，「22」沒有附上單位。是℃，還是美國使用的°F（華氏）？這不是寫在JSON裡，而是寫在API的規格書中。不讀規格書就使用，就會發生這種弄錯單位的事。</p>
+<p>JSON的寫法，由2017年的規格RFC 8259所規定。它源自JavaScript這種程式語言的寫法，現在幾乎所有程式語言都能讀寫。</p>
+</section>
+
+<section>
+<h2>API金鑰：表示「是誰在請求」的鑰匙</h2>
+<p>很多Web API並不會無限制地接受任何人的請求。它們會替每個使用者或公司，發行一串猜不到的長字元。這稱為「API金鑰」。請求的一方每次請求時，都要附上這把金鑰。</p>
+<p>收到金鑰的伺服器，會分辨請求來自哪個使用者。接著判斷這個使用者能不能使用該功能，並計算呼叫次數來決定費用。例如Apple的天氣API叫做WeatherKit。截至2026年10月，每月50萬次以內的呼叫，包含在開發者會員的費用中。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>API金鑰很像公司的入館證。櫃台看入館證，判斷「是哪家公司的人」，再決定可以進入哪些樓層。相似之處是：「辨識持有人，並決定能使用的範圍」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>入館證上有大頭照，別人拿去用會被發現。API金鑰只是一串字元，被複製了也看不出差別。拿到金鑰的人，誰都能冒充持有人來使用。而且，使用費會算在持有人頭上。</p></aside>
+</section>
+
+<section>
+<h2>金鑰必須保密的理由，以及保護方法</h2>
+<p>因此，API金鑰要像密碼一樣保密。傳送時，要使用加密的HTTPS（「<a href="{{home}}learn/what-is-encryption/">加密是什麼？</a>」）。特別要小心的是，把金鑰直接寫在程式的檔案裡。一旦公開那支程式，金鑰也會跟著公開給全世界。</p>
+<p>把金鑰放進手機App或網頁裡，也很危險。因為發出去的內容，使用者可以取出來檢查。秘密金鑰只能放在自家的伺服器上，由那台伺服器附上金鑰，再向對方請求。</p>
+<p>實際上，外洩事件發生過很多次。保存和公開程式的代表性服務是GitHub。資安公司GitGuardian在2025年3月發表了一份報告。2024年在公開的GitHub上，找到的金鑰、密碼等機密資訊約有2,380萬件。</p>
+<p>Google對API金鑰的處理方式，提出了下面這些注意事項。</p>
+<ul>
+<li>不要把金鑰放進App或網頁的程式裡，也不要放進存放程式的地方</li>
+<li>替每把金鑰限制可以使用的網站和功能</li>
+<li>刪除不再使用的金鑰</li>
+<li>定期把金鑰換成新的</li>
+</ul>
+<p>不過，也有一些金鑰，本來就是設計成放在網頁裡、讓人看得到的。例如在商店網站上嵌入地圖用的金鑰，瀏覽網頁的人也看得到。這是另一種金鑰，要靠「只接受來自這家商店網站的請求」之類的限制來保護。金鑰能不能被看到，請以發行單位的說明為準。</p>
+</section>
+
+<section>
+<h2>次數的限制（速率限制）</h2>
+<p>很多Web API對一定時間內可以請求的次數設有上限。這稱為「速率限制」。目的是避免少數使用者占滿伺服器，讓其他人只能等待。它也能防止有錯誤的程式不斷重複請求，讓費用暴增。</p>
+<p>例如GitHub的API，截至2026年10月，沒有表明身分的請求每小時最多60次。附上使用者的身分憑據再請求，每小時最多可以用到5,000次。</p>
+<p>超過上限時，很多伺服器會傳回「429 Too Many Requests（請求太多）」的回應。這個編號是由2012年的規格RFC 6585所規定。回應裡有時還會附上「請在幾秒後再請求」的資訊。設計良好的App會照著做，隔一段時間再重新請求。</p>
+</section>
+
+<section>
+<h2>「使用Google帳戶登入」的背後</h2>
+<p>在其他網站「使用Google帳戶登入」時，你並沒有把Google的密碼交給那個網站。輸入密碼的畫面，是Google的畫面。網站收到的，是Google發行的「這個人確實是本人」的證明，裡面不含密碼。</p>
+<p>這種做法以名為{{term:OAuth|OAuth}}的規則為基礎。OAuth是一套不交出密碼，就能允許其他App「使用到這個範圍為止」的規則。2012年，現在的版本OAuth 2.0成為規格。</p>
+<p>許可和證明，是用稱為「權杖（token）」的資料來傳遞。它有期限，能使用的範圍也有限，就像通行證一樣。就算外洩，造成的損害範圍和時間也比密碼小。</p>
+<p>登入時使用的是OpenID Connect這套規則。它在OAuth 2.0上加入了傳達「是誰」的部分，Google的登入也遵循它。本人的證明，會以稱為「ID權杖」的權杖送達。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 312" role="img"><title>你在商店網站按下使用Google帳戶登入後，會被帶到Google的畫面，密碼只輸入給Google。Google再把本人的證明交給網站</title>
+<rect x="10" y="8" width="100" height="34" rx="6" class="metal"/>
+<text x="60" y="31" text-anchor="middle">你</text>
+<rect x="130" y="8" width="100" height="34" rx="6" class="metal"/>
+<text x="180" y="31" text-anchor="middle">商店網站</text>
+<rect x="250" y="8" width="100" height="34" rx="6" class="metal"/>
+<text x="300" y="31" text-anchor="middle">Google</text>
+<line x1="60" y1="42" x2="60" y2="270" class="dash"/>
+<line x1="180" y1="42" x2="180" y2="140" class="dash"/>
+<line x1="180" y1="178" x2="180" y2="270" class="dash"/>
+<line x1="300" y1="42" x2="300" y2="270" class="dash"/>
+<text x="120" y="72" text-anchor="middle">① 按鈕</text>
+<line x1="60" y1="82" x2="170" y2="82" class="ln"/><polygon points="180,82 170,77 170,87" class="ink"/>
+<text x="240" y="114" text-anchor="middle">② 引導</text>
+<line x1="180" y1="124" x2="290" y2="124" class="ln"/><polygon points="300,124 290,119 290,129" class="ink"/>
+<text x="180" y="156" text-anchor="middle" class="a">③ 密碼</text>
+<line x1="60" y1="166" x2="288" y2="166" class="ac"/><polygon points="300,166 286,159 286,173" class="fa"/>
+<text x="240" y="200" text-anchor="middle">④ 本人的證明</text>
+<line x1="300" y1="210" x2="190" y2="210" class="ln"/><polygon points="180,210 190,205 190,215" class="ink"/>
+<text x="120" y="242" text-anchor="middle">⑤ 完成</text>
+<line x1="180" y1="252" x2="70" y2="252" class="ln"/><polygon points="60,252 70,247 70,257" class="ink"/>
+<text x="180" y="300" text-anchor="middle" class="a">只有Google看得到密碼</text>
+</svg><figcaption class="fig-cap">③的密碼不經過商店網站，直接送到Google。省略的部分：第一次使用時「是否同意提供資訊」的確認。實際的④，會先經由瀏覽器送來一張兌換券，再由網站向Google換成證明。</figcaption></figure>
+</section>
+
+<section>
+<h2>API不只用在Web上</h2>
+<p>API這個詞，在Web API普及之前很久就有人使用了。例如App想儲存檔案時，會向作業系統（OS）請求。作業系統是管理電腦或手機的零件，再借給App使用的基礎軟體。這種請求方式也是API，每種作業系統都不一樣（「<a href="{{home}}learn/what-is-an-operating-system/">作業系統（OS）是什麼？</a>」）。</p>
+<p>把常用的功能整理成零件的程式，稱為「函式庫」。例如畫圖表、計算日期之類的零件。函式庫也有API，規定要怎麼呼叫哪個零件。這是在同一台機器裡的呼叫，所以不經過網際網路。</p>
+<table>
+<thead><tr><th>種類</th><th>請求的對象</th><th>經過的路徑</th><th>例子</th></tr></thead>
+<tbody>
+<tr><td>作業系統的API</td><td>作業系統</td><td>同一台機器裡</td><td>儲存檔案</td></tr>
+<tr><td>函式庫的API</td><td>零件的程式</td><td>同一支程式裡</td><td>計算日期</td></tr>
+<tr><td>Web API</td><td>別的伺服器</td><td>網際網路</td><td>取得天氣預報</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>工作上聽到的「API串接」是什麼</h2>
+<p>在公司裡，常會聽到「把這兩個系統用API串接起來」的說法。意思是讓不同的系統，透過API自動交換資料。這樣就不必由人從一邊的畫面匯出資料，再匯入另一邊。</p>
+<p>例如會計軟體自動匯入銀行帳戶的收支明細。在日本，2017年5月通過、2018年6月施行的《銀行法》等修正，建立了這種串接的制度。銀行被要求努力建立體制，以API和記帳、會計服務的公司連接。</p>
+<p>其他還有把網路商店的訂單自動通知物流公司等用法。這些都是把外部公司在雲端提供的服務，連接到自家系統的情況（「<a href="{{home}}learn/what-is-cloud-computing/">雲端運算是什麼？</a>」）。</p>
+<h3>串接前要確認的事</h3>
+<ul>
+<li>哪些資料、往哪個方向流動（如果包含個人資料，也要確認處理的規定）</li>
+<li>用誰的權限串接，是否只允許必要的範圍（{{term:最小権限の原則|最小權限原則}}）</li>
+<li>對方的API停止服務或約定改變時，會發生什麼事</li>
+<li>呼叫次數的上限和費用</li>
+<li>API金鑰和權杖由誰、在哪裡保管</li>
+</ul>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：API就是網路服務</p><p>實際上，API指的是「程式之間請求方式的約定」全體。作業系統和函式庫也有API。因為Web API越來越常見，用「API」來指「Web API」的情況變多，所以容易混淆。</p></div>
+<div class="myth"><p class="myth-q">誤解：用Google帳戶登入時，Google的密碼會交給那個網站</p><p>實際上，就像前面看到的，密碼只輸入在Google的畫面上，網站收到的是有期限的證明（權杖）。因為畫面切換只有一瞬間，很難意識到自己是在哪裡輸入。不過，也有顯示假登入畫面的{{term:フィッシング|網路釣魚}}。輸入前，請確認網址列的名稱是不是真正的Google（accounts.google.com）。</p></div>
+<div class="myth"><p class="myth-q">誤解：不小心公開的API金鑰，只要從檔案刪掉就沒事了</p><p>實際上，金鑰還會留在存放處的舊版本裡，以及已經複製走的人手上。基本做法是到發行單位讓金鑰失效，再重新建立。根據GitGuardian在2025年3月的報告，2022年外洩的機密約有70%，到那時仍然可以使用。從檔案表面上消失，看起來就像已經解決了。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>時間、出處</th></tr></thead>
+<tbody>
+<tr><td>提出REST</td><td>2000年</td><td>菲爾丁的博士論文</td></tr>
+<tr><td>OAuth 2.0的規格</td><td>2012年10月</td><td>RFC 6749</td></tr>
+<tr><td>「請求太多」（429）的規格</td><td>2012年4月</td><td>RFC 6585</td></tr>
+<tr><td>JSON現行的規格</td><td>2017年12月</td><td>RFC 8259</td></tr>
+<tr><td>HTTP語意現行的規格</td><td>2022年6月</td><td>RFC 9110</td></tr>
+<tr><td>GitHub API的次數上限</td><td>每小時60次（未表明身分）、5,000次（表明身分）</td><td>2026年10月，GitHub</td></tr>
+<tr><td>WeatherKit會員費用包含的呼叫次數</td><td>每月50萬次</td><td>2026年10月，Apple</td></tr>
+<tr><td>在公開的GitHub上找到的機密資訊</td><td>約2,380萬件</td><td>2024年，GitGuardian（2025年3月的報告）</td></tr>
+<tr><td>日本建立銀行API串接制度的修法</td><td>2017年5月通過、2018年6月施行</td><td>日本金融廳</td></tr>
+</tbody>
+</table>
+<p>規格會使用很久，但次數上限和費用常常因服務的狀況而改變。使用時，請確認提供者當時的說明。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>下一步的用語：{{term:JWT(JSON Web Token)|JWT}}（權杖的一種形式）、{{term:Cookie|Cookie}}、{{term:WAF(Webアプリケーションファイアウォール)|網頁應用程式防火牆（WAF）}}</li>
+<li>用表格看差異：<a href="{{home}}compare/http-1-1-vs-http-2-vs-http-3/">HTTP/1.1、HTTP/2、HTTP/3的差異</a>、<a href="{{home}}compare/iaas-vs-paas-vs-saas/">IaaS、PaaS與SaaS的差異</a>、<a href="{{home}}compare/static-vs-dynamic-linking/">靜態連結與動態連結的差異</a>（函式庫的結合方式）</li>
+<li>試試看長的金鑰為什麼難猜中：<a href="{{home}}tools/password-brute-force-time/">密碼暴力破解時間計算工具</a></li>
+<li>從基礎讀起：「<a href="{{home}}learn/how-the-internet-delivers-data/">網際網路怎麼傳送資料？</a>」、「<a href="{{home}}learn/how-passwords-get-cracked/">密碼為什麼會被破解？</a>」</li>
+</ul>
+</section>
