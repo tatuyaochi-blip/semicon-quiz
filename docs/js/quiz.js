@@ -45,7 +45,7 @@ const explanationText = (text, cat) => {
 // 解説文(用語集の語にリンク)、図、選択肢ごとの補足(choiceNotes)、誤り報告リンク
 const explain = q => h('div', {},
   h('p', { class: 'explanation' }, explanationText(q.explanation, q.cat)),
-  q.figureSvg && figure(q.figureSvg),
+  q.figureSvg && !q.figureFirst && figure(q.figureSvg),
   q.choiceNotes && h('ul', { class: 'choice-notes' }, q.choiceNotes.map((note, n) =>
     note && h('li', {}, h('b', {}, `${String.fromCharCode(65 + n)}. `), note))),
   index.reportFormUrl && h('p', { class: 'q-report' },
@@ -124,6 +124,7 @@ function show() {
     q.codeFirst ? codeBlock(q) : '',
     h('h1', { class: 'q-text' }, q.question),
     q.codeFirst ? '' : codeBlock(q),
+    q.figureFirst && q.figureSvg ? figure(q.figureSvg) : '',
     h('div', { class: 'choices' }, buttons),
     h('div', { class: 'feedback', hidden: true }));
   window.scrollTo(0, 0);
