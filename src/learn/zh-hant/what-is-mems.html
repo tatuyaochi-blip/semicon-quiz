@@ -1,0 +1,217 @@
+<!--
+{
+  "title": "MEMS是什麼？手機裡微小「會動的機械」的原理",
+  "description": "MEMS（微機電系統）是用和晶片相同的做法，在矽裡做出微小「會動的零件」的元件。本文淺顯說明手機的加速度計與陀螺儀如何測量動作、在麥克風與投影機中的用途，以及製作方法與難處。",
+  "series": "everyday-chips",
+  "order": 14,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["mems-sensor", "etching", "automotive", "package"],
+  "terms": ["MEMS", "加速度センサー", "ジャイロスコープ", "コリオリ力", "犠牲層エッチング", "ボッシュプロセス(Deep RIE)", "スティクション"],
+  "sources": [
+    { "title": "Apple：Apple Reinvents the Phone with iPhone（2007年1月9日。內建的加速度計會感應機身從直向轉成橫向，切換畫面方向）", "url": "https://www.apple.com/newsroom/2007/01/09Apple-Reinvents-the-Phone-with-iPhone/" },
+    { "title": "Apple：iPhone 4 Sales Top 1.7 Million（2010年6月28日。把3軸陀螺儀列為iPhone 4的特色之一）", "url": "https://www.apple.com/ca/newsroom/2010/06/28iPhone-4-Sales-Top-1-7-Million/" },
+    { "title": "Analog Devices (Analog Dialogue)：ADXL105: A Lower-Noise, Wider-Bandwidth Accelerometer Rivals Performance of More Expensive Sensors（感測部分為0.5 mm × 0.4 mm、厚2 µm的多晶矽，質量塊約0.5 µg。電容約150 fF，1 g時差值的變化約100 aF）", "url": "https://www.analog.com/en/resources/analog-dialogue/articles/a-lower-noise-wider-bandwidth-accelerometer.html" },
+    { "title": "Analog Devices (Analog Dialogue)：Surface-machined Monolithic Accelerometer（ADXL50。差動電容式，把表面微加工的多晶矽感測器、電路與自我診斷功能整合在1顆晶片上）", "url": "https://www.analog.com/jp/resources/analog-dialogue/articles/surface-machined-monolithic-accelerometer.html" },
+    { "title": "Digi-Key：MEMS Sensors are Good, but the Revolution is Just Beginning（ADXL50於1991年發表，1993年前開始量產。用於打開安全氣囊，在此之前主流是小球在筒中移動的機械式感測器）", "url": "https://www.digikey.com/en/blog/mems-sensors-are-good-but-the-revolution-is-just-beginning" },
+    { "title": "K. E. Petersen：Silicon as a Mechanical Material（Proceedings of the IEEE，第70卷第5期，420–457頁，1982年。把矽當作機械材料使用的概念與加工方法的回顧論文）", "url": "https://doi.org/10.1109/PROC.1982.12331" },
+    { "title": "Design, Analysis, and Simulation of a MEMS Tuning Fork Gyroscope with a Mechanical Amplification Structure（Micromachines。振動式MEMS陀螺儀由科氏力造成的感測方向位移求出角速度）", "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11857292/" },
+    { "title": "University of California, Berkeley EE247B/ME218：Surface Micromachining（課程講義。疊上氧化膜的犧牲層與多晶矽的結構層，再溶掉犧牲層讓結構懸空的步驟）", "url": "https://inst.eecs.berkeley.edu/~ee247b/sp20/lectures/Lec7m.SurfaceMicromachining.ee247b-me218.s20.ctn.pdf" },
+    { "title": "University of California, Berkeley EE247B/ME218：Module 5 Surface Micromachining（表面微加工只用積體電路的製造設備就能製作。以氫氟酸釋放結構後乾燥時發生的黏附，以及從甲醇換成超臨界二氧化碳再乾燥的對策）", "url": "https://inst.eecs.berkeley.edu/~ee247b/sp20/modules/Module5.SurfaceMicromachining.ee247b-me218.s20.ctn.pdf" },
+    { "title": "Fraunhofer ISIT：Deep Reactive Ion Etch (DRIE)（由Robert Bosch GmbH於1990年代初期開發，因此也稱為「博世製程」）", "url": "https://www.isit.fraunhofer.de/en/technology/micro-manufacturing-processes/processes-on-wafer-level/drie.html" },
+    { "title": "SPTS Technologies：Introduction to Silicon DRIE Processing（交替重複以氟蝕刻，以及用氟碳化合物膜保護側壁的步驟）", "url": "https://www.spts.com/resources/tech-insights/intro-to-silicon-DRIE-etching" },
+    { "title": "SPTS Technologies：1000th DRIE module installed（1994年Bosch的員工申請專利。SPTS取得第一個授權，1995年出貨第一台商用設備）", "url": "https://spts.com/resources/tech-insights/1000th-drie-module-installed" },
+    { "title": "Research on a 3D Encapsulation Technique for Capacitive MEMS Sensors Based on Through Silicon Via（Sensors，2018年。用蓋子把電容式陀螺儀封在真空中，振動不易衰減的程度（Q值）提高到封裝前的10倍以上）", "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6339255/" },
+    { "title": "Micro-Electro-Mechanical Systems Microphones: A Brief Review Emphasizing Recent Advances in Audible Spectrum Applications（Micromachines，2024年。MEMS麥克風的方式、結構與降低雜訊方法的回顧論文）", "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10972232/" },
+    { "title": "P. V. Loeppert、S. B. Lee：SiSonic – The First Commercialized MEMS Microphone（Solid-State Sensors, Actuators, and Microsystems Workshop，Hilton Head，2006年。Knowles公司）", "url": "https://transducer-research-foundation.org/technical_digests/HiltonHead_2006/hh2006_0027.pdf" },
+    { "title": "HP Virtual Museum：Hewlett-Packard ThinkJet, 1984（1984年推出，HP第一款大量銷售的個人用噴墨印表機。名稱來自熱感式噴墨）", "url": "https://www.hp.com/hpinfo/abouthp/histnfacts/museum/imagingprinting/0011/index.html" },
+    { "title": "National Research Council：Microelectromechanical Systems: Advanced Materials and Fabrication Methods（1997年。熱感式噴墨頭無論數量或金額，都是MEMS最大的商業成功）", "url": "https://www.nationalacademies.org/read/5977/chapter/3" },
+    { "title": "ASME：Landmark #243 Digital Micromirror Device（TI於1977年開始開發，1987年做出第一個DMD。以最多約200萬個微小鏡子切換光線）", "url": "https://www.asme.org/about-asme/engineering-history/landmarks/243-Digital-Micromirror-Device" },
+    { "title": "Lemelson-MIT Program：Larry Hornbeck（DMD是搭載最多約200萬個微小鏡子開關的矽晶片，是TI的DLP的核心。也用於電影院的數位放映）", "url": "https://lemelson.mit.edu/resources/larry-hornbeck" },
+    { "title": "Texas Instruments：DLP4621-Q1 產品頁面（車用DMD。鏡子的傾角為±12°）", "url": "https://www.ti.com/product/DLP4621-Q1" },
+    { "title": "Yole Group：MEMS market regains momentum（2025年的發布。2024年MEMS的營收為154億美元，出貨310億個）", "url": "https://www.yolegroup.com/press-release/mems-market-regains-momentum-leading-companies-bosch-stmicroelectronics-and-tdk-navigate-the-post-inventory-growth-era/" }
+  ]
+}
+-->
+<p class="lead">MEMS（微機電系統）是用和晶片相同的技術，在矽裡做出肉眼分辨不出的微小「會動的零件」的元件。它用在測量手機傾斜與旋轉的感測器、麥克風、汽車的安全氣囊感測器、印表機的噴墨頭、投影機的鏡子等地方。許多感測器裡，有彈簧支撐的小重物或薄膜會微微移動。間隙因此產生的變化，會被當成電的變化讀出來。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>MEMS是什麼，用在身邊的哪些地方</li>
+<li>手機的加速度計與陀螺儀，如何測量動作</li>
+<li>用晶片的技術做出會動零件的方法（犧牲層蝕刻、博世製程）</li>
+<li>做得小的好處，以及黏附和封裝的難處</li>
+</ul><p class="muted">先備知識：沒有特別需要。會稍微用到儲存電的零件（電容器）的概念，本文會說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>把手機轉成橫向，畫面也會跟著變成橫向。蘋果在2007年第一代iPhone的發表資料中說明，這個切換用到感應傾斜的加速度計。2010年的iPhone 4，又加入了測量旋轉速度的陀螺儀。兩者都是內部有微小會動零件的MEMS。</p>
+<p>通話和語音輸入用的麥克風，也廣泛使用MEMS。在汽車上，它一直用在感應碰撞時的急遽減速、發出打開安全氣囊訊號的感測器。噴墨印表機的噴墨頭、電影院的投影機裡也有。這些會在後面的段落逐一介紹。</p>
+</section>
+
+<section>
+<h2>MEMS是什麼：用晶片的做法做出的微小機械</h2>
+<p>MEMS是英文Micro Electro Mechanical Systems的縮寫，意思是「非常微小的電與機械的系統」。中文稱為{{term:MEMS|微機電系統}}。它不只有電路，還把會彎曲的彈簧、會振動的薄膜等機械部分，整合在一個小元件裡。</p>
+<p>特點是用和晶片相同的工具製作。在矽做成的圓形薄板（晶圓）上疊上薄膜，用光轉印圖案，再削掉不要的部分（「<a href="{{home}}learn/how-chips-are-made/">半導體晶片是怎麼做出來的？</a>」）。一般的晶片，用這種方法做出配線和電晶體。MEMS則是在削去之後，留下「能動的形狀」。</p>
+<p>矽不只是電子零件的材料，也是優秀的彈簧材料。做得很小的矽彈簧，只要在不折斷的範圍內，彎曲後都能準確恢復原狀。1982年，美國的庫爾特·彼得森（Kurt Petersen）發表論文「把矽當作機械材料」，廣泛介紹了這個想法。</p>
+<p>舉個尺寸的例子。美國亞德諾半導體（Analog Devices）有一款測量動作的感測器ADXL105。它的感測部分約0.5 mm × 0.4 mm，厚度只有2 µm（1000分之2 mm）（該公司的技術刊物）。</p>
+</section>
+
+<section>
+<h2>原理①：加速度計，由彈簧支撐的質量塊</h2>
+<p>速度改變的程度，稱為加速度。靜止的電車開始行駛，或汽車煞車停下時，都會產生加速度。測量加速度的元件，就是{{term:加速度センサー|加速度計}}（也稱加速度感測器）。</p>
+<p>裡面有一個由彈簧支撐的小重物，稱為質量塊。元件的外殼突然移動時，質量塊會想留在原地，因此稍微落後。結果，質量塊相對於外殼會稍微偏移。加速度越大，偏移也越大。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img"><title>由彈簧支撐的質量塊兩側，有不會動的電極。元件開始向右移動時，質量塊落後而向左偏移，左邊的間隙變窄，右邊的間隙變寬</title>
+<text x="10" y="24">開始移動時，質量塊會落後</text>
+<rect x="150" y="44" width="40" height="16" class="metal"/>
+<rect x="150" y="220" width="40" height="16" class="metal"/>
+<path d="M170,60 L162,66 L174,72 L158,78 L170,84 L154,90 L150,100" class="ln"/>
+<path d="M150,180 L154,190 L170,196 L158,202 L174,208 L162,214 L170,220" class="ln"/>
+<text x="146" y="76" text-anchor="end" class="m">彈簧</text>
+<rect x="100" y="100" width="100" height="80" class="n"/>
+<text x="150" y="146" text-anchor="middle">質量塊</text>
+<rect x="60" y="110" width="16" height="60" class="metal"/>
+<rect x="264" y="110" width="16" height="60" class="metal"/>
+<text x="88" y="96" text-anchor="middle" class="a">窄</text>
+<text x="232" y="96" text-anchor="middle" class="a">寬</text>
+<text x="68" y="194" text-anchor="middle">固定</text>
+<text x="68" y="216" text-anchor="middle">電極</text>
+<text x="272" y="194" text-anchor="middle">固定</text>
+<text x="272" y="216" text-anchor="middle">電極</text>
+<line x1="110" y1="258" x2="222" y2="258" class="ac"/>
+<polygon points="232,258 220,252 220,264" class="fa"/>
+<text x="170" y="288" text-anchor="middle">整個元件開始向右移動</text>
+</svg><figcaption class="fig-cap">從正上方看的加速度計示意圖。上下的方塊是固定在底座上的支撐。偏移經過大幅誇大。省略的部分：實際上電極像梳齒一樣排列數十根、測量上下或前後方向的部分、讀取電路。</figcaption></figure>
+<p>加速度計也能感應重力。即使手機放在桌上，裡面的質量塊也被重力往下拉，稍微偏移。從偏移的方向，就能知道機身朝哪邊傾斜。畫面方向的切換，就是利用這個原理。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>就像電車上的吊環。電車開動時，吊環往後傾；緊急煞車時，則往前傾。看傾斜就知道加速的方向和強弱，這點和加速度計的質量塊相同。</p><p class="analogy-limit"><strong>比喻的限制：</strong>吊環用帶子垂吊，會一直大幅搖晃。MEMS的質量塊由彈簧支撐，偏移非常小，而且設計成搖晃很快就會停止。另外，吊環的傾斜是用眼睛看，MEMS的偏移則像下一節那樣用電讀出。</p></aside>
+<p>汽車的安全氣囊也一直使用這種感測器。亞德諾半導體在1991年發表安全氣囊用的加速度計ADXL50，1993年前也開始量產（零件經銷商Digi-Key的解說）。它把感測器和讀取電路放在1顆晶片上，還具備檢查自身故障的功能。在此之前，主流是小球在筒中移動的機械式感測器。</p>
+</section>
+
+<section>
+<h2>原理②：用電讀出偏移，間隙與電容器</h2>
+<p>質量塊的偏移非常小，直接看是看不見的。因此，要在質量塊旁邊放一片不會動的板子，稱為電極。它是會導電的板子，隔著間隙和質量塊相對。</p>
+<p>隔著間隙相對的兩片板子，和儲存電的零件「電容器」形狀相同。間隙越窄，能儲存的電量越大（「<a href="{{home}}learn/what-is-a-capacitor/">電容器是什麼？</a>」）。質量塊偏移、間隙改變，能儲存的電量也會改變。晶片裡的電路，會測量這個變化。</p>
+<p>實際上，質量塊兩側都放了電極。一側的間隙變窄，另一側就會變寬。取兩者的差值，就能抵消溫度等讓兩側同樣改變的影響。像這樣由儲存電的難易度變化讀取動作的方式，稱為{{term:静電容量検出|電容式感測}}。</p>
+<p>這個變化非常小。和地球重力相同強度的加速度，寫作1 g。ADXL105即使受到1 g，儲存電的難易度也只改變約1500分之1。為了讀出它，測量電路就做在感測器旁邊。</p>
+<p>也有不看間隙的方式。它把彈簧根部的形變，當作導電難易度（電阻）的變化來讀取（{{term:ピエゾ抵抗効果|壓阻效應}}）。兩種方式的差異，整理成表格在「<a href="{{home}}compare/capacitive-vs-piezoresistive-mems/">電容式與壓阻式MEMS感測器的差異</a>」。</p>
+</section>
+
+<section>
+<h2>原理③：陀螺儀，旋轉產生的橫向力</h2>
+<p>{{term:ジャイロスコープ|陀螺儀}}是測量旋轉速度的感測器。加速度計靠重力得知傾斜，但有不擅長的動作。把手機平放在桌上水平轉動，重力的方向並不會改變。因此，加速度計幾乎測不到變化。</p>
+<p>MEMS陀螺儀裡，質量塊一直朝固定方向快速地來回振動。在這個狀態下整個元件旋轉時，質量塊會被推向和來回方向垂直的方向。這是在旋轉的東西上、作用於移動物體的「看起來的力」，稱為{{term:コリオリ力|科氏力}}。</p>
+<p>旋轉越快，推的力越大。質量塊往橫向偏移的量，和加速度計一樣當作間隙的變化讀出（MEMS陀螺儀的論文）。重點是讓質量塊來回振動的電極，和讀取橫向偏移的電極，要分開準備。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>假設在轉動中的旋轉木馬上，把球丟給對面的人。從地面看，球是直直飛出去的。但從坐在台上的人看，球好像往旁邊彎過去。在旋轉的地方移動的東西，看起來會往旁邊偏，這點和科氏力相同。</p><p class="analogy-limit"><strong>比喻的限制：</strong>球朝一個方向飛出去，但陀螺儀的質量塊是在同一個地方非常快速地來回振動。另外，球的彎曲看得見，MEMS的橫向偏移卻非常小，只能用電讀出。</p></aside>
+</section>
+
+<section>
+<h2>製作方法①：溶掉下層，讓結構浮起來</h2>
+<p>要做會動的零件，下面需要有間隙。但晶片的做法，是把薄膜從下往上一層層疊上去。懸空的形狀，沒辦法一下子疊在上面。</p>
+<p>所以，要先放一層之後會去除的層，稱為犧牲層。在上面疊上結構的薄膜，最後只用藥品把犧牲層溶掉。這樣上面的薄膜就會浮起來，成為能動的細長板子（樑）或薄膜。這個方法就是{{term:犠牲層エッチング|犧牲層蝕刻}}。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 360" role="img"><title>犧牲層蝕刻的3個階段。在基板上堆積犧牲層，在上面製作結構層，只把犧牲層溶掉後，只有一端固定的樑就浮起來了</title>
+<text x="10" y="24">① 在基板上堆積犧牲層</text>
+<rect x="90" y="56" width="160" height="14" class="ox"/>
+<rect x="40" y="70" width="260" height="24" class="p"/>
+<text x="10" y="128">② 在上面製作結構層</text>
+<rect x="90" y="160" width="160" height="14" class="ox"/>
+<path d="M60,146 H250 V160 H90 V174 H60 Z" class="n"/>
+<rect x="40" y="174" width="260" height="24" class="p"/>
+<text x="10" y="232">③ 只把犧牲層溶掉</text>
+<path d="M60,250 H250 V264 H90 V278 H60 Z" class="n"/>
+<rect x="40" y="278" width="260" height="24" class="p"/>
+<line x1="272" y1="244" x2="272" y2="270" class="ac"/>
+<polygon points="272,238 267,247 277,247" class="fa"/>
+<polygon points="272,276 267,267 277,267" class="fa"/>
+<rect x="20" y="330" width="16" height="12" class="p"/>
+<text x="42" y="342">基板</text>
+<rect x="104" y="330" width="16" height="12" class="ox"/>
+<text x="126" y="342">犧牲層</text>
+<rect x="214" y="330" width="16" height="12" class="n"/>
+<text x="236" y="342">結構</text>
+</svg><figcaption class="fig-cap">剖面示意圖。③右邊的箭頭，表示浮起的樑的前端能上下移動。比例並不準確。省略的部分：用光轉印圖案的步驟、配線、疊在樑上的薄膜。</figcaption></figure>
+<p>犧牲層常用玻璃的主要成分二氧化矽，再用名為氫氟酸的藥品溶掉。結構的薄膜，常用由細小結晶聚集而成的矽（多晶矽）（美國加州大學柏克萊分校的課程講義）。氫氟酸很容易溶解二氧化矽，卻幾乎不溶解矽。靠這個溶解程度的差異，只留下需要的形狀。</p>
+<p>這有點像做混凝土樓板時，先在下面搭臨時支撐，等凝固後再拆掉。不過犧牲層不是拆掉，而是溶解後沖走。形成的間隙，通常也只有幾µm（幾千分之一 mm）以下。</p>
+</section>
+
+<section>
+<h2>製作方法②：挖得又細又深，博世製程</h2>
+<p>MEMS常需要把矽挖得又深又直。這是為了讓質量塊更重，或是加大電極相對的面積。但是用藥品或氣體去削，往往不只往下削，也會往旁邊削。</p>
+<p>這裡用對氣體通電產生的「電漿」來削（「<a href="{{home}}learn/what-is-plasma/">電漿是什麼？</a>」）。1990年代初期，德國的零件製造商博世（Bosch），開發出用電漿挖深的方法（德國研究機構的資料）。這個方法以公司名稱命名，稱為{{term:ボッシュプロセス(Deep RIE)|博世製程}}（Bosch process）。</p>
+<p>步驟有3個。①挖一點。②在孔的內側整面鍍上薄薄的保護膜。③從正上方打入帶電的粒子（離子），只打穿底部的膜。底部露出來後，再回到①挖一點。側壁有膜保護，所以幾乎不會往旁邊擴大。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" role="img"><title>用博世製程挖出的細而深的溝槽剖面，以及挖一點、在側壁鍍膜、打穿底部的膜這3個步驟的重複</title>
+<text x="10" y="22">重複3個步驟</text>
+<rect x="20" y="60" width="150" height="230" class="p"/>
+<path d="M75,60 Q67,75 75,90 Q67,105 75,120 Q67,135 75,150 Q67,165 75,180 Q67,195 75,210 Q67,225 75,240 Q75,262 95,262 Q115,262 115,240 Q123,225 115,210 Q123,195 115,180 Q123,165 115,150 Q123,135 115,120 Q123,105 115,90 Q123,75 115,60 Z" class="hole"/>
+<rect x="20" y="46" width="55" height="14" class="metal"/>
+<rect x="115" y="46" width="55" height="14" class="metal"/>
+<line x1="95" y1="34" x2="95" y2="66" class="ac"/>
+<polygon points="95,74 90,64 100,64" class="fa"/>
+<text x="95" y="316" text-anchor="middle" class="m">側壁的波紋經過誇大</text>
+<text x="190" y="90">① 挖一點</text>
+<line x1="210" y1="102" x2="210" y2="114" class="thin"/>
+<text x="190" y="136">② 在側壁鍍膜</text>
+<line x1="210" y1="148" x2="210" y2="160" class="thin"/>
+<text x="190" y="182">③ 打穿底部的膜</text>
+<line x1="210" y1="194" x2="210" y2="206" class="thin"/>
+<text x="190" y="228" class="a">回到①</text>
+</svg><figcaption class="fig-cap">剖面示意圖。左上的箭頭，是從正上方打下的離子。上方的2塊板子，是覆蓋不挖部分的膜（遮罩）。省略的部分：實際上能挖得比寬度深很多、使用的氣體種類、側壁保護膜的厚度。</figcaption></figure>
+<p>靠這樣的重複，能挖出比寬度深得多的孔或溝槽。不過因為是一點一點挖，側壁會留下細小的波紋。第一台商用設備，由英國的設備製造商（現在的SPTS公司）在1995年出貨（該公司的資料）。現在，它也用在挖出縱向貫穿晶片的孔的步驟。</p>
+</section>
+
+<section>
+<h2>為什麼做得小比較好</h2>
+<p>第一，能做得便宜。在1片晶圓上排列數千個以上（依零件大小而定）相同的零件，一次做出來。和逐一組裝的機械零件相比，能大幅降低每1個的價格。</p>
+<p>第二，用電很少。會動的部分非常輕，只要一點電就能驅動或測量。手機能一整天計算步數，也要歸功於這種省電。</p>
+<p>第三，能以一致的品質大量生產。根據調查公司Yole Group，2024年全球出貨的MEMS約310億個，營收約154億美元。能備齊這麼多品質相同的零件，是因為採用了晶片的製作方法。</p>
+</section>
+
+<section>
+<h2>困難之處：黏附與封裝</h2>
+<p>在微小的世界裡，比起重量，表面之間互相吸引的力更明顯。特別危險的是溶掉犧牲層後，把清洗用的水弄乾的時候。殘留在間隙裡的水，表面想要收縮的力，會把浮起的樑拉向底座黏住。這個現象稱為{{term:スティクション|黏附}}（英文stiction）。</p>
+<p>對策之一，是把水先換成酒精，再換成液態二氧化碳，然後才弄乾。提高壓力和溫度，讓液體和氣體之間沒有分界，表面收縮的力就不會作用（柏克萊分校的課程講義）。也有在表面加上撥水的膜，防止使用期間黏住的做法。</p>
+<p>另一個難處是封裝，也就是包覆的方式。一般的晶片用樹脂包起來保護（「<a href="{{home}}learn/what-is-chip-packaging/">半導體封裝是什麼？</a>」）。但是把MEMS包起來，它就不能動了。所以要在會動的部分上方蓋一個小蓋子，留下空間再封住。</p>
+<p>陀螺儀常把內部抽成接近真空再封住（MEMS封裝的論文）。因為有空氣的話，來回的振動很快就會減弱。相反地，麥克風需要讓聲音進入的孔。每種零件都必須在保護方式與對外的連接方式上下功夫。</p>
+</section>
+
+<section>
+<h2>其他身邊的MEMS</h2>
+<h3>MEMS麥克風</h3>
+<p>薄膜和開了許多孔的堅硬板子，隔著間隙相對。聲音讓空氣壓力改變時，薄膜會振動，間隙也跟著改變。代表性的方式是和加速度計一樣，把它當作電容器的變化讀出（2024年MEMS麥克風的回顧論文）。美國的樓氏電子（Knowles）在2000年代初期推出MEMS麥克風。該公司的工程師在2006年的論文中，稱它為「第一個商品化的MEMS麥克風」。</p>
+<h3>噴墨印表機的噴墨頭</h3>
+<p>這裡介紹利用熱的方式。用噴嘴深處的小加熱器瞬間加熱墨水，會產生氣泡，把墨滴推出去。HP在1984年推出採用這種方式的印表機ThinkJet（HP的資料）。1997年美國國家研究委員會的報告寫道，這種噴墨頭無論數量或金額，都是MEMS最大的商業成功。</p>
+<h3>投影機的微小鏡子</h3>
+<p>美國德州儀器（TI）的賴瑞·宏貝克（Larry Hornbeck），在1987年做出排列微小鏡子的元件「數位微鏡（DMD）」。美國機械工程師學會（ASME）介紹它是排列最多約200萬個鏡子的元件。基本上每1片鏡子負責影像的1個點，靠改變傾斜角度，切換把光送往鏡頭或偏向外面。</p>
+<p>傾斜角度例如車用產品是+12°和−12°兩種（TI的規格書）。亮度用鏡子把光送往鏡頭的時間長短來表示。使用這種元件的投影方式稱為DLP，也用在電影院的放映機（美國MIT的Lemelson計畫）。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：MEMS是小齒輪、小馬達在轉動的「迷你機械」</p><p>實際上，身邊產品裡的MEMS，大多沒有互相摩擦的部分。它們靠像彈簧一樣彎曲的樑或振動的薄膜來動作。因為在微小的世界裡，表面互相吸附的力很強，摩擦的部分容易黏住或磨損。齒輪常被畫成好懂的插圖，但不是量產品的主角。</p></div>
+<div class="myth"><p class="myth-q">誤解：手機只靠陀螺儀得知方向</p><p>實際上，哪邊是下方（傾斜），是加速度計從重力得知的。2007年的第一代iPhone沒有陀螺儀，靠加速度計切換畫面的直向與橫向。陀螺儀負責測量旋轉速度，結合兩者的結果，才能順暢地追蹤動作。</p></div>
+<div class="myth"><p class="myth-q">誤解：MEMS是用和晶片完全不同的技術製作</p><p>實際上，鍍膜、轉印圖案、削除這些基本工具，都和晶片共通。柏克萊分校的課程講義說明，做在表面的MEMS只用晶片的製造設備就能製作。在此之上，再加上溶掉犧牲層、挖深、蓋上蓋子封住等MEMS專用的步驟。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>數字</th><th>代表什麼</th></tr></thead>
+<tbody>
+<tr><td>0.5 mm × 0.4 mm、厚2 µm</td><td>加速度計ADXL105感測部分的大小（亞德諾半導體）</td></tr>
+<tr><td>約0.5 µg</td><td>同一感測器質量塊的重量（µg是100萬分之1公克）</td></tr>
+<tr><td>約1500分之1</td><td>同一感測器受到1 g的加速度時，儲存電的難易度變化的比例</td></tr>
+<tr><td>1987年</td><td>投影機用的微小鏡子元件（DMD）做出來的年份（ASME）</td></tr>
+<tr><td>1991年</td><td>安全氣囊用的加速度計ADXL50發表的年份</td></tr>
+<tr><td>約310億個</td><td>2024年全球出貨的MEMS數量（Yole Group，2025年的發布）</td></tr>
+</tbody>
+</table>
+<p>表中的「1 g」是加速度的單位，和重量的1 g（公克）是不同的東西。質量塊的重量約0.5 µg，是1公克的200萬分之1。這麼輕的質量塊的偏移，竟然能用電讀出來。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>相關文章：「<a href="{{home}}learn/chips-inside-a-smartphone/">手機裡的半導體</a>」（MEMS以外裝在手機裡的晶片）、「<a href="{{home}}learn/how-touchscreens-work/">觸控螢幕的原理</a>」（同樣讀取儲存電難易度的變化）、「<a href="{{home}}learn/what-is-a-capacitor/">電容器是什麼？</a>」、「<a href="{{home}}learn/what-is-plasma/">電漿是什麼？</a>」</li>
+<li>用表格看差異：<a href="{{home}}compare/capacitive-vs-piezoresistive-mems/">電容式與壓阻式MEMS感測器的差異</a> / <a href="{{home}}compare/isotropic-vs-anisotropic-etching/">等向性蝕刻與非等向性蝕刻的差異</a> / <a href="{{home}}compare/koh-vs-tmah-anisotropic-etching/">KOH與TMAH的差異</a>（用藥液挖矽的方法，中級）</li>
+<li>下一步的用語：{{term:異方性エッチング|非等向性蝕刻}}、{{term:陽極接合|陽極接合}}、{{term:SOIウエハ|SOI晶圓}}、{{term:ホール素子|霍爾元件}}</li>
+</ul>
+</section>
