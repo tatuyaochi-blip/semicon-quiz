@@ -1,0 +1,194 @@
+<!--
+{
+  "title": "晶片怎麼散熱？熱的傳遞路徑與冷卻的極限",
+  "description": "晶片幾乎把用掉的電全部變成熱。本文說明熱從晶粒經金屬蓋、散熱片傳到空氣或液體的路徑，用熱阻估算溫度的方法、熱導管，以及手機、電腦與資料中心的散熱方式。",
+  "series": "everyday-chips",
+  "order": 24,
+  "minutes": 12,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["package", "power-management", "datasheet", "reliability"],
+  "terms": ["熱抵抗", "サーマルスロットリング"],
+  "sources": [
+    { "title": "D. Harris: CMOS VLSI Design, Lecture 7: Power（Harvey Mudd College E158。輸出切換時，從電源取出的能量有一半在電晶體變成熱，其餘也在放電時變成熱）", "url": "https://pages.hmc.edu/harris/class/e158/lect7-power.pdf" },
+    { "title": "Intel: Information about Temperature for Intel Processors（最高接面溫度依產品而定，多為100～110 ℃。超過時會降低頻率與功率，仍降不下來就自動關機）", "url": "https://www.intel.com/content/www/us/en/support/articles/000005597/processors.html" },
+    { "title": "Intel: What Is Throttling and How Can It Be Resolved?（溫度超過上限時，為了保護晶片而降低時脈）", "url": "https://www.intel.com/content/www/us/en/support/articles/000088048/processors.html" },
+    { "title": "Intel: Thermal Design Power (TDP) in Intel Processors（TDP是設計散熱方式時的參考值。自第12代起改稱Processor Base Power）", "url": "https://www.intel.com/content/www/us/en/support/articles/000055611/processors.html" },
+    { "title": "Intel: Core i9 processor 14900K Product Specifications（2023年第4季推出。基本功率125 W，最大渦輪功率253 W，TJUNCTION 100 ℃）", "url": "https://www.intel.com/content/www/us/en/products/sku/236773/intel-core-i9-processor-14900k-36m-cache-up-to-6-00-ghz/specifications.html" },
+    { "title": "Intel: How to Apply Thermal Paste（在金屬蓋中央放米粒到豌豆大小的少量即可）", "url": "https://www.intel.com/content/www/us/en/gaming/resources/how-to-apply-thermal-paste.html" },
+    { "title": "Fraunhofer ISE: Conventional heat pipes – evaporation and condensation（液體在熱端蒸發，在冷端凝結並放出熱；內壁的溝槽、網或燒結體以毛細力把液體送回）", "url": "https://www.heatpipes.fraunhofer.de/en/functionality.html" },
+    { "title": "Advanced Cooling Technologies: Vapor Chamber（產品資料。扁平形狀的熱導管，不論方向都能把熱擴散到整個面）", "url": "https://www.1-act.com/wp-content/uploads/2013/01/vapcham.pdf" },
+    { "title": "Apple Newsroom: Apple unveils iPhone 17 Pro and iPhone 17 Pro Max（2025年9月。把封入去離子水的均熱板以雷射焊接在鋁製機身上，把熱從A19 Pro帶走）", "url": "https://www.apple.com/newsroom/2025/09/apple-unveils-iphone-17-pro-and-iphone-17-pro-max/" },
+    { "title": "Apple Support: If your iPhone or iPad gets too hot or too cold（設想的環境溫度為0～35 ℃。玩遊戲或充電時變溫是正常的，太熱時會改變運作方式或顯示警告）", "url": "https://support.apple.com/en-us/118431" },
+    { "title": "NVIDIA: GeForce RTX 5090（規格。Total Graphics Power 575 W）", "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/" },
+    { "title": "NVIDIA: Compare GeForce Graphics Cards（各款顯示卡的規格比較。RTX 4090的Total Graphics Power為450 W）", "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/compare/" },
+    { "title": "NVIDIA: NVIDIA RTX Blackwell GPU Architecture（2025年。RTX 5090的GB202與Total Graphics Power 575 W）", "url": "https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf" },
+    { "title": "Engineering ToolBox: Thermal Conductivity of Common Materials（銅約400 W/(m·K)，25 ℃的空氣約0.026 W/(m·K)）", "url": "https://www.engineeringtoolbox.com/thermal-conductivity-d_429.html" },
+    { "title": "Upsite Technologies: Data Center Cooling Effectiveness Versus Efficiency（以相同體積計算，水能儲存的熱約為空氣的3,450倍）", "url": "https://www.upsite.com/blog/data-center-cooling-effectiveness-versus-efficiency/" },
+    { "title": "Microsoft: To cool datacenter servers, Microsoft turns to boiling liquid（2021年4月。把伺服器浸在約50 ℃就沸騰的液體中，在蓋子冷卻的蒸氣回到液體的兩相浸沒式冷卻）", "url": "https://news.microsoft.com/innovation-stories/datacenter-liquid-cooling/" }
+  ]
+}
+-->
+<p class="lead">晶片用掉的電，最後幾乎全部變成熱。熱累積起來，速度會變慢，壽命也會縮短，所以必須不斷把熱排到外面。熱會從晶片依序交給金屬蓋、散熱片，再交給空氣或液體。各段讓熱通過的難易度，決定了晶片的溫度。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>晶片變熱的原因，以及「耗電就等於發熱」的意思</li>
+<li>熱從晶片散到空氣的路徑</li>
+<li>用熱阻（℃/W）估算晶片溫度的方法</li>
+<li>熱導管與均熱板的原理</li>
+<li>手機、電腦與資料中心散熱方式的不同</li>
+</ul><p class="muted">先備知識：不需要。如果知道晶片裡有很多小開關（電晶體），會更容易閱讀（「<a href="{{home}}learn/what-is-a-transistor/">電晶體是什麼？</a>」）。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>用手機一直玩遊戲，機身會變溫。過一陣子，有時還會覺得動作有點卡。筆電開始做吃重的工作時，風扇的聲音會變大。</p>
+<p>這些都和裡面晶片發出的熱，以及把熱排掉的機制有關。新聞常提到的「資料中心的電力與冷卻」，也是同一件事的放大版。本文要依序看看，熱在哪裡產生、經過哪裡被排掉。</p>
+</section>
+
+<section>
+<h2>晶片為什麼會變熱</h2>
+<p>晶片裡有數十億個電晶體，在0和1之間切換。每次切換，都會在導線裡存入一點點電，再放掉。電流流過細小的通道時，通道的電阻會把電能變成熱。這和電暖器會變熱是同樣的原理。</p>
+<p>這種「每次切換所用的電力」，稱為{{term:動的消費電力|動態功耗}}。切換得越快，或一次切換的數量越多，熱就越多。</p>
+<p>沒有切換的時候，也會發熱。這是因為本來應該關閉的電晶體，還是會持續漏出一點點電流。這種漏電所用的電力，稱為{{term:静的消費電力|靜態功耗}}。溫度越高，漏電增加得越快，所以晶片越熱，就越容易發出更多熱。</p>
+<p>晶片雖然在做計算，但幾乎不會移動東西或發光。所以送進來的電能，最後幾乎全部變成熱。「耗電100瓦的晶片」，和「每秒發出100焦耳熱的晶片」意思幾乎相同。焦耳是能量的單位，瓦特是每秒的焦耳數。這裡省略了以訊號形式送出去的少量電能。</p>
+</section>
+
+<section>
+<h2>太熱會有什麼問題</h2>
+<p>晶片有不能超過的溫度。最熱的地方，是電晶體排列的部分。這部分的溫度稱為「接面溫度」，上限依產品而定。根據Intel的說明，該公司大多數處理器的上限是100～110 ℃。</p>
+<p>接近上限時，晶片會自己降低運作速度（頻率）與電壓，減少發熱。這種作用稱為{{term:サーマルスロットリング|熱節流}}（常說的「降頻」）。如果溫度還是降不下來，為了避免損壞，會自動切斷電源。散熱能力不夠，晶片就跑不出原本的速度。</p>
+<p>另一個問題是壽命。在高溫下，導線的金屬一點一點移動等劣化，會進行得更快。溫度和劣化速度的關係，在「<a href="{{home}}learn/arrhenius-equation-in-chips/">阿瑞尼斯方程式是什麼？</a>」中詳細說明。常聽到的「溫度升高10 ℃，壽命減半」，只是會隨條件改變的參考值。</p>
+</section>
+
+<section>
+<h2>熱的路徑：從晶片到空氣</h2>
+<p>以電腦的CPU為例，看看熱的路徑。CPU的本體，是從圓形的矽板（晶圓）切下來的小片。這一小片稱為「晶粒」。晶粒翻面放在一塊有佈線的小板子（基板）上。所以，晶粒的背面朝上。</p>
+<p>晶粒的背面上，蓋著一片金屬蓋。金屬蓋負責把小小晶粒的熱擴散到較大的面積，所以也稱為均熱片。再往上，壓著一塊排滿金屬鰭片的散熱片。熱依序經過晶粒 → 金屬蓋 → 散熱片 → 空氣。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img"><title>CPU的剖面。由下而上依序是基板、晶粒、TIM、金屬蓋、散熱膏、散熱片，熱由下往上散到空氣</title>
+<line x1="60" y1="44" x2="60" y2="22" class="ac2"/><polygon points="60,12 54,24 66,24" class="fa2"/>
+<line x1="100" y1="44" x2="100" y2="22" class="ac2"/><polygon points="100,12 94,24 106,24" class="fa2"/>
+<line x1="140" y1="44" x2="140" y2="22" class="ac2"/><polygon points="140,12 134,24 146,24" class="fa2"/>
+<text x="180" y="32">散到空氣</text>
+<rect x="35" y="50" width="10" height="70" class="metal"/>
+<rect x="55" y="50" width="10" height="70" class="metal"/>
+<rect x="75" y="50" width="10" height="70" class="metal"/>
+<rect x="95" y="50" width="10" height="70" class="metal"/>
+<rect x="115" y="50" width="10" height="70" class="metal"/>
+<rect x="135" y="50" width="10" height="70" class="metal"/>
+<rect x="155" y="50" width="10" height="70" class="metal"/>
+<rect x="30" y="120" width="140" height="20" class="metal"/>
+<rect x="55" y="140" width="90" height="8" class="dep"/>
+<rect x="40" y="148" width="120" height="20" class="metal"/>
+<rect x="40" y="168" width="10" height="58" class="metal"/>
+<rect x="150" y="168" width="10" height="58" class="metal"/>
+<rect x="70" y="168" width="60" height="8" class="dep"/>
+<rect x="70" y="176" width="60" height="28" class="n"/>
+<text x="100" y="196" text-anchor="middle">晶粒</text>
+<circle cx="78" cy="214" r="4" class="ink"/>
+<circle cx="92" cy="214" r="4" class="ink"/>
+<circle cx="108" cy="214" r="4" class="ink"/>
+<circle cx="122" cy="214" r="4" class="ink"/>
+<rect x="25" y="226" width="150" height="22" class="ox"/>
+<line x1="12" y1="180" x2="12" y2="64" class="ac"/><polygon points="12,52 6,66 18,66" class="fa"/>
+<text x="12" y="202" text-anchor="middle" class="a">熱</text>
+<line x1="166" y1="86" x2="176" y2="86" class="thin"/><text x="180" y="91">散熱片</text>
+<line x1="146" y1="144" x2="176" y2="144" class="thin"/><text x="180" y="149">散熱膏</text>
+<line x1="161" y1="176" x2="176" y2="176" class="thin"/><text x="180" y="181">金屬蓋</text>
+<line x1="131" y1="172" x2="176" y2="208" class="thin"/><text x="180" y="213">TIM</text>
+<text x="180" y="243">基板</text>
+<text x="170" y="282" text-anchor="middle" class="m">厚度比例與實際不同</text>
+</svg><figcaption class="fig-cap">從側面切開CPU的圖。熱由下方的晶粒，往上方的空氣流動（左側箭頭）。散熱膏也是TIM的一種。省略的部分：從基板散到機器電路板的熱、風扇、晶粒內部的導線。</figcaption></figure>
+<p>圖中的「TIM」，是填補縫隙的材料。金屬表面看起來很平，仔細看卻凹凸不平，疊在一起時，小縫隙裡會留下空氣。空氣非常不容易傳熱，傳熱能力不到銅的一萬分之一。所以要在縫隙裡填入容易傳熱的膏狀材料等。這種材料稱為TIM（熱介面材料，連接熱的材料）。</p>
+<p>散熱片排滿鰭片，是為了增加和空氣接觸的面積。因為熱只會從金屬的表面傳到空氣。包住晶片的封裝有什麼功能，在「<a href="{{home}}learn/what-is-chip-packaging/">半導體封裝是什麼？</a>」中說明。</p>
+</section>
+
+<section>
+<h2>熱阻：把熱的難通過程度變成數字</h2>
+<p>熱路徑上的每一段，都有「熱不容易通過的程度」。這稱為{{term:熱抵抗|熱阻}}。單位是「℃/W」，表示讓1瓦的熱通過時，入口和出口之間會產生幾℃的溫差。數字越小，熱越容易通過。</p>
+<p>溫差由熱量和熱阻相乘決定。例如，假設從散熱片到空氣的熱阻是0.3 ℃/W。讓100瓦的熱通過，會產生100 × 0.3 = 30 ℃的溫差。如果室內空氣是25 ℃，散熱片約為55 ℃。</p>
+<p>從晶粒到散熱片的部分也有熱阻。假設晶粒、TIM、金屬蓋、散熱膏合計0.2 ℃/W，又會產生20 ℃的溫差。路徑上的熱阻可以相加，所以晶粒的溫度是25 + 30 + 20 = 75 ℃。距離上限100 ℃還有餘裕。這裡的數字是說明用的例子，實際的值會隨產品和安裝方式改變。</p>
+<p>風扇停下來時，散熱片到空氣的熱阻會增加，例如變成1.0 ℃/W。這樣晶粒的溫度就是25 + 100 + 20 = 145 ℃，超過上限。實際上，在那之前熱節流就會啟動，降低速度直到發熱減少。從耗電和熱阻來計算，可以用<a href="{{home}}tools/junction-temperature-calculator/">接面溫度計算器</a>試試看。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>熱的路徑，有點像接在一起的好幾條水管。要讓同樣多的水一直流，水管越細就要壓得越用力。接的水管越多，需要的壓力就一段段相加。相似的只有一點：「流量 × 難通過的程度 = 需要的差」，而且難通過的程度可以相加。</p><p class="analogy-limit"><strong>比喻的限制：</strong>熱不只在管子裡走，而是會往所有方向擴散。另外，剛開機時，熱會先用來加熱零件本身，所以溫度是慢慢上升的。水管的比喻表現不出這段「變熱所需的時間」。散熱片的熱阻會隨風量大幅改變，這點水管也沒有。</p></aside>
+</section>
+
+<section>
+<h2>風扇與熱導管</h2>
+<p>風扇會替換散熱片周圍的空氣。在鰭片表面變熱的空氣馬上被吹走，冷空氣持續接觸鰭片，熱就更容易傳到空氣。也就是說，風扇是降低散熱片到空氣之間熱阻的工具。代價是轉得越快，聲音越大。</p>
+<p>筆電裡，晶片和風扇常常離得很遠。所以要用細細的銅管，把熱運到遠處。這稱為熱導管。管子裡的空氣已經抽掉，並裝有少量液體（多半是水）。</p>
+<p>在熱的一端，液體蒸發成氣體。氣體在管內移到冷的一端，在那裡冷卻後變回液體。變回液體時，會把帶來的熱放給鰭片。液體滲進內壁細小的溝槽或網，被吸回熱的一端。這和把面紙的一角泡進水裡，水會往上爬是同一種力。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 220" role="img"><title>熱導管的剖面。液體在左側熱端蒸發，蒸氣移到右側凝結，液體沿著內壁回到左側</title>
+<text x="85" y="40" text-anchor="middle">蒸發（變成氣體）</text>
+<text x="265" y="40" text-anchor="middle">凝結（變回液體）</text>
+<rect x="20" y="62" width="300" height="86" rx="20" class="hole"/>
+<rect x="34" y="72" width="272" height="14" class="dep"/>
+<rect x="34" y="124" width="272" height="14" class="dep"/>
+<text x="170" y="104" text-anchor="middle">蒸氣移動</text>
+<line x1="100" y1="114" x2="232" y2="114" class="ac2"/><polygon points="242,114 230,108 230,120" class="fa2"/>
+<line x1="240" y1="131" x2="110" y2="131" class="ac"/><polygon points="100,131 112,125 112,137" class="fa"/>
+<line x1="40" y1="186" x2="40" y2="164" class="ac"/><polygon points="40,154 34,166 46,166" class="fa"/>
+<line x1="68" y1="186" x2="68" y2="164" class="ac"/><polygon points="68,154 62,166 74,166" class="fa"/>
+<line x1="276" y1="156" x2="276" y2="176" class="ac"/><polygon points="276,186 270,174 282,174" class="fa"/>
+<line x1="304" y1="156" x2="304" y2="176" class="ac"/><polygon points="304,186 298,174 310,174" class="fa"/>
+<text x="54" y="208" text-anchor="middle">晶片的熱</text>
+<text x="290" y="208" text-anchor="middle">傳給鰭片</text>
+<text x="170" y="176" text-anchor="middle" class="m">液體沿內壁回流</text>
+</svg><figcaption class="fig-cap">把熱導管縱向切開的圖。上下的帶狀部分，是讓液體滲入的內壁（細小的溝槽、網、燒結的金屬粉末）。省略的部分：管子壓扁的形狀與彎曲、鰭片和風扇。</figcaption></figure>
+<p>這種方法能有效運送熱，是因為液體變成氣體時會吸收大量的熱。這和汗水乾掉時身體會變涼是一樣的。管內抽掉空氣、壓力很低，所以水在低於100 ℃時也會大量蒸發。把液體送回去的不是重力，而是內壁的吸力，所以換個方向也能運作。不過，能運送的熱量會隨方向改變。</p>
+</section>
+
+<section>
+<h2>手機：沒有風扇也要散熱</h2>
+<p>很多手機既沒有風扇，也沒有鰭片。因為薄薄的機身放不下，而且為了防水防塵，也很難開孔。所以，要用薄板或薄片把晶片的熱擴散到整個機身，再從機身表面慢慢散到空氣中。</p>
+<p>擴散熱的零件之一，是扁平形狀的熱導管。這稱為均熱板。細管是把熱往一個方向運送，均熱板因為是板狀，可以把熱擴散到整個面。例如，Apple在2025年9月發表了iPhone 17 Pro。說明中提到，把封入水的均熱板焊接在鋁製機身上。</p>
+<p>即使如此，手機的散熱能力還是有極限。因為表面不能熱到人拿不住。長時間玩遊戲時，會用熱節流降低速度，減少發熱。Apple的支援說明也提到，溫度過高時會改變運作方式來調節溫度，溫度再升高就會顯示警告畫面。</p>
+</section>
+
+<section>
+<h2>電腦與GPU：數百瓦的熱</h2>
+<p>電腦的CPU和GPU，發出的熱比手機晶片多得多。散熱裝置是以晶片持續做重度工作時的發熱參考值為基準來設計。這個參考值稱為{{term:TDP(熱設計電力)|TDP}}（熱設計功耗）。Intel從第12代Core起，把這個值稱為「Processor Base Power（基本功率）」。</p>
+<p>例如，Intel在2023年推出的Core i9-14900K，基本功率是125瓦。提高速度運作時，最多會用到253瓦。接面溫度的上限是100 ℃。</p>
+<p>用於繪圖和AI計算的GPU，發出的熱更多。NVIDIA在2025年推出的GeForce RTX 5090，整張卡可用的功率上限是575瓦。2022年的RTX 4090是450瓦。沒在做重度工作時，會以比這更少的電力運作。這類顯示卡會在大型散熱片上搭配熱導管或均熱板，再用多個風扇冷卻。GPU為什麼用於AI，在「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」中說明。</p>
+</section>
+
+<section>
+<h2>資料中心：從空氣到液體</h2>
+<p>資料中心裡，裝著這類晶片的伺服器排列了好幾千台。伺服器會疊放在稱為機櫃的高架子上。塞滿AI用GPU的機櫃，光靠空氣已經運不走所有的熱。整棟建築物的冷卻方式，在「<a href="{{home}}learn/what-is-a-data-center/">資料中心是什麼？</a>」中說明。</p>
+<p>因此，用液體運送熱的方法越來越多。以相同體積比較，水能儲存的熱約為空氣的3,500倍。常見的方法，是在晶片正上方貼上內部有液體流動的金屬板。金屬板接收的熱，會隨著液體經由管線運到伺服器外面。</p>
+<p>也有把整台伺服器浸在不導電液體裡的方法，稱為浸沒式冷卻。Microsoft在2021年宣布，開始使用把伺服器浸在約50 ℃就會沸騰的液體中的方式。晶片的熱讓液體沸騰，蒸氣在容器的蓋子冷卻後變回液體，再落下來。這是把熱導管「蒸發、凝結再回流」的原理，用在整個容器上。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：風扇裝得越多，晶片就冷卻得越好</p><p>實際上，風扇能降低的，只有散熱片到空氣的熱阻。在上面的例子裡，晶粒到散熱片的0.2 ℃/W不會因風扇改變，100瓦時一定會留下20 ℃的溫差。而且，如果變熱的空氣沒有出口，風扇只是在攪動同一團空氣。重要的不是數量，而是冷空氣進來、熱空氣出去的氣流。</p></div>
+<div class="myth"><p class="myth-q">誤解：機身變熱，就是壞掉的徵兆</p><p>實際上，晶片內部是設計成可以在接近100 ℃下使用的，外側變溫是正常的。Apple也說明，玩遊戲或無線充電時iPhone變溫是常有的事。晶片也有保護機制，太熱時會降低速度或切斷電源。不過，如果出現溫度警告，或什麼都沒做卻很燙，就要停止使用、讓它冷卻；一直發生的話，就送去檢查。</p></div>
+<div class="myth"><p class="myth-q">誤解：散熱膏塗得越厚，冷卻效果越好</p><p>實際上，散熱膏雖然比空氣容易傳熱得多，卻比銅等金屬難傳熱得多。它的任務，是把金屬之間縫隙裡的空氣擠出去。塗得太厚，熱就要通過更長一段不易傳熱的層，熱阻反而增加。Intel也建議，在金屬蓋中央放米粒到豌豆大小的少量即可。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>補充</th></tr></thead>
+<tbody>
+<tr><td>Intel處理器的接面溫度上限</td><td>多為100～110 ℃</td><td>依產品而定（Intel）</td></tr>
+<tr><td>Core i9-14900K（2023年）</td><td>基本125 W，最大253 W</td><td>接面溫度上限100 ℃（Intel）</td></tr>
+<tr><td>GeForce RTX 4090（2022年）</td><td>450 W</td><td>整張卡的功率上限（NVIDIA）</td></tr>
+<tr><td>GeForce RTX 5090（2025年）</td><td>575 W</td><td>整張卡的功率上限（NVIDIA）</td></tr>
+<tr><td>說明用的例子：100 W通過0.3 ℃/W</td><td>30 ℃的溫差</td><td>熱量 × 熱阻</td></tr>
+<tr><td>傳熱的難易：銅與空氣</td><td>約400比約0.026</td><td>以導熱能力的單位W/(m·K)比較的值。相差一萬倍以上</td></tr>
+<tr><td>相同體積能儲存的熱：水與空氣</td><td>約3,500倍</td><td>由25 ℃附近的性質計算</td></tr>
+<tr><td>iPhone設想的環境溫度</td><td>0～35 ℃</td><td>Apple支援說明</td></tr>
+</tbody>
+</table>
+<p>晶片的功率數字，每推出新一代就會改變。上表的產品數字，都是各自推出時的規格。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用計算試試看：<a href="{{home}}tools/junction-temperature-calculator/">接面溫度計算器</a>（從耗電與熱阻求出晶片的溫度與餘裕）、<a href="{{home}}tools/cmos-power-calculator/">CMOS功耗計算工具</a>（求出切換與漏電的功耗）</li>
+<li>用表格看差異：<a href="{{home}}compare/bga-vs-qfp-vs-qfn/">BGA、QFP、QFN的差異</a>（形狀不同，散熱方式也不同）、<a href="{{home}}compare/wire-bonding-vs-flip-chip/">打線接合與覆晶的差異</a></li>
+<li>用圖來看：<a href="{{home}}figures/">圖解一覽</a>（包括把熱阻串接起來的模型圖等）</li>
+<li>下一步的用語：{{term:DVFS(動的電圧・周波数制御)|DVFS（動態電壓頻率調整）}}（配合工作量改變電壓與速度）、{{term:パワーキャップ|功率上限控制}}（為電力設定上限並加以抑制）</li>
+<li>相關文章：「<a href="{{home}}learn/chips-inside-a-smartphone/">手機裡有哪些半導體？</a>」「<a href="{{home}}learn/what-is-a-power-semiconductor/">功率半導體是什麼？</a>」</li>
+</ul>
+</section>

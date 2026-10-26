@@ -1,0 +1,194 @@
+<!--
+{
+  "title": "How Are Chips Cooled? Heat Sinks, Heat Pipes and Limits",
+  "description": "Chips turn nearly all their power into heat. Learn how heat flows from die to air, thermal resistance, heat pipes, and phone, PC and data center cooling.",
+  "series": "everyday-chips",
+  "order": 24,
+  "minutes": 12,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["package", "power-management", "datasheet", "reliability"],
+  "terms": ["熱抵抗", "サーマルスロットリング"],
+  "sources": [
+    { "title": "D. Harris: CMOS VLSI Design, Lecture 7: Power (Harvey Mudd College E158; when an output switches, half the energy drawn from the supply becomes heat in the transistors, and the rest also becomes heat on discharge)", "url": "https://pages.hmc.edu/harris/class/e158/lect7-power.pdf" },
+    { "title": "Intel: Information about Temperature for Intel Processors (the maximum junction temperature is set for each product, usually 100–110 ℃; above it the chip lowers frequency and power, and shuts down automatically if that is not enough)", "url": "https://www.intel.com/content/www/us/en/support/articles/000005597/processors.html" },
+    { "title": "Intel: What Is Throttling and How Can It Be Resolved? (when the temperature goes above the limit, the clock is lowered to protect the chip)", "url": "https://www.intel.com/content/www/us/en/support/articles/000088048/processors.html" },
+    { "title": "Intel: Thermal Design Power (TDP) in Intel Processors (TDP is a guide for designing the cooling; from the 12th generation it is called Processor Base Power)", "url": "https://www.intel.com/content/www/us/en/support/articles/000055611/processors.html" },
+    { "title": "Intel: Core i9 processor 14900K Product Specifications (launched Q4 2023; Processor Base Power 125 W, Maximum Turbo Power 253 W, TJUNCTION 100 ℃)", "url": "https://www.intel.com/content/www/us/en/products/sku/236773/intel-core-i9-processor-14900k-36m-cache-up-to-6-00-ghz/specifications.html" },
+    { "title": "Intel: How to Apply Thermal Paste (place a small dab, from a grain of rice to a pea in size, at the center of the lid)", "url": "https://www.intel.com/content/www/us/en/gaming/resources/how-to-apply-thermal-paste.html" },
+    { "title": "Fraunhofer ISE: Conventional heat pipes – evaporation and condensation (liquid evaporates at the hot end and condenses at the cold end, giving off heat; grooves, mesh or sintered material on the inner wall return the liquid by capillary force)", "url": "https://www.heatpipes.fraunhofer.de/en/functionality.html" },
+    { "title": "Advanced Cooling Technologies: Vapor Chamber (product sheet; a flat heat pipe that spreads heat over a surface in any direction)", "url": "https://www.1-act.com/wp-content/uploads/2013/01/vapcham.pdf" },
+    { "title": "Apple Newsroom: Apple unveils iPhone 17 Pro and iPhone 17 Pro Max (September 2025; a vapor chamber sealed with deionized water is laser-welded into the aluminum body and moves heat away from A19 Pro)", "url": "https://www.apple.com/newsroom/2025/09/apple-unveils-iphone-17-pro-and-iphone-17-pro-max/" },
+    { "title": "Apple Support: If your iPhone or iPad gets too hot or too cold (designed for ambient temperatures of 0–35 ℃; getting warm while gaming or charging is normal, and if it gets too hot it changes how it runs or shows a warning)", "url": "https://support.apple.com/en-us/118431" },
+    { "title": "NVIDIA: GeForce RTX 5090 (specifications; Total Graphics Power 575 W)", "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/" },
+    { "title": "NVIDIA: Compare GeForce Graphics Cards (spec comparison of each card; the RTX 4090's Total Graphics Power is 450 W)", "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/compare/" },
+    { "title": "NVIDIA: NVIDIA RTX Blackwell GPU Architecture (2025; the RTX 5090's GB202 and its Total Graphics Power of 575 W)", "url": "https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf" },
+    { "title": "Engineering ToolBox: Thermal Conductivity of Common Materials (copper about 400 W/(m·K); air at 25 ℃ about 0.026 W/(m·K))", "url": "https://www.engineeringtoolbox.com/thermal-conductivity-d_429.html" },
+    { "title": "Upsite Technologies: Data Center Cooling Effectiveness Versus Efficiency (a calculation showing that, by volume, water can store about 3,450 times as much heat as air)", "url": "https://www.upsite.com/blog/data-center-cooling-effectiveness-versus-efficiency/" },
+    { "title": "Microsoft: To cool datacenter servers, Microsoft turns to boiling liquid (April 2021; two-phase immersion cooling, in which servers sit in a liquid that boils at about 50 ℃ and vapor cooled by the lid returns to the liquid)", "url": "https://news.microsoft.com/innovation-stories/datacenter-liquid-cooling/" }
+  ]
+}
+-->
+<p class="lead">A chip turns almost all the electricity it uses into heat in the end. If that heat builds up, the chip slows down and wears out sooner. So the heat must be removed all the time. It passes from the chip to a metal lid, then a heat sink, then air or liquid. How hard it is for heat to get through each step sets the chip's temperature.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>Why chips get hot, and what "power use equals heat" means</li>
+<li>The path heat takes from the chip to the air</li>
+<li>How to estimate a chip's temperature with thermal resistance (℃/W)</li>
+<li>How heat pipes and vapor chambers work</li>
+<li>How phones, PCs and data centers are cooled differently</li>
+</ul><p class="muted">Prerequisites: none. It helps to know that a chip holds many tiny switches called transistors (see "<a href="{{home}}learn/what-is-a-transistor/">What Is a Transistor?</a>").</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>Play a game on your phone for a while, and the phone gets warm. After some time, it may even feel a little sluggish. On a laptop, the fan gets louder when you start a heavy task.</p>
+<p>All of these come down to the heat the chips inside give off, and the parts that get rid of it. News about the power and cooling of data centers is the same story on a much bigger scale. This article follows heat from where it is made to where it leaves.</p>
+</section>
+
+<section>
+<h2>Why do chips get hot?</h2>
+<p>Inside a chip, billions of transistors switch between 0 and 1. Each switch puts a tiny amount of charge into the wiring and then lets it go. When current flows through a narrow path, the path's resistance turns electrical energy into heat. An electric heater warms up in the same way.</p>
+<p>The power used by this switching is called {{term:動的消費電力|dynamic power}}. The faster the switching, and the more transistors switch at once, the more heat there is.</p>
+<p>A chip makes heat even when it is not switching. A small current keeps leaking through transistors that should be off. The power lost to this leakage is called {{term:静的消費電力|static power}}. Leakage rises quickly as temperature goes up, so a hot chip tends to make even more heat.</p>
+<p>A chip computes, but it hardly moves anything or gives off light. So almost all the electrical energy that goes in ends up as heat. "A chip that uses 100 watts" means nearly the same as "a chip that gives off 100 joules of heat every second." A joule is a unit of energy, and a watt is one joule per second. Here we leave out the tiny amount of energy that leaves the chip as signals.</p>
+</section>
+
+<section>
+<h2>What goes wrong when a chip gets hot?</h2>
+<p>Every chip has a temperature it must not go above. The hottest part is the layer where the transistors sit. Its temperature is called the "junction temperature," and each product has its own limit. According to Intel, the limit is 100–110 ℃ for many of its processors.</p>
+<p>Near the limit, the chip lowers its own speed (frequency) and voltage to make less heat. This is called {{term:サーマルスロットリング|thermal throttling}}. If the temperature still does not drop, the chip shuts off its power automatically to avoid damage. Without enough cooling, a chip cannot reach its full speed.</p>
+<p>The other problem is lifetime. At high temperatures, wear speeds up, such as metal atoms in the wiring slowly moving. For how temperature and the rate of wear are linked, see "<a href="{{home}}learn/arrhenius-equation-in-chips/">Arrhenius Equation in Chips</a>." The common saying "10 ℃ hotter halves the lifetime" is only a rough guide that depends on conditions.</p>
+</section>
+
+<section>
+<h2>The heat path: from chip to air</h2>
+<p>Let's follow the heat in a PC's CPU. The CPU itself is a small piece cut from a round disk of silicon, called a wafer. This piece is called the "die." The die sits upside down on a small board with wiring in it, called the substrate. So the back of the die faces up.</p>
+<p>A metal lid sits on the back of the die. The lid spreads the heat of the small die over a wider area, so it is also called a heat spreader. On top of it, a heat sink is pressed down: a block of metal with rows of fins. Heat is handed on in order: die → lid → heat sink → air.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img"><title>Cross-section of a CPU. From the bottom up: substrate, die, TIM, metal lid, thermal paste and heat sink. Heat escapes upward to the air.</title>
+<line x1="60" y1="44" x2="60" y2="22" class="ac2"/><polygon points="60,12 54,24 66,24" class="fa2"/>
+<line x1="100" y1="44" x2="100" y2="22" class="ac2"/><polygon points="100,12 94,24 106,24" class="fa2"/>
+<line x1="140" y1="44" x2="140" y2="22" class="ac2"/><polygon points="140,12 134,24 146,24" class="fa2"/>
+<text x="180" y="32">To the air</text>
+<rect x="35" y="50" width="10" height="70" class="metal"/>
+<rect x="55" y="50" width="10" height="70" class="metal"/>
+<rect x="75" y="50" width="10" height="70" class="metal"/>
+<rect x="95" y="50" width="10" height="70" class="metal"/>
+<rect x="115" y="50" width="10" height="70" class="metal"/>
+<rect x="135" y="50" width="10" height="70" class="metal"/>
+<rect x="155" y="50" width="10" height="70" class="metal"/>
+<rect x="30" y="120" width="140" height="20" class="metal"/>
+<rect x="55" y="140" width="90" height="8" class="dep"/>
+<rect x="40" y="148" width="120" height="20" class="metal"/>
+<rect x="40" y="168" width="10" height="58" class="metal"/>
+<rect x="150" y="168" width="10" height="58" class="metal"/>
+<rect x="70" y="168" width="60" height="8" class="dep"/>
+<rect x="70" y="176" width="60" height="28" class="n"/>
+<text x="100" y="196" text-anchor="middle">Die</text>
+<circle cx="78" cy="214" r="4" class="ink"/>
+<circle cx="92" cy="214" r="4" class="ink"/>
+<circle cx="108" cy="214" r="4" class="ink"/>
+<circle cx="122" cy="214" r="4" class="ink"/>
+<rect x="25" y="226" width="150" height="22" class="ox"/>
+<line x1="12" y1="180" x2="12" y2="64" class="ac"/><polygon points="12,52 6,66 18,66" class="fa"/>
+<text x="2" y="202" class="a">Heat</text>
+<line x1="166" y1="86" x2="176" y2="86" class="thin"/><text x="180" y="91">Heat sink</text>
+<line x1="146" y1="144" x2="176" y2="144" class="thin"/><text x="180" y="149">Thermal paste</text>
+<line x1="161" y1="176" x2="176" y2="176" class="thin"/><text x="180" y="181">Metal lid</text>
+<line x1="131" y1="172" x2="176" y2="208" class="thin"/><text x="180" y="213">TIM</text>
+<text x="180" y="243">Substrate</text>
+<text x="170" y="282" text-anchor="middle" class="m">Thicknesses not to scale</text>
+</svg><figcaption class="fig-cap">A CPU cut open and seen from the side. Heat flows from the die at the bottom up to the air at the top (arrow on the left). Thermal paste is also a kind of TIM. Left out: heat that escapes through the substrate into the device's board, the fan, and the wiring inside the die.</figcaption></figure>
+<p>The "TIM" in the figure is a material that fills gaps. Metal surfaces look flat, but up close they are bumpy. When two are stacked, tiny pockets of air remain between them. Air conducts heat very poorly, less than 1/10,000 as well as copper. So a paste or other material that conducts heat well is put in the gaps. This is called a TIM, short for thermal interface material.</p>
+<p>A heat sink has rows of fins to give it more surface touching the air. That matters because heat moves into the air only at the metal's surface. For what the package around a chip does, see "<a href="{{home}}learn/what-is-chip-packaging/">What Is Semiconductor Packaging?</a>"</p>
+</section>
+
+<section>
+<h2>Thermal resistance: a number for how hard heat flows</h2>
+<p>Each step on the heat path makes it harder for heat to flow, to some degree. This is called {{term:熱抵抗|thermal resistance}}. Its unit is ℃/W. It tells you the temperature difference between the entry and exit when 1 watt of heat passes through. The smaller the number, the more easily heat flows.</p>
+<p>The temperature difference equals the amount of heat times the thermal resistance. For example, say the thermal resistance from the heat sink to the air is 0.3 ℃/W. Passing 100 watts of heat creates a difference of 100 × 0.3 = 30 ℃. If the room air is 25 ℃, the heat sink is about 55 ℃.</p>
+<p>The part from the die to the heat sink also has thermal resistance. Say the die, TIM, lid and paste add up to 0.2 ℃/W. That adds another 20 ℃. Thermal resistances along a path add up, so the die is at 25 + 30 + 20 = 75 ℃. That still leaves room below the 100 ℃ limit. These numbers are only examples. Real values depend on the product and how it is mounted.</p>
+<p>If the fan stops, the thermal resistance from heat sink to air rises to, say, 1.0 ℃/W. Then the die would reach 25 + 100 + 20 = 145 ℃, above the limit. In practice, thermal throttling kicks in before that and cuts speed until the heat drops. You can try this calculation from power and thermal resistance with the <a href="{{home}}tools/junction-temperature-calculator/">junction temperature calculator</a>.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>A heat path is a bit like several hoses joined end to end. To keep the same amount of water flowing, you must push harder through a narrower hose. The more hoses you join, the more push you need, and the amounts simply add up. The one thing that matches is this: "amount flowing × resistance = difference needed," and resistances add up.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> Heat does not stay inside a pipe; it spreads in every direction. Also, right after power-on, heat first goes into warming the parts themselves, so the temperature rises slowly. The hose picture cannot show this warm-up time. And a hose has nothing like a heat sink, whose thermal resistance changes a lot with airflow.</p></aside>
+</section>
+
+<section>
+<h2>Fans and heat pipes</h2>
+<p>A fan replaces the air around the heat sink. Air warmed at the fins flows away at once, and cool air keeps touching them. So heat moves into the air more easily. In other words, a fan lowers the thermal resistance from heat sink to air. The trade-off is noise: the faster it spins, the louder it gets.</p>
+<p>In laptops, the chip and the fan are often far apart. So a thin copper tube carries the heat over the distance. This is called a heat pipe. The air inside the tube has been pumped out, and it holds a little liquid, usually water.</p>
+<p>At the hot end, the liquid evaporates into a gas. The gas moves through the tube to the cold end, where it cools and turns back into liquid. As it does, it gives the heat it carried to the fins. The liquid soaks into fine grooves or mesh on the inner wall and is drawn back to the hot end. It is the same force that pulls water up a tissue when you dip one corner in water.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 220" role="img"><title>Cross-section of a heat pipe. Liquid evaporates at the hot left end, the vapor moves right and condenses, and the liquid returns left along the inner wall.</title>
+<text x="85" y="40" text-anchor="middle">Liquid → vapor</text>
+<text x="265" y="40" text-anchor="middle">Vapor → liquid</text>
+<rect x="20" y="62" width="300" height="86" rx="20" class="hole"/>
+<rect x="34" y="72" width="272" height="14" class="dep"/>
+<rect x="34" y="124" width="272" height="14" class="dep"/>
+<text x="170" y="104" text-anchor="middle">Vapor moves</text>
+<line x1="100" y1="114" x2="232" y2="114" class="ac2"/><polygon points="242,114 230,108 230,120" class="fa2"/>
+<line x1="240" y1="131" x2="110" y2="131" class="ac"/><polygon points="100,131 112,125 112,137" class="fa"/>
+<line x1="40" y1="186" x2="40" y2="164" class="ac"/><polygon points="40,154 34,166 46,166" class="fa"/>
+<line x1="68" y1="186" x2="68" y2="164" class="ac"/><polygon points="68,154 62,166 74,166" class="fa"/>
+<line x1="276" y1="156" x2="276" y2="176" class="ac"/><polygon points="276,186 270,174 282,174" class="fa"/>
+<line x1="304" y1="156" x2="304" y2="176" class="ac"/><polygon points="304,186 298,174 310,174" class="fa"/>
+<text x="54" y="208" text-anchor="middle">Chip heat</text>
+<text x="290" y="208" text-anchor="middle">To fins</text>
+<text x="170" y="176" text-anchor="middle" class="m">Liquid flows back</text>
+</svg><figcaption class="fig-cap">A heat pipe cut along its length. The bands at the top and bottom are the inner wall that the liquid soaks into (fine grooves, mesh or baked metal powder). Left out: the pipe's flattened shape and bends, and the fins and fan.</figcaption></figure>
+<p>This carries heat well because a liquid absorbs a lot of heat when it turns into a gas. It is the same reason your body cools as sweat dries. With the air pumped out, the pressure inside is low, so water evaporates readily below 100 ℃. The liquid returns by the wall's wicking force, not by gravity, so the pipe works in any position. But how much heat it can carry does change with its position.</p>
+</section>
+
+<section>
+<h2>Phones: cooling without a fan</h2>
+<p>Most phones have no fan and no fins. These would not fit in a thin body, and holes are hard to add when the phone must keep out water and dust. Instead, thin plates and sheets spread the chip's heat across the whole body. The heat then escapes slowly from the body's surface into the air.</p>
+<p>One of the parts that spreads heat is a flat heat pipe. This is called a vapor chamber. A thin tube carries heat in one direction, but a plate can spread heat across a whole surface. For example, Apple announced the iPhone 17 Pro in September 2025. Apple says its vapor chamber, sealed with water, is welded into the aluminum body.</p>
+<p>Even so, a phone can only get rid of so much heat. Its surface cannot get hotter than a person can hold. During long gaming sessions, thermal throttling lowers the speed to make less heat. Apple's support page says the same. If the phone gets too hot, it changes how it runs to control its temperature. If it gets hotter still, it shows a warning screen.</p>
+</section>
+
+<section>
+<h2>PCs and GPUs: hundreds of watts of heat</h2>
+<p>A PC's CPU or GPU gives off far more heat than a phone chip. Cooling is designed around a guide figure: the heat a chip gives off when it keeps doing heavy work. This figure is called {{term:TDP(熱設計電力)|TDP}} (thermal design power). Since its 12th-generation Core chips, Intel has called this value "Processor Base Power."</p>
+<p>For example, Intel's Core i9-14900K, released in 2023, has a base power of 125 watts. When it speeds up, it uses up to 253 watts. Its junction temperature limit is 100 ℃.</p>
+<p>GPUs, used for graphics and AI computing, give off even more heat. NVIDIA released the GeForce RTX 5090 in 2025. Its power limit for the whole card is 575 watts. The RTX 4090 of 2022 had a limit of 450 watts. When not doing heavy work, these cards use less power than this. Cards like these are cooled by a large heat sink with heat pipes or a vapor chamber, plus several fans. For why GPUs are used for AI, see "<a href="{{home}}learn/why-gpus-for-ai/">Why Are GPUs Used for AI?</a>"</p>
+</section>
+
+<section>
+<h2>Data centers: from air to liquid</h2>
+<p>In a data center, thousands of servers holding chips like these stand in rows. Servers are stacked on tall shelves called racks. In racks packed with AI GPUs, air alone can no longer carry away all the heat. For how a whole building is cooled, see "<a href="{{home}}learn/what-is-a-data-center/">What Is a Data Center?</a>"</p>
+<p>That is why using liquid to carry heat is spreading. For the same volume, water can store about 3,500 times as much heat as air. A common method presses a metal plate with liquid flowing inside it right on top of the chip. The heat the plate picks up travels with the liquid through pipes out of the server.</p>
+<p>Another method sinks whole servers in a liquid that does not conduct electricity. This is called immersion cooling. In 2021, Microsoft announced it had started sinking servers in a liquid that boils at about 50 ℃. The chips' heat makes the liquid boil. The vapor is cooled by the tank's lid, turns back into liquid and falls back down. It is the heat pipe's "evaporate, condense and return" idea, used on a whole tank.</p>
+</section>
+
+<section>
+<h2>Common myths</h2>
+<div class="myth"><p class="myth-q">Myth: The more fans you add, the better the chip is cooled</p><p>In fact, fans can only lower the thermal resistance from the heat sink to the air. In the example above, fans do not change the 0.2 ℃/W from die to heat sink. At 100 watts, a 20 ℃ difference always remains. Also, if warm air has no way out, fans just stir the same air around. What matters is not the number of fans but a flow where cool air comes in and warm air goes out.</p></div>
+<div class="myth"><p class="myth-q">Myth: A device getting hot is a sign that it is broken</p><p>In fact, the inside of a chip is built to work at up to nearly 100 ℃, so it is normal for the outside to feel warm. Apple also says it is common for an iPhone to get warm during games or wireless charging. Chips also have protection that slows them down or shuts them off if they get too hot. But if a temperature warning appears, or the device is hot while doing nothing, stop using it and let it cool. If it keeps happening, have it checked.</p></div>
+<div class="myth"><p class="myth-q">Myth: The thicker you apply thermal paste, the better it cools</p><p>In fact, paste conducts heat much better than air, but much worse than metals such as copper. Its job is to push out the air in the gaps between metal surfaces. A thick layer makes heat travel farther through a poor conductor, which raises the thermal resistance. Intel, too, advises placing just a small dab, from a grain of rice to a pea in size, at the center of the lid.</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Item</th><th>Value</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>Junction temperature limit of Intel processors</td><td>Usually 100–110 ℃</td><td>Set for each product (Intel)</td></tr>
+<tr><td>Core i9-14900K (2023)</td><td>Base 125 W, max 253 W</td><td>Junction temperature limit 100 ℃ (Intel)</td></tr>
+<tr><td>GeForce RTX 4090 (2022)</td><td>450 W</td><td>Power limit for the whole card (NVIDIA)</td></tr>
+<tr><td>GeForce RTX 5090 (2025)</td><td>575 W</td><td>Power limit for the whole card (NVIDIA)</td></tr>
+<tr><td>Example: 100 W through 0.3 ℃/W</td><td>30 ℃ temperature difference</td><td>Heat × thermal resistance</td></tr>
+<tr><td>How well heat is conducted: copper vs air</td><td>About 400 vs about 0.026</td><td>In W/(m·K), the unit of thermal conductivity; a gap of more than 10,000 times</td></tr>
+<tr><td>Heat stored per volume: water vs air</td><td>About 3,500 times</td><td>Calculated from properties near 25 ℃</td></tr>
+<tr><td>Surrounding temperature an iPhone is designed for</td><td>0–35 ℃</td><td>Apple support page</td></tr>
+</tbody>
+</table>
+<p>Chip power figures change with each new generation. The product figures above are the specs at each launch.</p>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Try the math: the <a href="{{home}}tools/junction-temperature-calculator/">junction temperature calculator</a> (find a chip's temperature and margin from its power and thermal resistance), the <a href="{{home}}tools/cmos-power-calculator/">CMOS power calculator</a> (find switching and leakage power)</li>
+<li>See the differences in a table: <a href="{{home}}compare/bga-vs-qfp-vs-qfn/">BGA vs QFP vs QFN</a> (the package shape also changes how heat escapes), <a href="{{home}}compare/wire-bonding-vs-flip-chip/">Wire bonding vs. flip chip</a></li>
+<li>See it in figures: <a href="{{home}}figures/">all figures</a> (including a model of thermal resistances joined in a chain)</li>
+<li>Terms for the next step: {{term:DVFS(動的電圧・周波数制御)|DVFS}} (changing voltage and speed to match the workload), {{term:パワーキャップ|power capping}} (setting a limit on power and holding to it)</li>
+<li>Related articles: "<a href="{{home}}learn/chips-inside-a-smartphone/">What Chips Are Inside a Smartphone?</a>" and "<a href="{{home}}learn/what-is-a-power-semiconductor/">What Is a Power Semiconductor?</a>"</li>
+</ul>
+</section>
