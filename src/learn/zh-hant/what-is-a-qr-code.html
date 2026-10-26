@@ -1,0 +1,612 @@
+<!--
+{
+  "title": "QR Code是什麼？髒污也能讀取的原理",
+  "description": "QR Code是用黑白小方塊表示文字與數字的二維條碼。本文說明3個大方塊的作用、修復髒污的錯誤更正（里德－所羅門碼）、遮罩、手機掃描讀取的流程，以及如何提防QR Code詐騙。",
+  "series": "it-security-life",
+  "order": 9,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["info-theory", "security", "image-sensor", "web-tech"],
+  "terms": ["前方誤り訂正(FEC)"],
+  "sources": [
+    { "title": "DENSO WAVE: History of QR Code（調查傳單、雜誌、紙箱等的印刷，選出印刷品中最少使用的比例1:1:3:1:1）", "url": "https://www.qrcode.com/en/history/" },
+    { "title": "DENSO: Creator of the QR Code Reflects on the Technology's Progress 25 Years After its Invention（2019年。2人的開發團隊，能更快讀取更多資訊的條碼）", "url": "https://www.denso.com/us-ca/en/news/newsroom/2019/20190909-01/" },
+    { "title": "DENSO: 75年史 (2) Proliferation of QR Codes（1992年由2人開始開發。條碼自1974年起用於看板）", "url": "https://www.denso.com/history/75th/en/history/chapter3/section6/infrastructure.html" },
+    { "title": "DENSO DRIVEN BASE: Believing in a Faint Light — QR Code developer Masahiro Hara（原昌宏先生於1980年進入公司，2001年轉到DENSO WAVE）", "url": "https://www.denso.com/global/en/driven-base/career-life/qr-hara_2408/" },
+    { "title": "DENSO（日文網站）：QR Code獲認定為IEEE里程碑（2020年10月。1994年由DENSO的應用機器技術部門，即現在的DENSO WAVE開發）", "url": "https://www.denso.com/jp/ja/news/newsroom/2020/201007-01/" },
+    { "title": "DENSO WAVE（日文網站）：QR Code的規格化與標準化（AIM 1997年、JIS X 0510 1999年、ISO/IEC 18004 2000年。對符合規格的QR Code不行使專利權）", "url": "https://www.qrcode.com/about/standards.html" },
+    { "title": "DENSO WAVE（日文網站）：註冊商標標示文的範例（「QR Code是株式會社DENSO WAVE的註冊商標」）", "url": "https://www.denso-wave.com/ja/adcd/support/faq/trademark/comment/hy25050115.html" },
+    { "title": "ISO/IEC 18004:2024, QR code bar code symbology specification（2024年8月發行的第4版）", "url": "https://www.iso.org/standard/83389.html" },
+    { "title": "DENSO WAVE（日文網站）：QR Code是什麼？（QR是Quick Response的縮寫。以高速讀取為目標開發）", "url": "https://www.qrcode.com/about/" },
+    { "title": "DENSO WAVE: Information capacity and versions of QR Code（版本1為21×21，每次增加4個模組，版本40為177×177）", "url": "https://www.qrcode.com/en/about/version.html" },
+    { "title": "Thonky.com: QR Code Tutorial — Character Capacities（轉載ISO/IEC 18004的表格。版本1在等級L為數字41位、位元組17個，在等級H為數字17位。版本40、等級L為數字7,089位、英數字4,296字、位元組2,953個、漢字1,817字）", "url": "https://www.thonky.com/qr-code-tutorial/character-capacities" },
+    { "title": "DENSO WAVE（日文網站）：關於錯誤更正功能（等級L、M、Q、H可還原全體碼字的約7%、15%、25%、30%。依髒污或破損的狀況，有時無法還原。工廠等容易髒污的環境用Q或H）", "url": "https://www.qrcode.com/about/error_correction.html" },
+    { "title": "DENSO WAVE（日文網站）：讀取問題的例子（疊在QR Code上的文字或圖畫、空白不足，會造成無法讀取）", "url": "https://www.qrcode.com/howto/trouble.html" },
+    { "title": "KEYENCE（日文網站）：QR Code的原理（定位圖案、時序圖案、校正圖案、格式資訊、遮罩）", "url": "https://www.keyence.co.jp/ss/products/autoid/codereader/basic2d_qr.jsp" },
+    { "title": "I. S. Reed, G. Solomon: Polynomial Codes over Certain Finite Fields, J. SIAM 8(2), 300–304 (1960)", "url": "https://epubs.siam.org/doi/10.1137/0108018" },
+    { "title": "A. Hulpke, Colorado State University: Mathematics 366 Reed Solomon Codes（CD的錯誤更正。有2個備用符號，就能修正1個不知道位置的錯誤）", "url": "https://www.math.colostate.edu/~hulpke/lectures/m366/reedsolomon.pdf" },
+    { "title": "Reliability on QR codes and Reed-Solomon codes, arXiv:2407.17364（8種遮罩、格式資訊、里德－所羅門碼的用法）", "url": "https://arxiv.org/pdf/2407.17364" },
+    { "title": "DENSO WAVE: Micro QR Code（定位圖案只有1個，空白區為2個模組，最大的M4為17×17、數字35位）", "url": "https://www.qrcode.com/en/codes/microqr.html" },
+    { "title": "DENSO WAVE（日文網站）：開發長方形的新型QR Code「rMQR Code」（2022年5月。ISO/IEC 23941:2022）", "url": "https://www.denso-wave.com/ja/adcd/info/detail__220525.html" },
+    { "title": "DENSO WAVE: rMQR Code（最大的R17×139可放數字361位）", "url": "https://www.qrcode.com/en/codes/rmqr.html" },
+    { "title": "日本防範網路釣魚協議會（Council of Anti-Phishing Japan，日文網站）：從電子郵件中的QR Code引導的網路釣魚（2024年8月28日的緊急資訊。用假冒信用卡公司的電子郵件中的QR Code，引導到假網站）", "url": "https://www.antiphishing.jp/news/alert/qr_20240828.html" },
+    { "title": "日本防範網路釣魚協議會（日文）：防範網路釣魚指引 2026年度版（只靠提醒使用者判斷URL是否正確，無法完全防止受害）", "url": "https://www.antiphishing.jp/report/antiphishing_guideline_2026.pdf" },
+    { "title": "IPA（日本資訊處理推進機構，日文）：資訊安全10大威脅2026 個人篇手冊（看板、傳單、郵寄物上的有害QR Code）", "url": "https://www.ipa.go.jp/security/10threats/omgdg50000008fi8-att/setsumei_2026_kojin.pdf" },
+    { "title": "FBI IC3: Cybercriminals Tampering with QR Codes to Steal Victim Funds（2022年1月18日。讀取後要確認URL）", "url": "https://www.ic3.gov/PSA/2022/PSA220118" },
+    { "title": "FTC Consumer Alert: Scammers hide harmful links in QR codes to steal your information（2023年12月。確認讀取App顯示的連結拼字）", "url": "https://consumer.ftc.gov/consumer-alerts/2023/12/scammers-hide-harmful-links-qr-codes-steal-your-information" },
+    { "title": "Apple Support: Scan a QR code with your iPhone or iPad（相機會顯示讀到的連結，點一下就會打開）", "url": "https://support.apple.com/en-us/102680" }
+  ]
+}
+-->
+<p class="lead">QR Code是把黑白小方塊排成縱橫的格子，用0和1表示文字與數字的條碼。它在1994年為了管理汽車零件，誕生於DENSO的開發部門（現在的DENSO WAVE）。資料中加了「修復損壞處用的備用資訊」，所以就算一部分髒了，也能還原讀取。不過，讀得到和安全是兩回事，打開之前先確認連結的去處很重要。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>QR Code誕生的原因，以及規格的概要</li>
+<li>3個大方塊等固定圖案的作用</li>
+<li>髒了也能讀的「錯誤更正」原理</li>
+<li>手機相機讀取QR Code的流程</li>
+<li>如何保護自己，避開利用QR Code的詐騙</li>
+</ul><p class="muted">先備知識：二進位（只用0和1表示數字的方法）。在「<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">電腦怎麼用0和1計算？</a>」中有說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>在商店用手機付款、火車或飛機的電子票、餐廳點餐、Wi-Fi的設定。這些都只要把手機相機對準，就能讀入很長的號碼或網頁的網址。</p>
+<p>QR Code的內容，只是一串文字或數字。如果內容是網頁的網址，手機就會試著打開那個網頁。如果是付款用的號碼，就會進入付款畫面。決定要做什麼的不是QR Code，而是讀取它的App。</p>
+</section>
+
+<section>
+<h2>QR Code從哪裡來</h2>
+<p>QR Code在1994年，誕生於汽車零件製造商DENSO的開發部門。這個部門在2001年獨立出來，成為現在的DENSO WAVE。帶領開發的是原昌宏先生，團隊從2個人開始。</p>
+<p>當時的工廠，在附於零件箱上的標籤（看板）使用條碼。但條碼能放的資訊少，1件物品必須貼上好幾條來讀取。因此，大家需要一種能快速讀取大量資訊、又不怕髒污的條碼。</p>
+<p>QR是Quick Response（快速回應）的縮寫，名稱代表以快速讀取為目標。另外，「QR Code」是DENSO WAVE的註冊商標。另一方面，該公司宣布，對於符合規格的QR Code，不行使所持有的專利權。因此，任何人都不必取得許可，就能製作和使用QR Code。</p>
+<p>QR Code的規則在1997年成為自動辨識產業團體AIM的規格。1999年成為日本的JIS X 0510，2000年成為國際標準ISO/IEC 18004。ISO/IEC 18004之後也持續修訂，截至2026年10月的最新版是2024年版。</p>
+</section>
+
+<section>
+<h2>原理1：黑白方塊代表0和1</h2>
+<p>把QR Code放大，會看到同樣大小的小方塊，像方格紙一樣排列。這1格稱為模組。基本上，黑色模組代表1，白色模組代表0。</p>
+<p>縱橫排列的模組數量，決定QR Code的大小。這種大小的級別稱為版本。最小的版本1是縱橫各21個。版本每升1級，縱橫各增加4個，最大的版本40是177×177個。</p>
+<p>能放的量，會隨放入的文字種類而改變。數字只有0〜9共10種，所以3位（1000種）可以合起來用10位元（1024種）表示。英文字母或漢字種類多，1個字就要用較多位元。最大的版本40能放的量如下（錯誤更正最弱的等級L時。等級稍後說明）。</p>
+<table>
+<thead><tr><th>放入的文字</th><th>最多的字數</th></tr></thead>
+<tbody>
+<tr><td>只有數字</td><td>7,089位</td></tr>
+<tr><td>英數字（數字、大寫英文字母、部分符號）</td><td>4,296字</td></tr>
+<tr><td>位元組（8位元的值）</td><td>2,953個</td></tr>
+<tr><td>漢字</td><td>1,817字</td></tr>
+</tbody>
+</table>
+<p>以日文為例，可以用漢字專用的寫法（漢字模式）放入，也可以當作位元組的排列放入。漢字模式使用的是Shift JIS這種日文字元表的編號。讀取端如果弄錯是用哪一種字元表寫的，就會出現亂碼。</p>
+</section>
+
+<section>
+<h2>原理2：固定的圖案是「讀取用的記號」</h2>
+<p>QR Code的圖案並不全是資料。在固定的位置，放有給讀取機器用的記號。下圖中只有⑤是承載資料的部分，其他都是記號。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 432" role="img"><title>QR Code（版本2）的各部分：定位圖案、時序圖案、校正圖案、格式資訊、資料、空白區</title>
+<rect x="38" y="8" width="264" height="264" class="dash"/>
+<rect x="70" y="40" width="56" height="56" class="ink"/>
+<rect x="78" y="48" width="40" height="40" class="hole"/>
+<rect x="86" y="56" width="24" height="24" class="ink"/>
+<rect x="214" y="40" width="56" height="56" class="ink"/>
+<rect x="222" y="48" width="40" height="40" class="hole"/>
+<rect x="230" y="56" width="24" height="24" class="ink"/>
+<rect x="70" y="184" width="56" height="56" class="ink"/>
+<rect x="78" y="192" width="40" height="40" class="hole"/>
+<rect x="86" y="200" width="24" height="24" class="ink"/>
+<rect x="134" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="104" width="8" height="8" class="ink"/>
+<rect x="150" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="120" width="8" height="8" class="ink"/>
+<rect x="166" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="136" width="8" height="8" class="ink"/>
+<rect x="182" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="152" width="8" height="8" class="ink"/>
+<rect x="198" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="168" width="8" height="8" class="ink"/>
+<rect x="198" y="168" width="40" height="40" class="ink"/>
+<rect x="206" y="176" width="24" height="24" class="hole"/>
+<rect x="214" y="184" width="8" height="8" class="ink"/>
+<rect x="70" y="104" width="8" height="8" class="fa2"/>
+<rect x="78" y="104" width="8" height="8" class="fa2"/>
+<rect x="86" y="104" width="8" height="8" class="fa2"/>
+<rect x="94" y="104" width="8" height="8" class="fa2"/>
+<rect x="102" y="104" width="8" height="8" class="fa2"/>
+<rect x="110" y="104" width="8" height="8" class="fa2"/>
+<rect x="126" y="104" width="8" height="8" class="fa2"/>
+<rect x="134" y="104" width="8" height="8" class="fa2"/>
+<rect x="134" y="40" width="8" height="8" class="fa2"/>
+<rect x="134" y="48" width="8" height="8" class="fa2"/>
+<rect x="134" y="56" width="8" height="8" class="fa2"/>
+<rect x="134" y="64" width="8" height="8" class="fa2"/>
+<rect x="134" y="72" width="8" height="8" class="fa2"/>
+<rect x="134" y="80" width="8" height="8" class="fa2"/>
+<rect x="134" y="96" width="8" height="8" class="fa2"/>
+<rect x="206" y="104" width="8" height="8" class="fa2"/>
+<rect x="214" y="104" width="8" height="8" class="fa2"/>
+<rect x="222" y="104" width="8" height="8" class="fa2"/>
+<rect x="230" y="104" width="8" height="8" class="fa2"/>
+<rect x="238" y="104" width="8" height="8" class="fa2"/>
+<rect x="246" y="104" width="8" height="8" class="fa2"/>
+<rect x="254" y="104" width="8" height="8" class="fa2"/>
+<rect x="262" y="104" width="8" height="8" class="fa2"/>
+<rect x="134" y="176" width="8" height="8" class="fa2"/>
+<rect x="134" y="184" width="8" height="8" class="fa2"/>
+<rect x="134" y="192" width="8" height="8" class="fa2"/>
+<rect x="134" y="200" width="8" height="8" class="fa2"/>
+<rect x="134" y="208" width="8" height="8" class="fa2"/>
+<rect x="134" y="216" width="8" height="8" class="fa2"/>
+<rect x="134" y="224" width="8" height="8" class="fa2"/>
+<rect x="134" y="232" width="8" height="8" class="fa2"/>
+<rect x="142" y="40" width="8" height="8" class="n"/>
+<rect x="150" y="40" width="8" height="8" class="n"/>
+<rect x="166" y="40" width="8" height="8" class="n"/>
+<rect x="182" y="40" width="8" height="8" class="n"/>
+<rect x="190" y="40" width="8" height="8" class="n"/>
+<rect x="142" y="48" width="8" height="8" class="n"/>
+<rect x="150" y="48" width="8" height="8" class="n"/>
+<rect x="158" y="48" width="8" height="8" class="n"/>
+<rect x="166" y="48" width="8" height="8" class="n"/>
+<rect x="174" y="48" width="8" height="8" class="n"/>
+<rect x="190" y="48" width="8" height="8" class="n"/>
+<rect x="198" y="48" width="8" height="8" class="n"/>
+<rect x="166" y="56" width="8" height="8" class="n"/>
+<rect x="182" y="56" width="8" height="8" class="n"/>
+<rect x="198" y="56" width="8" height="8" class="n"/>
+<rect x="142" y="64" width="8" height="8" class="n"/>
+<rect x="150" y="64" width="8" height="8" class="n"/>
+<rect x="158" y="64" width="8" height="8" class="n"/>
+<rect x="174" y="64" width="8" height="8" class="n"/>
+<rect x="198" y="64" width="8" height="8" class="n"/>
+<rect x="150" y="72" width="8" height="8" class="n"/>
+<rect x="158" y="72" width="8" height="8" class="n"/>
+<rect x="166" y="72" width="8" height="8" class="n"/>
+<rect x="182" y="72" width="8" height="8" class="n"/>
+<rect x="190" y="72" width="8" height="8" class="n"/>
+<rect x="142" y="80" width="8" height="8" class="n"/>
+<rect x="150" y="80" width="8" height="8" class="n"/>
+<rect x="174" y="80" width="8" height="8" class="n"/>
+<rect x="150" y="96" width="8" height="8" class="n"/>
+<rect x="166" y="96" width="8" height="8" class="n"/>
+<rect x="174" y="96" width="8" height="8" class="n"/>
+<rect x="190" y="96" width="8" height="8" class="n"/>
+<rect x="198" y="96" width="8" height="8" class="n"/>
+<rect x="142" y="104" width="8" height="8" class="n"/>
+<rect x="182" y="104" width="8" height="8" class="n"/>
+<rect x="78" y="112" width="8" height="8" class="n"/>
+<rect x="102" y="112" width="8" height="8" class="n"/>
+<rect x="126" y="112" width="8" height="8" class="n"/>
+<rect x="166" y="112" width="8" height="8" class="n"/>
+<rect x="174" y="112" width="8" height="8" class="n"/>
+<rect x="190" y="112" width="8" height="8" class="n"/>
+<rect x="198" y="112" width="8" height="8" class="n"/>
+<rect x="206" y="112" width="8" height="8" class="n"/>
+<rect x="214" y="112" width="8" height="8" class="n"/>
+<rect x="222" y="112" width="8" height="8" class="n"/>
+<rect x="238" y="112" width="8" height="8" class="n"/>
+<rect x="246" y="112" width="8" height="8" class="n"/>
+<rect x="254" y="112" width="8" height="8" class="n"/>
+<rect x="70" y="120" width="8" height="8" class="n"/>
+<rect x="78" y="120" width="8" height="8" class="n"/>
+<rect x="126" y="120" width="8" height="8" class="n"/>
+<rect x="134" y="120" width="8" height="8" class="n"/>
+<rect x="142" y="120" width="8" height="8" class="n"/>
+<rect x="166" y="120" width="8" height="8" class="n"/>
+<rect x="174" y="120" width="8" height="8" class="n"/>
+<rect x="182" y="120" width="8" height="8" class="n"/>
+<rect x="190" y="120" width="8" height="8" class="n"/>
+<rect x="198" y="120" width="8" height="8" class="n"/>
+<rect x="214" y="120" width="8" height="8" class="n"/>
+<rect x="222" y="120" width="8" height="8" class="n"/>
+<rect x="230" y="120" width="8" height="8" class="n"/>
+<rect x="238" y="120" width="8" height="8" class="n"/>
+<rect x="94" y="128" width="8" height="8" class="n"/>
+<rect x="142" y="128" width="8" height="8" class="n"/>
+<rect x="150" y="128" width="8" height="8" class="n"/>
+<rect x="158" y="128" width="8" height="8" class="n"/>
+<rect x="174" y="128" width="8" height="8" class="n"/>
+<rect x="182" y="128" width="8" height="8" class="n"/>
+<rect x="190" y="128" width="8" height="8" class="n"/>
+<rect x="198" y="128" width="8" height="8" class="n"/>
+<rect x="206" y="128" width="8" height="8" class="n"/>
+<rect x="214" y="128" width="8" height="8" class="n"/>
+<rect x="222" y="128" width="8" height="8" class="n"/>
+<rect x="230" y="128" width="8" height="8" class="n"/>
+<rect x="238" y="128" width="8" height="8" class="n"/>
+<rect x="246" y="128" width="8" height="8" class="n"/>
+<rect x="254" y="128" width="8" height="8" class="n"/>
+<rect x="78" y="136" width="8" height="8" class="n"/>
+<rect x="86" y="136" width="8" height="8" class="n"/>
+<rect x="94" y="136" width="8" height="8" class="n"/>
+<rect x="102" y="136" width="8" height="8" class="n"/>
+<rect x="110" y="136" width="8" height="8" class="n"/>
+<rect x="142" y="136" width="8" height="8" class="n"/>
+<rect x="150" y="136" width="8" height="8" class="n"/>
+<rect x="158" y="136" width="8" height="8" class="n"/>
+<rect x="166" y="136" width="8" height="8" class="n"/>
+<rect x="174" y="136" width="8" height="8" class="n"/>
+<rect x="182" y="136" width="8" height="8" class="n"/>
+<rect x="198" y="136" width="8" height="8" class="n"/>
+<rect x="206" y="136" width="8" height="8" class="n"/>
+<rect x="230" y="136" width="8" height="8" class="n"/>
+<rect x="246" y="136" width="8" height="8" class="n"/>
+<rect x="86" y="144" width="8" height="8" class="n"/>
+<rect x="94" y="144" width="8" height="8" class="n"/>
+<rect x="102" y="144" width="8" height="8" class="n"/>
+<rect x="142" y="144" width="8" height="8" class="n"/>
+<rect x="150" y="144" width="8" height="8" class="n"/>
+<rect x="206" y="144" width="8" height="8" class="n"/>
+<rect x="222" y="144" width="8" height="8" class="n"/>
+<rect x="230" y="144" width="8" height="8" class="n"/>
+<rect x="238" y="144" width="8" height="8" class="n"/>
+<rect x="246" y="144" width="8" height="8" class="n"/>
+<rect x="254" y="144" width="8" height="8" class="n"/>
+<rect x="78" y="152" width="8" height="8" class="n"/>
+<rect x="110" y="152" width="8" height="8" class="n"/>
+<rect x="126" y="152" width="8" height="8" class="n"/>
+<rect x="134" y="152" width="8" height="8" class="n"/>
+<rect x="142" y="152" width="8" height="8" class="n"/>
+<rect x="150" y="152" width="8" height="8" class="n"/>
+<rect x="182" y="152" width="8" height="8" class="n"/>
+<rect x="206" y="152" width="8" height="8" class="n"/>
+<rect x="246" y="152" width="8" height="8" class="n"/>
+<rect x="254" y="152" width="8" height="8" class="n"/>
+<rect x="70" y="160" width="8" height="8" class="n"/>
+<rect x="94" y="160" width="8" height="8" class="n"/>
+<rect x="102" y="160" width="8" height="8" class="n"/>
+<rect x="134" y="160" width="8" height="8" class="n"/>
+<rect x="142" y="160" width="8" height="8" class="n"/>
+<rect x="150" y="160" width="8" height="8" class="n"/>
+<rect x="174" y="160" width="8" height="8" class="n"/>
+<rect x="206" y="160" width="8" height="8" class="n"/>
+<rect x="222" y="160" width="8" height="8" class="n"/>
+<rect x="230" y="160" width="8" height="8" class="n"/>
+<rect x="70" y="168" width="8" height="8" class="n"/>
+<rect x="94" y="168" width="8" height="8" class="n"/>
+<rect x="102" y="168" width="8" height="8" class="n"/>
+<rect x="110" y="168" width="8" height="8" class="n"/>
+<rect x="126" y="168" width="8" height="8" class="n"/>
+<rect x="142" y="168" width="8" height="8" class="n"/>
+<rect x="150" y="168" width="8" height="8" class="n"/>
+<rect x="158" y="168" width="8" height="8" class="n"/>
+<rect x="174" y="168" width="8" height="8" class="n"/>
+<rect x="182" y="168" width="8" height="8" class="n"/>
+<rect x="246" y="168" width="8" height="8" class="n"/>
+<rect x="158" y="176" width="8" height="8" class="n"/>
+<rect x="166" y="176" width="8" height="8" class="n"/>
+<rect x="174" y="176" width="8" height="8" class="n"/>
+<rect x="182" y="176" width="8" height="8" class="n"/>
+<rect x="238" y="176" width="8" height="8" class="n"/>
+<rect x="246" y="176" width="8" height="8" class="n"/>
+<rect x="142" y="184" width="8" height="8" class="n"/>
+<rect x="174" y="184" width="8" height="8" class="n"/>
+<rect x="190" y="184" width="8" height="8" class="n"/>
+<rect x="238" y="184" width="8" height="8" class="n"/>
+<rect x="158" y="192" width="8" height="8" class="n"/>
+<rect x="238" y="192" width="8" height="8" class="n"/>
+<rect x="254" y="192" width="8" height="8" class="n"/>
+<rect x="166" y="200" width="8" height="8" class="n"/>
+<rect x="238" y="200" width="8" height="8" class="n"/>
+<rect x="246" y="200" width="8" height="8" class="n"/>
+<rect x="254" y="200" width="8" height="8" class="n"/>
+<rect x="262" y="200" width="8" height="8" class="n"/>
+<rect x="142" y="208" width="8" height="8" class="n"/>
+<rect x="150" y="208" width="8" height="8" class="n"/>
+<rect x="182" y="208" width="8" height="8" class="n"/>
+<rect x="206" y="208" width="8" height="8" class="n"/>
+<rect x="230" y="208" width="8" height="8" class="n"/>
+<rect x="246" y="208" width="8" height="8" class="n"/>
+<rect x="254" y="208" width="8" height="8" class="n"/>
+<rect x="150" y="216" width="8" height="8" class="n"/>
+<rect x="158" y="216" width="8" height="8" class="n"/>
+<rect x="174" y="216" width="8" height="8" class="n"/>
+<rect x="182" y="216" width="8" height="8" class="n"/>
+<rect x="190" y="216" width="8" height="8" class="n"/>
+<rect x="206" y="216" width="8" height="8" class="n"/>
+<rect x="222" y="216" width="8" height="8" class="n"/>
+<rect x="230" y="216" width="8" height="8" class="n"/>
+<rect x="238" y="216" width="8" height="8" class="n"/>
+<rect x="262" y="216" width="8" height="8" class="n"/>
+<rect x="166" y="224" width="8" height="8" class="n"/>
+<rect x="174" y="224" width="8" height="8" class="n"/>
+<rect x="182" y="224" width="8" height="8" class="n"/>
+<rect x="198" y="224" width="8" height="8" class="n"/>
+<rect x="206" y="224" width="8" height="8" class="n"/>
+<rect x="214" y="224" width="8" height="8" class="n"/>
+<rect x="238" y="224" width="8" height="8" class="n"/>
+<rect x="246" y="224" width="8" height="8" class="n"/>
+<rect x="150" y="232" width="8" height="8" class="n"/>
+<rect x="158" y="232" width="8" height="8" class="n"/>
+<rect x="174" y="232" width="8" height="8" class="n"/>
+<rect x="182" y="232" width="8" height="8" class="n"/>
+<rect x="214" y="232" width="8" height="8" class="n"/>
+<rect x="230" y="232" width="8" height="8" class="n"/>
+<rect x="246" y="232" width="8" height="8" class="n"/>
+<rect x="254" y="232" width="8" height="8" class="n"/>
+<text x="54" y="73" text-anchor="middle">①</text>
+<text x="286" y="73" text-anchor="middle">①</text>
+<text x="54" y="217" text-anchor="middle">①</text>
+<text x="54" y="113" text-anchor="middle">④</text>
+<text x="170" y="26" text-anchor="middle">②</text>
+<line x1="170" y1="32" x2="170" y2="88" class="ac"/>
+<text x="54" y="145" text-anchor="middle">②</text>
+<line x1="63" y1="140" x2="118" y2="140" class="ac"/>
+<text x="286" y="193" text-anchor="middle">③</text>
+<line x1="277" y1="188" x2="238" y2="188" class="ac"/>
+<text x="286" y="137" text-anchor="middle">⑤</text>
+<line x1="277" y1="132" x2="186" y2="132" class="ac"/>
+<text x="170" y="261" text-anchor="middle">⑥</text>
+<text x="40" y="298">① 定位圖案（3個）</text>
+<text x="40" y="322">② 時序圖案</text>
+<text x="40" y="346">③ 校正圖案</text>
+<text x="40" y="370">④ 格式資訊（色帶）</text>
+<text x="40" y="394">⑤ 資料與錯誤更正的資訊</text>
+<text x="40" y="418">⑥ 空白區（4個模組寬）</text>
+</svg><figcaption class="fig-cap">版本2（25×25模組）QR Code的各部分。印刷時為黑色的記號（①〜③）以塗滿表示。⑤的點是隨機的範例，為了和記號區分而用淺色表示。④只用色帶標出位置。省略的部分：格式資訊中的0和1、遮罩、資料排列的順序。</figcaption></figure>
+<ul>
+<li><strong>① 定位圖案</strong>：位於3個角落的大方塊。它告訴讀取端，條碼在哪裡、朝哪個方向、有多大。英文稱為finder pattern。</li>
+<li><strong>② 時序圖案</strong>：連接大方塊、黑白交替的一列。它像尺一樣，用來量出1格的間隔。</li>
+<li><strong>③ 校正圖案</strong>：小方塊，出現在版本2以上。它是修正斜拍時變形的線索。版本越大數量越多，版本40有46個。</li>
+<li><strong>④ 格式資訊</strong>：記錄錯誤更正的強度，以及稍後說明的「遮罩」編號。因為是讀取不可缺少的部分，同樣的內容放在2個地方。</li>
+<li><strong>⑥ 空白區（靜區，quiet zone）</strong>：四周需要4個模組寬、什麼都沒有的帶狀區域。這是為了把條碼和周圍的文字或圖畫區分開來。</li>
+</ul>
+<p>版本7以上，還會加上記錄版本編號的欄位。圖中省略。</p>
+</section>
+
+<section>
+<h2>3個大方塊是「1:1:3:1:1」的理由</h2>
+<p>定位圖案是黑框、白框、黑芯疊在一起的形狀。沿著通過中心的線看，黑、白、黑、白、黑的寬度是1:1:3:1:1。不論橫向、縱向或斜向，只要通過中心，這個比例都不變。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 294" role="img"><title>在通過定位圖案中心的線上，黑、白、黑、白、黑的寬度是1:1:3:1:1</title>
+<rect x="100" y="14" width="140" height="140" class="ink"/>
+<rect x="120" y="34" width="100" height="100" class="hole"/>
+<rect x="140" y="54" width="60" height="60" class="ink"/>
+<line x1="86" y1="84.0" x2="254" y2="84.0" class="ac"/>
+<line x1="90" y1="4" x2="250" y2="164" class="ac2"/>
+<text x="258" y="89.0" class="a">橫</text>
+<text x="254" y="168">斜向</text>
+<rect x="100" y="184" width="20" height="24" class="ink"/>
+<text x="110.0" y="230" text-anchor="middle" class="a">1</text>
+<rect x="120" y="184" width="20" height="24" class="ok"/>
+<text x="130.0" y="230" text-anchor="middle" class="a">1</text>
+<rect x="140" y="184" width="60" height="24" class="ink"/>
+<text x="170.0" y="230" text-anchor="middle" class="a">3</text>
+<rect x="200" y="184" width="20" height="24" class="ok"/>
+<text x="210.0" y="230" text-anchor="middle" class="a">1</text>
+<rect x="220" y="184" width="20" height="24" class="ink"/>
+<text x="230.0" y="230" text-anchor="middle" class="a">1</text>
+<line x1="100" y1="158" x2="100" y2="180" class="dash"/>
+<line x1="120" y1="158" x2="120" y2="180" class="dash"/>
+<line x1="140" y1="158" x2="140" y2="180" class="dash"/>
+<line x1="200" y1="158" x2="200" y2="180" class="dash"/>
+<line x1="220" y1="158" x2="220" y2="180" class="dash"/>
+<line x1="240" y1="158" x2="240" y2="180" class="dash"/>
+<text x="88" y="202" text-anchor="end">寬</text>
+<text x="170" y="260" text-anchor="middle">只要線通過中心，不論哪個方向</text>
+<text x="170" y="282" text-anchor="middle">寬度比都是 1:1:3:1:1</text>
+</svg><figcaption class="fig-cap">定位圖案由7×7的黑框、5×5的白框、3×3的黑芯組成（圖中以塗滿表示黑色）。只要線通過中心，即使是斜向，寬度比仍是1:1:3:1:1（每段長度都以相同比例拉長）。省略的部分：圍繞圖案、1個模組寬的白色帶。</figcaption></figure>
+<p>因此，即使條碼轉了方向，讀取端只要尋找「這種寬度比的排列」，就能找到記號。根據DENSO WAVE的說明，開發團隊調查了傳單、雜誌和紙箱上的印刷。然後選出在印刷品中最不容易出現的比例1:1:3:1:1。這是為了即使周圍有照片或文字，也不容易認錯記號。</p>
+<p>大方塊有3個，是因為有3個就能確定唯一的方向。從沒有方塊的角落在哪裡，就知道條碼的右下角。就算拍到上下顛倒，也能轉回正確的方向讀取。</p>
+</section>
+
+<section>
+<h2>原理3：髒了也能讀的「錯誤更正」</h2>
+<p>QR Code除了資料以外，還加上了修復損壞部分用的備用資訊。即使因髒污或刮傷而讀錯模組，也能從備用資訊重新算出原本的資料。這種機制稱為錯誤更正。</p>
+<p>「<a href="{{home}}learn/crc-and-gf2-polynomials/">CRC是什麼？</a>」中說明的CRC，是發現「有」錯誤的機制。如果是通訊，發現後請對方重送就好。但是，印刷出來的QR Code，沒有可以請求重送的對象。所以要使用只靠接收端就能修正的方法。這種方法稱為{{term:前方誤り訂正(FEC)|前向錯誤更正（FEC）}}。</p>
+<p>QR Code把資料分成每8位元一塊來處理。這種塊稱為碼字。備用的碼字，是從資料的碼字用固定的計算產生的。</p>
+<p>這種計算方法，就是里德和所羅門在1960年發表的里德－所羅門碼。除了QR Code，CD和DVD也用它來修正刮傷造成的錯誤。能修正錯誤的編碼統稱為{{term:ECC(誤り訂正符号)|錯誤更正碼（ECC）}}，里德－所羅門碼是其中的代表之一。</p>
+<h3>4種強度（錯誤更正等級）</h3>
+<p>製作QR Code的人，可以從4個等級中，選擇要加多少備用資訊。DENSO WAVE列出各等級能修正的量如下。</p>
+<table>
+<thead><tr><th>等級</th><th>可還原的量（以碼字數計）</th></tr></thead>
+<tbody>
+<tr><td>L</td><td>約7%</td></tr>
+<tr><td>M</td><td>約15%</td></tr>
+<tr><td>Q</td><td>約25%</td></tr>
+<tr><td>H</td><td>約30%</td></tr>
+</tbody>
+</table>
+<p>這個比例是以碼字的數量計算，而不是紙面的面積。1處髒污也可能跨到2個碼字，該公司也提醒「依髒污的狀況，有時無法還原」。另外，①〜④的記號如果髒了，即使資料完好，也可能讀不出來。</p>
+<h3>用文字說明里德－所羅門碼</h3>
+<p>里德－所羅門碼會從資料產生「符合固定規則的備用值」。接收端讓剩下的值符合規則，反推出損壞的值。下面不用數學式，用一個比喻來想想看。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>假設要傳送2和5這2個數。用「每次增加相同的數」這個規則接下去，就得到2、5、8、11。傳送這4個數，即使途中消失了2個，也能從剩下的2個知道增加的幅度，還原原本的數列。如果有1個變成別的數，4個中有3個符合規則，就知道不符合的那1個是錯的。</p><p class="analogy-limit"><strong>比喻的限制：</strong>實際的編碼不是用一般的加法，而是在使用0〜255之數的特殊計算世界中進行。它是CRC文章中「沒有進位的計算」的延伸，計算結果總是落在0〜255（1位元組）之內。而且規則比「每次增加相同的數」複雜得多，一次要守住數十個值。這個比喻表達的只有一點：「從符合規則的備用值，反推出損壞處」。</p></aside>
+<p>在比喻中，知道消失的位置時，1個備用值就能修正1個。不知道哪裡變了時，還得找出「哪個是錯的」，所以需要2個備用值。QR Code各等級的比例，是以不知道位置的錯誤來計算的。因此，能修正約30%的等級H，全體有一半以上是備用資訊。</p>
+<p>備用資訊越多，越不怕髒污，但同樣大小能放的資料就越少。例如版本1能放的數字，等級L是41位，等級H是17位。根據DENSO WAVE的說明，在工廠等容易髒污的地方，有時會選擇Q或H。</p>
+</section>
+
+<section>
+<h2>原理4：用遮罩讓圖案平均</h2>
+<p>資料直接排列，有時會出現整片全白或全黑的大區塊。區塊太大，就不容易數出格子的邊界。也可能碰巧出現類似定位圖案的圖案。</p>
+<p>因此，要在資料部分疊上固定的圖案，把黑白互換。這個圖案稱為遮罩。疊的方法是XOR這種計算：2個相同就是0（白），不同就是1（黑）。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 226" role="img"><title>遮罩：用XOR把棋盤格疊到資料上，白色的大區塊就會消失</title>
+<rect x="8" y="32" width="13" height="13" class="ok"/>
+<rect x="21" y="32" width="13" height="13" class="ok"/>
+<rect x="34" y="32" width="13" height="13" class="ok"/>
+<rect x="47" y="32" width="13" height="13" class="ok"/>
+<rect x="60" y="32" width="13" height="13" class="ink"/>
+<rect x="73" y="32" width="13" height="13" class="ink"/>
+<rect x="8" y="45" width="13" height="13" class="ok"/>
+<rect x="21" y="45" width="13" height="13" class="ok"/>
+<rect x="34" y="45" width="13" height="13" class="ok"/>
+<rect x="47" y="45" width="13" height="13" class="ok"/>
+<rect x="60" y="45" width="13" height="13" class="ink"/>
+<rect x="73" y="45" width="13" height="13" class="ok"/>
+<rect x="8" y="58" width="13" height="13" class="ok"/>
+<rect x="21" y="58" width="13" height="13" class="ok"/>
+<rect x="34" y="58" width="13" height="13" class="ok"/>
+<rect x="47" y="58" width="13" height="13" class="ok"/>
+<rect x="60" y="58" width="13" height="13" class="ok"/>
+<rect x="73" y="58" width="13" height="13" class="ink"/>
+<rect x="8" y="71" width="13" height="13" class="ok"/>
+<rect x="21" y="71" width="13" height="13" class="ok"/>
+<rect x="34" y="71" width="13" height="13" class="ok"/>
+<rect x="47" y="71" width="13" height="13" class="ok"/>
+<rect x="60" y="71" width="13" height="13" class="ink"/>
+<rect x="73" y="71" width="13" height="13" class="ink"/>
+<rect x="8" y="84" width="13" height="13" class="ink"/>
+<rect x="21" y="84" width="13" height="13" class="ink"/>
+<rect x="34" y="84" width="13" height="13" class="ok"/>
+<rect x="47" y="84" width="13" height="13" class="ink"/>
+<rect x="60" y="84" width="13" height="13" class="ok"/>
+<rect x="73" y="84" width="13" height="13" class="ok"/>
+<rect x="8" y="97" width="13" height="13" class="ink"/>
+<rect x="21" y="97" width="13" height="13" class="ok"/>
+<rect x="34" y="97" width="13" height="13" class="ink"/>
+<rect x="47" y="97" width="13" height="13" class="ink"/>
+<rect x="60" y="97" width="13" height="13" class="ok"/>
+<rect x="73" y="97" width="13" height="13" class="ok"/>
+<text x="47" y="22" text-anchor="middle">資料</text>
+<text x="47" y="134" text-anchor="middle" class="m">成片的0</text>
+<rect x="131" y="32" width="13" height="13" class="ink"/>
+<rect x="144" y="32" width="13" height="13" class="ok"/>
+<rect x="157" y="32" width="13" height="13" class="ink"/>
+<rect x="170" y="32" width="13" height="13" class="ok"/>
+<rect x="183" y="32" width="13" height="13" class="ink"/>
+<rect x="196" y="32" width="13" height="13" class="ok"/>
+<rect x="131" y="45" width="13" height="13" class="ok"/>
+<rect x="144" y="45" width="13" height="13" class="ink"/>
+<rect x="157" y="45" width="13" height="13" class="ok"/>
+<rect x="170" y="45" width="13" height="13" class="ink"/>
+<rect x="183" y="45" width="13" height="13" class="ok"/>
+<rect x="196" y="45" width="13" height="13" class="ink"/>
+<rect x="131" y="58" width="13" height="13" class="ink"/>
+<rect x="144" y="58" width="13" height="13" class="ok"/>
+<rect x="157" y="58" width="13" height="13" class="ink"/>
+<rect x="170" y="58" width="13" height="13" class="ok"/>
+<rect x="183" y="58" width="13" height="13" class="ink"/>
+<rect x="196" y="58" width="13" height="13" class="ok"/>
+<rect x="131" y="71" width="13" height="13" class="ok"/>
+<rect x="144" y="71" width="13" height="13" class="ink"/>
+<rect x="157" y="71" width="13" height="13" class="ok"/>
+<rect x="170" y="71" width="13" height="13" class="ink"/>
+<rect x="183" y="71" width="13" height="13" class="ok"/>
+<rect x="196" y="71" width="13" height="13" class="ink"/>
+<rect x="131" y="84" width="13" height="13" class="ink"/>
+<rect x="144" y="84" width="13" height="13" class="ok"/>
+<rect x="157" y="84" width="13" height="13" class="ink"/>
+<rect x="170" y="84" width="13" height="13" class="ok"/>
+<rect x="183" y="84" width="13" height="13" class="ink"/>
+<rect x="196" y="84" width="13" height="13" class="ok"/>
+<rect x="131" y="97" width="13" height="13" class="ok"/>
+<rect x="144" y="97" width="13" height="13" class="ink"/>
+<rect x="157" y="97" width="13" height="13" class="ok"/>
+<rect x="170" y="97" width="13" height="13" class="ink"/>
+<rect x="183" y="97" width="13" height="13" class="ok"/>
+<rect x="196" y="97" width="13" height="13" class="ink"/>
+<text x="170" y="22" text-anchor="middle">遮罩</text>
+<text x="170" y="134" text-anchor="middle" class="m">棋盤格</text>
+<rect x="254" y="32" width="13" height="13" class="ink"/>
+<rect x="267" y="32" width="13" height="13" class="ok"/>
+<rect x="280" y="32" width="13" height="13" class="ink"/>
+<rect x="293" y="32" width="13" height="13" class="ok"/>
+<rect x="306" y="32" width="13" height="13" class="ok"/>
+<rect x="319" y="32" width="13" height="13" class="ink"/>
+<rect x="254" y="45" width="13" height="13" class="ok"/>
+<rect x="267" y="45" width="13" height="13" class="ink"/>
+<rect x="280" y="45" width="13" height="13" class="ok"/>
+<rect x="293" y="45" width="13" height="13" class="ink"/>
+<rect x="306" y="45" width="13" height="13" class="ink"/>
+<rect x="319" y="45" width="13" height="13" class="ink"/>
+<rect x="254" y="58" width="13" height="13" class="ink"/>
+<rect x="267" y="58" width="13" height="13" class="ok"/>
+<rect x="280" y="58" width="13" height="13" class="ink"/>
+<rect x="293" y="58" width="13" height="13" class="ok"/>
+<rect x="306" y="58" width="13" height="13" class="ink"/>
+<rect x="319" y="58" width="13" height="13" class="ink"/>
+<rect x="254" y="71" width="13" height="13" class="ok"/>
+<rect x="267" y="71" width="13" height="13" class="ink"/>
+<rect x="280" y="71" width="13" height="13" class="ok"/>
+<rect x="293" y="71" width="13" height="13" class="ink"/>
+<rect x="306" y="71" width="13" height="13" class="ink"/>
+<rect x="319" y="71" width="13" height="13" class="ok"/>
+<rect x="254" y="84" width="13" height="13" class="ok"/>
+<rect x="267" y="84" width="13" height="13" class="ink"/>
+<rect x="280" y="84" width="13" height="13" class="ink"/>
+<rect x="293" y="84" width="13" height="13" class="ink"/>
+<rect x="306" y="84" width="13" height="13" class="ink"/>
+<rect x="319" y="84" width="13" height="13" class="ok"/>
+<rect x="254" y="97" width="13" height="13" class="ink"/>
+<rect x="267" y="97" width="13" height="13" class="ink"/>
+<rect x="280" y="97" width="13" height="13" class="ink"/>
+<rect x="293" y="97" width="13" height="13" class="ok"/>
+<rect x="306" y="97" width="13" height="13" class="ok"/>
+<rect x="319" y="97" width="13" height="13" class="ink"/>
+<text x="293" y="22" text-anchor="middle">結果</text>
+<text x="293" y="134" text-anchor="middle" class="m">區塊消失</text>
+<text x="108" y="76" text-anchor="middle" class="a">⊕</text>
+<text x="231" y="76" text-anchor="middle" class="a">=</text>
+<rect x="6" y="30" width="56" height="56" class="ac"/>
+<rect x="96" y="153" width="13" height="13" class="ink"/><text x="114" y="166">= 1</text>
+<rect x="196" y="153" width="13" height="13" class="ok"/><text x="214" y="166">= 0</text>
+<text x="170" y="190" text-anchor="middle">⊕：相同為0，不同為1</text>
+<text x="170" y="214" text-anchor="middle" class="m">對結果再疊一次遮罩，就會還原</text>
+</svg><figcaption class="fig-cap">6×6格的範例。左上一大片的0（框起來的地方），疊上棋盤格的遮罩後就消失了。塗色的格（印刷時為黑）當作1，空白的格（印刷時為白）當作0，逐格做XOR。實際的遮罩有8種，不會套用在記號的部分（①〜④）。省略的部分：套用在格式資訊上的另一種遮罩。</figcaption></figure>
+<p>只有遮罩的黑色處，資料的黑白會反轉。讀取端再疊一次同樣的遮罩，反轉就會抵消，回到原本的樣子。XOR的計算，也可以用<a href="{{home}}tools/bitwise-operations-calculator/">位元運算計算工具</a>試試看。</p>
+<p>遮罩的圖案有8種。製作端會8種全部試過，用分數挑出大區塊和容易混淆的圖案較少的那一種。用了哪一種，會寫在④的格式資訊裡。</p>
+</section>
+
+<section>
+<h2>手機讀取的流程</h2>
+<p>從把相機對準到出現文字為止，手機內部會依序進行以下的事。這裡省略細節，只說明流程。</p>
+<ol>
+<li><strong>拍照</strong>：相機的零件（影像感測器）把光的亮度，變成每個點的數字（「<a href="{{home}}learn/how-image-sensors-work/">影像感測器是什麼？</a>」）</li>
+<li><strong>分成黑白</strong>：決定亮度的分界，把每個點分成白或黑</li>
+<li><strong>尋找3個方塊</strong>：尋找1:1:3:1:1的排列，得知條碼的位置、方向和大小</li>
+<li><strong>修正變形</strong>：從斜角拍攝，正方形會拍成梯形。從方塊和校正圖案的位置，用計算修正成從正面看的形狀</li>
+<li><strong>讀取格子</strong>：用時序圖案量出格子的間隔，逐格讀成0或1</li>
+<li><strong>讀取格式資訊</strong>：得知錯誤更正的等級和遮罩的編號</li>
+<li><strong>移除遮罩</strong>：疊上同樣的遮罩，還原成原本的資料</li>
+<li><strong>修正錯誤</strong>：用里德－所羅門碼，修正因髒污而變掉的碼字</li>
+<li><strong>還原成文字</strong>：讀取寫法種類（數字、英數字、位元組、漢字）的標記和字數，還原成文字</li>
+</ol>
+<p>在手機上，這些步驟一瞬間就完成。iPhone的相機等，會先在畫面上顯示讀到的連結，點一下才會打開。這個「打開前的一瞬間」，就是防範接下來要說明的詐騙的重要時刻。</p>
+</section>
+
+<section>
+<h2>小心利用QR Code的詐騙</h2>
+<p>QR Code的內容，人的眼睛讀不出來。有些詐騙就利用這個性質，把人引到假網站。假冒真實公司、盜取密碼等資料的手法，稱為{{term:フィッシング|網路釣魚}}。利用QR Code的手法，英文也稱為「quishing」。</p>
+<p>以日本為例，日本的防範網路釣魚協議會在2024年8月發出提醒。內容是用假冒信用卡公司的電子郵件中的QR Code，引導到假網站的手法。日本的IPA（資訊處理推進機構）也說明，曾在看板、傳單和郵寄物上發現有害的QR Code。美國FBI在2022年1月，警告了真的QR Code被換成假QR Code的手法。</p>
+<p>整理各機構的呼籲，重點如下。</p>
+<ul>
+<li>打開之前，先確認畫面上顯示的URL（網址）。小心只差1個字的假名稱</li>
+<li>不要從電子郵件或簡訊（SMS）收到的QR Code登入。從官方App，或事先存好的書籤打開</li>
+<li>街上張貼的QR Code，要看看上面有沒有被貼上另一張貼紙</li>
+<li>讀取後的頁面如果要求輸入密碼或卡號，先停下來</li>
+</ul>
+<p>不過，只看URL，有時也無法斷定是真的。日本的防範網路釣魚協議會也表示，只靠確認URL，無法完全防止受害。養成從官方App打開的習慣，再搭配{{term:多要素認証|多因素驗證}}（密碼之外再多一種確認的方法），才比較可靠。假網站和鎖頭圖示的關係，在「<a href="{{home}}learn/what-does-https-mean/">HTTPS是什麼？</a>」中說明。</p>
+</section>
+
+<section>
+<h2>QR Code的同類</h2>
+<p>Micro QR Code是只有1個定位圖案的小型版本。空白區只要2個模組寬，所以可以印在小零件等狹窄的地方。最大的M4也只有17×17模組，最多只能放35位數字。</p>
+<p>rMQR Code是長方形的QR Code。它由DENSO WAVE開發，2022年5月以ISO/IEC 23941成為國際標準。它也能印在細長的地方，最大尺寸（17×139模組）最多可放361位數字。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：大家一直製作下去，QR Code總有一天會不夠用</p><p>實際上，QR Code不是像電話號碼那樣分配出去的號碼。它是把內容的文字，按照固定規則變成圖案。即使是最小的版本1、等級L，也能放17個位元組。1個位元組有256種，所以組合超過10的40次方種。同樣內容的QR Code不管有幾張，都沒有關係。</p></div>
+<div class="myth"><p class="myth-q">誤解：中間的標誌（logo），是放在QR Code預留的「logo專用位置」</p><p>實際上，QR Code沒有logo專用的位置。被logo遮住的模組，每次讀取時都靠錯誤更正來修復。不過，能修正的量有限。如果遮住3個大方塊或格式資訊，即使資料完好也讀不出來。DENSO WAVE也提醒，在條碼上疊加文字或圖畫，可能會讀不出來。要放logo，基本做法是提高錯誤更正等級，並實際用幾台裝置確認能否讀取。</p></div>
+<div class="myth"><p class="myth-q">誤解：能順利讀取的QR Code，內容也很安全</p><p>實際上，「讀得到」只代表從圖案正確取出了文字。錯誤更正保護的，是髒污和刮傷造成的錯誤，而不是製作者的惡意。放入假網站URL的QR Code，也能清楚讀出來。安全與否，要在讀取之後，從要打開的去處來判斷。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>數字</th><th>代表什麼</th></tr></thead>
+<tbody>
+<tr><td>1994年</td><td>QR Code開發的年份</td></tr>
+<tr><td>2024年</td><td>現行國際標準 ISO/IEC 18004 的版本（截至2026年10月）</td></tr>
+<tr><td>21×21 〜 177×177</td><td>從版本1到版本40的縱橫模組數</td></tr>
+<tr><td>7,089位</td><td>版本40、等級L能放的數字最多位數</td></tr>
+<tr><td>約7〜30%</td><td>錯誤更正等級L到H可還原的碼字，占全體的比例</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>名詞的詳細解說：{{term:前方誤り訂正(FEC)|前向錯誤更正（FEC）}}／{{term:ECC(誤り訂正符号)|ECC（錯誤更正碼）}}／{{term:ハミング符号|漢明碼}}／{{term:CRC(巡回冗長検査)|CRC（循環冗餘檢查）}}</li>
+<li>用數字試試看：<a href="{{home}}tools/hamming-code-calculator/">漢明碼計算工具</a>（修正錯誤最簡單的編碼）／<a href="{{home}}tools/crc-calculator/">CRC 計算工具</a>（發現錯誤的編碼）</li>
+<li>相關的解說：「<a href="{{home}}learn/crc-and-gf2-polynomials/">CRC是什麼？</a>」／「<a href="{{home}}learn/how-image-sensors-work/">影像感測器是什麼？</a>」／「<a href="{{home}}learn/how-passwords-get-cracked/">密碼為什麼會被破解？</a>」</li>
+</ul>
+</section>

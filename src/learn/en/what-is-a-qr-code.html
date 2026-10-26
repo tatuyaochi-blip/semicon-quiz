@@ -1,0 +1,612 @@
+<!--
+{
+  "title": "How QR Codes Work: Error Correction and the Three Squares",
+  "description": "A QR code stores text as black and white squares. How the three big squares, Reed–Solomon error correction and masks work, and how to avoid QR code scams.",
+  "series": "it-security-life",
+  "order": 9,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["info-theory", "security", "image-sensor", "web-tech"],
+  "terms": ["前方誤り訂正(FEC)"],
+  "sources": [
+    { "title": "DENSO WAVE: History of QR Code (the team surveyed printing on flyers, magazines and cardboard boxes, and chose 1:1:3:1:1 as the ratio least used in printed matter)", "url": "https://www.qrcode.com/en/history/" },
+    { "title": "DENSO: Creator of the QR Code Reflects on the Technology's Progress 25 Years After its Invention (2019; a two-person development team; a code that holds more data and reads faster)", "url": "https://www.denso.com/us-ca/en/news/newsroom/2019/20190909-01/" },
+    { "title": "DENSO: 75th anniversary history (2) Proliferation of QR Codes (development began with two people in 1992; barcodes had been used on kanban since 1974)", "url": "https://www.denso.com/history/75th/en/history/chapter3/section6/infrastructure.html" },
+    { "title": "DENSO DRIVEN BASE: Believing in a Faint Light — QR Code developer Masahiro Hara (Hara joined DENSO in 1980 and moved to DENSO WAVE in 2001)", "url": "https://www.denso.com/global/en/driven-base/career-life/qr-hara_2408/" },
+    { "title": "DENSO: QRコードがIEEEマイルストーンに認定 (QR Code recognized as an IEEE Milestone, in Japanese; October 2020; developed in 1994 by DENSO's applied equipment division, now DENSO WAVE)", "url": "https://www.denso.com/jp/ja/news/newsroom/2020/201007-01/" },
+    { "title": "DENSO WAVE: QRコード規格化・標準化 (Standardization of QR Code, in Japanese; AIM in 1997, JIS X 0510 in 1999, ISO/IEC 18004 in 2000; the company does not exercise its patent rights for QR codes that follow the standard)", "url": "https://www.qrcode.com/about/standards.html" },
+    { "title": "DENSO WAVE: 登録商標文の例 (Sample trademark statement, in Japanese; the Japanese for “QR Code is a registered trademark of DENSO WAVE INCORPORATED”)", "url": "https://www.denso-wave.com/ja/adcd/support/faq/trademark/comment/hy25050115.html" },
+    { "title": "ISO/IEC 18004:2024, QR code bar code symbology specification (4th edition, published August 2024)", "url": "https://www.iso.org/standard/83389.html" },
+    { "title": "DENSO WAVE: QRコードとは? (What is a QR Code?, in Japanese; QR stands for Quick Response, and the code was developed with fast reading as the goal)", "url": "https://www.qrcode.com/about/" },
+    { "title": "DENSO WAVE: Information capacity and versions of QR Code (version 1 is 21×21, each version adds 4 modules, and version 40 is 177×177)", "url": "https://www.qrcode.com/en/about/version.html" },
+    { "title": "Thonky.com: QR Code Tutorial — Character Capacities (a copy of the ISO/IEC 18004 table; version 1 holds 41 digits or 17 bytes at level L and 17 digits at level H; version 40 at level L holds 7,089 digits, 4,296 alphanumeric characters, 2,953 bytes or 1,817 kanji)", "url": "https://www.thonky.com/qr-code-tutorial/character-capacities" },
+    { "title": "DENSO WAVE: 誤り訂正機能について (About the error correction feature, in Japanese; levels L, M, Q and H restore about 7%, 15%, 25% and 30% of all codewords; restoration may fail depending on the dirt or damage; Q or H for dirty settings such as factories)", "url": "https://www.qrcode.com/about/error_correction.html" },
+    { "title": "DENSO WAVE: 読み取りトラブルの例 (Examples of reading problems, in Japanese; text or pictures laid over a QR code, or too little margin, can make it unreadable)", "url": "https://www.qrcode.com/howto/trouble.html" },
+    { "title": "KEYENCE: QRコードのしくみ (How QR codes work, in Japanese; finder patterns, timing patterns, alignment patterns, format information and masks)", "url": "https://www.keyence.co.jp/ss/products/autoid/codereader/basic2d_qr.jsp" },
+    { "title": "I. S. Reed, G. Solomon: Polynomial Codes over Certain Finite Fields, J. SIAM 8(2), 300–304 (1960)", "url": "https://epubs.siam.org/doi/10.1137/0108018" },
+    { "title": "A. Hulpke, Colorado State University: Mathematics 366 Reed Solomon Codes (error correction in CDs; two spare symbols can fix one error whose position is unknown)", "url": "https://www.math.colostate.edu/~hulpke/lectures/m366/reedsolomon.pdf" },
+    { "title": "Reliability on QR codes and Reed-Solomon codes, arXiv:2407.17364 (the eight masks, the format information, and how Reed–Solomon codes are used)", "url": "https://arxiv.org/pdf/2407.17364" },
+    { "title": "DENSO WAVE: Micro QR Code (one finder pattern, a 2-module margin; the largest, M4, is 17×17 and holds 35 digits)", "url": "https://www.qrcode.com/en/codes/microqr.html" },
+    { "title": "DENSO WAVE: 長方形型の新しいQRコード「rMQRコード」を開発 (Development of the rMQR Code, a new rectangular QR code, in Japanese; May 2022; ISO/IEC 23941:2022)", "url": "https://www.denso-wave.com/ja/adcd/info/detail__220525.html" },
+    { "title": "DENSO WAVE: rMQR Code (the largest size, R17×139, holds 361 digits)", "url": "https://www.qrcode.com/en/codes/rmqr.html" },
+    { "title": "Council of Anti-Phishing Japan: メールに記載したQRコードから誘導するフィッシング (Phishing that leads people from QR codes in emails, in Japanese; urgent alert of August 28, 2024; emails posing as a card company lead people to fake sites through a QR code)", "url": "https://www.antiphishing.jp/news/alert/qr_20240828.html" },
+    { "title": "Council of Anti-Phishing Japan: フィッシング対策ガイドライン 2026年度版 (Anti-phishing guidelines, 2026 edition, in Japanese; warnings that leave users to judge whether a URL is genuine cannot fully prevent harm)", "url": "https://www.antiphishing.jp/report/antiphishing_guideline_2026.pdf" },
+    { "title": "IPA (Information-technology Promotion Agency, Japan): 情報セキュリティ10大脅威2026 個人編ハンドブック (10 Major Information Security Threats 2026, handbook for individuals, in Japanese; harmful QR codes on signs, flyers and mailed items)", "url": "https://www.ipa.go.jp/security/10threats/omgdg50000008fi8-att/setsumei_2026_kojin.pdf" },
+    { "title": "FBI IC3: Cybercriminals Tampering with QR Codes to Steal Victim Funds (January 18, 2022; check the URL after scanning)", "url": "https://www.ic3.gov/PSA/2022/PSA220118" },
+    { "title": "FTC Consumer Alert: Scammers hide harmful links in QR codes to steal your information (December 2023; check the spelling of the link the scanner app shows)", "url": "https://consumer.ftc.gov/consumer-alerts/2023/12/scammers-hide-harmful-links-qr-codes-steal-your-information" },
+    { "title": "Apple Support: Scan a QR code with your iPhone or iPad (the camera shows the link it read, and opens it when you tap)", "url": "https://support.apple.com/en-us/102680" }
+  ]
+}
+-->
+<p class="lead">A QR code is a grid of small black and white squares that stores letters and numbers as 0s and 1s. It was invented in 1994 at a development division of DENSO, a Japanese car parts maker, to keep track of auto parts. That division is now DENSO WAVE. The code carries extra "spare" information for repairing damage, so it can still be read when part of it is dirty. But a code that scans is not the same as a code that is safe. Always check where a link goes before you open it.</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>Why QR codes were invented, and an outline of the standards</li>
+<li>What the fixed patterns, such as the three big squares, are for</li>
+<li>How "error correction" lets a dirty code still be read</li>
+<li>The steps a phone camera goes through to read a code</li>
+<li>How to protect yourself from QR code scams</li>
+</ul><p class="muted">Prerequisites: binary numbers (writing numbers with only 0 and 1). "<a href="{{home}}learn/how-computers-calculate-with-0-and-1/">How Do Computers Use Binary?</a>" explains them.</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>Paying in a shop with your phone, e-tickets for trains and flights, ordering in a restaurant, setting up Wi-Fi. In each case, you just point your phone's camera, and a long number or a web address is read in.</p>
+<p>What a QR code holds is just a string of letters and numbers. If it holds a web address, the phone tries to open that page. If it holds a payment number, the phone moves to a payment screen. What happens next is decided by the app that read the code, not by the QR code.</p>
+</section>
+
+<section>
+<h2>Where QR codes came from</h2>
+<p>The QR code was born in 1994 in a development division of DENSO, a car parts maker. In 2001 the division was split off and became today's DENSO WAVE. The project was led by Masahiro Hara, and the team started with just two people.</p>
+<p>Factories at the time put barcodes on the tags attached to parts boxes. (In Japanese factories, these tags are called kanban.) But a barcode holds little information, so a single item needed several barcodes, each read in turn. What the factories needed was a code that held more data, read quickly and stood up to dirt.</p>
+<p>QR stands for Quick Response, a name chosen because the aim was fast reading. QR Code is a registered trademark of DENSO WAVE INCORPORATED. At the same time, the company has declared that it will not exercise its patent rights for QR codes that follow the standard. So anyone can make and use QR codes without asking permission.</p>
+<p>The rules for QR codes became a standard of AIM, an industry group for automatic identification, in 1997. They became Japan's national standard JIS X 0510 in 1999, and the international standard ISO/IEC 18004 in 2000. ISO/IEC 18004 has been revised since then, and as of October 2026 the latest edition is from 2024.</p>
+</section>
+
+<section>
+<h2>Part 1: black and white squares stand for 1 and 0</h2>
+<p>Zoom in on a QR code and you see small squares of equal size, lined up like graph paper. Each of these squares is called a module. As a basic rule, a black module means 1 and a white module means 0.</p>
+<p>The number of modules across and down sets the size of the code. These size steps are called versions. The smallest, version 1, is 21 modules on each side. Each step up adds 4 modules on each side, so the largest, version 40, is 177×177 modules.</p>
+<p>How much fits depends on the kind of characters. Digits come in only 10 kinds, 0 to 9. So three digits (1000 combinations) can be packed together into 10 bits (1024 combinations). Letters and kanji have many more kinds, so each character uses more bits. Here is what fits in the largest code, version 40, at level L, the weakest error correction (levels are explained later).</p>
+<table>
+<thead><tr><th>What you store</th><th>Maximum amount</th></tr></thead>
+<tbody>
+<tr><td>Digits only</td><td>7,089 digits</td></tr>
+<tr><td>Alphanumeric (digits, capital letters and some symbols)</td><td>4,296 characters</td></tr>
+<tr><td>Bytes (8-bit values)</td><td>2,953 bytes</td></tr>
+<tr><td>Kanji</td><td>1,817 characters</td></tr>
+</tbody>
+</table>
+<p>Japanese text goes in either with the special kanji mode or as a sequence of bytes. Kanji mode uses the numbers of a Japanese character table called Shift JIS. If the reader guesses the wrong character table, the text comes out garbled.</p>
+</section>
+
+<section>
+<h2>Part 2: the fixed patterns are landmarks for reading</h2>
+<p>Not everything in a QR code's pattern is data. Landmarks for the reading device sit in fixed places. In the figure below, only ⑤ carries data. Everything else is a landmark.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 432" role="img"><title>Parts of a QR code (version 2): finder patterns, timing patterns, alignment pattern, format information, data and quiet zone</title>
+<rect x="38" y="8" width="264" height="264" class="dash"/>
+<rect x="70" y="40" width="56" height="56" class="ink"/>
+<rect x="78" y="48" width="40" height="40" class="hole"/>
+<rect x="86" y="56" width="24" height="24" class="ink"/>
+<rect x="214" y="40" width="56" height="56" class="ink"/>
+<rect x="222" y="48" width="40" height="40" class="hole"/>
+<rect x="230" y="56" width="24" height="24" class="ink"/>
+<rect x="70" y="184" width="56" height="56" class="ink"/>
+<rect x="78" y="192" width="40" height="40" class="hole"/>
+<rect x="86" y="200" width="24" height="24" class="ink"/>
+<rect x="134" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="104" width="8" height="8" class="ink"/>
+<rect x="150" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="120" width="8" height="8" class="ink"/>
+<rect x="166" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="136" width="8" height="8" class="ink"/>
+<rect x="182" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="152" width="8" height="8" class="ink"/>
+<rect x="198" y="88" width="8" height="8" class="ink"/>
+<rect x="118" y="168" width="8" height="8" class="ink"/>
+<rect x="198" y="168" width="40" height="40" class="ink"/>
+<rect x="206" y="176" width="24" height="24" class="hole"/>
+<rect x="214" y="184" width="8" height="8" class="ink"/>
+<rect x="70" y="104" width="8" height="8" class="fa2"/>
+<rect x="78" y="104" width="8" height="8" class="fa2"/>
+<rect x="86" y="104" width="8" height="8" class="fa2"/>
+<rect x="94" y="104" width="8" height="8" class="fa2"/>
+<rect x="102" y="104" width="8" height="8" class="fa2"/>
+<rect x="110" y="104" width="8" height="8" class="fa2"/>
+<rect x="126" y="104" width="8" height="8" class="fa2"/>
+<rect x="134" y="104" width="8" height="8" class="fa2"/>
+<rect x="134" y="40" width="8" height="8" class="fa2"/>
+<rect x="134" y="48" width="8" height="8" class="fa2"/>
+<rect x="134" y="56" width="8" height="8" class="fa2"/>
+<rect x="134" y="64" width="8" height="8" class="fa2"/>
+<rect x="134" y="72" width="8" height="8" class="fa2"/>
+<rect x="134" y="80" width="8" height="8" class="fa2"/>
+<rect x="134" y="96" width="8" height="8" class="fa2"/>
+<rect x="206" y="104" width="8" height="8" class="fa2"/>
+<rect x="214" y="104" width="8" height="8" class="fa2"/>
+<rect x="222" y="104" width="8" height="8" class="fa2"/>
+<rect x="230" y="104" width="8" height="8" class="fa2"/>
+<rect x="238" y="104" width="8" height="8" class="fa2"/>
+<rect x="246" y="104" width="8" height="8" class="fa2"/>
+<rect x="254" y="104" width="8" height="8" class="fa2"/>
+<rect x="262" y="104" width="8" height="8" class="fa2"/>
+<rect x="134" y="176" width="8" height="8" class="fa2"/>
+<rect x="134" y="184" width="8" height="8" class="fa2"/>
+<rect x="134" y="192" width="8" height="8" class="fa2"/>
+<rect x="134" y="200" width="8" height="8" class="fa2"/>
+<rect x="134" y="208" width="8" height="8" class="fa2"/>
+<rect x="134" y="216" width="8" height="8" class="fa2"/>
+<rect x="134" y="224" width="8" height="8" class="fa2"/>
+<rect x="134" y="232" width="8" height="8" class="fa2"/>
+<rect x="142" y="40" width="8" height="8" class="n"/>
+<rect x="150" y="40" width="8" height="8" class="n"/>
+<rect x="166" y="40" width="8" height="8" class="n"/>
+<rect x="182" y="40" width="8" height="8" class="n"/>
+<rect x="190" y="40" width="8" height="8" class="n"/>
+<rect x="142" y="48" width="8" height="8" class="n"/>
+<rect x="150" y="48" width="8" height="8" class="n"/>
+<rect x="158" y="48" width="8" height="8" class="n"/>
+<rect x="166" y="48" width="8" height="8" class="n"/>
+<rect x="174" y="48" width="8" height="8" class="n"/>
+<rect x="190" y="48" width="8" height="8" class="n"/>
+<rect x="198" y="48" width="8" height="8" class="n"/>
+<rect x="166" y="56" width="8" height="8" class="n"/>
+<rect x="182" y="56" width="8" height="8" class="n"/>
+<rect x="198" y="56" width="8" height="8" class="n"/>
+<rect x="142" y="64" width="8" height="8" class="n"/>
+<rect x="150" y="64" width="8" height="8" class="n"/>
+<rect x="158" y="64" width="8" height="8" class="n"/>
+<rect x="174" y="64" width="8" height="8" class="n"/>
+<rect x="198" y="64" width="8" height="8" class="n"/>
+<rect x="150" y="72" width="8" height="8" class="n"/>
+<rect x="158" y="72" width="8" height="8" class="n"/>
+<rect x="166" y="72" width="8" height="8" class="n"/>
+<rect x="182" y="72" width="8" height="8" class="n"/>
+<rect x="190" y="72" width="8" height="8" class="n"/>
+<rect x="142" y="80" width="8" height="8" class="n"/>
+<rect x="150" y="80" width="8" height="8" class="n"/>
+<rect x="174" y="80" width="8" height="8" class="n"/>
+<rect x="150" y="96" width="8" height="8" class="n"/>
+<rect x="166" y="96" width="8" height="8" class="n"/>
+<rect x="174" y="96" width="8" height="8" class="n"/>
+<rect x="190" y="96" width="8" height="8" class="n"/>
+<rect x="198" y="96" width="8" height="8" class="n"/>
+<rect x="142" y="104" width="8" height="8" class="n"/>
+<rect x="182" y="104" width="8" height="8" class="n"/>
+<rect x="78" y="112" width="8" height="8" class="n"/>
+<rect x="102" y="112" width="8" height="8" class="n"/>
+<rect x="126" y="112" width="8" height="8" class="n"/>
+<rect x="166" y="112" width="8" height="8" class="n"/>
+<rect x="174" y="112" width="8" height="8" class="n"/>
+<rect x="190" y="112" width="8" height="8" class="n"/>
+<rect x="198" y="112" width="8" height="8" class="n"/>
+<rect x="206" y="112" width="8" height="8" class="n"/>
+<rect x="214" y="112" width="8" height="8" class="n"/>
+<rect x="222" y="112" width="8" height="8" class="n"/>
+<rect x="238" y="112" width="8" height="8" class="n"/>
+<rect x="246" y="112" width="8" height="8" class="n"/>
+<rect x="254" y="112" width="8" height="8" class="n"/>
+<rect x="70" y="120" width="8" height="8" class="n"/>
+<rect x="78" y="120" width="8" height="8" class="n"/>
+<rect x="126" y="120" width="8" height="8" class="n"/>
+<rect x="134" y="120" width="8" height="8" class="n"/>
+<rect x="142" y="120" width="8" height="8" class="n"/>
+<rect x="166" y="120" width="8" height="8" class="n"/>
+<rect x="174" y="120" width="8" height="8" class="n"/>
+<rect x="182" y="120" width="8" height="8" class="n"/>
+<rect x="190" y="120" width="8" height="8" class="n"/>
+<rect x="198" y="120" width="8" height="8" class="n"/>
+<rect x="214" y="120" width="8" height="8" class="n"/>
+<rect x="222" y="120" width="8" height="8" class="n"/>
+<rect x="230" y="120" width="8" height="8" class="n"/>
+<rect x="238" y="120" width="8" height="8" class="n"/>
+<rect x="94" y="128" width="8" height="8" class="n"/>
+<rect x="142" y="128" width="8" height="8" class="n"/>
+<rect x="150" y="128" width="8" height="8" class="n"/>
+<rect x="158" y="128" width="8" height="8" class="n"/>
+<rect x="174" y="128" width="8" height="8" class="n"/>
+<rect x="182" y="128" width="8" height="8" class="n"/>
+<rect x="190" y="128" width="8" height="8" class="n"/>
+<rect x="198" y="128" width="8" height="8" class="n"/>
+<rect x="206" y="128" width="8" height="8" class="n"/>
+<rect x="214" y="128" width="8" height="8" class="n"/>
+<rect x="222" y="128" width="8" height="8" class="n"/>
+<rect x="230" y="128" width="8" height="8" class="n"/>
+<rect x="238" y="128" width="8" height="8" class="n"/>
+<rect x="246" y="128" width="8" height="8" class="n"/>
+<rect x="254" y="128" width="8" height="8" class="n"/>
+<rect x="78" y="136" width="8" height="8" class="n"/>
+<rect x="86" y="136" width="8" height="8" class="n"/>
+<rect x="94" y="136" width="8" height="8" class="n"/>
+<rect x="102" y="136" width="8" height="8" class="n"/>
+<rect x="110" y="136" width="8" height="8" class="n"/>
+<rect x="142" y="136" width="8" height="8" class="n"/>
+<rect x="150" y="136" width="8" height="8" class="n"/>
+<rect x="158" y="136" width="8" height="8" class="n"/>
+<rect x="166" y="136" width="8" height="8" class="n"/>
+<rect x="174" y="136" width="8" height="8" class="n"/>
+<rect x="182" y="136" width="8" height="8" class="n"/>
+<rect x="198" y="136" width="8" height="8" class="n"/>
+<rect x="206" y="136" width="8" height="8" class="n"/>
+<rect x="230" y="136" width="8" height="8" class="n"/>
+<rect x="246" y="136" width="8" height="8" class="n"/>
+<rect x="86" y="144" width="8" height="8" class="n"/>
+<rect x="94" y="144" width="8" height="8" class="n"/>
+<rect x="102" y="144" width="8" height="8" class="n"/>
+<rect x="142" y="144" width="8" height="8" class="n"/>
+<rect x="150" y="144" width="8" height="8" class="n"/>
+<rect x="206" y="144" width="8" height="8" class="n"/>
+<rect x="222" y="144" width="8" height="8" class="n"/>
+<rect x="230" y="144" width="8" height="8" class="n"/>
+<rect x="238" y="144" width="8" height="8" class="n"/>
+<rect x="246" y="144" width="8" height="8" class="n"/>
+<rect x="254" y="144" width="8" height="8" class="n"/>
+<rect x="78" y="152" width="8" height="8" class="n"/>
+<rect x="110" y="152" width="8" height="8" class="n"/>
+<rect x="126" y="152" width="8" height="8" class="n"/>
+<rect x="134" y="152" width="8" height="8" class="n"/>
+<rect x="142" y="152" width="8" height="8" class="n"/>
+<rect x="150" y="152" width="8" height="8" class="n"/>
+<rect x="182" y="152" width="8" height="8" class="n"/>
+<rect x="206" y="152" width="8" height="8" class="n"/>
+<rect x="246" y="152" width="8" height="8" class="n"/>
+<rect x="254" y="152" width="8" height="8" class="n"/>
+<rect x="70" y="160" width="8" height="8" class="n"/>
+<rect x="94" y="160" width="8" height="8" class="n"/>
+<rect x="102" y="160" width="8" height="8" class="n"/>
+<rect x="134" y="160" width="8" height="8" class="n"/>
+<rect x="142" y="160" width="8" height="8" class="n"/>
+<rect x="150" y="160" width="8" height="8" class="n"/>
+<rect x="174" y="160" width="8" height="8" class="n"/>
+<rect x="206" y="160" width="8" height="8" class="n"/>
+<rect x="222" y="160" width="8" height="8" class="n"/>
+<rect x="230" y="160" width="8" height="8" class="n"/>
+<rect x="70" y="168" width="8" height="8" class="n"/>
+<rect x="94" y="168" width="8" height="8" class="n"/>
+<rect x="102" y="168" width="8" height="8" class="n"/>
+<rect x="110" y="168" width="8" height="8" class="n"/>
+<rect x="126" y="168" width="8" height="8" class="n"/>
+<rect x="142" y="168" width="8" height="8" class="n"/>
+<rect x="150" y="168" width="8" height="8" class="n"/>
+<rect x="158" y="168" width="8" height="8" class="n"/>
+<rect x="174" y="168" width="8" height="8" class="n"/>
+<rect x="182" y="168" width="8" height="8" class="n"/>
+<rect x="246" y="168" width="8" height="8" class="n"/>
+<rect x="158" y="176" width="8" height="8" class="n"/>
+<rect x="166" y="176" width="8" height="8" class="n"/>
+<rect x="174" y="176" width="8" height="8" class="n"/>
+<rect x="182" y="176" width="8" height="8" class="n"/>
+<rect x="238" y="176" width="8" height="8" class="n"/>
+<rect x="246" y="176" width="8" height="8" class="n"/>
+<rect x="142" y="184" width="8" height="8" class="n"/>
+<rect x="174" y="184" width="8" height="8" class="n"/>
+<rect x="190" y="184" width="8" height="8" class="n"/>
+<rect x="238" y="184" width="8" height="8" class="n"/>
+<rect x="158" y="192" width="8" height="8" class="n"/>
+<rect x="238" y="192" width="8" height="8" class="n"/>
+<rect x="254" y="192" width="8" height="8" class="n"/>
+<rect x="166" y="200" width="8" height="8" class="n"/>
+<rect x="238" y="200" width="8" height="8" class="n"/>
+<rect x="246" y="200" width="8" height="8" class="n"/>
+<rect x="254" y="200" width="8" height="8" class="n"/>
+<rect x="262" y="200" width="8" height="8" class="n"/>
+<rect x="142" y="208" width="8" height="8" class="n"/>
+<rect x="150" y="208" width="8" height="8" class="n"/>
+<rect x="182" y="208" width="8" height="8" class="n"/>
+<rect x="206" y="208" width="8" height="8" class="n"/>
+<rect x="230" y="208" width="8" height="8" class="n"/>
+<rect x="246" y="208" width="8" height="8" class="n"/>
+<rect x="254" y="208" width="8" height="8" class="n"/>
+<rect x="150" y="216" width="8" height="8" class="n"/>
+<rect x="158" y="216" width="8" height="8" class="n"/>
+<rect x="174" y="216" width="8" height="8" class="n"/>
+<rect x="182" y="216" width="8" height="8" class="n"/>
+<rect x="190" y="216" width="8" height="8" class="n"/>
+<rect x="206" y="216" width="8" height="8" class="n"/>
+<rect x="222" y="216" width="8" height="8" class="n"/>
+<rect x="230" y="216" width="8" height="8" class="n"/>
+<rect x="238" y="216" width="8" height="8" class="n"/>
+<rect x="262" y="216" width="8" height="8" class="n"/>
+<rect x="166" y="224" width="8" height="8" class="n"/>
+<rect x="174" y="224" width="8" height="8" class="n"/>
+<rect x="182" y="224" width="8" height="8" class="n"/>
+<rect x="198" y="224" width="8" height="8" class="n"/>
+<rect x="206" y="224" width="8" height="8" class="n"/>
+<rect x="214" y="224" width="8" height="8" class="n"/>
+<rect x="238" y="224" width="8" height="8" class="n"/>
+<rect x="246" y="224" width="8" height="8" class="n"/>
+<rect x="150" y="232" width="8" height="8" class="n"/>
+<rect x="158" y="232" width="8" height="8" class="n"/>
+<rect x="174" y="232" width="8" height="8" class="n"/>
+<rect x="182" y="232" width="8" height="8" class="n"/>
+<rect x="214" y="232" width="8" height="8" class="n"/>
+<rect x="230" y="232" width="8" height="8" class="n"/>
+<rect x="246" y="232" width="8" height="8" class="n"/>
+<rect x="254" y="232" width="8" height="8" class="n"/>
+<text x="54" y="73" text-anchor="middle">①</text>
+<text x="286" y="73" text-anchor="middle">①</text>
+<text x="54" y="217" text-anchor="middle">①</text>
+<text x="54" y="113" text-anchor="middle">④</text>
+<text x="170" y="26" text-anchor="middle">②</text>
+<line x1="170" y1="32" x2="170" y2="88" class="ac"/>
+<text x="54" y="145" text-anchor="middle">②</text>
+<line x1="63" y1="140" x2="118" y2="140" class="ac"/>
+<text x="286" y="193" text-anchor="middle">③</text>
+<line x1="277" y1="188" x2="238" y2="188" class="ac"/>
+<text x="286" y="137" text-anchor="middle">⑤</text>
+<line x1="277" y1="132" x2="186" y2="132" class="ac"/>
+<text x="170" y="261" text-anchor="middle">⑥</text>
+<text x="40" y="298">① Finder patterns (3)</text>
+<text x="40" y="322">② Timing patterns</text>
+<text x="40" y="346">③ Alignment pattern</text>
+<text x="40" y="370">④ Format info (colored bands)</text>
+<text x="40" y="394">⑤ Data and error correction</text>
+<text x="40" y="418">⑥ Quiet zone (4 modules)</text>
+</svg><figcaption class="fig-cap">The parts of a version 2 QR code (25×25 modules). The landmarks that print in black (① to ③) are shown filled. The dots in ⑤ are a random sample, drawn in a pale color so they are easy to tell apart from the landmarks. For ④, colored bands show only where it sits. Left out: the 0s and 1s inside the format information, the mask, and the order in which the data is laid out.</figcaption></figure>
+<ul>
+<li><strong>① Finder patterns</strong>: the large squares in three corners. They tell the reader where the code is, which way it faces and how big it is.</li>
+<li><strong>② Timing patterns</strong>: rows of alternating black and white modules that join the large squares. They work as a ruler for measuring the spacing of the modules.</li>
+<li><strong>③ Alignment pattern</strong>: a small square found in version 2 and above. It is a clue for correcting distortion when the code is photographed at an angle. Bigger versions have more of them, and version 40 has 46.</li>
+<li><strong>④ Format information</strong>: records the error correction strength and the number of the "mask" (explained later). The code cannot be read without it, so the same content is stored in two places.</li>
+<li><strong>⑥ Quiet zone</strong>: an empty margin 4 modules wide is needed all around. It separates the code from nearby text and pictures.</li>
+</ul>
+<p>Version 7 and above also have an area that records the version number. The figure leaves it out.</p>
+</section>
+
+<section>
+<h2>Why the three big squares are "1:1:3:1:1"</h2>
+<p>A finder pattern is a black frame, a white frame and a black core, one inside the other. Along a line through the center, the black, white, black, white and black widths are in the ratio 1:1:3:1:1. The ratio stays the same across, down or at a slant, as long as the line goes through the center.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 294" role="img"><title>Along a line through the center of a finder pattern, the black, white, black, white and black widths are 1:1:3:1:1</title>
+<rect x="100" y="14" width="140" height="140" class="ink"/>
+<rect x="120" y="34" width="100" height="100" class="hole"/>
+<rect x="140" y="54" width="60" height="60" class="ink"/>
+<line x1="86" y1="84.0" x2="254" y2="84.0" class="ac"/>
+<line x1="90" y1="4" x2="250" y2="164" class="ac2"/>
+<text x="258" y="89.0" class="a">Across</text>
+<text x="254" y="168">Slant</text>
+<rect x="100" y="184" width="20" height="24" class="ink"/>
+<text x="110.0" y="230" text-anchor="middle" class="a">1</text>
+<rect x="120" y="184" width="20" height="24" class="ok"/>
+<text x="130.0" y="230" text-anchor="middle" class="a">1</text>
+<rect x="140" y="184" width="60" height="24" class="ink"/>
+<text x="170.0" y="230" text-anchor="middle" class="a">3</text>
+<rect x="200" y="184" width="20" height="24" class="ok"/>
+<text x="210.0" y="230" text-anchor="middle" class="a">1</text>
+<rect x="220" y="184" width="20" height="24" class="ink"/>
+<text x="230.0" y="230" text-anchor="middle" class="a">1</text>
+<line x1="100" y1="158" x2="100" y2="180" class="dash"/>
+<line x1="120" y1="158" x2="120" y2="180" class="dash"/>
+<line x1="140" y1="158" x2="140" y2="180" class="dash"/>
+<line x1="200" y1="158" x2="200" y2="180" class="dash"/>
+<line x1="220" y1="158" x2="220" y2="180" class="dash"/>
+<line x1="240" y1="158" x2="240" y2="180" class="dash"/>
+<text x="88" y="202" text-anchor="end">Width</text>
+<text x="170" y="260" text-anchor="middle">Through the center, in any direction,</text>
+<text x="170" y="282" text-anchor="middle">the widths are 1:1:3:1:1</text>
+</svg><figcaption class="fig-cap">A finder pattern is made of a 7×7 black frame, a 5×5 white frame and a 3×3 black core (black is shown filled). On any line through the center, even a slanted one, the widths stay at 1:1:3:1:1, because every length stretches by the same factor. Left out: the 1-module white band around the pattern.</figcaption></figure>
+<p>So even if the code is rotated, the reader only has to look for this sequence of widths to find the landmarks. According to DENSO WAVE, the team studied printing on flyers, magazines and cardboard boxes. They chose 1:1:3:1:1 as the ratio least likely to appear in printed matter. That way, photos or text around the code are unlikely to be mistaken for a landmark.</p>
+<p>There are three big squares because three are enough to fix the direction. The corner without a square tells the reader where the bottom right of the code is. Even if the code is photographed upside down, it can be turned the right way and read.</p>
+</section>
+
+<section>
+<h2>Part 3: "error correction" lets dirty codes be read</h2>
+<p>Besides the data, a QR code holds spare information for repairing damaged parts. Dirt or a scratch may cause some modules to be misread. Even then, the original data can be worked out again from the spare information. This is called error correction.</p>
+<p>The CRC described in "<a href="{{home}}learn/crc-and-gf2-polynomials/">How CRC Works</a>" only detects that an error exists. In networking, that is enough: you can ask the sender to send again. But a printed QR code has no one to ask for a resend. So it uses a method that lets the receiver fix errors on its own. This method is called {{term:前方誤り訂正(FEC)|forward error correction (FEC)}}.</p>
+<p>A QR code handles its data in chunks of 8 bits. Each chunk is called a codeword. The spare codewords are made from the data codewords by a fixed calculation.</p>
+<p>That calculation is the Reed–Solomon code, published by Reed and Solomon in 1960. Besides QR codes, it is used in CDs and DVDs to fix errors caused by scratches. Codes that can fix errors are called {{term:ECC(誤り訂正符号)|error-correcting codes}}, and the Reed–Solomon code is one of the best-known.</p>
+<h3>Four strengths (error correction levels)</h3>
+<p>The person who makes a QR code can choose from four levels of how much spare information to add. DENSO WAVE gives the amount each level can repair as follows.</p>
+<table>
+<thead><tr><th>Level</th><th>Amount that can be restored (by number of codewords)</th></tr></thead>
+<tbody>
+<tr><td>L</td><td>About 7%</td></tr>
+<tr><td>M</td><td>About 15%</td></tr>
+<tr><td>Q</td><td>About 25%</td></tr>
+<tr><td>H</td><td>About 30%</td></tr>
+</tbody>
+</table>
+<p>These shares count codewords, not area on paper. A single spot of dirt can touch two codewords. The company also warns that the data may not be restored, depending on the dirt or damage. And if the landmarks ① to ④ get dirty, the code may not scan even when the data is intact.</p>
+<h3>The Reed–Solomon code in plain words</h3>
+<p>The Reed–Solomon code makes spare values from the data that follow a fixed rule. The receiver works backward to find the damaged values, so that the remaining values fit the rule. Let's think it through with an analogy instead of equations.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>Say you want to send two numbers, 2 and 5. Continue them with the rule "grow by the same amount each step," and you get 2, 5, 8, 11. Send all four. If two of them get lost on the way, the other two still show the step size, so you can rebuild the list. If one turns into a different number, three of the four still fit the rule. So you can tell that the odd one out is the error.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> The real code does not use ordinary addition. It works in a special world of arithmetic that uses the numbers 0 to 255. This extends the "arithmetic without carries" from the CRC article, and the results always stay within 0 to 255 (one byte). Also, the rule is far more complex than "grow by the same amount," and it ties dozens of values together at once. The analogy shows only one idea: working backward from spare values that follow a rule to find what was damaged.</p></aside>
+<p>In the analogy, when you knew which places were lost, one spare value fixed one lost value. When you don't know which value changed, you must also find which one is wrong, so you need two spare values. The QR code level percentages count errors whose positions are unknown. That is why level H, which fixes about 30%, uses more than half the code for spare information.</p>
+<p>More spare information means better resistance to dirt, but less data fits in the same size. For example, version 1 holds 41 digits at level L, but only 17 at level H. According to DENSO WAVE, Q or H is sometimes chosen for places that get dirty easily, such as factories.</p>
+</section>
+
+<section>
+<h2>Part 4: masks even out the pattern</h2>
+<p>If the data were laid out as is, big blocks of all white or all black could appear. Big blocks make it hard to count where one module ends and the next begins. A pattern that looks like a finder pattern might also appear by chance.</p>
+<p>So a fixed pattern is laid over the data area to swap some whites and blacks. This pattern is called a mask. It is applied with a calculation called XOR. If the two values are the same, the result is 0 (white). If they differ, it is 1 (black).</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 226" role="img"><title>Mask: laying a checkerboard over the data with XOR removes the big block of white</title>
+<rect x="8" y="32" width="13" height="13" class="ok"/>
+<rect x="21" y="32" width="13" height="13" class="ok"/>
+<rect x="34" y="32" width="13" height="13" class="ok"/>
+<rect x="47" y="32" width="13" height="13" class="ok"/>
+<rect x="60" y="32" width="13" height="13" class="ink"/>
+<rect x="73" y="32" width="13" height="13" class="ink"/>
+<rect x="8" y="45" width="13" height="13" class="ok"/>
+<rect x="21" y="45" width="13" height="13" class="ok"/>
+<rect x="34" y="45" width="13" height="13" class="ok"/>
+<rect x="47" y="45" width="13" height="13" class="ok"/>
+<rect x="60" y="45" width="13" height="13" class="ink"/>
+<rect x="73" y="45" width="13" height="13" class="ok"/>
+<rect x="8" y="58" width="13" height="13" class="ok"/>
+<rect x="21" y="58" width="13" height="13" class="ok"/>
+<rect x="34" y="58" width="13" height="13" class="ok"/>
+<rect x="47" y="58" width="13" height="13" class="ok"/>
+<rect x="60" y="58" width="13" height="13" class="ok"/>
+<rect x="73" y="58" width="13" height="13" class="ink"/>
+<rect x="8" y="71" width="13" height="13" class="ok"/>
+<rect x="21" y="71" width="13" height="13" class="ok"/>
+<rect x="34" y="71" width="13" height="13" class="ok"/>
+<rect x="47" y="71" width="13" height="13" class="ok"/>
+<rect x="60" y="71" width="13" height="13" class="ink"/>
+<rect x="73" y="71" width="13" height="13" class="ink"/>
+<rect x="8" y="84" width="13" height="13" class="ink"/>
+<rect x="21" y="84" width="13" height="13" class="ink"/>
+<rect x="34" y="84" width="13" height="13" class="ok"/>
+<rect x="47" y="84" width="13" height="13" class="ink"/>
+<rect x="60" y="84" width="13" height="13" class="ok"/>
+<rect x="73" y="84" width="13" height="13" class="ok"/>
+<rect x="8" y="97" width="13" height="13" class="ink"/>
+<rect x="21" y="97" width="13" height="13" class="ok"/>
+<rect x="34" y="97" width="13" height="13" class="ink"/>
+<rect x="47" y="97" width="13" height="13" class="ink"/>
+<rect x="60" y="97" width="13" height="13" class="ok"/>
+<rect x="73" y="97" width="13" height="13" class="ok"/>
+<text x="47" y="22" text-anchor="middle">Data</text>
+<text x="47" y="134" text-anchor="middle" class="m">Block of 0s</text>
+<rect x="131" y="32" width="13" height="13" class="ink"/>
+<rect x="144" y="32" width="13" height="13" class="ok"/>
+<rect x="157" y="32" width="13" height="13" class="ink"/>
+<rect x="170" y="32" width="13" height="13" class="ok"/>
+<rect x="183" y="32" width="13" height="13" class="ink"/>
+<rect x="196" y="32" width="13" height="13" class="ok"/>
+<rect x="131" y="45" width="13" height="13" class="ok"/>
+<rect x="144" y="45" width="13" height="13" class="ink"/>
+<rect x="157" y="45" width="13" height="13" class="ok"/>
+<rect x="170" y="45" width="13" height="13" class="ink"/>
+<rect x="183" y="45" width="13" height="13" class="ok"/>
+<rect x="196" y="45" width="13" height="13" class="ink"/>
+<rect x="131" y="58" width="13" height="13" class="ink"/>
+<rect x="144" y="58" width="13" height="13" class="ok"/>
+<rect x="157" y="58" width="13" height="13" class="ink"/>
+<rect x="170" y="58" width="13" height="13" class="ok"/>
+<rect x="183" y="58" width="13" height="13" class="ink"/>
+<rect x="196" y="58" width="13" height="13" class="ok"/>
+<rect x="131" y="71" width="13" height="13" class="ok"/>
+<rect x="144" y="71" width="13" height="13" class="ink"/>
+<rect x="157" y="71" width="13" height="13" class="ok"/>
+<rect x="170" y="71" width="13" height="13" class="ink"/>
+<rect x="183" y="71" width="13" height="13" class="ok"/>
+<rect x="196" y="71" width="13" height="13" class="ink"/>
+<rect x="131" y="84" width="13" height="13" class="ink"/>
+<rect x="144" y="84" width="13" height="13" class="ok"/>
+<rect x="157" y="84" width="13" height="13" class="ink"/>
+<rect x="170" y="84" width="13" height="13" class="ok"/>
+<rect x="183" y="84" width="13" height="13" class="ink"/>
+<rect x="196" y="84" width="13" height="13" class="ok"/>
+<rect x="131" y="97" width="13" height="13" class="ok"/>
+<rect x="144" y="97" width="13" height="13" class="ink"/>
+<rect x="157" y="97" width="13" height="13" class="ok"/>
+<rect x="170" y="97" width="13" height="13" class="ink"/>
+<rect x="183" y="97" width="13" height="13" class="ok"/>
+<rect x="196" y="97" width="13" height="13" class="ink"/>
+<text x="170" y="22" text-anchor="middle">Mask</text>
+<text x="170" y="134" text-anchor="middle" class="m">Checkerboard</text>
+<rect x="254" y="32" width="13" height="13" class="ink"/>
+<rect x="267" y="32" width="13" height="13" class="ok"/>
+<rect x="280" y="32" width="13" height="13" class="ink"/>
+<rect x="293" y="32" width="13" height="13" class="ok"/>
+<rect x="306" y="32" width="13" height="13" class="ok"/>
+<rect x="319" y="32" width="13" height="13" class="ink"/>
+<rect x="254" y="45" width="13" height="13" class="ok"/>
+<rect x="267" y="45" width="13" height="13" class="ink"/>
+<rect x="280" y="45" width="13" height="13" class="ok"/>
+<rect x="293" y="45" width="13" height="13" class="ink"/>
+<rect x="306" y="45" width="13" height="13" class="ink"/>
+<rect x="319" y="45" width="13" height="13" class="ink"/>
+<rect x="254" y="58" width="13" height="13" class="ink"/>
+<rect x="267" y="58" width="13" height="13" class="ok"/>
+<rect x="280" y="58" width="13" height="13" class="ink"/>
+<rect x="293" y="58" width="13" height="13" class="ok"/>
+<rect x="306" y="58" width="13" height="13" class="ink"/>
+<rect x="319" y="58" width="13" height="13" class="ink"/>
+<rect x="254" y="71" width="13" height="13" class="ok"/>
+<rect x="267" y="71" width="13" height="13" class="ink"/>
+<rect x="280" y="71" width="13" height="13" class="ok"/>
+<rect x="293" y="71" width="13" height="13" class="ink"/>
+<rect x="306" y="71" width="13" height="13" class="ink"/>
+<rect x="319" y="71" width="13" height="13" class="ok"/>
+<rect x="254" y="84" width="13" height="13" class="ok"/>
+<rect x="267" y="84" width="13" height="13" class="ink"/>
+<rect x="280" y="84" width="13" height="13" class="ink"/>
+<rect x="293" y="84" width="13" height="13" class="ink"/>
+<rect x="306" y="84" width="13" height="13" class="ink"/>
+<rect x="319" y="84" width="13" height="13" class="ok"/>
+<rect x="254" y="97" width="13" height="13" class="ink"/>
+<rect x="267" y="97" width="13" height="13" class="ink"/>
+<rect x="280" y="97" width="13" height="13" class="ink"/>
+<rect x="293" y="97" width="13" height="13" class="ok"/>
+<rect x="306" y="97" width="13" height="13" class="ok"/>
+<rect x="319" y="97" width="13" height="13" class="ink"/>
+<text x="293" y="22" text-anchor="middle">Result</text>
+<text x="293" y="134" text-anchor="middle" class="m">Block gone</text>
+<text x="108" y="76" text-anchor="middle" class="a">⊕</text>
+<text x="231" y="76" text-anchor="middle" class="a">=</text>
+<rect x="6" y="30" width="56" height="56" class="ac"/>
+<rect x="96" y="153" width="13" height="13" class="ink"/><text x="114" y="166">= 1</text>
+<rect x="196" y="153" width="13" height="13" class="ok"/><text x="214" y="166">= 0</text>
+<text x="170" y="190" text-anchor="middle">⊕: same → 0, different → 1</text>
+<text x="170" y="214" text-anchor="middle" class="m">Apply the mask again to undo it</text>
+</svg><figcaption class="fig-cap">A 6×6 sample. The big block of 0s at the top left (outlined) disappears when the checkerboard mask is laid over it. Filled cells (black in print) are 1 and empty cells (white in print) are 0, and XOR is applied cell by cell. Real QR codes have eight masks, and they are not applied to the landmarks (① to ④). Left out: the separate mask applied to the format information.</figcaption></figure>
+<p>Only where the mask is black does the data flip between black and white. When the reader applies the same mask again, the flips cancel out and the original data comes back. You can try XOR with the <a href="{{home}}tools/bitwise-operations-calculator/">bitwise operations calculator</a>.</p>
+<p>There are eight mask patterns. The encoder tries all eight and scores each one, picking the one with the fewest blocks and confusing patterns. The mask it used is recorded in the format information ④.</p>
+</section>
+
+<section>
+<h2>How a phone reads a QR code</h2>
+<p>Between pointing the camera and seeing the text, a phone does the following steps in order. The details are left out to show just the flow.</p>
+<ol>
+<li><strong>Take a picture</strong>: the camera's sensor chip (the image sensor) turns the brightness of light into a number for each point ("<a href="{{home}}learn/how-image-sensors-work/">How Do Image Sensors Work?</a>")</li>
+<li><strong>Split into black and white</strong>: it sets a brightness threshold and sorts each point into black or white</li>
+<li><strong>Find the three squares</strong>: it looks for the 1:1:3:1:1 sequence to learn the code's position, direction and size</li>
+<li><strong>Correct the distortion</strong>: a square photographed at an angle looks like a trapezoid. Using the positions of the squares and the alignment pattern, it calculates how the code would look from the front</li>
+<li><strong>Read the modules</strong>: it measures the module spacing with the timing patterns and reads each module as 0 or 1</li>
+<li><strong>Read the format information</strong>: it learns the error correction level and the mask number</li>
+<li><strong>Remove the mask</strong>: it applies the same mask again to get back the original data</li>
+<li><strong>Fix errors</strong>: it uses the Reed–Solomon code to fix codewords that dirt has changed</li>
+<li><strong>Turn it back into text</strong>: it reads the marker for the encoding type (digits, alphanumeric, bytes or kanji) and the character count, then turns the data into text</li>
+</ol>
+<p>On a phone, all of this happens in an instant. The iPhone camera and others first show the link they read on the screen, and open it only when you tap. This moment before opening is the key moment for stopping the scams described next.</p>
+</section>
+
+<section>
+<h2>Watch out for QR code scams</h2>
+<p>People cannot read what a QR code says just by looking at it. Some scams abuse this to lure people to fake websites. A trick that poses as a real company to steal passwords and other details is called {{term:フィッシング|phishing}}. When it uses a QR code, it is also called "quishing."</p>
+<p>In Japan, for example, the Council of Anti-Phishing Japan issued a warning in August 2024. It was about emails posing as a card company that lead people to fake sites through a QR code. IPA (Information-technology Promotion Agency, Japan) also reports harmful QR codes found on signs, flyers and mailed items. In the US, the FBI warned in January 2022 that real QR codes were being swapped for fake ones.</p>
+<p>Putting the advice from these agencies together, it comes to this:</p>
+<ul>
+<li>Before opening a link, check the URL (web address) shown on the screen. Watch for fake names that differ by just one letter</li>
+<li>Don't log in from a QR code sent by email or text message. Open the site from the official app or from a bookmark you saved yourself</li>
+<li>For QR codes posted in public places, check that no other sticker has been put on top</li>
+<li>If the page you reach asks for a password or card number, stop for a moment</li>
+</ul>
+<p>Still, looking at a URL is not always enough to be sure a site is real. The Council of Anti-Phishing Japan also says that relying only on checking URLs cannot fully prevent harm. The safest approach combines the habit of opening sites from official apps with {{term:多要素認証|multi-factor authentication}} (a second check besides your password). "<a href="{{home}}learn/what-does-https-mean/">What Does HTTPS Mean?</a>" explains how fake sites relate to the padlock icon.</p>
+</section>
+
+<section>
+<h2>Relatives of the QR code</h2>
+<p>The Micro QR Code is a small version with only one finder pattern. Its margin needs only 2 modules, so it can be printed in tight spots such as on small parts. Even the largest size, M4, is only 17×17 modules and holds up to 35 digits.</p>
+<p>The rMQR Code is a rectangular QR code. DENSO WAVE developed it, and in May 2022 it became the international standard ISO/IEC 23941. It can be printed in long, narrow spaces, and its largest size (17×139 modules) holds up to 361 digits.</p>
+</section>
+
+<section>
+<h2>Common myths</h2>
+<div class="myth"><p class="myth-q">Myth: if everyone keeps making them, we will run out of QR codes someday</p><p>In fact, QR codes are not numbers handed out like phone numbers. A QR code is just its text content turned into a pattern by fixed rules. Even the smallest, version 1 at level L, holds 17 bytes. Each byte has 256 possible values, so there are more than 10<sup>40</sup> combinations. Many QR codes with the same content cause no problem at all.</p></div>
+<div class="myth"><p class="myth-q">Myth: the logo in the middle sits in a "logo space" set aside in the QR code</p><p>In fact, QR codes have no space for a logo. The modules hidden by the logo are repaired by error correction every time the code is read. But there is a limit to how much can be repaired. If the logo covers the three big squares or the format information, the code will not scan even when the data is intact. DENSO WAVE also warns that text or pictures laid over a code can make it unreadable. If you add a logo, the basic rule is to raise the error correction level and test the code on several devices.</p></div>
+<div class="myth"><p class="myth-q">Myth: if a QR code scans properly, its content is safe</p><p>In fact, "it scanned" only means the text was correctly taken out of the pattern. Error correction guards against errors from dirt and scratches, not against bad intent by whoever made the code. A QR code holding the URL of a fake site scans perfectly well. Whether it is safe is something you judge at the destination you open after scanning.</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Number</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td>1994</td><td>The year the QR code was developed</td></tr>
+<tr><td>2024</td><td>The edition of the current international standard ISO/IEC 18004 (as of October 2026)</td></tr>
+<tr><td>21×21 to 177×177</td><td>Modules across and down, from version 1 to version 40</td></tr>
+<tr><td>7,089 digits</td><td>The most digits that fit in version 40 at level L</td></tr>
+<tr><td>About 7–30%</td><td>The share of all codewords that error correction levels L to H can restore</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Glossary entries: {{term:前方誤り訂正(FEC)|Forward error correction (FEC)}} / {{term:ECC(誤り訂正符号)|ECC (error-correcting code)}} / {{term:ハミング符号|Hamming code}} / {{term:CRC(巡回冗長検査)|CRC (cyclic redundancy check)}}</li>
+<li>Try it with numbers: <a href="{{home}}tools/hamming-code-calculator/">Hamming code calculator</a> (the simplest code that fixes errors) / <a href="{{home}}tools/crc-calculator/">CRC calculator</a> (a code that detects errors)</li>
+<li>Related explainers: "<a href="{{home}}learn/crc-and-gf2-polynomials/">How CRC Works</a>" / "<a href="{{home}}learn/how-image-sensors-work/">How Do Image Sensors Work?</a>" / "<a href="{{home}}learn/how-passwords-get-cracked/">How Are Passwords Cracked?</a>"</li>
+</ul>
+</section>
