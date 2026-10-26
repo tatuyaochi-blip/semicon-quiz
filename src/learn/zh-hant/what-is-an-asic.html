@@ -1,0 +1,247 @@
+<!--
+{
+  "title": "ASIC是什麼？特定應用積體電路與CPU、FPGA的差異",
+  "description": "ASIC（特定應用積體電路）是只為一種固定工作設計製造的晶片。本文說明它為何比CPU快又省電、為何一開始要花大筆費用且做越多越划算、製作流程，以及與FPGA、ASSP的差異。",
+  "series": "computer-basics",
+  "order": 9,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["eda", "industry", "ai-stack", "cpu"],
+  "terms": ["ASIC(特定用途向けIC)", "MPW(マルチプロジェクトウエハ)", "スタンダードセル", "RTL(レジスタ転送レベル)"],
+  "sources": [
+    { "title": "Google Cloud Blog: An in-depth look at Google's first Tensor Processing Unit (TPU)（2017年5月12日。在推論工作上，性能是同時期CPU、GPU的15～30倍，每單位電力30～80倍。從設計到在資料中心運作花了15個月。28 nm的ASIC）", "url": "https://cloud.google.com/blog/products/ai-machine-learning/an-in-depth-look-at-googles-first-tensor-processing-unit-tpu" },
+    { "title": "N. P. Jouppi et al.: In-Datacenter Performance Analysis of a Tensor Processing Unit, ISCA 2017（比較對象是同一個資料中心使用的Intel Haswell CPU與NVIDIA K80 GPU）", "url": "https://arxiv.org/abs/1704.04760" },
+    { "title": "Google Cloud: TPU transformation: A look back at 10 years of our AI-specialized chips（第一代TPU用於推論。從第二代起也能進行訓練）", "url": "https://cloud.google.com/transform/ai-specialized-chips-tpu-history-gen-ai" },
+    { "title": "Google Cloud Blog: Google supercharges machine learning tasks with TPU custom chip（2016年5月19日。已在資料中心使用超過1年）", "url": "https://cloud.google.com/blog/products/ai-machine-learning/google-supercharges-machine-learning-tasks-with-custom-chip" },
+    { "title": "S. Nakamoto: Bitcoin: A Peer-to-Peer Electronic Cash System（2008年。使用SHA-256等雜湊的工作量證明）", "url": "https://bitcoin.org/bitcoin.pdf" },
+    { "title": "Canaan Inc.: Company Profile（該公司說明，2013年創業團隊以Avalon的名稱，首次出貨使用ASIC的礦機）", "url": "https://canaan.gcs-web.com/corporate/company-profile" },
+    { "title": "Canaan Inc.: Form 20-F（2022年度年報。公司沿革）", "url": "https://www.sec.gov/Archives/edgar/data/1780652/000110465923047189/can-20221231x20f.htm" },
+    { "title": "Apple Newsroom: Apple unveils iPhone 15 Pro and iPhone 15 Pro Max（2023年9月12日。A17 Pro內建專用的AV1解碼器）", "url": "https://www.apple.com/newsroom/2023/09/apple-unveils-iphone-15-pro-and-iphone-15-pro-max/" },
+    { "title": "P. Ranganathan et al.: Warehouse-Scale Video Acceleration: Co-design and Deployment in the Wild, ASPLOS 2021（Google。轉換影片用的VCU。與調校良好、不使用專用晶片的系統相比，效率為20～33倍）", "url": "https://research.google/pubs/pub50300/" },
+    { "title": "Broadcom: Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads（2022年8月16日。1顆晶片51.2 Tb/s）", "url": "https://www.nasdaq.com/press-release/broadcom-ships-tomahawk-5-industrys-highest-bandwidth-switch-chip-to-accelerate-ai-ml" },
+    { "title": "AnandTech: Hot Chips 31 Live Blogs: Tesla Solution for Full Self Driving（2019年8月。Tesla在Hot Chips 31的發表。每顆晶片不到40 W，Samsung的14 nm）", "url": "https://www.anandtech.com/show/14766/hot-chips-31-live-blogs-tesla-solution-for-full-self-driving" },
+    { "title": "SemiAnalysis（D. Patel）: The Dark Side Of The Semiconductor Design Renaissance – Fixed Costs Soaring Due To Photomask Sets, Verification, and Validation（2022年7月24日。一整套光罩費用的估計：28 nm超過100萬美元，7 nm超過1,000萬美元。先進製程有超過60層的微影）", "url": "https://newsletter.semianalysis.com/p/the-dark-side-of-the-semiconductor" },
+    { "title": "Semiconductor Engineering: What Will That Chip Cost?（先進晶片設計費用的估計。規模達數億美元）", "url": "https://semiengineering.com/what-will-that-chip-cost/" },
+    { "title": "TSMC: CyberShuttle Prototyping Service（1998年起。多個設計共用光罩的試作服務）", "url": "https://www.tsmc.com/english/dedicatedFoundry/services/cyberShuttle" },
+    { "title": "東京大學 大學院工學系研究科（日文資料）：池田誠教授、淺田邦博名譽教授獲電子情報通信學會業績賞（2021年6月。VDEC於1996年成立，為全國共同使用的設施。彙整設計資料、便宜試作的共乘服務）", "url": "https://www.t.u-tokyo.ac.jp/shared/topics/data/setnws_202106071040333637307962_495424.pdf" },
+    { "title": "MONOist（日文報導）：從ASIC與FPGA的對比看「轉折點」 FPGA Watch(2)（2010年。廣義的ASIC也包含ASSP，狹義則指為特定客戶做的晶片）", "url": "https://monoist.itmedia.co.jp/mn/articles/1004/22/news096.html" }
+  ]
+}
+-->
+<p class="lead">ASIC是只為一種固定工作而設計、製造的晶片。做這項工作時，它比什麼都能做的CPU更快，也更省電。不過，它做不了其他工作，而且開始生產前要花很大的費用。因此，越是大量生產的產品，越適合用ASIC。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>ASIC是什麼，以及生活中用到它的例子</li>
+<li>專用晶片為什麼比較快，也比較省電</li>
+<li>「只在一開始花一次的費用」的原理，以及為什麼做越多越划算</li>
+<li>ASIC的製作流程，以及分攤試作費用的方式</li>
+<li>與CPU、GPU、FPGA的差異，以及與ASSP的差異</li>
+</ul><p class="muted">先備知識：如果知道晶片（積體電路）是把電晶體和導線整合在一塊矽上的電路，會比較容易閱讀。這在「<a href="{{home}}learn/what-is-an-integrated-circuit/">積體電路（IC）是什麼？</a>」中說明。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>手機上看的影片資料，為了方便傳送，都經過壓縮變小。播放時，要不停地計算，把它還原成原本的影像。許多手機是由專用電路負責這項計算。例如Apple在2023年發表，在iPhone 15 Pro的晶片裡加入了專用電路。這是用來還原AV1格式影片的電路。</p>
+<p>網路搜尋和翻譯的背後，也有專用晶片。Google在2016年公開了為AI計算而自行設計的晶片「TPU」。比特幣「挖礦」用的機器裡，也裝著只會做這種計算的晶片。</p>
+<p>這種「為一種工作而做的晶片」，就稱為ASIC。像手機的影片電路那樣，放在晶片一部分裡的專用電路，概念也一樣。本文會依序說明，為什麼要特地做專用晶片，又是怎麼做出來的。</p>
+</section>
+
+<section>
+<h2>ASIC是什麼：為一種工作設計的晶片</h2>
+<p>ASIC是英文Application Specific Integrated Circuit的縮寫。中文稱為「特定應用積體電路」，也譯作「特殊應用積體電路」。如同名稱，它是為固定用途設計的積體電路（IC）。</p>
+<p>相反的想法，是什麼都能用的通用晶片。代表是CPU，只要換掉程式，計算、寫文件、玩遊戲都能做（「<a href="{{home}}learn/what-is-a-cpu/">CPU是什麼？</a>」）。ASIC則從一開始就限定用途。相對地，它能把這項工作做得非常好。</p>
+<p>「一種工作」的範圍，因晶片而不同。有的ASIC幾乎只重複一種計算。也有的ASIC是為了一個產品，把許多功能整合起來設計。兩者的共同點，是「只為這個用途而做」。</p>
+</section>
+
+<section>
+<h2>用在哪裡？</h2>
+<ul>
+<li><strong>比特幣挖礦</strong>：比特幣會一再重複一種計算，從資料算出固定長度的數，尋找符合條件的答案。這種計算是{{term:ハッシュ関数|雜湊函數}}的一種，稱為SHA-256。Canaan公司表示，他們在2013年1月出貨使用ASIC的礦機，而且是全世界第一台。</li>
+<li><strong>AI的計算</strong>：Google的TPU，是專門做AI所用「乘了再加」計算的晶片。2016年公開時，它已經在資料中心使用超過1年。</li>
+<li><strong>影片</strong>：除了手機晶片裡的影片電路，也有資料中心用的專用晶片。Google在2021年的論文中，報告了用來轉換影片格式的專用晶片。</li>
+<li><strong>網路</strong>：資料中心裡，有把資料依目的地分送的設備（交換器），裡面就有這種晶片。Broadcom公司在2022年發表Tomahawk 5晶片出貨。1顆晶片每秒可分送51.2兆位元的資料。</li>
+<li><strong>汽車</strong>：Tesla在2019年的學術會議Hot Chips上，說明了為駕駛輔助功能自行設計的晶片。他們表示，1顆晶片的功耗壓在40瓦以下。</li>
+</ul>
+</section>
+
+<section>
+<h2>原理1：為什麼專用就比較快、比較省電？</h2>
+<p>CPU會從記憶體一個一個取出指令來執行，指令上寫著工作的步驟。取出、解讀意思、計算、存放結果。它能應付任何工作，但每次都要花計算本身以外的工夫。</p>
+<p>ASIC則把工作步驟本身做成電路的形狀。資料只要流過依固定順序排列的計算電路就好。不必花工夫解讀指令，也不用放進用不到的電路。還能把許多相同的計算電路排在一起，同時運作。</p>
+<p>能看出效果有多大的例子，是第一代TPU。Google在2017年的解說中，拿它和當時同一個資料中心使用的CPU和GPU比較。TPU比它們快15～30倍。以每單位電力的性能來看，則是30～80倍。不過，比較的只有一種計算：讓訓練完成的AI給出答案。</p>
+<p>也就是說，「快」「省電」，指的是設計時決定的那項工作。決定以外的工作，ASIC基本上做不了。</p>
+</section>
+
+<section>
+<h2>原理2：一開始的費用，與每顆的費用</h2>
+<p>把ASIC的費用分成兩種來想，會比較容易懂。第一種，是和生產數量無關、只在一開始花一次的費用。這稱為NRE。這是英文Non-Recurring Engineering的縮寫，意思是「不重複的開發費用」，中文常稱為非重複性工程費用。</p>
+<p>NRE的內容主要有3項。第一是許多工程師花長時間設計、確認所需的人事費用。第二是設計軟體的使用費，以及使用其他公司設計好的電路藍圖的授權費。第三是製作原版的費用，原版上畫著電路的圖案（{{term:フォトマスク(レチクル)|光罩}}）。</p>
+<p>光罩大致上是晶片的每一層各需要1片。根據研究公司SemiAnalysis在2022年的文章，先進晶片的層數超過60層。因此，一整套光罩非常昂貴。而且，光罩是一個設計的專用品，不能挪用到其他晶片。</p>
+<p>第二種，是每做1顆就要花的費用。這包括在矽的圓形薄板（晶圓）上做出電路、切開、裝進與外部連接的外殼（封裝），再加以檢測的費用。ASIC沒有多餘的電路，可以做得小，所以這筆費用比較便宜。</p>
+<p>每顆的費用，是NRE除以生產數量的部分，加上做1顆的費用。接下來，用為了說明而假設的數字來計算。假設NRE是新台幣6億元，做1顆的費用是新台幣100元。只做1萬顆，每顆約新台幣6萬元。做1,000萬顆，每顆就降到新台幣160元。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 290" role="img"><title>生產數量越多，一開始的費用分攤到每顆的部分就越小，每顆的費用也跟著下降</title>
+<text x="10" y="20">每顆的費用</text>
+<rect x="184" y="7" width="16" height="16" class="metal"/>
+<text x="206" y="20">初期費用的分攤</text>
+<rect x="184" y="33" width="16" height="16" class="ox"/>
+<text x="206" y="46">做1顆的費用</text>
+<line x1="40" y1="236" x2="320" y2="236" class="ln"/>
+<rect x="62" y="56" width="60" height="150" class="metal"/>
+<rect x="62" y="206" width="60" height="30" class="ox"/>
+<rect x="150" y="156" width="60" height="50" class="metal"/>
+<rect x="150" y="206" width="60" height="30" class="ox"/>
+<rect x="238" y="200" width="60" height="6" class="metal"/>
+<rect x="238" y="206" width="60" height="30" class="ox"/>
+<text x="92" y="258" text-anchor="middle">少</text>
+<text x="180" y="258" text-anchor="middle">中等</text>
+<text x="268" y="258" text-anchor="middle">多</text>
+<text x="320" y="282" text-anchor="end" class="m">生產數量 →</text>
+</svg><figcaption class="fig-cap">做1顆的費用（下面的部分），即使生產數量改變，也幾乎相同。只在一開始花一次的費用（上面的部分），生產數量越多，每顆分到的就越小。圖中省略：實際金額與刻度（長度是為了說明而假設的）、大量生產時材料等也會變便宜的效果。</figcaption></figure>
+<p>也就是說，ASIC划不划算，會因生產數量而有很大差異。所以它適合賣出幾千萬台的產品，或像Google那樣自家大量使用的公司。如果只做少量，現成的CPU，或事後可以改寫電路的FPGA會比較便宜。和FPGA的分界點，可以在「<a href="{{home}}learn/what-is-an-fpga/">FPGA是什麼？</a>」的圖中看到。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>ASIC的費用結構，很像塑膠製品的模具。做模具要花很大的費用，但只要做好一次，就能以很低的單價大量生產相同形狀的產品。相似的是「把一開始的大筆費用，用生產數量攤薄」這一點。</p><p class="analogy-limit"><strong>比喻的限制：</strong>模具有時可以稍微削一削來修改。ASIC的光罩不能修改，一旦發現設計錯誤，就要重做相關各層的光罩。另外，ASIC一開始的費用中，設計與驗證的人力，常常比相當於模具的光罩還要多。</p></aside>
+</section>
+
+<section>
+<h2>原理3：ASIC是怎麼做出來的</h2>
+<p>ASIC設計的大致流程，和其他晶片幾乎一樣（「<a href="{{home}}learn/what-is-an-integrated-circuit/">積體電路（IC）是什麼？</a>」中的「IC的誕生過程」）。這裡以ASIC特別重要的地方為中心來看。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 360" role="img"><title>ASIC的製作流程：從規格到RTL、邏輯合成、佈局與繞線、驗證、設計定案、製造，再到評估試作品</title>
+<line x1="58" y1="14" x2="58" y2="258" class="thin"/>
+<line x1="58" y1="14" x2="66" y2="14" class="thin"/>
+<line x1="58" y1="258" x2="66" y2="258" class="thin"/>
+<text x="32" y="141" text-anchor="middle" class="m">設計</text>
+<line x1="58" y1="278" x2="58" y2="302" class="thin"/>
+<line x1="58" y1="278" x2="66" y2="278" class="thin"/>
+<line x1="58" y1="302" x2="66" y2="302" class="thin"/>
+<text x="32" y="295" text-anchor="middle" class="m">工廠</text>
+<rect x="70" y="10" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="31" text-anchor="middle">① 決定規格</text>
+<rect x="70" y="54" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="75" text-anchor="middle">② 描述功能（RTL）</text>
+<rect x="70" y="98" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="119" text-anchor="middle">③ 邏輯合成</text>
+<rect x="70" y="142" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="163" text-anchor="middle">④ 佈局與繞線</text>
+<rect x="70" y="186" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="207" text-anchor="middle">⑤ 驗證</text>
+<rect x="70" y="230" width="180" height="32" rx="6" class="ox"/>
+<rect x="70" y="230" width="180" height="32" rx="6" class="ac"/>
+<text x="160" y="251" text-anchor="middle" class="a">⑥ 設計定案</text>
+<rect x="70" y="274" width="180" height="32" rx="6" class="metal"/>
+<text x="160" y="295" text-anchor="middle">⑦ 光罩、製造</text>
+<rect x="70" y="318" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="339" text-anchor="middle">⑧ 評估試作品</text>
+<line x1="160" y1="42" x2="160" y2="50" class="ln"/>
+<line x1="160" y1="86" x2="160" y2="94" class="ln"/>
+<line x1="160" y1="130" x2="160" y2="138" class="ln"/>
+<line x1="160" y1="174" x2="160" y2="182" class="ln"/>
+<line x1="160" y1="218" x2="160" y2="226" class="ln"/>
+<line x1="160" y1="262" x2="160" y2="270" class="ln"/>
+<line x1="160" y1="306" x2="160" y2="314" class="ln"/>
+<polyline points="250,202 274,202 274,66 258,66" class="dash"/>
+<polygon points="251,66 260,61 260,71" class="ink"/>
+<text x="279" y="140">修正</text>
+<polyline points="250,334 312,334 312,76 258,76" class="dash"/>
+<polygon points="251,76 260,71 260,81" class="ink"/>
+</svg><figcaption class="fig-cap">在⑤發現的錯誤，可以在電腦上修正（內側的虛線）。如果在⑥之後才發現，就要重做光罩（外側的虛線）。圖中省略：各階段中的細部確認、封裝與檢測、製造前先用FPGA試驗的流程。</figcaption></figure>
+<p>首先，決定要讓晶片做什麼（規格）。接著，用專用的語言描述電路的功能。晶片裡每隔固定時間，就會送來一次訊號。每次訊號一來，資料就從一個記憶元件移到下一個。描述這種移動方式與途中計算的寫法，稱為{{term:RTL(レジスタ転送レベル)|RTL}}。</p>
+<p>寫好的功能，會由軟體自動轉換成許多小電路的組合，這些小電路負責處理0和1。這項工作稱為{{term:論理合成|邏輯合成}}。並不是由人一顆一顆畫出電晶體。</p>
+<p>轉換時用的材料，是一套事先設計並驗證好的元件。裡面有AND之類的小邏輯電路，以及記住1位元的電路。元件的高度一致，可以像磚塊一樣排成一列一列。這種元件稱為{{term:スタンダードセル|標準元件}}（也稱標準單元），整套元件稱為標準元件庫。</p>
+<p>接著，決定元件在晶片上怎麼排列、走哪條路線連線（{{term:配置配線|佈局與繞線}}）。然後，用電腦仔細確認電路能否以決定的速度運作，是否遵守工廠的製造規則（驗證）。</p>
+<p>把確認完成的設計資料交給製造端，稱為{{term:テープアウト|設計定案（tape-out）}}，也稱為投片。製造端會根據資料製作光罩，在工廠的晶圓上做出電路。設計和製造由不同公司負責的分工方式，在「<a href="{{home}}learn/what-is-a-foundry/">晶圓代工是什麼？</a>」中說明。</p>
+<p>從工廠送回來的第一批晶片，要實際運作來確認。如果這時發現錯誤，就得重做部分或全部光罩，損失金錢和好幾個月的時間。因此，製造前常會先把設計好的電路放進FPGA，試著運作看看。</p>
+<p>來看看所需時間的一個例子。Google表示，第一代TPU從設計到在資料中心運作，花了15個月。該公司把這當成非常快完成的例子來介紹。</p>
+</section>
+
+<section>
+<h2>CPU、GPU、FPGA、ASIC的差異</h2>
+<p>電路越配合工作，這項工作的效率就越高。相對地，會失去處理其他工作的彈性，也不再容易開始生產。以下把話說得簡單一點，用表格整理4者的差異。</p>
+<table>
+<thead><tr><th></th><th>事後能改的東西</th><th>固定工作的效率</th><th>適合的場合</th></tr></thead>
+<tbody>
+<tr><td>CPU</td><td>程式</td><td>偏低</td><td>什麼都能做</td></tr>
+<tr><td>GPU</td><td>程式</td><td>大量進行相同計算時很高</td><td>影像、AI、科學計算</td></tr>
+<tr><td>FPGA</td><td>電路本身</td><td>中等</td><td>少量、規格會變</td></tr>
+<tr><td>ASIC</td><td>不能改</td><td>最高</td><td>大量、規格已定</td></tr>
+</tbody>
+</table>
+<p>CPU、GPU、FPGA都是買現成的晶片來用。工作內容是事後用程式或電路的設定來決定。只有ASIC，是在做晶片之前就決定工作內容，做進電路裡。</p>
+<p>手機等裝置的晶片裡，也有專門做AI計算的電路。這稱為{{term:NPU(ニューラルプロセッシングユニット)|NPU}}。限定用途來提高效率的想法，和ASIC一樣（「<a href="{{home}}learn/what-is-an-npu/">NPU是什麼？</a>」）。GPU為什麼用在AI上，在「<a href="{{home}}learn/why-gpus-for-ai/">AI為什麼要用GPU？</a>」中說明。</p>
+<p>實際的產品，會把這些組合起來。手機的核心晶片，是把CPU、GPU、NPU、影片電路整合成一顆的{{term:SoC(システムオンチップ)|SoC}}。像Apple的A系列這樣，只為自家產品設計的SoC，是ASIC的一種。賣給許多廠商的SoC，則相當於接下來說明的ASSP。用語之間的關係，整理在「<a href="{{home}}compare/asic-vs-fpga-vs-soc/">ASIC、FPGA、SoC的差異</a>」的表中。</p>
+</section>
+
+<section>
+<h2>和ASSP的差異：賣給許多公司的專用品</h2>
+<p>即使是限定用途的晶片，也有放在型錄上、賣給許多公司的產品。這稱為ASSP（特定應用標準產品）。它是英文Application Specific Standard Product的縮寫。</p>
+<p>狹義的ASIC，是為某一家公司或某一個產品做的晶片。ASSP則是用途雖然固定，但任何人都買得到的現成品。例如前面提到的Tomahawk 5，是許多設備廠商買來使用的產品。套用這個分法，可以說它比較接近ASSP。</p>
+<p>不過在業界，常把這類產品也包含在內，廣泛稱為「ASIC」。Tomahawk 5有時也被稱為「交換器ASIC」。用語的範圍因人和場合而不同，請依上下文判斷。</p>
+</section>
+
+<section>
+<h2>分攤試作費用的方式</h2>
+<p>既然光罩這麼貴，小公司和大學就無法試作ASIC嗎？其實，有降低試作費用的方式。把好幾組設計排在一組光罩上，用一次製造一起做出來。這稱為{{term:MPW(マルチプロジェクトウエハ)|多專案晶圓（MPW）}}。因為像大家一起搭的接駁車，也稱為shuttle（共乘）。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 232" role="img"><title>專用光罩只放一個設計，MPW則由多個設計共用一組光罩</title>
+<text x="85" y="22" text-anchor="middle" class="a">專用光罩</text>
+<text x="245" y="22" text-anchor="middle" class="a">MPW（共乘）</text>
+<rect x="15" y="34" width="140" height="140" class="hole"/>
+<rect x="15" y="34" width="70" height="70" class="ox"/>
+<rect x="85" y="34" width="70" height="70" class="ox"/>
+<rect x="15" y="104" width="70" height="70" class="ox"/>
+<rect x="85" y="104" width="70" height="70" class="ox"/>
+<text x="50" y="74" text-anchor="middle">A</text>
+<text x="120" y="74" text-anchor="middle">A</text>
+<text x="50" y="144" text-anchor="middle">A</text>
+<text x="120" y="144" text-anchor="middle">A</text>
+<rect x="175" y="34" width="140" height="140" class="hole"/>
+<rect x="175" y="34" width="70" height="70" class="ox"/>
+<rect x="245" y="34" width="70" height="70" class="n"/>
+<rect x="175" y="104" width="50" height="70" class="p"/>
+<rect x="225" y="104" width="50" height="70" class="metal"/>
+<rect x="275" y="104" width="40" height="70" class="dep"/>
+<text x="210" y="74" text-anchor="middle">A</text>
+<text x="280" y="74" text-anchor="middle">B</text>
+<text x="200" y="144" text-anchor="middle">C</text>
+<text x="250" y="144" text-anchor="middle">D</text>
+<text x="295" y="144" text-anchor="middle">E</text>
+<text x="85" y="198" text-anchor="middle">1個設計</text>
+<text x="85" y="220" text-anchor="middle">負擔全部費用</text>
+<text x="245" y="198" text-anchor="middle">5個設計</text>
+<text x="245" y="220" text-anchor="middle">分攤費用</text>
+</svg><figcaption class="fig-cap">大的方框代表1片光罩上描繪的範圍。A～E是不同公司或大學的設計。左邊是只排列同一個設計A的量產用光罩，右邊是排列5個設計的試作用光罩。圖中省略：實際的排列方式與數量、光罩的片數和層數一樣多。</figcaption></figure>
+<p>光罩和晶圓的費用，由參加者依使用面積分攤。拿到的晶片數量有限，不能用來量產。即使如此，還是能確認自己的電路在真正的矽上能否運作。</p>
+<p>例如台積電（TSMC）從1998年起，以CyberShuttle的名稱提供這項服務。在日本，東京大學在1996年成立了VDEC（大型積體系統設計教育研究中心）。它彙整全國大學的設計資料，一直提供便宜試作的管道。</p>
+<p>另外，試作之後若要量產，就要做自己專用的光罩。MPW降低的是試作的費用，不是量產的費用。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：ASIC不論做什麼處理，都比CPU或GPU快</p><p>實際上，快的只有設計時決定的工作。比特幣挖礦用的ASIC，既不能播放影片，也不能做試算表。即使同樣是AI的計算，也有擅長與不擅長的。例如第一代TPU是為了「讓訓練完成的AI給出答案」的計算而做，並沒有用在AI的訓練上。「專用就快」中的「專用」容易被忽略，這就是誤解的來源。</p></div>
+<div class="myth"><p class="myth-q">誤解：只有擁有巨額資金的大企業，才能做ASIC</p><p>實際上，試作可以用MPW分攤費用。選擇比最先進世代更早的製造技術，光罩也會便宜很多。大學的研究室和新創公司，也用這些方法做晶片。不過，量產需要專用的光罩和龐大的設計費用。需要能大量賣出的前景，這一點沒有改變。新聞上出現的ASIC，幾乎都是大企業的最先進晶片，這就是誤解的來源。</p></div>
+<div class="myth"><p class="myth-q">誤解：ASIC和FPGA是類似東西的不同名稱</p><p>實際上，FPGA是買現成的晶片，事後再寫入電路來使用。ASIC的電路是在工廠做進去的，所以做好之後就不能改。因為有人會先用FPGA試驗同一個電路，之後再做成ASIC，所以兩者容易混淆。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th></tr></thead>
+<tbody>
+<tr><td>第一代TPU與同時期（2015年左右）CPU、GPU的差距（訓練完成的AI的計算，Google 2017年）</td><td>性能 15～30倍，每單位電力 30～80倍</td></tr>
+<tr><td>第一代TPU的開發期間（從設計到運作）</td><td>15個月</td></tr>
+<tr><td>一整套光罩費用的估計（SemiAnalysis，2022年）</td><td>28 nm世代超過100萬美元，7 nm世代超過1,000萬美元</td></tr>
+<tr><td>先進晶片需要光罩的層數（同上）</td><td>超過60層</td></tr>
+<tr><td>Tomahawk 5（2022年）分送的資料量</td><td>每秒51.2兆位元</td></tr>
+<tr><td>影片轉換用晶片的效率（Google，2021年的論文）</td><td>不用專用晶片時的20～33倍</td></tr>
+<tr><td>台積電試作共乘服務的開始</td><td>1998年</td></tr>
+</tbody>
+</table>
+<p>光罩費用是估計值，會因調查來源和合約而有很大差異。請當作大概位數的參考。另外，「○ nm」是製造技術世代的名稱，不是晶片上某處的長度（「<a href="{{home}}learn/what-does-2nm-mean/">「2奈米」「3奈米」是什麼的長度？</a>」）。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>用表格看差異：<a href="{{home}}compare/asic-vs-fpga-vs-soc/">ASIC、FPGA、SoC的差異</a>、<a href="{{home}}compare/cpu-vs-gpu-vs-npu/">CPU、GPU、NPU的差異</a>、<a href="{{home}}compare/idm-vs-fabless-vs-foundry/">IDM、無晶圓廠、晶圓代工的差異</a></li>
+<li>下一步的用語：{{term:ASIC(特定用途向けIC)|ASIC}}（詳細解說）、{{term:ハードウェア記述言語|硬體描述語言}}、{{term:STA(静的タイミング解析)|STA}}（檢查電路能否以決定的速度運作）、{{term:PDK(プロセスデザインキット)|PDK}}（晶圓代工廠交給設計公司的一整套規則與資料）</li>
+<li>用數字試試看：用<a href="{{home}}tools/die-yield-calculator/">晶粒良率計算器</a>，可以算出晶片做小之後，1片晶圓能切出的數量會增加多少。</li>
+<li>相關文章：「<a href="{{home}}learn/how-chips-are-made/">半導體晶片是怎麼做出來的？</a>」（工廠裡的流程）、「<a href="{{home}}learn/what-is-a-microcontroller/">微控制器（MCU）是什麼？</a>」（用在許多設備裡的通用小型電腦）</li>
+</ul>
+</section>
