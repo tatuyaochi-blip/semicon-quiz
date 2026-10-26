@@ -1,0 +1,220 @@
+<!--
+{
+  "title": "行動電源10000mAh能充幾次？原理、Wh與安全使用",
+  "description": "行動電源由鋰離子電池的電芯，以及升壓到5 V的電路、保護IC等晶片組成。10,000 mAh真正充進手機的，在計算例中只有7成多。說明Wh的算法、搭機規定（以日本為例），以及安全的使用與丟棄方式。",
+  "series": "everyday-chips",
+  "order": 28,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-01",
+  "cats": ["power-electronics", "power-management", "reliability", "io-interface"],
+  "terms": ["昇圧チョッパ(ブーストコンバータ)", "昇降圧チョッパ(バックブーストコンバータ)", "静止電流"],
+  "sources": [
+    { "title": "Anker Support: Why Is the Rated Capacity Marked on a Power Bank Lower Than Expected?（10,000 mAh、3.7 V的電芯約37 Wh。換算成5 V，即使沒有損耗也是7,400 mAh。若升壓效率約82%，約為6,000 mAh，這就是標示的「額定容量」。2026年10月確認）", "url": "https://service.anker.com/article-description/Why-Is-the-Rated-Capacity-Marked-on-a-Power-Bank-Lower-Than-Expected" },
+    { "title": "Anker Japan：關於行動電源的常見問題（日文。充電電路的損耗和電壓轉換會用掉30～45%，10,000 mAh的機型約相當於5,500～6,500 mAh。2026年10月確認）", "url": "https://www.ankerjapan.com/blogs/faq/%E3%83%A2%E3%83%90%E3%82%A4%E3%83%AB%E3%83%90%E3%83%83%E3%83%86%E3%83%AA%E3%83%BC" },
+    { "title": "Battery University: BU-206 Lithium-polymer: Substance or Hype?（從使用者的角度看，鋰聚合物電池和鋰離子電池本質上相同。正極、負極的材料相同，差別在電解質的形態。可以做得很薄）", "url": "https://batteryuniversity.com/article/bu-206-lithium-polymer-substance-or-hype" },
+    { "title": "Texas Instruments: BQ25895（單顆鋰離子、鋰聚合物電池用的充電IC，也具備從電池升壓產生5 V的功能）", "url": "https://www.ti.com/product/bq25895" },
+    { "title": "Texas Instruments: PMP40441 reference design（行動電源用的USB PD充電設計範例。把升降壓充電IC BQ25713，和另一塊電路板上的PD控制器組合，用同一條電的路徑，既能充電也能送電）", "url": "https://www.ti.com/tool/PMP40441" },
+    { "title": "Texas Instruments: Deep dive into TI's Impedance Track technology（電量計在有負載時計算電流，休息時用電壓推估，再把兩者組合）", "url": "https://www.ti.com/lit/ml/slyp819/slyp819.pdf" },
+    { "title": "日本國土交通省 新聞稿（2026-04-14）：關於行動電源帶上飛機的新規定（日文。自4月24日起，日本國內線與在日本起降的航班，帶上飛機的限160 Wh以下、每人2個，機上不可替行動電源充電，也不可用行動電源替其他裝置充電。不可託運，以及不放進行李櫃，和以前相同）", "url": "https://www.mlit.go.jp/report/press/kouku10_hh_000310.html" },
+    { "title": "日本國土交通省 新聞稿（2025-07-01）：請不要把行動電源放進行李櫃！（日文。自2025年7月8日起，請求旅客不要放進座位上方的行李櫃，而是放在能確認狀態的地方。2025年1月在韓國金海機場發生的客機火災，被指出可能是行動電源起火造成）", "url": "https://www.mlit.go.jp/report/press/kouku10_hh_000284.html" },
+    { "title": "ICAO: New power bank restrictions will safeguard international aviation（2026-03-27。危險物品國際標準（Doc 9284）的增補，自同日起每人限2個，禁止在機上替行動電源充電。也建議不要在機上用它替其他裝置充電）", "url": "https://www.icao.int/news/new-power-bank-restrictions-will-safeguard-international-aviation" },
+    { "title": "日本經濟產業省：關於行動電源的FAQ（日文。電氣用品安全法。2018年2月1日變更解釋後納入對象，經過1年的過渡期，自2019年2月1日起，沒有PSE標誌的產品不能販售。須標示圓形的PSE標誌和申報業者名稱）", "url": "https://www.meti.go.jp/policy/consumer/seian/denan/mlb_faq.html" },
+    { "title": "日本經濟產業省（2025-10-21）：關於Anker Japan實施召回（回收及更換）（日文。行動電源1項產品與喇叭3項產品。在委託製造電芯的廠商製程中，可能混入異物，有在電池內部發生短路的可能）", "url": "https://www.meti.go.jp/product_safety/recall/file/251021oshirase.pdf" },
+    { "title": "NITE（日本製品評價技術基盤機構）新聞稿（2026-07-15）：小心「夏天的電池」（日文。2021～2025年搭載鋰離子電池產品的事故共2,140件。依產品別，行動電源最多。依月份，8月最多。事故多發生在充電中，應避免外出時或睡覺時充電，在沒有易燃物、看得到的地方充電。「3個C」：聰明選擇、小心使用、正確丟棄）", "url": "https://www.nite.go.jp/data/000161880.pdf" },
+    { "title": "日本消費者廳（2025-10-02）：注意使用鋰離子電池的產品起火事故（日文。購買前後，都要用召回資訊網站和NITE的SAFE-Lite確認）", "url": "https://www.caa.go.jp/policies/policy/consumer_safety/caution/caution_083/assets/caution_083_251002_0001.pdf" },
+    { "title": "日本消費者廳 召回資訊網站（日文）", "url": "https://www.recall.caa.go.jp/" },
+    { "title": "日本環境省：鋰離子電池相關（日文。從家庭丟棄時，依照市區町村（地方政府）的規定。受到強烈撞擊或高溫可能起火，在廢棄物處理設施等地都曾發生火災）", "url": "https://www.env.go.jp/recycle/waste/lithium_1/index.html" },
+    { "title": "UL Research Institutes: What Causes Thermal Runaway?（隔離膜缺陷等造成的內部短路、過度充電、外部短路、高溫等是起因）", "url": "https://ul.org/research-updates/what-causes-thermal-runaway/" }
+  ]
+}
+-->
+<p class="lead">行動電源是「可以帶著走的電池」，裡面有鋰離子電池的電芯，以及把電轉成USB電壓的晶片。「10,000 mAh」是用電芯的電壓（約3.7 V）計算的量。轉成5 V的電路等會把一部分變成熱，在本文的計算例中，真正充進手機電池的只有7成多。比較產品或搭飛機時，要看代表能量多少的Wh（瓦時）。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>行動電源裡面有哪些零件，以及各自的工作</li>
+<li>「10,000 mAh」能替手機充幾次，以及計算的方法</li>
+<li>為什麼要看Wh，以及帶上飛機的規定（以日本為例，2026年10月時的內容）</li>
+<li>有時會起火的原因，以及安全的選擇、使用和丟棄方式</li>
+</ul><p class="muted">先備知識：大致了解電壓（V）和電流（A）的意思。會用到一點乘法和除法。電池本身的原理，請看「<a href="{{home}}learn/how-lithium-ion-batteries-work/">鋰電池是什麼？</a>」。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>在外面手機快沒電時，很多人會從包包拿出行動電源接上。盒子上寫著「10,000 mAh」「20,000 mAh」這類大數字。</p>
+<p>可是，就算算出4,000 mAh的手機能充2.5次，實際上常常連2次都充不到。這不是故障，也不是標示造假。盒子上的數字，和送到手機的量，是在不同的地方計算的。</p>
+<p>新聞也常報導行動電源起火，以及搭機規定的改變。本文從內部的原理開始，依序說明數字的看法和安全的使用方式。</p>
+</section>
+
+<section>
+<h2>原理①：裡面裝了什麼</h2>
+<p>行動電源的內部，大致分成2個部分（拆開很危險，所以用圖來看）。一個是儲存電的電池，另一個是讓電進出的電路板。電路板上，有好幾顆負責不同工作的晶片。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 372" role="img"><title>行動電源內部零件的連接方式。USB-C連接埠與PD控制器、充電與升壓晶片、保護IC、電量計、電芯，以及顯示剩餘電量的LED</title>
+<text x="10" y="24">行動電源的內部（一例）</text>
+<rect x="20" y="40" width="130" height="54" rx="6" class="hole"/>
+<text x="85" y="72" text-anchor="middle">USB-C連接埠</text>
+<rect x="180" y="40" width="140" height="54" rx="6" class="hole"/>
+<text x="250" y="62" text-anchor="middle">PD控制器</text>
+<text x="250" y="84" text-anchor="middle" class="m">協商電壓</text>
+<line x1="150" y1="67" x2="180" y2="67" class="ln"/>
+<line x1="85" y1="106" x2="85" y2="112" class="ac"/>
+<polygon points="85,96 79,108 91,108" class="fa"/>
+<polygon points="85,122 79,110 91,110" class="fa"/>
+<line x1="250" y1="94" x2="250" y2="122" class="dash"/>
+<text x="258" y="114" class="m">指示</text>
+<rect x="20" y="122" width="300" height="56" rx="6" class="ox"/>
+<text x="170" y="146" text-anchor="middle">充電與升壓晶片</text>
+<text x="170" y="168" text-anchor="middle" class="m">替電池充電／產生5 V等電壓</text>
+<line x1="85" y1="190" x2="85" y2="196" class="ac"/>
+<polygon points="85,180 79,192 91,192" class="fa"/>
+<polygon points="85,206 79,194 91,194" class="fa"/>
+<rect x="20" y="206" width="130" height="54" rx="6" class="hole"/>
+<text x="85" y="228" text-anchor="middle">保護IC</text>
+<text x="85" y="250" text-anchor="middle" class="m">異常時切斷</text>
+<rect x="180" y="206" width="140" height="54" rx="6" class="hole"/>
+<text x="250" y="228" text-anchor="middle">電量計</text>
+<text x="250" y="250" text-anchor="middle" class="m">估算剩餘電量</text>
+<line x1="150" y1="233" x2="180" y2="233" class="thin"/>
+<polygon points="85,262 79,273 91,273" class="fa"/>
+<polygon points="85,286 79,275 91,275" class="fa"/>
+<rect x="20" y="288" width="130" height="54" rx="6" class="n"/>
+<text x="85" y="310" text-anchor="middle">電芯</text>
+<text x="85" y="332" text-anchor="middle">3.6～3.7 V</text>
+<line x1="250" y1="260" x2="250" y2="288" class="thin"/>
+<rect x="180" y="288" width="140" height="54" rx="6" class="hole"/>
+<circle cx="214" cy="306" r="6" class="fa"/>
+<circle cx="238" cy="306" r="6" class="fa"/>
+<circle cx="262" cy="306" r="6" class="fa"/>
+<circle cx="286" cy="306" r="6" class="hole"/>
+<text x="250" y="334" text-anchor="middle" class="m">電量顯示LED</text>
+<text x="170" y="364" text-anchor="middle" class="a">上下箭頭：電可以雙向流動</text>
+</svg><figcaption class="fig-cap">零件連接方式的示意圖。上下方向的箭頭，是替行動電源充電時（由上往下）和使用時（由下往上）電的路徑。有些產品把充電、升壓、電量顯示和PD協商整合在1顆晶片裡。省略的部分：保護IC切斷用的2個開關、測量溫度的零件、USB-A連接埠和無線充電的線圈。</figcaption></figure>
+<p>接下來從圖的下方開始，依序看各個零件的工作。</p>
+</section>
+
+<section>
+<h2>原理②：儲存電的「電芯」</h2>
+<p>儲存電的一個一個電池，稱為電芯。行動電源的電芯，和手機一樣是鋰離子電池。1顆電芯的電壓約3.6～3.7 V，標示的數值依產品而不同。容量大的產品，會把好幾顆電芯連接在一起。</p>
+<p>有些產品的盒子上寫著「鋰聚合物電池」。這不是另一種電池，而是鋰離子電池的一種做法。通常是指把裡面的液體做成果凍狀、裝進薄袋子裡的電池。從使用者的角度看，性質幾乎相同（Battery University）。因為能做得又薄又平，適合薄型的產品。</p>
+</section>
+
+<section>
+<h2>原理③：從3.7 V產生5 V</h2>
+<p>這裡有一個問題。USB的電，原本就規定是5 V（「<a href="{{home}}learn/what-is-usb/">USB是什麼？</a>」）。但是，電芯只能提供約3.7 V。直接使用的話，送給手機的電壓不夠。</p>
+<p>所以要用提高電壓的電路。用電晶體做的開關，每秒切換通電與斷電數十萬次以上。開啟時，把電的能量存進一種叫線圈的零件，它是用電線繞成的。關閉的瞬間，把存起來的能量疊加在電池的電壓上送出去。這裡為了簡化，省略了讓輸出電壓平穩的零件等。</p>
+<p>像這樣產生比輸入更高電壓的電路，稱為{{term:昇圧コンバータ|升壓轉換器}}。替電池充電的晶片（充電IC）中，有些也具備升壓的功能，例如Texas Instruments的BQ25895。用快速開關來調整電的想法，在「<a href="{{home}}learn/what-is-a-power-semiconductor/">功率半導體是什麼？</a>」中有說明。</p>
+<p>升壓是效率很好的方法，但損耗不是零。開關、線圈和配線都有一點電阻，電流流過就會發熱（「<a href="{{home}}learn/what-is-a-resistor/">電阻是什麼？</a>」）。電芯內部也有小小的電阻，那裡也會發熱。使用時行動電源會變得溫溫的，就是因為這些損耗。</p>
+</section>
+
+<section>
+<h2>原理④：協商電壓的PD控制器</h2>
+<p>支援快充的產品，除了5 V，也能輸出9 V等電壓。要用哪個電壓，會透過傳輸線裡的線路，和接上的裝置協商決定。這套協商的規則，稱為{{term:USB PD|USB PD（USB 供電）}}。</p>
+<p>負責協商的，是叫PD控制器的晶片。電壓決定後，它會把目標值告訴產生電壓的電路。剛接上、協商完成之前，輸出的只有5 V（「USB是什麼？」）。</p>
+<p>有些產品使用的電路，能產生比電芯電壓更高或更低的電壓。這稱為{{term:昇降圧コンバータ|升降壓轉換器}}。需要輸出的電壓範圍很廣，或要用各種電壓來充電時，這種電路很方便。</p>
+<p>就算只有1個USB-C連接埠，行動電源也能當「接收的一方」和「送出的一方」。接上牆上插座的充電器，就接收電、替電芯充電。接上手機，就把電送出去。</p>
+</section>
+
+<section>
+<h2>原理⑤：看守的晶片與電量顯示</h2>
+<p>電芯旁邊，有一顆叫保護IC的看守晶片。發現電壓太高、太低，或電流太大等異常時，就切斷電的路徑上的開關。想法和手機電池組裡的保護IC相同。</p>
+<p>按下按鈕時亮起的LED數量，是剩餘電量的參考。剩餘電量的估算方式，是計算進出的電流，或在休息時測量電壓（Texas Instruments）。有些產品使用專用的電量計晶片，有些則由充電晶片簡單估算。</p>
+<p>就算收著不用，電量也會一點一點減少。因為電芯本身會流失少量的電，看守的電路也一直在用電。像這樣電路只是待命就會用掉的電流，稱為{{term:静止電流|靜態電流}}。</p>
+</section>
+
+<section>
+<h2>「10,000 mAh」能充手機幾次？</h2>
+<p>mAh（毫安時）是電流乘上時間得到的電量。例如1,000 mAh，就是能以1,000 mA的電流流1小時。行動電源的「10,000 mAh」，是用電芯的電壓，也就是約3.7 V計算的值。可是，送到手機時，用的是5 V等更高的電壓。</p>
+<p>電所攜帶的能量，由「電壓×電量」決定。表示能量本身的單位是Wh（瓦時）。把mAh乘上電壓再除以1,000，就能算出來（毫是千分之一的意思）。能量相同時，電壓提高，用mAh計算的數字就會變小。</p>
+<p>實際算算看。到③為止是Anker支援頁面上的例子，④和⑤是本文設定的假設。數字只是一例，效率會因產品和使用方式而改變。</p>
+<table>
+<thead><tr><th>階段</th><th>計算</th><th>結果</th></tr></thead>
+<tbody>
+<tr><td>① 電芯儲存的量</td><td>10,000 mAh × 3.7 V ÷ 1,000</td><td>37 Wh</td></tr>
+<tr><td>② 以5 V重新計算（無損耗）</td><td>37 Wh ÷ 5 V</td><td>7,400 mAh</td></tr>
+<tr><td>③ 升壓等的損耗（效率82%：Anker的例子）</td><td>37 Wh × 0.82</td><td>約30.3 Wh（以5 V計約6,070 mAh）</td></tr>
+<tr><td>④ 手機端充電也損失1成（假設）</td><td>30.3 Wh × 0.9</td><td>約27.3 Wh</td></tr>
+<tr><td>⑤ 把約15 Wh的手機（假設）從沒電充到滿</td><td>27.3 Wh ÷ 15 Wh</td><td>約1.8次</td></tr>
+</tbody>
+</table>
+<p>②減少，是因為計算方式改變，能量並沒有損失。真正變成熱消失的，是③和④的部分。盒子上用小字寫的「額定容量」，多半是像③那樣，以出口的5 V計算的量（Anker）。</p>
+<p>⑤的手機，是以4,000 mAh、3.7 V的電池（約15 Wh）為例。把④的27.3 Wh用手機電池的3.7 V重新計算，約是7,400 mAh。和②的數字相同，只是巧合。這是原本10,000 mAh的約74%，比用mAh直接相除得到的「2.5次」少。</p>
+<p>這個比例會因條件而更低。Anker Japan的常見問題說明，電路的損耗和電壓的轉換會用掉約30～45%。電池老舊、在寒冷的地方使用、一邊充電一邊用手機等情況，次數也會減少。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>mAh很像錢的「枚數」。37枚100日圓硬幣是3,700日圓。換成500日圓硬幣，枚數會減少到7枚多，但金額幾乎一樣。電壓相當於1枚硬幣的面額，Wh相當於總金額。相似的只有一點：面額改變時，同樣的金額，枚數也會改變。</p><p class="analogy-limit"><strong>比喻的限制：</strong>電不像硬幣那樣一枚一枚數，電壓也能細細調成任何值。另外，換錢時可能有人收手續費。但轉換的損耗不會交給任何人，而是變成熱散到空氣中。損耗的比例，也會因流過的電流和溫度而改變。</p></aside>
+</section>
+
+<section>
+<h2>搭飛機時：依Wh決定的規定</h2>
+<p>飛機的規定不是用mAh，而是用Wh決定。因為即使是電壓不同的電池，也能用能量多少來公平比較。產品本體上有寫Wh的話，就看那個值。沒寫的話，就把mAh乘上電芯的電壓，再除以1,000。</p>
+<p>以日本為例，日本國內線，以及在日本起降的國際線，國家的規定如下。這是2026年4月24日起的規定，為本文確認時（2026年10月）的內容（日本國土交通省）。</p>
+<table>
+<thead><tr><th>項目</th><th>日本的規定</th></tr></thead>
+<tbody>
+<tr><td>託運行李</td><td>不能放入（一定要帶上飛機）</td></tr>
+<tr><td>可帶上飛機的大小與數量</td><td>160 Wh以下，每人最多2個</td></tr>
+<tr><td>機上充電</td><td>不可替行動電源充電，也不可用行動電源替其他裝置充電</td></tr>
+<tr><td>放置的地方</td><td>請求旅客不要放進座位上方的行李櫃，要放在身邊（屬於請求配合）</td></tr>
+</tbody>
+</table>
+<p>不放進行李櫃，是從2025年7月8日開始請求的。日本國土交通省在當時的發表中，提到2025年1月在韓國機場燒毀客機的火災。這場火災被指出，可能是行動電源起火造成的。</p>
+<p>日本2026年的規定，是配合國際標準而訂的。國際民用航空組織（ICAO）在2026年3月27日緊急修改了標準（ICAO）。</p>
+<p>像這樣，規定在短時間內改了好幾次，今後也可能再改。航空公司也可能自行訂定更嚴格的規定。搭機前，請一定要確認所搭乘航空公司的說明。如果不在日本，請確認所在國家或地區，以及航空公司的規定。</p>
+</section>
+
+<section>
+<h2>為什麼有時會起火</h2>
+<p>電芯裡，正極和負極的電極隔著一層薄膜相對。薄膜破掉、兩邊在裡面直接接觸時，那裡就會流過很大的電流。儲存的能量會在短時間內變成熱。這種電池內部的捷徑，稱為內部短路。</p>
+<p>危險發熱的起因主要有3種。第一，摔落、踩到、用力壓等來自外部的損傷。第二，製造時混入的微小異物，或品質不良的材料。第三，放在高溫的地方，或充電超過上限（美國的安全研究機構ULRI）。</p>
+<p>熱讓內部的反應加快，就會放出更多熱，溫度可能持續上升。這種惡性循環稱為熱失控。裡面的液體容易燃燒，所以可能冒煙或起火。詳細的原理，在「<a href="{{home}}learn/how-lithium-ion-batteries-work/">鋰電池是什麼？</a>」中有說明。</p>
+<p>日本的NITE（製品評價技術基盤機構）在2026年7月15日發表了一份資料。根據NITE收到的事故資訊，使用鋰離子電池的產品，在2021～2025年共發生2,140件事故。依產品別，行動電源最多。依月份，8月最多。資料也顯示，充電中的事故很多。</p>
+</section>
+
+<section>
+<h2>安全地選擇、使用、丟棄</h2>
+<p>NITE以「3個C」作為預防事故的口號：聰明選擇、小心使用、正確丟棄。以下依照日本政府和公家機關的說明來介紹。</p>
+<h3>選擇：在日本，確認PSE標誌與召回資訊</h3>
+<p>在日本，行動電源是《電氣用品安全法》這部法律的對象。從2019年2月1日起，沒有圓形PSE標誌的產品不能販售（日本經濟產業省）。標誌附近，也會標示向政府申報的製造或進口業者名稱。</p>
+<p>就算有標誌，也可能事後發現瑕疵而回收（召回）。例如2025年10月，Anker Japan召回了行動電源等產品。原因是委託製造電芯的廠商，在製程中可能混入了異物（日本經濟產業省）。日本消費者廳建議，買了之後也要確認。可以用召回資訊網站，或NITE的搜尋網站「SAFE-Lite」。</p>
+<h3>使用：注意熱、撞擊和異常</h3>
+<ul>
+<li>不要在夏天的車內、陽光直射處等會變熱的地方使用或放置</li>
+<li>不要摔落、用力壓，或放在重物下面</li>
+<li>避免外出時或睡覺時充電，在周圍沒有易燃物、看得到的地方充電（NITE）</li>
+<li>出現鼓起、異常發燙、有異味等情況時，立刻停止使用和充電，並向製造商或店家諮詢</li>
+<li>不要拆開、分解或修理</li>
+</ul>
+<h3>丟棄：不要混進一般垃圾</h3>
+<p>行動電源混進一般垃圾的話，可能在垃圾車或處理設施中被壓壞而起火。根據日本環境省，這類火災在各地都有發生。丟棄時，請依照居住地地方政府的規定。</p>
+<p>也有製造商回收，或在家電量販店等處設置回收箱的機制。接受哪些產品、是否接受鼓起的電池，依窗口而不同。不確定時，請詢問地方政府或製造商。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：10,000 mAh的話，能替4,000 mAh的手機充2.5次</p><p>實際上，通常連2次都不到。10,000 mAh是以3.7 V的電芯計算的量，換成5 V數字就會變小。再加上升壓和手機端的充電，會有一部分變成熱。比較時用Wh來想比較實際。在計算例中，能送到的也只有7成多，依條件還會更少。</p></div>
+<div class="myth"><p class="myth-q">誤解：有PSE標誌就絕對安全</p><p>實際上，在日本，PSE標誌是製造或進口業者確認產品符合國家標準後所加上的標示。沒有標誌的產品不能販售，所以先確認是值得的。不過，有標誌的產品，也可能事後發現瑕疵而被召回。除了標誌，也要看召回資訊，並注意熱和撞擊，小心使用。</p></div>
+<div class="myth"><p class="myth-q">誤解：100 Wh以下的小型行動電源，帶幾個上飛機都可以，在機上也能自由使用</p><p>實際上，從2026年4月24日起，在日本機場起降的航班，限160 Wh以下、每人最多2個。在機上不可以替行動電源充電，也不可以用它替手機等裝置充電（日本國土交通省）。規定在2025年和2026年接連改變，所以可能還留有舊的資訊。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>數字</th><th>代表什麼</th></tr></thead>
+<tbody>
+<tr><td>約3.6～3.7 V / 5 V</td><td>1顆電芯的電壓 / USB的基本電壓</td></tr>
+<tr><td>37 Wh</td><td>10,000 mAh、3.7 V的電芯儲存的能量（本站計算）</td></tr>
+<tr><td>約30 Wh / 約27 Wh</td><td>10,000 mAh的產品，以5 V能送出的量 / 充進手機電池的量（計算例。效率82%是Anker的例子，手機端的1成是假設）</td></tr>
+<tr><td>160 Wh、2個</td><td>在日本，可帶上飛機的每個行動電源的上限與數量（日本國土交通省，2026年4月24日起）</td></tr>
+<tr><td>2019年2月1日</td><td>在日本，沒有PSE標誌的行動電源不能再販售的日期（日本經濟產業省）</td></tr>
+<tr><td>2,140件</td><td>在日本，2021～2025年使用鋰離子電池的產品事故。依產品別，行動電源最多（NITE）</td></tr>
+</tbody>
+</table>
+<p>帶上飛機的上限160 Wh，是①的電芯（37 Wh）的4倍多。較大的20,000 mAh產品，以3.7 V計算是74 Wh，約是上限的一半。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>相關文章：「<a href="{{home}}learn/how-lithium-ion-batteries-work/">鋰電池是什麼？</a>」（電芯內部、熱失控）、「<a href="{{home}}learn/what-is-usb/">USB是什麼？</a>」（USB PD的協商）、「<a href="{{home}}learn/how-ac-adapters-work/">充電器怎麼把插座的電變成5 V？</a>」（插座端的充電器）、「<a href="{{home}}learn/what-is-gallium-nitride/">氮化鎵（GaN）是什麼？</a>」（小型充電器）、「<a href="{{home}}learn/how-wireless-charging-works/">無線充電是什麼？</a>」（也有放上去就能充電的行動電源）</li>
+<li>用表格看差異：<a href="{{home}}compare/buck-vs-boost-converter/">降壓轉換器與升壓轉換器的差異</a> / <a href="{{home}}compare/ldo-vs-switching-regulator/">LDO與切換式穩壓器的差異</a> / <a href="{{home}}compare/series-vs-parallel-circuit/">串聯與並聯的差異</a>（連接電芯時的電壓與容量）</li>
+<li>用數字試試看：<a href="{{home}}tools/dc-dc-converter-calculator/">DC-DC轉換器計算工具</a>（有「從鋰離子電池產生5 V」的例子。中級）</li>
+<li>下一步的用語：{{term:昇圧コンバータ|升壓轉換器}}、{{term:昇降圧コンバータ|升降壓轉換器}}、{{term:DC-DCコンバータ|DC-DC 轉換器}}、{{term:パワーMOSFET|功率 MOSFET}}、{{term:静止電流|靜態電流}}</li>
+</ul>
+</section>
