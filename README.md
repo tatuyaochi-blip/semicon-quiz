@@ -1,6 +1,6 @@
 # 半導体教室 Semiconductor Room
 
-HTML/CSS/JavaScript だけで作った学習サイト。`src/` と `data/` から `tools/build.js` で `docs/` を生成し、GitHub Pages（main ブランチの /docs）で公開する。
+HTML/CSS/JavaScript だけで作った学習サイト。`src/` と `data/` から `tools/build.js` で `docs/` を生成する。公開は GitHub Actions（`.github/workflows/pages.yml`）が main への push のたびにビルドして GitHub Pages に出す。`docs/` はコミットしない（手元での点検用）。ページの更新日は `data/lastmod.json` から決まるので、手元でビルドしたあとの `data/lastmod.json` はコミットする。
 
 ## コマンド
 
