@@ -1,0 +1,52 @@
+# 公開中のサイトを外から点検する(手動実行、または点検用ブランチへの push で動く)。
+# 状態コード、リダイレクト、X-Robots-Tag、robots の meta、DNS、証明書、サイトマップの中の URL の抜き取り検査
+name: Site check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/exciting-keller-4nxhh3]
+    paths: [.github/workflows/site-check.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: DNS
+        run: |
+          for h in semiconroom.com www.semiconroom.com; do echo "== $h"; dig +short A $h; dig +short AAAA $h; dig +short CNAME $h; done
+      - name: Redirects and headers
+        run: |
+          UA='Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+          for u in http://semiconroom.com/ https://www.semiconroom.com/ https://semiconroom.com/ https://semiconroom.com/robots.txt https://semiconroom.com/sitemap.xml https://semiconroom.com/about/ https://semiconroom.com/ads.txt https://tatuyaochi-blip.github.io/semicon-quiz/; do
+            echo "== $u"; curl -sS -o /dev/null -A "$UA" -w 'code=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n' -L "$u"
+            curl -sSI -A "$UA" "$u" | grep -iE '^(HTTP|location|x-robots-tag|content-type|server|last-modified|age|x-github-request-id)' || true
+          done
+      - name: Certificate
+        run: echo | openssl s_client -servername semiconroom.com -connect semiconroom.com:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates
+      - name: robots and meta on the top page
+        run: |
+          curl -sS https://semiconroom.com/robots.txt
+          curl -sS https://semiconroom.com/ | grep -oiE '<meta name="robots"[^>]*>|<link rel="canonical"[^>]*>|<title>[^<]*' | head
+      - name: Sample URLs from the sitemaps
+        run: |
+          UA='Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+          curl -sS https://semiconroom.com/sitemap.xml | grep -o '<loc>[^<]*' | sed 's/<loc>//' > maps.txt
+          cat maps.txt
+          : > urls.txt
+          while read m; do curl -sS "$m" | grep -o '<loc>[^<]*' | sed 's/<loc>//' | shuf -n 8 >> urls.txt; done < maps.txt
+          bad=0; total=0
+          while read u; do
+            total=$((total+1))
+            out=$(curl -sS -A "$UA" -w '\n%{http_code}' "$u")
+            code=$(echo "$out" | tail -1)
+            robots=$(echo "$out" | grep -oiE '<meta name="robots"[^>]*>' | head -1)
+            canon=$(echo "$out" | grep -oiE '<link rel="canonical" href="[^"]*"' | head -1 | sed 's/.*href="//;s/"//')
+            flag=""; [ "$code" != 200 ] && flag="BAD"; echo "$robots" | grep -qi noindex && flag="NOINDEX"; [ -n "$canon" ] && [ "$canon" != "$u" ] && flag="$flag CANON=$canon"
+            [ -n "$flag" ] && bad=$((bad+1))
+            echo "$code $u $flag"
+          done < urls.txt
+          echo "checked=$total problems=$bad"
