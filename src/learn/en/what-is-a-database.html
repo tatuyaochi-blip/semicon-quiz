@@ -1,0 +1,246 @@
+<!--
+{
+  "title": "What Is a Database? Tables, SQL and Indexes Explained",
+  "description": "A database lets many people use huge amounts of data at once, safely and fast. Learn tables and keys, SQL, why indexes are fast, and ACID transactions.",
+  "series": "computer-basics",
+  "order": 14,
+  "minutes": 15,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["database", "algorithms", "memory-hierarchy", "cloud-container"],
+  "terms": ["関係データベース", "SQL", "主キー", "外部キー", "インデックス", "トランザクション", "ACID特性", "NoSQL"],
+  "sources": [
+    { "title": "IPA: ITパスポート試験 シラバス Ver.6.5 (Information-technology Promotion Agency, Japan: IT Passport Examination syllabus, in Japanese; database methods, database design, data manipulation and transaction processing)", "url": "https://www.ipa.go.jp/shiken/syllabus/omgdg50000005kn1-att/syllabus_ip_ver6_5.pdf" },
+    { "title": "IPA: 基本情報技術者試験(レベル2)シラバス Ver.9.1 (Information-technology Promotion Agency, Japan: Fundamental Information Technology Engineer Examination, Level 2, syllabus, in Japanese)", "url": "https://www.ipa.go.jp/shiken/syllabus/nl10bi0000007tf7-att/syllabus_fe_ver9_1.pdf" },
+    { "title": "E. F. Codd: A Relational Model of Data for Large Shared Data Banks (Communications of the ACM 13(6), 377–387, June 1970)", "url": "https://doi.org/10.1145/362384.362685" },
+    { "title": "ISO/IEC 9075-1:2023 Information technology — Database languages SQL — Part 1: Framework (the international standard for SQL)", "url": "https://www.iso.org/standard/76583.html" },
+    { "title": "R. Bayer, E. McCreight: Organization and Maintenance of Large Ordered Indexes (Acta Informatica 1, 173–189, 1972; the B-tree paper)", "url": "https://doi.org/10.1007/BF00288683" },
+    { "title": "T. Härder, A. Reuter: Principles of Transaction-Oriented Database Recovery (ACM Computing Surveys 15(4), 287–317, 1983; coined the name ACID)", "url": "https://doi.org/10.1145/289.291" },
+    { "title": "PostgreSQL Documentation: 3.4. Transactions (the bank transfer example; BEGIN, COMMIT and ROLLBACK)", "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html" },
+    { "title": "PostgreSQL Documentation: 11.1. Indexes — Introduction (the comparison with a book's index; indexes add overhead to the database system as a whole)", "url": "https://www.postgresql.org/docs/current/indexes-intro.html" },
+    { "title": "PostgreSQL Documentation: 11.6. Unique Indexes (an index is created automatically when a primary key or unique constraint is defined)", "url": "https://www.postgresql.org/docs/current/indexes-unique.html" },
+    { "title": "PostgreSQL Documentation: 11.2. Index Types (CREATE INDEX makes a B-tree by default)", "url": "https://www.postgresql.org/docs/current/indexes-types.html" },
+    { "title": "PostgreSQL Documentation: Database Page Layout (tables and indexes are stored as a series of fixed-size pages, usually 8 KB)", "url": "https://www.postgresql.org/docs/current/storage-page-layout.html" },
+    { "title": "PostgreSQL Documentation: Write-Ahead Logging (WAL) (changes are written to the log before the data files are changed)", "url": "https://www.postgresql.org/docs/current/wal-intro.html" },
+    { "title": "MySQL 8.0 Reference Manual: The Physical Structure of an InnoDB Index (InnoDB indexes are B-trees; the default page size is 16 KB)", "url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-physical-structure.html" },
+    { "title": "MySQL 8.4 Reference Manual: Buffer Pool (on dedicated servers, up to about 80% of physical memory is often assigned to it)", "url": "https://docs.oracle.com/cd/E17952_01/mysql-8.4-en/innodb-buffer-pool.html" },
+    { "title": "SQLite: Most Widely Deployed and Used Database Engine (built into Android and iPhone devices and more; estimate of over one trillion databases in use; checked October 2026)", "url": "https://sqlite.org/mostdeployed.html" },
+    { "title": "SQLite: Default Page Size Change of SQLite 3.12.0 (since 2016, the default page size for new files is 4,096 bytes)", "url": "https://sqlite.org/pgszchng2016.html" },
+    { "title": "Microsoft Support: Excel specifications and limits (a worksheet is 1,048,576 rows by 16,384 columns)", "url": "https://support.microsoft.com/en-us/office/1672b34d-7043-467e-8e27-269d656771c3" },
+    { "title": "G. DeCandia et al.: Dynamo: Amazon's Highly Available Key-value Store (SOSP 2007; to stay available, it sacrifices consistency under certain failure scenarios)", "url": "https://doi.org/10.1145/1294261.1294281" },
+    { "title": "MongoDB Manual v4.0: Transactions (transactions that span multiple documents are supported from version 4.0)", "url": "https://docs.mongodb.com/v4.0/core/transactions/" },
+    { "title": "University of Washington CSE 351 (Spring 2020): Caches II (lecture slides; typical read times for memory and SSDs)", "url": "https://courses.cs.washington.edu/courses/cse351/20sp/lectures/17/CSE351-L17-caches-II_20sp.pdf" },
+    { "title": "Samsung Semiconductor: NVMe SSD 990 PRO Data Sheet (sequential reads up to 7,450 MB/s)", "url": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_990_PRO_Datasheet_Rev.1.0_10129514072296.pdf" }
+  ]
+}
+-->
+<p class="lead">A database is a system that organizes lots of data in a fixed format. It manages that data so many people can use it at the same time without contradictions. The most common kind, the relational database, keeps data in tables. You use a language called SQL to ask for "the rows that meet this condition." An index narrows the search in one jump. A transaction guarantees "all of it or none of it."</p>
+
+<div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
+<li>How a database differs from a spreadsheet file</li>
+<li>Tables, rows and columns, and what primary keys and foreign keys mean (with a small example)</li>
+<li>How to read SQL, and why an index (a B-tree) makes searches fast</li>
+<li>Transactions and the ACID properties, seen through a bank transfer</li>
+<li>How relational databases differ from NoSQL, and where the data is actually stored</li>
+</ul><p class="muted">Prerequisites: none. If you have seen a table in a spreadsheet program such as Excel, you can follow along. The last section is easier if you know the difference between memory and storage.</p></div>
+
+<section>
+<h2>In everyday life</h2>
+<p>When you press the order button in an online shop, the stock drops by one and one new order record is added. When you open a banking app, your current balance appears right away. Behind both, data is being stored in a database and fetched from it.</p>
+<p>There is one inside your phone, too. It is a small database program called SQLite. According to its developers' official site, it is built into both Android phones and iPhones.</p>
+<p>This article looks at how a database finds data among huge amounts in an instant. It also shows why we can trust it with records of money. Along the way, it explains terms from the official topic lists (syllabi) of two Japanese IT exams in plain words. These are IT Passport and the Fundamental Information Technology Engineer Examination.</p>
+</section>
+
+<section>
+<h2>Why isn't a spreadsheet file enough?</h2>
+<p>A spreadsheet program can also put data in a table. The trouble starts when the number of users and the amount of data grow. There are three main reasons.</p>
+<p>The first is many people writing at the same time. A large online shop receives many orders every second. Suppose two people open the same file separately and edit it. The one who saves last may wipe out the other's changes.</p>
+<p>The second is enforcing rules. Text ends up in the "quantity" field, or an order arrives for a member who does not exist. When people type data by hand, errors like these slip in. A database can reject data that breaks rules set in advance, right when it is entered.</p>
+<p>The third is size and speed. One Excel sheet holds at most 1,048,576 rows (according to Microsoft's specifications). Large services handle many orders of magnitude more rows than that. Among them, they must find the one row they need without making users wait.</p>
+<p>This work is taken on by dedicated software that manages the database. It is called a DBMS (database management system). Products include PostgreSQL, MySQL, SQLite and Oracle Database. Apps do not write data to files themselves. Instead, they ask the DBMS to "save this" or "find this."</p>
+</section>
+
+<section>
+<h2>How it works 1: tables, rows, columns and keys</h2>
+<p>The most widely used approach keeps data in the form of tables. This is called a {{term:関係データベース|relational database}}. Edgar Codd, a researcher at IBM, presented the idea in a 1970 paper.</p>
+<p>The horizontal lines of a table are called rows, and the vertical ones are called columns. One row is one record (for example, one member), and the columns are its fields, such as name and address. Unlike in a spreadsheet, each column can have rules like "whole numbers only" or "may not be blank."</p>
+<p>To pick out exactly one row, you choose a column in which no value appears twice, such as a member ID. This is called the {{term:主キー|primary key}}. Even if two members share the same name, the member ID keeps them apart.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 352" role="img"><title>A members table and an orders table. The member_id column in the orders table points to the primary key of the members table</title>
+<text x="4" y="20" class="m">members table</text>
+<rect class="hole" x="4" y="28" width="100" height="28"/><rect class="hole" x="104" y="28" width="100" height="28"/><rect class="hole" x="204" y="28" width="136" height="28"/>
+<text x="54" y="48" text-anchor="middle" class="m">member_id</text><text x="154" y="48" text-anchor="middle" class="m">name</text><text x="272" y="48" text-anchor="middle" class="m">city</text>
+<rect class="hole" x="4" y="56" width="100" height="28"/><rect class="hole" x="104" y="56" width="100" height="28"/><rect class="hole" x="204" y="56" width="136" height="28"/>
+<text x="54" y="76" text-anchor="middle">1</text><text x="154" y="76" text-anchor="middle">Sato</text><text x="272" y="76" text-anchor="middle">Tokyo</text>
+<rect class="hole" x="4" y="84" width="100" height="28"/><rect class="hole" x="104" y="84" width="100" height="28"/><rect class="hole" x="204" y="84" width="136" height="28"/>
+<text x="54" y="104" text-anchor="middle">2</text><text x="154" y="104" text-anchor="middle">Suzuki</text><text x="272" y="104" text-anchor="middle">Osaka</text>
+<rect class="hole" x="4" y="112" width="100" height="28"/><rect class="hole" x="104" y="112" width="100" height="28"/><rect class="hole" x="204" y="112" width="136" height="28"/>
+<text x="54" y="132" text-anchor="middle">3</text><text x="154" y="132" text-anchor="middle">Takahashi</text><text x="272" y="132" text-anchor="middle">Osaka</text>
+<rect class="ac" x="4" y="28" width="100" height="112"/>
+<text x="54" y="160" text-anchor="middle" class="a">Primary key</text>
+<line class="ac2" x1="130" y1="196" x2="64" y2="168"/>
+<polygon class="fa2" points="54,164 70,162 64,174"/>
+<text x="140" y="180" class="a">Foreign key points</text>
+<text x="140" y="198" class="a">to the primary key</text>
+<text x="4" y="216" class="m">orders table</text>
+<rect class="hole" x="4" y="224" width="76" height="25"/><rect class="hole" x="80" y="224" width="92" height="25"/><rect class="hole" x="172" y="224" width="96" height="25"/><rect class="hole" x="268" y="224" width="72" height="25"/>
+<text x="42" y="242" text-anchor="middle" class="m">order_id</text><text x="126" y="242" text-anchor="middle" class="m">member_id</text><text x="220" y="242" text-anchor="middle" class="m">item</text><text x="304" y="242" text-anchor="middle" class="m">quantity</text>
+<rect class="hole" x="4" y="249" width="76" height="25"/><rect class="hole" x="80" y="249" width="92" height="25"/><rect class="hole" x="172" y="249" width="96" height="25"/><rect class="hole" x="268" y="249" width="72" height="25"/>
+<text x="42" y="267" text-anchor="middle">101</text><text x="126" y="267" text-anchor="middle">1</text><text x="220" y="267" text-anchor="middle">notebook</text><text x="304" y="267" text-anchor="middle">2</text>
+<rect class="hole" x="4" y="274" width="76" height="25"/><rect class="hole" x="80" y="274" width="92" height="25"/><rect class="hole" x="172" y="274" width="96" height="25"/><rect class="hole" x="268" y="274" width="72" height="25"/>
+<text x="42" y="292" text-anchor="middle">102</text><text x="126" y="292" text-anchor="middle">2</text><text x="220" y="292" text-anchor="middle">pen</text><text x="304" y="292" text-anchor="middle">5</text>
+<rect class="hole" x="4" y="299" width="76" height="25"/><rect class="hole" x="80" y="299" width="92" height="25"/><rect class="hole" x="172" y="299" width="96" height="25"/><rect class="hole" x="268" y="299" width="72" height="25"/>
+<text x="42" y="317" text-anchor="middle">103</text><text x="126" y="317" text-anchor="middle">3</text><text x="220" y="317" text-anchor="middle">notebook</text><text x="304" y="317" text-anchor="middle">1</text>
+<rect class="hole" x="4" y="324" width="76" height="25"/><rect class="hole" x="80" y="324" width="92" height="25"/><rect class="hole" x="172" y="324" width="96" height="25"/><rect class="hole" x="268" y="324" width="72" height="25"/>
+<text x="42" y="342" text-anchor="middle">104</text><text x="126" y="342" text-anchor="middle">2</text><text x="220" y="342" text-anchor="middle">eraser</text><text x="304" y="342" text-anchor="middle">1</text>
+<rect class="ac2" x="80" y="224" width="92" height="125"/>
+</svg><figcaption class="fig-cap">In the members table, member_id (the primary key) never repeats a value. In the orders table, member_id (a foreign key) points by number to the member who placed each order. Suzuki (member 2) has two orders. Left out: the mark for the orders table's own primary key (order_id), and the rules on each column's type of value.</figcaption></figure>
+<p>The member_id column in the orders table points to the primary key of the members table. A column that points to another table's primary key like this is called a {{term:外部キー|foreign key}}. If you try to add an order with a number that is not in the members table, the DBMS rejects it.</p>
+<p>Why not write the member's name directly in the orders table? If you write the name on every order, a name change means fixing dozens of rows. Miss even one, and the data no longer agrees. Splitting tables so that each fact is written in only one place is a design step called {{term:正規化|normalization}}.</p>
+</section>
+
+<section>
+<h2>How it works 2: SQL describes what you want</h2>
+<p>The language for passing requests to a DBMS is {{term:SQL|SQL}} (read letter by letter, "S-Q-L"). It is defined in the international standard ISO/IEC 9075. Each product has small dialect differences, but the basic way of writing it is shared.</p>
+<p>The three examples below are SQL for the tables in the figure above. The words are close to plain English, so reading them aloud tells you what they mean. The table and column names match the figure, with words joined by underscores (member_id).</p>
+<table>
+<thead><tr><th>SQL</th><th>Meaning</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>SELECT name FROM members WHERE city = 'Osaka';</td><td>From the members table, take the name from each row whose city is Osaka</td><td>Suzuki, Takahashi</td></tr>
+<tr><td>SELECT item, quantity FROM orders WHERE member_id = 2;</td><td>Take the item and quantity of each order by member 2</td><td>pen 5, eraser 1</td></tr>
+<tr><td>UPDATE orders SET quantity = 3 WHERE order_id = 103;</td><td>Change the quantity of order 103 to 3</td><td>Takahashi's order becomes 3 notebooks</td></tr>
+</tbody>
+</table>
+<p>SELECT means "pick and take out," FROM means "from which table," and WHERE means "the rows that meet which condition." In SQL you write only what you want, not the order in which to search. The DBMS decides how to search on its own, looking at things like the size of the tables.</p>
+<p>Link the two tables by member ID, and you can answer questions that span both, such as "the items ordered by members in Osaka." Here, the foreign key is the marker that links them.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>SQL is like a request slip you hand in at a library counter. Write "books by this author, from before 1950," and a librarian fetches them from the stacks. You do not tell them which shelves to visit, or in what order. What they share is this: you state only what you want and leave the way of searching to the other side.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> A librarian can work out what you mean even from a vague request. SQL gives an error if you stray even slightly from its fixed way of writing, and it never guesses what you meant.</p></aside>
+</section>
+
+<section>
+<h2>How it works 3: indexes narrow the search in one jump</h2>
+<p>Suppose you want the orders with member ID 457 from an orders table of 100 million rows. With no preparation, the DBMS has no choice but to check every row, starting from the first. If each row is 100 bytes, that is 10 GB to read. Even a fast SSD that reads about 7 GB per second in a continuous stream would need more than 1 second.</p>
+<p>So you build a separate list in advance. It sorts the values of the column you search on, from smallest to largest, and notes where the rows with each value are. This is called an {{term:インデックス|index}}. In many DBMSs you create one with a command called CREATE INDEX (one is made automatically for the primary key column). Once it exists, the DBMS uses it by itself whenever it judges it useful. It also updates the index by itself each time rows change.</p>
+<aside class="analogy"><p class="analogy-h">An analogy</p><p>An index is like the index at the back of a book. To find a word, you do not read the book from page one. You look it up in the alphabetical index and see right away which page it is on. What they share is this: you jump from sorted headings to a place in the main body.</p><p class="analogy-limit"><strong>Where the analogy breaks down:</strong> A book's index never changes once it is printed. A database table keeps gaining new rows and edits. The index has to be updated each time, so writes get a little slower, and the index takes extra space.</p></aside>
+<p>When a DBMS moves data to and from an SSD or memory, it does not read and write one row at a time. It uses blocks of a fixed size, called "pages." A page is usually 8 KB in PostgreSQL and 16 KB in MySQL's standard storage engine (InnoDB).</p>
+<p>With 100 million rows, the index list itself becomes huge. So the list is split into pages. On top go layers of guides that say "which page holds numbers up to what." The tree-shaped index made this way is called a B-tree. Bayer and McCreight published it in a 1972 paper.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 300" role="img"><title>Finding member 457's orders with a B-tree. The DBMS reads one page per level from the top, and by the third page it knows where the rows are</title>
+<text x="4" y="18" class="m">Find the orders of member 457</text>
+<text x="4" y="58">Level 1</text>
+<text x="4" y="138">Level 2</text>
+<text x="4" y="218">Level 3</text>
+<rect class="hole" x="110" y="32" width="57" height="36"/><rect class="hole" x="167" y="32" width="57" height="36"/><rect class="hole" x="224" y="32" width="57" height="36"/>
+<text x="138.5" y="56" text-anchor="middle">≤300</text><text x="195.5" y="56" text-anchor="middle" class="a">≤600</text><text x="252.5" y="56" text-anchor="middle">≤900</text>
+<rect class="ac" x="167" y="32" width="57" height="36"/>
+<line class="thin" x1="138" y1="68" x2="83" y2="112"/>
+<line class="ac" x1="195" y1="68" x2="195" y2="112"/>
+<line class="thin" x1="252" y1="68" x2="307" y2="112"/>
+<rect class="dash" x="66" y="112" width="34" height="36"/><text x="83" y="136" text-anchor="middle" class="m">…</text>
+<rect class="dash" x="290" y="112" width="34" height="36"/><text x="307" y="136" text-anchor="middle" class="m">…</text>
+<rect class="hole" x="110" y="112" width="57" height="36"/><rect class="hole" x="167" y="112" width="57" height="36"/><rect class="hole" x="224" y="112" width="57" height="36"/>
+<text x="138.5" y="136" text-anchor="middle">≤400</text><text x="195.5" y="136" text-anchor="middle" class="a">≤500</text><text x="252.5" y="136" text-anchor="middle">≤600</text>
+<rect class="ac" x="167" y="112" width="57" height="36"/>
+<line class="thin" x1="138" y1="148" x2="83" y2="192"/>
+<line class="ac" x1="195" y1="148" x2="195" y2="192"/>
+<line class="thin" x1="252" y1="148" x2="307" y2="192"/>
+<rect class="dash" x="66" y="192" width="34" height="36"/><text x="83" y="216" text-anchor="middle" class="m">…</text>
+<rect class="dash" x="290" y="192" width="34" height="36"/><text x="307" y="216" text-anchor="middle" class="m">…</text>
+<rect class="hole" x="110" y="192" width="57" height="36"/><rect class="hole" x="167" y="192" width="57" height="36"/><rect class="hole" x="224" y="192" width="57" height="36"/>
+<text x="138.5" y="216" text-anchor="middle">451</text><text x="195.5" y="216" text-anchor="middle" class="a">457</text><text x="252.5" y="216" text-anchor="middle">462</text>
+<rect class="ac" x="167" y="192" width="57" height="36"/>
+<line class="ac" x1="195" y1="228" x2="195" y2="254"/>
+<polygon class="fa" points="189,252 201,252 195,262"/>
+<rect class="n" x="70" y="264" width="250" height="32" rx="6"/>
+<text x="195" y="286" text-anchor="middle">Rows in orders (member 457)</text>
+</svg><figcaption class="fig-cap">Each row of boxes is one page. The upper levels are guides that say "up to which number, take which branch." The bottom level records where the rows are. Reading just 3 pages gets you to the rows. Left out: a real page holds hundreds of guides. Also left out: how many orders with the same number are arranged, and the side links between pages on the bottom level.</figcaption></figure>
+<p>As in the figure, the DBMS reads one page per level from the top and chooses which branch to follow. One page can hold hundreds of guides, so each level down narrows the range by a factor of several hundred. Suppose one page holds 300 guides. Then 3 levels can tell apart 300 × 300 × 300 = 27 million rows, and 4 levels can tell apart 8.1 billion. Even in a table of 100 million rows, reading about 4 pages tells you where the row is.</p>
+<p>Now search the same 100 million rows with {{term:二分探索|binary search}}, which halves the range each time. It takes at most 27 comparisons. But the places it compares start out far apart, so each comparison reads a different page. Under the same assumption of 300 entries per page, that comes to nearly 20 page reads. A B-tree compares hundreds of candidates at once within one page. This cuts the number of pages read from slow storage.</p>
+<p>The indexes that PostgreSQL and MySQL (InnoDB) create by default also belong to the B-tree family. In practice they use improved forms such as the "B+ tree," which links the bottom-level pages side by side to make range searches easier.</p>
+<p>However, an index is not always used. Suppose most rows in the table match the condition. Then reading the table from the start can be faster than using the index to fetch rows one by one. The DBMS estimates which is better and decides.</p>
+</section>
+
+<section>
+<h2>How it works 4: transactions, "all or nothing"</h2>
+<p>Imagine that person A sends 10,000 yen to person B. Inside the database, this takes two changes. One subtracts 10,000 yen from A's balance, and the other adds 10,000 yen to B's balance.</p>
+<p>What if a power cut stops the server right after the first change? A's money has gone down, but it never reaches B, so 10,000 yen vanishes. To prevent this, the two changes must be handled as one set that cannot be split.</p>
+<p>This set of operations is called a {{term:トランザクション|transaction}}. In PostgreSQL and some other systems, you start it with BEGIN, and writing COMMIT at the end makes the result final. If a problem occurs midway, ROLLBACK returns everything to the state before it started.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 236" role="img"><title>A transfer transaction. COMMIT makes it final only after both changes are done; if something fails midway, ROLLBACK undoes it</title>
+<rect class="hole" x="10" y="8" width="200" height="36" rx="6"/><text x="110" y="32" text-anchor="middle">BEGIN (start)</text>
+<line class="ln" x1="110" y1="44" x2="110" y2="62"/><polygon class="ink" points="104,60 116,60 110,70"/>
+<rect class="hole" x="10" y="70" width="200" height="36" rx="6"/><text x="110" y="94" text-anchor="middle">Take 10,000 yen from A</text>
+<line class="ln" x1="110" y1="106" x2="110" y2="124"/><polygon class="ink" points="104,122 116,122 110,132"/>
+<rect class="hole" x="10" y="132" width="200" height="36" rx="6"/><text x="110" y="156" text-anchor="middle">Add 10,000 yen to B</text>
+<line class="ln" x1="110" y1="168" x2="110" y2="186"/><polygon class="ink" points="104,184 116,184 110,194"/>
+<rect class="hole" x="10" y="194" width="200" height="36" rx="6"/><rect class="ac" x="10" y="194" width="200" height="36" rx="6"/><text x="110" y="218" text-anchor="middle" class="a">COMMIT (final)</text>
+<line class="dash" x1="110" y1="119" x2="288" y2="119"/>
+<line class="dash" x1="288" y1="119" x2="288" y2="140"/>
+<text x="228" y="110" class="a">If it fails</text>
+<rect class="hole" x="236" y="140" width="104" height="36" rx="6"/><text x="288" y="164" text-anchor="middle">ROLLBACK</text>
+<text x="288" y="198" text-anchor="middle" class="m">Back to the</text>
+<text x="288" y="220" text-anchor="middle" class="m">start state</text>
+</svg><figcaption class="fig-cap">Until COMMIT, the two changes count only as "provisional changes." If the work stops midway, both are treated as if they never happened. Left out: checking that the balance is large enough, and coordinating with other work that uses the same account at the same time.</figcaption></figure>
+<p>The four properties a transaction must keep are called the {{term:ACID特性|ACID properties}}, from the first letters of their English names. Theo Härder and Andreas Reuter coined the name in a 1983 paper. The table below sums up each one using the transfer example.</p>
+<table>
+<thead><tr><th>Property</th><th>In plain words</th><th>In the transfer example</th></tr></thead>
+<tbody>
+<tr><td>Atomicity</td><td>All of it or none of it</td><td>It never ends with only the subtraction done</td></tr>
+<tr><td>Consistency</td><td>Never ends in a state that breaks the rules</td><td>If you set the rule "no balance below zero," it is kept</td></tr>
+<tr><td>Isolation</td><td>Work running at the same time never sees another's half-done state</td><td>No other work reads a balance partway through the transfer</td></tr>
+<tr><td>Durability</td><td>A confirmed result survives failures</td><td>A transfer shown as "complete" is still there after a power cut</td></tr>
+</tbody>
+</table>
+<p>To protect isolation, the DBMS makes one of two operations wait for a while when both try to change the same row. It is like hanging an "in use" sign on the row, and it is called a lock. Thanks to this, even if two transfers take money from the same account at the same moment, the balance does not come out wrong.</p>
+<p>But too much waiting slows everything down. So you can choose in the settings how strictly isolation is kept. This setting is called the {{term:分離レベル|isolation level}}.</p>
+<p>Durability is protected by the order in which things are written. Before the DBMS changes the tables on the SSD, it writes "what will change, and how" in a separate record, called the log. It replies "complete" only after it confirms the log has been written to the SSD or similar storage. Even after a power cut, rereading the log at restart restores the confirmed changes.</p>
+</section>
+
+<section>
+<h2>Relational databases and NoSQL</h2>
+<p>Some databases do not use tables at all. They were built for data that does not fit a table shape, and for services of very large scale. The many kinds other than relational databases are grouped together as {{term:NoSQL|NoSQL}} (read "no S-Q-L").</p>
+<p>A simple example is a type that just returns the contents when you give it a name. The name is called the "key" and the contents the "value," so this type is called a key-value store. The database does not care what the contents are.</p>
+<p>Another type, the document store, keeps one record whole, like a single document. It can hold one member's name and that member's list of orders as one unit, without splitting them into tables.</p>
+<p>Many NoSQL products spread data across many servers, and they are built to grow easily by adding machines. This approach is called {{term:スケールアウト|scale-out}}. In exchange, they sometimes give up part of the strictness. For example, Amazon described a key-value store called Dynamo in a 2007 paper. Its top priority was never going down. Under some kinds of failure, it lets the contents of different servers disagree for a while.</p>
+<p>It is less about which one is better than about using each where it fits. Relational databases are strong for data where mismatches are not allowed, such as money and stock. When you want many servers to handle a huge number of requests, NoSQL can be a better fit.</p>
+</section>
+
+<section>
+<h2>Where is a database actually kept?</h2>
+<p>In the end, a database's contents are files inside a server. Tables and indexes are written, as collections of pages, onto SSDs or HDDs, which keep data when the power is off.</p>
+<p>But waiting for one read from an SSD takes about 0.1 milliseconds. That is about a thousand times longer than memory, at about 100 nanoseconds ("<a href="{{home}}learn/memory-vs-storage/">Memory vs Storage: What's the Difference?</a>"). So the DBMS keeps copies of often-used pages in memory. According to the MySQL manual, a dedicated server often gives up to about 80% of its memory to this area. The upper levels of a B-tree are read again and again, so they tend to stay in memory. Often only the lower levels need a trip to the SSD.</p>
+<p>Today, more and more databases are rented as a service from cloud providers. Even then, the data sits on the SSDs and other storage of servers in the provider's data centers ("<a href="{{home}}learn/what-is-cloud-computing/">What Is Cloud Computing?</a>").</p>
+</section>
+
+<section>
+<h2>Common misconceptions</h2>
+<div class="myth"><p class="myth-q">Myth: A database is just a big spreadsheet file</p><p>In fact, what matters is the work of the software that manages the data (the DBMS). The DBMS rejects data that breaks the rules and keeps many writes at the same time in order. It also protects confirmed results through failures. A spreadsheet program is a tool for people to calculate while looking at a screen. Both look like "tables," so they are easy to confuse.</p></div>
+<div class="myth"><p class="myth-q">Myth: The more indexes you create, the faster things get</p><p>In fact, only searches on that column get faster. Each time you add or change a row, every index must be updated, so writes get slower. Indexes also take up space. The PostgreSQL documentation, too, says that indexes add overhead to the database as a whole, so they should be used sensibly.</p></div>
+<div class="myth"><p class="myth-q">Myth: NoSQL is newer, so it is better than relational databases</p><p>In fact, they are good at different things. Relational databases rest on an idea from 1970, but they are still being improved. On the other side, some NoSQL products have added transactions. For example, MongoDB has supported transactions that span multiple documents since version 4.0 in 2018. The name "NoSQL" makes it easy to see it as the next generation after SQL.</p></div>
+</section>
+
+<section>
+<h2>By the numbers</h2>
+<table>
+<thead><tr><th>Item</th><th>Figure</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>Relational database paper</td><td>1970</td><td>Codd at IBM</td></tr>
+<tr><td>B-tree paper</td><td>1972</td><td>Bayer and McCreight</td></tr>
+<tr><td>Name "ACID" coined</td><td>1983</td><td>Härder and Reuter</td></tr>
+<tr><td>Row limit of one Excel sheet</td><td>1,048,576 rows</td><td>Columns go up to 16,384</td></tr>
+<tr><td>Size of one page</td><td>8 KB, 16 KB, 4,096 bytes</td><td>PostgreSQL, MySQL (InnoDB), SQLite (default since 2016)</td></tr>
+<tr><td>Binary search in 100 million rows</td><td>At most 27 comparisons</td><td>2 multiplied by itself 27 times is about 134 million</td></tr>
+<tr><td>B-tree search in 100 million rows</td><td>About 4 pages</td><td>Assuming 300 guides fit in one page</td></tr>
+<tr><td>Reading all 100 million rows (10 GB)</td><td>A little over 1 second</td><td>With an SSD that reads about 7 GB per second</td></tr>
+<tr><td>Wait for one read</td><td>Memory about 100 ns, SSD about 0.1 ms</td><td>About a thousandfold difference</td></tr>
+<tr><td>SQLite databases in use</td><td>More than 1 trillion</td><td>Developers' estimate (checked October 2026)</td></tr>
+</tbody>
+</table>
+<p>The B-tree and full-read figures are simplified estimates. The real number of levels depends on the key length and how full the pages are. The read time depends on whether a copy is already in memory.</p>
+</section>
+
+<section>
+<h2>Learn more</h2>
+<ul>
+<li>Try it: the <a href="{{home}}tools/sql-practice/">SQL practice tool</a>, the <a href="{{home}}tools/binary-search-tree-heap-visualizer/">binary search tree and heap visualizer</a> and the <a href="{{home}}tools/raid-capacity-calculator/">RAID capacity calculator</a></li>
+<li>Compare in a table: <a href="{{home}}compare/rdb-vs-nosql/">relational database vs. NoSQL</a>, <a href="{{home}}compare/inner-join-vs-outer-join/">inner join vs. outer join</a>, <a href="{{home}}compare/ssd-vs-hdd/">SSD vs. HDD</a></li>
+<li>Terms for your next step: {{term:E-R図|E-R diagram}}, {{term:第3正規形|third normal form}}, {{term:ビュー|database view}}, {{term:2相ロック|two-phase locking}}, {{term:デッドロック|deadlock}}, {{term:SQLインジェクション|SQL injection}}</li>
+<li>Read the basics: "<a href="{{home}}learn/memory-vs-storage/">Memory vs Storage: What's the Difference?</a>", "<a href="{{home}}learn/what-is-an-algorithm/">What Is an Algorithm?</a>", "<a href="{{home}}learn/what-is-a-data-center/">What Is a Data Center?</a>"</li>
+</ul>
+</section>
