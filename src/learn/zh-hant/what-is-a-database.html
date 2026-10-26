@@ -1,0 +1,245 @@
+<!--
+{
+  "title": "資料庫是什麼？表格、SQL與索引的運作原理",
+  "description": "資料庫是讓大量資料能被許多人同時、不矛盾又快速地使用的管理機制。本文說明表格與主鍵、外鍵，SQL的讀法，索引為何能快速搜尋，並以轉帳為例介紹交易與ACID特性。",
+  "series": "computer-basics",
+  "order": 14,
+  "minutes": 15,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["database", "algorithms", "memory-hierarchy", "cloud-container"],
+  "terms": ["関係データベース", "SQL", "主キー", "外部キー", "インデックス", "トランザクション", "ACID特性", "NoSQL"],
+  "sources": [
+    { "title": "IPA: ITパスポート試験 シラバス Ver.6.5（日本資訊處理推進機構：IT Passport考試課程大綱。日文。資料庫方式、資料庫設計、資料操作、交易處理）", "url": "https://www.ipa.go.jp/shiken/syllabus/omgdg50000005kn1-att/syllabus_ip_ver6_5.pdf" },
+    { "title": "IPA: 基本情報技術者試験(レベル2)シラバス Ver.9.1（日本資訊處理推進機構：基本資訊技術人員考試〈等級2〉課程大綱。日文）", "url": "https://www.ipa.go.jp/shiken/syllabus/nl10bi0000007tf7-att/syllabus_fe_ver9_1.pdf" },
+    { "title": "E. F. Codd: A Relational Model of Data for Large Shared Data Banks（Communications of the ACM 13(6), 377–387，1970年6月）", "url": "https://doi.org/10.1145/362384.362685" },
+    { "title": "ISO/IEC 9075-1:2023 Information technology — Database languages SQL — Part 1: Framework（SQL的國際標準）", "url": "https://www.iso.org/standard/76583.html" },
+    { "title": "R. Bayer, E. McCreight: Organization and Maintenance of Large Ordered Indexes（Acta Informatica 1, 173–189，1972年。B樹的論文）", "url": "https://doi.org/10.1007/BF00288683" },
+    { "title": "T. Härder, A. Reuter: Principles of Transaction-Oriented Database Recovery（ACM Computing Surveys 15(4), 287–317，1983年。ACID的命名）", "url": "https://doi.org/10.1145/289.291" },
+    { "title": "PostgreSQL Documentation: 3.4. Transactions（銀行轉帳的例子，BEGIN、COMMIT、ROLLBACK）", "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html" },
+    { "title": "PostgreSQL Documentation: 11.1. Indexes — Introduction（與書末索引的比喻，以及索引會增加整個資料庫的負擔）", "url": "https://www.postgresql.org/docs/current/indexes-intro.html" },
+    { "title": "PostgreSQL Documentation: 11.6. Unique Indexes（設定主鍵或唯一限制時，會自動建立索引）", "url": "https://www.postgresql.org/docs/current/indexes-unique.html" },
+    { "title": "PostgreSQL Documentation: 11.2. Index Types（CREATE INDEX的預設是B樹）", "url": "https://www.postgresql.org/docs/current/indexes-types.html" },
+    { "title": "PostgreSQL Documentation: Database Page Layout（表格與索引以固定大小〈通常為8 KB〉的頁排列存放）", "url": "https://www.postgresql.org/docs/current/storage-page-layout.html" },
+    { "title": "PostgreSQL Documentation: Write-Ahead Logging (WAL)（先把修改寫進日誌，再改寫資料檔案）", "url": "https://www.postgresql.org/docs/current/wal-intro.html" },
+    { "title": "MySQL 8.0 Reference Manual: The Physical Structure of an InnoDB Index（InnoDB的索引是B樹，頁大小的預設值為16 KB）", "url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-physical-structure.html" },
+    { "title": "MySQL 8.4 Reference Manual: Buffer Pool（在專用伺服器上，常把最多約80%的實體記憶體分配給它）", "url": "https://docs.oracle.com/cd/E17952_01/mysql-8.4-en/innodb-buffer-pool.html" },
+    { "title": "SQLite: Most Widely Deployed and Used Database Engine（內建於Android、iPhone等，並估計使用中的資料庫超過1兆個。2026年10月確認）", "url": "https://sqlite.org/mostdeployed.html" },
+    { "title": "SQLite: Default Page Size Change of SQLite 3.12.0（自2016年起，新檔案的頁大小預設值為4,096位元組）", "url": "https://sqlite.org/pgszchng2016.html" },
+    { "title": "Microsoft Support: Excel specifications and limits（工作表大小為1,048,576列 × 16,384欄）", "url": "https://support.microsoft.com/en-us/office/1672b34d-7043-467e-8e27-269d656771c3" },
+    { "title": "G. DeCandia等: Dynamo: Amazon's Highly Available Key-value Store（SOSP 2007。為了不停機，在某些故障情況下犧牲一致性）", "url": "https://doi.org/10.1145/1294261.1294281" },
+    { "title": "MongoDB Manual v4.0: Transactions（從4.0版起，支援跨越多份文件的交易）", "url": "https://docs.mongodb.com/v4.0/core/transactions/" },
+    { "title": "University of Washington CSE 351 (Spring 2020): Caches II（課程講義。記憶體與SSD讀取時間的參考值）", "url": "https://courses.cs.washington.edu/courses/cse351/20sp/lectures/17/CSE351-L17-caches-II_20sp.pdf" },
+    { "title": "Samsung Semiconductor: NVMe SSD 990 PRO Data Sheet（連續讀取最高7,450 MB/s）", "url": "https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_NVMe_SSD_990_PRO_Datasheet_Rev.1.0_10129514072296.pdf" }
+  ]
+}
+-->
+<p class="lead">資料庫是一種管理機制：把大量資料整理成固定的形式，讓許多人同時使用也不會產生矛盾。常用的關聯式資料庫把資料放進表格，再用一種叫SQL的語言，提出「我要符合這個條件的資料列」的要求。它用索引一口氣縮小搜尋範圍，並用交易守住「全部做完，或完全不做」。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>資料庫和試算表檔案的差別</li>
+<li>表格、列、欄，以及主鍵與外鍵的意思（附小例子）</li>
+<li>SQL的讀法，以及索引（B樹）讓搜尋變快的原因</li>
+<li>以轉帳為例，看交易與ACID特性</li>
+<li>和NoSQL的差別，以及資料實際存放的地方</li>
+</ul><p class="muted">先備知識：不需要。只要在Excel等試算表軟體看過表格，就能讀懂。最後一節若先知道記憶體和儲存空間的差別，會更容易理解。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>在網路商店按下訂購按鈕，庫存就少1件，訂單紀錄就多1筆。打開銀行的App，馬上就會顯示目前的餘額。這兩者的背後，都是把資料存進資料庫，或從資料庫取出來。</p>
+<p>手機裡也有資料庫。那是一個叫SQLite的小型資料庫軟體。根據開發者的官方網站，Android和iPhone裡都有它。</p>
+<p>本文要看看：為什麼能從大量資料中瞬間找到目標，又為什麼能放心把金錢的紀錄交給它。日本的IT Passport考試和基本資訊技術人員考試的出題範圍（課程大綱）裡的用語，也會用平常的話說明。</p>
+</section>
+
+<section>
+<h2>試算表檔案為什麼不夠用？</h2>
+<p>如果只是把資料做成表格，試算表軟體也辦得到。問題出在使用的人和資料量變多的時候。主要的理由有3個。</p>
+<p>第1個是許多人同時寫入。大型網路商店每秒會收到好幾筆訂單。如果2個人各自打開同一個檔案修改，後存檔的一方可能會蓋掉前一方的修改。</p>
+<p>第2個是讓資料遵守規則。「數量」欄裡出現文字，或出現不存在的會員的訂單。人工輸入時，這類錯誤就會混進來。資料庫可以在寫入的當下，拒絕不符合事先定好之規則的資料。</p>
+<p>第3個是資料量與速度。Excel的1張工作表最多只能放1,048,576列（微軟的規格）。大型服務處理的列數比這多好幾個數量級，而且必須從中找出需要的那1列，不能讓使用者久等。</p>
+<p>承擔這些工作的，是專門管理資料庫的軟體，稱為DBMS（資料庫管理系統）。產品有PostgreSQL、MySQL、SQLite、Oracle Database等。應用程式不自己把資料寫進檔案，而是請DBMS「幫我存這個」「幫我找這個」。</p>
+</section>
+
+<section>
+<h2>原理1：表格、列、欄與「鍵」</h2>
+<p>最廣泛使用的，是把資料以表格形式保存的方式，稱為{{term:関係データベース|關聯式資料庫}}。IBM的研究人員科德（Edgar Codd）在1970年的論文中提出了這個想法。</p>
+<p>表格的橫向排列稱為「列」，縱向排列稱為「欄」。1列是1筆資料（例如1位會員），欄則是它的項目（姓名、地址等）。和試算表軟體不同的是，每一欄都能加上「只能是整數」「不可空白」之類的規則。</p>
+<p>為了能指定唯一的1列，要先決定一個值絕不重複的欄，例如會員編號。這稱為{{term:主キー|主鍵}}。就算有2位同名的會員，只要用會員編號，就不會弄錯。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 352" role="img"><title>會員表格與訂單表格。訂單表格的會員編號，指向會員表格的主鍵</title>
+<text x="4" y="20" class="m">會員表格</text>
+<rect class="hole" x="4" y="28" width="100" height="28"/><rect class="hole" x="104" y="28" width="100" height="28"/><rect class="hole" x="204" y="28" width="136" height="28"/>
+<text x="54" y="48" text-anchor="middle" class="m">會員編號</text><text x="154" y="48" text-anchor="middle" class="m">姓名</text><text x="272" y="48" text-anchor="middle" class="m">縣市</text>
+<rect class="hole" x="4" y="56" width="100" height="28"/><rect class="hole" x="104" y="56" width="100" height="28"/><rect class="hole" x="204" y="56" width="136" height="28"/>
+<text x="54" y="76" text-anchor="middle">1</text><text x="154" y="76" text-anchor="middle">佐藤</text><text x="272" y="76" text-anchor="middle">東京</text>
+<rect class="hole" x="4" y="84" width="100" height="28"/><rect class="hole" x="104" y="84" width="100" height="28"/><rect class="hole" x="204" y="84" width="136" height="28"/>
+<text x="54" y="104" text-anchor="middle">2</text><text x="154" y="104" text-anchor="middle">鈴木</text><text x="272" y="104" text-anchor="middle">大阪</text>
+<rect class="hole" x="4" y="112" width="100" height="28"/><rect class="hole" x="104" y="112" width="100" height="28"/><rect class="hole" x="204" y="112" width="136" height="28"/>
+<text x="54" y="132" text-anchor="middle">3</text><text x="154" y="132" text-anchor="middle">高橋</text><text x="272" y="132" text-anchor="middle">大阪</text>
+<rect class="ac" x="4" y="28" width="100" height="112"/>
+<text x="54" y="160" text-anchor="middle" class="a">主鍵</text>
+<line class="ac2" x1="130" y1="196" x2="64" y2="168"/>
+<polygon class="fa2" points="54,164 70,162 64,174"/>
+<text x="150" y="182" class="a">外鍵指向主鍵</text>
+<text x="4" y="216" class="m">訂單表格</text>
+<rect class="hole" x="4" y="224" width="84" height="25"/><rect class="hole" x="88" y="224" width="84" height="25"/><rect class="hole" x="172" y="224" width="96" height="25"/><rect class="hole" x="268" y="224" width="72" height="25"/>
+<text x="46" y="242" text-anchor="middle" class="m">訂單編號</text><text x="130" y="242" text-anchor="middle" class="m">會員編號</text><text x="220" y="242" text-anchor="middle" class="m">商品</text><text x="304" y="242" text-anchor="middle" class="m">數量</text>
+<rect class="hole" x="4" y="249" width="84" height="25"/><rect class="hole" x="88" y="249" width="84" height="25"/><rect class="hole" x="172" y="249" width="96" height="25"/><rect class="hole" x="268" y="249" width="72" height="25"/>
+<text x="46" y="267" text-anchor="middle">101</text><text x="130" y="267" text-anchor="middle">1</text><text x="220" y="267" text-anchor="middle">筆記本</text><text x="304" y="267" text-anchor="middle">2</text>
+<rect class="hole" x="4" y="274" width="84" height="25"/><rect class="hole" x="88" y="274" width="84" height="25"/><rect class="hole" x="172" y="274" width="96" height="25"/><rect class="hole" x="268" y="274" width="72" height="25"/>
+<text x="46" y="292" text-anchor="middle">102</text><text x="130" y="292" text-anchor="middle">2</text><text x="220" y="292" text-anchor="middle">原子筆</text><text x="304" y="292" text-anchor="middle">5</text>
+<rect class="hole" x="4" y="299" width="84" height="25"/><rect class="hole" x="88" y="299" width="84" height="25"/><rect class="hole" x="172" y="299" width="96" height="25"/><rect class="hole" x="268" y="299" width="72" height="25"/>
+<text x="46" y="317" text-anchor="middle">103</text><text x="130" y="317" text-anchor="middle">3</text><text x="220" y="317" text-anchor="middle">筆記本</text><text x="304" y="317" text-anchor="middle">1</text>
+<rect class="hole" x="4" y="324" width="84" height="25"/><rect class="hole" x="88" y="324" width="84" height="25"/><rect class="hole" x="172" y="324" width="96" height="25"/><rect class="hole" x="268" y="324" width="72" height="25"/>
+<text x="46" y="342" text-anchor="middle">104</text><text x="130" y="342" text-anchor="middle">2</text><text x="220" y="342" text-anchor="middle">橡皮擦</text><text x="304" y="342" text-anchor="middle">1</text>
+<rect class="ac2" x="88" y="224" width="84" height="125"/>
+</svg><figcaption class="fig-cap">會員表格的「會員編號」（主鍵），同一個值不會出現第二次。訂單表格的「會員編號」（外鍵），用編號指出這是哪位會員的訂單。鈴木（2號）有2筆訂單。省略的部分：訂單表格本身主鍵（訂單編號）的標示，以及各欄的值的種類規則。</figcaption></figure>
+<p>訂單表格的「會員編號」這一欄，指向會員表格的主鍵。像這樣指向其他表格主鍵的欄，稱為{{term:外部キー|外鍵}}。如果想放入會員表格裡沒有的編號的訂單，DBMS會拒絕。</p>
+<p>為什麼不在訂單表格裡直接寫會員的姓名呢？如果每筆訂單都寫上姓名，姓名改變時就得修改幾十列。只要漏改1處，資料就會互相矛盾。把表格拆開、讓同一件事實只寫在1個地方的設計步驟，稱為{{term:正規化|正規化}}。</p>
+</section>
+
+<section>
+<h2>原理2：SQL是寫「想要什麼」的語言</h2>
+<p>把要求傳達給DBMS的語言是{{term:SQL|SQL}}（讀作S-Q-L）。它由國際標準ISO/IEC 9075規定。各產品多少有些方言，但基本的寫法是共通的。</p>
+<p>下面3個是針對上圖表格的SQL例子。它接近英文單字，唸出來就能抓到意思。為了方便閱讀，表格和欄的名稱用中文表示（實際的系統多半使用英文名稱）。</p>
+<table>
+<thead><tr><th>SQL</th><th>意思</th><th>結果</th></tr></thead>
+<tbody>
+<tr><td>SELECT 姓名 FROM 會員 WHERE 縣市 = '大阪';</td><td>從會員表格中，取出縣市是大阪的列的姓名</td><td>鈴木、高橋</td></tr>
+<tr><td>SELECT 商品, 數量 FROM 訂單 WHERE 會員編號 = 2;</td><td>取出會員編號2的人所下訂單的商品與數量</td><td>原子筆 5、橡皮擦 1</td></tr>
+<tr><td>UPDATE 訂單 SET 數量 = 3 WHERE 訂單編號 = 103;</td><td>把訂單編號103的數量改成3</td><td>高橋的筆記本變成3本</td></tr>
+</tbody>
+</table>
+<p>SELECT是「選出並取出」，FROM是「從哪個表格」，WHERE是「符合什麼條件的列」。SQL只寫「想要什麼」，不寫「按什麼順序找」。找法由DBMS看表格大小等情況，自己決定。</p>
+<p>用會員編號把2個表格連起來，就能回答「大阪的會員訂了哪些商品」這種跨越兩個表格的問題。這時，外鍵就是連接的記號。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>SQL很像在圖書館櫃台填寫的調書單。只要寫上「這位作者、1950年以前的書」，館員就會從書庫幫你找出來。書庫的哪些書架要按什麼順序去找，使用者不必指示。相似之處是：只傳達「想要的東西」，「找法」則交給對方。</p><p class="analogy-limit"><strong>比喻的限制：</strong>館員就算聽到模糊的要求，也能體會你的意思。SQL只要稍微偏離規定的寫法就會出錯，也不會去揣測你的意思。</p></aside>
+</section>
+
+<section>
+<h2>原理3：索引一口氣縮小搜尋範圍</h2>
+<p>假設要從1億列的訂單表格中，找出會員編號457的訂單。如果什麼都沒準備，DBMS只能從第1列開始，依序檢查所有的列。如果1列是100位元組，要讀的量就是10 GB。就算是連續讀取每秒約7 GB的高速SSD，算起來也要超過1秒。</p>
+<p>因此，另外準備一份清單：把要搜尋的欄的值由小到大排好，並附註有該值的列在哪裡。這稱為{{term:インデックス|索引}}。許多DBMS用「CREATE INDEX」這個指令建立（主鍵的欄會自動建立）。建好之後，DBMS判斷有用時就會自己使用，每次列有變動時也會自己更新。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>索引很像書末的索引。要找某個詞時，不用從頭讀內文，只要查依筆畫等順序排好的索引，就能馬上知道在第幾頁。相似之處是：從排好的標題，跳到本體的位置。</p><p class="analogy-limit"><strong>比喻的限制：</strong>書的索引印好之後就不會變。資料庫的表格則會不斷新增或修改資料列。每次都要跟著更新索引，所以寫入會稍微變慢，也會多占儲存空間。</p></aside>
+<p>DBMS和SSD或記憶體交換資料時，不是1列1列地讀寫，而是以固定大小的區塊為單位。這個區塊稱為「頁」（page）。大小在PostgreSQL通常是8 KB，在MySQL的標準方式（InnoDB）是16 KB。</p>
+<p>列數有1億時，索引的清單本身也會變得很龐大。因此把清單按頁分段，再在上面疊上「哪一頁放到幾號為止」的導引層。這樣做出的樹狀索引，稱為B樹（B-tree）。Bayer與McCreight在1972年的論文中發表了它。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 300" role="img"><title>用B樹尋找會員編號457的訂單。從上層開始1次讀1頁，讀到第3頁就知道資料列的位置</title>
+<text x="4" y="18" class="m">尋找會員編號457的訂單</text>
+<text x="4" y="58">第1層</text>
+<text x="4" y="138">第2層</text>
+<text x="4" y="218">第3層</text>
+<rect class="hole" x="110" y="32" width="57" height="36"/><rect class="hole" x="167" y="32" width="57" height="36"/><rect class="hole" x="224" y="32" width="57" height="36"/>
+<text x="138.5" y="56" text-anchor="middle">≤300</text><text x="195.5" y="56" text-anchor="middle" class="a">≤600</text><text x="252.5" y="56" text-anchor="middle">≤900</text>
+<rect class="ac" x="167" y="32" width="57" height="36"/>
+<line class="thin" x1="138" y1="68" x2="76" y2="112"/>
+<line class="ac" x1="195" y1="68" x2="195" y2="112"/>
+<line class="thin" x1="252" y1="68" x2="316" y2="112"/>
+<rect class="dash" x="56" y="112" width="40" height="36"/><text x="76" y="136" text-anchor="middle" class="m">…</text>
+<rect class="dash" x="296" y="112" width="40" height="36"/><text x="316" y="136" text-anchor="middle" class="m">…</text>
+<rect class="hole" x="110" y="112" width="57" height="36"/><rect class="hole" x="167" y="112" width="57" height="36"/><rect class="hole" x="224" y="112" width="57" height="36"/>
+<text x="138.5" y="136" text-anchor="middle">≤400</text><text x="195.5" y="136" text-anchor="middle" class="a">≤500</text><text x="252.5" y="136" text-anchor="middle">≤600</text>
+<rect class="ac" x="167" y="112" width="57" height="36"/>
+<line class="thin" x1="138" y1="148" x2="76" y2="192"/>
+<line class="ac" x1="195" y1="148" x2="195" y2="192"/>
+<line class="thin" x1="252" y1="148" x2="316" y2="192"/>
+<rect class="dash" x="56" y="192" width="40" height="36"/><text x="76" y="216" text-anchor="middle" class="m">…</text>
+<rect class="dash" x="296" y="192" width="40" height="36"/><text x="316" y="216" text-anchor="middle" class="m">…</text>
+<rect class="hole" x="110" y="192" width="57" height="36"/><rect class="hole" x="167" y="192" width="57" height="36"/><rect class="hole" x="224" y="192" width="57" height="36"/>
+<text x="138.5" y="216" text-anchor="middle">451</text><text x="195.5" y="216" text-anchor="middle" class="a">457</text><text x="252.5" y="216" text-anchor="middle">462</text>
+<rect class="ac" x="167" y="192" width="57" height="36"/>
+<line class="ac" x1="195" y1="228" x2="195" y2="254"/>
+<polygon class="fa" points="189,252 201,252 195,262"/>
+<rect class="n" x="70" y="264" width="250" height="32" rx="6"/>
+<text x="195" y="286" text-anchor="middle">訂單表格的資料列（會員457）</text>
+</svg><figcaption class="fig-cap">每一層橫排的方框是1頁。上層是「到幾號為止、往哪個分支走」的導引，最下層寫著資料列所在的位置。只要讀3頁，就能到達資料列。省略的部分：實際上1頁會放進數百個導引。同一個編號有多筆訂單時的排列方式，以及最下層各頁之間的橫向連結。</figcaption></figure>
+<p>如圖所示，從上層開始1次讀1頁，選擇要往哪個分支走。1頁可以寫進數百個導引，所以每往下1層，範圍就縮小到數百分之一。假設1頁能放300個導引，3層就能分辨300×300×300的2,700萬列，4層能分辨81億列。即使是1億列的表格，大約讀4頁就能知道資料列的位置。</p>
+<p>同樣的1億列，如果用每次把範圍減半的{{term:二分探索|二分搜尋}}來找，最多比較27次。不過一開始比較的位置彼此相隔很遠，每比較1次就要讀不同的頁。同樣假設1頁放300筆，要讀的頁數將近20頁。B樹在1頁之中一次比較數百個候選，減少從慢速儲存裝置讀取的頁數。</p>
+<p>PostgreSQL和MySQL（InnoDB）一般建立的索引，也屬於B樹家族。實際使用的是改良型，例如把最下層各頁橫向連起來、方便範圍搜尋的「B+樹」。</p>
+<p>不過，索引不一定每次都會用到。如果符合條件的列占了表格的大半，從頭讀表格，有時比查索引再1列1列去取更快。要選哪一種，由DBMS估算後決定。</p>
+</section>
+
+<section>
+<h2>原理4：交易就是「全部做完，或完全不做」</h2>
+<p>想像A要轉帳1萬日圓給B。在資料庫裡，這需要2項修改：從A的餘額扣掉1萬日圓，以及在B的餘額加上1萬日圓。</p>
+<p>如果第1項剛做完，伺服器就因停電而停止，會怎麼樣呢？A的錢減少了，卻沒有轉到B，1萬日圓就這樣消失了。為了防止這種情況，必須把2項修改當成不可分割的1組來處理。</p>
+<p>這1組處理稱為{{term:トランザクション|交易}}（transaction）。在PostgreSQL等系統中，以BEGIN開始，最後寫上COMMIT，結果就會確定。途中發生問題時，用ROLLBACK回到開始前的狀態。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 236" role="img"><title>轉帳的交易。2項修改都完成後，才用COMMIT確定；途中發生故障時，用ROLLBACK恢復原狀</title>
+<rect class="hole" x="10" y="8" width="200" height="36" rx="6"/><text x="110" y="32" text-anchor="middle">BEGIN（開始）</text>
+<line class="ln" x1="110" y1="44" x2="110" y2="62"/><polygon class="ink" points="104,60 116,60 110,70"/>
+<rect class="hole" x="10" y="70" width="200" height="36" rx="6"/><text x="110" y="94" text-anchor="middle">從A的餘額扣1萬日圓</text>
+<line class="ln" x1="110" y1="106" x2="110" y2="124"/><polygon class="ink" points="104,122 116,122 110,132"/>
+<rect class="hole" x="10" y="132" width="200" height="36" rx="6"/><text x="110" y="156" text-anchor="middle">在B的餘額加1萬日圓</text>
+<line class="ln" x1="110" y1="168" x2="110" y2="186"/><polygon class="ink" points="104,184 116,184 110,194"/>
+<rect class="hole" x="10" y="194" width="200" height="36" rx="6"/><rect class="ac" x="10" y="194" width="200" height="36" rx="6"/><text x="110" y="218" text-anchor="middle" class="a">COMMIT（確定）</text>
+<line class="dash" x1="110" y1="119" x2="288" y2="119"/>
+<line class="dash" x1="288" y1="119" x2="288" y2="140"/>
+<text x="228" y="110" class="a">發生故障時</text>
+<rect class="hole" x="236" y="140" width="104" height="36" rx="6"/><text x="288" y="164" text-anchor="middle">ROLLBACK</text>
+<text x="288" y="198" text-anchor="middle" class="m">回到開始前</text>
+<text x="288" y="220" text-anchor="middle" class="m">的狀態</text>
+</svg><figcaption class="fig-cap">在COMMIT之前，2項修改都被當作「暫時的修改」。如果中途停止，兩項修改都會當作沒發生過。省略的部分：確認餘額是否足夠，以及和同時使用同一帳戶的其他處理之間的協調。</figcaption></figure>
+<p>交易應該遵守的4項性質，取英文的字首，稱為{{term:ACID特性|ACID特性}}。Theo Härder與Andreas Reuter在1983年的論文中為它命名。下表用轉帳的例子，整理各項的意思。</p>
+<table>
+<thead><tr><th>性質</th><th>用平常的話說</th><th>轉帳的例子</th></tr></thead>
+<tbody>
+<tr><td>原子性（Atomicity）</td><td>全部做完，或完全不做</td><td>不會只扣款就結束</td></tr>
+<tr><td>一致性（Consistency）</td><td>不會以違反規則的狀態結束</td><td>只要規定「餘額不能是負數」，就會被遵守</td></tr>
+<tr><td>隔離性（Isolation）</td><td>同時執行的處理，彼此看不到對方做到一半的狀態</td><td>其他處理不會讀到轉帳途中的餘額</td></tr>
+<tr><td>持久性（Durability）</td><td>已確定的結果，即使故障也不會消失</td><td>顯示「完成」的轉帳，停電後仍然存在</td></tr>
+</tbody>
+</table>
+<p>為了守住隔離性，當2個處理要修改同一列時，DBMS會讓其中一方等一下。這就像在資料列上掛「使用中」的牌子，稱為鎖定（lock）。因此，即使2筆轉帳同時從同一個帳戶扣款，餘額的計算也不會出錯。</p>
+<p>不過，讓處理等太久，整體就會變慢。因此可以用設定選擇要守到多嚴格。這個設定稱為{{term:分離レベル|隔離等級}}。</p>
+<p>持久性靠寫入順序的巧思來守住。DBMS在改寫SSD上的表格之前，會先把「要改什麼、怎麼改」寫進另一份紀錄（日誌）。確認日誌已寫入SSD等裝置後，才回覆「完成」。即使停電，重新啟動時再讀一次日誌，就能把已確定的修改恢復回來。</p>
+</section>
+
+<section>
+<h2>關聯式資料庫與NoSQL</h2>
+<p>為了不適合表格形式的資料，以及規模非常大的服務，也有人做出了不使用表格的資料庫。關聯式資料庫以外的各種資料庫，統稱為{{term:NoSQL|NoSQL}}（讀作No-S-Q-L）。</p>
+<p>容易理解的例子，是只要給名稱就回傳內容的方式。名稱稱為「鍵」（key），內容稱為「值」（value），所以叫做鍵值型。資料庫不在意內容裡裝的是什麼。</p>
+<p>還有一種文件型，把1筆資料整個像1份文件一樣收起來。它能把1位會員的姓名和他的訂單清單，不拆成表格，當成1個整體保存。</p>
+<p>許多NoSQL產品把資料分散放在多台伺服器上，設計成容易靠增加台數來擴大規模。這種做法稱為{{term:スケールアウト|水平擴展}}。代價是有時會放棄一部分的嚴謹性。例如Amazon在2007年的論文中發表的鍵值型資料庫Dynamo，把「不停機」放在第一優先。依故障發生的方式，它允許各伺服器的內容暫時不一致。</p>
+<p>與其說哪一種比較好，不如說是依用途分開使用。像金錢或庫存這種不允許不一致的資料，是關聯式資料庫的強項。想用多台伺服器處理大量存取時，NoSQL有時比較適合。</p>
+</section>
+
+<section>
+<h2>資料庫放在哪裡？</h2>
+<p>資料庫的內容，最後是伺服器裡的檔案。表格和索引都以頁的集合，寫在關掉電源也不會消失的SSD或HDD上。</p>
+<p>不過，從SSD讀取1次要等約0.1毫秒，大約是記憶體（約100奈秒）的一千倍（「<a href="{{home}}learn/memory-vs-storage/">記憶體和儲存空間有什麼不同？</a>」）。因此DBMS會把常用的頁的副本放在記憶體裡。根據MySQL的說明文件，專用伺服器常把最多約80%的記憶體分配給這個存放區。B樹的上層會被一再讀取，容易留在記憶體裡，所以多半只有下層需要到SSD去讀。</p>
+<p>現在，向雲端業者租用資料庫服務的情況也越來越多。即使如此，資料仍放在業者資料中心裡伺服器的SSD等裝置上（「<a href="{{home}}learn/what-is-cloud-computing/">雲端運算是什麼？</a>」）。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：資料庫就是很大的試算表檔案</p><p>實際上，重要的是管理資料的軟體（DBMS）所做的工作。DBMS會拒絕不符合規則的資料，整理許多人同時進行的寫入，即使故障也會守住已確定的結果。試算表軟體則是讓人看著畫面計算的工具。兩者看起來都是「表格」，所以容易混淆。</p></div>
+<div class="myth"><p class="myth-q">誤解：索引建得越多，速度就越快</p><p>實際上，變快的只有用那一欄搜尋的查詢。每次新增或修改資料列，所有索引都要跟著更新，所以寫入會變慢，也會占用儲存空間。PostgreSQL的說明文件也寫道，索引會增加整個資料庫的負擔，應該考慮清楚再使用。</p></div>
+<div class="myth"><p class="myth-q">誤解：NoSQL比較新，所以比關聯式資料庫優秀</p><p>實際上，兩者擅長的事不同。關聯式資料庫源自1970年的想法，但至今仍持續改良。反過來，也有NoSQL產品加入了交易功能。例如MongoDB從2018年的4.0版起，就能使用跨越多份文件的交易。「NoSQL」這個名稱，容易讓人誤以為它是SQL的下一代。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字</th><th>備註</th></tr></thead>
+<tbody>
+<tr><td>關聯式資料庫的論文</td><td>1970年</td><td>IBM的科德</td></tr>
+<tr><td>B樹的論文</td><td>1972年</td><td>Bayer與McCreight</td></tr>
+<tr><td>ACID特性的命名</td><td>1983年</td><td>Härder與Reuter</td></tr>
+<tr><td>Excel 1張工作表的列數上限</td><td>1,048,576列</td><td>欄最多16,384欄</td></tr>
+<tr><td>1頁的大小</td><td>8 KB、16 KB、4,096位元組</td><td>PostgreSQL、MySQL（InnoDB）、SQLite（2016年起的預設值）</td></tr>
+<tr><td>從1億列用二分搜尋找</td><td>最多比較27次</td><td>2連乘27次約為1億3,400萬</td></tr>
+<tr><td>從1億列用B樹找</td><td>約4頁</td><td>假設1頁能放300個導引</td></tr>
+<tr><td>讀完1億列（10 GB）</td><td>1秒多一點</td><td>每秒約可讀7 GB的SSD</td></tr>
+<tr><td>讀取1次的等待時間</td><td>記憶體約100奈秒，SSD約0.1毫秒</td><td>約一千倍的差距</td></tr>
+<tr><td>使用中的SQLite資料庫</td><td>超過1兆個</td><td>開發者的估計（2026年10月確認）</td></tr>
+</tbody>
+</table>
+<p>B樹和全部讀取的數字，是把情況簡化後的參考值。實際的層數會隨鍵的長度和頁的填滿程度而變，讀取時間則取決於記憶體裡有沒有副本。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>動手試試看：<a href="{{home}}tools/sql-practice/">SQL練習工具</a>、<a href="{{home}}tools/binary-search-tree-heap-visualizer/">二元搜尋樹與堆積視覺化工具</a>、<a href="{{home}}tools/raid-capacity-calculator/">RAID容量計算工具</a></li>
+<li>用表格看差異：<a href="{{home}}compare/rdb-vs-nosql/">關聯式資料庫與NoSQL的差異</a>、<a href="{{home}}compare/inner-join-vs-outer-join/">內部合併與外部合併的差異</a>、<a href="{{home}}compare/ssd-vs-hdd/">SSD與HDD的差異</a></li>
+<li>下一步的用語：{{term:E-R図|E-R圖}}、{{term:第3正規形|第三正規化}}、{{term:ビュー|檢視表}}、{{term:2相ロック|兩階段鎖定}}、{{term:デッドロック|死結}}、{{term:SQLインジェクション|SQL隱碼攻擊}}</li>
+<li>從基礎讀起：「<a href="{{home}}learn/memory-vs-storage/">記憶體和儲存空間有什麼不同？</a>」、「<a href="{{home}}learn/what-is-an-algorithm/">演算法是什麼？</a>」、「<a href="{{home}}learn/what-is-a-data-center/">資料中心是什麼？</a>」</li>
+</ul>
+</section>
