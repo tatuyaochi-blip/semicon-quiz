@@ -1,0 +1,247 @@
+<!--
+{
+  "title": "ASICとは? 特定用途向けのチップとCPU・FPGAとの違い",
+  "description": "ASICは、1つの決まった仕事のためだけに設計して作るチップです。CPUより速く省電力になる理由、最初に大きな費用がかかり大量に作るほど得になるしくみ、作り方、FPGA・ASSPとの違いを解説します。",
+  "series": "computer-basics",
+  "order": 9,
+  "minutes": 13,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["eda", "industry", "ai-stack", "cpu"],
+  "terms": ["ASIC(特定用途向けIC)", "MPW(マルチプロジェクトウエハ)", "スタンダードセル", "RTL(レジスタ転送レベル)"],
+  "sources": [
+    { "title": "Google Cloud Blog: An in-depth look at Google's first Tensor Processing Unit (TPU)(2017年5月12日。推論の仕事で、同時期のCPU・GPUより15〜30倍の性能、電力あたり30〜80倍。設計からデータセンターでの運用まで15か月。28nmのASIC)", "url": "https://cloud.google.com/blog/products/ai-machine-learning/an-in-depth-look-at-googles-first-tensor-processing-unit-tpu" },
+    { "title": "N. P. Jouppi et al.: In-Datacenter Performance Analysis of a Tensor Processing Unit, ISCA 2017(比べた相手は同じデータセンターで使っていたIntel HaswellのCPUとNVIDIA K80のGPU)", "url": "https://arxiv.org/abs/1704.04760" },
+    { "title": "Google Cloud: TPU transformation: A look back at 10 years of our AI-specialized chips(初代TPUは推論向け。学習もできるのは第2世代から)", "url": "https://cloud.google.com/transform/ai-specialized-chips-tpu-history-gen-ai" },
+    { "title": "Google Cloud Blog: Google supercharges machine learning tasks with TPU custom chip(2016年5月19日。1年以上前からデータセンターで使用)", "url": "https://cloud.google.com/blog/products/ai-machine-learning/google-supercharges-machine-learning-tasks-with-custom-chip" },
+    { "title": "S. Nakamoto: Bitcoin: A Peer-to-Peer Electronic Cash System(2008年。SHA-256などのハッシュを使うプルーフ・オブ・ワーク)", "url": "https://bitcoin.org/bitcoin.pdf" },
+    { "title": "Canaan Inc.: Company Profile(2013年に創業チームがASICを使った採掘機の最初の出荷をAvalonの名前で行ったとする同社の説明)", "url": "https://canaan.gcs-web.com/corporate/company-profile" },
+    { "title": "Canaan Inc.: Form 20-F(2022年度の年次報告書。会社の沿革)", "url": "https://www.sec.gov/Archives/edgar/data/1780652/000110465923047189/can-20221231x20f.htm" },
+    { "title": "Apple Newsroom: Apple unveils iPhone 15 Pro and iPhone 15 Pro Max(2023年9月12日。A17 Proに専用のAV1デコーダ)", "url": "https://www.apple.com/newsroom/2023/09/apple-unveils-iphone-15-pro-and-iphone-15-pro-max/" },
+    { "title": "P. Ranganathan et al.: Warehouse-Scale Video Acceleration: Co-design and Deployment in the Wild, ASPLOS 2021(Google。動画の変換用のVCU。よく調整した、専用チップを使わない仕組みと比べて効率20〜33倍)", "url": "https://research.google/pubs/pub50300/" },
+    { "title": "Broadcom: Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads(2022年8月16日。1つのチップで51.2 Tb/s)", "url": "https://www.nasdaq.com/press-release/broadcom-ships-tomahawk-5-industrys-highest-bandwidth-switch-chip-to-accelerate-ai-ml" },
+    { "title": "AnandTech: Hot Chips 31 Live Blogs: Tesla Solution for Full Self Driving(2019年8月。Hot Chips 31でのTeslaの発表。1チップあたり40W未満、Samsungの14nm)", "url": "https://www.anandtech.com/show/14766/hot-chips-31-live-blogs-tesla-solution-for-full-self-driving" },
+    { "title": "SemiAnalysis(D. Patel): The Dark Side Of The Semiconductor Design Renaissance – Fixed Costs Soaring Due To Photomask Sets, Verification, and Validation(2022年7月24日。マスク一式の費用の推定。28nmで100万ドル超、7nmで1,000万ドル超。先端では60を超えるリソグラフィの層)", "url": "https://newsletter.semianalysis.com/p/the-dark-side-of-the-semiconductor" },
+    { "title": "Semiconductor Engineering: What Will That Chip Cost?(先端のチップの設計費用の推定。数億ドル規模)", "url": "https://semiengineering.com/what-will-that-chip-cost/" },
+    { "title": "TSMC: CyberShuttle Prototyping Service(1998年から。複数の設計でマスクを分け合う試作サービス)", "url": "https://www.tsmc.com/english/dedicatedFoundry/services/cyberShuttle" },
+    { "title": "東京大学 大学院工学系研究科: 池田誠教授・浅田邦博名誉教授が電子情報通信学会 業績賞を受賞(2021年6月。VDECは1996年に全国共同利用施設として発足。設計データを集めて安く試作するシャトルサービス)", "url": "https://www.t.u-tokyo.ac.jp/shared/topics/data/setnws_202106071040333637307962_495424.pdf" },
+    { "title": "MONOist: ASICとFPGAの対比で見る“転換点” FPGA Watch(2)(2010年。広い意味のASICはASSPも含み、狭い意味では特定の顧客向けを指す)", "url": "https://monoist.itmedia.co.jp/mn/articles/1004/22/news096.html" }
+  ]
+}
+-->
+<p class="lead">ASIC(エーシック)は、1つの決まった仕事のためだけに設計して作るチップです。その仕事なら、何にでも使えるCPUより速く、少ない電力でこなせます。ただし、ほかの仕事はできず、作り始めるまでに大きな費用がかかります。そのため、たくさん作る製品ほど向いています。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>ASICとは何か。身近なところで使われている例</li>
+<li>専用のチップが速く、電力も少なくて済む理由</li>
+<li>「最初に一度だけかかる費用」のしくみと、たくさん作るほど得になる理由</li>
+<li>ASICができるまでの流れと、試作の費用を分け合うしくみ</li>
+<li>CPU・GPU・FPGAとの違い、ASSPとの違い</li>
+</ul><p class="muted">前提知識: チップ(集積回路)が、トランジスタと配線を1つのシリコンにまとめた回路だと知っていると読みやすくなります。「<a href="{{home}}learn/what-is-an-integrated-circuit/">集積回路(IC)とは?</a>」で説明しています。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>スマホで見る動画のデータは、送りやすいように小さく縮めてあります。再生するときは、それを元の映像に戻す計算が休みなく続きます。多くのスマホでは、この計算を専用の回路が受け持ちます。たとえばAppleは2023年、iPhone 15 Proのチップに専用の回路を入れたと発表しました。AV1という形式の動画を元に戻すための回路です。</p>
+<p>ネットの検索や翻訳の裏側にも、専用のチップがあります。Googleは2016年、AIの計算のために自社で設計したチップ「TPU」を公表しました。ビットコインの「採掘」に使う機械にも、その計算しかできないチップが入っています。</p>
+<p>こうした「1つの仕事のために作ったチップ」を、ASICと呼びます。スマホの動画の回路のように、チップの一部に入る専用の回路も、考え方は同じです。この記事では、なぜわざわざ専用のチップを作るのか、どうやって作るのかを順に見ていきます。</p>
+</section>
+
+<section>
+<h2>ASICとは: 1つの仕事のために設計したチップ</h2>
+<p>ASICは、英語のApplication Specific Integrated Circuitの頭文字です。日本語では「特定用途向け集積回路」と訳します。名前のとおり、決まった用途のために設計した集積回路(IC)です。</p>
+<p>反対の考え方が、何にでも使える汎用のチップです。代表はCPUで、プログラムを入れ替えれば、計算も文書作りもゲームもこなせます(「<a href="{{home}}learn/what-is-a-cpu/">CPUとは?</a>」)。ASICは、使い道を最初から絞ります。その代わり、その仕事だけはとても上手にこなします。</p>
+<p>「1つの仕事」の幅は、チップによって違います。ほぼ1種類の計算だけをくり返すASICもあります。1つの製品のために、たくさんの働きをまとめて設計したASICもあります。どちらも「その用途のためだけに作る」点が共通です。</p>
+</section>
+
+<section>
+<h2>どんなところで使われている?</h2>
+<ul>
+<li><strong>ビットコインの採掘</strong>: ビットコインでは、データから決まった長さの数を作る計算をくり返し、条件に合う答えを探します。この計算は{{term:ハッシュ関数}}の一種で、SHA-256と呼ばれます。Canaan社は、2013年1月にASICを使った採掘機を出荷し、それが世界で最初だったと説明しています。</li>
+<li><strong>AIの計算</strong>: GoogleのTPUは、AIで使う「掛けて足す」計算に絞ったチップです。2016年の公表の時点で、すでに1年以上データセンターで使っていました。</li>
+<li><strong>動画</strong>: スマホのチップの中の動画用の回路のほか、データセンター用の専用チップもあります。Googleは2021年の論文で、動画の形式を変換するための専用チップを報告しました。</li>
+<li><strong>ネットワーク</strong>: データセンターで、データを行き先ごとに振り分ける装置(スイッチ)の中のチップです。Broadcom社は2022年、Tomahawk 5というチップの出荷を発表しました。1つのチップで、1秒に51.2テラビット(1テラは1兆)のデータを振り分けます。</li>
+<li><strong>車</strong>: Teslaは2019年、運転を支援する機能のために自社で設計したチップを、学会Hot Chipsで説明しました。1チップの電力は40ワット未満に抑えたとしています。</li>
+</ul>
+</section>
+
+<section>
+<h2>しくみ1: なぜ専用だと速く、電力が少ないのか</h2>
+<p>CPUは、仕事の手順を書いた命令を、メモリから1つずつ取り出して実行します。取り出し、意味を読み解き、計算し、結果をしまう。どんな仕事にも対応できる代わりに、計算そのもの以外の手間が毎回かかります。</p>
+<p>ASICでは、仕事の手順そのものを回路の形にしてしまいます。データは、決まった順に並んだ計算の回路を流れていくだけです。命令を読み解く手間がなく、使わない回路も入れずに済みます。同じ計算の回路をたくさん並べて、同時に動かすこともできます。</p>
+<p>効果の大きさを示す例が、初代のTPUです。Googleの2017年の解説では、当時同じデータセンターで使っていたCPUやGPUと比べています。TPUは、それらより15〜30倍速く動きました。電力あたりの性能では30〜80倍でした。ただし、比べたのは、学習を終えたAIに答えを出させる計算だけです。</p>
+<p>つまり、「速い」「電力が少ない」は、設計のときに決めた仕事についての話です。決めた仕事以外は、ASICは基本的にこなせません。</p>
+</section>
+
+<section>
+<h2>しくみ2: 最初の費用と、1個あたりの費用</h2>
+<p>ASICの費用は、2つに分けて考えるとわかりやすくなります。1つ目は、作る数に関係なく、最初に一度だけかかる費用です。これをNREと呼びます。英語のNon-Recurring Engineeringの略で、「くり返さない開発の費用」という意味です。</p>
+<p>NREの中身は、主に3つです。大勢の技術者が長い期間をかけて設計し、確かめるための人件費。設計用のソフトや、他社が作った回路の設計図を使うための使用料。そして、回路の模様を描いた原版({{term:フォトマスク(レチクル)|マスク}})を作る費用です。</p>
+<p>マスクは、おおまかに言うと、チップの層ごとに1枚ずつ必要です。調査会社SemiAnalysisの2022年の記事によると、先端のチップでは層が60を超えます。そのため、マスク一式はとても高くなります。しかも、マスクは1つの設計の専用品で、ほかのチップには使い回せません。</p>
+<p>2つ目は、1個作るたびにかかる費用です。シリコンの円い板(ウエハ)の上に回路を作り、切り分け、外とつなぐ入れ物(パッケージ)に入れて検査する費用です。不要な回路を持たないASICは小さく作れるので、この費用は安く済みます。</p>
+<p>1個あたりの費用は、NREを作った数で割った分と、1個を作る費用の合計です。ここからは、説明のために作った仮の数字で計算します。NREを30億円、1個を作る費用を500円とします。1万個だけ作ると、1個あたり約30万円です。1,000万個作れば、1個あたり800円まで下がります。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 290" role="img"><title>作る数が多いほど、最初の費用の1個あたりの分担が小さくなり、1個あたりの費用が下がる</title>
+<text x="10" y="20">1個あたりの費用</text>
+<rect x="184" y="7" width="16" height="16" class="metal"/>
+<text x="206" y="20">最初の費用の分担</text>
+<rect x="184" y="33" width="16" height="16" class="ox"/>
+<text x="206" y="46">1個を作る費用</text>
+<line x1="40" y1="236" x2="320" y2="236" class="ln"/>
+<rect x="62" y="56" width="60" height="150" class="metal"/>
+<rect x="62" y="206" width="60" height="30" class="ox"/>
+<rect x="150" y="156" width="60" height="50" class="metal"/>
+<rect x="150" y="206" width="60" height="30" class="ox"/>
+<rect x="238" y="200" width="60" height="6" class="metal"/>
+<rect x="238" y="206" width="60" height="30" class="ox"/>
+<text x="92" y="258" text-anchor="middle">少ない</text>
+<text x="180" y="258" text-anchor="middle">中くらい</text>
+<text x="268" y="258" text-anchor="middle">多い</text>
+<text x="320" y="282" text-anchor="end" class="m">作る数 →</text>
+</svg><figcaption class="fig-cap">1個を作る費用(下の部分)は、作る数が変わってもほぼ同じです。最初に一度だけかかる費用(上の部分)は、作る数が多いほど1個あたりが小さくなります。省略していること: 実際の金額と縮尺(長さは説明のための仮のもの)、たくさん作ると材料なども安くなる効果。</figcaption></figure>
+<p>つまり、ASICが得になるかどうかは、作る数で大きく変わります。何千万台も売れる製品や、Googleのように自社で大量に使う会社に向くのは、このためです。少ししか作らないなら、既製品のCPUや、あとから回路を書き換えられるFPGAのほうが安く済みます。FPGAとの分かれ目は、「<a href="{{home}}learn/what-is-an-fpga/">FPGAとは?</a>」の図で見られます。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>ASICの費用のしくみは、プラスチック製品の金型に似ています。金型を作るには大きな費用がかかりますが、一度できれば、同じ形の製品を1個あたり安く大量に作れます。似ているのは「最初の大きな費用を、作る数で割って薄める」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 金型は、少し削るなどして手直しできることもあります。ASICのマスクは手直しできず、設計に誤りが見つかると、関係する層のマスクを作り直します。また、ASICの最初の費用は、型にあたるマスクより、設計と検証の人手のほうが大きいことがよくあります。</p></aside>
+</section>
+
+<section>
+<h2>しくみ3: ASICができるまで</h2>
+<p>ASICの設計の大きな流れは、ほかのチップとほぼ同じです(「<a href="{{home}}learn/what-is-an-integrated-circuit/">集積回路(IC)とは?</a>」の「ICができるまで」)。ここでは、ASICで特に大事な点を中心に見ていきます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 360" role="img"><title>ASICができるまで: 仕様からRTL、論理合成、配置配線、検証、テープアウト、製造、試作品の評価へ</title>
+<line x1="58" y1="14" x2="58" y2="258" class="thin"/>
+<line x1="58" y1="14" x2="66" y2="14" class="thin"/>
+<line x1="58" y1="258" x2="66" y2="258" class="thin"/>
+<text x="32" y="141" text-anchor="middle" class="m">設計</text>
+<line x1="58" y1="278" x2="58" y2="302" class="thin"/>
+<line x1="58" y1="278" x2="66" y2="278" class="thin"/>
+<line x1="58" y1="302" x2="66" y2="302" class="thin"/>
+<text x="32" y="295" text-anchor="middle" class="m">工場</text>
+<rect x="70" y="10" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="31" text-anchor="middle">① 仕様を決める</text>
+<rect x="70" y="54" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="75" text-anchor="middle">② 働きを書く(RTL)</text>
+<rect x="70" y="98" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="119" text-anchor="middle">③ 論理合成</text>
+<rect x="70" y="142" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="163" text-anchor="middle">④ 配置配線</text>
+<rect x="70" y="186" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="207" text-anchor="middle">⑤ 検証</text>
+<rect x="70" y="230" width="180" height="32" rx="6" class="ox"/>
+<rect x="70" y="230" width="180" height="32" rx="6" class="ac"/>
+<text x="160" y="251" text-anchor="middle" class="a">⑥ テープアウト</text>
+<rect x="70" y="274" width="180" height="32" rx="6" class="metal"/>
+<text x="160" y="295" text-anchor="middle">⑦ マスク・製造</text>
+<rect x="70" y="318" width="180" height="32" rx="6" class="ox"/>
+<text x="160" y="339" text-anchor="middle">⑧ 試作品の評価</text>
+<line x1="160" y1="42" x2="160" y2="50" class="ln"/>
+<line x1="160" y1="86" x2="160" y2="94" class="ln"/>
+<line x1="160" y1="130" x2="160" y2="138" class="ln"/>
+<line x1="160" y1="174" x2="160" y2="182" class="ln"/>
+<line x1="160" y1="218" x2="160" y2="226" class="ln"/>
+<line x1="160" y1="262" x2="160" y2="270" class="ln"/>
+<line x1="160" y1="306" x2="160" y2="314" class="ln"/>
+<polyline points="250,202 274,202 274,66 258,66" class="dash"/>
+<polygon points="251,66 260,61 260,71" class="ink"/>
+<text x="279" y="140">直す</text>
+<polyline points="250,334 312,334 312,76 258,76" class="dash"/>
+<polygon points="251,76 260,71 260,81" class="ink"/>
+</svg><figcaption class="fig-cap">⑤で見つかった誤りは、コンピュータの上で直せます(内側の破線)。⑥より後で見つかると、マスクの作り直しになります(外側の破線)。省略していること: 各段階の中での細かな確認、パッケージと検査、製造の前にFPGAで試す流れ。</figcaption></figure>
+<p>まず、チップに何をさせるかを決めます(仕様)。次に、回路の働きを専用の言葉で書きます。チップの中では、一定の間隔で合図が来るたびに、データが記憶の部品から部品へ移ります。その移り方と途中の計算を書く書き方を、{{term:RTL(レジスタ転送レベル)|RTL}}と呼びます。</p>
+<p>書いた働きは、ソフトが、0と1を処理する小さな回路のつながりに自動で直します。この作業を{{term:論理合成}}と呼びます。人がトランジスタを1個ずつ描くわけではありません。</p>
+<p>直すときの材料は、あらかじめ設計して検証した部品集です。ANDのような小さな論理の回路や、1ビットを覚える回路が入っています。部品は高さがそろっていて、レンガのように列に並べられます。この部品を{{term:スタンダードセル}}と呼びます。</p>
+<p>次に、部品をチップの上にどう並べ、どの道で配線するかを決めます({{term:配置配線}})。そして、決めた速さで動くか、工場の製造の決まりを守っているかを、コンピュータで細かく確かめます(検証)。</p>
+<p>確かめ終えた設計データを、製造する側に渡すことを{{term:テープアウト}}と呼びます。製造側は、データからマスクを作り、工場でウエハの上に回路を作ります。設計と製造を別の会社が受け持つ形は「<a href="{{home}}learn/what-is-a-foundry/">ファウンドリとは?</a>」で説明しています。</p>
+<p>工場から戻った最初のチップは、実際に動かして確かめます。ここで誤りが見つかると、マスクの一部または全部を作り直すことになり、お金と数か月の時間を失います。そのため、製造の前に、設計した回路をFPGAに入れて動かしてみることもよくあります。</p>
+<p>かかる期間の一例を見てみましょう。Googleは初代のTPUについて、設計からデータセンターでの運用まで15か月だったと説明しています。同社はこれを、とても短く済んだ例として紹介しています。</p>
+</section>
+
+<section>
+<h2>CPU・GPU・FPGA・ASICの違い</h2>
+<p>回路を仕事に合わせるほど、その仕事の効率は上がります。その代わり、ほかの仕事への柔軟さや、作り始めやすさを手放します。4つの違いを、話を簡単にして表にまとめます。</p>
+<table>
+<thead><tr><th></th><th>あとで変えられるもの</th><th>決まった仕事の効率</th><th>向いている場面</th></tr></thead>
+<tbody>
+<tr><td>CPU</td><td>プログラム</td><td>低め</td><td>何でもこなす</td></tr>
+<tr><td>GPU</td><td>プログラム</td><td>同じ計算を大量にするなら高い</td><td>画像、AI、科学の計算</td></tr>
+<tr><td>FPGA</td><td>回路そのもの</td><td>中くらい</td><td>少量、仕様が変わる</td></tr>
+<tr><td>ASIC</td><td>変えられない</td><td>最も高い</td><td>大量、仕様が固まった</td></tr>
+</tbody>
+</table>
+<p>CPU・GPU・FPGAは、どれも既製品のチップを買って使います。仕事の中身は、プログラムや回路の設定であとから決めます。ASICだけは、仕事の中身をチップを作る前に決め、回路として作り込みます。</p>
+<p>スマホなどのチップには、AIの計算に絞った回路も入っています。これを{{term:NPU(ニューラルプロセッシングユニット)|NPU}}と呼びます。使い道を絞って効率を上げるという考え方は、ASICと同じです(「<a href="{{home}}learn/what-is-an-npu/">NPUとは?</a>」)。GPUがAIに使われる理由は「<a href="{{home}}learn/why-gpus-for-ai/">なぜAIにGPUが使われるの?</a>」で説明しています。</p>
+<p>実際の製品では、これらが組み合わさります。スマホの中心のチップは、CPU・GPU・NPU・動画の回路を1つにまとめた{{term:SoC(システムオンチップ)|SoC}}です。AppleのAシリーズのように、自社の製品のためだけに設計するSoCは、ASICの一種です。多くのメーカーに売るSoCは、次に説明するASSPにあたります。言葉の関係は「<a href="{{home}}compare/asic-vs-fpga-vs-soc/">ASIC・FPGA・SoCの違い</a>」で表にしています。</p>
+</section>
+
+<section>
+<h2>ASSPとの違い: 多くの会社に売る専用品</h2>
+<p>用途を絞ったチップでも、カタログに載せて多くの会社に売るものがあります。これをASSP(特定用途向け標準品)と呼びます。英語のApplication Specific Standard Productの頭文字です。</p>
+<p>狭い意味のASICは、ある1社や1つの製品のために作るチップです。ASSPは、用途は決まっていても、だれでも買える既製品です。たとえば先ほどのTomahawk 5は、多くの機器メーカーが買って使う製品です。この分け方に当てはめれば、ASSPに近いと言えます。</p>
+<p>ただし業界では、こうした製品も含めて広く「ASIC」と呼ぶことがよくあります。Tomahawk 5も「スイッチのASIC」と呼ばれることがあります。言葉の範囲は人や場面によって違うので、文脈で判断しましょう。</p>
+</section>
+
+<section>
+<h2>試作の費用を分け合うしくみ</h2>
+<p>マスクがそれほど高いなら、小さな会社や大学はASICを試作できないのでしょうか。実は、試作の費用を下げるしくみがあります。何組もの設計を1組のマスクに並べ、1回の製造でまとめて作るのです。これを{{term:MPW(マルチプロジェクトウエハ)|MPW}}と呼びます。乗り合いのバスにたとえて、シャトルとも呼びます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 232" role="img"><title>専用のマスクは1つの設計だけ、MPWは複数の設計で1組のマスクを分け合う</title>
+<text x="85" y="22" text-anchor="middle" class="a">専用のマスク</text>
+<text x="245" y="22" text-anchor="middle" class="a">MPW(相乗り)</text>
+<rect x="15" y="34" width="140" height="140" class="hole"/>
+<rect x="15" y="34" width="70" height="70" class="ox"/>
+<rect x="85" y="34" width="70" height="70" class="ox"/>
+<rect x="15" y="104" width="70" height="70" class="ox"/>
+<rect x="85" y="104" width="70" height="70" class="ox"/>
+<text x="50" y="74" text-anchor="middle">A</text>
+<text x="120" y="74" text-anchor="middle">A</text>
+<text x="50" y="144" text-anchor="middle">A</text>
+<text x="120" y="144" text-anchor="middle">A</text>
+<rect x="175" y="34" width="140" height="140" class="hole"/>
+<rect x="175" y="34" width="70" height="70" class="ox"/>
+<rect x="245" y="34" width="70" height="70" class="n"/>
+<rect x="175" y="104" width="50" height="70" class="p"/>
+<rect x="225" y="104" width="50" height="70" class="metal"/>
+<rect x="275" y="104" width="40" height="70" class="dep"/>
+<text x="210" y="74" text-anchor="middle">A</text>
+<text x="280" y="74" text-anchor="middle">B</text>
+<text x="200" y="144" text-anchor="middle">C</text>
+<text x="250" y="144" text-anchor="middle">D</text>
+<text x="295" y="144" text-anchor="middle">E</text>
+<text x="85" y="198" text-anchor="middle">1つの設計で</text>
+<text x="85" y="220" text-anchor="middle">費用を負担</text>
+<text x="245" y="198" text-anchor="middle">5つの設計で</text>
+<text x="245" y="220" text-anchor="middle">費用を分担</text>
+</svg><figcaption class="fig-cap">大きな四角は、1枚のマスクに描く範囲を表します。A〜Eは別々の会社や大学の設計です。左は同じ設計Aだけを並べた量産用、右は5つの設計を並べた試作用。省略していること: 実際の並べ方と数、マスクが層の数だけあること。</figcaption></figure>
+<p>マスクとウエハの費用は、使う面積に応じて参加者で分け合います。受け取れるチップの数は限られ、量産には使えません。それでも、自分の回路が本物のシリコンで動くかを確かめられます。</p>
+<p>たとえばTSMCは、1998年からCyberShuttleという名前でこのサービスを行っています。日本では1996年、東京大学にVDEC(大規模集積システム設計教育研究センター)が発足しました。全国の大学の設計データを集めて、安く試作するしくみを提供してきました。</p>
+<p>なお、試作のあとで量産するには、自分専用のマスクを作ります。MPWで下がるのは試作の費用で、量産のための費用ではありません。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: ASICは、どんな処理でもCPUやGPUより速い</p><p>実際は、速いのは設計のときに決めた仕事だけです。ビットコインの採掘用のASICは、動画の再生も表計算もできません。同じAIの計算でも、得意・不得意があります。たとえば初代のTPUは、学習を終えたAIに答えを出させる計算向けで、AIの学習には使われませんでした。「専用なら速い」の「専用」の部分が見落とされやすいのが、誤解の理由です。</p></div>
+<div class="myth"><p class="myth-q">誤解: ASICを作れるのは、巨額の資金を持つ大企業だけ</p><p>実際は、試作ならMPWで費用を分け合えます。先端より前の世代の製造技術を選べば、マスクもずっと安く済みます。大学の研究室やスタートアップも、こうした方法でチップを作っています。ただし量産には、専用のマスクと大きな設計の費用が要ります。たくさん売れる見込みが要る点は変わりません。ニュースに出るASICが、大企業の最先端のチップばかりなのが誤解の理由です。</p></div>
+<div class="myth"><p class="myth-q">誤解: ASICとFPGAは、同じようなものの別の名前</p><p>実際は、FPGAは既製品のチップを買い、回路をあとから書き込んで使います。ASICは、回路を工場で作り込むので、作ったあとは変えられません。同じ回路をまずFPGAで試し、そのあとASICにするという使い方があるため、混同されやすいのです。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字</th></tr></thead>
+<tbody>
+<tr><td>初代TPUと同時期(2015年ごろ)のCPU・GPUの差(学習を終えたAIの計算、Google 2017年)</td><td>性能 15〜30倍、電力あたり 30〜80倍</td></tr>
+<tr><td>初代TPUの開発期間(設計から運用まで)</td><td>15か月</td></tr>
+<tr><td>マスク一式の費用の推定(SemiAnalysis、2022年)</td><td>28nm世代で100万ドル超、7nm世代で1,000万ドル超</td></tr>
+<tr><td>先端のチップのマスクが要る層の数(同)</td><td>60を超える</td></tr>
+<tr><td>Tomahawk 5(2022年)が振り分けるデータ量</td><td>1秒に51.2テラビット</td></tr>
+<tr><td>動画の変換用チップの効率(Google、2021年の論文)</td><td>専用チップなしの場合の20〜33倍</td></tr>
+<tr><td>TSMCの試作の相乗りサービスの開始</td><td>1998年</td></tr>
+</tbody>
+</table>
+<p>マスクの費用は、調査元や契約によって大きく違う推定値です。おおよその桁の目安として見てください。また、「◯nm」は製造技術の世代の名前で、チップのどこかの長さではありません(「<a href="{{home}}learn/what-does-2nm-mean/">「2nm」「3nm」は何の長さ?</a>」)。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>違いを表で見る: <a href="{{home}}compare/asic-vs-fpga-vs-soc/">ASIC・FPGA・SoCの違い</a>、<a href="{{home}}compare/cpu-vs-gpu-vs-npu/">CPU・GPU・NPUの違い</a>、<a href="{{home}}compare/idm-vs-fabless-vs-foundry/">IDM・ファブレス・ファウンドリの違い</a></li>
+<li>次の一歩の用語: {{term:ASIC(特定用途向けIC)|ASIC}}(詳しい解説)、{{term:ハードウェア記述言語}}、{{term:STA(静的タイミング解析)|STA}}(回路が決めた速さで動くかを調べる)、{{term:PDK(プロセスデザインキット)|PDK}}(工場が設計する会社に渡す決まりとデータの一式)</li>
+<li>数字で試す: <a href="{{home}}tools/die-yield-calculator/">ダイ数・歩留まり計算ツール</a>で、チップを小さくすると1枚のウエハから取れる数がどう増えるかを計算できます。</li>
+<li>関連する記事: 「<a href="{{home}}learn/how-chips-are-made/">半導体チップはどうやって作られる?</a>」(工場の中の流れ)、「<a href="{{home}}learn/what-is-a-microcontroller/">マイコンとは?</a>」(多くの機器で使われる汎用の小さなコンピュータ)</li>
+</ul>
+</section>
