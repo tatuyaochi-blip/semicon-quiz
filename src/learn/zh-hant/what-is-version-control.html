@@ -1,0 +1,241 @@
+<!--
+{
+  "title": "Git是什麼？版本控制的原理與GitHub的差異",
+  "description": "版本控制是記錄檔案的變更、隨時可以回到之前狀態的機制。以代表性的Git為例，說明提交、歷史、分支、合併、衝突，與GitHub的差異，以及為什麼不能把密碼放進去。",
+  "series": "computer-basics",
+  "order": 15,
+  "minutes": 12,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["linux-cli", "software-dev", "cyber-defense", "cloud-container"],
+  "terms": ["Git", "CI/CD(継続的インテグレーション・継続的デリバリー)"],
+  "sources": [
+    { "title": "Pro Git（第2版）1.1 About Version Control（版本控制的定義。把檔案複製到資料夾的方法容易出錯。集中式（CVS、Subversion、Perforce）與分散式（Git 等），中央伺服器會成為單一故障點）", "url": "https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control" },
+    { "title": "Pro Git（第2版）1.2 A Short History of Git（1991～2002年使用修補檔與壓縮檔，2002年起使用 BitKeeper，2005年由林納斯·托瓦茲等人開發 Git）", "url": "https://git-scm.com/book/en/v2/Getting-Started-A-Short-History-of-Git" },
+    { "title": "Pro Git（第2版）1.3 What is Git?（不是差異而是快照，沒有變更的檔案只指向之前的檔案，大部分操作在本機完成，SHA-1 的40個字元的值）", "url": "https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F" },
+    { "title": "Pro Git（第2版）3.1 Branches in a Nutshell（分支是指向提交、輕巧且可移動的標記）", "url": "https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell" },
+    { "title": "Pro Git（第2版）3.2 Basic Branching and Merging（兩個分支都修改同一個檔案的同一處時，無法順利合併。Git 會暫停合併，加上標記並列出兩邊的內容）", "url": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging" },
+    { "title": "Pro Git（第2版）7.1 Revision Selection（縮短的值預設為7個字元，160位元，偶然碰撞所需的數量約為2的80次方）", "url": "https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection" },
+    { "title": "Pro Git（第2版）8.2 Git Attributes（Word 文件預設的差異只會顯示「Binary files … differ」）", "url": "https://git-scm.com/book/en/v2/Customizing-Git-Git-Attributes" },
+    { "title": "Pro Git（第2版）10.2 Git Objects（由內容與標頭計算 SHA-1 作為名稱。提交中包含快照、前一個提交、作者與日期、訊息）", "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects" },
+    { "title": "Git documentation: git-revert（抵銷之前提交的效果，記錄成新的提交）", "url": "https://git-scm.com/docs/git-revert.html" },
+    { "title": "Git documentation: gitignore（指定刻意不追蹤的檔案。對已經在追蹤的檔案無效）", "url": "https://git-scm.com/docs/gitignore" },
+    { "title": "Git documentation: hash function transition（Git 以雜湊值為內容命名。2017年2月23日的 SHAttered，2.13.0 起使用強化的 SHA-1，2018年下半年決定以 SHA-256 為後繼）", "url": "https://git-scm.com/docs/hash-function-transition" },
+    { "title": "Git 說明文件的原稿（main 分支）：git-init（--object-format。預設為 sha1。2026年10月確認）", "url": "https://github.com/git/git/blob/master/Documentation/git-init.adoc" },
+    { "title": "Git documentation: BreakingChanges（預計在 Git 3.0 把新建儲存庫的預設雜湊函數改為 SHA-256。發布時間未定。2026年10月確認）", "url": "https://git-scm.com/docs/BreakingChanges" },
+    { "title": "GitHub Docs: About GitHub and Git（GitHub 是用來存放、分享程式碼，並與他人一起撰寫的雲端平台）", "url": "https://docs.github.com/en/get-started/start-your-journey/about-github-and-git" },
+    { "title": "GitHub Docs: About pull requests（拉取請求是把某個分支的變更合併到另一個分支的提案）", "url": "https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests" },
+    { "title": "GitHub Docs: Removing sensitive data from a repository（即使改寫歷史，也可能留在複製、分叉等地方。外洩的認證資訊要更換）", "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository" },
+    { "title": "GitLab Docs: Merge requests（合併請求是把來源分支的變更納入目標分支的提案。包含審查與 CI/CD 的結果）", "url": "https://docs.gitlab.com/user/project/merge_requests/" },
+    { "title": "GitLab: README（gitlab-org/gitlab。Git 儲存庫的管理、以合併請求進行程式碼審查、CI/CD。也可以架設在自家伺服器上使用）", "url": "https://gitlab.com/gitlab-org/gitlab" },
+    { "title": "Apache Subversion（官方網站。開放原始碼的集中式版本控制系統）", "url": "https://subversion.apache.org/" },
+    { "title": "The Apache Software Foundation: Announces 20th Anniversary of Apache Subversion（2000年在 CollabNet 開始開發，2010年成為 Apache 的頂級專案）", "url": "https://news.apache.org/foundation/entry/the-apache-software-foundation-announces58" }
+  ]
+}
+-->
+<p class="lead">版本控制是把檔案的變更，連同「何時、誰、改了什麼、為什麼」一起記錄下來，並且可以回到之前狀態的機制。代表性的軟體是Git。它把當時整體的快照（提交）依序串起來，也能分岔（分支）同時進行不同的工作。GitHub不是Git，而是代管Git存放處、協助團隊確認內容的網路服務。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>有了版本控制，會有什麼改變</li>
+<li>提交、歷史、分支、合併、衝突的意思</li>
+<li>集中式（Subversion）與分散式（Git）的差異，以及Git與GitHub的差異</li>
+<li>拉取請求與審查，以及Git分辨內容的方法（雜湊值）</li>
+<li>為什麼不能提交密碼或API金鑰</li>
+</ul><p class="muted">先備知識：不需要。只要曾經在電腦上儲存檔案、把檔案分到資料夾裡，就能讀懂。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>你是否在共用資料夾裡看過這樣的檔案？「企劃書.docx」「企劃書_最終版.docx」「企劃書_最終版_v2.docx」「企劃書_最終版_v2_最新.docx」。哪一個才是真正的最新版？v2改了什麼？光看檔名無從得知。</p>
+<p>兩個人各自打開同一個檔案修改，會更麻煩。因為後存檔的人，會把先存檔那個人的修改蓋掉。</p>
+<p>在軟體開發中，這種事的規模大上好幾個數量級。有時幾十個人會同時改寫幾千個檔案。這時派上用場的，就是「版本控制」的機制。</p>
+</section>
+
+<section>
+<h2>版本控制是什麼：留下變更紀錄的機制</h2>
+<p>Git官方網站公開的說明書《Pro Git》，是這樣說明版本控制的：隨著時間記錄檔案的變更，之後可以叫出特定版本的機制。做這件事的軟體，稱為「版本控制系統」。</p>
+<p>把檔案複製到加上日期的資料夾，方法很簡單。但《Pro Git》寫道，這種做法容易出錯，因為很容易覆寫到別的資料夾裡的檔案。用版本控制系統，還能知道哪個變更是誰、在何時加入的，也有助於找出問題的原因。</p>
+<p>代表性的軟體是{{term:Git|Git}}。主要的對象是程式，但只要是以文字寫成的檔案，都能用同樣的方式管理。半導體晶片的電路，也常以類似文章的形式寫出來進行設計（「<a href="{{home}}learn/how-compilers-work/">編譯器是什麼？</a>」）。</p>
+</section>
+
+<section>
+<h2>原理①：提交——附有說明的「當下快照」</h2>
+<p>在Git中，留下紀錄的單位稱為「提交」（commit）。一個提交，就是當時所有檔案的快照。上面還會附上「誰」「何時」，以及寫明變更理由的簡短文字（提交訊息）。</p>
+<p>實際上，沒有變更的檔案只會指向之前存好的那一份，以節省空間。這裡為了讓說明簡單，先當作「會留下整體的快照」。</p>
+<p>重要的是，提交和儲存檔案是不同的操作。檔案存檔再多次，也不會自動提交。要在完成一段有意義的工作時，例如「修正了標題」，自己動手提交。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>提交很像遊戲的存檔。挑戰頭目前先存檔，失敗了也能從那裡重來。相似的地方是「想在什麼時候留下記號都可以，之後還能回到那裡」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>遊戲存檔常常是覆寫在固定數量的欄位裡，舊的紀錄會消失。Git的提交不會覆寫，全部都會留下，而且每一個都附有說明理由的備註。整個團隊能共用這些紀錄，這點也不同。</p></aside>
+</section>
+
+<section>
+<h2>原理②：歷史——查看、還原、比較以前的版本</h2>
+<p>每個提交都記得前一個提交是哪一個。所以順著提交往回追，從最初到現在的變更就會排成一條流程。這稱為「歷史」。</p>
+<p>有了歷史，就能只取出兩個版本之間的不同之處來看。這個不同之處稱為「差異」（diff）。如果在1,000行的檔案裡改了3行，就只會顯示那3行和前後幾行。</p>
+<p>也可以回到之前的狀態，只還原一個檔案或還原全部都可以。和團隊共用之後要取消變更，基本做法是新增一個「抵銷之前變更」的提交。因為不刪除歷史，「何時、為什麼還原」也會留在紀錄裡。</p>
+<p>最擅長處理的是以文字寫成的檔案。Word文件和圖片也能存放。只是預設的差異只會顯示「內容不同」（《Pro Git》8.2節）。</p>
+</section>
+
+<section>
+<h2>原理③：分支與合併——分岔出去，再匯合回來</h2>
+<p>正在開發新功能的檔案，有時還無法運作。把它放進主線，連其他人的工作都會停擺。所以在Git中，會讓歷史分岔，在不影響主線的情況下繼續工作。</p>
+<p>這個分岔稱為「分支」（branch）。它的本質是一個有名字的標記，指向某條流程中最新的提交。因為不會整個複製檔案，所以馬上就能建立，也幾乎不占空間。主線的分支常用main或master這樣的名字。</p>
+<p>功能完成後，就把分支的變更納入主線。這稱為「合併」（merge）。Git會比較從分岔點開始，兩邊各改了什麼。如果改的是不同的地方，就會自動把兩邊組合起來。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 250" role="img"><title>分支從主線的歷史分岔出去，進行別的工作後，透過合併匯入主線</title>
+<text x="2" y="20" class="m">主線（main）</text>
+<text x="290" y="20" text-anchor="middle" class="a">合併</text>
+<line x1="46" y1="60" x2="79" y2="60" class="ln"/>
+<line x1="111" y1="60" x2="169" y2="60" class="ln"/>
+<line x1="201" y1="60" x2="272" y2="60" class="ln"/>
+<line x1="106" y1="72" x2="138" y2="138" class="ln"/>
+<line x1="166" y1="150" x2="199" y2="150" class="ln"/>
+<line x1="229" y1="140" x2="278" y2="73" class="ac"/>
+<circle cx="30" cy="60" r="16" class="hole"/><text x="30" y="65" text-anchor="middle">A</text>
+<circle cx="95" cy="60" r="16" class="hole"/><text x="95" y="65" text-anchor="middle">B</text>
+<circle cx="185" cy="60" r="16" class="hole"/><text x="185" y="65" text-anchor="middle">C</text>
+<circle cx="290" cy="60" r="18" class="ox"/><text x="290" y="65" text-anchor="middle" class="a">M</text>
+<circle cx="150" cy="150" r="16" class="p"/><text x="150" y="155" text-anchor="middle">X</text>
+<circle cx="215" cy="150" r="16" class="p"/><text x="215" y="155" text-anchor="middle">Y</text>
+<text x="2" y="112" class="m">分岔</text>
+<text x="118" y="192" class="m">分支（新功能）</text>
+<line x1="2" y1="222" x2="310" y2="222" class="thin"/><polygon points="320,222 310,217 310,227" class="ink"/>
+<text x="300" y="244" text-anchor="end" class="m">時間</text>
+</svg><figcaption class="fig-cap">每個圓圈代表一次提交。在從B分岔出去的分支上做X和Y的期間，其他人在主線上加了C。透過M的合併，兩邊的變更合而為一。省略的部分：實際的紀錄是由新的提交指向前一個提交的方向串起來；也省略了分支的標記本身。</figcaption></figure>
+<p>Git的指令，例如像下面這樣。用畫面上的按鈕做同樣事情的工具，也很常用。</p>
+<table>
+<thead><tr><th>指令的例子</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td>git commit -m "修正標題的錯字"</td><td>把選好的變更附上說明後提交</td></tr>
+<tr><td>git log --oneline</td><td>以一個提交一行的方式顯示歷史</td></tr>
+<tr><td>git switch -c new-feature</td><td>建立名為new-feature（新功能）的分支並切換過去</td></tr>
+<tr><td>git merge new-feature</td><td>把new-feature的變更合併到目前所在的分支</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>原理④：衝突——同一個地方被各自修改時</h2>
+<p>有時候無法自動組合。那就是兩個分支把同一個檔案的同一處，改成了不同內容的情況。例如，A同事把會議時間改成「10點」，B同事則改成「11點」。</p>
+<p>哪一個才對，Git無法判斷。所以Git不會擅自選一邊，而是停止合併。檔案的那個部分，會並列出兩邊的內容。分隔處會加上「&lt;&lt;&lt;&lt;&lt;&lt;&lt;」等標記。這種狀態稱為「衝突」（conflict）。</p>
+<p>修正是人的工作。兩個人討論後改寫成正確的內容，刪掉標記再提交。衝突不是故障，而是「需要由人決定的分歧」的通知。經常合併，就比較不容易發生。</p>
+</section>
+
+<section>
+<h2>集中式與分散式：Subversion與Git</h2>
+<p>版本控制系統大致分為兩種類型。第一種是把歷史全部放在一台伺服器上，每個人從那裡取出最新版本來工作。這稱為「集中式」。代表是Subversion，2000年開始開發。官方網站也自稱是集中式。</p>
+<p>集中式因為所有人都看同一個地方，優點是容易管理。另一方面，《Pro Git》也舉出了弱點。伺服器停止的期間，誰都無法留下紀錄。伺服器的硬碟壞掉又沒有備份的話，歷史會全部消失。像這樣一處停止就讓整體停止的地方，稱為{{term:単一障害点(SPOF)|單一故障點}}。</p>
+<p>第二種是Git的「分散式」。每個人的電腦裡，不只有最新版本，還複製了完整的歷史。所以提交、查看歷史等大部分操作都在本機完成，沒有網路也能工作。每個人的複本，也都是全部資料的備份。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 420" role="img"><title>集中式的完整歷史只在伺服器上，分散式則每個人的本機也有完整的歷史</title>
+<text x="2" y="20" class="a">集中式（Subversion等）</text>
+<rect x="90" y="32" width="150" height="56" rx="6" class="ox"/>
+<text x="165" y="55" text-anchor="middle">伺服器</text>
+<text x="165" y="78" text-anchor="middle" class="a">完整歷史</text>
+<line x1="165" y1="88" x2="54" y2="130" class="ln"/>
+<line x1="165" y1="88" x2="165" y2="130" class="ln"/>
+<line x1="165" y1="88" x2="276" y2="130" class="ln"/>
+<rect x="6" y="130" width="96" height="56" rx="6" class="n"/>
+<text x="54" y="153" text-anchor="middle">本機</text>
+<text x="54" y="176" text-anchor="middle" class="m">工作版本</text>
+<rect x="117" y="130" width="96" height="56" rx="6" class="n"/>
+<text x="165" y="153" text-anchor="middle">本機</text>
+<text x="165" y="176" text-anchor="middle" class="m">工作版本</text>
+<rect x="228" y="130" width="96" height="56" rx="6" class="n"/>
+<text x="276" y="153" text-anchor="middle">本機</text>
+<text x="276" y="176" text-anchor="middle" class="m">工作版本</text>
+<text x="2" y="230" class="a">分散式（Git）</text>
+<rect x="90" y="242" width="150" height="56" rx="6" class="ox"/>
+<text x="165" y="265" text-anchor="middle">共用的存放處</text>
+<text x="165" y="288" text-anchor="middle" class="a">完整歷史</text>
+<line x1="165" y1="298" x2="54" y2="340" class="ln"/>
+<line x1="165" y1="298" x2="165" y2="340" class="ln"/>
+<line x1="165" y1="298" x2="276" y2="340" class="ln"/>
+<rect x="6" y="340" width="96" height="56" rx="6" class="n"/>
+<text x="54" y="363" text-anchor="middle">本機</text>
+<text x="54" y="386" text-anchor="middle" class="a">完整歷史</text>
+<rect x="117" y="340" width="96" height="56" rx="6" class="n"/>
+<text x="165" y="363" text-anchor="middle">本機</text>
+<text x="165" y="386" text-anchor="middle" class="a">完整歷史</text>
+<rect x="228" y="340" width="96" height="56" rx="6" class="n"/>
+<text x="276" y="363" text-anchor="middle">本機</text>
+<text x="276" y="386" text-anchor="middle" class="a">完整歷史</text>
+<text x="165" y="414" text-anchor="middle" class="m">只有傳送、取回時才需要連線</text>
+</svg><figcaption class="fig-cap">集中式每次留下紀錄，都要和伺服器溝通。分散式則在本機提交，想共用時再傳送。省略的部分：集中式的本機也有工作前版本的備份；共用的存放處可以有好幾個。</figcaption></figure>
+<p>版本的稱呼方式也不同。Subversion的版本會依序編上1、2、3的流水號。在Git中，每個人各自提交，無法決定編號，所以改用由內容計算出來的值。</p>
+</section>
+
+<section>
+<h2>Git誕生的經過</h2>
+<p>Git是為了開發作業系統Linux而誕生的。根據《Pro Git》，1991～2002年，Linux的變更是以差異或壓縮檔的形式交換的。從2002年起，開始免費使用某家公司的分散式產品BitKeeper。</p>
+<p>2005年，Linux的開發者們和那家公司的關係惡化，無法再免費使用。於是以創造Linux的林納斯·托瓦茲（Linus Torvalds）為中心，做出了自己的工具。那就是Git。目標包括速度快、能同時處理數千條分支等。</p>
+</section>
+
+<section>
+<h2>遠端儲存庫與GitHub、GitLab</h2>
+<p>在Git中，存放檔案和完整歷史的地方稱為「儲存庫」（repository）。自己電腦裡的是本機儲存庫。為了讓團隊共用而放在伺服器上的儲存庫，稱為「遠端儲存庫」。</p>
+<p>只在本機提交，其他人是看不到的。要用git push指令送到遠端，其他人再用git pull取回。在送出之前，可以在本機累積任意多次的提交。</p>
+<p>代管遠端儲存庫的代表性服務，是GitHub和GitLab。GitHub自稱是「用來存放、分享程式碼，並與他人一起撰寫的雲端平台」。GitLab是在儲存庫管理之外，加上審查和自動測試功能的產品，也可以架設在自家公司的伺服器上使用。</p>
+<p>也就是說，Git是在本機運作的軟體，GitHub和GitLab是代管Git儲存庫的服務。Git也可以只在公司內部的伺服器上使用。</p>
+</section>
+
+<section>
+<h2>拉取請求：合併前先請人看過</h2>
+<p>在團隊開發中，通常不會擅自把自己的分支合併進主線。在那之前，會先提出「請把這個變更放進主線」的提案。GitHub稱為「拉取請求」（Pull Request），GitLab稱為「合併請求」（Merge Request）。</p>
+<p>提案的畫面上會列出變更的差異和說明。其他人閱讀差異，在有疑問的行留言，提出的人修正後再追加提交。這個確認的過程稱為「程式碼審查」，得到同意後就合併。</p>
+<p>每次提案都自動執行測試的設定也很常見。把變更經常整合到主線，每次都自動檢查的做法，稱為{{term:継続的インテグレーション|持續整合}}（CI）。</p>
+</section>
+
+<section>
+<h2>Git怎麼分辨內容？</h2>
+<p>Git會從要存放的檔案內容，計算出固定長度的值。相同的內容一定會得到相同的值，只要差一個字，就會變成完全不同的值。這種計算稱為{{term:ハッシュ関数|雜湊函數}}，得到的值稱為雜湊值。</p>
+<p>Git預設使用的雜湊函數是SHA-1，值以0～9和a～f共40個字元表示。下表是對只差一個字的兩個檔案，用和Git相同的方法算出的值的前10個字元。因為雜湊值取決於確切的內容，檔案內容照原文（日文）列出。意思分別是「會議從10點開始」「會議從11點開始」。</p>
+<table>
+<thead><tr><th>檔案內容（結尾有1個換行）</th><th>雜湊值（前10個字元）</th></tr></thead>
+<tbody>
+<tr><td>会議は10時から</td><td>d7a6150543…</td></tr>
+<tr><td>会議は11時から</td><td>3eec220ecf…</td></tr>
+</tbody>
+</table>
+<p>Git把這個值當作檔案和提交的名稱。內容相同，名稱也相同，所以同樣的東西不必存兩次。存放的內容就算損壞，重新計算的值也會和名稱對不上，因此能夠察覺。</p>
+<p>提交的名稱也用同樣的方法決定。提交裡也寫入了前一個提交的名稱。所以只要偷偷改寫過去的任何一個提交，在它之後所有提交的名稱都會改變。平常會縮短成前7個字元左右來顯示。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>雜湊值很像檔案內容的「指紋」。相似的地方是「用簡短的記號，就能分辨內容」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>人的指紋，就算是同卵雙胞胎也不同。雜湊值只由內容計算，所以內容完全相同的檔案，即使是不同的檔案，也一定會得到相同的值。</p></aside>
+<p>密碼學用的雜湊函數，設計成實際上無法做出得到相同值的另一筆資料。這是和找出傳輸錯誤的<a href="{{home}}learn/crc-and-gf2-polynomials/">CRC</a>最大的不同。</p>
+<p>不過，SHA-1在2017年被實際展示了做出兩筆相同值資料的攻擊。Git加入了識破這種攻擊的機制，並選擇SHA-256作為後繼。在2026年10月時的Git說明文件中，預設仍是SHA-1。預計在下一個大版本Git 3.0，把新儲存庫的預設改為SHA-256，但時間還沒有決定。</p>
+</section>
+
+<section>
+<h2>密碼和API金鑰不要提交</h2>
+<p>版本控制的強項是「不會消失」。但這有時會帶來反效果。那就是不小心把密碼，或是使用服務用的祕密鑰匙（API金鑰）寫進檔案並提交的情況。</p>
+<p>就算發現後從檔案刪掉、再提交一次，之前的提交裡還是留著。能看到儲存庫的人，只要順著歷史就能取出。GitHub的說明文件也提醒，即使改寫歷史，也可能留在其他人的複本等地方。</p>
+<p>因此，只要曾經送到共用的地方，就要把那個祕密當作已經外洩。基本做法是到發行的一方讓那把金鑰失效，換成新的。原本就不要把祕密寫在程式的檔案裡，而是放在別的地方。金鑰的保護方法，在「<a href="{{home}}learn/what-is-an-api/">API是什麼？</a>」中有說明。把不想放進去的檔案名稱寫進「.gitignore」，還沒納入Git管理的檔案就會被忽略。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：Git和GitHub是同一個東西</p><p>實際上，Git是在自己電腦上運作的版本控制軟體。GitHub是代管Git儲存庫，再加上拉取請求等協作功能的網路服務。沒有GitHub也能使用Git。因為名字相似，又常常一起使用，所以容易混淆。</p></div>
+<div class="myth"><p class="myth-q">誤解：只要提交，變更就會傳給團隊的所有人</p><p>實際上，提交是記錄在本機儲存庫裡。要傳給其他人，必須用git push送到遠端儲存庫。反過來說，其他人的變更，在取回之前也不會進到你的電腦。集中式的Subversion留下紀錄的操作會直接送到伺服器，所以同一個詞容易造成誤解。</p></div>
+<div class="myth"><p class="myth-q">誤解：版本控制是只有程式設計師才用的工具</p><p>實際上，幾乎任何檔案都能管理。《Pro Git》也推薦給想保留圖片和版面配置各個版本的設計師。不過，Word文件等檔案的差異比較難看出來。</p></div>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<table>
+<thead><tr><th>項目</th><th>數字／時間</th><th>備註</th></tr></thead>
+<tbody>
+<tr><td>Linux的變更以差異或壓縮檔交換</td><td>1991～2002年</td><td>《Pro Git》</td></tr>
+<tr><td>Subversion開始開發</td><td>2000年</td><td>集中式的代表</td></tr>
+<tr><td>Git誕生</td><td>2005年</td><td>林納斯·托瓦茲等人</td></tr>
+<tr><td>SHA-1雜湊值的長度</td><td>40個字元（160位元）</td><td>以0～9和a～f表示</td></tr>
+<tr><td>縮短顯示的長度</td><td>從7個字元起</td><td>無法分辨時會加長</td></tr>
+<tr><td>偶然出現相同值的機率達到一半所需的數量</td><td>約2的80次方（約1.2×10的24次方）個</td><td>《Pro Git》的估算</td></tr>
+<tr><td>發表以SHA-1做出相同值的攻擊</td><td>2017年2月</td><td>SHAttered</td></tr>
+<tr><td>Git選擇SHA-256作為後繼</td><td>2018年下半年</td><td>預設仍是SHA-1。預計在Git 3.0成為新儲存庫的預設（時間未定，2026年10月時）</td></tr>
+</tbody>
+</table>
+<p>2的80次方，大約是1兆的1兆倍。偶然出現相同值幾乎不必擔心，要擔心的是刻意做出相同值的攻擊。這就是改用SHA-256的理由。</p>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>下一步的用語：{{term:CI/CD(継続的インテグレーション・継続的デリバリー)|CI/CD（持續整合與持續交付）}}、{{term:SSH|SSH}}、{{term:アジャイル開発|敏捷開發}}、{{term:テスト駆動開発(TDD)|測試驅動開發（TDD）}}</li>
+<li>相關文章：「<a href="{{home}}learn/what-is-an-api/">API是什麼？</a>」（祕密金鑰的保護方法）、「<a href="{{home}}learn/what-is-encryption/">加密是什麼？</a>」（雜湊與加密的差異）、「<a href="{{home}}learn/how-passwords-get-cracked/">密碼為什麼會被破解？</a>」</li>
+<li>從基礎讀起：「<a href="{{home}}learn/how-compilers-work/">編譯器是什麼？</a>」、「<a href="{{home}}learn/what-is-a-database/">資料庫是什麼？</a>」、「<a href="{{home}}learn/what-is-cloud-computing/">雲端運算是什麼？</a>」</li>
+</ul>
+</section>

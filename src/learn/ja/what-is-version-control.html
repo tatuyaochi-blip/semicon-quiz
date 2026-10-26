@@ -1,0 +1,241 @@
+<!--
+{
+  "title": "Gitとは? バージョン管理のしくみとGitHubとの違い",
+  "description": "バージョン管理とは、ファイルの変更を記録し、いつでも前の状態に戻せるしくみです。代表のGitで、コミット・履歴・ブランチ・マージ・コンフリクト、GitHubとの違い、パスワードを入れてはいけない理由を解説します。",
+  "series": "computer-basics",
+  "order": 15,
+  "minutes": 12,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["linux-cli", "software-dev", "cyber-defense", "cloud-container"],
+  "terms": ["Git", "CI/CD(継続的インテグレーション・継続的デリバリー)"],
+  "sources": [
+    { "title": "Pro Git(第2版) 1.1 About Version Control(バージョン管理の定義。フォルダに写す方法は誤りやすいこと。集中型(CVS・Subversion・Perforce)と分散型(Git など)、中央のサーバが1か所の弱点になること)", "url": "https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control" },
+    { "title": "Pro Git(第2版) 1.2 A Short History of Git(1991〜2002年はパッチと圧縮ファイル、2002年から BitKeeper、2005年にリーナス・トーバルズらが Git を開発)", "url": "https://git-scm.com/book/en/v2/Getting-Started-A-Short-History-of-Git" },
+    { "title": "Pro Git(第2版) 1.3 What is Git?(差分ではなくスナップショット、変わらないファイルは前のものを指すだけ、ほとんどの操作は手元で済む、SHA-1 の40文字の値)", "url": "https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F" },
+    { "title": "Pro Git(第2版) 3.1 Branches in a Nutshell(ブランチはコミットを指す、軽くて動く目印)", "url": "https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell" },
+    { "title": "Pro Git(第2版) 3.2 Basic Branching and Merging(同じファイルの同じ部分を両方のブランチで変えると、きれいにマージできない。マージを止め、印をつけて両方を示す)", "url": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging" },
+    { "title": "Pro Git(第2版) 7.1 Revision Selection(短縮した値は標準で7文字、160ビット、偶然の衝突に必要な数は約2の80乗)", "url": "https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection" },
+    { "title": "Pro Git(第2版) 8.2 Git Attributes(Word の文書は、そのままでは差分が「Binary files … differ」としか出ない)", "url": "https://git-scm.com/book/en/v2/Customizing-Git-Git-Attributes" },
+    { "title": "Pro Git(第2版) 10.2 Git Objects(中身と見出しから SHA-1 を計算して名前にする。コミットには、写し・1つ前のコミット・作者と日時・メッセージが入る)", "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects" },
+    { "title": "Git documentation: git-revert(前のコミットの効果を打ち消す、新しいコミットを記録する)", "url": "https://git-scm.com/docs/git-revert.html" },
+    { "title": "Git documentation: gitignore(わざと追跡しないファイルを指定する。すでに追跡しているファイルには効かない)", "url": "https://git-scm.com/docs/gitignore" },
+    { "title": "Git documentation: hash function transition(Git はハッシュ値で中身に名前をつける。2017年2月23日の SHAttered、2.13.0 からの強化した SHA-1、2018年後半に後継を SHA-256 に決定)", "url": "https://git-scm.com/docs/hash-function-transition" },
+    { "title": "Git の説明書の原稿(main ブランチ): git-init(--object-format。標準は sha1。2026年10月に確認)", "url": "https://github.com/git/git/blob/master/Documentation/git-init.adoc" },
+    { "title": "Git documentation: BreakingChanges(Git 3.0 で、新しく作るリポジトリの標準のハッシュ関数を SHA-256 に変える予定。公開の時期は未定。2026年10月に確認)", "url": "https://git-scm.com/docs/BreakingChanges" },
+    { "title": "GitHub Docs: About GitHub and Git(GitHub は、コードを保管・共有し、ほかの人と一緒に書くためのクラウドのプラットフォーム)", "url": "https://docs.github.com/en/get-started/start-your-journey/about-github-and-git" },
+    { "title": "GitHub Docs: About pull requests(プルリクエストは、あるブランチの変更を別のブランチにマージする提案)", "url": "https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests" },
+    { "title": "GitHub Docs: Removing sensitive data from a repository(履歴を書き換えても、複製やフォークなどに残りうる。漏れた認証情報は取り替える)", "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository" },
+    { "title": "GitLab Docs: Merge requests(マージリクエストは、元のブランチの変更を目的のブランチに取り込む提案。レビューと CI/CD の結果を含む)", "url": "https://docs.gitlab.com/user/project/merge_requests/" },
+    { "title": "GitLab: README(gitlab-org/gitlab。Git のリポジトリの管理、マージリクエストによるコードレビュー、CI/CD。自社のサーバに置いて使う形もある)", "url": "https://gitlab.com/gitlab-org/gitlab" },
+    { "title": "Apache Subversion(公式サイト。オープンソースの集中型バージョン管理システム)", "url": "https://subversion.apache.org/" },
+    { "title": "The Apache Software Foundation: Announces 20th Anniversary of Apache Subversion(2000年に CollabNet で開発が始まり、2010年に Apache のトップレベルのプロジェクトに)", "url": "https://news.apache.org/foundation/entry/the-apache-software-foundation-announces58" }
+  ]
+}
+-->
+<p class="lead">バージョン管理とは、ファイルの変更を「いつ・誰が・何を・なぜ」と一緒に記録し、前の状態に戻せるしくみです。代表のソフトがGitで、その時点の全体の写し(コミット)を順につなぎ、枝分かれ(ブランチ)で並行して作業できます。GitHubはGitではなく、Gitの保管場所を預かり、チームでの確認を助けるWebのサービスです。</p>
+
+<div class="learn-box"><p class="learn-box-h">この記事でわかること</p><ul>
+<li>バージョン管理で何が変わるか</li>
+<li>コミット・履歴・ブランチ・マージ・コンフリクトの意味</li>
+<li>集中型(Subversion)と分散型(Git)の違い、GitとGitHubの違い</li>
+<li>プルリクエストとレビュー、Gitが中身を見分けるしくみ(ハッシュ値)</li>
+<li>パスワードやAPIキーをコミットしてはいけない理由</li>
+</ul><p class="muted">前提知識: 特にありません。パソコンでファイルを保存したり、フォルダに分けたりしたことがあれば読めます。</p></div>
+
+<section>
+<h2>身近なところでは</h2>
+<p>共有フォルダに、こんなファイルが並んでいるのを見たことはないでしょうか。「企画書.docx」「企画書_最終.docx」「企画書_最終_v2.docx」「企画書_最終_v2_最新.docx」。どれが本当の最新なのか、v2で何を直したのか、名前からはわかりません。</p>
+<p>2人が同じファイルを別々に開いて直すと、もっと困ります。後から保存した人が、先の人の修正を消してしまうからです。</p>
+<p>ソフトウェアの開発では、これが桁違いの規模で起きます。何千ものファイルを、何十人もが同時に書き換えることもあります。そこで使われているのが「バージョン管理」のしくみです。</p>
+</section>
+
+<section>
+<h2>バージョン管理とは: 変更の記録を残すしくみ</h2>
+<p>Gitの公式サイトで公開されている解説書『Pro Git』は、バージョン管理を次のように説明しています。ファイルへの変更を時間を追って記録し、後で特定の版を呼び出せるようにするしくみ。版は「バージョン」ともいい、そのためのソフトを「バージョン管理システム」と呼びます。</p>
+<p>日付つきのフォルダにファイルを写す方法は簡単ですが、『Pro Git』は誤りやすいと書いています。違うフォルダのファイルに上書きしやすいからです。バージョン管理システムなら、どの変更を誰がいつ入れたかもわかり、問題の原因探しにも役立ちます。</p>
+<p>代表的なソフトが{{term:Git}}(ギット)です。主な対象はプログラムですが、文字で書かれたファイルなら同じように管理できます。半導体チップの回路も、文章のような形で書いて設計することが多くあります(「<a href="{{home}}learn/how-compilers-work/">コンパイラとは?</a>」)。</p>
+</section>
+
+<section>
+<h2>しくみ① コミット: 説明つきの「その時点の写し」</h2>
+<p>Gitで記録を残す単位を「コミット」と呼びます。1つのコミットは、その時点のファイル全体の写しです。これに「誰が」「いつ」と、変更の理由を書いた短い文(コミットメッセージ)がつきます。</p>
+<p>実際には、変わらなかったファイルは前に保存したものを指すだけにして、場所を節約します。ここでは話を簡単にするため、「全体の写しが残る」と考えます。</p>
+<p>大事なのは、コミットはファイルの保存とは別の操作だという点です。ファイルを何度保存しても、自動でコミットされることはありません。「見出しを直した」のように、意味のあるまとまりができたところで、自分でコミットします。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>コミットは、ゲームのセーブに似ています。ボスに挑む前にセーブしておけば、失敗してもその場所からやり直せます。似ているのは「好きなときに区切りを残し、後でそこへ戻れる」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> ゲームのセーブは、決まった数の枠に上書きすることが多く、古い記録は消えます。Gitのコミットは上書きせずにすべて残り、一つひとつに理由のメモがつきます。チームの全員で記録を共有できる点も違います。</p></aside>
+</section>
+
+<section>
+<h2>しくみ② 履歴: 前の版を見る、戻す、比べる</h2>
+<p>コミットは、1つ前のコミットがどれかを覚えています。そのため、コミットをたどると、最初から今までの変更が一本の流れとして並びます。これを「履歴」と呼びます。</p>
+<p>履歴があると、2つの版の違いだけを取り出して見られます。この違いを「差分」と呼びます。1,000行のファイルのうち3行を直したなら、その3行と前後の数行だけが示されます。</p>
+<p>前の状態に戻すこともできます。ファイル1つだけでも、全体でも戻せます。チームで共有した後の取り消しは、「前の変更を打ち消す変更」を新しいコミットとして足すのが基本です。履歴を消さないので、「いつ、なぜ戻したか」も記録に残ります。</p>
+<p>得意なのは、文字で書かれたファイルです。Wordの文書や画像も保存はできます。ただ、そのままでは差分が「中身が違う」としか表示されません(『Pro Git』8.2節)。</p>
+</section>
+
+<section>
+<h2>しくみ③ ブランチとマージ: 枝分かれして、合流する</h2>
+<p>新しい機能を作っている途中のファイルは、動かないことがあります。それを本流に入れると、ほかの人の作業まで止まってしまいます。そこでGitでは、履歴を枝分かれさせて、本流に影響を与えずに作業を進めます。</p>
+<p>この枝分かれを「ブランチ」(枝)と呼びます。中身は、ある流れの一番新しいコミットを指す、名前のついた目印です。ファイルを丸ごと複製しないので、すぐに作れて場所もとりません。本流のブランチには、main や master という名前がよく使われます。</p>
+<p>機能ができあがったら、ブランチの変更を本流に取り込みます。これを「マージ」(合流)と呼びます。Gitは、枝分かれした地点から両方で何が変わったかを比べます。別々の場所の変更なら、自動で両方を組み合わせます。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 250" role="img"><title>本流の履歴からブランチが枝分かれし、別の作業を進めた後、マージで本流に合流する</title>
+<text x="2" y="20" class="m">本流(main)</text>
+<text x="290" y="20" text-anchor="middle" class="a">マージ</text>
+<line x1="46" y1="60" x2="79" y2="60" class="ln"/>
+<line x1="111" y1="60" x2="169" y2="60" class="ln"/>
+<line x1="201" y1="60" x2="272" y2="60" class="ln"/>
+<line x1="106" y1="72" x2="138" y2="138" class="ln"/>
+<line x1="166" y1="150" x2="199" y2="150" class="ln"/>
+<line x1="229" y1="140" x2="278" y2="73" class="ac"/>
+<circle cx="30" cy="60" r="16" class="hole"/><text x="30" y="65" text-anchor="middle">A</text>
+<circle cx="95" cy="60" r="16" class="hole"/><text x="95" y="65" text-anchor="middle">B</text>
+<circle cx="185" cy="60" r="16" class="hole"/><text x="185" y="65" text-anchor="middle">C</text>
+<circle cx="290" cy="60" r="18" class="ox"/><text x="290" y="65" text-anchor="middle" class="a">M</text>
+<circle cx="150" cy="150" r="16" class="p"/><text x="150" y="155" text-anchor="middle">X</text>
+<circle cx="215" cy="150" r="16" class="p"/><text x="215" y="155" text-anchor="middle">Y</text>
+<text x="2" y="112" class="m">枝分かれ</text>
+<text x="118" y="192" class="m">ブランチ(新機能)</text>
+<line x1="2" y1="222" x2="310" y2="222" class="thin"/><polygon points="320,222 310,217 310,227" class="ink"/>
+<text x="300" y="244" text-anchor="end" class="m">時間</text>
+</svg><figcaption class="fig-cap">丸の1つが1回のコミットです。Bから枝分かれしたブランチでXとYを作る間に、本流ではほかの人がCを足しました。Mのマージで、両方の変更が1つにまとまります。省略していること: 実際の記録は、新しいコミットが1つ前を指す向きでつながること。ブランチの目印そのもの。</figcaption></figure>
+<p>Gitの命令は、例えば次のような形です。画面のボタンで同じことをする道具もよく使われます。</p>
+<table>
+<thead><tr><th>命令の例</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td>git commit -m "見出しの誤字を直す"</td><td>選んだ変更を、説明をつけてコミットする</td></tr>
+<tr><td>git log --oneline</td><td>履歴を1コミット1行で表示する</td></tr>
+<tr><td>git switch -c new-feature</td><td>new-feature(新機能)というブランチを作って移る</td></tr>
+<tr><td>git merge new-feature</td><td>new-feature の変更を、今いるブランチに合流させる</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>しくみ④ コンフリクト: 同じ場所を別々に直したとき</h2>
+<p>自動で組み合わせられないこともあります。2つのブランチで、同じファイルの同じ部分が、別々の内容に書き換えられていた場合です。例えば、Aさんは会議の時刻を「10時」に、Bさんは「11時」に直していたとします。</p>
+<p>どちらが正しいかは、Gitには判断できません。そこでGitは、勝手にどちらかを選ばずにマージを止めます。ファイルのその部分には、両方の内容が並べて示されます。区切りには「&lt;&lt;&lt;&lt;&lt;&lt;&lt;」などの印がつきます。この状態を「コンフリクト」(衝突)と呼びます。</p>
+<p>直すのは人の仕事です。2人で相談して正しい内容に書き直し、印を消してからコミットします。コンフリクトは故障ではなく、「人が決めるべき食い違い」の知らせです。こまめに合流させると起きにくくなります。</p>
+</section>
+
+<section>
+<h2>集中型と分散型: SubversionとGit</h2>
+<p>バージョン管理システムには、大きく2つの型があります。1つ目は、履歴をすべて1台のサーバに置き、各自がそこから最新の版を取り出して作業する型です。これを「集中型」と呼びます。代表はSubversion(サブバージョン)で、2000年に開発が始まりました。公式サイトも自らを集中型と紹介しています。</p>
+<p>集中型は、全員が同じ場所を見るので、管理しやすいのが利点です。一方で、『Pro Git』は弱点も挙げています。サーバが止まっている間は、誰も記録を残せません。サーバのディスクが壊れ、控えもなければ、履歴をすべて失います。このように、1か所止まると全体が止まる場所を{{term:単一障害点(SPOF)|単一障害点}}と呼びます。</p>
+<p>2つ目が、Gitの「分散型」です。各自のパソコンに、最新の版だけでなく、履歴の全部を写して持ちます。そのため、コミットや履歴を見る操作のほとんどは手元で済み、ネットワークがなくても作業できます。どの人の写しも、全データの控えになります。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 420" role="img"><title>集中型では履歴の全部がサーバだけにあり、分散型では各自の手元にも履歴の全部がある</title>
+<text x="2" y="20" class="a">集中型(Subversion など)</text>
+<rect x="90" y="32" width="150" height="56" rx="6" class="ox"/>
+<text x="165" y="55" text-anchor="middle">サーバ</text>
+<text x="165" y="78" text-anchor="middle" class="a">履歴の全部</text>
+<line x1="165" y1="88" x2="54" y2="130" class="ln"/>
+<line x1="165" y1="88" x2="165" y2="130" class="ln"/>
+<line x1="165" y1="88" x2="276" y2="130" class="ln"/>
+<rect x="6" y="130" width="96" height="56" rx="6" class="n"/>
+<text x="54" y="153" text-anchor="middle">手元</text>
+<text x="54" y="176" text-anchor="middle" class="m">作業中の版</text>
+<rect x="117" y="130" width="96" height="56" rx="6" class="n"/>
+<text x="165" y="153" text-anchor="middle">手元</text>
+<text x="165" y="176" text-anchor="middle" class="m">作業中の版</text>
+<rect x="228" y="130" width="96" height="56" rx="6" class="n"/>
+<text x="276" y="153" text-anchor="middle">手元</text>
+<text x="276" y="176" text-anchor="middle" class="m">作業中の版</text>
+<text x="2" y="230" class="a">分散型(Git)</text>
+<rect x="90" y="242" width="150" height="56" rx="6" class="ox"/>
+<text x="165" y="265" text-anchor="middle">共有の保管場所</text>
+<text x="165" y="288" text-anchor="middle" class="a">履歴の全部</text>
+<line x1="165" y1="298" x2="54" y2="340" class="ln"/>
+<line x1="165" y1="298" x2="165" y2="340" class="ln"/>
+<line x1="165" y1="298" x2="276" y2="340" class="ln"/>
+<rect x="6" y="340" width="96" height="56" rx="6" class="n"/>
+<text x="54" y="363" text-anchor="middle">手元</text>
+<text x="54" y="386" text-anchor="middle" class="a">履歴の全部</text>
+<rect x="117" y="340" width="96" height="56" rx="6" class="n"/>
+<text x="165" y="363" text-anchor="middle">手元</text>
+<text x="165" y="386" text-anchor="middle" class="a">履歴の全部</text>
+<rect x="228" y="340" width="96" height="56" rx="6" class="n"/>
+<text x="276" y="363" text-anchor="middle">手元</text>
+<text x="276" y="386" text-anchor="middle" class="a">履歴の全部</text>
+<text x="165" y="414" text-anchor="middle" class="m">送る・取り込むときだけ通信</text>
+</svg><figcaption class="fig-cap">集中型では、記録を残すたびにサーバとやり取りします。分散型では、手元でコミットし、共有したいときに送ります。省略していること: 集中型でも手元に作業前の版の控えがあること。共有の場所を複数使えること。</figcaption></figure>
+<p>版の呼び方も違います。Subversionでは、版に1、2、3と通し番号がつきます。各自がばらばらにコミットするGitでは番号を決められないので、中身から計算した値を使います。</p>
+</section>
+
+<section>
+<h2>Gitが生まれたいきさつ</h2>
+<p>Gitは、OSのLinux(リナックス)を開発するために生まれました。『Pro Git』によれば、1991〜2002年、Linuxの変更は差分や圧縮ファイルの形でやり取りされていました。2002年からは、ある会社の分散型の製品BitKeeperを無料で使うようになります。</p>
+<p>2005年、Linuxの開発者たちとその会社の関係がこじれ、無料で使えなくなりました。そこでLinuxを作ったリーナス・トーバルズを中心に、自分たちの道具を作りました。それがGitです。目標には、速いこと、何千もの枝分かれを並行して扱えることなどがありました。</p>
+</section>
+
+<section>
+<h2>リモートリポジトリと、GitHub・GitLab</h2>
+<p>Gitで、ファイルと履歴の全部をしまっておく場所を「リポジトリ」(保管庫)と呼びます。自分のパソコンにあるものは手元のリポジトリです。チームで共有するために、サーバに置いたリポジトリを「リモートリポジトリ」と呼びます。</p>
+<p>手元でコミットしただけでは、ほかの人には見えません。git push という命令でリモートに送り、ほかの人は git pull で取り込みます。送るまでは、手元で何度でもコミットを重ねられます。</p>
+<p>リモートリポジトリを預かるサービスの代表が、GitHub(ギットハブ)やGitLab(ギットラボ)です。GitHubは自らを「コードを保管し、共有し、ほかの人と一緒に書くためのクラウドのプラットフォーム」と説明しています。GitLabは、リポジトリの管理にレビューや自動テストの機能を加えた製品で、自社のサーバに置いても使えます。</p>
+<p>つまり、Gitは手元で動くソフト、GitHubやGitLabはGitの保管場所を預かるサービスです。Gitは社内のサーバだけで使うこともできます。</p>
+</section>
+
+<section>
+<h2>プルリクエスト: 合流の前に見てもらう</h2>
+<p>チームの開発では、自分のブランチを勝手に本流へマージしないのがふつうです。その前に、「この変更を本流に入れてください」という提案を出します。GitHubではこれを「プルリクエスト」、GitLabでは「マージリクエスト」と呼びます。</p>
+<p>提案の画面には、変更の差分と説明が並びます。ほかの人は差分を読んで気になる行にコメントし、出した人は直してコミットを足します。この確認を「コードレビュー」と呼び、了承が得られたらマージします。</p>
+<p>提案のたびに、テストを自動で走らせる設定もよく使われます。変更をこまめに本流へ統合し、そのたびに自動で確かめる進め方を、{{term:継続的インテグレーション}}(CI)と呼びます。</p>
+</section>
+
+<section>
+<h2>Gitは中身をどう見分けている?</h2>
+<p>Gitは、保存するファイルの中身から、決まった長さの値を計算します。同じ中身からは必ず同じ値が出て、1文字でも違えばまったく別の値になります。この計算を{{term:ハッシュ関数}}、出てくる値をハッシュ値と呼びます。</p>
+<p>Gitが標準で使うハッシュ関数はSHA-1で、値は0〜9とa〜fの40文字で表されます。次の表は、1文字だけ違う2つのファイルについて、Gitと同じ方法で計算した値の先頭10文字です。</p>
+<table>
+<thead><tr><th>ファイルの中身(最後に改行1つ)</th><th>ハッシュ値(先頭10文字)</th></tr></thead>
+<tbody>
+<tr><td>会議は10時から</td><td>d7a6150543…</td></tr>
+<tr><td>会議は11時から</td><td>3eec220ecf…</td></tr>
+</tbody>
+</table>
+<p>Gitは、この値をファイルやコミットの名前として使います。中身が同じなら名前も同じなので、同じものを2回しまわずに済みます。保存した中身が壊れても、計算し直した値が名前と合わなくなるので気づけます。</p>
+<p>コミットの名前も同じ方法で決まります。コミットには、1つ前のコミットの名前も書き込まれています。そのため、過去のコミットを1つでもこっそり書き換えると、それより後のすべての名前が変わってしまいます。ふだんは先頭の7文字ほどに縮めて表示します。</p>
+<aside class="analogy"><p class="analogy-h">たとえで言うと</p><p>ハッシュ値は、ファイルの中身の「指紋」に似ています。似ているのは「短い印で、中身を見分けられる」という点です。</p><p class="analogy-limit"><strong>たとえが当てはまらない点:</strong> 人の指紋は、一卵性の双子でも違います。ハッシュ値は中身だけから計算するので、中身がまったく同じファイルは、別のファイルでも必ず同じ値になります。</p></aside>
+<p>暗号で使うハッシュ関数は、同じ値になる別のデータを作るのが、事実上できないように設計されています。通信の誤りを見つける<a href="{{home}}learn/crc-and-gf2-polynomials/">CRC</a>との大きな違いです。</p>
+<p>ただ、SHA-1は2017年に、同じ値になる2つのデータを実際に作る攻撃が示されました。Gitはその攻撃を見破る工夫を加え、後継にSHA-256を選んでいます。2026年10月時点のGitの説明書では、標準はまだSHA-1です。次の大きな版のGit 3.0で、新しいリポジトリの標準をSHA-256に変える予定ですが、時期は決まっていません。</p>
+</section>
+
+<section>
+<h2>パスワードやAPIキーは、コミットしない</h2>
+<p>バージョン管理は「消えない」ことが強みです。ところが、これが裏目に出ることがあります。パスワードや、サービスを使うための秘密の鍵(APIキー)を、うっかりファイルに書いてコミットした場合です。</p>
+<p>気づいてファイルから消し、もう一度コミットしても、前のコミットには残っています。リポジトリを見られる人なら、履歴をたどって取り出せます。GitHubの説明書も、履歴を書き換えても、ほかの人の写しなどに残りうると注意しています。</p>
+<p>そのため、一度でも共有の場所に送った秘密は、漏れたものとして扱います。発行元でその鍵を無効にし、新しいものに取り替えるのが基本です。そもそも秘密はプログラムのファイルに書かず、別の場所に置きます。キーの守り方は「<a href="{{home}}learn/what-is-an-api/">APIとは?</a>」で説明しています。入れたくないファイルの名前を「.gitignore」に書くと、まだGitの管理に入れていないものは無視されます。</p>
+</section>
+
+<section>
+<h2>よくある誤解</h2>
+<div class="myth"><p class="myth-q">誤解: GitとGitHubは同じもの</p><p>実際は、Gitは手元のパソコンで動くバージョン管理のソフトです。GitHubは、Gitのリポジトリを預かり、プルリクエストなどの共同作業の機能を加えたWebのサービスです。GitはGitHubがなくても使えます。名前が似ていて、一緒に使われることが多いので、混同されやすいのです。</p></div>
+<div class="myth"><p class="myth-q">誤解: コミットすれば、チームの全員に変更が届く</p><p>実際は、コミットは手元のリポジトリへの記録です。ほかの人に届けるには、git push でリモートリポジトリに送る必要があります。逆に、ほかの人の変更も、取り込むまでは手元に入りません。集中型のSubversionでは記録を残す操作がそのままサーバに届くので、同じ言葉から誤解が生まれやすいのです。</p></div>
+<div class="myth"><p class="myth-q">誤解: バージョン管理は、プログラマーだけの道具</p><p>実際は、ほとんどどんなファイルでも管理できます。『Pro Git』も、画像やレイアウトの版を残したいデザイナーに勧めています。ただし、Wordの文書などは差分が見えにくくなります。</p></div>
+</section>
+
+<section>
+<h2>数字で見る</h2>
+<table>
+<thead><tr><th>項目</th><th>数字・時期</th><th>メモ</th></tr></thead>
+<tbody>
+<tr><td>Linuxの変更を差分や圧縮ファイルでやり取り</td><td>1991〜2002年</td><td>『Pro Git』</td></tr>
+<tr><td>Subversionの開発の開始</td><td>2000年</td><td>集中型の代表</td></tr>
+<tr><td>Gitの誕生</td><td>2005年</td><td>リーナス・トーバルズら</td></tr>
+<tr><td>SHA-1のハッシュ値の長さ</td><td>40文字(160ビット)</td><td>0〜9とa〜fで表す</td></tr>
+<tr><td>縮めた表示の長さ</td><td>7文字から</td><td>見分けられないときは長くする</td></tr>
+<tr><td>偶然に同じ値が出る確率が半々になる数</td><td>約2の80乗(約1.2×10の24乗)個</td><td>『Pro Git』の見積もり</td></tr>
+<tr><td>SHA-1で同じ値を作る攻撃の発表</td><td>2017年2月</td><td>SHAttered</td></tr>
+<tr><td>Gitが後継にSHA-256を選ぶ</td><td>2018年後半</td><td>標準はまだSHA-1。Git 3.0で新しいリポジトリの標準にする予定(時期は未定、2026年10月時点)</td></tr>
+</tbody>
+</table>
+<p>2の80乗は、1兆の1兆倍ほどの数です。偶然に同じ値が出る心配はまずなく、心配なのはわざと同じ値を作る攻撃のほうです。それがSHA-256へ移る理由です。</p>
+</section>
+
+<section>
+<h2>もっと詳しく学ぶ</h2>
+<ul>
+<li>次の一歩の用語: {{term:CI/CD(継続的インテグレーション・継続的デリバリー)|CI/CD}}、{{term:SSH}}、{{term:アジャイル開発}}、{{term:テスト駆動開発(TDD)}}</li>
+<li>関係する記事: 「<a href="{{home}}learn/what-is-an-api/">APIとは?</a>」(秘密の鍵の守り方)、「<a href="{{home}}learn/what-is-encryption/">暗号とは?</a>」(ハッシュと暗号の違い)、「<a href="{{home}}learn/how-passwords-get-cracked/">パスワードはなぜ破られる?</a>」</li>
+<li>土台から読む: 「<a href="{{home}}learn/how-compilers-work/">コンパイラとは?</a>」、「<a href="{{home}}learn/what-is-a-database/">データベースとは?</a>」、「<a href="{{home}}learn/what-is-cloud-computing/">クラウドとは?</a>」</li>
+</ul>
+</section>
