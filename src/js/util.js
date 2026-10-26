@@ -34,16 +34,22 @@ export function termMatcher(terms) {
       }
     }
   }
-  // カタカナだけの語は、長いカタカナ語の一部には一致させない(「ジクロロシラン」の中の「シラン」など)
-  const words = [...keys.keys()].sort((a, b) => b.length - a.length)
-    .map(k => {
-      const w = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return /^[ァ-ヶー・]+$/.test(k) ? `(?<![ァ-ヶー])${w}(?![ァ-ヶー])` : w;
-    });
-  // 英字・数字の境界(「CMOS」を「CMOSFET」の中で一致させない)は、語の端が英数字のときだけ linkTerms で確かめる。
-  // 正規表現の各語に境界を付けると100倍以上遅くなるため。日本語の語は「投影飛程Rp」「理想係数n」のように英字が続いても一致させる
-  return { keys, exact, re: new RegExp(`(${words.join('|')})`, 'gi') };
+  // 英字・数字の境界(「CMOS」を「CMOSFET」の中で一致させない)と、カタカナだけの語の境界(「ジクロロシラン」の中の
+  // 「シラン」に一致させない)は、linkTerms で一致のあとに確かめる。正規表現の各語に境界の条件を付けると、数千語の
+  // 選択肢の速い探し方が使えなくなり、100倍以上遅くなるため。日本語の語は「投影飛程Rp」「理想係数n」のように英字が続いても一致させる
+  const sorted = [...keys.keys()].sort((a, b) => b.length - a.length);
+  const escape = k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // カタカナだけの語が境界で外れた位置で、同じ位置から始まるほかの語を長い順に探し直すための、先頭の文字ごとの一覧
+  const byFirst = new Map();
+  for (const k of sorted) (byFirst.get(k[0]) ?? byFirst.set(k[0], []).get(k[0])).push(k);
+  return { keys, exact, byFirst, re: new RegExp(`(${sorted.map(escape).join('|')})`, 'gi') };
 }
+
+const KATA_ONLY = /^[ァ-ヶー・]+$/;
+const KATA = /[ァ-ヶー]/;
+// カタカナだけの語が、前後にカタカナが続く位置(長いカタカナ語の一部)にないか
+const kataBounded = (text, start, end) => !KATA_ONLY.test(text.slice(start, end))
+  || !(KATA.test(text[start - 1] ?? '') || KATA.test(text[end] ?? ''));
 
 const ALNUM = /[A-Za-z0-9]/;
 const bounded = (text, start, end) => !(ALNUM.test(text[start] ?? '') && ALNUM.test(text[start - 1] ?? ''))
@@ -54,12 +60,20 @@ const OTHER_MEANING = /^\s*[(（]\s*(人体|人體|인체|human body|modèle du 
 
 // 文章を [文字列 | { text, id }] に分ける。各用語は最初の1回だけ
 // skip: リンクしない用語の id の集合(用語集の noLinkIn で、別の意味で使う分野の問題を除く)
-export function linkTerms(text, { keys, exact, re }, skip) {
+export function linkTerms(text, { keys, exact, byFirst, re }, skip) {
   const parts = [];
   const used = new Set();
   let last = 0;
   re.lastIndex = 0;
   for (let m; (m = re.exec(text));) {
+    // カタカナだけの語が長いカタカナ語の一部なら、同じ位置から始まるほかの語を長い順に探す(なければ次の文字から)
+    if (!kataBounded(text, m.index, m.index + m[0].length)) {
+      const i = m.index;
+      const k = (byFirst.get(text[i].toLowerCase()) ?? []).find(w => text.slice(i, i + w.length).toLowerCase() === w && kataBounded(text, i, i + w.length));
+      if (!k) { re.lastIndex = i + 1; continue; }
+      m = Object.assign([text.slice(i, i + k.length)], { index: i });
+      re.lastIndex = i + k.length;
+    }
     // 英数字の途中で切れている一致は捨て、次の文字から探し直す
     if (!bounded(text, m.index, m.index + m[0].length)) { re.lastIndex = m.index + 1; continue; }
     if (exact?.has(m[0].toLowerCase()) && exact.get(m[0].toLowerCase()) !== m[0]) continue;
