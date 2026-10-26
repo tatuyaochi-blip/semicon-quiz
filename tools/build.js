@@ -185,6 +185,8 @@ const qTpl = read('src/templates/question.html');
 
 const questions = {};
 const CODE_ABOVE = /(?<!以)上の/;
+// 問題文が「図の回路」「図(a)の…」のように図を見て答える問題(「管理図」「図示」などは除く)
+const FIG_ABOVE = /(?<![\u4e00-\u9fff\u30a0-\u30ff])図[のにで中(]/;
 for (const c of categories) {
   const qs = readOpt(`data/questions/${c.id}.json`, []);
   questions[c.id] = qs.filter(q => q.reviewed || !config.onlyReviewed);
@@ -286,7 +288,9 @@ function buildLang(L) {
       const figureSvg = figure ? localizeFigure(figs[figure], figT[figure], isDef) : null;
       // 問題文が「上のコード」と書いている問題は、コードを問題文の前に出す(既定言語の問題文で判定し、すべての言語で同じにする)
       const codeFirst = q.code && CODE_ABOVE.test(q.question) ? { codeFirst: true } : {};
-      return { ...q, ...codeFirst, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg, figureId: figure } : {}) };
+      // 図を見て答える問題は、図を解説ではなく問題文のすぐ下に出す(判定は既定言語の問題文で)
+      const figureFirst = figureSvg && FIG_ABOVE.test(q.question) ? { figureFirst: true } : {};
+      return { ...q, ...codeFirst, ...figureFirst, ...(isDef ? { choiceNotes } : {}), ...(tq[q.id] || {}), ...(figureSvg ? { figureSvg, figureId: figure } : {}) };
     });
     write(`data/${code}/q/${c.id}.json`, JSON.stringify(qs[c.id]));
   }
@@ -957,7 +961,8 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
           choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
           answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
           explanation: linked(q.explanation, c.id),
-          figure: q.figureSvg ? figureHtml(q.figureSvg, q.figureId) : '',
+          figure: q.figureSvg && !q.figureFirst ? figureHtml(q.figureSvg, q.figureId) : '',
+          figureBefore: q.figureSvg && q.figureFirst ? figureHtml(q.figureSvg, q.figureId) : '',
           choiceNotes: choiceNotes(q),
           report: reportLink(q.id),
           solveUrl: quizUrl(solve, c.id),
@@ -2822,18 +2827,22 @@ for (const size of [192, 512]) write(`icon-${size}.png`, iconPng(size));
 // 最初に保存しておくファイル: 各言語のトップ・クイズ・成績のページと問題データ、JS・CSS・アイコン
 const files = dir => fs.readdirSync(path.join(out, dir), { recursive: true }).map(f => `${dir}/${f.replaceAll('\\', '/')}`)
   .filter(f => fs.statSync(path.join(out, f)).isFile());
+// 最初の訪問で保存するのは画面の骨組みだけ。問題データなど(data/{言語}/)は、開いたページの言語の分だけを
+// ページからの知らせ(postMessage)を受けて保存する(7言語すべてだと約30 MB になり、通信量の無駄になるため)
 const precache = [
-  ...langs.flatMap(L => [L.path, `${L.path}quiz/`, `${L.path}stats/`, `${L.path}manifest.json`, ...files(`data/${L.code}`).filter(f => !f.endsWith("/search.json"))]),
+  ...langs.flatMap(L => [L.path, `${L.path}quiz/`, `${L.path}stats/`, `${L.path}manifest.json`]),
   ...files('js'), ...files('css'), 'icon-192.png', 'icon-512.png',
 ];
+const langData = Object.fromEntries(langs.map(L => [L.code, files(`data/${L.code}`).filter(f => !f.endsWith('/search.json'))]));
 // 中身が変わったら版も変わり、古いキャッシュは消える
 const hash = crypto.createHash('sha1');
-for (const f of precache) hash.update(fs.readFileSync(path.join(out, f.endsWith('/') || !f ? `${f}index.html` : f)));
+for (const f of [...precache, ...Object.values(langData).flat()]) hash.update(fs.readFileSync(path.join(out, f.endsWith('/') || !f ? `${f}index.html` : f)));
 write('sw.js', fill(read('src/templates/sw.js'), {
   version: hash.digest('hex').slice(0, 10),
   base: JSON.stringify(base),
   homes: JSON.stringify(langs.map(L => base + L.path).sort((a, b) => b.length - a.length)),
   precache: JSON.stringify(precache.map(f => base + f), null, 2),
+  langData: JSON.stringify(Object.fromEntries(Object.entries(langData).map(([k, v]) => [k, v.map(f => base + f)]))),
 }));
 
 const total = Object.values(questions).reduce((s, x) => s + x.length, 0);

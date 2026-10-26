@@ -5,9 +5,20 @@ const BASE = {{base}};
 // 各言語のトップ(長い順)。オフラインで未保存のページを開いたときは、その言語のトップを出す
 const HOMES = {{homes}};
 const PRECACHE = {{precache}};
+// 言語ごとの問題データなど。ページから { lang } が届いたら、その言語の分だけ保存する
+const LANG_DATA = {{langData}};
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('message', e => {
+  const files = LANG_DATA[e.data?.lang];
+  if (!files) return;
+  // 保存済みの印があれば何もしない(この版で一度だけ)
+  const mark = `${BASE}__lang-${e.data.lang}`;
+  e.waitUntil(caches.open(CACHE).then(c => c.match(mark).then(done => done || c.addAll(files)
+    .then(() => c.put(mark, new Response('1'))).catch(() => {}))));
 });
 
 // 古い版のキャッシュを消す
