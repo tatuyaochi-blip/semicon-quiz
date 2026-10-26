@@ -1,0 +1,307 @@
+<!--
+{
+  "title": "指紋辨識、臉部辨識的原理是什麼？手機如何認出本人？",
+  "description": "手機的指紋辨識和臉部辨識，會把手指或臉的特徵轉成數字，在晶片內受保護的區域比對是否和登錄的數字相似。本文說明感測器的方式、資料存放的地方、讓他人通過的機率、需要PIN碼的原因，以及和通行金鑰的關係。",
+  "series": "it-security-life",
+  "order": 11,
+  "minutes": 14,
+  "updated": "2026-10-23",
+  "review": "2027-10",
+  "cats": ["hw-security", "security", "image-sensor"],
+  "terms": ["TEE(信頼できる実行環境)", "TrustZone", "耐タンパ性"],
+  "sources": [
+    { "title": "Apple Platform Security: Biometric security（Touch ID、Face ID、Optic ID讓他人碰巧通過的機率。登錄5根手指時最高1萬分之1，登錄2種外觀時約50萬分之1）", "url": "https://support.apple.com/guide/security/biometric-security-sec067eb0c9e/web" },
+    { "title": "Apple Platform Security: Optic ID, Face ID, Touch ID, passcodes, and passwords（需要解鎖密碼的條件：重新啟動後、48小時、失敗5次、156小時與4小時）", "url": "https://support.apple.com/guide/security/optic-face-touch-passcodes-passwords-sec9479035f1/web" },
+    { "title": "Apple Platform Security: The Secure Enclave（和主處理器隔離的專用處理器、記憶體加密、以較低的時脈運作）", "url": "https://support.apple.com/guide/security/the-secure-enclave-sec59b0b31ff/web" },
+    { "title": "Apple Support: About Touch ID advanced security technology（用電容從皮膚表層下方讀取，只儲存數學表示而非影像，5萬分之1，失敗5次）", "url": "https://support.apple.com/en-us/105095" },
+    { "title": "Apple Support: About Face ID advanced technology（用數千個看不見的光點建立深度圖、紅外線影像，100萬分之1，雙胞胎與未滿13歲，不包含在iCloud等備份中）", "url": "https://support.apple.com/en-us/102381" },
+    { "title": "Apple Developer: Local Authentication（App無法接觸指紋影像等，只收到成功或失敗。Secure Enclave是和系統其他部分隔離的安全處理器）", "url": "https://developer.apple.com/documentation/localauthentication" },
+    { "title": "Apple: Touch ID & Privacy（不儲存影像，只儲存數學表示。表示無法從儲存的資料重建指紋影像）", "url": "https://www.apple.com/legal/privacy/data/en/touch-id/" },
+    { "title": "R. Cappelli 等: Fingerprint Image Reconstruction from Standard Templates（IEEE TPAMI 29(9)，2007年。顯示能從標準格式的特徵點資料，重建很相似的指紋影像的研究）", "url": "https://doi.org/10.1109/TPAMI.2007.1087" },
+    { "title": "Apple Developer: Supporting passkeys（裝置持有私密金鑰，把公開金鑰交給伺服器。用Touch ID、Face ID確認）", "url": "https://developer.apple.com/documentation/authenticationservices/supporting-passkeys" },
+    { "title": "Apple Newsroom: Apple Announces iPhone 5s（2013年9月。Touch ID，指紋資訊加密後存放在A7晶片內的Secure Enclave）", "url": "https://www.apple.com/newsroom/2013/09/10Apple-Announces-iPhone-5s-The-Most-Forward-Thinking-Smartphone-in-the-World/" },
+    { "title": "Apple Newsroom: The future is here: iPhone X（2017年9月。Face ID，點陣投射器、紅外線相機、泛光照明元件，超過3萬個紅外線光點）", "url": "https://www.apple.com/newsroom/2017/09/the-future-is-here-iphone-x/" },
+    { "title": "Android Open Source Project: Measure biometric unlock security（等級1～3、FAR、SAR。FAR的目標是5萬分之1，等級的差異主要由假造物通過的比例SAR決定）", "url": "https://source.android.com/docs/security/features/biometric/measure" },
+    { "title": "Android Open Source Project: Biometrics（原始影像和範本不能從TEE等隔離環境的外面看到，用只有TEE知道的金鑰加密，在別的裝置上無法使用）", "url": "https://source.android.com/docs/security/features/biometric" },
+    { "title": "Android Developers: Show a biometric authentication dialog（等級3＝BIOMETRIC_STRONG。App可以只接受等級3的生物辨識。登錄生物特徵前，要求先建立PIN碼等）", "url": "https://developer.android.com/identity/sign-in/biometric-auth" },
+    { "title": "Google Pixel Help: Unlock your Pixel device with your face（長得很像的人或同卵雙胞胎的兄弟姊妹，有時也能解鎖；安全性有時比強的PIN碼低）", "url": "https://support.google.com/pixelphone/answer/9517039?hl=en" },
+    { "title": "FIDO Alliance: FIDO Passkeys（生物特徵的資訊和處理留在裝置內，不會送到伺服器）", "url": "https://fidoalliance.org/passkeys/" },
+    { "title": "FIDO Alliance: How Passkeys Work（裝置建立金鑰組，只把公開金鑰送給服務。生物特徵的量測值和範本不會離開裝置）", "url": "https://fidoalliance.org/how-fido-works/" },
+    { "title": "Qualcomm: Qualcomm 3D Sonic Sensor（用超音波讀取手指的脊線和谷線，建立立體的影像）", "url": "https://www.qualcomm.com/products/features/fingerprint-sensors" },
+    { "title": "Qualcomm 新聞稿: Snapdragon 855 Mobile Platform Enables the Samsung Galaxy S10 Line-Up（2019年2月。超音波式指紋感測器）", "url": "https://investor.qualcomm.com/news-events/press-releases/news-details/2019/Qualcomm-Snapdragon-855-Mobile-Platform-Enables-the-Samsung-Galaxy-S10-Line-Up-with-Multi-Gigabit-Connectivity-Artificial-Intelligence-and-Ultrasonic-Fingerprint-Technology-02-20-2019/default.aspx" },
+    { "title": "AnandTech: Goodix Ships Optical In-Display Fingerprint Sensor for Smartphones（2018年3月。放在OLED螢幕下方的光學式指紋感測器，搭載於vivo等手機）", "url": "https://www.anandtech.com/show/12593" },
+    { "title": "NIST: User's Guide to NIST Biometric Image Software (NBIS)（NISTIR 7392。指紋的特徵點：脊線中斷的點和分岔的點）", "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7392.pdf" }
+  ]
+}
+-->
+<p class="lead">手機的指紋辨識和臉部辨識，是把感測器讀到的手指或臉的特徵轉成數字，再比對是否和登錄時的數字相似。比對和資料的保管，都在晶片中受保護的區域進行，照片和特徵資料不會送到外面。讓他人通過的機率不是零，所以會和PIN碼或解鎖密碼搭配使用。</p>
+
+<div class="learn-box"><p class="learn-box-h">這篇文章可以了解</p><ul>
+<li>生物辨識不是看「完全一致」，而是看「相似程度」來判斷的原因</li>
+<li>指紋感測器的3種方式（電容式、光學式、超音波式）</li>
+<li>臉部辨識中，一般相機和量測立體形狀的方式有什麼不同</li>
+<li>指紋和臉的資料，以什麼形式存放在哪裡</li>
+<li>讓他人通過的機率的官方數值，以及仍然需要PIN碼的原因</li>
+<li>通行金鑰和指紋、臉的關係</li>
+</ul><p class="muted">先備知識：不需要。加密和密碼的基礎，可以從相關文章的連結補充。</p></div>
+
+<section>
+<h2>生活中的例子</h2>
+<p>拿起手機看一下螢幕，鎖就解開了。手指放上去，付款就完成了。iPhone在2013年推出Touch ID（指紋），2017年推出Face ID（臉）。</p>
+<p>另一方面，也有人擔心指紋或臉的照片會不會留在手機裡，或被送到廠商那裡。也有人懷疑，長得很像的人是不是就能打開。</p>
+</section>
+
+<section>
+<h2>生物辨識是什麼：用身體的特徵確認本人</h2>
+<p>確認本人的線索，大致有3種：知道的東西（PIN碼或密碼）、擁有的東西（手機等），以及身體的特徵。用身體的特徵確認本人的方法，稱為生物辨識。3種線索的搭配方式，在「<a href="{{home}}learn/how-passwords-get-cracked/">密碼為什麼會被破解？</a>」中說明。</p>
+<p>和密碼最大的不同，是每次讀到的都不會完全相同。手指放上去的角度、力道和乾燥程度，都會讓讀到的紋路一點一點改變。臉也會因為亮度、表情和眼鏡而看起來不同。所以判斷的方式不是「是否完全一致」，而是「有多相似」。</p>
+<p>把相似的程度變成分數，超過事先決定的線，就視為本人。這條線稱為門檻值。門檻值要設在哪裡，後面的「2種錯誤」會再說明。</p>
+</section>
+
+<section>
+<h2>讀取指紋的感測器：3種方式</h2>
+<p>指尖的皮膚上，排列著細細隆起的線條，稱為「脊線」。脊線和脊線之間稍微凹下的部分，稱為「谷線」。指紋感測器是一種半導體晶片，會把脊線和谷線的排列，當成許多細小的點來讀取。讀取的方式主要有3種。</p>
+<h3>電容式：量測電荷累積的差異</h3>
+<p>感測器表面的下方，密密麻麻地排列著能導電的小板子。這種板子稱為電極。手指放上去時，脊線的部分會非常靠近電極。谷線的部分則離得稍微遠一點。</p>
+<p>電極和手指之間，會產生儲存電荷的性質。能儲存的量稱為電容，距離越近就越大。因此，脊線下方的電極數值大，谷線下方的數值小。把這些數值排列成深淺，指紋的紋路就浮現出來了。這和觸控螢幕是同樣的想法，詳細說明在「<a href="{{home}}learn/how-touchscreens-work/">觸控螢幕為什麼能感應手指？</a>」。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img"><title>電容式指紋感測器：手指脊線下方的電極數值大，谷線下方的電極數值小。把數值排列起來，就成為指紋的紋路</title>
+<text x="170" y="26" text-anchor="middle" class="m">從側面看指尖</text>
+<path d="M20,40 L320,40 L320,86 L312,86 Q310,112 290,112 Q270,112 268,86 L252,86 Q250,112 230,112 Q210,112 208,86 L192,86 Q190,112 170,112 Q150,112 148,86 L132,86 Q130,112 110,112 Q90,112 88,86 L72,86 Q70,112 50,112 Q30,112 28,86 L20,86 Z" class="ox"/>
+<text x="170" y="68" text-anchor="middle">手指</text>
+<rect x="20" y="113" width="300" height="12" class="n"/>
+<rect x="30" y="132" width="16" height="12" class="metal"/>
+<rect x="50" y="132" width="16" height="12" class="metal"/>
+<rect x="70" y="132" width="16" height="12" class="metal"/>
+<rect x="90" y="132" width="16" height="12" class="metal"/>
+<rect x="110" y="132" width="16" height="12" class="metal"/>
+<rect x="130" y="132" width="16" height="12" class="metal"/>
+<rect x="150" y="132" width="16" height="12" class="metal"/>
+<rect x="170" y="132" width="16" height="12" class="metal"/>
+<rect x="190" y="132" width="16" height="12" class="metal"/>
+<rect x="210" y="132" width="16" height="12" class="metal"/>
+<rect x="230" y="132" width="16" height="12" class="metal"/>
+<rect x="250" y="132" width="16" height="12" class="metal"/>
+<rect x="270" y="132" width="16" height="12" class="metal"/>
+<rect x="290" y="132" width="16" height="12" class="metal"/>
+<rect x="310" y="132" width="16" height="12" class="metal"/>
+<text x="170" y="164" text-anchor="middle">各電極（方塊）量到的值</text>
+<rect x="32" y="196" width="12" height="30" class="fa"/>
+<rect x="52" y="178" width="12" height="48" class="fa"/>
+<rect x="72" y="214" width="12" height="12" class="fa"/>
+<rect x="92" y="196" width="12" height="30" class="fa"/>
+<rect x="112" y="178" width="12" height="48" class="fa"/>
+<rect x="132" y="214" width="12" height="12" class="fa"/>
+<rect x="152" y="196" width="12" height="30" class="fa"/>
+<rect x="172" y="178" width="12" height="48" class="fa"/>
+<rect x="192" y="214" width="12" height="12" class="fa"/>
+<rect x="212" y="196" width="12" height="30" class="fa"/>
+<rect x="232" y="178" width="12" height="48" class="fa"/>
+<rect x="252" y="214" width="12" height="12" class="fa"/>
+<rect x="272" y="196" width="12" height="30" class="fa"/>
+<rect x="292" y="178" width="12" height="48" class="fa"/>
+<rect x="312" y="214" width="12" height="12" class="fa"/>
+<line x1="20" y1="226" x2="320" y2="226" class="thin"/>
+<text x="10" y="256" class="a">脊線下方：距離近，所以大</text>
+<text x="10" y="284" class="m">谷線下方：距離遠，所以小</text>
+</svg><figcaption class="fig-cap">手指的脊線（皮膚隆起的線條）離電極近，谷線離得遠，所以每個電極的數值都不同。省略的部分：實際的電極縱橫排列了好幾萬個，間隔比這裡細得多。表面保護層的厚度，以及脊線和谷線的高低差，也都畫得比較誇張。</figcaption></figure>
+<p>Apple的Touch ID使用這種{{term:静電容量検出|電容式感測}}的原理。根據Apple的說明，它會從皮膚最外層的下方讀取細緻的影像。</p>
+<h3>光學式：用螢幕的光照亮再拍攝</h3>
+<p>在螢幕上按手指的方式，常見的是光學式。手機常用的OLED螢幕，構成畫面的小點（像素）每一個都會自己發光。讓手指按著的地方發光，光就會在手指上反射。脊線和谷線的反射方式不同，就形成明暗的紋路。</p>
+<p>這道光，由放在螢幕下方的小型相機感測器接收。把光轉成電的原理，和手機相機的{{term:CMOSイメージセンサ|影像感測器}}相同（「<a href="{{home}}learn/how-image-sensors-work/">影像感測器是什麼？</a>」）。放在螢幕下方的指紋感測器，大約從2018年開始搭載在手機上。</p>
+<h3>超音波式：用聲音的反射量測形狀</h3>
+<p>人耳聽不到的高頻聲音，稱為超音波。超音波式感測器從螢幕下方朝手指發出超音波，再量測反射回來的情形。脊線貼著表面，但谷線和表面之間有一點點空氣的空隙。這個差異會改變聲音反射的方式。</p>
+<p>Qualcomm的超音波式感測器「3D Sonic」，用在2019年Samsung的Galaxy S10系列。</p>
+<table>
+<thead><tr><th>方式</th><th>用什麼讀取</th><th>配置位置的例子</th></tr></thead>
+<tbody>
+<tr><td>電容式</td><td>電荷的累積</td><td>Home鍵、電源鍵</td></tr>
+<tr><td>光學式</td><td>螢幕光的反射</td><td>螢幕下方</td></tr>
+<tr><td>超音波式</td><td>聲音的反射</td><td>螢幕下方</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>分辨臉：平面的影像與立體的形狀</h2>
+<p>臉部辨識大致有2種做法。一種是用正面的一般相機拍下的影像來比對。這種做法不需要特別的零件，但影像是平面的。要和照片或螢幕上顯示的臉區分開來，需要另外下工夫。</p>
+<p>另一種是連臉的凹凸，也就是立體的形狀都量測的方法。Apple的Face ID就是這種方法。iPhone正面的上方，集中搭載了使用紅外線（人眼看不到的光）的零件。Apple稱之為TrueDepth相機。</p>
+<p>核心的零件有3個：用看不見的光照亮整張臉的零件、投射出許多看不見光點的零件（點陣投射器），以及拍下光點的紅外線相機。Apple支援頁面的說明是「數千個」光點，2017年發表iPhone X時則是「超過3萬個」。因為自己發光照明，在暗的地方也能使用。</p>
+<p>把光點投射在平坦的牆上，拍下來仍是固定的排列。投射在臉上時，在鼻子這種突出的地方和眼睛凹陷的地方，光點的位置會一點一點偏移。從這些偏移，就能知道每個位置的距離。這樣做出的臉的「距離地圖」，稱為深度圖。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" role="img"><title>投射在平面照片上的光點排列整齊，投射在立體的臉上的光點，會因為鼻子等凹凸而偏移。從偏移可以知道距離</title>
+<text x="170" y="22" text-anchor="middle">投射看不見的光點再拍攝</text>
+<rect x="14" y="44" width="148" height="190" rx="10" class="n"/>
+<rect x="178" y="44" width="148" height="190" rx="10" class="n"/>
+<rect x="34" y="66" width="108" height="146" rx="4" class="ok"/>
+<ellipse cx="252" cy="139" rx="54" ry="74" class="ox"/>
+<circle cx="44" cy="80" r="3.2" class="fa"/>
+<circle cx="66" cy="80" r="3.2" class="fa"/>
+<circle cx="88" cy="80" r="3.2" class="fa"/>
+<circle cx="110" cy="80" r="3.2" class="fa"/>
+<circle cx="132" cy="80" r="3.2" class="fa"/>
+<circle cx="44" cy="104" r="3.2" class="fa"/>
+<circle cx="66" cy="104" r="3.2" class="fa"/>
+<circle cx="88" cy="104" r="3.2" class="fa"/>
+<circle cx="110" cy="104" r="3.2" class="fa"/>
+<circle cx="132" cy="104" r="3.2" class="fa"/>
+<circle cx="44" cy="128" r="3.2" class="fa"/>
+<circle cx="66" cy="128" r="3.2" class="fa"/>
+<circle cx="88" cy="128" r="3.2" class="fa"/>
+<circle cx="110" cy="128" r="3.2" class="fa"/>
+<circle cx="132" cy="128" r="3.2" class="fa"/>
+<circle cx="44" cy="152" r="3.2" class="fa"/>
+<circle cx="66" cy="152" r="3.2" class="fa"/>
+<circle cx="88" cy="152" r="3.2" class="fa"/>
+<circle cx="110" cy="152" r="3.2" class="fa"/>
+<circle cx="132" cy="152" r="3.2" class="fa"/>
+<circle cx="44" cy="176" r="3.2" class="fa"/>
+<circle cx="66" cy="176" r="3.2" class="fa"/>
+<circle cx="88" cy="176" r="3.2" class="fa"/>
+<circle cx="110" cy="176" r="3.2" class="fa"/>
+<circle cx="132" cy="176" r="3.2" class="fa"/>
+<circle cx="44" cy="200" r="3.2" class="fa"/>
+<circle cx="66" cy="200" r="3.2" class="fa"/>
+<circle cx="88" cy="200" r="3.2" class="fa"/>
+<circle cx="110" cy="200" r="3.2" class="fa"/>
+<circle cx="132" cy="200" r="3.2" class="fa"/>
+<circle cx="231.2" cy="80" r="3.2" class="fa"/>
+<circle cx="254.6" cy="80" r="3.2" class="fa"/>
+<circle cx="275.2" cy="80" r="3.2" class="fa"/>
+<circle cx="208.6" cy="104" r="3.2" class="fa"/>
+<circle cx="234.5" cy="104" r="3.2" class="fa"/>
+<circle cx="260.8" cy="104" r="3.2" class="fa"/>
+<circle cx="278.5" cy="104" r="3.2" class="fa"/>
+<circle cx="296.6" cy="104" r="3.2" class="fa"/>
+<circle cx="209.7" cy="128" r="3.2" class="fa"/>
+<circle cx="238.1" cy="128" r="3.2" class="fa"/>
+<circle cx="270.6" cy="128" r="3.2" class="fa"/>
+<circle cx="282.1" cy="128" r="3.2" class="fa"/>
+<circle cx="297.7" cy="128" r="3.2" class="fa"/>
+<circle cx="209.6" cy="152" r="3.2" class="fa"/>
+<circle cx="238.8" cy="152" r="3.2" class="fa"/>
+<circle cx="273.2" cy="152" r="3.2" class="fa"/>
+<circle cx="282.8" cy="152" r="3.2" class="fa"/>
+<circle cx="297.6" cy="152" r="3.2" class="fa"/>
+<circle cx="208.5" cy="176" r="3.2" class="fa"/>
+<circle cx="235.3" cy="176" r="3.2" class="fa"/>
+<circle cx="264.1" cy="176" r="3.2" class="fa"/>
+<circle cx="279.3" cy="176" r="3.2" class="fa"/>
+<circle cx="296.5" cy="176" r="3.2" class="fa"/>
+<circle cx="231.3" cy="200" r="3.2" class="fa"/>
+<circle cx="255.4" cy="200" r="3.2" class="fa"/>
+<circle cx="275.3" cy="200" r="3.2" class="fa"/>
+<text x="88" y="262" text-anchor="middle">照片（平面）</text>
+<text x="252" y="262" text-anchor="middle">真正的臉</text>
+<text x="88" y="288" text-anchor="middle" class="m">光點不變</text>
+<text x="252" y="288" text-anchor="middle" class="a">光點偏移</text>
+<text x="170" y="320" text-anchor="middle">從偏移的大小，知道每個位置的距離</text>
+</svg><figcaption class="fig-cap">相機和投射光點的零件之間隔著一點距離，所以有凹凸時，拍到的光點位置就會偏移。省略的部分：實際的光點有數千個以上，排列也不是整齊的格子。因為是人眼看不到的光（紅外線），實際上看不到這些光點。</figcaption></figure>
+<p>知道立體的形狀後，就很難用平面的照片騙過。Face ID結合深度圖和紅外線影像，把臉的特徵轉成數字。</p>
+</section>
+
+<section>
+<h2>存起來的不是照片，而是「特徵的數字」</h2>
+<p>登錄時，手機不會直接儲存指紋或臉的影像。而是從影像中只取出比對需要的特徵，變成一串數字。這串數字稱為範本。比對時，也會把讀到的影像同樣轉成數字，再和範本比較。</p>
+<p>指紋常用的特徵，是脊線中斷的點和分岔成2條的點。美國國家標準暨技術研究院（NIST）的資料，也說明了用這些點的位置和方向來比對的方法。不過，各家手機實際用哪些特徵，大多沒有公開。</p>
+<p>Apple表示，Touch ID儲存的只是指紋的數學表示，不會儲存手指的影像。Apple的說明是，無法從儲存的資料重建原本的指紋影像。</p>
+<p>不過，也不能斷言特徵的數字就一定安全。有研究（2007年）顯示，能從標準格式的特徵點資料，做出很相似的指紋影像。而且指紋和臉不像密碼，外洩了也無法更換。因此，特徵的數字也會加密，保護起來不送到外面。</p>
+</section>
+
+<section>
+<h2>存放的地方：晶片中「受保護的區域」</h2>
+<p>範本的保管和比對，在手機晶片中特別建立的區域進行。一般的App，以及讓整支手機運作的基本軟體（作業系統，OS），都無法窺看裡面。iPhone把這個區域稱為Secure Enclave。</p>
+<p>根據Apple給開發者的資料，Secure Enclave是和其他部分隔離的安全專用運算電路。使用指紋或臉的App，收到的只有成功或失敗的答案。指紋的影像等資料，不會交給App。</p>
+<p>Secure Enclave位在負責手機運算的中心晶片之中（2013年的iPhone 5s是A7）。晶片的整體樣貌，在「<a href="{{home}}learn/chips-inside-a-smartphone/">手機裡有哪些半導體？</a>」中介紹。</p>
+<p>瞄準機密的攻擊，不只有使用軟體的方法。也有擾亂電源電壓，或打開晶片調查內部的方法。能承受這類物理攻擊的性質，稱為{{term:耐タンパ性|抗竄改性}}。Apple說明，Secure Enclave的運算電路刻意以較低的速度運作，以防範擾亂電源等的攻擊。</p>
+<aside class="analogy"><p class="analogy-h">用比喻來說</p><p>受保護的區域，就像在上鎖的房間裡批改考卷，只在外面貼出及格或不及格。考卷（範本）不會離開房間，外面的人只知道「及格還是不及格」。相似的地方是「內容不拿出來，只傳達結果」。</p><p class="analogy-limit"><strong>比喻的限制：</strong>房間裡是由人思考後判斷。晶片中則是由固定的程式，依分數和門檻值機械式地決定。另外，防護的強度取決於設計，並不是任何攻擊都絕對打不破的房間。</p></aside>
+<p>Android的官方資料也規定，讀到的原始影像和範本，都不能從隔離的環境外面看到。這種環境的代表是{{term:TEE(信頼できる実行環境)|TEE}}，中文稱為「可信執行環境」。</p>
+<p>建立TEE的機制中，廣泛使用的是Arm的{{term:TrustZone|TrustZone}}。它在1顆晶片中，切換使用一般的世界和受保護的世界。受保護世界的記憶體，一般的世界會被電路擋住，無法接近。</p>
+<p>儲存範本時，會用只有TEE知道的金鑰加密。Android的資料也要求，範本的檔案即使搬到別的裝置也無法使用。登錄的資料，只在那1台裝置上才有意義。存放金鑰的專用元件有什麼不同，在「<a href="{{home}}compare/tpm-vs-hsm-vs-secure-element/">TPM、HSM、安全元件的差異</a>」中比較。</p>
+</section>
+
+<section>
+<h2>2種錯誤</h2>
+<p>生物辨識的錯誤有2種。一種是把他人判斷為本人。這個比例稱為錯誤接受率，英文縮寫為FAR。</p>
+<p>另一種是明明是本人卻被拒絕。這個比例稱為錯誤拒絕率（FRR）。需要一再重新放手指時，就是發生了錯誤拒絕。把門檻值調嚴，錯誤接受率會下降，錯誤拒絕率則會上升。兩者是互相拉扯的關係。</p>
+<p>也有用假造物代替真的手指或臉來欺騙的攻擊。Android除了錯誤接受率，還會另外測試假造物通過的比例（SAR）。因為錯誤接受率是隨機選出的他人碰巧通過的比率，並不表示對假造物的抵抗力。Android依這個比例等，把生物辨識分成3個等級。最強的是等級3（Class 3）。</p>
+<p>App可以只接受等級3的生物辨識。因此依機型不同，有時臉部辨識可以解鎖，卻不能在部分App中使用。</p>
+</section>
+
+<section>
+<h2>從數字來看</h2>
+<p>下表列出各家公司公布的「他人碰巧通過的機率」，以及1次猜中PIN碼的機率。數值依據各資料在2026年時的記載。</p>
+<table>
+<thead><tr><th>情況</th><th>他人通過的機率（參考值）</th></tr></thead>
+<tbody>
+<tr><td>Touch ID（登錄1根手指）</td><td>低於5萬分之1</td></tr>
+<tr><td>Touch ID（登錄5根手指）</td><td>最高1萬分之1</td></tr>
+<tr><td>Face ID（登錄1張臉）</td><td>低於100萬分之1</td></tr>
+<tr><td>Face ID（也登錄另一種外觀）</td><td>約50萬分之1</td></tr>
+<tr><td>Android的標準（錯誤接受率）</td><td>5萬分之1</td></tr>
+<tr><td>1次猜中4位數的PIN碼</td><td>1萬分之1</td></tr>
+<tr><td>1次猜中6位數的PIN碼</td><td>100萬分之1</td></tr>
+</tbody>
+</table>
+<p>Apple的數值，是Apple自己估計的、隨機選出的1個人碰巧通過的機率。登錄的手指或外觀越多，比對的對象就越多，機率也會上升。Apple提醒，雙胞胎、長得很像的兄弟姊妹，以及未滿13歲的兒童，這個機率會比較高。因為兒童臉部的特徵可能還沒有發育完全。Apple建議，如果擔心就使用解鎖密碼。</p>
+<p>Android的5萬分之1，是隨機選出的他人通過的比率，也是所有等級共同的目標。等級的差異，主要取決於對假造物的抵抗力。</p>
+<p>PIN碼的數值，是數字隨機選擇時的計算結果。像生日這種容易猜到的PIN碼，會比表中的數值弱得多。</p>
+<p>失敗的次數也有上限。Apple規定，Face ID和Touch ID比對失敗5次，就會要求輸入解鎖密碼。他人無法一再嘗試，等待碰巧通過。</p>
+</section>
+
+<section>
+<h2>即使如此，仍需要PIN碼或解鎖密碼的原因</h2>
+<p>要使用生物辨識，必須先設定PIN碼或解鎖密碼。生物辨識不是解鎖密碼的替代品。它是省去每次輸入解鎖密碼的捷徑。</p>
+<p>第1個原因，是有些場合無法使用生物辨識。例如手指濕了、受傷了，或臉前面有東西擋住。Apple規定，在下面這些情況也會要求解鎖密碼。</p>
+<ul>
+<li>剛開機或重新啟動之後</li>
+<li>超過48小時沒有解鎖時</li>
+<li>比對失敗5次時</li>
+<li>6天半（156小時）沒有使用解鎖密碼，而且4小時沒有使用生物辨識時</li>
+</ul>
+<p>第2個原因是資料的加密。手機裡的照片和訊息，是用和解鎖密碼綁在一起的金鑰加密的（「<a href="{{home}}learn/what-is-encryption/">加密是什麼？</a>」）。重新啟動後一定要求解鎖密碼，也是這種防護的一部分。簡化來說，解鎖密碼先把金鑰打開一次，生物辨識則是之後繼續使用這把金鑰時的確認。</p>
+<p>第3個原因，是指紋和臉無法改變。必須另外準備外洩時可以更換的方法。</p>
+</section>
+
+<section>
+<h2>和通行金鑰的關係：指紋不會送到網站</h2>
+<p>越來越多服務可以用通行金鑰代替密碼登入。使用通行金鑰時，手機會為每個網站建立並持有私密金鑰。交給網站保管的，只有成對的、可以公開的金鑰（公開金鑰）。這個機制是以{{term:公開鍵暗号|公開金鑰加密}}為基礎。</p>
+<p>登入時，手機用私密金鑰製作簽章，送到網站。簽章是只有持有那把金鑰的裝置才做得出來的記號（{{term:デジタル署名|數位簽章}}）。而決定能不能使用私密金鑰的，就是指紋或臉的比對（也可以用PIN碼等代替）。比對通過後，裝置內的金鑰就可以使用。</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 404" role="img"><title>指紋或臉的資料在手機中比對，不會送到外面。通過後用私密金鑰製作簽章，送到網站的只有簽章</title>
+<rect x="70" y="8" width="200" height="44" rx="8" class="n"/>
+<text x="170" y="36" text-anchor="middle">感測器（手指、臉）</text>
+<line x1="170" y1="52" x2="170" y2="80" class="ln"/><polygon points="170,90 165,80 175,80" class="ink"/>
+<rect x="14" y="94" width="312" height="196" rx="10" class="dash"/>
+<text x="30" y="120" class="a">手機的晶片之中</text>
+<rect x="40" y="134" width="260" height="56" rx="8" class="ox"/>
+<text x="170" y="158" text-anchor="middle">和登錄的特徵數字</text>
+<text x="170" y="180" text-anchor="middle">比對是否相似</text>
+<line x1="170" y1="190" x2="170" y2="206" class="ln"/><polygon points="170,216 165,206 175,206" class="ink"/>
+<text x="182" y="208">通過的話</text>
+<rect x="40" y="218" width="260" height="56" rx="8" class="metal"/>
+<text x="170" y="242" text-anchor="middle">用私密金鑰</text>
+<text x="170" y="264" text-anchor="middle">製作簽章</text>
+<line x1="170" y1="290" x2="170" y2="320" class="ac"/><polygon points="170,332 163,318 177,318" class="fa"/>
+<text x="182" y="312">只有簽章</text>
+<rect x="70" y="334" width="200" height="44" rx="8" class="p"/>
+<text x="170" y="362" text-anchor="middle">網站（公開金鑰）</text>
+<text x="170" y="398" text-anchor="middle" class="m">指紋、臉的資料不會離開手機</text>
+</svg><figcaption class="fig-cap">用通行金鑰登入時的流程。手機解鎖時不會製作簽章，只把「是本人」的結果傳給作業系統。省略的部分：對網站每次送來的問題（挑戰）製作簽章。另外，通行金鑰的私密金鑰，也可能加密後同步到同一個人的其他裝置。</figcaption></figure>
+<p>業界團體FIDO聯盟說明，生物特徵的資訊和處理都留在裝置內，不會送到伺服器。伺服器知道的，只有本人確認成功這件事。即使網站的資料被偷，裡面也沒有指紋或臉的資料。</p>
+<p>也就是說，指紋和臉不是「給網站看的證明書」，而是「打開自己裝置裡金鑰的信號」。</p>
+</section>
+
+<section>
+<h2>常見的誤解</h2>
+<div class="myth"><p class="myth-q">誤解：手機裡存著指紋或臉的照片，也會送到廠商那裡</p><p>實際上，儲存的是用來比對的特徵數字（範本），在晶片中受保護的區域管理。Apple表示，Face ID的資料不會送到Apple，也不會包含在iCloud等備份中。因為登錄的畫面看起來像是在用相機拍攝，所以常被以為會留下照片。</p></div>
+<div class="myth"><p class="myth-q">誤解：設定了生物辨識，PIN碼簡單一點也沒關係</p><p>實際上，PIN碼或解鎖密碼，是重新啟動後或連續失敗時的最後防線。如果PIN碼是「0000」或生日，不管生物辨識多強，都可能從這裡被打開。正因為不再每次輸入，更要設定成不容易被猜到的號碼。</p></div>
+<div class="myth"><p class="myth-q">誤解：既然是「100萬分之1」，除了自己以外絕對沒人能打開</p><p>實際上，這個數值是隨機選出的1個人碰巧通過的機率。雙胞胎或長得很像的兄弟姊妹，機率會比較高。Google也針對Pixel的臉部辨識說明，長得很像的人有時可以打開。機率雖然小，但不是零。</p></div>
+</section>
+
+<section>
+<h2>進一步學習</h2>
+<ul>
+<li>個人電腦和伺服器的CPU保護機密的方式：{{term:エンクレーブ|飛地}}</li>
+<li>從開機的瞬間就只執行正確的軟體：<a href="{{home}}compare/secure-boot-vs-measured-boot/">安全開機與量測開機的差異</a></li>
+<li>金鑰和簽章的基礎：<a href="{{home}}learn/what-is-encryption/">加密是什麼？對稱式加密與公開金鑰加密的原理</a></li>
+<li>用數字確認2種錯誤：<a href="{{home}}tools/confusion-matrix-calculator/">混淆矩陣計算工具</a></li>
+</ul>
+</section>
