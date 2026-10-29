@@ -231,6 +231,8 @@ const pagePath = (L, name) => (name === 'index' ? L.path : `${L.path}${name}/`);
 const sitemap = [];
 // hreflang の後始末用: noindex のページと、hreflang を出したページ(出力先と相手のパス)
 const noindexPaths = new Set();
+// 問題ページを検索に出す言語(ほかの言語の問題ページは noindex にしてサイトマップからも外す)
+const INDEX_Q_LANGS = ['ja', 'en', 'zh-hant'];
 const hreflangPages = [];
 for (const L of langs) buildLang(L);
 // hreflang の相手が noindex のページ(その言語では問題に出てこない用語など)なら、その相手を外す。
@@ -945,6 +947,8 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
       const related = [...new Set([1, 2, 3, 4, 5].map(k => pqs[(n + k) % pqs.length]))].filter(r => r !== q);
       page({
         path: qUrl(c.id, q.id),
+        // 問題ページは機械的に数が多いので、検索に出すのは日本語・英語・繁体字だけにする(2026-10-26 の検索表示の急落を受けて、薄いページの量を減らす)
+        noindex: !INDEX_Q_LANGS.includes(code),
         alt: Object.fromEntries(langs.filter(x => hasQ[x.code].has(q.id)).map(x => [x.code, qUrl(c.id, q.id, x)])),
         fallback: x => (x.code === defLang || catByLang[x.code][c.id] ? `${x.path}c/${c.id}/` : x.path), // 分野の訳がない言語ではトップへ
         title: qTitle(c, q),
