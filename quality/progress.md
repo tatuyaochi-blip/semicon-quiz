@@ -34,7 +34,7 @@
 | 9 | 酸化・拡散 × 用語解説・比較 | 15+2 | 659回、平均17.5位 | 検証済み(2026-11-02) |
 | 10 | 配線プロセス × 用語解説・比較 | 18+2 | 496回、平均13.6位 | 検証済み(2026-11-02) |
 | 11 | PN接合・ダイオード × 用語解説・比較 | 13+3 | 570回、平均18.3位、基礎分野 | 検証済み(2026-11-02) |
-| 12 | 計算ツール T3 回路(1) | 5本 | P0 の危険。回路の基本の計算 | 未確認 |
+| 12 | 計算ツール T3 回路(1) | 5本 | P0 の危険。回路の基本の計算 | 検証済み(2026-11-02) |
 | 13 | やさしい解説 L1 半導体の基本・作り方 | 22本 | 初学者向けの入口の記事 | 未確認 |
 | 14〜 | 残りの区画 | | 下の分野の表の順(用語の表示回数の多い順)を基本に、計算ツール・記事の区画をはさむ | 未確認 |
 
@@ -44,7 +44,7 @@
 |---|---|---|
 | T1 デバイス | mosfet-iv, mosfet-vth, bjt-iv, pn-junction, intrinsic-carrier | 検証済み(2026-11-02、テスト tools/tests/device-tools.test.mjs) |
 | T2 物性・プロセス | resistivity, bandgap-wavelength, oxidation, litho, die-yield | 検証済み(2026-11-02、テスト tools/tests/process-tools.test.mjs) |
-| T3 回路(1) | divider, rc, led-resistor, resistor-color, series-parallel | 未確認 |
+| T3 回路(1) | divider, rc, led-resistor, resistor-color, series-parallel | 検証済み(2026-11-02、テスト tools/tests/circuit-tools.test.mjs) |
 | T4 回路(2) | opamp, dbm, jitter, adc-snr, dcdc | 未確認 |
 | T5 回路・実装 | interconnect-rc, pdn, thermal, cmos-power, bode | 未確認 |
 | T6 論理・制御 | sta, kmap, logic-sim, fsm, pid | 未確認 |
@@ -160,6 +160,13 @@
 ## 区画ごとの記録
 
 (区画を閉じるたびに、ここに「確認範囲・修正・検証」を追記する)
+
+### 12. 計算ツール T3 回路(1)(2026-11-02)
+
+- 確認範囲: 5本中5本。式(分圧とテブナン等価、τ = RC・fc = 1/(2πRC)、R = (Vs − n·Vf)/If と E24 の切り上げ、IEC 60062 の色と許容差、直列・並列の式と E24 の2本の探索)と、各ページの計算例をすべて照合
+- 修正: 計算の部分を関数として書き出し(calc・decode・code・nearest)、テスト5本を追加。画面の動きは変えていない(日・英のページをブラウザで開いて表示と入力を確認)
+- 修正(audit.md の C-001): 合成抵抗ツールの「最悪でも約0.33%」を「約0.3%」に(3言語)。100 Ω〜100 kΩ を3桁の値で調べると、誤差0.1%以下が92%、最悪0.30%
+- 検証: ビルド・npm test(テスト5本を含む)・check:site がすべて通る
 
 ### 11. PN接合・ダイオード × 用語解説・比較(2026-11-02)
 
