@@ -3,19 +3,25 @@
 import { si, eUp, reader } from './eng.js';
 const form = document.getElementById('led-form');
 const out = k => document.querySelector(`[data-out="${k}"]`);
-const val = reader(form);
 const RATINGS = [0.125, 0.25, 0.5, 1, 2];
 
-function update() {
-  const vs = val('vs'), vf = val('vf', 0), ia = val('ma', 1e-6) / 1000, n = Math.max(1, Math.round(val('n', 1)));
+// 電源 vs・順方向電圧 vf(V)、電流 ia(A)、直列の個数 n。rating は消費電力の2倍以上の定格(W、なければ undefined)
+export function calc({ vs, vf, ia, n = 1 }) {
   const drop = vs - n * vf;
   const ok = drop > 0;
-  document.getElementById('led-warn').hidden = ok;
   const r = ok ? drop / ia : NaN;
   const re = eUp(r);
   const ie = drop / re;
   const pr = ie * ie * re;
-  const rating = RATINGS.find(w => w >= 2 * pr);
+  return { ok, r, re, ie, pr, rating: RATINGS.find(w => w >= 2 * pr), pled: ok ? vf * ie : NaN };
+}
+
+if (form) {
+const val = reader(form);
+function update() {
+  const { ok, r, re, ie, pr, rating } = calc({ vs: val('vs'), vf: val('vf', 0), ia: val('ma', 1e-6) / 1000, n: Math.max(1, Math.round(val('n', 1))) });
+  const vf = val('vf', 0);
+  document.getElementById('led-warn').hidden = ok;
   out('r').textContent = si(r, 'Ω');
   out('re').textContent = si(re, 'Ω');
   out('ie').textContent = si(ie, 'A');
@@ -26,3 +32,4 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+}

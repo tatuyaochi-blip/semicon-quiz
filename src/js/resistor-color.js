@@ -3,7 +3,6 @@
 import { si, num, reader } from './eng.js';
 const form = document.getElementById('rcc-form');
 const out = k => document.querySelector(`[data-out="${k}"]`);
-const val = reader(form);
 const svg = document.getElementById('rcc-body');
 let names = {};
 try { names = JSON.parse(form.dataset.colors); } catch {}
@@ -25,8 +24,13 @@ function draw(bands) {
   svg.innerHTML = `<line x1="0" y1="50" x2="300" y2="50" stroke="#999" stroke-width="4"/><rect x="40" y="22" width="220" height="56" rx="20" fill="#e8d3a8" stroke="#0003"/>${rects}`;
 }
 
+// 色の並び(数字の帯・乗数・許容差)から、抵抗値(Ω)と許容差(%)
+export function decode(digits, mul, tol) {
+  return { r: Number(digits.map(c => DIGIT[c]).join('')) * MULT[mul], tol: TOL[tol] };
+}
+
 // 逆引き: 有効数字 n 桁の色(丸めた値も返す)
-function code(r, n) {
+export function code(r, n) {
   if (!(r >= 0.01)) return null;
   let e = Math.floor(Math.log10(r)) - (n - 1);
   let m = Math.round(r / 10 ** e);
@@ -36,12 +40,14 @@ function code(r, n) {
   return { colors: [...digits, byExp[e]], value: m * 10 ** e };
 }
 
+if (form) {
+const val = reader(form);
 function update() {
   const five = form.elements.bands.value === '5';
   form.querySelector('[data-band3]').hidden = !five;
   const d = ['d1', 'd2', ...(five ? ['d3'] : [])].map(k => form.elements[k].value);
   const mul = form.elements.mul.value, tol = form.elements.tol.value;
-  const r = Number(d.map(c => DIGIT[c]).join('')) * MULT[mul];
+  const { r } = decode(d, mul, tol);
   out('value').textContent = si(r, 'Ω', 4);
   out('tol').textContent = `±${num(TOL[tol])}%`;
   out('range').textContent = `${si(r * (1 - TOL[tol] / 100), 'Ω', 4)} – ${si(r * (1 + TOL[tol] / 100), 'Ω', 4)}`;
@@ -55,3 +61,4 @@ function update() {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+}
