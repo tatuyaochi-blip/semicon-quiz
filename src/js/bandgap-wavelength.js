@@ -4,13 +4,13 @@ const form = document.getElementById('bg-form');
 const lang = document.documentElement.lang || 'en';
 const fmt = (x, d = 4) => (Number.isFinite(x) ? x.toLocaleString(lang, { maximumSignificantDigits: d }) : '–');
 const out = k => document.querySelector(`[data-out="${k}"]`);
-const HC = 1239.84; // eV·nm
+export const HC = 1239.84; // eV·nm(λ [nm] = HC / Eg [eV])
 const band = document.getElementById('bg-band');
 let names = {};
-try { names = JSON.parse(band.dataset.labels); } catch {}
+try { names = JSON.parse(band?.dataset.labels); } catch {}
 // 材料のプリセット: 選択肢の value がバンドギャップ (eV)
-const sel = form.elements.preset;
-sel.addEventListener('change', () => {
+const sel = form?.elements.preset;
+sel?.addEventListener('change', () => {
   if (sel.value === '') return;
   form.elements.eg.value = sel.value;
   form.elements.lambda.value = Number((HC / Number(sel.value)).toPrecision(4));
@@ -67,6 +67,9 @@ function update(e) {
   sw.hidden = !c;
   if (c) sw.style.background = c;
 }
-form.addEventListener('input', e => { if (e.target !== sel) update(e); });
-form.addEventListener('submit', e => e.preventDefault());
-update();
+// 画面がないとき(テストで計算だけを読み込むとき)は、画面の処理をしない
+if (form) {
+  form.addEventListener('input', e => { if (e.target !== sel) update(e); });
+  form.addEventListener('submit', e => e.preventDefault());
+  update();
+}

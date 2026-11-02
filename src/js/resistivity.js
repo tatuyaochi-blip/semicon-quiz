@@ -55,6 +55,9 @@ function update(e) {
     series: [{ points: curve('n'), cls: type === 'n' ? 'ac' : 'dash' }, { points: curve('p'), cls: type === 'p' ? 'ac' : 'dash' }],
     marks: ok && N >= 1e13 && N <= 1e19 ? [[N, r, `${fmt(r)} Ω·cm`]] : [] });
 }
-form.addEventListener('input', update);
-form.addEventListener('submit', e => e.preventDefault());
-update();
+// 画面がないとき(テストで計算だけを読み込むとき)は、画面の処理をしない
+if (form) {
+  form.addEventListener('input', update);
+  form.addEventListener('submit', e => e.preventDefault());
+  update();
+}
