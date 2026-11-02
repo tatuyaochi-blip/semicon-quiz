@@ -79,7 +79,7 @@ function update() {
     let tpl = {};
     try { tpl = JSON.parse(note.dataset.tpl); } catch {}
     note.textContent = (r.region === 'active' ? tpl.active ?? '' : tpl.sat ?? '')
-      .replace('{d}', si(1 / r.ro, 'A')).replace('{line}', si(line(p, p.ib * 1e-6, p.vce), 'A'));
+      .replace('{d}', `${si(1 / r.ro, 'A')}/V`).replace('{line}', si(line(p, p.ib * 1e-6, p.vce), 'A'));
   }
   draw(p, r);
 }

@@ -40,8 +40,13 @@ function update() {
   if (note) {
     const c2 = compute({ ...p, w: p.w * Math.SQRT2, h: p.h * Math.SQRT2 });
     const ratio = c2.negbin.cost / c.negbin.cost;
-    note.textContent = Number.isFinite(c.negbin.cost) && Number.isFinite(ratio)
-      ? note.dataset.tpl.replace('{good}', fmt(c.negbin.good)).replace('{cost}', fmt(c.negbin.cost, 2)).replace('{ratio}', fmt(ratio, 1))
+    let tpl = {};
+    try { tpl = JSON.parse(note.dataset.tpl); } catch {}
+    // 面積を2倍にしたチップが1回の露光の範囲(26×33 mm = 858 mm²)に収まらないときは、倍率の文は出さない
+    const fits = 2 * p.w * p.h <= 858;
+    note.textContent = Number.isFinite(c.negbin.cost)
+      ? [tpl.main.replace('{good}', fmt(c.negbin.good)).replace('{cost}', fmt(c.negbin.cost, 2)),
+        fits && Number.isFinite(ratio) ? tpl.ratio.replace('{ratio}', fmt(ratio, 1)) : ''].filter(Boolean).join(/^(ja|zh)/.test(lang) ? '' : ' ')
       : '';
   }
   draw();

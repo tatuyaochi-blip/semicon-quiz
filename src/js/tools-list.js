@@ -31,6 +31,8 @@ filter?.addEventListener('input', () => {
       if (hit) n++;
     }
     sec.hidden = !n;
+    const count = sec.querySelector('[data-count]');
+    if (count) count.textContent = n;
     shown += n;
   }
   if (none) none.hidden = shown > 0;
