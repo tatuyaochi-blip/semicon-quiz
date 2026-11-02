@@ -57,6 +57,9 @@ function update() {
     series: ['ge', 'si', 'gaas'].map(m => ({ points: curve(m), cls: m === v.mat ? 'ac' : 'dash' })),
     marks: ok && v.t >= 200 && v.t <= 850 ? [[v.t, r.ni, `${big(r.ni)} cm⁻³`]] : [] });
 }
-form.addEventListener('input', update);
-form.addEventListener('submit', e => e.preventDefault());
-update();
+// 画面がないとき(テストで計算だけを読み込むとき)は、画面の処理をしない
+if (form) {
+  form.addEventListener('input', update);
+  form.addEventListener('submit', e => e.preventDefault());
+  update();
+}

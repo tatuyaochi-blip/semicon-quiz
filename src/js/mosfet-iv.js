@@ -1,4 +1,5 @@
 // MOSFETの電流-電圧特性のページ。長チャネルの2乗則にチャネル長変調を加えたモデルで、ID–VDS 特性の曲線群と動作点を描く
+import { initSweep } from './sweep.js';
 const form = document.getElementById('iv-form');
 const svg = document.getElementById('iv-chart');
 const lang = document.documentElement.lang || 'en';
@@ -65,16 +66,18 @@ function draw(p, iOp) {
     + `<text x="${x(Math.min(p.vds, vmax)) + 9}" y="${y(iOp) + 16}" font-size="14" fill="var(--ng)">${labels.op ?? 'operating point'}</text>`;
 }
 
-form.addEventListener('input', update);
-form.addEventListener('submit', e => e.preventDefault());
-update();
+// 画面がないとき(テストで計算だけを読み込むとき)は、画面の処理をしない
+if (form) {
+  form.addEventListener('input', update);
+  form.addEventListener('submit', e => e.preventDefault());
+  update();
 
-// グラフで見る: VGS や W/L を変えたときのドレイン電流・gm
-import { initSweep } from './sweep.js';
-initSweep({
-  form, inputs: ['vgs', 'vds', 'wl', 'vth', 'kp', 'lambda'], outputs: ['id', 'gm', 'ro'], defaults: { x: 'vgs', y: 'id' }, ranges: { vgs: [0, 3.3] },
-  calc: p => {
-    const i = id(p, p.vgs, p.vds), vov = p.vgs - p.vth, sat = vov > 0 && p.vds >= vov;
-    return { id: i * 1e3, gm: sat ? ((2 * i) / vov) * 1e3 : vov > 0 ? p.kp * 1e-6 * p.wl * p.vds * 1e3 : 0, ro: sat && p.lambda > 0 && i > 0 ? 1 / (p.lambda * i) / 1e3 : NaN };
-  },
-});
+  // グラフで見る: VGS や W/L を変えたときのドレイン電流・gm
+  initSweep({
+    form, inputs: ['vgs', 'vds', 'wl', 'vth', 'kp', 'lambda'], outputs: ['id', 'gm', 'ro'], defaults: { x: 'vgs', y: 'id' }, ranges: { vgs: [0, 3.3] },
+    calc: p => {
+      const i = id(p, p.vgs, p.vds), vov = p.vgs - p.vth, sat = vov > 0 && p.vds >= vov;
+      return { id: i * 1e3, gm: sat ? ((2 * i) / vov) * 1e3 : vov > 0 ? p.kp * 1e-6 * p.wl * p.vds * 1e3 : 0, ro: sat && p.lambda > 0 && i > 0 ? 1 / (p.lambda * i) / 1e3 : NaN };
+    },
+  });
+}
