@@ -35,6 +35,15 @@ function update() {
     out(`${m}-good`).textContent = fmt(c[m].good);
     out(`${m}-cost`).textContent = fmt(c[m].cost, 2);
   }
+  // 結果の読み方: 負の二項モデルの良品数とコスト、同じ縦横比で面積を2倍にしたときのコストの倍率
+  const note = out('note');
+  if (note) {
+    const c2 = compute({ ...p, w: p.w * Math.SQRT2, h: p.h * Math.SQRT2 });
+    const ratio = c2.negbin.cost / c.negbin.cost;
+    note.textContent = Number.isFinite(c.negbin.cost) && Number.isFinite(ratio)
+      ? note.dataset.tpl.replace('{good}', fmt(c.negbin.good)).replace('{cost}', fmt(c.negbin.cost, 2)).replace('{ratio}', fmt(ratio, 1))
+      : '';
+  }
   draw();
 }
 

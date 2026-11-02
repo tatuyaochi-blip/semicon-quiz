@@ -15,3 +15,23 @@ if (root) {
   const n = fill('fav', fav) + fill('recent', recentTools().filter(id => !fav.includes(id)));
   root.hidden = !n;
 }
+
+// 絞り込み: 入力した語をすべて含むカードだけを残し、カードが1つもない分野は見出しごと隠す
+const filter = document.querySelector('[data-tools-filter]');
+const none = document.querySelector('[data-tools-none]');
+const norm = s => s.toLowerCase().normalize('NFKC');
+filter?.addEventListener('input', () => {
+  const words = norm(filter.value).split(/\s+/).filter(Boolean);
+  let shown = 0;
+  for (const sec of document.querySelectorAll('.tools-group')) {
+    let n = 0;
+    for (const a of sec.querySelectorAll('.tool-card')) {
+      const hit = words.every(w => norm(a.textContent).includes(w));
+      a.hidden = !hit;
+      if (hit) n++;
+    }
+    sec.hidden = !n;
+    shown += n;
+  }
+  if (none) none.hidden = shown > 0;
+});

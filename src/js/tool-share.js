@@ -32,6 +32,35 @@ if (fields.length) {
   sync();
 }
 
+// 例の条件のボタン: 値を入力欄に入れて計算し直す。押した例は手で値を変えるまで選択中の表示にする
+const presetBtns = form ? [...form.querySelectorAll('[data-preset]')] : [];
+const presetOf = btn => { try { return JSON.parse(btn.dataset.preset); } catch { return {}; } };
+const matches = v => Object.entries(v).every(([k, val]) => {
+  const el = form.elements[k];
+  return !el || (el.type === 'checkbox' ? el.checked === !!val : Number(el.value) === Number(val) || el.value === String(val));
+});
+const markPresets = () => presetBtns.forEach(b => b.setAttribute('aria-pressed', String(matches(presetOf(b)))));
+for (const btn of presetBtns) {
+  btn.addEventListener('click', () => {
+    for (const [k, val] of Object.entries(presetOf(btn))) {
+      const el = form.elements[k];
+      if (!el) continue;
+      if (el.type === 'checkbox') el.checked = !!val; else el.value = String(val);
+    }
+    form.dispatchEvent(new Event('input', { bubbles: true }));
+    form.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+if (presetBtns.length) {
+  form.addEventListener('input', () => setTimeout(markPresets));
+  form.addEventListener('change', () => setTimeout(markPresets));
+  markPresets();
+}
+
+// スマートフォンでは説明文を3行に縮めて表示し、押すと全文を開く(CSS の line-clamp と組み合わせる)
+const lead = document.querySelector('.tool-hero .lead');
+lead?.addEventListener('click', () => lead.classList.toggle('open'));
+
 async function copy(text) {
   try { await navigator.clipboard.writeText(text); return true; } catch {}
   const ta = document.createElement('textarea');
