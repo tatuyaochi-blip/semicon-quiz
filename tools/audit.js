@@ -53,7 +53,7 @@ for (const f of files) {
   // 解説の中の「NaN」「undefined reference」、シェルの ${f%.log} などは正しい内容なので数えない。
   // コード・リンク・用語名の欄を除き、要素の中身がその語だけのもの(埋め込みの失敗)と [object Object] だけを見る
   const body = html.replace(/<(script|style|pre|code)\b[\s\S]*?<\/\1>/g, '');
-  const broken = [...body.matchAll(/<([a-z0-9]+)\b[^>]*>\s*(undefined|NaN|null)\s*</g)].filter(m => !['a', 'span'].includes(m[1])).map(m => m[2])
+  const broken = [...body.matchAll(/<([a-z0-9]+)\b[^>]*>\s*(undefined|NaN|null)\s*</g)].filter(m => !['a', 'span', 'abbr'].includes(m[1])) // <abbr>NaN</abbr> は略語辞典の正しい見出し.map(m => m[2])
     .concat(body.replace(/<[^>]+>/g, ' ').match(/\[object Object\]/g) ?? []);
   pages.set(rel, { rel, lang, type, field, noindex, canonical, hreflang, links, imgNoAlt, broken });
 }
