@@ -3,6 +3,15 @@
 import { si, num, reader } from './eng.js';
 const form = document.getElementById('db-form');
 const out = k => document.querySelector(`[data-out="${k}"]`);
+// dBm と負荷抵抗 r(Ω)から、電力・dBW・実効電圧・ピークtoピーク電圧(正弦波)・dBµV
+export function fromDbm(dbm, r = 50) {
+  const p = 10 ** (dbm / 10) / 1000, vrms = Math.sqrt(p * r);
+  return { p, dbw: dbm - 30, vrms, vpp: vrms * 2 * Math.SQRT2, dbuv: 20 * Math.log10(vrms / 1e-6) };
+}
+// dB から電力比と電圧比
+export const ratios = db => ({ pr: 10 ** (db / 10), vr: 10 ** (db / 20) });
+
+if (form) {
 const val = reader(form);
 
 function update(e) {
@@ -16,18 +25,17 @@ function update(e) {
     dbm = val('dbm');
     mEl.value = Number((10 ** (dbm / 10)).toPrecision(4));
   }
-  const p = 10 ** (dbm / 10) / 1000;
-  const r = val('r', 1e-9);
-  const vrms = Math.sqrt(p * r);
+  const { p, dbw, vrms, vpp, dbuv } = fromDbm(dbm, val('r', 1e-9));
   out('w').textContent = si(p, 'W', 4);
-  out('dbw').textContent = Number.isFinite(dbm) ? `${num(dbm - 30, 5)} dBW` : '–';
+  out('dbw').textContent = Number.isFinite(dbm) ? `${num(dbw, 5)} dBW` : '–';
   out('vrms').textContent = si(vrms, 'V', 4);
-  out('vpp').textContent = si(vrms * 2 * Math.SQRT2, 'V', 4);
-  out('dbuv').textContent = Number.isFinite(vrms) ? `${num(20 * Math.log10(vrms / 1e-6), 5)} dBµV` : '–';
-  const db = val('db');
-  out('pr').textContent = `${num(10 ** (db / 10), 4)}×`;
-  out('vr').textContent = `${num(10 ** (db / 20), 4)}×`;
+  out('vpp').textContent = si(vpp, 'V', 4);
+  out('dbuv').textContent = Number.isFinite(vrms) ? `${num(dbuv, 5)} dBµV` : '–';
+  const { pr, vr } = ratios(val('db'));
+  out('pr').textContent = `${num(pr, 4)}×`;
+  out('vr').textContent = `${num(vr, 4)}×`;
 }
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+}
