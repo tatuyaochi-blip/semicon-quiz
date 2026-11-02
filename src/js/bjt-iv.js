@@ -5,7 +5,14 @@ import { initSweep } from './sweep.js';
 const form = document.getElementById('bjt-form');
 const svg = document.getElementById('bjt-chart');
 const lang = document.documentElement.lang || 'en';
-const fmt = (x, d = 2) => (Number.isFinite(x) ? x.toLocaleString(lang, { maximumFractionDigits: d }) : '–');
+const fmt = (x, d = 2) => (Number.isFinite(x) ? x.toLocaleString(lang, { maximumFractionDigits: d }).replace('-', '−') : '–');
+// 有効数字3桁で、大きさに合う接頭辞(n・µ・m・k・M)を付ける
+const PRE = [[1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+const si = (x, unit) => {
+  if (!Number.isFinite(x)) return '–';
+  const [f, pre] = PRE.find(([f]) => Math.abs(x) >= f * 0.9995) ?? PRE[PRE.length - 1];
+  return `${Number((x / f).toPrecision(3)).toLocaleString(lang, { maximumFractionDigits: 3 }).replace('-', '−')} ${pre}${unit}`;
+};
 const out = k => document.querySelector(`[data-out="${k}"]`);
 let labels = {};
 try { labels = JSON.parse(svg?.dataset.labels ?? '{}'); } catch {}
@@ -18,7 +25,8 @@ export const ACTIVE = 0.95;
 const read = () => Object.fromEntries(['beta', 'va', 'ib', 'vce', 'vmax'].map(k => {
   const el = form.elements[k];
   const v = Number(el.value);
-  return [k, Number.isFinite(v) && v > 0 ? v : Number(el.defaultValue)];
+  // VCE だけは 0 も受け付ける(ほかは正の値)
+  return [k, Number.isFinite(v) && (k === 'vce' ? v >= 0 : v > 0) ? v : Number(el.defaultValue)];
 }));
 
 // ベース電流 ib (A) とコレクタ-エミッタ間電圧 vce (V) から VBE を二分法で求め、コレクタ電流 (A) を返す
@@ -48,8 +56,10 @@ export function point(p) {
   const { ic: i, vbe } = solve(p, ib, p.vce);
   const region = !(ib > 0) ? 'cutoff' : i >= ACTIVE * line(p, ib, p.vce) ? 'active' : 'sat';
   const act = region === 'active';
-  // 小信号: gm = IC/VT、ro = (VA + VCE)/IC(よく使う近似は VA/IC)、真性利得 gm·ro
-  const gm = act ? i / VT : NaN, ro = act ? (p.va + p.vce) / i : NaN;
+  // 小信号: gm = IC/VT。ro は IC–VCE 曲線の傾きの逆数を数値微分で求める(能動領域の奥では (VA + VCE)/IC に一致し、
+  // 飽和の境目のすぐ上では曲線がまだ曲がっているので、それより小さくなる)。真性利得は gm·ro
+  const h = 1e-4, v0 = Math.max(p.vce - h, 0);
+  const gm = act ? i / VT : NaN, ro = act ? (p.vce + h - v0) / (ic(p, ib, p.vce + h) - ic(p, ib, v0)) : NaN;
   return { region, ic: i, vbe, hfe: i / ib, gm, ro, gain: gm * ro };
 }
 
@@ -57,11 +67,11 @@ function update() {
   const p = read();
   const r = point(p);
   out('region').textContent = labels[r.region] ?? r.region;
-  out('ic').textContent = `${fmt(r.ic * 1e3, 3)} mA`;
+  out('ic').textContent = si(r.ic, 'A');
   out('vbe').textContent = `${fmt(r.vbe, 3)} V`;
   out('hfe').textContent = fmt(r.hfe, 1);
-  out('gm').textContent = Number.isFinite(r.gm) ? `${fmt(r.gm * 1e3, 1)} mS` : '–';
-  out('ro').textContent = Number.isFinite(r.ro) ? `${fmt(r.ro / 1e3, 1)} kΩ` : '–';
+  out('gm').textContent = si(r.gm, 'S');
+  out('ro').textContent = si(r.ro, 'Ω');
   out('gain').textContent = Number.isFinite(r.gain) ? `${fmt(r.gain, 0)} (${fmt(20 * Math.log10(r.gain), 1)} dB)` : '–';
   draw(p, r);
 }
@@ -83,28 +93,33 @@ function draw(p, r) {
   const ticks = n => Array.from({ length: n + 1 }, (_, k) => k / n);
   // 線と重なる文字は、背景色の縁取りで読みやすくする
   const halo = ' paint-order="stroke" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round"';
-  const xt = ext ? [-p.va, -p.va / 2, 0, vmax / 2, vmax] : ticks(5).map(f => vmax * f);
-  const grid = xt.map(v => `<line x1="${x(v)}" y1="${T}" x2="${x(v)}" y2="${B}" stroke="var(--border)"/>
-    <text x="${x(v)}" y="${B + 16}" font-size="14" fill="var(--muted)" text-anchor="middle">${fmt(v, 1)}</text>`).join('')
+  // 横軸の目盛り。延長線の表示中は、右端から順に、前の目盛りと 32px 以上離れたものだけ数字を出す
+  const xt = ext ? [vmax, vmax / 2, 0, -p.va / 2, -p.va] : ticks(5).map(f => vmax * f);
+  let last = Infinity;
+  const xl = xt.map(v => { const ok = !ext || last - x(v) >= 32; if (ok) last = x(v); return ok; });
+  // 縦軸の単位は電流の大きさに合わせる(mA・µA・nA)
+  const [iu, iname] = imax >= 1e-3 ? [1e3, 'mA'] : imax >= 1e-6 ? [1e6, 'µA'] : [1e9, 'nA'];
+  const grid = xt.map((v, k) => `<line x1="${x(v)}" y1="${T}" x2="${x(v)}" y2="${B}" stroke="var(--border)"/>`
+    + (xl[k] ? `<text x="${x(v)}" y="${B + 16}" font-size="14" fill="var(--muted)" text-anchor="middle">${fmt(v, 1)}</text>` : '')).join('')
     + ticks(4).map(f => `<line x1="${L}" y1="${y(imax * f)}" x2="${R}" y2="${y(imax * f)}" stroke="var(--border)"/>
-    <text x="${L - 6}" y="${y(imax * f) + 4}" font-size="14" fill="var(--muted)" text-anchor="end">${fmt(imax * f * 1e3, 2)}</text>`).join('');
-  // 延長線: 能動領域の直線を −VA まで伸ばす
-  const lines = ext ? ibs.map(ib => `<line x1="${x(-p.va)}" y1="${y(0)}" x2="${x(vmax)}" y2="${y(line(p, ib, vmax))}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 4"/>`).join('')
+    <text x="${L - 6}" y="${y(imax * f) + 4}" font-size="14" fill="var(--muted)" text-anchor="end">${fmt(imax * f * iu, 2)}</text>`).join('');
+  // 延長線: 能動領域の直線を −VA まで伸ばす(飽和の境目の破線と区別するため、色付きの点線)
+  const lines = ext ? ibs.map(ib => `<line x1="${x(-p.va)}" y1="${y(0)}" x2="${x(vmax)}" y2="${y(line(p, ib, vmax))}" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="1 4" stroke-linecap="round" opacity="0.7"/>`).join('')
     + `<line x1="${x(0)}" y1="${T}" x2="${x(0)}" y2="${B}" stroke="var(--text)" stroke-width="1"/>`
     + `<circle cx="${x(-p.va)}" cy="${y(0)}" r="5" fill="var(--accent)"/>`
     + `<text x="${x(-p.va) + 8}" y="${y(0) - 10}" font-size="14" fill="var(--accent)"${halo}>−VA = −${fmt(p.va, 1)} V</text>` : '';
   const vop = Math.min(p.vce, vmax);
-  // 動作点の文字は、右端に近いときは点の左に置く
-  const opLeft = x(vop) > R - 130;
+  // 動作点の文字は、右端に近いときは点の左に、下端に近いときは点の上に置く
+  const opLeft = x(vop) > R - 130, opUp = y(r.ic) > B - 30;
   svg.innerHTML = grid + lines
     + `<text x="${(L + R) / 2}" y="${H - 6}" font-size="15" fill="var(--text)" text-anchor="middle">VCE (V)</text>`
-    + `<text x="14" y="${(T + B) / 2}" font-size="15" fill="var(--text)" text-anchor="middle" transform="rotate(-90 14 ${(T + B) / 2})">IC (mA)</text>`
+    + `<text x="14" y="${(T + B) / 2}" font-size="15" fill="var(--text)" text-anchor="middle" transform="rotate(-90 14 ${(T + B) / 2})">IC (${iname})</text>`
     + `<path d="${edge}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>`
     + ibs.map((ib, k) => `<path d="${path(ib)}" fill="none" stroke="var(--accent)" stroke-width="${k === 4 ? 3 : 1.5}" opacity="${k === 4 ? 1 : 0.55}"/>
-      <text x="${R - 4}" y="${y(ic(p, ib, vmax)) - 5}" font-size="14" fill="var(--muted)" text-anchor="end"${halo}>IB = ${fmt(ib * 1e6, 1)} µA</text>`).join('')
+      <text x="${R - 4}" y="${y(ic(p, ib, vmax)) - 5}" font-size="14" fill="var(--muted)" text-anchor="end"${halo}>IB = ${si(ib, 'A')}</text>`).join('')
     + `<circle cx="${x(vop)}" cy="${y(r.ic)}" r="6" fill="var(--ng)" stroke="var(--surface)" stroke-width="2"/>`
     // 延長線の表示中は横軸が縮むので、文字は出さず点だけにする
-    + (ext ? '' : `<text x="${x(vop) + (opLeft ? -9 : 9)}" y="${y(r.ic) + 18}" font-size="14" fill="var(--ng)" text-anchor="${opLeft ? 'end' : 'start'}"${halo}>${labels.op ?? 'operating point'}</text>`);
+    + (ext ? '' : `<text x="${x(vop) + (opLeft ? -9 : 9)}" y="${y(r.ic) + (opUp ? -10 : 18)}" font-size="14" fill="var(--ng)" text-anchor="${opLeft ? 'end' : 'start'}"${halo}>${labels.op ?? 'operating point'}</text>`);
 }
 
 if (form) {
@@ -115,6 +130,7 @@ if (form) {
   // グラフで見る: IB や VA を変えたときのコレクタ電流・出力抵抗・真性利得
   initSweep({
     form, inputs: ['ib', 'vce', 'beta', 'va'], outputs: ['ic', 'ro', 'gain'], defaults: { x: 'vce', y: 'ic' }, ranges: { vce: [0, 10] },
+    units: { ic: 'mA', ro: 'kΩ' },
     calc: v => { const r = point(v); return { ic: r.ic * 1e3, ro: r.ro / 1e3, gain: r.gain }; },
   });
 }

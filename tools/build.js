@@ -1311,11 +1311,11 @@ ${x.faq?.length ? `<section class="faq">
   </section>`,
     'bjt-iv': x => `<form id="bjt-form" class="dy-form">
     <h2>${esc(x.in_heading)}</h2>
-    ${field('beta', x.beta, 100, 'min="1" step="10"')}
-    ${field('va', x.va, 50, 'min="1" step="5"')}
-    ${field('ib', x.ib, 20, 'min="0.1" step="1"')}
+    ${field('beta', x.beta, 100, 'min="1" step="any"')}
+    ${field('va', x.va, 50, 'min="1" step="any"')}
+    ${field('ib', x.ib, 20, 'min="0.001" step="any"')}
     ${field('vce', x.vce, 5, 'min="0" step="0.1"')}
-    ${field('vmax', x.vmax, 10, 'min="0.5" step="1"')}
+    ${field('vmax', x.vmax, 10, 'min="0.5" step="any"')}
     <label class="crc-check"><input name="ext" type="checkbox"> ${esc(x.ext)}</label>
   </form>
   <section class="dy-out" aria-live="polite">
