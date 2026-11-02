@@ -1309,6 +1309,22 @@ ${x.faq?.length ? `<section class="faq">
       data-labels="${esc(JSON.stringify({ cutoff: x.r_cutoff, linear: x.r_linear, sat: x.r_sat, op: x.lbl_op }))}"></svg>
     <p class="muted">${esc(x.chart_note)}</p>
   </section>`,
+    'bjt-iv': x => `<form id="bjt-form" class="dy-form">
+    <h2>${esc(x.in_heading)}</h2>
+    ${field('beta', x.beta, 100, 'min="1" step="any"')}
+    ${field('va', x.va, 50, 'min="1" step="any"')}
+    ${field('ib', x.ib, 20, 'min="0.001" step="any"')}
+    ${field('vce', x.vce, 5, 'min="0" step="0.1"')}
+    ${field('vmax', x.vmax, 10, 'min="0.5" step="any"')}
+    <label class="crc-check"><input name="ext" type="checkbox"> ${esc(x.ext)}</label>
+  </form>
+  <section class="dy-out" aria-live="polite">
+    <h2>${esc(x.out_heading)}</h2>
+    <dl class="dy-stats">${stat('region', x.region)}${stat('ic', x.ic)}${stat('vbe', x.vbe)}${stat('hfe', x.hfe)}${stat('gm', x.gm)}${stat('ro', x.ro)}${stat('gain', x.gain)}</dl>
+    <svg id="bjt-chart" class="sta-chart" viewBox="0 0 600 340" role="img" aria-label="${esc(x.chart_label)}"
+      data-labels="${esc(JSON.stringify({ active: x.r_active, sat: x.r_sat, op: x.lbl_op }))}"></svg>
+    <p class="muted">${esc(x.chart_note)}</p>
+  </section>`,
     thermal: x => `<form id="th-form" class="dy-form">
     <h2>${esc(x.in_heading)}</h2>
     ${field('p', x.p, 1, 'min="0" step="0.1"')}
