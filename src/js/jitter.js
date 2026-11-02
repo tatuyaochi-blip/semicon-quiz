@@ -2,6 +2,7 @@
 // 対数の横軸の上で直線(dB の値が log f に比例して変わる)とみなしてつなぎ、各区間をべき乗の式として解析的に積分する。
 // A = ∫ 10^(L/10) df、RMS位相 φ = √(2A) rad、RMSジッタ = φ / (2π f0)
 import { lineChart } from './chart.js';
+import { initSweep } from './sweep.js';
 const form = document.getElementById('jt-form');
 const svg = document.getElementById('jt-chart');
 const lang = document.documentElement.lang || 'en';
@@ -44,6 +45,7 @@ export function jitter(v) {
   return r;
 }
 
+if (form) {
 function read() {
   const v = Object.fromEntries([...form.elements].filter(el => el.name).map(el => [el.name, Number(el.value)]));
   for (const k of ['f0', 'lo', 'hi']) if (!(v[k] > 0)) v[k] = Number(form.elements[k].defaultValue);
@@ -82,10 +84,10 @@ form.addEventListener('submit', e => e.preventDefault());
 update();
 
 // グラフで見る: 搬送波の周波数や積分範囲を変えたときのジッタ
-import { initSweep } from './sweep.js';
 initSweep({
   form, inputs: ['f0', 'lo', 'hi', 'p0', 'p1', 'p2', 'p3', 'p4', 'p5'], outputs: ['jitter', 'mrad', 'integ'], defaults: { x: 'f0', y: 'jitter' },
   // 位相雑音の点は、それぞれ既定値のまわり(およそ ±30 dB)で変える
   ranges: { p0: [-140, -80], p1: [-150, -90], p2: [-160, -100], p3: [-175, -115], p4: [-180, -130], p5: [-180, -130] },
   calc: jitter,
 });
+}
