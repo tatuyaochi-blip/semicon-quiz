@@ -2,6 +2,7 @@
 // 目標インピーダンス Zt = V × 許容リップル / ΔI。コンデンサは C・ESR・ESL の直列とし、同じものを N 個並列にすると
 // Z = (ESR + jωESL + 1/(jωC)) / N。|Z| < Zt となる範囲は、2次方程式を解いて端の周波数を求める
 import { lineChart } from './chart.js';
+import { initSweep } from './sweep.js';
 const form = document.getElementById('pdn-form');
 const svg = document.getElementById('pdn-chart');
 const lang = document.documentElement.lang || 'en';
@@ -29,6 +30,7 @@ const zmag = (v, f) => { const w = 2 * Math.PI * f; return Math.hypot(v.esr * 1e
 const hz = mhz => (mhz >= 1e3 ? `${fmt(mhz / 1e3)} GHz` : mhz >= 1 ? `${fmt(mhz)} MHz` : `${fmt(mhz * 1e3)} kHz`);
 const mohm = x => (x >= 1e3 ? `${fmt(x / 1e3)} Ω` : `${fmt(x)} mΩ`);
 
+if (form) {
 function read() {
   const num = k => { const v = Number(form.elements[k].value); return Number.isFinite(v) && v > 0 ? v : Number(form.elements[k].defaultValue); };
   return Object.fromEntries(['v', 'ripple', 'di', 'c', 'esr', 'esl', 'n'].map(k => [k, num(k)]));
@@ -58,8 +60,8 @@ form.addEventListener('submit', e => e.preventDefault());
 update();
 
 // グラフで見る: コンデンサの数や容量、ESL を変えたときの範囲など
-import { initSweep } from './sweep.js';
 initSweep({
   form, inputs: ['n', 'c', 'esl', 'esr', 'di', 'ripple', 'v'], outputs: ['flo', 'fhi', 'zsrf', 'srf', 'zt', 'nmin'], defaults: { x: 'n', y: 'fhi' }, ranges: { n: [1, 50] },
   calc: v => (['v', 'ripple', 'di', 'c', 'esr', 'esl', 'n'].every(k => v[k] > 0) ? pdn(v) : {}),
 });
+}

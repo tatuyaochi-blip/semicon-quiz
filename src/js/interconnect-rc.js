@@ -2,6 +2,7 @@
 // 上下の面への 2ε·W/H と、左右の隣の配線への 2ε·T/S の和(フリンジ容量は含めない)。
 // 遅延は分布RC線路の50%遅延 0.38·Rw·Cw に、駆動側の抵抗と負荷容量の項を足す(Bakoglu の近似)
 import { lineChart } from './chart.js';
+import { initSweep } from './sweep.js';
 const form = document.getElementById('rc-form');
 const svg = document.getElementById('rc-chart');
 const lang = document.documentElement.lang || 'en';
@@ -28,6 +29,7 @@ export function wire(v) {
 const ohm = x => (x >= 1e3 ? `${fmt(x / 1e3)} kΩ` : `${fmt(x)} Ω`);
 const ps = x => (x >= 1e3 ? `${fmt(x / 1e3)} ns` : `${fmt(x)} ps`);
 
+if (form) {
 function read() {
   const num = (k, min = 0) => { const v = Number(form.elements[k].value); return Number.isFinite(v) && v > min ? v : Number(form.elements[k].defaultValue); };
   const z = k => { const v = Number(form.elements[k].value); return Number.isFinite(v) && v >= 0 ? v : 0; };
@@ -56,8 +58,8 @@ form.addEventListener('submit', e => e.preventDefault());
 update();
 
 // グラフで見る: 配線の長さや幅、間隔、比誘電率を変えたときの遅延など
-import { initSweep } from './sweep.js';
 initSweep({
   form, inputs: ['len', 'w', 's', 't', 'h', 'k', 'rhox', 'rdrv', 'cl'], outputs: ['total', 'wire', 'r', 'c', 'c-len', 'cc-share'], defaults: { x: 'len', y: 'total' }, units: { r: 'Ω' },
   calc: v => (v.w > 0 && v.t > 0 && v.s > 0 && v.h > 0 && v.len >= 0 ? wire({ ...v, rhox: Math.max(v.rhox, 1), k: Math.max(v.k, 1), rdrv: Math.max(v.rdrv, 0), cl: Math.max(v.cl, 0) }) : {}),
 });
+}
