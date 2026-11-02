@@ -9,6 +9,7 @@ import { validate } from './validate.js';
 import { termMatcher, linkTerms, reportUrl } from '../src/js/util.js';
 import { iconPng } from './icon.js';
 import { figures, localizeFigure } from './figures.js';
+import { buildReference } from './reference.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -153,6 +154,8 @@ const dictText = {
 // 「Numbers Every Chip Engineer Should Know」(英語のみ。/en/numbers/)。各数値に根拠の問題IDを付ける
 const numbers = readOpt('data/numbers.json', []);
 const numbersLang = 'en';
+// 資料のページ(/reference/)の言語ごとの文。この言語の文があるときだけ、資料のページとメニューの項目を作る
+const refText = readOpt('data/reference/text.json', {});
 const numbersQ = [...new Set(numbers.flatMap(g => g.items.flatMap(x => x.questions ?? [])))];
 // 計算ツール(/tools/{slug}/)。data/tools/*.json に1ツール1ファイル(order 順)。文言は言語ごとで、訳のある言語だけページを作る
 const tools = exists('data/tools') ? fs.readdirSync(path.join(root, 'data/tools')).filter(f => f.endsWith('.json'))
@@ -695,7 +698,10 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
   // ---- ページ生成 ----
   // alt: 言語コード → その言語での同じページのパス(なければ省略)
   // fallback: 同じページがない言語へ切り替えるときの行き先(既定はその言語のトップ)
+  // この言語で作ったページ(パス → タイトルと説明)。資料のトップで、ある言語のページだけを並べるのに使う
+  const built = new Map();
   function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
+    if (!noindex) built.set(p, { title: title ?? fullTitle ?? '', description: description ?? '' });
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
     const alts = langs.filter(x => alt[x.code] != null);
@@ -731,7 +737,8 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
     const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
     const resources = [...(learnArts.length ? [['learn/', LT.nav]] : []), ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
       ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : []),
-      ...(toolsIn(code).length ? [['tools/', S.nav_tools]] : [])];
+      ...(toolsIn(code).length ? [['tools/', S.nav_tools]] : []),
+      ...(refText[code] ? [['reference/', refText[code].nav]] : [])];
     // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
     const headerNav = [['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
     const navMenu = [['', S.nav_home], ['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
@@ -2857,6 +2864,10 @@ ${related.length ? `<section>
 ${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
     });
   }
+
+  // 資料のページ(ほかのページを作り終えてから。この言語にあるページだけをトップに並べる)
+  buildReference({ L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary,
+    R: refText[code], enGlo: gloByLang.en ?? {}, abbrExtra: readOpt('data/reference/abbr.json', {}), hasLang: x => !!refText[x] });
 }
 
 // ---- sitemap / robots / その他 ----
