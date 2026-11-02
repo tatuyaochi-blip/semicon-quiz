@@ -50,3 +50,16 @@ jobs:
             echo "$code $u $flag"
           done < urls.txt
           echo "checked=$total problems=$bad"
+      # 新しく公開したページ(ここに足していく)。状態コード・タイトル・robots・canonical と、ページが読むスクリプトを確かめる
+      - name: Recently published pages
+        run: |
+          UA='Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+          bad=0
+          for u in https://semiconroom.com/tools/bjt-output-characteristics-early-voltage/ https://semiconroom.com/en/tools/bjt-output-characteristics-early-voltage/ https://semiconroom.com/zh-hant/tools/bjt-output-characteristics-early-voltage/ https://semiconroom.com/js/bjt-iv.js; do
+            out=$(curl -sS -A "$UA" -w '\n%{http_code}' "$u"); code=$(echo "$out" | tail -1)
+            echo "== $code $u"
+            echo "$out" | grep -oiE '<title>[^<]*|<meta name="robots"[^>]*>|<link rel="canonical" href="[^"]*"|bjt-iv\.js|export function point' | sort -u
+            [ "$code" = 200 ] || bad=$((bad+1))
+          done
+          curl -sS https://semiconroom.com/sitemaps/en-tools.xml | grep -c 'bjt-output-characteristics-early-voltage' || bad=$((bad+1))
+          echo "problems=$bad"; [ "$bad" = 0 ]

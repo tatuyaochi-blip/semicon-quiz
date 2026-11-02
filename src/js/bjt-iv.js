@@ -73,6 +73,14 @@ function update() {
   out('gm').textContent = si(r.gm, 'S');
   out('ro').textContent = si(r.ro, 'Ω');
   out('gain').textContent = Number.isFinite(r.gain) ? `${fmt(r.gain, 0)} (${fmt(20 * Math.log10(r.gain), 1)} dB)` : '–';
+  // 結果の読み方の一文(能動: VCE を 1 V 上げたときの IC の増え方。飽和: 能動領域の値との比較)
+  const note = out('note');
+  if (note) {
+    let tpl = {};
+    try { tpl = JSON.parse(note.dataset.tpl); } catch {}
+    note.textContent = (r.region === 'active' ? tpl.active ?? '' : tpl.sat ?? '')
+      .replace('{d}', `${si(1 / r.ro, 'A')}/V`).replace('{line}', si(line(p, p.ib * 1e-6, p.vce), 'A'));
+  }
   draw(p, r);
 }
 

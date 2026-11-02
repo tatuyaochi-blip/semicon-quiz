@@ -1239,6 +1239,7 @@ ${x.faq?.length ? `<section class="faq">
   <section class="dy-out" aria-live="polite">
     <h2>${esc(x.out_heading)}</h2>
     <dl class="dy-stats">${stat('area', x.area)}${stat('gross', x.gross)}${stat('formula', x.gross_formula)}</dl>
+    ${x.note ? `<p class="dy-note" data-out="note" data-tpl="${esc(JSON.stringify({ main: x.note, ratio: x.note_ratio }))}"></p>` : ''}
     <div class="table-wrap"><table class="dy-table">
       <thead><tr><th scope="col">${esc(x.model)}</th><th scope="col">${esc(x.yield)}</th><th scope="col">${esc(x.good)}</th><th scope="col">${esc(x.cpgd)}</th></tr></thead>
       <tbody>${['poisson', 'murphy', 'negbin'].map(m => `<tr><th scope="row">${esc(x[m])}</th><td data-out="${m}-y">–</td><td data-out="${m}-good">–</td><td data-out="${m}-cost">–</td></tr>`).join('')}</tbody>
@@ -1316,11 +1317,12 @@ ${x.faq?.length ? `<section class="faq">
     ${field('ib', x.ib, 20, 'min="0.001" step="any"')}
     ${field('vce', x.vce, 5, 'min="0" step="0.1"')}
     ${field('vmax', x.vmax, 10, 'min="0.5" step="any"')}
-    <label class="crc-check"><input name="ext" type="checkbox"> ${esc(x.ext)}</label>
+    <label class="crc-check"><input name="ext" type="checkbox" data-share> ${esc(x.ext)}</label>
   </form>
   <section class="dy-out" aria-live="polite">
     <h2>${esc(x.out_heading)}</h2>
     <dl class="dy-stats">${stat('region', x.region)}${stat('ic', x.ic)}${stat('vbe', x.vbe)}${stat('hfe', x.hfe)}${stat('gm', x.gm)}${stat('ro', x.ro)}${stat('gain', x.gain)}</dl>
+    <p class="dy-note" data-out="note" data-tpl="${esc(JSON.stringify({ active: x.note_active, sat: x.note_sat }))}"></p>
     <svg id="bjt-chart" class="sta-chart" viewBox="0 0 600 340" role="img" aria-label="${esc(x.chart_label)}"
       data-labels="${esc(JSON.stringify({ active: x.r_active, sat: x.r_sat, op: x.lbl_op }))}"></svg>
     <p class="muted">${esc(x.chart_note)}</p>
@@ -2419,6 +2421,26 @@ ${x.faq?.length ? `<section class="faq">
     // 関連する図解と比較ページ(この言語で出せるものだけ)
     const tf = (tool.figures ?? []).map(id => figList.find(f => f.id === id)).filter(Boolean);
     const tcmp = (tool.compares ?? []).map(slug => cmp.find(e => e.slug === slug)).filter(Boolean);
+    // 入力フォームが先頭にあって入力欄が多すぎないツールは、PC では左に入力・右に結果の2列にする(split)。
+    // 入力の表やコードを広く使うツール(状態機械・擬似コード・問題セット・スケジューリング)は1列のまま
+    // 例の条件(tool.presets の値と、言語ごとの x.presets の名前)。入力フォームの見出しのすぐ後にボタンとして置く
+    const presets = tool.presets && x.presets ? `<div class="dy-presets" role="group" aria-labelledby="presets-${tool.id}"><span id="presets-${tool.id}">${esc(t('tool_presets'))}</span>${tool.presets.map((pr, k) => `<button type="button" class="chip" data-preset="${esc(JSON.stringify(pr.v))}" aria-pressed="false">${esc(x.presets[k])}</button>`).join('')}</div>` : '';
+    let body = toolBody[tool.id](x);
+    if (presets && body.trimStart().startsWith('<form')) body = body.replace('</h2>', `</h2>\n    ${presets}`);
+    const formEnd = body.trimStart().startsWith('<form') ? body.indexOf('</form>') + '</form>'.length : -1;
+    const nInputs = formEnd > 0 ? (body.slice(0, formEnd).match(/<(input|select|textarea)\b/g) ?? []).length : 99;
+    // 結果をフォームの中に持つツールなどは、データの layout: "stack" で1列に固定する
+    const split = tool.layout !== 'stack' && formEnd > 0 && /^<form[^>]*class="dy-form/.test(body.trimStart()) && nInputs <= 17 && !/fsm-form|ps-form|qs-form|sc-form/.test(body.slice(0, 300));
+    const sweep = `
+  <section class="dy-out" id="sweep" hidden>
+    <h2>${esc(S.sweep_heading)}</h2>
+    <div class="sweep-pick">
+      <label class="dy-field"><span>${esc(S.sweep_x)}</span><select name="sweep-x"></select></label>
+      <label class="dy-field"><span>${esc(S.sweep_y)}</span><select name="sweep-y"></select></label>
+    </div>
+    <svg class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(S.sweep_heading)}"></svg>
+    <p class="muted">${esc(S.sweep_note)}</p>
+  </section>`;
     page({
       path: toolPath(tool, L),
       alt: Object.fromEntries(langs.filter(y => tool.text[y.code]).map(y => [y.code, toolPath(tool, y)])),
@@ -2433,39 +2455,41 @@ ${x.faq?.length ? `<section class="faq">
         { '@context': 'https://schema.org', '@type': 'FAQPage',
           mainEntity: x.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
       ],
-      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}tools/">${esc(S.tools_title)}</a></nav>
-<h1>${esc(x.h1)}</h1>
-<p class="lead">${esc(x.lead)}</p>
-<div class="cmp-tools tool-actions" data-tool-id="${tool.id}"${tool.share === false ? '' : ' data-share'} hidden>
-  <button type="button" class="btn btn-ghost" data-fav data-off="${esc(t('tool_fav_add'))}" data-on="${esc(t('tool_fav_on'))}" aria-pressed="false">${esc(t('tool_fav_add'))}</button>${tool.share === false ? '' : `
-  <button type="button" class="btn btn-ghost" data-copy-result data-done="${esc(t('compare_copied'))}">${esc(t('tool_copy_result'))}</button>
-  <button type="button" class="btn btn-ghost" data-share data-done="${esc(t('compare_link_copied'))}">${esc(t('tool_share'))}</button>`}
-  <p class="muted tool-note">${esc(t(tool.share === false ? 'tool_note_local' : 'tool_note'))}</p>
+      content: `<div class="tool-page">
+<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}tools/">${esc(S.tools_title)}</a></nav>
+<header class="tool-hero">
+  ${tc ? `<p class="tool-kicker">${esc(tc.name)}</p>` : ''}
+  <h1>${esc(x.h1)}</h1>
+  <p class="lead">${esc(x.lead)}</p>
+  <div class="cmp-tools tool-actions" data-tool-id="${tool.id}"${tool.share === false ? '' : ' data-share'} hidden>
+    <button type="button" class="btn btn-ghost" data-fav data-off="${esc(t('tool_fav_add'))}" data-on="${esc(t('tool_fav_on'))}" aria-pressed="false">${esc(t('tool_fav_add'))}</button>${tool.share === false ? '' : `
+    <button type="button" class="btn btn-ghost" data-copy-result data-done="${esc(t('compare_copied'))}">${esc(t('tool_copy_result'))}</button>
+    <button type="button" class="btn btn-ghost" data-share data-done="${esc(t('compare_link_copied'))}">${esc(t('tool_share'))}</button>`}
+    <details class="tool-note"><summary>${esc(t('tool_note_summary'))}</summary><p class="muted">${esc(t(tool.share === false ? 'tool_note_local' : 'tool_note'))}</p></details>
+  </div>
+</header>
+<div class="dy${split ? ' split' : ''}">
+  ${split ? `${body.slice(0, formEnd)}\n  <div class="dy-side">${body.slice(formEnd)}${sweep}</div>` : `${body}${sweep}`}
 </div>
-<div class="dy">
-  ${toolBody[tool.id](x)}
-  <section class="dy-out" id="sweep" hidden>
-    <h2>${esc(S.sweep_heading)}</h2>
-    <div class="sweep-pick">
-      <label class="dy-field"><span>${esc(S.sweep_x)}</span><select name="sweep-x"></select></label>
-      <label class="dy-field"><span>${esc(S.sweep_y)}</span><select name="sweep-y"></select></label>
-    </div>
-    <svg class="sta-chart" viewBox="0 0 600 320" role="img" aria-label="${esc(S.sweep_heading)}"></svg>
-    <p class="muted">${esc(S.sweep_note)}</p>
-  </section>
-</div>
-${x.sections.map(sec => `<section class="term-about">
+<article class="tool-article">
+  <nav class="tool-toc" aria-label="${esc(t('tool_toc'))}">
+    <p class="tool-toc-h">${esc(t('tool_toc'))}</p>
+    <ol>${x.sections.map((sec, k) => `<li><a href="#tool-sec-${k + 1}">${esc(sec.h)}</a></li>`).join('')}<li><a href="#tool-faq">${esc(t('compare_faq'))}</a></li></ol>
+  </nav>
+${x.sections.map((sec, k) => `<section class="term-about" id="tool-sec-${k + 1}">
   <h2>${esc(sec.h)}</h2>
   <p>${linked(sec.p, tool.cat)}</p>
 </section>`).join('\n')}
+${tq.length ? `<section id="tool-practice">${tq.map(miniQ).join('')}</section>` : ''}
 ${tc && qs[tc.id]?.length ? `<p><a class="btn btn-primary" href="${home}quiz/?mode=category&amp;c=${tc.id}&amp;n=10" rel="nofollow">${esc(x.practice)}</a></p>` : ''}
-${tq.length ? `<section>${tq.map(miniQ).join('')}</section>` : ''}
-<section class="faq">
+<section class="faq" id="tool-faq">
   <h2>${esc(t('compare_faq'))}</h2>${x.faq.map(f => `
   <h3>${esc(f.q)}</h3>
   <p>${esc(f.a)}</p>`).join('')}
 </section>
+</article>
 <div data-ad="tool"></div>
+<div class="tool-more">
 ${tt.length ? `<section>
   <h2>${esc(x.related)}</h2>
   <p class="term-chips">${tt.map(y => `<a class="chip" href="${home}term/${termSlug[y.key]}/">${esc(y.term)}</a>`).join(' ')}</p>
@@ -2479,7 +2503,9 @@ ${toolsIn(code).length > 1 ? `<section>
   <h2>${esc(t('figure_tools'))}</h2>
   <div class="mode-grid compact">${relatedTools(tool).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
   <p><a class="btn btn-ghost" href="${home}tools/">${esc(S.tools_title)} →</a></p>
-</section>` : ''}`,
+</section>` : ''}
+</div>
+</div>`,
     });
   }
   // 計算ツールを分野のグループ(基礎・デバイス・前工程…・システム)ごとにまとめる。グループの順は試験区分の定義の順
@@ -2487,7 +2513,7 @@ ${toolsIn(code).length > 1 ? `<section>
     const gs = [];
     for (const y of toolsIn(code)) {
       const c = catOf(y.cat);
-      const name = c ? groupOf(c).name : '';
+      const name = c ? groupOf(c).name : t('tools_other');
       const order = c ? (exams.find(e => e.id === c.exam)?.groups.findIndex(g => g.id === c.group) ?? 99) : 99;
       let g = gs.find(x => x.name === name);
       if (!g) gs.push(g = { name, order, items: [] });
@@ -2503,19 +2529,28 @@ ${toolsIn(code).length > 1 ? `<section>
       title: S.tools_title,
       description: S.tools_lead,
       scripts: ['tools-list.js'],
-      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
-<h1>${esc(S.tools_title)}</h1>
-<p class="lead">${esc(S.tools_lead)}</p>
+      content: `<div class="tool-page tools-index">
+<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
+<header class="tool-hero">
+  <h1>${esc(S.tools_title)}</h1>
+  <p class="lead">${esc(S.tools_lead)}</p>
+</header>
+<input type="search" class="tools-filter" data-tools-filter placeholder="${esc(t('tools_filter'))}" aria-label="${esc(t('tools_filter'))}" autocomplete="off">
+<div class="tools-find">
+  <p class="tools-jump">${toolGroups().map((g, k) => `<a class="chip" href="#tg-${k + 1}">${esc(g.name)} <small>${g.items.length}</small></a>`).join(' ')}</p>
+  <p class="muted" data-tools-none hidden>${esc(t('tools_none'))}</p>
+</div>
 <section class="tool-mine" data-tool-mine hidden>
   <div data-list="fav" hidden><h2>${esc(t('tools_fav'))}</h2><div class="mode-grid compact"></div></div>
   <div data-list="recent" hidden><h2>${esc(t('tools_recent'))}</h2><div class="mode-grid compact"></div></div>
   <p class="muted">${esc(t('tools_local_note'))}</p>
 </section>
-${toolGroups().map(g => `<section>
-  <h2>${esc(g.name)}</h2>
-  <div class="mode-grid tool-all">${g.items.map(y => `<a class="mode-card" data-tool="${y.id}" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
+${toolGroups().map((g, k) => `<section class="tools-group" id="tg-${k + 1}">
+  <h2>${esc(g.name)} <small class="muted" data-count>${g.items.length}</small></h2>
+  <div class="mode-grid tool-all">${g.items.map(y => `<a class="mode-card tool-card" data-tool="${y.id}" href="${home}tools/${y.slug}/">${catOf(y.cat) ? `<em>${esc(catOf(y.cat).name)}</em>` : ''}<strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
 </section>`).join('\n')}
-<div data-ad="tools"></div>`,
+<div data-ad="tools"></div>
+</div>`,
     });
   }
 
