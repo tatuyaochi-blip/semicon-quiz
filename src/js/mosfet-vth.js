@@ -1,6 +1,7 @@
 // MOSFETのしきい値電圧(長チャネル・均一な基板濃度)。温度は 300 K、基板はシリコン。
 // nMOS: Vth = VFB + 2φF + √(2qεsNA(2φF + VSB)) / Cox、pMOS: Vth = VFB + 2φF − √(2qεsND(2|φF| + |VSB|)) / Cox(φF < 0)
 // VFB = φms − Qf/Cox、φms = φm − (χ + Eg/2 + φF)。φF は p型で正、n型で負
+import { initSweep } from './sweep.js';
 const form = document.getElementById('vt-form');
 const lang = document.documentElement.lang || 'en';
 const fmt = (x, d = 3) => (Number.isFinite(x) ? x.toLocaleString(lang, { maximumSignificantDigits: d }) : '–');
@@ -28,7 +29,7 @@ export function calc(v) {
   };
 }
 
-const sel = form.elements.gate;
+const sel = form?.elements.gate;
 function update() {
   const v = Object.fromEntries(['n', 'tox', 'nf', 'vsb', 'phim'].map(k => [k, Number(form.elements[k].value)]));
   v.type = form.elements.type.value;
@@ -46,13 +47,15 @@ function update() {
   out('gamma').textContent = ok ? `${fmt(r.gamma)} V^½` : '–';
   out('vth').textContent = V(r.vth);
 }
-form.addEventListener('input', update);
-form.addEventListener('submit', e => e.preventDefault());
-update();
+// 画面がないとき(テストで計算だけを読み込むとき)は、画面の処理をしない
+if (form) {
+  form.addEventListener('input', update);
+  form.addEventListener('submit', e => e.preventDefault());
+  update();
 
-// グラフで見る: 基板濃度・酸化膜厚・基板バイアスを変えたときのしきい値電圧など
-import { initSweep } from './sweep.js';
-initSweep({
-  form, inputs: ['n', 'tox', 'vsb', 'nf'], outputs: ['vth', 'vfb', 'qd', 'wd'], defaults: { x: 'n', y: 'vth' }, ranges: { vsb: [0, 3] },
-  calc: v => { const r = calc(v); return { ...r, wd: r.wd }; },
-});
+  // グラフで見る: 基板濃度・酸化膜厚・基板バイアスを変えたときのしきい値電圧など
+  initSweep({
+    form, inputs: ['n', 'tox', 'vsb', 'nf'], outputs: ['vth', 'vfb', 'qd', 'wd'], defaults: { x: 'n', y: 'vth' }, ranges: { vsb: [0, 3] },
+    calc: v => { const r = calc(v); return { ...r, wd: r.wd }; },
+  });
+}
