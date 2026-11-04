@@ -48,9 +48,28 @@ export function abbrList(glossary, enGlo, extra = {}) {
 }
 const initial = s => (/^[A-Za-z]/.test(s) ? s[0].toUpperCase() : '0-9');
 
+// ---- オープンデータ(用語集と7言語の対訳。CC BY 4.0) ----
+// 用語ごとに、スラッグ(各言語の解説ページの URL に使う)・分野・7言語の見出しと短い説明。CSV は見出しだけ
+export const OPEN_LICENSE = { name: 'CC BY 4.0', url: 'https://creativecommons.org/licenses/by/4.0/', attribution: 'Semiconductor Room (https://semiconroom.com/)' };
+export function openData({ glossary, gloByLang, langCodes, defLang, termSlug }) {
+  const terms = glossary.map(g => {
+    const term = {}, desc = {};
+    for (const x of langCodes) {
+      const v = x === defLang ? g : gloByLang[x]?.[g.term];
+      if (v?.term) { term[x] = v.term; if (v.desc) desc[x] = v.desc; }
+    }
+    return { slug: termSlug[g.term], field: g.cat, term, desc };
+  });
+  const json = JSON.stringify({ name: 'Semiconductor Room glossary', license: OPEN_LICENSE.name, licenseUrl: OPEN_LICENSE.url, attribution: OPEN_LICENSE.attribution,
+    languages: langCodes, pageUrl: 'https://semiconroom.com/{lang}/term/{slug}/ (Japanese: https://semiconroom.com/term/{slug}/)', terms });
+  const q = v => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const csv = '﻿' + [['slug', 'field', ...langCodes], ...terms.map(t => [t.slug, t.field, ...langCodes.map(x => t.term[x] ?? '')])].map(r => r.map(v => q(String(v))).join(',')).join('\r\n') + '\r\n';
+  return { json, csv, n: terms.length };
+}
+
 // ctx: build.js の buildLang の中の値と関数
 export function buildReference(ctx) {
-  const { L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, R, glossary, enGlo, abbrExtra, gloGroups, gloByLang } = ctx;
+  const { L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, R, glossary, enGlo, abbrExtra, gloGroups, gloByLang, write } = ctx;
   if (!R) return;
   const termIn = new Map(terms.map(g => [g.key, g]));
 
@@ -158,6 +177,42 @@ ${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
 <p class="muted">${langs.map(x => esc(x.label)).join(' · ')}</p>
 <ul class="cmp-list">${cards.join('')}</ul>
 <div data-ad="glossary"></div>
+<p><a class="btn btn-ghost" href="${home}reference/">${esc(R.to_hub)}</a></p>`,
+    });
+  }
+
+  // ---- オープンデータ: ファイルは既定言語のときに1回だけ書き、説明のページは各言語に作る ----
+  if (write) {
+    const od = openData({ glossary, gloByLang, langCodes: langs.map(x => x.code), defLang, termSlug });
+    if (code === defLang) { write('open-data/semiconroom-glossary.json', od.json); write('open-data/semiconroom-glossary.csv', od.csv); }
+    const kb = s2 => `${Math.round(Buffer.byteLength(s2) / 1024)} KB`;
+    const sub = 'reference/open-data/';
+    page({
+      path: `${L.path}${sub}`,
+      alt: Object.fromEntries(langs.filter(x => x.code === defLang || ctx.hasLang(x.code)).map(x => [x.code, `${x.path}${sub}`])),
+      title: R.od_title.replace('{n}', od.n),
+      description: R.od_description.replace('{n}', od.n),
+      jsonld: crumbs([t('breadcrumb_top'), home], [R.nav, `${home}reference/`], [R.od_h1, `${home}${sub}`]),
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(R.nav)}</a></nav>
+<h1>${esc(R.od_h1)}</h1>
+<p class="lead">${esc(R.od_lead.replace('{n}', od.n))}</p>
+<section>
+  <h2>${esc(R.od_files)}</h2>
+  <ul class="cmp-list">
+    <li><a class="cmp-card" href="${base}open-data/semiconroom-glossary.csv" download><strong>CSV (${kb(od.csv)})</strong><span>${esc(R.od_csv)}</span></a></li>
+    <li><a class="cmp-card" href="${base}open-data/semiconroom-glossary.json" download><strong>JSON (${kb(od.json)})</strong><span>${esc(R.od_json)}</span></a></li>
+  </ul>
+</section>
+<section>
+  <h2>${esc(R.od_license_h)}</h2>
+  <p>${esc(R.od_license).replace('{license}', `<a href="${OPEN_LICENSE.url}" rel="license">${OPEN_LICENSE.name}</a>`)}</p>
+  <p><code>${esc(OPEN_LICENSE.attribution)}</code></p>
+  <p class="muted">${esc(R.od_scope)}</p>
+</section>
+<section>
+  <h2>${esc(R.od_fields_h)}</h2>
+  <ul>${R.od_fields.map(f => `<li>${esc(f)}</li>`).join('')}</ul>
+</section>
 <p><a class="btn btn-ghost" href="${home}reference/">${esc(R.to_hub)}</a></p>`,
     });
   }
