@@ -2867,7 +2867,7 @@ ${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_l
   }
 
   // 資料のページ(ほかのページを作り終えてから。この言語にあるページだけをトップに並べる)
-  buildReference({ L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary, gloGroups, gloByLang,
+  buildReference({ L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary, gloGroups, gloByLang, write,
     R: refText[code], enGlo: gloByLang.en ?? {}, abbrExtra: readOpt('data/reference/abbr.json', {}), hasLang: x => !!refText[x] });
 }
 
