@@ -50,7 +50,7 @@ const initial = s => (/^[A-Za-z]/.test(s) ? s[0].toUpperCase() : '0-9');
 
 // ctx: build.js の buildLang の中の値と関数
 export function buildReference(ctx) {
-  const { L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, R, glossary, enGlo, abbrExtra } = ctx;
+  const { L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, R, glossary, enGlo, abbrExtra, gloGroups, gloByLang } = ctx;
   if (!R) return;
   const termIn = new Map(terms.map(g => [g.key, g]));
 
@@ -90,6 +90,73 @@ ${groups.map(gr => `<section class="glossary-cat" id="abbr-${gr}">
   </table></div>
 </section>`).join('\n')}
 <p class="muted">${esc(R.abbr_note)}</p>
+<div data-ad="glossary"></div>
+<p><a class="btn btn-ghost" href="${home}reference/">${esc(R.to_hub)}</a></p>`,
+    });
+  }
+
+  // ---- 7言語の対訳表(分野の区分ごとのページと、その一覧) ----
+  // 1つの表にすると1,300語 × 7列で重いので、区分(基礎・デバイス・前工程…)ごとに分ける。
+  // 列は表示する言語をボタンで選ぶ(既定はこのページの言語・英語・もう1つ。選んだ言語はブラウザに保存。multilingual.js)
+  if (gloGroups?.length) {
+    const cols = [code, ...['en', 'ja', 'zh-hant'].filter(x => x !== code)].slice(0, 3);
+    const order = [...langs.map(x => x.code)].sort((a, b) => (cols.includes(b) - cols.includes(a)) || cols.indexOf(a) - cols.indexOf(b));
+    const nameIn = (key, x) => (x === defLang ? key : gloByLang[x]?.[key]?.term);
+    const lang = x => langs.find(y => y.code === x);
+    const cell = (key, x) => {
+      const nm = nameIn(key, x), l = lang(x);
+      const rd = x === defLang && code === defLang ? glossary.find(g => g.term === key)?.reading ?? '' : '';
+      return `<td data-l="${x}" lang="${l.htmlLang}">${nm ? `<a href="${base}${l.path}term/${termSlug[key]}/">${esc(nm)}</a>${rd ? `<small>${esc(rd)}</small>` : ''}` : '–'}</td>`;
+    };
+    const altFor = sub => Object.fromEntries(langs.filter(x => x.code === defLang || ctx.hasLang(x.code)).map(x => [x.code, `${x.path}${sub}`]));
+    const picker = `<div class="ml-pick" role="group" aria-label="${esc(R.ml_cols)}"><span class="muted">${esc(R.ml_cols)}</span> ${order.map(x => `<button type="button" class="chip" data-ml="${x}" aria-pressed="${cols.includes(x)}">${esc(lang(x).label)}</button>`).join(' ')}</div>`;
+    const cards = [];
+    for (const gr of gloGroups) {
+      const n = gr.cats.reduce((k, x) => k + x.list.length, 0);
+      const sub = `reference/multilingual/${gr.id}/`;
+      cards.push(`<li><a class="cmp-card" href="${home}${sub}"><strong>${esc(gr.name)}</strong><span>${esc(R.ml_card.replace('{n}', n))}</span></a></li>`);
+      page({
+        path: `${L.path}${sub}`,
+        alt: altFor(sub),
+        title: R.ml_group_title.replace('{group}', gr.name).replace('{n}', n),
+        description: R.ml_group_description.replace('{group}', gr.name).replace('{n}', n),
+        scripts: ['glossary.js', 'multilingual.js'],
+        jsonld: crumbs([t('breadcrumb_top'), home], [R.nav, `${home}reference/`], [R.ml_h1, `${home}reference/multilingual/`], [gr.name, `${home}${sub}`]),
+        content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(R.nav)}</a> <span>›</span> <a href="${home}reference/multilingual/">${esc(R.ml_h1)}</a></nav>
+<h1>${esc(R.ml_group_h1.replace('{group}', gr.name))}</h1>
+<p class="lead">${esc(R.ml_group_lead.replace('{n}', n))}</p>
+${picker}
+<div class="search">
+  <input id="glossary-q" type="search" placeholder="${esc(R.ml_search)}" aria-label="${esc(R.ml_search)}">
+  <span id="glossary-count" class="muted" data-label="${esc(t('glossary_count'))}"></span>
+</div>
+<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}"><p>${gr.cats.map(({ c, list }) => `<a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join(' ')}</p></nav>
+${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
+  <h2>${esc(c.name)}</h2>
+  <div class="table-wrap"><table class="numbers dict ml" data-show="${cols.join(' ')}">
+    <thead><tr>${order.map(x => `<th scope="col" data-l="${x}">${esc(lang(x).label)}</th>`).join('')}</tr></thead>
+    <tbody>${list.map(g => `
+      <tr class="term">${order.map(x => cell(g.key, x)).join('')}</tr>`).join('')}
+    </tbody>
+  </table></div>
+</section>`).join('\n')}
+<p class="muted">${esc(R.ml_note)}</p>
+<div data-ad="glossary"></div>
+<p><a class="btn btn-ghost" href="${home}reference/multilingual/">${esc(R.ml_to_index)}</a></p>`,
+      });
+    }
+    const total = gloGroups.reduce((s2, gr) => s2 + gr.cats.reduce((k, x) => k + x.list.length, 0), 0);
+    page({
+      path: `${L.path}reference/multilingual/`,
+      alt: altFor('reference/multilingual/'),
+      title: R.ml_title.replace('{n}', total),
+      description: R.ml_description.replace('{n}', total),
+      jsonld: crumbs([t('breadcrumb_top'), home], [R.nav, `${home}reference/`], [R.ml_h1, `${home}reference/multilingual/`]),
+      content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(R.nav)}</a></nav>
+<h1>${esc(R.ml_h1)}</h1>
+<p class="lead">${esc(R.ml_lead.replace('{n}', total))}</p>
+<p class="muted">${langs.map(x => esc(x.label)).join(' · ')}</p>
+<ul class="cmp-list">${cards.join('')}</ul>
 <div data-ad="glossary"></div>
 <p><a class="btn btn-ghost" href="${home}reference/">${esc(R.to_hub)}</a></p>`,
     });
