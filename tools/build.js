@@ -443,6 +443,7 @@ function buildLang(L) {
       <dd>${esc(g.desc)}</dd>
     </div>`;
   const gloGroups = exams.flatMap(e => e.groups.map(g => ({
+    id: g.id,
     name: grName(e, g),
     cats: cats.filter(c => c.exam === e.id && c.group === g.id)
       .map(c => ({ c, list: terms.filter(x => x.cat === c.id) })).filter(x => x.list.length),
@@ -2866,7 +2867,7 @@ ${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_l
   }
 
   // 資料のページ(ほかのページを作り終えてから。この言語にあるページだけをトップに並べる)
-  buildReference({ L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary,
+  buildReference({ L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary, gloGroups, gloByLang,
     R: refText[code], enGlo: gloByLang.en ?? {}, abbrExtra: readOpt('data/reference/abbr.json', {}), hasLang: x => !!refText[x] });
 }
 
