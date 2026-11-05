@@ -1,3 +1,4 @@
+import { initSweep } from './sweep.js';
 // 静的タイミング解析(セットアップ・ホールド)の計算ページ。値はすべて ns
 const form = document.getElementById('sta-form');
 const svg = document.getElementById('sta-chart');
@@ -59,13 +60,14 @@ function draw(p, r) {
   ].join('');
 }
 
+if (form) {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
 
 // グラフで見る: クロック周期やスキューを変えたときのスラック
-import { initSweep } from './sweep.js';
 initSweep({
   form, inputs: ['period', 'combmax', 'skew', 'unc', 'tcqmax', 'setup', 'combmin', 'hold'], outputs: ['setup-slack', 'hold-slack', 'fmax'], defaults: { x: 'period', y: 'setup-slack' }, ranges: { skew: [-0.5, 0.5] },
   calc: v => { const r = slacks(v); return { 'setup-slack': r.setup, 'hold-slack': r.hold, fmax: r.fmax }; },
 });
+}
