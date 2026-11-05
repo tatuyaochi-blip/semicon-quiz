@@ -236,7 +236,9 @@ const sitemap = [];
 // hreflang の後始末用: noindex のページと、hreflang を出したページ(出力先と相手のパス)
 const noindexPaths = new Set();
 // 問題ページを検索に出す言語(ほかの言語の問題ページは noindex にしてサイトマップからも外す)
-const INDEX_Q_LANGS = ['ja', 'en', 'zh-hant'];
+// 2026-10-29: ko・de・nl・fr を外した。2026-11-05: 検索表示の急落が続くため、運営者の判断で全言語の問題ページを外した
+// (問題ページはサイトマップの58%を占めるが、検索の表示は全体の約2%。クイズ・分野ページからは今までどおり使える)
+const INDEX_Q_LANGS = [];
 const hreflangPages = [];
 for (const L of langs) buildLang(L);
 // hreflang の相手が noindex のページ(その言語では問題に出てこない用語など)なら、その相手を外す。
