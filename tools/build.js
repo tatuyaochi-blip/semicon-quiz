@@ -655,6 +655,8 @@ function buildLang(L) {
   };
 
   const common = {
+    // 資料の中のページ(用語集・比較・図解集)の上に出す、資料のトップへのパンくず
+    refCrumb: refText[code] ? `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(refText[code].nav)}</a></nav>` : '',
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
