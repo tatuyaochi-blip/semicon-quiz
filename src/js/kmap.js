@@ -67,6 +67,19 @@ function solve(on, dc) {
   return { terms, primes: ps.filter(t => on.some(x => covers(t, x))).sort((a, b) => lits(a) - lits(b) || key(a).localeCompare(key(b))), ess, alt };
 }
 
+// 計算だけを使うとき(テストなど): nv 変数の 1 の最小項 on と X の最小項 dc から、最小の積和形の項・主項・必須主項。
+// 項は { v, m }。plain は否定を ' で書いた式(例: A'B + C)
+export function simplify(nv, on, dc = []) {
+  const keep = n;
+  n = nv;
+  try {
+    const r = solve(on, dc);
+    const word = t => { let s = ''; for (let j = 0; j < n; j++) { const b = 1 << (n - 1 - j); if (!(t.m & b)) s += NAMES[j] + (t.v & b ? '' : "'"); } return s || '1'; };
+    return { ...r, plain: r.zero ? '0' : r.terms.map(word).join(' + '), lits: r.terms.reduce((a, t) => a + lits(t), 0) };
+  } finally { n = keep; }
+}
+export { covers };
+
 // ---- 表記(否定は上線)----
 const bar = s => `<span class="ov">${s}</span>`;
 const lit = (j, pos) => (pos ? bar(NAMES[j]) : NAMES[j]);
@@ -181,6 +194,7 @@ const EX = {
   parity: [3, [1, 2, 4, 7], []],
   corners: [4, [0, 2, 8, 10], []],
 };
+if (form) {
 form.addEventListener('click', e => {
   const b = e.target.closest('.km-cell');
   if (!b) return;
@@ -206,3 +220,4 @@ form.addEventListener('submit', e => e.preventDefault());
     set(nv, list('m'), list('d'));
   } else set(...EX.seg_a);
 })();
+}
