@@ -1,3 +1,5 @@
+import { icon } from './icons.js';
+
 // 資料のページ: 資料のトップ /reference/ と、略語・読み方辞典 /reference/abbreviations/。
 // build.js の buildLang の最後で呼ぶ(ほかのページを作り終えてから、その言語にあるページだけをトップに並べるため)
 
@@ -218,12 +220,14 @@ ${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
   }
 
   // ---- 資料のトップ ----
-  // 各ページのタイトル(「:」より前)と説明を、そのページ自身の言葉で使う。この言語で作られたページだけを並べる
+  // アイコンと短い名前のタイル(以前は各ページの長いタイトルと説明の文章カードで、一目で分かりにくかった)。この言語で作られたページだけを並べる
+  const TILE_ICON = { 'glossary/': 'glossary', 'reference/abbreviations/': 'abbr', 'reference/multilingual/': 'langs', 'glossary/trilingual/': 'langs', 'numbers/': 'numbers', 'news-terms/': 'news',
+    'figures/': 'figures', 'compare/': 'compare', 'beyond-scaling/': 'trend', 'careers/': 'careers', 'interview-questions/': 'interview', 'it-exam-guide/': 'exam', 'reference/open-data/': 'download' };
   const card = sub => {
     const x = built.get(`${L.path}${sub}`);
     if (!x) return '';
-    const name = String(x.title).split(/\s*[:：|｜—–]\s*/)[0];
-    return `<li><a class="cmp-card" href="${home}${sub}"><strong>${esc(name)}</strong><span>${esc(short(x.description, 110))}</span></a></li>`;
+    const name = R.tiles?.[sub] ?? String(x.title).split(/\s*[:：|｜—–]\s*/)[0];
+    return `<li><a class="ref-tile" href="${home}${sub}" title="${esc(x.title)}">${icon(TILE_ICON[sub] ?? 'other')}<span>${esc(name)}</span></a></li>`;
   };
   const sections = R.sections.map(s => ({ ...s, html: s.pages.map(card).join('') })).filter(s => s.html);
   page({
@@ -238,7 +242,7 @@ ${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
 ${sections.map(s => `<section>
   <h2>${esc(s.h)}</h2>
   <p class="muted">${esc(s.p)}</p>
-  <ul class="cmp-list">${s.html}</ul>
+  <ul class="ref-tiles">${s.html}</ul>
 </section>`).join('\n')}
 <div data-ad="glossary"></div>`,
   });
