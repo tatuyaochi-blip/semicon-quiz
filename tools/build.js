@@ -10,6 +10,7 @@ import { termMatcher, linkTerms, reportUrl } from '../src/js/util.js';
 import { iconPng } from './icon.js';
 import { figures, localizeFigure } from './figures.js';
 import { buildReference } from './reference.js';
+import { icon } from './icons.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -426,7 +427,7 @@ function buildLang(L) {
 <section class="topic-area">
   <h3 class="area-title">${esc(exName(e))}</h3>
   ${examGroups(e).map(({ g, list }) => `<details class="topic-group" id="g-${e.id}-${g.id}"${open ? ' open' : ''}>
-    <summary><span class="tg-name">${esc(grName(e, g))}</span><span class="tg-meta">${esc(t('course_steps_n', { n: list.length }))} · ${esc(t('n_questions', { n: list.reduce((s, c) => s + qs[c.id].length, 0) }))}</span><span class="tg-preview">${esc(list.slice(0, 4).map(c => c.name).join(listSep))}${list.length > 4 ? ' …' : ''}</span></summary>
+    <summary><span class="tg-name">${icon(g.id, 'tg-ic')}${esc(grName(e, g))}</span><span class="tg-meta">${esc(t('course_steps_n', { n: list.length }))} · ${esc(t('n_questions', { n: list.reduce((s, c) => s + qs[c.id].length, 0) }))}</span><span class="tg-preview">${esc(list.slice(0, 4).map(c => c.name).join(listSep))}${list.length > 4 ? ' …' : ''}</span></summary>
     ${topicRows(list, open ? '' : 'home_topic_row')}
   </details>`).join('\n  ')}
 </section>`).join('');
@@ -451,7 +452,7 @@ function buildLang(L) {
   // 分野ごとに開閉できる欄にする(1,000語を超えて縦に長くなりすぎるため)。説明文は閉じていても HTML にあり、検索で開く(glossary.js)
   const glossaryList = gloGroups.map(g => `
 <section class="glossary-group">
-  <h2>${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
+  <h2 class="h-ic">${icon(g.id)}${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
   <details class="glossary-cat" id="cat-${c.id}">
     <summary><span class="tg-name">${esc(c.name)}</span><span class="tg-meta">${list.length}</span></summary>
     <p class="glossary-cat-quiz"><a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></p>
@@ -541,6 +542,7 @@ function buildLang(L) {
   <li><a class="cmp-card" href="${cmpUrl(e)}"><strong>${esc(e.title)}</strong><span>${esc(short(e.description, 110))}</span></a></li>`).join('') + '</ul>';
   // 比較の一覧(用語集と同じ作り): 区分 → 分野の順にまとめる
   const cmpGroups = exams.flatMap(e => e.groups.map(g => ({
+    id: g.id,
     name: grName(e, g),
     cats: cats.filter(c => c.exam === e.id && c.group === g.id)
       .map(c => ({ c, list: cmp.filter(x => x.cat === c.id) })).filter(x => x.list.length),
@@ -550,16 +552,17 @@ function buildLang(L) {
       <dt><a href="${cmpUrl(e)}">${esc(e.title)}</a></dt>
       <dd>${esc(e.description)}</dd>
     </div>`;
-  const compareIndex = `<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}">${cmpGroups.map(g => `
-  <p><b>${esc(g.name)}</b>${g.cats.map(({ c, list }) => ` <a class="chip" href="#cat-${c.id}">${esc(c.name)} <small>${list.length}</small></a>`).join('')}</p>`).join('')}
-</nav>` + cmpGroups.map(g => `
-<section class="glossary-group">
-  <h2>${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
-  <section class="glossary-cat" id="cat-${c.id}">
-    <h3>${esc(c.name)}<a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></h3>
-    <dl class="glossary">${list.map(cmpItem).join('')}
+  // 比較の一覧: 用語集・分野一覧と同じ形(大分類の見出しにアイコン、分野ごとに開閉できる欄)。
+  // 欄の中は比較の名前だけを並べ、説明は検索のために残して画面では1行に縮める(以前は説明つきで縦に約66画面あった)
+  const compareIndex = `<nav class="glossary-nav" aria-label="${esc(t('glossary_nav'))}"><p>${cmpGroups.map(g => `<a class="chip" href="#cg-${g.id}">${esc(g.name)} <small>${g.cats.reduce((n, x) => n + x.list.length, 0)}</small></a>`).join(' ')}</p></nav>` + cmpGroups.map(g => `
+<section class="glossary-group" id="cg-${g.id}">
+  <h2 class="h-ic">${icon(g.id)}${esc(g.name)}</h2>${g.cats.map(({ c, list }) => `
+  <details class="glossary-cat" id="cat-${c.id}">
+    <summary><span class="tg-name">${esc(c.name)}</span><span class="tg-meta">${list.length}</span></summary>
+    <dl class="glossary cmp-rows">${list.map(cmpItem).join('')}
     </dl>
-  </section>`).join('')}
+    <p class="glossary-cat-quiz"><a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></p>
+  </details>`).join('')}
 </section>`).join('');
   const cmpSection = (heading, list) => (list.length ? `<section>
   <h2>${esc(heading)}</h2>
@@ -618,7 +621,7 @@ function buildLang(L) {
   // その図への行き先: 図ごとのページがあればそこ、なければ図解集の中の位置
   const figHref = id => (figPage(id) ? `${base}${figPagePath(id)}` : `${home}figures/#fig-${id}`);
   const figureHtml = (svg, id) => `<figure class="fig">${svg}<figcaption class="fig-cap">${esc(figTitle(svg))} · <a href="${figHref(id)}">${esc(t(figPage(id) ? 'figure_try' : 'figure_open'))}</a></figcaption></figure>`;
-  const figureGallery = `<div class="fig-grid">${figList.map(x => `
+  const figureGallery = `<div class="fig-gallery fig-grid">${figList.map(x => `
   <figure class="fig-item" id="fig-${x.id}">
     <img src="${base}img/${code}/${x.id}.svg" alt="${esc(x.title)}" width="${x.size[0]}" height="${x.size[1]}" loading="lazy">
     <figcaption><strong>${figPage(x.id) ? `<a href="${figHref(x.id)}">${esc(x.title)}</a>` : esc(x.title)}</strong>${figPage(x.id) ? `<a class="fig-try" href="${figHref(x.id)}">${esc(t('figure_try'))} →</a>` : ''}${figUse[x.id]?.length ? `<span class="muted">${esc(t('figure_used_in'))}: ${figUse[x.id].slice(0, 2).map(q => `<a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 48))}</a>`).join(' / ')}</span>` : ''}</figcaption>
@@ -652,6 +655,8 @@ function buildLang(L) {
   };
 
   const common = {
+    // 資料の中のページ(用語集・比較・図解集)の上に出す、資料のトップへのパンくず
+    refCrumb: refText[code] ? `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(refText[code].nav)}</a></nav>` : '',
     base, home, lang: code, htmlLang: L.htmlLang,
     siteName: esc(siteName),
     year: new Date().getFullYear(),
@@ -735,11 +740,14 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
         : `<a href="${base}${fallback(x)}" lang="${x.htmlLang}" data-lang="${x.code}">${esc(x.label)}</a>`).join('');
     // ヘッダーのナビ(いまいるページには aria-current を付ける)。
     // PC: Topics / 用語集 / 比較 / 図解 / 計算ツール / Progress。スマートフォン: ホームを加えて Menu に縦に並べる
-    const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
-    const resources = [...(learnArts.length ? [['learn/', LT.nav]] : []), ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures],
-      ...(numbers.length && code === numbersLang ? [['numbers/', 'Key numbers']] : []),
+    // 用語集・比較・図解集・略語辞典などは「資料」の中なので、そのページでは「資料」を今いる場所として示す
+    const inRef = ['reference/', 'glossary/', 'compare/', 'figures/', 'numbers/', 'news-terms/'].some(x => p.startsWith(L.path + x));
+    const navLink = ([sub, label]) => `<a href="${home}${sub}"${p === L.path + sub || (sub === 'reference/' && inRef && refText[code]) ? ' aria-current="page"' : ''}>${esc(label)}</a>`;
+    // メニューは「分野・やさしい解説・計算ツール・資料・成績」の5つ。用語集・比較・図解集・略語辞典などは「資料」のトップにまとめる
+    // (資料の文がない言語では、これまでどおり用語集・比較・図解集をメニューに出す)
+    const resources = [...(learnArts.length ? [['learn/', LT.nav]] : []),
       ...(toolsIn(code).length ? [['tools/', S.nav_tools]] : []),
-      ...(refText[code] ? [['reference/', refText[code].nav]] : [])];
+      ...(refText[code] ? [['reference/', refText[code].nav]] : [['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures]])];
     // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
     const headerNav = [['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
     const navMenu = [['', S.nav_home], ['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
@@ -802,6 +810,7 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
       alt: Object.fromEntries(langs.filter(x => learnText[x.code] && learnNames(x.code).length).map(x => [x.code, `${x.path}learn/`])),
       title: LT.title,
       description: LT.description,
+      scripts: ['open-hash.js'],
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [LT.nav, learnUrl]),
         { '@context': 'https://schema.org', '@type': 'ItemList', name: LT.nav,
@@ -811,11 +820,10 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
 <h1>${esc(LT.nav)}</h1>
 <p class="lead">${esc(LT.lead)}</p>
 ${seriesList.length > 1 ? `<nav class="topic-jump">${seriesList.map(({ s, list }) => `<a class="chip" href="#s-${s.id}">${esc(seriesName(s))} <small>${list.length}</small></a>`).join(' ')}</nav>` : ''}
-${seriesList.map(({ s, list }) => `<section class="learn-series" id="s-${s.id}">
-  <h2>${esc(seriesName(s))}</h2>
-  ${s.desc?.[code] ? `<p class="muted">${esc(s.desc[code])}</p>` : ''}
-  <ol class="cmp-list learn-list">${list.map(a => card(a, 'learn_index')).join('')}</ol>
-</section>`).join('\n')}
+${seriesList.map(({ s, list }, k) => `<details class="learn-series topic-group" id="s-${s.id}"${k === 0 ? ' open' : ''}>
+  <summary><span class="tg-name">${icon('learn', 'tg-ic')}${esc(seriesName(s))}</span><span class="tg-meta">${list.length}</span>${s.desc?.[code] ? `<span class="tg-preview">${esc(s.desc[code])}</span>` : ''}</summary>
+  <ol class="learn-rows">${list.map(a => `<li><a href="${a.href}" data-track="learn_index"><span>${esc(a.title)}</span>${a.minutes ? `<small>${esc(learnFill(LT.minutes, { n: a.minutes }))}</small>` : ''}</a></li>`).join('')}</ol>
+</details>`).join('\n')}
 <div data-ad="glossary"></div>`,
     });
     for (const a of learnArts) {
@@ -2538,9 +2546,11 @@ ${toolsIn(code).length > 1 ? `<section>
     for (const y of toolsIn(code)) {
       const c = catOf(y.cat);
       const name = c ? groupOf(c).name : t('tools_other');
-      const order = c ? (exams.find(e => e.id === c.exam)?.groups.findIndex(g => g.id === c.group) ?? 99) : 99;
+      // 並びは分野一覧と同じ(半導体の大分類 → コンピュータの大分類)。以前は区分の中の順番だけで並べていて、両者が交互に出ていた
+      const ei = c ? exams.findIndex(e => e.id === c.exam) : 99;
+      const order = c ? ei * 100 + (exams[ei]?.groups.findIndex(g => g.id === c.group) ?? 99) : 9999;
       let g = gs.find(x => x.name === name);
-      if (!g) gs.push(g = { name, order, items: [] });
+      if (!g) gs.push(g = { name, id: c ? c.group : 'other', order, items: [] });
       g.items.push(y);
     }
     return gs.sort((a, b) => a.order - b.order);
@@ -2552,7 +2562,7 @@ ${toolsIn(code).length > 1 ? `<section>
       alt: Object.fromEntries(langs.filter(y => toolsIn(y.code).length).map(y => [y.code, `${y.path}tools/`])),
       title: S.tools_title,
       description: S.tools_lead,
-      scripts: ['tools-list.js'],
+      scripts: ['tools-list.js', 'open-hash.js'],
       content: `<div class="tool-page tools-index">
 <nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a></nav>
 <header class="tool-hero">
@@ -2569,10 +2579,10 @@ ${toolsIn(code).length > 1 ? `<section>
   <div data-list="recent" hidden><h2>${esc(t('tools_recent'))}</h2><div class="mode-grid compact"></div></div>
   <p class="muted">${esc(t('tools_local_note'))}</p>
 </section>
-${toolGroups().map((g, k) => `<section class="tools-group" id="tg-${k + 1}">
-  <h2>${esc(g.name)} <small class="muted" data-count>${g.items.length}</small></h2>
+${toolGroups().map((g, k) => `<details class="tools-group topic-group" id="tg-${k + 1}">
+  <summary><span class="tg-name">${icon(g.id, 'tg-ic')}${esc(g.name)}</span><span class="tg-meta" data-count>${g.items.length}</span></summary>
   <div class="mode-grid tool-all">${g.items.map(y => `<a class="mode-card tool-card" data-tool="${y.id}" href="${home}tools/${y.slug}/">${catOf(y.cat) ? `<em>${esc(catOf(y.cat).name)}</em>` : ''}<strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
-</section>`).join('\n')}
+</details>`).join('\n')}
 <div data-ad="tools"></div>
 </div>`,
     });

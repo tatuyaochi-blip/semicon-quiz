@@ -31,6 +31,8 @@ filter?.addEventListener('input', () => {
       if (hit) n++;
     }
     sec.hidden = !n;
+    // 分野の欄は開閉式。絞り込み中は当たりのある欄を開き、絞り込みをやめたら閉じる
+    if (sec.tagName === 'DETAILS') sec.open = words.length > 0 && n > 0;
     const count = sec.querySelector('[data-count]');
     if (count) count.textContent = n;
     shown += n;
