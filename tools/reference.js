@@ -139,6 +139,8 @@ ${groups.map(gr => `<section class="glossary-cat" id="abbr-${gr}">
       page({
         path: `${L.path}${sub}`,
         alt: altFor(sub),
+        // 用語集と内容が重なるので検索には出さない(2026-11-05、検索表示の急落を受けた運営者の判断。ページは資料から使える)
+        noindex: true,
         title: R.ml_group_title.replace('{group}', gr.name).replace('{n}', n),
         description: R.ml_group_description.replace('{group}', gr.name).replace('{n}', n),
         scripts: ['glossary.js', 'multilingual.js'],
