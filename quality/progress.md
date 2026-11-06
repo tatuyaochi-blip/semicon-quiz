@@ -38,7 +38,8 @@
 | 13 | やさしい解説 L1 半導体の基本・作り方 | 22本 | 初学者向けの入口の記事 | 検証済み(2026-11-02) |
 | 14 | エッチング × 用語解説・比較 | 20+5 | 1,402回、平均54.2位(表示は2番目に多いが順位が低い) | 検証済み(2026-11-02) |
 | 15 | パッケージ・実装 × 用語解説・比較 | 14+3 | 1,034回、平均64.7位 | 検証済み(2026-11-05) |
-| 16〜 | 残りの区画 | | 下の分野の表の順(用語の表示回数の多い順)を基本に、計算ツール・記事の区画をはさむ | 未確認 |
+| 16 | 計測・分析 × 用語解説・比較 | 13+4 | — | 検証済み(2026-11-06) |
+| 17〜 | 残りの区画 | | 下の分野の表の順(用語の表示回数の多い順)を基本に、計算ツール・記事の区画をはさむ | 未確認 |
 
 ## 計算ツールの区画
 
@@ -50,7 +51,7 @@
 | T4 回路(2) | opamp, dbm, jitter, adc-snr, dcdc | 検証済み(2026-11-02、テスト tools/tests/circuit2-tools.test.mjs) |
 | T5 回路・実装 | interconnect-rc, pdn, thermal, cmos-power, bode | 検証済み(2026-11-02、テスト tools/tests/circuit3-tools.test.mjs) |
 | T6 論理・制御 | sta, kmap, logic-sim, fsm, pid | 検証済み(2026-11-05、テスト tools/tests/logic-control-tools.test.mjs。logic-sim はブラウザで例の真理値表を照合) |
-| T7 計算機の基礎 | base-convert, bitops, ieee754, hamming, crc | 未確認 |
+| T7 計算機の基礎 | base-convert, bitops, ieee754, hamming, crc | 検証済み(2026-11-06、テスト tools/tests/computing-tools.test.mjs。ページの計算をテストと同じ関数に寄せた) |
 | T8 アーキテクチャ・OS | cache-calc, mem-bw, paging, sched, raid | 未確認 |
 | T9 アルゴリズム | sort, bintree, hash, dijkstra, bigo | 未確認 |
 | T10 ネットワーク・セキュリティ | subnet, transfer, password, cvss, huffman | 未確認 |

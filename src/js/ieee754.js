@@ -8,7 +8,7 @@ try { T = JSON.parse(form.dataset.text); } catch {}
 const FMT = { half: { e: 5, m: 10 }, single: { e: 8, m: 23 }, double: { e: 11, m: 52 } };
 
 // ---- 倍精度の値 → 各形式のビット(BigInt) ----
-function bitsOf(x, f) {
+export function bitsOf(x, f) {
   const dv = new DataView(new ArrayBuffer(8));
   if (f === 'double') { dv.setFloat64(0, x); return dv.getBigUint64(0); }
   if (f === 'single') { dv.setFloat32(0, x); return BigInt(dv.getUint32(0)); }
@@ -16,7 +16,7 @@ function bitsOf(x, f) {
 }
 const minus = v => String(v).replace(/-/g, '−');
 const roundEven = x => { const r = Math.round(x); return r - x === 0.5 && r % 2 ? r - 1 : r; };
-function toHalf(x) {
+export function toHalf(x) {
   const s = x < 0 || Object.is(x, -0) ? 0x8000 : 0;
   const a = Math.abs(x);
   if (Number.isNaN(x)) return 0x7e00;
@@ -31,8 +31,25 @@ function toHalf(x) {
   return s | (e + 15) << 10 | m;
 }
 
+// ビット列 bits(BigInt)が表す数の種類と、記憶される値の正確な10進数(正規化数・非正規化数・0 のとき)
+export function exactOf(bits, f) {
+  const { e: eb, m: mb } = FMT[f];
+  const total = 1 + eb + mb;
+  const bin = bits.toString(2).padStart(total, '0');
+  const sign = Number(bin[0]), ev = parseInt(bin.slice(1, 1 + eb), 2), bias = 2 ** (eb - 1) - 1;
+  const mv = BigInt('0b' + bin.slice(1 + eb));
+  const kind = ev === 2 ** eb - 1 ? (mv ? 'nan' : 'inf') : ev === 0 ? (mv ? 'sub' : 'zero') : 'normal';
+  if (kind === 'nan' || kind === 'inf') return { kind, sign, exact: kind === 'inf' ? (sign ? '−∞' : '+∞') : 'NaN' };
+  const M = kind === 'normal' ? (1n << BigInt(mb)) + mv : mv;
+  const E = (kind === 'normal' ? ev - bias : 1 - bias) - mb;
+  let str;
+  if (E >= 0) str = (M << BigInt(E)).toString();
+  else { const d = (M * 5n ** BigInt(-E)).toString().padStart(-E + 1, '0'); str = `${d.slice(0, d.length + E)}.${d.slice(d.length + E)}`.replace(/\.?0+$/, ''); }
+  return { kind, sign, M, E, exact: (sign ? '−' : '') + str };
+}
+
 // ---- 10進数の文字列を分数 N / 10^k で表す(誤差を正確に求めるため) ----
-function decimal(text) {
+export function decimal(text) {
   const t = text.trim().replace(/[\s_]/g, '');
   const mt = t.match(/^([+-]?)(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/i);
   if (!mt || !(mt[2] || mt[3])) return null;
@@ -72,15 +89,8 @@ function show(bits, f, input) {
   // 記憶される値を正確な10進数で: 値 = M × 2^E(M は整数)
   let exact = '–', err = '–';
   if (kind === 'normal' || kind === 'sub' || kind === 'zero') {
-    const M = kind === 'normal' ? (1n << BigInt(mb)) + mv : mv;
-    const E = (kind === 'normal' ? ev - bias : 1 - bias) - mb;
-    let str;
-    if (E >= 0) str = (M << BigInt(E)).toString();
-    else {
-      const d = (M * 5n ** BigInt(-E)).toString().padStart(-E + 1, '0');
-      str = `${d.slice(0, d.length + E)}.${d.slice(d.length + E)}`.replace(/\.?0+$/, '');
-    }
-    exact = (sign ? '−' : '') + str;
+    const { M, E, exact: ex } = exactOf(bits, f);
+    exact = ex;
     if (input) {
       // 誤差 = 記憶される値 − 入力(共通の分母 10^k × 2^a で引き算する)
       const a = BigInt(Math.max(0, -E));
@@ -130,6 +140,8 @@ function info(f) {
   out('minn').textContent = `2^${minus(1 - bias)} ≈ ${minus((2 ** (1 - bias)).toPrecision(4))}`;
   out('mins').textContent = `2^${minus(1 - bias - m)} ≈ ${minus((2 ** (1 - bias - m)).toPrecision(4))}`;
 }
+if (form) {
 form.addEventListener('input', e => (e.target.name === 'hex' ? fromHex : fromValue)());
 form.addEventListener('submit', e => e.preventDefault());
 fromValue();
+}

@@ -83,6 +83,7 @@ function render() {
   document.getElementById('hm-out').textContent = d.status === 'double' ? '–' : `${out}${same ? '' : ` (${T.miscorrect})`}`;
   document.getElementById('hm-flips').textContent = String(state.flips.size);
 }
+if (form) {
 document.getElementById('hm-code').addEventListener('click', e => {
   const b = e.target.closest('.hm-bit');
   if (!b) return;
@@ -99,3 +100,4 @@ form.elements.k.addEventListener('change', () => {
 });
 form.addEventListener('submit', e => e.preventDefault());
 build();
+}
