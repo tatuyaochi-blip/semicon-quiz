@@ -114,8 +114,10 @@ function update() {
     box.querySelector('[data-rem]').textContent = T.div_none;
   }
 }
+if (form) {
 form.elements.preset.addEventListener('change', e => { setPreset(e.target.value); update(); });
 form.addEventListener('input', e => { if (e.target.name !== 'preset') update(); });
 form.addEventListener('submit', e => e.preventDefault());
 setPreset(form.elements.preset.value || 'crc-32');
 update();
+}
