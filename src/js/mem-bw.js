@@ -1,12 +1,13 @@
 // メモリ帯域の計算ページ。ピーク帯域 = 転送レート(MT/s) × バス幅(ビット) ÷ 8 × 数
-const form = document.getElementById('bw-form');
+import { initSweep } from './sweep.js';
 const lang = document.documentElement.lang || 'en';
 const fmt = (x, d = 1) => (Number.isFinite(x) ? x.toLocaleString(lang, { maximumFractionDigits: d }) : '–');
 const out = k => document.querySelector(`[data-out="${k}"]`);
 // 代表的な規格: [名前, 転送レート MT/s, 幅 ビット] (DIMM・パッケージ・チップ・スタックあたり)
-const PRESETS = [['DDR4-3200 (64-bit DIMM)', 3200, 64], ['DDR5-6400 (2 × 32-bit DIMM)', 6400, 64], ['LPDDR5X-8533 (64-bit)', 8533, 64], ['GDDR6 16 Gb/s (32-bit chip)', 16000, 32], ['HBM3 6.4 Gb/s (1024-bit stack)', 6400, 1024]];
-const gbs = (rate, width, n) => (rate * 1e6 * width / 8 * n) / 1e9;
-
+export const PRESETS = [['DDR4-3200 (64-bit DIMM)', 3200, 64], ['DDR5-6400 (2 × 32-bit DIMM)', 6400, 64], ['LPDDR5X-8533 (64-bit)', 8533, 64], ['GDDR6 16 Gb/s (32-bit chip)', 16000, 32], ['HBM3 6.4 Gb/s (1024-bit stack)', 6400, 1024]];
+export const gbs = (rate, width, n) => (rate * 1e6 * width / 8 * n) / 1e9;
+const form = globalThis.document?.getElementById('bw-form');
+if (form) {
 const sel = form.elements.preset;
 sel.addEventListener('change', () => {
   const p = PRESETS[Number(sel.value)];
@@ -29,8 +30,8 @@ form.addEventListener('submit', e => e.preventDefault());
 update();
 
 // グラフで見る: 転送レートやバス幅を変えたときの帯域
-import { initSweep } from './sweep.js';
 initSweep({
   form, inputs: ['rate', 'width', 'count', 'eff'], outputs: ['peak', 'eff'], defaults: { x: 'rate', y: 'peak' },
   calc: v => { const peak = gbs(v.rate, v.width, v.count); return { peak, eff: (peak * v.eff) / 100 }; },
 });
+}
