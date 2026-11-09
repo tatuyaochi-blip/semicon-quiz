@@ -107,12 +107,12 @@ const beyondCats = ['finfet', 'lithography', 'interconnect', 'advanced-packaging
 // やさしい解説(/learn/): 初心者が素朴な疑問から読む記事。本文は src/learn/{言語}/{slug}.html(先頭のコメントに JSON の情報)。
 // シリーズは data/learn.json。記事のある言語だけに一覧と記事のページを作る(企画: research/2026-10-23-articles-plan.md)
 const learnData = readOpt('data/learn.json', { series: [], extra: [] });
-// サイトに出さない分野だけを扱う記事は作らない(分野の一部が出さない分野なら、その分野を外して作る)
+// 主な分野(cats の先頭)がサイトに出さない分野の記事は作らない(config.keepLearn は例外)。ほかの分野に出さない分野があれば、その分野を外して作る
 const learnCats = (code, slug) => JSON.parse(read(`src/learn/${code}/${slug}.html`).match(/^<!--\s*(\{[\s\S]*?\})\s*-->/)?.[1] ?? '{}').cats ?? [];
 const learnNamesCache = {};
 const learnNamesAll = code => (exists(`src/learn/${code}`) ? fs.readdirSync(path.join(root, `src/learn/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5)) : []);
 const learnNames = code => (learnNamesCache[code] ??= exists(`src/learn/${code}`) ? fs.readdirSync(path.join(root, `src/learn/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5))
-  .filter(slug => !excluded.size || learnCats(code, slug).some(keepCat)) : []);
+  .filter(slug => !excluded.size || keepCat(learnCats(code, slug)[0]) || (config.keepLearn ?? []).includes(slug)) : []);
 const learnText = {
   ja: { nav: 'やさしい解説', card: '「半導体とは?」「CPUとは?」など、素朴な疑問から読む解説記事', title: 'やさしい解説: 半導体とコンピュータを素朴な疑問から',
     description: '半導体・トランジスタ・CPU など、半導体とコンピュータの基本を、予備知識の少ない人向けに素朴な疑問から解説します。しくみ、身近な使われ方、よくある誤解まで。読んだあとは理解度チェックとクイズで確かめられます。',
