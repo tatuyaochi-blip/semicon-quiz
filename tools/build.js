@@ -18,9 +18,15 @@ const exists = p => fs.existsSync(path.join(root, p));
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const readJSON = p => JSON.parse(read(p));
 const readOpt = (p, d) => (exists(p) ? readJSON(p) : d);
+// サイトに出さないページ(config.excludeCats)へのリンクは、文字だけ残して外す(removedPath は読み込みの後で決める)
+let removedPath = null;
+const unlinkRemoved = s => s.replace(/<a\b[^>]*\bhref="([^"#?]*)[^"]*"[^>]*>([\s\S]*?)<\/a>/g, (m, href, inner) => {
+  const p = href.replace(/^https:\/\/semiconroom\.com/, '').replace(/^\/(en|zh-hant|ko|de|nl|fr|zh)\//, '/');
+  return removedPath(p) ? inner : m;
+});
 const write = (p, s) => {
   fs.mkdirSync(path.dirname(path.join(out, p)), { recursive: true });
-  fs.writeFileSync(path.join(out, p), s);
+  fs.writeFileSync(path.join(out, p), removedPath && typeof s === 'string' && p.endsWith('.html') ? unlinkRemoved(s) : s);
 };
 const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 const fill = (tpl, vars) => tpl.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m));
@@ -45,8 +51,13 @@ const mainLang = config.mainLang ?? defLang;
 const mainL = langs.find(x => x.code === mainLang);
 const mainS = { ...readJSON(`src/i18n/${defLang}.json`), ...readOpt(`src/i18n/${mainLang}.json`, {}) };
 const exams = readJSON('data/exams.json');
-const categories = readJSON('data/categories.json');
-const glossary = readJSON('data/glossary.json');
+// サイトに出さない分野(config.excludeCats)。その分野の問題・用語・比較・ツールと、その分野だけの記事を作らない(データは残す)
+const excluded = new Set(config.excludeCats ?? []);
+const keepCat = id => !excluded.has(id);
+// 分野の大分類の付け替え(config.regroupCats)。出さない分野を外した後に、少ない分野だけが残る大分類をまとめる
+const categories = readJSON('data/categories.json').filter(c => keepCat(c.id)).map(c => (config.regroupCats?.[c.id] ? { ...c, group: config.regroupCats[c.id] } : c));
+const glossaryAll = readJSON('data/glossary.json');
+const glossary = glossaryAll.filter(g => keepCat(g.cat));
 // 用語ページのURL(/term/{slug}/)。英語の用語名から作る(glossary.json の slug で上書きできる)
 const gloEn = readOpt('data/i18n/en/glossary.json', {});
 const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
@@ -96,7 +107,12 @@ const beyondCats = ['finfet', 'lithography', 'interconnect', 'advanced-packaging
 // やさしい解説(/learn/): 初心者が素朴な疑問から読む記事。本文は src/learn/{言語}/{slug}.html(先頭のコメントに JSON の情報)。
 // シリーズは data/learn.json。記事のある言語だけに一覧と記事のページを作る(企画: research/2026-10-23-articles-plan.md)
 const learnData = readOpt('data/learn.json', { series: [], extra: [] });
-const learnNames = code => (exists(`src/learn/${code}`) ? fs.readdirSync(path.join(root, `src/learn/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5)) : []);
+// サイトに出さない分野だけを扱う記事は作らない(分野の一部が出さない分野なら、その分野を外して作る)
+const learnCats = (code, slug) => JSON.parse(read(`src/learn/${code}/${slug}.html`).match(/^<!--\s*(\{[\s\S]*?\})\s*-->/)?.[1] ?? '{}').cats ?? [];
+const learnNamesCache = {};
+const learnNamesAll = code => (exists(`src/learn/${code}`) ? fs.readdirSync(path.join(root, `src/learn/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5)) : []);
+const learnNames = code => (learnNamesCache[code] ??= exists(`src/learn/${code}`) ? fs.readdirSync(path.join(root, `src/learn/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5))
+  .filter(slug => !excluded.size || learnCats(code, slug).some(keepCat)) : []);
 const learnText = {
   ja: { nav: 'やさしい解説', card: '「半導体とは?」「CPUとは?」など、素朴な疑問から読む解説記事', title: 'やさしい解説: 半導体とコンピュータを素朴な疑問から',
     description: '半導体・トランジスタ・CPU など、半導体とコンピュータの基本を、予備知識の少ない人向けに素朴な疑問から解説します。しくみ、身近な使われ方、よくある誤解まで。読んだあとは理解度チェックとクイズで確かめられます。',
@@ -160,11 +176,44 @@ const refText = readOpt('data/reference/text.json', {});
 const numbersQ = [...new Set(numbers.flatMap(g => g.items.flatMap(x => x.questions ?? [])))];
 // 計算ツール(/tools/{slug}/)。data/tools/*.json に1ツール1ファイル(order 順)。文言は言語ごとで、訳のある言語だけページを作る
 const tools = exists('data/tools') ? fs.readdirSync(path.join(root, 'data/tools')).filter(f => f.endsWith('.json'))
-  .map(f => readJSON(`data/tools/${f}`)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
+  .map(f => readJSON(`data/tools/${f}`)).filter(x => !x.cat || keepCat(x.cat)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
 const toolsIn = code => tools.filter(x => x.text[code]);
-const compares = readOpt('data/compare.json', []); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
+const compares = readOpt('data/compare.json', []).filter(x => keepCat(x.cat)); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 // ニュースに出た用語(/news-terms/)。用語集の語に「なぜ今話題なのか」などを足す。訳は data/i18n/{言語}/news-terms.json
 const newsTerms = readOpt('data/news-terms.json', []);
+// サイトに出さない分野(excluded)の用語・問題・比較・ツールへの参照を、残すデータから外す
+if (excluded.size) {
+  const removedTerm = new Set(readJSON('data/glossary.json').filter(g => excluded.has(g.cat)).map(g => g.term));
+  const removedQ = new Set([...excluded].flatMap(id => readOpt(`data/questions/${id}.json`, []).map(q => q.id)));
+  const removedCmp = new Set(readOpt('data/compare.json', []).filter(x => excluded.has(x.cat)).map(x => x.slug));
+  const keepIn = (arr, pred) => { for (let i = arr.length - 1; i >= 0; i--) if (!pred(arr[i])) arr.splice(i, 1); return arr; };
+  const prune = o => {
+    if (Array.isArray(o.terms)) o.terms = o.terms.filter(k => !removedTerm.has(k));
+    if (Array.isArray(o.questions)) o.questions = o.questions.filter(id => !removedQ.has(id));
+    if (Array.isArray(o.cats)) o.cats = o.cats.filter(keepCat);
+    if (Array.isArray(o.fields)) o.fields = o.fields.filter(keepCat);
+    if (Array.isArray(o.compares)) o.compares = o.compares.filter(x => !removedCmp.has(x));
+    if (Array.isArray(o.steps)) o.steps = o.steps.filter(keepCat);
+    return o;
+  };
+  [...compares, ...tools, ...careers, ...courses].forEach(prune);
+  // 分野の半分以上を外したコース(基本情報・応用情報の対策など)は作らない
+  const stepsAll = Object.fromEntries(readOpt('data/courses.json', []).map(co => [co.id, co.steps.length]));
+  keepIn(courses, co => co.steps.length > 0 && co.steps.length * 2 >= stepsAll[co.id]);
+  keepIn(newsTerms, e => !removedTerm.has(e.term)).forEach(e => { prune(e); if (removedQ.has(e.question)) delete e.question; });
+  numbers.forEach(g => g.items.forEach(prune));
+  const slugOf = g => g.slug ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const gone = new Set([
+    ...[...excluded].flatMap(id => [`/c/${id}/`]),
+    ...glossaryAll.filter(g => excluded.has(g.cat)).map(g => `/term/${slugOf(g)}/`),
+    ...[...removedCmp].map(x => `/compare/${x}/`),
+    ...fs.readdirSync(path.join(root, 'data/tools')).map(f => readJSON(`data/tools/${f}`)).filter(x => x.cat && excluded.has(x.cat)).map(x => `/tools/${x.slug}/`),
+    ...learnNamesAll('ja').filter(x => !learnNames('ja').includes(x)).map(x => `/learn/${x}/`),
+  ]);
+  const goneCourse = new Set(readOpt('data/courses.json', []).map(x => x.id).filter(id => !courses.some(c => c.id === id)).map(id => `/course/${id}/`));
+  for (const x of config.excludePages ?? []) gone.add(`/${x}/`);
+  removedPath = p => gone.has(p) || goneCourse.has(p) || [...excluded].some(id => p.startsWith(`/q/${id}/`));
+}
 const figs = figures();
 // 操作できる図解(図IDごと。動きは fig-live.js)。文言は言語ごとで、訳のある言語だけ出す
 const figLive = readOpt('data/figures-live.json', {});
@@ -229,7 +278,7 @@ write('js/modes/index.js',
   `\nexport default [${modes.map((_, i) => `m${i}`).join(', ')}];\n`);
 
 // ページの一覧: 言語ごとに src/pages/{言語}/*.html
-const pageNames = code => (exists(`src/pages/${code}`) ? fs.readdirSync(path.join(root, `src/pages/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5)) : []);
+const pageNames = code => (exists(`src/pages/${code}`) ? fs.readdirSync(path.join(root, `src/pages/${code}`)).filter(f => f.endsWith('.html')).map(f => f.slice(0, -5)).filter(x => !(config.excludePages ?? []).includes(x)) : []);
 const pagePath = (L, name) => (name === 'index' ? L.path : `${L.path}${name}/`);
 
 const sitemap = [];
@@ -316,6 +365,8 @@ function buildLang(L) {
     const m = src.match(/^<!--\s*(\{[\s\S]*?\})\s*-->/);
     if (!m) throw new Error(`src/learn/${code}/${slug}.html: 先頭に JSON のコメントがありません`);
     const a = { slug, ...JSON.parse(m[1]), body: src.slice(m[0].length) };
+    if (a.cats) a.cats = a.cats.filter(keepCat);
+    if (a.terms) a.terms = a.terms.filter(k => !excluded.size || glossary.some(g => g.term === k));
     for (const k of ['title', 'description', 'series', 'order', 'updated', 'cats']) if (a[k] == null) throw new Error(`learn/${code}/${slug}: ${k} がありません`);
     if (!learnData.series.some(s => s.id === a.series)) throw new Error(`learn/${code}/${slug}: data/learn.json にないシリーズ ${a.series}`);
     for (const id of a.cats) if (!categories.some(c => c.id === id)) throw new Error(`learn/${code}/${slug}: 存在しない分野 ${id}`);
@@ -838,6 +889,9 @@ ${seriesList.map(({ s, list }, k) => `<details class="learn-series topic-group" 
         })
         .replace(/\{\{term:([^}|]+)(?:\|([^}]+))?\}\}/g, (m, k, text) => {
           const g = glossary.find(x => x.term === k) ?? glossary.find(x => (x.aliases ?? []).includes(k));
+          // サイトに出さない分野の語は、リンクにせず文字だけにする
+          const gx = !g && glossaryAll.find(x => x.term === k || (x.aliases ?? []).includes(k));
+          if (gx) return esc(text ?? (isDef ? k : gloT[gx.term]?.term ?? k));
           if (!g) throw new Error(`${where}: 用語集にない語 ${k}`);
           const lg = terms.find(x => x.key === g.term);
           const label = text ?? (isDef ? k : lg?.term ?? k);
