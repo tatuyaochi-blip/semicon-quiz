@@ -456,6 +456,7 @@ function buildLang(L) {
   const homeFeatures = `<section class="features" aria-labelledby="features-h">
   <h2 id="features-h">${esc(t('home_feat_heading'))}</h2>
   <ul class="ref-tiles home-tiles">
+    ${feature(`${home}c/`, S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics', 'basic')}
     ${learnArts.length ? feature(`${home}learn/`, LT.nav, LT.card, 'home_feat_learn', 'learn') : ''}
     ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses', 'course') : ''}
     ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary', 'glossary')}
@@ -825,6 +826,9 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
     // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
     const headerNav = [['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
     const navMenu = [['', S.nav_home], ['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
+    // フッターの上段: 学ぶ・調べるページへの入口(下段はサイトの情報)
+    const footerMain = [['c/', S.nav_topics], ...resources, ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures]]
+      .filter((x, k, arr) => arr.findIndex(y => y[0] === x[0]) === k).map(([sub, label]) => `<a href="${home}${sub}">${esc(label)}</a>`).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
@@ -2926,7 +2930,7 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
   <h1>${esc(t('term_heading', { term: g.term }))}</h1>
   ${g.reading ? `<p class="muted term-reading">${esc(g.reading)}</p>` : ''}
   <p class="lead term-def">${esc(g.desc)}</p>
-  ${c || list.length ? `<p class="term-meta">${c ? `<a class="chip" href="${home}c/${c.id}/">${esc(c.name)}</a>` : ''}${list.length ? `<a class="chip" href="#questions">${esc(t('n_questions', { n: list.length }))}</a>` : ''}</p>` : ''}
+  ${c ? `<p class="term-meta"><span class="muted">${esc(t('term_category'))}:</span> <a class="chip" href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
   ${learnByTerm.has(g.key) ? `<p class="learn-link">${esc(LT.termLink)}: <a href="${home}learn/${learnByTerm.get(g.key).slug}/" data-track="term_learn">${esc(learnByTerm.get(g.key).title)}</a></p>` : ''}
   ${isDef ? '' : `<p class="muted">${esc(t('term_ja_name'))}: <span lang="ja">${esc(g.key)}</span></p>`}
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
