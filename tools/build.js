@@ -47,6 +47,8 @@ const config = readJSON('config.json');
 const baseUrl = config.baseUrl.replace(/\/?$/, '/');
 const base = new URL(baseUrl).pathname; // 例: /semicon-quiz/ または /
 const langs = config.languages;
+// サイトには出さないが、用語の見出しのデータだけ使う言語(config.languagesOff)を含めた一覧。資料の対訳表とオープンデータの列に使う
+const dataLangs = [...langs, ...(config.languagesOff ?? [])];
 const defLang = langs[0].code;
 // 検索エンジンに既定として伝える言語(x-default)。ほかの言語のページには、この言語版への案内を出す
 const mainLang = config.mainLang ?? defLang;
@@ -66,7 +68,7 @@ const termSlug = Object.fromEntries(glossary.map(g => [g.term, g.slug
   ?? (gloEn[g.term]?.term ?? g.term).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')]));
 const catByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/categories.json`, {})]));
 // 用語ページは、訳のある言語でだけ作る(訳のない語を日本語のまま出さない)
-const gloByLang = Object.fromEntries(langs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/glossary.json`, {})]));
+const gloByLang = Object.fromEntries(dataLangs.slice(1).map(x => [x.code, readOpt(`data/i18n/${x.code}/glossary.json`, {})]));
 const termLangs = key => langs.filter(x => x.code === defLang || gloByLang[x.code][key]);
 // 英語の用語名の短い形(タイトル用)。「DRAM (dynamic …)」は DRAM、「Address space … (ASLR)」は ASLR、「Silane (SiH4)」は Silane
 const enLabel = key => {
@@ -3056,7 +3058,7 @@ ${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_l
   }
 
   // 資料のページ(ほかのページを作り終えてから。この言語にあるページだけをトップに並べる)
-  buildReference({ L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary, gloGroups, gloByLang, write,
+  buildReference({ L, code, defLang, home, base, langs, dataLangs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary, gloGroups, gloByLang, write,
     R: refText[code], enGlo: gloByLang.en ?? {}, abbrExtra: readOpt('data/reference/abbr.json', {}), hasLang: x => !!refText[x] });
 }
 
