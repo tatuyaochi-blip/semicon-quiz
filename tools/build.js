@@ -618,6 +618,14 @@ function buildLang(L) {
     <p class="glossary-cat-quiz"><a href="${home}c/${c.id}/">${esc(t('glossary_to_quiz'))}</a></p>
   </details>`).join('')}
 </section>`).join('');
+  // PC の右の欄(用語・比較・問題・分野のページで共通): 目次、分野の問題を解くボタン、関連するページの一覧。
+  // スマホでは目次だけを、横に送れる行として出す(src/css/style.css の .term-rail)
+  const rail = ({ toc = [], c, lists = [], track }) => `<aside class="term-rail"><div class="term-rail-in">
+  ${toc.length >= 3 ? `<nav class="rail-box rail-toc" aria-label="${esc(S.tool_toc)}"><p class="rail-h">${esc(S.tool_toc)}</p><ol>${toc.map(([id, h]) => `<li><a href="#${id}">${esc(h)}</a></li>`).join('')}</ol></nav>` : ''}
+  ${c && qs[c.id]?.length ? `<div class="rail-box rail-cta"><p class="rail-h">${esc(c.name)}</p><p class="rail-sub">${esc(t('n_questions', { n: qs[c.id].length }))}</p><a class="btn btn-primary btn-block" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow" data-track="${track}">${esc(t('start_try'))}</a></div>` : ''}
+  ${lists.filter(([, items]) => items.length).map(([h, items]) => `<div class="rail-box rail-related"><p class="rail-h">${esc(h)}</p><ul>${items.map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`).join('')}</ul></div>`).join('\n  ')}
+</div></aside>`;
+  const cmpShort = e => String(e.title).split(/\s*[:：]\s*/)[0];
   const cmpSection = (heading, list) => (list.length ? `<section>
   <h2>${esc(heading)}</h2>
   ${cmpCards(list)}
@@ -1012,11 +1020,15 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
           .replace('<div class="mode-grid">', `<div class="mode-grid">
   <a class="mode-card primary" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow">
     <strong>${esc(t('practice_10'))}</strong><span>${esc(t('practice_10_desc'))}</span>
-  </a>`) + toolsIn(code).filter(x => x.cats.includes(c.id))
-          .map(x => `\n<p><a class="btn btn-ghost" href="${home}tools/${x.slug}/">${esc(x.text[code].nav)} →</a></p>`).join('')
-          + (beyondCats.includes(c.id) && beyondText[code] && pageNames(code).includes('beyond-scaling') ? `\n<p><a class="btn btn-ghost" href="${home}beyond-scaling/">${esc(beyondText[code].link)} →</a></p>` : '')
+  </a>`) + (links => (links.length ? `\n<p class="cat-links">${links.join('')}</p>` : ''))([
+            ...toolsIn(code).filter(x => x.cats.includes(c.id)).map(x => `<a class="btn btn-ghost" href="${home}tools/${x.slug}/">${esc(x.text[code].nav)} →</a>`),
+            ...(beyondCats.includes(c.id) && beyondText[code] && pageNames(code).includes('beyond-scaling') ? [`<a class="btn btn-ghost" href="${home}beyond-scaling/">${esc(beyondText[code].link)} →</a>`] : [])])
           : `<p class="muted">${esc(t('preparing'))}</p>`,
         siblings: catCards(live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id)),
+        // 右の欄(PC): この分野の用語(解説のある語を先に8つ)と、同じ大分類のほかの分野
+        rail: rail({ lists: [[S.nav_glossary, [...terms.filter(x => x.cat === c.id).sort((a, b) => !!(b.about?.length) - !!(a.about?.length)).slice(0, 8).map(x => [`${home}term/${termSlug[x.key]}/`, x.term]),
+          ...(terms.some(x => x.cat === c.id) ? [[`${home}glossary/#cat-${c.id}`, `${t('term_to_glossary')} →`]] : [])]],
+          [t('other_in_group', { group: g.name }), live.filter(x => x.exam === c.exam && x.group === c.group && x.id !== c.id).map(x => [`${home}c/${x.id}/`, x.name])]] }),
         compareLinks: cmpSection(t('compare_in_cat'), cmp.filter(e => e.cat === c.id)),
         books: bookSection(c),
         // 問題一覧は折りたたむ(リンクは HTML に残るので、各問題ページへの内部リンクは保たれる)
@@ -1095,6 +1107,8 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
           toolLinks: qToolLinks(q, c),
           books: bookSection(c),
           related: related.length ? `<h2>${esc(t('related_questions', { name: c.name }))}</h2>\n${qLinks(related)}` : '',
+          rail: rail({ c, track: 'q_rail_quiz', lists: [[t('related_questions', { name: c.name }), related.map(r => [`${base}${qUrl(c.id, r.id)}`, short(r.question, 46)])],
+            [t('compare_in_cat'), cmp.filter(e => e.cat === c.id).slice(0, 4).map(e => [cmpUrl(e), cmpShort(e)])]] }),
         }),
       });
     });
@@ -2733,7 +2747,8 @@ ${used.length ? `<section>
             mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }] : []),
         ],
         content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}compare/">${esc(t('breadcrumb_compare'))}</a></nav>
-<article class="compare-page">
+<div class="term-layout">
+<article class="compare-page rail-head">
   <h1>${esc(e.title)}</h1>
   <p class="lead">${esc(e.lead)}</p>
   <div class="cmp-tools">
@@ -2750,30 +2765,35 @@ ${used.length ? `<section>
   </div>
   <p class="muted compare-note">${esc(t('compare_note'))}</p>
 </article>
+${rail({ toc: [['when', t('compare_when')], faq.length && ['faq', t('compare_faq')], quiz.length && ['check', t('compare_quiz')], keyTerms.length && ['terms', t('compare_terms')], relatedCmp(e).length && ['more', t('compare_more')]].filter(Boolean),
+    c, track: 'compare_rail_quiz', lists: [[t('term_related'), keyTerms.slice(0, 6).map(x => [`${home}term/${termSlug[x.key]}/`, x.term])], [t('compare_more'), relatedCmp(e).slice(0, 4).map(x => [cmpUrl(x), cmpShort(x)])]] })}
+<div class="term-body">
 <div data-ad="compare"></div>
-<section>
+<section id="when">
   <h2>${esc(t('compare_when'))}</h2>
   <dl class="compare-when">${e.when.map(([k, v]) => `
     <dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}
   </dl>
 </section>
-${faq.length ? `<section class="faq">
+${faq.length ? `<section class="faq" id="faq">
   <h2>${esc(t('compare_faq'))}</h2>${faq.map(([q, a]) => `
   <h3>${esc(q)}</h3>
   <p>${esc(a)}</p>`).join('')}
 </section>` : ''}
-${quiz.length ? `<section>
+${quiz.length ? `<section id="check">
   <h2>${esc(t('compare_quiz'))}</h2>${mini.map(miniQ).join('')}
   ${quiz.length > mini.length ? qLinks(quiz.filter(q => !mini.includes(q))) : ''}
   <p><a class="btn btn-primary" href="${home}c/${c.id}/">${esc(t('compare_to_category', { name: c.name }))}</a></p>
 </section>` : ''}
-${keyTerms.length ? `<section>
+${keyTerms.length ? `<section id="terms">
   <h2>${esc(t('compare_terms'))}</h2>
   <dl class="glossary">${keyTerms.map(x => `
     <div class="term"><dt><a href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a></dt><dd>${esc(x.desc)}</dd></div>`).join('')}
   </dl>
 </section>` : ''}
-${cmpSection(t('compare_more'), relatedCmp(e))}`,
+${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id="more">')}
+</div>
+</div>`,
       });
     }
   }
@@ -2935,11 +2955,7 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
   ${isDef ? '' : `<p class="muted">${esc(t('term_ja_name'))}: <span lang="ja">${esc(g.key)}</span></p>`}
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
 </article>
-<aside class="term-rail"><div class="term-rail-in">
-  ${toc.length >= 3 ? `<nav class="rail-box rail-toc" aria-label="${esc(S.tool_toc)}"><p class="rail-h">${esc(S.tool_toc)}</p><ol>${toc.map(([id, h]) => `<li><a href="#${id}">${esc(h)}</a></li>`).join('')}</ol></nav>` : ''}
-  ${c && qs[c.id]?.length ? `<div class="rail-box rail-cta"><p class="rail-h">${esc(c.name)}</p><p class="rail-sub">${esc(t('n_questions', { n: qs[c.id].length }))}</p><a class="btn btn-primary btn-block" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow" data-track="term_rail_quiz">${esc(t('start_try'))}</a></div>` : ''}
-  ${related.length ? `<div class="rail-box rail-related"><p class="rail-h">${esc(t('term_related'))}</p><ul>${related.slice(0, 6).map(x => `<li><a href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a></li>`).join('')}</ul></div>` : ''}
-</div></aside>
+${rail({ toc, c, lists: [[t('term_related'), related.slice(0, 6).map(x => [`${home}term/${termSlug[x.key]}/`, x.term])]], track: 'term_rail_quiz' })}
 <div class="term-body">
 ${newsHtml ? `${newsHtml}\n` : ''}${aboutHtml}
 ${diffHtml ? `${diffHtml}\n` : ''}${practiceHtml}
