@@ -11,6 +11,7 @@ import { iconPng } from './icon.js';
 import { figures, localizeFigure } from './figures.js';
 import { buildReference } from './reference.js';
 import { icon } from './icons.js';
+import { mathifyHtml } from '../src/js/mathify.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -790,6 +791,9 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
   // この言語で作ったページ(パス → タイトルと説明)。資料のトップで、ある言語のページだけを並べるのに使う
   const built = new Map();
   function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
+    // 本文の数式と単位を整える(添字、行が切れないスペース)。タグの中・script・pre・入力欄は触らない(src/js/mathify.js)
+    const rawContent = content; // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)
+    content = mathifyHtml(content);
     if (!noindex) built.set(p, { title: title ?? fullTitle ?? '', description: description ?? '' });
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
@@ -860,7 +864,7 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
       scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
     }));
     // 更新日の判定用に、本文(タイトル・説明・内容)のハッシュを残す。ヘッダーなど全ページ共通の部分は含めない
-    if (!noindex) sitemap.push({ url, hash: crypto.createHash('sha1').update(tt + description + content).digest('hex').slice(0, 16) });
+    if (!noindex) sitemap.push({ url, hash: crypto.createHash('sha1').update(tt + description + rawContent).digest('hex').slice(0, 16) });
   }
 
   // src/pages/{言語}/*.html(ファイルを足せばページが増える)
