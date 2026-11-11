@@ -1,7 +1,7 @@
 // 待ち行列(M/M/1 と M/M/c)。到着率 λ とサービス率 μ(または平均サービス時間)と窓口の数 c から、
 // 利用率 ρ = λ/(cμ)、待っている数 Lq、系内の数 L、待ち時間 Wq、系内時間 W を求める。
 // M/M/c の待つ確率はアーランC式。ρ ≥ 1 では行列が限りなく伸びるので結果を出さない
-const form = document.getElementById('qu-form');
+const form = globalThis.document?.getElementById('qu-form');
 const out = k => document.querySelector(`[data-out="${k}"]`);
 let T = {};
 try { T = JSON.parse(form.dataset.text); } catch {}
@@ -60,6 +60,8 @@ function chart(mu, c, unit, now) {
   const mark = now < 0.95 ? `<circle cx="${px(now)}" cy="${py(mmc(now * c * mu, mu, c).wq * mu)}" r="5" class="mark"/>` : '';
   svg.innerHTML = `${ticks}${yt}<path d="${path}" class="line"/>${mark}<text x="${L}" y="${Tp + 4}" class="lbl">${T.chart_y}</text><text x="${W - R}" y="${H - B - 6}" text-anchor="end" class="lbl">${T.chart_x}</text>`;
 }
+if (form) {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+}

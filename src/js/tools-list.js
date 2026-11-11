@@ -39,3 +39,11 @@ filter?.addEventListener('input', () => {
   }
   if (none) none.hidden = shown > 0;
 });
+
+// 一覧の開き方: PC(幅900px以上)は全部の大分類を開いて一目で見渡せるようにし、スマホは最初の大分類だけ開く。
+// URL に #tg-… があるときは open-hash.js がその大分類を開く
+const groups = [...document.querySelectorAll('details.tools-group')];
+if (groups.length && !location.hash) {
+  if (matchMedia('(min-width: 900px)').matches) groups.forEach(d => (d.open = true));
+  else groups[0].open = true;
+}
