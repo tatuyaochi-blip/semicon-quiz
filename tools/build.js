@@ -1365,6 +1365,11 @@ ${x.faq?.length ? `<section class="faq">
   const field = (name, label, value, attrs = '') => `<label class="dy-field"><span>${esc(label)}</span><input name="${name}" type="number" inputmode="decimal" value="${value}" ${attrs}></label>`;
   const select = (name, label, options, value) => `<label class="dy-field"><span>${esc(label)}</span><select name="${name}">${options.map(([v, text]) => `<option value="${v}"${v === value ? ' selected' : ''}>${esc(text)}</option>`).join('')}</select></label>`;
   const stat = (key, label) => `<div><dt>${esc(label)}</dt><dd data-out="${key}">–</dd></div>`;
+  // 入力欄の右端に出す単位かどうか(短く、単位に使う文字だけ。「0でなし」「例: …」などの注記は単位にしない)
+  const unitTok = '(?:[µμmkKMGTnpfc]?(?:V|A|W|Ω|F|H|Hz|s|m|eV|B|K)|%|℃|°C|dB|dBm|dBc|h|bits?|Bit|ビット|비트|秒|seconds|frames|個|枚|MT|rms|1|per|pro|par|每|cm²당)(?:[²³]|⁻[¹²³])?';
+  const isUnit = u => new RegExp(`^${unitTok}(?:[/·⋅ ]${unitTok})*$`).test(u.trim());
+  // 大きく出す主な結果(data-out の名前)。ここにないツールは最初の結果
+  const toolMain = { 'adc-snr': 'enob', 'cache-calc': 'amat', 'cmos-power': 'total', 'die-yield': 'gross', 'interconnect-rc': 'total', jitter: 'jitter', 'mosfet-iv': 'id', 'bjt-iv': 'ic', dcdc: 'D', resistivity: 'rho', queue: 'w', media: 'comp', bode: 'pm' };
   const toolBody = {
     'die-yield': x => `<form id="dy-form" class="dy-form">
     <h2>${esc(x.in_heading)}</h2>
@@ -2567,6 +2572,12 @@ ${x.faq?.length ? `<section class="faq">
     // 例の条件(tool.presets の値と、言語ごとの x.presets の名前)。入力フォームの見出しのすぐ後にボタンとして置く
     const presets = tool.presets && x.presets ? `<div class="dy-presets" role="group" aria-labelledby="presets-${tool.id}"><span id="presets-${tool.id}">${esc(t('tool_presets'))}</span>${tool.presets.map((pr, k) => `<button type="button" class="chip" data-preset="${esc(JSON.stringify(pr.v))}" aria-pressed="false">${esc(x.presets[k])}</button>`).join('')}</div>` : '';
     let body = toolBody[tool.id](x);
+    // 数値の入力欄: ラベルの末尾の「(単位)」を、入力欄の右端に出す(読み上げ用にラベルにも残す)。単位らしくないカッコはそのまま
+    body = body.replace(/<label class="dy-field"><span>([^<]*?)\s*[((\[]([^()()\[\]<]{1,14})[))\]]<\/span>(<input [^>]*type="number"[^>]*>)<\/label>/g, (m, label, unit, input) =>
+      (isUnit(unit) ? `<label class="dy-field"><span>${label}<span class="visually-hidden"> (${unit})</span></span><span class="dy-inp">${input}<i class="dy-unit" aria-hidden="true">${unit}</i></span></label>` : m));
+    // 主な結果(大きく出す1つ)。指定がなければ最初の結果
+    const mainKey = toolMain[tool.id] ?? body.match(/<div><dt>[^<]*<\/dt><dd data-out="([^"]+)"/)?.[1];
+    if (mainKey) body = body.replace(new RegExp(`<div>(<dt>[^<]*</dt><dd data-out="${mainKey}")`), '<div class="main">$1');
     if (presets && body.trimStart().startsWith('<form')) body = body.replace('</h2>', `</h2>\n    ${presets}`);
     const formEnd = body.trimStart().startsWith('<form') ? body.indexOf('</form>') + '</form>'.length : -1;
     const nInputs = formEnd > 0 ? (body.slice(0, formEnd).match(/<(input|select|textarea)\b/g) ?? []).length : 99;
@@ -2588,7 +2599,7 @@ ${x.faq?.length ? `<section class="faq">
       fallback: y => `${y.path}tools/`,
       title: x.title,
       description: x.description,
-      scripts: ['tool-share.js', `${tool.id}.js`, 'answer.js'],
+      scripts: ['tool-share.js', `${tool.id}.js`, 'tool-ui.js', 'answer.js'],
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.tools_title, `${home}tools/`], [x.h1, toolPath(tool, L)]),
         { '@context': 'https://schema.org', '@type': 'WebApplication', name: x.h1, description: x.description, url: abs(toolPath(tool, L)), inLanguage: L.htmlLang,
@@ -2609,7 +2620,7 @@ ${x.faq?.length ? `<section class="faq">
     <details class="tool-note"><summary>${esc(t('tool_note_summary'))}</summary><p class="muted">${esc(t(tool.share === false ? 'tool_note_local' : 'tool_note'))}</p></details>
   </div>
 </header>
-<div class="dy${split ? ' split' : ''}">
+<div class="dy${split ? ' split' : ''}" data-reset="${esc(t('tool_reset'))}">
   ${split ? `${body.slice(0, formEnd)}\n  <div class="dy-side">${body.slice(formEnd)}${sweep}</div>` : `${body}${sweep}`}
 </div>
 <article class="tool-article">
