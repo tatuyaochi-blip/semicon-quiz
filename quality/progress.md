@@ -42,7 +42,8 @@
 | 17 | クリーンルーム・製造装置 × 用語解説・比較 | 12+1 | 958回、平均23.1位 | 検証済み(2026-11-06) |
 | 18 | 半導体産業・市場 × 用語解説・比較 | 12+2 | 952回、平均28.9位 | 検証済み(2026-11-06) |
 | 19 | テスト・検査 × 用語解説・比較 | 12+3 | 945回、平均46.4位 | 検証済み(2026-11-11) |
-| 20〜 | 残りの区画 | | 下の分野の表の順(用語の表示回数の多い順)を基本に、計算ツール・記事の区画をはさむ。2026-11-09 にサイトから外した22分野(config.json の excludeCats)は対象外 | 未確認 |
+| 20 | イメージセンサ・光デバイス × 用語解説・比較 | 18+4 | 910回、平均59.7位 | 検証済み(2026-11-11) |
+| 21〜 | 残りの区画 | | 下の分野の表の順(用語の表示回数の多い順)を基本に、計算ツール・記事の区画をはさむ。2026-11-09 にサイトから外した22分野(config.json の excludeCats)は対象外 | 未確認 |
 
 ## 計算ツールの区画
 
@@ -56,7 +57,7 @@
 | T6 論理・制御 | sta, kmap, logic-sim, fsm, pid | 検証済み(2026-11-05、テスト tools/tests/logic-control-tools.test.mjs。logic-sim はブラウザで例の真理値表を照合) |
 | T7 計算機の基礎 | base-convert, bitops, ieee754, hamming, crc | 検証済み(2026-11-06、テスト tools/tests/computing-tools.test.mjs。ページの計算をテストと同じ関数に寄せた) |
 | T8 アーキテクチャ・OS | cache-calc, mem-bw, paging, sched, raid | 検証済み(2026-11-06、テスト tools/tests/arch-os-tools.test.mjs。教科書の例のフォルト数・平均待ち時間と規格のピーク帯域で照合) |
-| T9 性能・データ量・信頼性(残りの公開中のツール) | queue, amdahl, media, availability, quiz-set | 未確認 |
+| T9 性能・データ量・信頼性(残りの公開中のツール) | queue, amdahl, media, availability, quiz-set | 検証済み(2026-11-11、テスト tools/tests/perf-tools.test.mjs。quiz-set は計算がなく URL を作るだけなので、ブラウザで動作を確認) |
 | — 対象外 | sort, bintree, hash, dijkstra, bigo, subnet, transfer, password, cvss, huffman, cmatrix, convnet, cpm, evm, npv, breakeven, rpn, pseudo, sql-practice(検証済みの paging, sched も) | 2026-11-09 にサイトから外した分野のツール(データは残してある)。戻すときに確認する |
 
 注: BJT の出力特性(bjt-iv)とダイ数・歩留まり(die-yield)は、2026-11-02 に独立検証(別のサブエージェント)で数値を検算済み。ただしこの台帳の基準(テストケースをリポジトリに残す)はまだ満たしていないので、区画では「未確認」から始める。
