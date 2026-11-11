@@ -1,5 +1,6 @@
 // クイズ画面。選択肢の数に依存しない（2択・3択・4択…すべて同じ処理）
 import { h, home, getData, makeT } from './dom.js';
+import { mathifyDom } from './mathify.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
 import { termMatcher, linkTerms, reportUrl, shuffle } from './util.js';
@@ -238,3 +239,6 @@ document.addEventListener('keydown', e => {
     next();
   }
 });
+
+// 問題文・選択肢・解説の数式と単位を整える(添字、行が切れないスペース)。描画のたびに行う。整えた後の文字は変わらないので繰り返さない
+if (app) new MutationObserver(() => mathifyDom(app)).observe(app, { childList: true, subtree: true });
