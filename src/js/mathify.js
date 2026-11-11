@@ -112,7 +112,7 @@ export function mathifyDom(root) {
   const doc = root.ownerDocument;
   const walker = doc.createTreeWalker(root, 4 /* SHOW_TEXT */);
   const nodes = [];
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (!n.parentElement.closest('pre, code, svg, script, style, textarea, select, sub')) nodes.push(n);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (!n.parentElement.closest('pre, code, svg, script, style, textarea, select, sub, math')) nodes.push(n);
   for (const n of nodes) {
     const block = n.parentElement.closest('p, li, dd, dt, td, th, h1, h2, h3, summary, div') ?? root;
     const out = mathText(n.nodeValue, block.textContent);
