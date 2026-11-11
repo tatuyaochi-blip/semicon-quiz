@@ -451,23 +451,24 @@ function buildLang(L) {
   </div>
 </section>`;
   // トップの「できること」: メニューを開かなくても主な機能が分かるカード(実在するページだけ。見出しはヘッダーの名前とそろえる)
-  const feature = (href, title, desc, track) => `<a class="feature-card" href="${href}" data-track="${track}"><strong>${esc(title)}</strong><span>${esc(desc)}</span></a>`;
+  const RT = refText[code]?.tiles ?? {};
+  const feature = (href, title, desc, track, ic) => `<li><a class="ref-tile" href="${href}" title="${esc(desc)}" data-track="${track}">${icon(ic)}<span>${esc(title)}</span></a></li>`;
   const homeFeatures = `<section class="features" aria-labelledby="features-h">
-  <h2 id="features-h" class="visually-hidden">${esc(t('home_feat_heading'))}</h2>
-  <div class="feature-grid">
-    ${feature('#topics', S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics')}
-    ${learnArts.length ? feature(`${home}learn/`, LT.nav, LT.card, 'home_feat_learn') : ''}
-    ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses') : ''}
-    ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary')}
-    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, dictText[code].nav, dictText[code].card, 'home_feat_dict') : ''}
-    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].nav, careerText[code].card, 'home_feat_careers') : ''}
-    ${interviewText[code] ? feature(`${home}interview-questions/`, interviewText[code].nav, interviewText[code].card, 'home_feat_interview') : ''}
-    ${beyondText[code] && pageNames(code).includes('beyond-scaling') ? feature(`${home}beyond-scaling/`, beyondText[code].nav, beyondText[code].card, 'home_feat_beyond') : ''}
-    ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare') : ''}
-    ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures')}
-    ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools') : ''}
-    ${news.length ? feature(`${home}news-terms/`, S.news_title, t('home_feat_news_desc'), 'home_feat_news') : ''}
-  </div>
+  <h2 id="features-h">${esc(t('home_feat_heading'))}</h2>
+  <ul class="ref-tiles home-tiles">
+    ${feature(`${home}c/`, S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics', 'basic')}
+    ${learnArts.length ? feature(`${home}learn/`, LT.nav, LT.card, 'home_feat_learn', 'learn') : ''}
+    ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses', 'course') : ''}
+    ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary', 'glossary')}
+    ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare', 'compare') : ''}
+    ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools', 'tools') : ''}
+    ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures', 'figures')}
+    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, RT['glossary/trilingual/'] ?? dictText[code].nav, dictText[code].card, 'home_feat_dict', 'langs') : ''}
+    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].nav, careerText[code].card, 'home_feat_careers', 'careers') : ''}
+    ${interviewText[code] ? feature(`${home}interview-questions/`, RT['interview-questions/'] ?? interviewText[code].nav, interviewText[code].card, 'home_feat_interview', 'interview') : ''}
+    ${beyondText[code] && pageNames(code).includes('beyond-scaling') ? feature(`${home}beyond-scaling/`, beyondText[code].nav, beyondText[code].card, 'home_feat_beyond', 'trend') : ''}
+    ${news.length ? feature(`${home}news-terms/`, RT['news-terms/'] ?? S.news_title, t('home_feat_news_desc'), 'home_feat_news', 'news') : ''}
+  </ul>
 </section>`;
   // 分野の選び方: 大きな区分(半導体 / コンピュータ・IT) → 大分類(開閉できる行) → 分野(1行ずつ)。
   // トップでは大分類を閉じておき(分野が増えても縦に伸びない)、分野一覧 /c/ では開いて並べる。分野名は閉じていても HTML にある
@@ -707,6 +708,27 @@ function buildLang(L) {
       .sort((a, b) => b.s - a.s).slice(0, 6).map(r => r.x);
   };
 
+  // トップの例題: 訪問した人がその場で1問解ける(answer.js)。この言語に訳のある問題だけ
+  const sampleQ = (() => { const cat = live.find(c => qs[c.id].some(q => q.id === config.homeSample)); const q = cat && qs[cat.id].find(x => x.id === config.homeSample); return q && !q.code ? { ...q, cat: cat.id, catName: cat.name } : null; })();
+  const heroSample = sampleQ ? `<aside class="hero-sample" aria-labelledby="hero-sample-h">
+    <p class="hero-sample-h" id="hero-sample-h">${esc(t('home_sample'))}</p>
+    <article class="q-mini"${qData(sampleQ)}>
+      <p class="hero-sample-tag"><span>${esc(t('home_sample_tag'))}</span> ${esc(sampleQ.catName)}</p>
+      <h2 class="hero-sample-q">${esc(sampleQ.question)}</h2>
+      <ol class="q-choices">${sampleQ.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
+      <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(sampleQ.answer), text: sampleQ.choices[sampleQ.answer] }))}</p><p class="explanation">${esc(sampleQ.explanation)}</p></details>
+      <p class="q-continue" hidden><a class="btn btn-primary btn-block" href="${home}quiz/?mode=category&amp;c=${sampleQ.cat}&amp;n=9&amp;skip=${sampleQ.id}" rel="nofollow" data-track="home_sample_continue">${esc(t('q_continue', { name: sampleQ.catName }))}</a></p>
+    </article>
+  </aside>` : '';
+  // トップの図: 図解集から数点を見本に出す(この言語の図があるものだけ)
+  const homeFigList = (config.homeFigures ?? []).map(id => figList.find(x => x.id === id)).filter(Boolean);
+  const homeFigures = homeFigList.length >= 3 ? `<section class="home-figs" aria-labelledby="home-figs-h">
+  <h2 id="home-figs-h">${esc(t('home_feat_figures_desc'))}</h2>
+  <ul class="home-fig-row">${homeFigList.map(x => `
+    <li><a href="${figHref(x.id)}" data-track="home_fig"><img src="${base}img/${code}/${x.id}.svg" alt="" width="${x.size[0]}" height="${x.size[1]}" loading="lazy"><span>${esc(x.title)}</span></a></li>`).join('')}
+  </ul>
+  <p class="topics-all"><a href="${home}figures/">${esc(S.footer_figures)} →</a></p>
+</section>` : '';
   const common = {
     // 資料の中のページ(用語集・比較・図解集)の上に出す、資料のトップへのパンくず
     refCrumb: refText[code] ? `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(refText[code].nav)}</a></nav>` : '',
@@ -721,7 +743,7 @@ function buildLang(L) {
     topModes: modeCards(modes.filter(m => m.scope.includes('top'))),
     // トップ下部の「ほかの練習方法」(ランダム10問は上の入口にあるので除く)
     moreModes: modeCards(modes.filter(m => m.scope.includes('top') && m.id !== 'random')).replace('mode-grid', 'mode-grid compact'),
-    startPanel, startBack, homeFeatures,
+    startPanel, startBack, homeFeatures, heroSample, homeFigures,
     // 用語集の上に出す、ニュース用語の一覧への案内
     dictLink: dictLangs.includes(code) ? `<p class="news-link"><a class="chip" href="${home}glossary/trilingual/">${esc(dictText[code].h1)}</a></p>` : '',
     newsTermsLink: news.length ? `<p class="news-link"><a class="chip" href="${home}news-terms/">${esc(S.news_title)}</a> <span class="muted">${esc(t('glossary_news_link', { terms: news.slice(0, 3).map(e => e.label ?? terms.find(g => g.key === e.term).term).join(', ') }))}</span></p>` : '',
@@ -804,6 +826,9 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
     // 用語集・比較・図解・計算ツールはそれぞれ独立した項目として並べる(PC ではホームはロゴから戻る)
     const headerNav = [['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
     const navMenu = [['', S.nav_home], ['c/', S.nav_topics], ...resources, ['stats/', S.nav_stats]].map(navLink).join('');
+    // フッターの上段: 学ぶ・調べるページへの入口(下段はサイトの情報)
+    const footerMain = [['c/', S.nav_topics], ...resources, ['glossary/', S.nav_glossary], ...(cmp.length ? [['compare/', S.nav_compare]] : []), ['figures/', S.footer_figures]]
+      .filter((x, k, arr) => arr.findIndex(y => y[0] === x[0]) === k).map(([sub, label]) => `<a href="${home}${sub}">${esc(label)}</a>`).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
     const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
@@ -820,6 +845,7 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
       langShort: esc({ en: 'EN', de: 'DE', nl: 'NL', fr: 'FR' }[code] ?? L.label),
       headerNav,
       navMenu,
+      footerMain,
       langBanner: bannerHtml,
       htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : ads && config.adsenseClient && config.adsenseSlots ? ` data-adsense-client="${esc(config.adsenseClient)}" data-adsense-slots="${esc(JSON.stringify(config.adsenseSlots))}"` : '',
       content,
@@ -2828,7 +2854,7 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
     const nw = newsOf(g.key);
     const nwQ = nw?.question && qById.get(nw.question);
     const pick = nwQ ? [nwQ] : (pickable.some(q => q.inQ) ? pickable.filter(q => q.inQ) : pickable).slice(0, 2);
-    const practiceHtml = pick.length ? `<section>
+    const practiceHtml = pick.length ? `<section id="practice">
   <h2>${esc(t('term_practice', { term: g.term }))}</h2>${pick.map(q => `
   <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
@@ -2842,11 +2868,11 @@ ${cmpSection(t('compare_more'), relatedCmp(e))}`,
       : p.id === g.key ? esc(p.text) : `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`)).join('');
     const about = g.about ?? [];
     const faq = g.faq ?? [];
-    const aboutHtml = about.map(s => `<section class="term-about">
+    const aboutHtml = about.map((s, k) => `<section class="term-about" id="s${k + 1}">
   <h2>${esc(s.h)}</h2>
   <p>${linkedOther(s.p)}</p>
 </section>`).join('\n');
-    const faqHtml = faq.length ? `<section class="faq">
+    const faqHtml = faq.length ? `<section class="faq" id="faq">
   <h2>${esc(t('compare_faq'))}</h2>${faq.map(x => `
   <h3>${esc(x.q)}</h3>
   <p>${esc(x.a)}</p>`).join('')}
@@ -2871,6 +2897,9 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
 </section>` : '';
     if (nw) related.unshift(...(nw.terms ?? []).map(k => terms.find(x => x.key === k)).filter(x => x && !related.includes(x)));
     const termUrl = `${home}term/${termSlug[g.key]}/`;
+    // 右の欄(PC)と、定義のすぐ下の横スクロールの目次(スマホ)に出す、このページの見出し
+    const toc = [...about.map((x, k) => [`s${k + 1}`, x.h]), practiceHtml && ['practice', t('term_practice', { term: g.term })], faq.length && ['faq', t('compare_faq')],
+      list.length && ['questions', t('term_questions', { term: g.term, n: list.length })], related.length && ['related', t('term_related')]].filter(Boolean);
     // 英語名を添える言語(繁体字など。英語の用語名に「中文」「是什麼」を付けて調べる人が多い)では、用語名に英語名が含まれていなければ添える
     // 用語名にもうカッコ(略語や別名)があるときは、カッコが重なるので添えない
     const en = !isDef && code !== 'en' && S.term_title_en && enLabel(g.key);
@@ -2896,16 +2925,22 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
           mainEntityOfPage: abs(termUrl), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } }] : []),
       ],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
+<div class="term-layout">
 <article class="term-page">
   <h1>${esc(t('term_heading', { term: g.term }))}</h1>
-  ${g.reading ? `<p class="muted">${esc(g.reading)}</p>` : ''}
-  <p class="lead">${esc(g.desc)}</p>
+  ${g.reading ? `<p class="muted term-reading">${esc(g.reading)}</p>` : ''}
+  <p class="lead term-def">${esc(g.desc)}</p>
+  ${c ? `<p class="term-meta"><span class="muted">${esc(t('term_category'))}:</span> <a class="chip" href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
   ${learnByTerm.has(g.key) ? `<p class="learn-link">${esc(LT.termLink)}: <a href="${home}learn/${learnByTerm.get(g.key).slug}/" data-track="term_learn">${esc(learnByTerm.get(g.key).title)}</a></p>` : ''}
   ${isDef ? '' : `<p class="muted">${esc(t('term_ja_name'))}: <span lang="ja">${esc(g.key)}</span></p>`}
-  ${termSummary}
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
-  ${c ? `<p>${esc(t('term_category'))}: <a href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
 </article>
+<aside class="term-rail"><div class="term-rail-in">
+  ${toc.length >= 3 ? `<nav class="rail-box rail-toc" aria-label="${esc(S.tool_toc)}"><p class="rail-h">${esc(S.tool_toc)}</p><ol>${toc.map(([id, h]) => `<li><a href="#${id}">${esc(h)}</a></li>`).join('')}</ol></nav>` : ''}
+  ${c && qs[c.id]?.length ? `<div class="rail-box rail-cta"><p class="rail-h">${esc(c.name)}</p><p class="rail-sub">${esc(t('n_questions', { n: qs[c.id].length }))}</p><a class="btn btn-primary btn-block" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow" data-track="term_rail_quiz">${esc(t('start_try'))}</a></div>` : ''}
+  ${related.length ? `<div class="rail-box rail-related"><p class="rail-h">${esc(t('term_related'))}</p><ul>${related.slice(0, 6).map(x => `<li><a href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a></li>`).join('')}</ul></div>` : ''}
+</div></aside>
+<div class="term-body">
 ${newsHtml ? `${newsHtml}\n` : ''}${aboutHtml}
 ${diffHtml ? `${diffHtml}\n` : ''}${practiceHtml}
 ${faqHtml}
@@ -2913,8 +2948,9 @@ ${quotes.length ? `<section>
   <h2>${esc(t('term_quotes', { term: g.term }))}</h2>
   <ul class="term-quotes">${quotes.map(({ q, s }) => `<li><p>${esc(s)}</p><a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 60))}</a></li>`).join('')}</ul>
 </section>` : ''}
-${list.length ? `<section>
+${list.length ? `<section id="questions">
   <h2>${esc(t('term_questions', { term: g.term, n: list.length }))}</h2>
+  ${termSummary}
   ${qLinks(list.slice(0, 15))}
 </section>` : ''}
 ${c ? bookSection(c) : ''}
@@ -2924,11 +2960,13 @@ ${toolsIn(code).some(y => (y.terms ?? []).includes(g.key)) ? `<section>
   <h2>${esc(S.tools_title)}</h2>
   <div class="mode-grid compact">${toolsIn(code).filter(y => (y.terms ?? []).includes(g.key)).map(y => `<a class="mode-card" href="${home}tools/${y.slug}/"><strong>${esc(y.text[code].h1)}</strong><span>${esc(y.text[code].card)}</span></a>`).join('')}</div>
 </section>` : ''}
-${related.length ? `<section>
+${related.length ? `<section id="related">
   <h2>${esc(t('term_related'))}</h2>
   <p class="term-chips">${related.slice(0, 10).map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
 </section>` : ''}
-${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>`,
+${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>
+</div>
+</div>`,
     });
   }
 
