@@ -1,14 +1,15 @@
 // 並列化による速度向上の計算ページ。アムダールの法則 S = 1/((1−p) + p/N) と、グスタフソンの法則 S = (1−p) + p·N
 import { lineChart } from './chart.js';
-const form = document.getElementById('am-form');
-const svg = document.getElementById('am-chart');
-const lang = document.documentElement.lang || 'en';
+import { initSweep } from './sweep.js';
+const form = globalThis.document?.getElementById('am-form');
+const svg = globalThis.document?.getElementById('am-chart');
+const lang = globalThis.document?.documentElement.lang || 'en';
 const fmt = (x, d = 2) => (Number.isFinite(x) ? x.toLocaleString(lang, { maximumFractionDigits: d }) : '–');
 const out = k => document.querySelector(`[data-out="${k}"]`);
 let labels = {};
 try { labels = JSON.parse(svg.dataset.labels); } catch {}
-const amdahl = (p, n) => 1 / ((1 - p) + p / n);
-const gustafson = (p, n) => (1 - p) + p * n;
+export const amdahl = (p, n) => 1 / ((1 - p) + p / n);
+export const gustafson = (p, n) => (1 - p) + p * n;
 
 function update() {
   const num = (k, min) => { const v = Number(form.elements[k].value); return Number.isFinite(v) && v >= min ? v : Number(form.elements[k].defaultValue); };
@@ -25,12 +26,12 @@ function update() {
     marks: [[n, a, `${fmt(a)}×`]],
   });
 }
+if (form) {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
 
 // グラフで見る: 並列化できる割合やコア数を変えたときの速度向上
-import { initSweep } from './sweep.js';
 initSweep({
   form, inputs: ['p', 'n'], outputs: ['amdahl', 'eff', 'gustafson'], defaults: { x: 'p', y: 'amdahl' }, ranges: { p: [0, 99] },
   calc: v => {
@@ -39,3 +40,4 @@ initSweep({
     return { amdahl: a, eff: (a / n) * 100, gustafson: gustafson(p, n) };
   },
 });
+}

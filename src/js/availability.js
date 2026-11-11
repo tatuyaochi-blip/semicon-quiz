@@ -1,7 +1,7 @@
 // 稼働率。MTBF と MTTR から A = MTBF / (MTBF + MTTR) を求め、年間の停止時間に直す。
 // 装置の組み合わせは、行ごとに「n 台のうち k 台が動けばよい」装置のまとまり(k = 1 なら並列)を作り、まとまりを直列につなぐ。
 // まとまりの稼働率は Σ_{j=k}^{n} C(n, j) a^j (1 − a)^(n − j)、全体は各まとまりの積
-const form = document.getElementById('av-form');
+const form = globalThis.document?.getElementById('av-form');
 const out = k => document.querySelector(`[data-out="${k}"]`);
 let T = {};
 try { T = JSON.parse(form.dataset.text); } catch {}
@@ -46,6 +46,8 @@ function update() {
   out('down').textContent = used ? downtime(total) : '–';
   out('nines').textContent = used ? nines(total) : '–';
 }
+if (form) {
 form.addEventListener('input', update);
 form.addEventListener('submit', e => e.preventDefault());
 update();
+}
