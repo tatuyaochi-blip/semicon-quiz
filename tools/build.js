@@ -932,6 +932,13 @@ ${seriesList.map(({ s, list }, k) => `<details class="learn-series topic-group" 
           return lg ? `<a class="term-link" href="${home}term/${termSlug[g.term]}/">${esc(label)}</a>` : esc(label);
         }), common);
       if (/\{\{/.test(body)) throw new Error(`${where}: 置き換えられない {{…}} があります`);
+      // 右の欄の目次: 本文の h2 に番号の id を付けて集める(id のある見出しはそのまま使う)
+      const heads = [];
+      const bodyToc = body.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/g, (m, attrs = '', inner) => {
+        const id = attrs.match(/\sid="([^"]+)"/)?.[1] ?? `h-${heads.length + 1}`;
+        heads.push([id, inner.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim()]);
+        return /\sid="/.test(attrs) ? m : `<h2${attrs} id="${id}">${inner}</h2>`;
+      });
       const s = seriesOf(a);
       const inSeries = items.filter(x => x.series === a.series).sort((x, y) => x.order - y.order);
       const next = inSeries.find(x => x.order > a.order);
@@ -949,11 +956,15 @@ ${seriesList.map(({ s, list }, k) => `<details class="learn-series topic-group" 
             author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
         ],
         content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${learnUrl}">${esc(LT.nav)}</a> <span>›</span> <a href="${learnUrl}#s-${s.id}">${esc(seriesName(s))}</a></nav>
-<article class="prose learn-article">
+<div class="term-layout learn-layout">
+<article class="prose learn-article rail-head">
 <h1>${esc(a.title)}</h1>
 <p class="learn-meta">${esc(learnFill(LT.minutes, { n: a.minutes }))} · ${esc(learnFill(LT.updated, { d: fmtDay(a.updated) }))}</p>
-${body}
+${bodyToc}
 </article>
+${rail({ toc: heads, c: main, track: 'learn_rail_quiz', lists: [[LT.next, inSeries.filter(x => x.order > a.order).slice(0, 3).map(x => [x.href, x.title])],
+    [t('term_related'), (a.terms ?? []).map(k => terms.find(x => x.key === k)).filter(Boolean).slice(0, 6).map(x => [`${home}term/${termSlug[x.key]}/`, x.term])]] })}
+<div class="term-body">
 ${next ? `<section class="learn-next">
   <h2>${esc(LT.next)}</h2>
   <ul class="cmp-list">${card(next, 'learn_next')}</ul>
@@ -964,7 +975,9 @@ ${inSeries.length > 1 ? `<section>
 </section>` : ''}
 ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)} <a href="${home}c/${main.id}/" data-track="learn_topic">${esc(main.name)}</a></p>\n` : ''}${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}</summary><ul>${a.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join('')}</ul></details>` : ''}
 <div data-ad="term"></div>
-<p><a class="btn btn-ghost" href="${learnUrl}">${esc(LT.all)}</a></p>`,
+<p><a class="btn btn-ghost" href="${learnUrl}">${esc(LT.all)}</a></p>
+</div>
+</div>`,
       });
     }
   }
