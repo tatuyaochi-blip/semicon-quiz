@@ -12,6 +12,7 @@ import { figures, localizeFigure } from './figures.js';
 import { buildReference } from './reference.js';
 import { icon } from './icons.js';
 import { mathifyHtml } from '../src/js/mathify.js';
+import { linearToMathML } from './mathml.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -179,6 +180,24 @@ const numbersQ = [...new Set(numbers.flatMap(g => g.items.flatMap(x => x.questio
 const tools = exists('data/tools') ? fs.readdirSync(path.join(root, 'data/tools')).filter(f => f.endsWith('.json'))
   .map(f => readJSON(`data/tools/${f}`)).filter(x => !x.cat || keepCat(x.cat)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
 const toolsIn = code => tools.filter(x => x.text[code]);
+// 教科書のような組み方で出す式(data/math.json)。本文の中の1行書きの式に目印(M0 … M1)を付け、page() で MathML に置き換える。
+// 目印を付けるのは、用語の解説・計算ツールの解説・よくある質問の答えだけ(検索用のデータや構造化データには付けない)
+const M0 = '\ue010', M1 = '\ue011';
+const mathTable = readOpt('data/math.json', { formulas: {} }).formulas;
+const mathKeys = Object.keys(mathTable).sort((a, b) => b.length - a.length);
+const mathRe = mathKeys.length ? new RegExp(`(?<![A-Za-z0-9µμα-ωΑ-Ω·×/^√|]|[=≈+−×·/] ?)(?:${mathKeys.map(k => k.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('|')})(?![A-Za-z0-9µμα-ωΑ-Ω²³⁰¹⁴-⁹⁻^·×/]| ?[=≈+−×·/])`, 'g') : null;
+const mathMark = text => (mathRe ? text.replace(mathRe, (m, at) => {
+  // すぐ後ろのカッコが式の続き(掛け算)なら目印を付けない。説明や条件のカッコ(日本語・単語・不等号を含む)ならよい
+  const rest = text.slice(at + m.length);
+  if (rest[0] === '(' || rest[0] === '[') { const close = rest.indexOf(rest[0] === '(' ? ')' : ']'); if (close < 0 || !/[\u3000-\u9fff\uac00-\ud7af]|[a-zà-ÿ]{4,}|[<>≤≥]/.test(rest.slice(1, close))) return m; }
+  return `${M0}${m}${M1}`;
+}) : text);
+const mathCache = new Map();
+const mathHtml = linear => {
+  if (!mathCache.has(linear)) { const r = mathTable[linear] ? linearToMathML(linear, mathTable[linear]) : null; mathCache.set(linear, r ? `<span class="math-block">${r.ml}</span>` : null); }
+  return mathCache.get(linear);
+};
+const unescHtml = x => x.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 const compares = readOpt('data/compare.json', []).filter(x => keepCat(x.cat)); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
 // ニュースに出た用語(/news-terms/)。用語集の語に「なぜ今話題なのか」などを足す。訳は data/i18n/{言語}/news-terms.json
 const newsTerms = readOpt('data/news-terms.json', []);
@@ -792,7 +811,9 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
   const built = new Map();
   function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
     // 本文の数式と単位を整える(添字、行が切れないスペース)。タグの中・script・pre・入力欄は触らない(src/js/mathify.js)
-    const rawContent = content; // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)
+    const rawContent = content.replaceAll(M0, '').replaceAll(M1, ''); // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)
+    // 目印の付いた式を MathML に置き換える(読めなかった式は1行書きのまま)。その後で、残りの本文の添字と単位を整える
+    if (content.includes(M0)) content = content.replace(new RegExp(`${M0}([^${M1}]*)${M1}`, 'g'), (m, x) => mathHtml(unescHtml(x)) ?? x).replaceAll(M0, '').replaceAll(M1, '');
     content = mathifyHtml(content);
     if (!noindex) built.set(p, { title: title ?? fullTitle ?? '', description: description ?? '' });
     const url = baseUrl + p;
@@ -1356,7 +1377,7 @@ ${relTerms.length ? `<section>
 ${x.faq?.length ? `<section class="faq">
   <h2>${esc(t('compare_faq'))}</h2>${x.faq.map(f => `
   <h3>${esc(f.q)}</h3>
-  <p>${esc(f.a)}</p>`).join('')}
+  <p>${esc(mathMark(f.a))}</p>`).join('')}
 </section>` : ''}
 <div data-ad="compare"></div>
 <p><a class="btn btn-ghost" href="${home}careers/">${esc(C.all)}</a></p>`,
@@ -2634,14 +2655,14 @@ ${x.faq?.length ? `<section class="faq">
   </nav>
 ${x.sections.map((sec, k) => `<section class="term-about" id="tool-sec-${k + 1}">
   <h2>${esc(sec.h)}</h2>
-  <p>${linked(sec.p, tool.cat)}</p>
+  <p>${linked(mathMark(sec.p), tool.cat)}</p>
 </section>`).join('\n')}
 ${tq.length ? `<section id="tool-practice">${tq.map(miniQ).join('')}</section>` : ''}
 ${tc && qs[tc.id]?.length ? `<p><a class="btn btn-primary" href="${home}quiz/?mode=category&amp;c=${tc.id}&amp;n=10" rel="nofollow">${esc(x.practice)}</a></p>` : ''}
 <section class="faq" id="tool-faq">
   <h2>${esc(t('compare_faq'))}</h2>${x.faq.map(f => `
   <h3>${esc(f.q)}</h3>
-  <p>${esc(f.a)}</p>`).join('')}
+  <p>${esc(mathMark(f.a))}</p>`).join('')}
 </section>
 </article>
 <div data-ad="tool"></div>
@@ -2918,12 +2939,12 @@ ${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id
     const faq = g.faq ?? [];
     const aboutHtml = about.map((s, k) => `<section class="term-about" id="s${k + 1}">
   <h2>${esc(s.h)}</h2>
-  <p>${linkedOther(s.p)}</p>
+  <p>${linkedOther(mathMark(s.p))}</p>
 </section>`).join('\n');
     const faqHtml = faq.length ? `<section class="faq" id="faq">
   <h2>${esc(t('compare_faq'))}</h2>${faq.map(x => `
   <h3>${esc(x.q)}</h3>
-  <p>${esc(x.a)}</p>`).join('')}
+  <p>${esc(mathMark(x.a))}</p>`).join('')}
 </section>` : '';
     // ニュース用語: 「ひとことで言うと」「なぜ今話題なのか(日付つき)」を解説の前に、「既存技術との違い」を解説の後に置く
     const termCmp = cmp.filter(e => (e.terms ?? []).includes(g.key) || termIds([e.title, ...(e.items ?? [])].join(' ')).includes(g.key));
