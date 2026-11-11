@@ -53,7 +53,7 @@ const initial = s => (/^[A-Za-z]/.test(s) ? s[0].toUpperCase() : '0-9');
 // ---- オープンデータ(用語集と7言語の対訳。CC BY 4.0) ----
 // 用語ごとに、スラッグ(各言語の解説ページの URL に使う)・分野・7言語の見出しと短い説明。CSV は見出しだけ
 export const OPEN_LICENSE = { name: 'CC BY 4.0', url: 'https://creativecommons.org/licenses/by/4.0/', attribution: 'Semiconductor Room (https://semiconroom.com/)' };
-export function openData({ glossary, gloByLang, langCodes, defLang, termSlug }) {
+export function openData({ glossary, gloByLang, langCodes, pageLangs = langCodes, defLang, termSlug }) {
   const terms = glossary.map(g => {
     const term = {}, desc = {};
     for (const x of langCodes) {
@@ -63,7 +63,7 @@ export function openData({ glossary, gloByLang, langCodes, defLang, termSlug }) 
     return { slug: termSlug[g.term], field: g.cat, term, desc };
   });
   const json = JSON.stringify({ name: 'Semiconductor Room glossary', license: OPEN_LICENSE.name, licenseUrl: OPEN_LICENSE.url, attribution: OPEN_LICENSE.attribution,
-    languages: langCodes, pageUrl: 'https://semiconroom.com/{lang}/term/{slug}/ (Japanese: https://semiconroom.com/term/{slug}/)', terms });
+    languages: langCodes, pageUrl: `https://semiconroom.com/{lang}/term/{slug}/ (lang: ${pageLangs.filter(x => x !== defLang).join(', ')}; Japanese: https://semiconroom.com/term/{slug}/)`, terms });
   const q = v => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const csv = '﻿' + [['slug', 'field', ...langCodes], ...terms.map(t => [t.slug, t.field, ...langCodes.map(x => t.term[x] ?? '')])].map(r => r.map(v => q(String(v))).join(',')).join('\r\n') + '\r\n';
   return { json, csv, n: terms.length };
@@ -71,7 +71,7 @@ export function openData({ glossary, gloByLang, langCodes, defLang, termSlug }) 
 
 // ctx: build.js の buildLang の中の値と関数
 export function buildReference(ctx) {
-  const { L, code, defLang, home, base, langs, page, esc, t, S, terms, termSlug, built, short, crumbs, R, glossary, enGlo, abbrExtra, gloGroups, gloByLang, write } = ctx;
+  const { L, code, defLang, home, base, langs, dataLangs = langs, page, esc, t, S, terms, termSlug, built, short, crumbs, R, glossary, enGlo, abbrExtra, gloGroups, gloByLang, write } = ctx;
   if (!R) return;
   const termIn = new Map(terms.map(g => [g.key, g]));
 
@@ -121,13 +121,14 @@ ${groups.map(gr => `<section class="glossary-cat" id="abbr-${gr}">
   // 列は表示する言語をボタンで選ぶ(既定はこのページの言語・英語・もう1つ。選んだ言語はブラウザに保存。multilingual.js)
   if (gloGroups?.length) {
     const cols = [code, ...['en', 'ja', 'zh-hant'].filter(x => x !== code)].slice(0, 3);
-    const order = [...langs.map(x => x.code)].sort((a, b) => (cols.includes(b) - cols.includes(a)) || cols.indexOf(a) - cols.indexOf(b));
+    const order = [...dataLangs.map(x => x.code)].sort((a, b) => (cols.includes(b) - cols.includes(a)) || cols.indexOf(a) - cols.indexOf(b));
     const nameIn = (key, x) => (x === defLang ? key : gloByLang[x]?.[key]?.term);
-    const lang = x => langs.find(y => y.code === x);
+    const lang = x => dataLangs.find(y => y.code === x);
+    const hasPages = x => langs.some(y => y.code === x); // サイトに出している言語だけ、用語ページへリンクする
     const cell = (key, x) => {
       const nm = nameIn(key, x), l = lang(x);
       const rd = x === defLang && code === defLang ? glossary.find(g => g.term === key)?.reading ?? '' : '';
-      return `<td data-l="${x}" lang="${l.htmlLang}">${nm ? `<a href="${base}${l.path}term/${termSlug[key]}/">${esc(nm)}</a>${rd ? `<small>${esc(rd)}</small>` : ''}` : '–'}</td>`;
+      return `<td data-l="${x}" lang="${l.htmlLang}">${nm ? `${hasPages(x) ? `<a href="${base}${l.path}term/${termSlug[key]}/">${esc(nm)}</a>` : `<span>${esc(nm)}</span>`}${rd ? `<small>${esc(rd)}</small>` : ''}` : '–'}</td>`;
     };
     const altFor = sub => Object.fromEntries(langs.filter(x => x.code === defLang || ctx.hasLang(x.code)).map(x => [x.code, `${x.path}${sub}`]));
     const picker = `<div class="ml-pick" role="group" aria-label="${esc(R.ml_cols)}"><span class="muted">${esc(R.ml_cols)}</span> ${order.map(x => `<button type="button" class="chip" data-ml="${x}" aria-pressed="${cols.includes(x)}">${esc(lang(x).label)}</button>`).join(' ')}</div>`;
@@ -178,7 +179,7 @@ ${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}reference/">${esc(R.nav)}</a></nav>
 <h1>${esc(R.ml_h1)}</h1>
 <p class="lead">${esc(R.ml_lead.replace('{n}', total))}</p>
-<p class="muted">${langs.map(x => esc(x.label)).join(' · ')}</p>
+<p class="muted">${dataLangs.map(x => esc(x.label)).join(' · ')}</p>
 <ul class="cmp-list">${cards.join('')}</ul>
 <div data-ad="glossary"></div>
 <p><a class="btn btn-ghost" href="${home}reference/">${esc(R.to_hub)}</a></p>`,
@@ -187,7 +188,7 @@ ${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
 
   // ---- オープンデータ: ファイルは既定言語のときに1回だけ書き、説明のページは各言語に作る ----
   if (write) {
-    const od = openData({ glossary, gloByLang, langCodes: langs.map(x => x.code), defLang, termSlug });
+    const od = openData({ glossary, gloByLang, langCodes: dataLangs.map(x => x.code), pageLangs: langs.map(x => x.code), defLang, termSlug });
     if (code === defLang) { write('open-data/semiconroom-glossary.json', od.json); write('open-data/semiconroom-glossary.csv', od.csv); }
     const kb = s2 => `${Math.round(Buffer.byteLength(s2) / 1024)} KB`;
     const sub = 'reference/open-data/';

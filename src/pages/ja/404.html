@@ -14,12 +14,21 @@
 <p><a class="btn btn-primary" href="{{base}}">トップページへ</a></p>
 </div>
 <div class="prose" data-nf="en" lang="en">
+<p class="lead" data-nf-off hidden><span data-nf-msg></span> <a data-nf-en href="{{base}}en/">Open this page in English</a></p>
 <h1>Page not found</h1>
 <p>The page you are looking for may have been moved or deleted.</p>
 <p><a class="btn btn-primary" href="{{base}}en/">Go to the top page</a></p>
 </div>
 <script>(() => {
-  const en = location.pathname.startsWith('{{base}}en/') || !(navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith('ja'));
+  // 公開をやめた言語(ドイツ語・オランダ語・フランス語)の古いURLには、同じページの英語版を案内する
+  const off = location.pathname.slice('{{base}}'.length).match(/^(de|nl|fr)\/(.*)$/);
+  const en = !!off || location.pathname.startsWith('{{base}}en/') || !(navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith('ja'));
   document.querySelector(`[data-nf="${en ? 'ja' : 'en'}"]`).remove();
+  if (off) {
+    const text = { de: ['Die deutsche Ausgabe wurde eingestellt.', 'German'], nl: ['De Nederlandse editie is stopgezet.', 'Dutch'], fr: ["L'édition française a été arrêtée.", 'French'] }[off[1]];
+    document.querySelector('[data-nf-msg]').textContent = text[0] + ' The ' + text[1] + ' edition of this site has been discontinued.';
+    document.querySelector('[data-nf-en]').href = '{{base}}en/' + off[2];
+    document.querySelector('[data-nf-off]').hidden = false;
+  }
   if (en) { document.documentElement.lang = 'en'; document.title = 'Page not found | Semiconductor Room'; }
 })();</script>
