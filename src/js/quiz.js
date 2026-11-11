@@ -1,5 +1,5 @@
 // クイズ画面。選択肢の数に依存しない（2択・3択・4択…すべて同じ処理）
-import { h, home, getData, makeT } from './dom.js';
+import { h, home, base, getData, makeT } from './dom.js';
 import { mathifyDom } from './mathify.js';
 import * as store from './store.js';
 import modes from './modes/index.js';
@@ -9,7 +9,10 @@ import { diagnosisReport } from './diagnosis.js';
 const app = document.getElementById('quiz');
 const params = Object.fromEntries(new URLSearchParams(location.search));
 const mode = modes.find(m => m.id === params.mode) || modes.find(m => m.id === 'random');
+// 式の表(教科書のような組み方にする式)は問題データと並行して読む。読めなくてもクイズは動く(式が1行書きのまま出る)
+const mathLoad = Promise.all([import('./mathml.js'), fetch(`${base}data/math.json`).then(r => (r.ok ? r.json() : null))]).catch(() => null);
 const index = await getData('index.json');
+const mathKit = await mathLoad.then(x => (x && x[1] ? { ...x[0], table: x[1], mark: x[0].makeMarker(x[1]) } : null));
 const t = makeT(index.strings);
 const catName = id => index.categories.find(c => c.id === id)?.name ?? '';
 const label = index.modes[mode.id].label;
@@ -36,8 +39,11 @@ const figure = svg => {
 
 // 解説の1文目(結論)を要点として太字にする。文の区切りが見つからない・長すぎるときは分けない
 const FIRST = /^(.{12,320}?(?:[。！？]|(?<!\b\w)(?<!\bca)(?<!\bbzw)(?<!\be\.g)(?<!\bi\.e)(?<!\bvs)(?<!\bapprox)(?<!\bFig)[.!?](?=\s+\S)))\s*(\S[\s\S]*)$/;
-const linked = (text, cat) => linkTerms(text, matcher, skipIn(cat)).map(p => (typeof p === 'string' ? p
+const linkedText = (text, cat) => linkTerms(text, matcher, skipIn(cat)).map(p => (typeof p === 'string' ? p
   : h('a', { class: 'term-link', href: `${home}term/${slugOf.get(p.id)}/` }, p.text)));
+// 解説の中の式は、用語のリンクを付ける前に取り出して教科書のような組み方にする(式の中の語にはリンクしない)
+const linked = (text, cat) => (mathKit ? mathKit.splitFormulas(text, mathKit.table, mathKit.mark) : [text])
+  .flatMap(p => (typeof p === 'string' ? linkedText(p, cat) : p));
 const explanationText = (text, cat) => {
   const m = text.match(FIRST);
   return m ? [h('strong', { class: 'key-point' }, linked(m[1], cat)), ' ', linked(m[2], cat)] : linked(text, cat);
@@ -241,4 +247,4 @@ document.addEventListener('keydown', e => {
 });
 
 // 問題文・選択肢・解説の数式と単位を整える(添字、行が切れないスペース)。描画のたびに行う。整えた後の文字は変わらないので繰り返さない
-if (app) new MutationObserver(() => mathifyDom(app)).observe(app, { childList: true, subtree: true });
+if (app) new MutationObserver(() => { if (mathKit) mathKit.mathBlocksDom(app, mathKit.table, mathKit.mark); mathifyDom(app); }).observe(app, { childList: true, subtree: true });

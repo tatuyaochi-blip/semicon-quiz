@@ -12,7 +12,7 @@ import { figures, localizeFigure } from './figures.js';
 import { buildReference } from './reference.js';
 import { icon } from './icons.js';
 import { mathifyHtml } from '../src/js/mathify.js';
-import { linearToMathML } from './mathml.js';
+import { makeMarker, modeOf, formulaHtml } from '../src/js/mathml.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'docs');
@@ -181,21 +181,34 @@ const tools = exists('data/tools') ? fs.readdirSync(path.join(root, 'data/tools'
   .map(f => readJSON(`data/tools/${f}`)).filter(x => !x.cat || keepCat(x.cat)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
 const toolsIn = code => tools.filter(x => x.text[code]);
 // 教科書のような組み方で出す式(data/math.json)。本文の中の1行書きの式に目印(M0 … M1)を付け、page() で MathML に置き換える。
-// 目印を付けるのは、用語の解説・計算ツールの解説・よくある質問の答えだけ(検索用のデータや構造化データには付けない)
-const M0 = '\ue010', M1 = '\ue011';
+// 目印を付けるのは画面に出す本文だけ(検索用のデータや構造化データには付けない)。クイズ画面は同じ表を読み、ブラウザで組み直す(src/js/quiz.js)
+const M0 = '\ue010', M1 = '\ue011', MI = '\ue012';
 const mathTable = readOpt('data/math.json', { formulas: {} }).formulas;
-const mathKeys = Object.keys(mathTable).sort((a, b) => b.length - a.length);
-const mathRe = mathKeys.length ? new RegExp(`(?<![A-Za-z0-9µμα-ωΑ-Ω·×/^√|]|[=≈+−×·/] ?)(?:${mathKeys.map(k => k.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('|')})(?![A-Za-z0-9µμα-ωΑ-Ω²³⁰¹⁴-⁹⁻^·×/]| ?[=≈+−×·/])`, 'g') : null;
-const mathMark = text => (mathRe ? text.replace(mathRe, (m, at) => {
-  // すぐ後ろのカッコが式の続き(掛け算)なら目印を付けない。説明や条件のカッコ(日本語・単語・不等号を含む)ならよい
-  const rest = text.slice(at + m.length);
-  if (rest[0] === '(' || rest[0] === '[') { const close = rest.indexOf(rest[0] === '(' ? ')' : ']'); if (close < 0 || !/[\u3000-\u9fff\uac00-\ud7af]|[a-zà-ÿ]{4,}|[<>≤≥]/.test(rest.slice(1, close))) return m; }
-  return `${M0}${m}${M1}`;
-}) : text);
+const mathMarker = makeMarker(mathTable);
+const mathMark = text => mathMarker(text ?? '', k => `${M0}${k}${M1}`);
+// 見出し・表・選択肢の中では、式を段落から独立させず、文の流れの中に置く
+const mathMarkIn = text => mathMarker(text ?? '', k => `${M0}${MI}${k}${M1}`);
+// HTML で書いた本文(やさしい解説)の、タグの外の文に目印を付ける。段落と箇条書きの中だけ独立した式にする
+const mathMarkHtml = html => {
+  let skip = 0, block = '';
+  return html.split(/(<[^>]+>)/).map(x => {
+    if (x.startsWith('<')) {
+      const m = x.match(/^<(\/?)([a-z0-9]+)/i);
+      if (m && ['svg', 'pre', 'code', 'script', 'style', 'math', 'figure', 'a'].includes(m[2]) && !x.endsWith('/>')) skip += m[1] ? -1 : 1;
+      else if (m && !m[1] && ['p', 'li', 'td', 'th', 'h2', 'h3', 'h4', 'dd', 'dt', 'figcaption', 'summary'].includes(m[2])) block = m[2];
+      return x;
+    }
+    return skip > 0 || !x.trim() ? x : (block === 'p' || block === 'li' ? mathMark(x) : mathMarkIn(x));
+  }).join('');
+};
 const mathCache = new Map();
-const mathHtml = linear => {
-  if (!mathCache.has(linear)) { const r = mathTable[linear] ? linearToMathML(linear, mathTable[linear]) : null; mathCache.set(linear, r ? `<span class="math-block">${r.ml}</span>` : null); }
-  return mathCache.get(linear);
+const mathHtml = x => {
+  if (!mathCache.has(x)) {
+    const inline = x.startsWith(MI), linear = inline ? x.slice(1) : x, hints = mathTable[linear];
+    const mode = hints?.mode ?? modeOf(linear);
+    mathCache.set(x, hints ? formulaHtml(linear, { ...hints, mode: inline && mode === 'block' ? 'compact' : mode }) : null);
+  }
+  return mathCache.get(x);
 };
 const unescHtml = x => x.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 const compares = readOpt('data/compare.json', []).filter(x => keepCat(x.cat)); // 用語の違い比較ページ(/compare/{slug}/)。英語などの訳は data/i18n/{言語}/compare.json
@@ -403,6 +416,7 @@ function buildLang(L) {
   const skipCache = new Map();
   // linkOnlyIn: その分野の問題でだけリンクする(ほかの言語ではふつうの語になる用語。言語ごとの訳で上書きできる)
   const skipIn = cat => cat && (skipCache.get(cat) ?? skipCache.set(cat, new Set(terms.filter(g => g.noLinkIn?.includes(cat) || (g.linkOnlyIn && !g.linkOnlyIn.includes(cat))).map(g => g.key))).get(cat));
+  if (isDef) write('data/math.json', JSON.stringify(mathTable));
   write(`data/${code}/index.json`, JSON.stringify({
     lang: code,
     locale: L.locale,
@@ -743,8 +757,8 @@ function buildLang(L) {
     <article class="q-mini"${qData(sampleQ)}>
       <p class="hero-sample-tag"><span>${esc(t('home_sample_tag'))}</span> ${esc(sampleQ.catName)}</p>
       <h2 class="hero-sample-q">${esc(sampleQ.question)}</h2>
-      <ol class="q-choices">${sampleQ.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
-      <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(sampleQ.answer), text: sampleQ.choices[sampleQ.answer] }))}</p><p class="explanation">${esc(sampleQ.explanation)}</p></details>
+      <ol class="q-choices">${sampleQ.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(mathMarkIn(ch))}</span></li>`).join('')}</ol>
+      <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(sampleQ.answer), text: sampleQ.choices[sampleQ.answer] }))}</p><p class="explanation">${esc(mathMark(sampleQ.explanation))}</p></details>
       <p class="q-continue" hidden><a class="btn btn-primary btn-block" href="${home}quiz/?mode=category&amp;c=${sampleQ.cat}&amp;n=9&amp;skip=${sampleQ.id}" rel="nofollow" data-track="home_sample_continue">${esc(t('q_continue', { name: sampleQ.catName }))}</a></p>
     </article>
   </aside>` : '';
@@ -811,9 +825,15 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
   const built = new Map();
   function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
     // 本文の数式と単位を整える(添字、行が切れないスペース)。タグの中・script・pre・入力欄は触らない(src/js/mathify.js)
-    const rawContent = content.replaceAll(M0, '').replaceAll(M1, ''); // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)
+    const rawContent = content.replaceAll(M0, '').replaceAll(M1, '').replaceAll(MI, ''); // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)
     // 目印の付いた式を MathML に置き換える(読めなかった式は1行書きのまま)。その後で、残りの本文の添字と単位を整える
-    if (content.includes(M0)) content = content.replace(new RegExp(`${M0}([^${M1}]*)${M1}`, 'g'), (m, x) => mathHtml(unescHtml(x)) ?? x).replaceAll(M0, '').replaceAll(M1, '');
+    // 独立させた式の前後のスペースは落とし、すぐ後ろの句読点は式の行の末尾に付ける(句読点だけが次の行の頭に残らないように)
+    if (content.includes(M0)) content = content.replace(new RegExp(`([ \\u00a0]*)${M0}([^${M1}]*)${M1}([ \\u00a0]*)([、。]|[,.;](?=[\\s<]|$))?`, 'g'), (m, s1, x, s2, punct = '') => {
+      const html = mathHtml(unescHtml(x));
+      if (!html) return `${s1}${x}${s2}${punct}`;
+      if (!html.startsWith('<span class="math-block">')) return `${s1}${html}${s2}${punct}`;
+      return punct && !s2 ? html.replace(/<\/span>$/, `<span class="math-punct">${punct}</span></span>`) : `${html}${punct}`;
+    }).replaceAll(M0, '').replaceAll(M1, '').replaceAll(MI, '');
     content = mathifyHtml(content);
     if (!noindex) built.set(p, { title: title ?? fullTitle ?? '', description: description ?? '' });
     const url = baseUrl + p;
@@ -940,7 +960,7 @@ ${seriesList.map(({ s, list }, k) => `<details class="learn-series topic-group" 
     });
     for (const a of learnArts) {
       const where = `learn/${code}/${a.slug}`;
-      const body = fill(a.body
+      const body = fill(mathMarkHtml(a.body)
         .replace(/\{\{fig:([\w-]+)\}\}/g, (m, id) => {
           if (!figs[id]) throw new Error(`${where}: 存在しない図 ${id}`);
           const svg = localizeFigure(figs[id], figT[id], isDef);
@@ -1124,15 +1144,15 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
           catUrl: `${home}c/${c.id}/`,
           catName: esc(c.name),
           groupName: esc(g.name),
-          question: esc(q.question),
+          question: esc(mathMarkIn(q.question)),
           qData: qData({ ...q, cat: c.id }),
           continueUrl: `${home}quiz/?mode=category&amp;c=${c.id}&amp;n=9&amp;skip=${q.id}`,
           continueLabel: esc(t('q_continue', { name: c.name })),
           code: q.code && !q.codeFirst ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
           codeBefore: q.code && q.codeFirst ? `<pre class="q-code" data-lang="${esc(q.codeLang ?? '')}"><code>${esc(q.code)}</code></pre>` : '',
-          choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('\n'),
-          answerIs: esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })),
-          explanation: linked(q.explanation, c.id),
+          choices: q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(mathMarkIn(ch))}</span></li>`).join('\n'),
+          answerIs: esc(mathMarkIn(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))),
+          explanation: linked(mathMark(q.explanation), c.id),
           figure: q.figureSvg && !q.figureFirst ? figureHtml(q.figureSvg, q.figureId) : '',
           figureBefore: q.figureSvg && q.figureFirst ? figureHtml(q.figureSvg, q.figureId) : '',
           choiceNotes: choiceNotes(q),
@@ -1195,8 +1215,8 @@ ${courseLearn(co)}<div class="course-progress" data-course-progress="${esc(t('co
   const miniQ = q => `
   <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
-    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
-    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation, q.cat)}</p></details>
+    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(mathMarkIn(ch))}</span></li>`).join('')}</ol>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(mathMarkIn(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })))}</p><p class="explanation">${linked(mathMark(q.explanation), q.cat)}</p></details>
   </article>`;
 
   // 数値のページ /en/numbers/(英語版のみ)。数値ごとに根拠の問題へリンクし、上部から10問のドリルへ
@@ -2799,7 +2819,7 @@ ${used.length ? `<section>
 <div class="term-layout">
 <article class="compare-page rail-head">
   <h1>${esc(e.title)}</h1>
-  <p class="lead">${esc(e.lead)}</p>
+  <p class="lead">${esc(mathMarkIn(e.lead))}</p>
   <div class="cmp-tools">
     <button type="button" class="btn btn-ghost" data-copy-table data-done="${esc(t('compare_copied'))}">${esc(t('compare_copy'))}</button>
     <button type="button" class="btn btn-ghost" data-share data-done="${esc(t('compare_link_copied'))}">${esc(t('compare_share'))}</button>
@@ -2808,7 +2828,7 @@ ${used.length ? `<section>
     <table class="compare">
       <thead><tr><th scope="col">${esc(t('compare_aspect'))}</th>${e.items.map(x => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead>
       <tbody>${e.rows.map(([label, ...cells]) => `
-        <tr><th scope="row">${esc(label)}</th>${cells.map(x => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}
+        <tr><th scope="row">${esc(label)}</th>${cells.map(x => `<td>${esc(mathMarkIn(x))}</td>`).join('')}</tr>`).join('')}
       </tbody>
     </table>
   </div>
@@ -2821,13 +2841,13 @@ ${rail({ toc: [['when', t('compare_when')], faq.length && ['faq', t('compare_faq
 <section id="when">
   <h2>${esc(t('compare_when'))}</h2>
   <dl class="compare-when">${e.when.map(([k, v]) => `
-    <dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}
+    <dt>${esc(k)}</dt><dd>${esc(mathMarkIn(v))}</dd>`).join('')}
   </dl>
 </section>
 ${faq.length ? `<section class="faq" id="faq">
   <h2>${esc(t('compare_faq'))}</h2>${faq.map(([q, a]) => `
   <h3>${esc(q)}</h3>
-  <p>${esc(a)}</p>`).join('')}
+  <p>${esc(mathMark(a))}</p>`).join('')}
 </section>` : ''}
 ${quiz.length ? `<section id="check">
   <h2>${esc(t('compare_quiz'))}</h2>${mini.map(miniQ).join('')}
@@ -2927,8 +2947,8 @@ ${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id
   <h2>${esc(t('term_practice', { term: g.term }))}</h2>${pick.map(q => `
   <article class="q-mini"${qData(q)}>
     <h3><a href="${base}${qUrl(q.cat, q.id)}">${esc(q.question)}</a></h3>
-    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(ch)}</span></li>`).join('')}</ol>
-    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] }))}</p><p class="explanation">${linked(q.explanation, q.cat)}</p></details>
+    <ol class="q-choices">${q.choices.map((ch, k) => `<li><span class="choice-mark">${mark(k)}</span><span class="choice-text">${esc(mathMarkIn(ch))}</span></li>`).join('')}</ol>
+    <details class="q-answer"><summary>${esc(t('answer_toggle'))}</summary><p class="verdict ok">${esc(mathMarkIn(t('answer_is', { mark: mark(q.answer), text: q.choices[q.answer] })))}</p><p class="explanation">${linked(mathMark(q.explanation), q.cat)}</p></details>
   </article>`).join('')}
 </section>` : '';
     // 詳しい解説(about: 見出しと段落)とよくある質問(faq)。用語集の訳にあるときだけ出す(今は表示回数の多い英語の用語)
