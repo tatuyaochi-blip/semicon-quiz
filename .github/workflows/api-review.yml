@@ -1,0 +1,89 @@
+# 問題(と訳)の事実確認を Claude API の Message Batches でまとめて頼む(手動実行だけ)。
+# 道具は tools/api-review.js、手順は quality/api-review.md。
+# 結果(指摘の候補)と費用の記録は、main ではなく api-review-results ブランチの quality/api-review/ に置く。サイトの公開には影響しない。
+# キーは Settings → Secrets and variables → Actions の ANTHROPIC_API_KEY(運営者が登録する)。見積もりだけならキーは要らない。
+name: API review
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'estimate=見積もりだけ / submit=送信して結果まで待つ / fetch=送信済みの結果を取りにいく / status=処理の状況'
+        type: choice
+        options: [estimate, submit, fetch, status]
+        default: estimate
+      cats:
+        description: '分野の ID(カンマ区切り)、または all'
+        default: 'all'
+      max_usd:
+        description: '今回の上限額(USD)。最悪の場合の額がこれを超えると送信しない'
+        default: '40'
+      total_cap_usd:
+        description: '累計の上限額(USD)。これまでの実費と合わせて判定する'
+        default: '180'
+      model:
+        type: choice
+        options: [claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5]
+        default: claude-opus-5-5
+      effort:
+        type: choice
+        options: [high, xhigh, medium, low, max]
+        default: high
+      batch_id:
+        description: 'fetch / status のときのバッチ ID(空なら、記録で待っているものすべて)'
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: これまでの記録を読む(api-review-results ブランチ)
+        run: |
+          if git ls-remote --exit-code --heads origin api-review-results; then
+            git fetch origin api-review-results
+            git worktree add -B api-review-results /tmp/results origin/api-review-results
+          else
+            git worktree add --detach /tmp/results
+            (cd /tmp/results && git checkout --orphan api-review-results && git rm -rfq .)
+          fi
+          mkdir -p quality/api-review
+          if [ -d /tmp/results/quality/api-review ]; then cp -r /tmp/results/quality/api-review/. quality/api-review/; fi
+      - name: 実行
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ACTION: ${{ inputs.action }}
+          CATS: ${{ inputs.cats }}
+          MAX_USD: ${{ inputs.max_usd }}
+          TOTAL_CAP: ${{ inputs.total_cap_usd }}
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+          BATCH_ID: ${{ inputs.batch_id }}
+        run: |
+          args=(--cats "$CATS" --max-usd "$MAX_USD" --total-cap-usd "$TOTAL_CAP" --model "$MODEL" --effort "$EFFORT" --wait-minutes 320)
+          if [ -n "$BATCH_ID" ]; then args+=(--batch "$BATCH_ID"); fi
+          node tools/api-review.js "$ACTION" "${args[@]}"
+      - name: 記録を api-review-results ブランチに保存
+        if: always() && inputs.action != 'estimate' && inputs.action != 'status'
+        env:
+          MSG: API 点検の記録 (${{ inputs.action }})
+        run: |
+          [ -d quality/api-review ] || exit 0
+          mkdir -p /tmp/results/quality/api-review
+          cp -r quality/api-review/. /tmp/results/quality/api-review/
+          cd /tmp/results
+          git add quality/api-review
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "$MSG"
+          git push origin api-review-results
