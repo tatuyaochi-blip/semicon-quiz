@@ -95,6 +95,14 @@ export function validate() {
     const base = `data/i18n/${code}`;
     const catT = opt(`${base}/categories.json`);
     for (const id of Object.keys(catT)) if (!catIds.has(id)) errors.push(`${base}/categories.json: 分野 "${id}" がありません`);
+    // 分野の講義(lecture: [{h, p}])は、見出しと本文がそろっていて、日本語と同じ節の数であること
+    for (const [id, x] of Object.entries(catT)) {
+      if (!x.lecture) continue;
+      if (x.lecture.some(s => !s.h?.trim() || !s.p?.trim())) errors.push(`${base}/categories.json: "${id}" の lecture に見出しか本文が空のものがあります`);
+      const ja = categories.find(c => c.id === id)?.lecture;
+      if (!ja) errors.push(`${base}/categories.json: "${id}" の lecture が日本語にありません`);
+      else if (ja.length !== x.lecture.length) errors.push(`${base}/categories.json: "${id}" の lecture の節の数が日本語(${ja.length})と違います(${x.lecture.length})`);
+    }
     const gloT = opt(`${base}/glossary.json`);
     for (const term of Object.keys(gloT)) {
       if (!glossaryTerms.has(term)) errors.push(`${base}/glossary.json: 用語 "${term}" が glossary.json にありません`);
