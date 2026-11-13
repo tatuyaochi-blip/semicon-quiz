@@ -3013,7 +3013,9 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
       // 詳しい解説(about)もよくある質問(faq)もない用語のページは、定義の1〜2文と問題の抜粋だけで中身が薄いので検索に出さない。
       // ニュース用語と、やさしい解説の記事がある用語は出す。解説を書けば自動で検索に出る
       // (2026-10-29: 10/26 の検索表示の急落を受け、薄いページを減らす。以前は「問題に出てこず解説もない」ときだけ noindex だった)
-      noindex: !nw && !g.about?.length && !faq.length && !learnByTerm.has(g.key),
+      // 2026-11-13: 英語の用語ページは、Search Console で10位前後に入っているもの(config.enTermIndex)だけ検索に出す。
+      // ほかは 60〜80 位でクリックがほぼ 0 のため(quality/next.md)。ページは残し、サイトの中からは今までどおり読める
+      noindex: (!nw && !g.about?.length && !faq.length && !learnByTerm.has(g.key)) || (code === 'en' && Array.isArray(config.enTermIndex) && !config.enTermIndex.includes(termSlug[g.key])),
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.nav_glossary, `${home}glossary/`], [g.term, termUrl]),
         { '@context': 'https://schema.org', '@type': 'DefinedTerm', name: g.term, description: g.desc, url: abs(termUrl), inLanguage: L.htmlLang,
