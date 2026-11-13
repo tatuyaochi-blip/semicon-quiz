@@ -187,7 +187,7 @@ ${gr.cats.map(({ c, list }) => `<section class="glossary-cat" id="cat-${c.id}">
   }
 
   // ---- オープンデータ: ファイルは既定言語のときに1回だけ書き、説明のページは各言語に作る ----
-  if (write) {
+  if (write && !ctx.dropped?.('reference/open-data/')) {
     const od = openData({ glossary, gloByLang, langCodes: dataLangs.map(x => x.code), pageLangs: langs.map(x => x.code), defLang, termSlug });
     if (code === defLang) { write('open-data/semiconroom-glossary.json', od.json); write('open-data/semiconroom-glossary.csv', od.csv); }
     const kb = s2 => `${Math.round(Buffer.byteLength(s2) / 1024)} KB`;
