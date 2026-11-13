@@ -2933,9 +2933,6 @@ ${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id
     // 問題文に用語が出てくる問題を先に並べる
     const list = termQs.get(g.key).sort((a, b) => b.inQ - a.inQ);
     const fig = list.find(q => q.inQ && q.figureSvg);
-    // 解説からの抜き出し: 用語を含む最初の文(最大3問ぶん)
-    const quotes = list.map(q => ({ q, s: q.explanation.split(/(?<=。)|(?<=[.!?])\s+/).map(x => x.trim()).find(x => termIds(x).includes(g.key)) }))
-      .filter(x => x.s).slice(0, 5);
     // 関連する用語: 同じ問題によく一緒に出てくる語 → 同じ分野の語
     const co = new Map();
     for (const q of list) for (const id of q.ids) if (id !== g.key) co.set(id, (co.get(id) || 0) + 1);
@@ -2953,6 +2950,10 @@ ${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id
     const nw = newsOf(g.key);
     const nwQ = nw?.question && qById.get(nw.question);
     const pick = nwQ ? [nwQ] : (pickable.some(q => q.inQ) ? pickable.filter(q => q.inQ) : pickable).slice(0, 2);
+    // 同じ問題を1ページに何度も出さない(2026-11-13)。練習問題に出した問題は「出てくる問題」の一覧から除く。
+    // 以前あった「解説の中の〇〇」(問題の解説の抜き出し)は、練習問題の解説・一覧と同じ問題を3回目に出していたのでやめた
+    const pickIds = new Set(pick.map(q => q.id));
+    const rest = list.filter(q => !pickIds.has(q.id));
     const practiceHtml = pick.length ? `<section id="practice">
   <h2>${esc(t('term_practice', { term: g.term }))}</h2>${pick.map(q => `
   <article class="q-mini"${qData(q)}>
@@ -2998,7 +2999,7 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
     const termUrl = `${home}term/${termSlug[g.key]}/`;
     // 右の欄(PC)と、定義のすぐ下の横スクロールの目次(スマホ)に出す、このページの見出し
     const toc = [...about.map((x, k) => [`s${k + 1}`, x.h]), practiceHtml && ['practice', t('term_practice', { term: g.term })], faq.length && ['faq', t('compare_faq')],
-      list.length && ['questions', t('term_questions', { term: g.term, n: list.length })], related.length && ['related', t('term_related')]].filter(Boolean);
+      rest.length && ['questions', t('term_questions', { term: g.term, n: rest.length })], related.length && ['related', t('term_related')]].filter(Boolean);
     // 英語名を添える言語(繁体字など。英語の用語名に「中文」「是什麼」を付けて調べる人が多い)では、用語名に英語名が含まれていなければ添える
     // 用語名にもうカッコ(略語や別名)があるときは、カッコが重なるので添えない
     const en = !isDef && code !== 'en' && S.term_title_en && enLabel(g.key);
@@ -3041,14 +3042,10 @@ ${rail({ toc, c, lists: [[t('term_related'), related.slice(0, 6).map(x => [`${ho
 ${newsHtml ? `${newsHtml}\n` : ''}${aboutHtml}
 ${diffHtml ? `${diffHtml}\n` : ''}${practiceHtml}
 ${faqHtml}
-${quotes.length ? `<section>
-  <h2>${esc(t('term_quotes', { term: g.term }))}</h2>
-  <ul class="term-quotes">${quotes.map(({ q, s }) => `<li><p>${esc(s)}</p><a href="${base}${qUrl(q.cat, q.id)}">${esc(short(q.question, 60))}</a></li>`).join('')}</ul>
-</section>` : ''}
-${list.length ? `<section id="questions">
-  <h2>${esc(t('term_questions', { term: g.term, n: list.length }))}</h2>
+${rest.length ? `<section id="questions">
+  <h2>${esc(t('term_questions', { term: g.term, n: rest.length }))}</h2>
   ${termSummary}
-  ${qLinks(list.slice(0, 15))}
+  ${qLinks(rest.slice(0, 15))}
 </section>` : ''}
 ${c ? bookSection(c) : ''}
 <div data-ad="term"></div>
