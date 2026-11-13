@@ -343,6 +343,12 @@ function buildLang(L) {
   const t = (k, vars = {}) => (S[k] ?? k)
     .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (m, x, one, many) => (x in vars ? (Number(vars[x]) === 1 ? one : many) : m))
     .replace(/\{(\w+)\}/g, (m, x) => (x in vars ? vars[x] : m));
+  // 用語・比較・やさしい解説のページの「更新日」と「作り方」の注記(E-E-A-T の「どのように作ったか」をページごとに示す。2026-11-13)
+  // 構造化データの著者: config.operator に名前を入れたら、その人(Person。サイトについてのページへのリンク付き)。それまではサイト(Organization)
+  const authorLd = (() => { const n = loc(config.operator?.name, code); return n ? { '@type': 'Person', name: n, url: `${baseUrl}${L.path}about/` } : { '@type': 'Organization', name: loc(config.siteName, code) }; })();
+  const pageDay = d => new Intl.DateTimeFormat(L.locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`));
+  const pageUpdated = p => (lastmodPrev[p]?.date ? `<!--nohash-->\n  <p class="page-updated muted">${esc(t('page_updated', { d: pageDay(lastmodPrev[p].date) }))}</p><!--/nohash-->` : '');
+  const pageNote = () => `<!--nohash-->\n<p class="page-note muted">${esc(t('page_note')).replace('{policy}', `<a href="${home}editorial-policy/">${esc(S.footer_editorial)}</a>`).replace('{contact}', `<a href="${home}contact/">${esc(S.nav_contact)}</a>`)}</p><!--/nohash-->`;
   const tr = kind => (isDef ? {} : readOpt(`data/i18n/${code}/${kind}.json`, {}));
   const exT = tr('exams');
   const catT = tr('categories');
@@ -827,7 +833,10 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
   const built = new Map();
   function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
     // 本文の数式と単位を整える(添字、行が切れないスペース)。タグの中・script・pre・入力欄は触らない(src/js/mathify.js)
-    const rawContent = content.replaceAll(M0, '').replaceAll(M1, '').replaceAll(MI, ''); // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)
+    // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)。
+    // 更新日の表示と「作り方」の注記(<!--nohash-->…<!--/nohash-->)も判定から外す(表示した日付で本文が変わり、更新日が毎回動かないように)
+    const rawContent = content.replace(/<!--nohash-->[\s\S]*?<!--\/nohash-->/g, '').replaceAll(M0, '').replaceAll(M1, '').replaceAll(MI, '');
+    content = content.replaceAll('<!--nohash-->', '').replaceAll('<!--/nohash-->', '');
     // 目印の付いた式を MathML に置き換える(読めなかった式は1行書きのまま)。その後で、残りの本文の添字と単位を整える
     // 独立させた式の前後のスペースは落とし、すぐ後ろの句読点は式の行の末尾に付ける(句読点だけが次の行の頭に残らないように)
     if (content.includes(M0)) content = content.replace(new RegExp(`([ \\u00a0]*)${M0}([^${M1}]*)${M1}([ \\u00a0]*)([、。]|[,.;](?=[\\s<]|$))?`, 'g'), (m, s1, x, s2, punct = '') => {
@@ -1000,7 +1009,7 @@ ${seriesList.map(({ s, list }, k) => `<details class="learn-series topic-group" 
           crumbs([t('breadcrumb_top'), home], [LT.nav, learnUrl], [a.title, url]),
           { '@context': 'https://schema.org', '@type': 'Article', headline: a.title, description: a.description, inLanguage: L.htmlLang,
             datePublished: a.published ?? a.updated, dateModified: a.updated, mainEntityOfPage: abs(url),
-            author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+            author: authorLd, publisher: { '@type': 'Organization', name: siteName } },
         ],
         content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${learnUrl}">${esc(LT.nav)}</a> <span>›</span> <a href="${learnUrl}#s-${s.id}">${esc(seriesName(s))}</a></nav>
 <div class="term-layout learn-layout">
@@ -1021,7 +1030,7 @@ ${inSeries.length > 1 ? `<section>
   <ol class="learn-toc">${inSeries.map(x => `<li>${x.slug === a.slug ? `<strong aria-current="page">${esc(x.title)}</strong>` : `<a href="${x.href}" data-track="learn_series">${esc(x.title)}</a>`}</li>`).join('')}</ol>
 </section>` : ''}
 ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)} <a href="${home}c/${main.id}/" data-track="learn_topic">${esc(main.name)}</a></p>\n` : ''}${a.sources?.length ? `<details class="news-sources"><summary>${esc(LT.sources)}</summary><ul>${a.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join('')}</ul></details>` : ''}
-<div data-ad="term"></div>
+<div data-ad="term"></div>${pageNote()}
 <p><a class="btn btn-ghost" href="${learnUrl}">${esc(LT.all)}</a></p>
 </div>
 </div>`,
@@ -2771,7 +2780,7 @@ ${toolGroups().map((g, k) => `<details class="tools-group topic-group" id="tg-${
       jsonld: [
         crumbs([t('breadcrumb_top'), home], [S.figures_title, `${home}figures/`], [x.title, url]),
         { '@context': 'https://schema.org', '@type': 'Article', headline: ft.title, description: ft.description, inLanguage: L.htmlLang, image: abs(`${base}img/${code}/${x.id}.svg`),
-          mainEntityOfPage: abs(url), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+          mainEntityOfPage: abs(url), author: authorLd, publisher: { '@type': 'Organization', name: siteName } },
       ],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}figures/">${esc(S.figures_title)}</a></nav>
 <h1>${esc(x.title)}</h1>
@@ -2813,14 +2822,14 @@ ${used.length ? `<section>
         jsonld: [
           crumbs(topCrumb, idxCrumb, [e.title, cmpUrl(e)]),
           { '@context': 'https://schema.org', '@type': 'Article', headline: e.title, description: e.description, inLanguage: L.htmlLang, dateModified: modified,
-            mainEntityOfPage: abs(cmpUrl(e)), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } },
+            mainEntityOfPage: abs(cmpUrl(e)), author: authorLd, publisher: { '@type': 'Organization', name: siteName } },
           ...(faq.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage',
             mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }] : []),
         ],
         content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}compare/">${esc(t('breadcrumb_compare'))}</a></nav>
 <div class="term-layout">
 <article class="compare-page rail-head">
-  <h1>${esc(e.title)}</h1>
+  <h1>${esc(e.title)}</h1>${pageUpdated(`${L.path}compare/${e.slug}/`)}
   <p class="lead">${esc(mathMarkIn(e.lead))}</p>
   <div class="cmp-tools">
     <button type="button" class="btn btn-ghost" data-copy-table data-done="${esc(t('compare_copied'))}">${esc(t('compare_copy'))}</button>
@@ -2862,7 +2871,7 @@ ${keyTerms.length ? `<section id="terms">
     <div class="term"><dt><a href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a></dt><dd>${esc(x.desc)}</dd></div>`).join('')}
   </dl>
 </section>` : ''}
-${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id="more">')}
+${cmpSection(t('compare_more'), relatedCmp(e)).replace('<section>', '<section id="more">')}${pageNote()}
 </div>
 </div>`,
       });
@@ -3013,7 +3022,7 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
           mainEntity: faq.map(x => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) }] : []),
         ...(nw ? [{ '@context': 'https://schema.org', '@type': 'Article', headline: t('term_title', { term: g.term }), description: nw.short, inLanguage: L.htmlLang,
           datePublished: nw.added, dateModified: lastmodPrev[`${L.path}term/${termSlug[g.key]}/`]?.date ?? new Date().toLocaleDateString('sv-SE'),
-          mainEntityOfPage: abs(termUrl), author: { '@type': 'Organization', name: siteName }, publisher: { '@type': 'Organization', name: siteName } }] : []),
+          mainEntityOfPage: abs(termUrl), author: authorLd, publisher: { '@type': 'Organization', name: siteName } }] : []),
       ],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}glossary/">${esc(S.nav_glossary)}</a>${c ? ` <span>›</span> <a href="${home}glossary/#cat-${c.id}">${esc(c.name)}</a>` : ''}</nav>
 <div class="term-layout">
@@ -3021,7 +3030,7 @@ ${nwFigs.map(x => figureHtml(x.svg, x.id)).join('\n')}` : '';
   <h1>${esc(t('term_heading', { term: g.term }))}</h1>
   ${g.reading ? `<p class="muted term-reading">${esc(g.reading)}</p>` : ''}
   <p class="lead term-def">${esc(g.desc)}</p>
-  ${c ? `<p class="term-meta"><span class="muted">${esc(t('term_category'))}:</span> <a class="chip" href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}
+  ${c ? `<p class="term-meta"><span class="muted">${esc(t('term_category'))}:</span> <a class="chip" href="${home}c/${c.id}/">${esc(c.name)}</a></p>` : ''}${pageUpdated(`${L.path}term/${termSlug[g.key]}/`)}
   ${learnByTerm.has(g.key) ? `<p class="learn-link">${esc(LT.termLink)}: <a href="${home}learn/${learnByTerm.get(g.key).slug}/" data-track="term_learn">${esc(learnByTerm.get(g.key).title)}</a></p>` : ''}
   ${isDef ? '' : `<p class="muted">${esc(t('term_ja_name'))}: <span lang="ja">${esc(g.key)}</span></p>`}
   ${fig ? figureHtml(fig.figureSvg, fig.figureId) : ''}
@@ -3051,7 +3060,7 @@ ${related.length ? `<section id="related">
   <h2>${esc(t('term_related'))}</h2>
   <p class="term-chips">${related.slice(0, 10).map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
 </section>` : ''}
-${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>
+${pageNote()}${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>
 </div>
 </div>`,
     });
