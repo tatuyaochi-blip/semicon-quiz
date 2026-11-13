@@ -22,6 +22,9 @@ const readJSON = p => JSON.parse(read(p));
 const readOpt = (p, d) => (exists(p) ? readJSON(p) : d);
 // サイトに出さないページ(config.excludeCats)へのリンクは、文字だけ残して外す(removedPath は読み込みの後で決める)
 let removedPath = null;
+// 作らないページ(config.dropPages。パスの先頭、言語の部分を除く)。2026-11-13 にサイトを簡素にするため外した周辺のページ
+const dropPrefixes = () => config.dropPages ?? [];
+const isDropped = sub => dropPrefixes().some(x => sub.replace(/^\//, '').startsWith(x));
 const unlinkRemoved = s => s.replace(/<a\b[^>]*\bhref="([^"#?]*)[^"]*"[^>]*>([\s\S]*?)<\/a>/g, (m, href, inner) => {
   const p = href.replace(/^https:\/\/semiconroom\.com/, '').replace(/^\/(en|zh-hant|ko|de|nl|fr|zh)\//, '/');
   return removedPath(p) ? inner : m;
@@ -247,7 +250,7 @@ if (excluded.size) {
   ]);
   const goneCourse = new Set(readOpt('data/courses.json', []).map(x => x.id).filter(id => !courses.some(c => c.id === id)).map(id => `/course/${id}/`));
   for (const x of config.excludePages ?? []) gone.add(`/${x}/`);
-  removedPath = p => gone.has(p) || goneCourse.has(p) || [...excluded].some(id => p.startsWith(`/q/${id}/`));
+  removedPath = p => gone.has(p) || goneCourse.has(p) || isDropped(p) || [...excluded].some(id => p.startsWith(`/q/${id}/`));
 }
 const figs = figures();
 // 操作できる図解(図IDごと。動きは fig-live.js)。文言は言語ごとで、訳のある言語だけ出す
@@ -493,23 +496,17 @@ function buildLang(L) {
   </div>
 </section>`;
   // トップの「できること」: メニューを開かなくても主な機能が分かるカード(実在するページだけ。見出しはヘッダーの名前とそろえる)
+  // 2026-11-13: 12枚から5枚に絞った(分野と学習コースはトップの別の節にあり、対訳表・面接・微細化の先へは「資料」から入る)
   const RT = refText[code]?.tiles ?? {};
   const feature = (href, title, desc, track, ic) => `<li><a class="ref-tile" href="${href}" title="${esc(desc)}" data-track="${track}">${icon(ic)}<span>${esc(title)}</span></a></li>`;
   const homeFeatures = `<section class="features" aria-labelledby="features-h">
   <h2 id="features-h">${esc(t('home_feat_heading'))}</h2>
   <ul class="ref-tiles home-tiles">
-    ${feature(`${home}c/`, S.nav_topics, t('home_feat_topics_desc', { n: live.length }), 'home_feat_topics', 'basic')}
     ${learnArts.length ? feature(`${home}learn/`, LT.nav, LT.card, 'home_feat_learn', 'learn') : ''}
-    ${courses.length ? feature('#courses', S.course_heading, t('home_feat_courses_desc'), 'home_feat_courses', 'course') : ''}
     ${feature(`${home}glossary/`, S.nav_glossary, t('home_feat_glossary_desc'), 'home_feat_glossary', 'glossary')}
     ${compares.some(e => isDef || tr('compare')[e.slug]) ? feature(`${home}compare/`, S.nav_compare, t('home_feat_compare_desc'), 'home_feat_compare', 'compare') : ''}
     ${toolsIn(code).length ? feature(`${home}tools/`, S.nav_tools, t('home_feat_tools_desc'), 'home_feat_tools', 'tools') : ''}
     ${feature(`${home}figures/`, S.footer_figures, t('home_feat_figures_desc'), 'home_feat_figures', 'figures')}
-    ${dictLangs.includes(code) ? feature(`${home}glossary/trilingual/`, RT['glossary/trilingual/'] ?? dictText[code].nav, dictText[code].card, 'home_feat_dict', 'langs') : ''}
-    ${careerText[code] && careers.some(x => isDef || carByLang[code][x.id]) ? feature(`${home}careers/`, careerText[code].nav, careerText[code].card, 'home_feat_careers', 'careers') : ''}
-    ${interviewText[code] ? feature(`${home}interview-questions/`, RT['interview-questions/'] ?? interviewText[code].nav, interviewText[code].card, 'home_feat_interview', 'interview') : ''}
-    ${beyondText[code] && pageNames(code).includes('beyond-scaling') ? feature(`${home}beyond-scaling/`, beyondText[code].nav, beyondText[code].card, 'home_feat_beyond', 'trend') : ''}
-    ${news.length ? feature(`${home}news-terms/`, RT['news-terms/'] ?? S.news_title, t('home_feat_news_desc'), 'home_feat_news', 'news') : ''}
   </ul>
 </section>`;
   // 分野の選び方: 大きな区分(半導体 / コンピュータ・IT) → 大分類(開閉できる行) → 分野(1行ずつ)。
@@ -796,7 +793,7 @@ function buildLang(L) {
     startPanel, startBack, homeFeatures, heroSample, homeFigures,
     // 用語集の上に出す、ニュース用語の一覧への案内
     dictLink: dictLangs.includes(code) ? `<p class="news-link"><a class="chip" href="${home}glossary/trilingual/">${esc(dictText[code].h1)}</a></p>` : '',
-    newsTermsLink: news.length ? `<p class="news-link"><a class="chip" href="${home}news-terms/">${esc(S.news_title)}</a> <span class="muted">${esc(t('glossary_news_link', { terms: news.slice(0, 3).map(e => e.label ?? terms.find(g => g.key === e.term).term).join(', ') }))}</span></p>` : '',
+    newsTermsLink: news.length && !isDropped('news-terms/') ? `<p class="news-link"><a class="chip" href="${home}news-terms/">${esc(S.news_title)}</a> <span class="muted">${esc(t('glossary_news_link', { terms: news.slice(0, 3).map(e => e.label ?? terms.find(g => g.key === e.term).term).join(', ') }))}</span></p>` : '',
     // トップ下部の計算ツールの一覧(訳のあるツールだけ)
     toolList: toolsIn(code).length ? `<section>
   <h2><a href="${home}tools/">${esc(S.tools_title)}</a></h2>
@@ -832,6 +829,7 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
   // この言語で作ったページ(パス → タイトルと説明)。資料のトップで、ある言語のページだけを並べるのに使う
   const built = new Map();
   function page({ path: p, alt, fallback = x => x.path, out: file, title, fullTitle, description, noindex, scripts = [], ads = true, langBanner = true, jsonld = null, content }) {
+    if (isDropped(p.slice(L.path.length))) return; // 外したページは作らない(config.dropPages)
     // 本文の数式と単位を整える(添字、行が切れないスペース)。タグの中・script・pre・入力欄は触らない(src/js/mathify.js)
     // 更新日の判定には整形前の本文を使う(整形の変更だけで全ページの更新日が変わらないように)。
     // 更新日の表示と「作り方」の注記(<!--nohash-->…<!--/nohash-->)も判定から外す(表示した日付で本文が変わり、更新日が毎回動かないように)
@@ -1198,6 +1196,7 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
       alt: Object.fromEntries(langs.filter(x => typeof co.name !== 'object' || co.name[x.code]).map(x => [x.code, `${x.path}course/${co.id}/`])),
       title: t('course_title', { name }),
       description: loc(co.desc, code),
+      noindex: true, // 2026-11-13: 本文は分野の並びだけで薄いので検索には出さない(学習の道案内としてサイト内では使う)
       scripts: ['course.js'],
       content: `<nav class="breadcrumb"><a href="${home}">${esc(t('breadcrumb_top'))}</a> <span>›</span> <a href="${home}#courses">${esc(t('course_heading'))}</a></nav>
 <h1>${esc(name)}</h1>
@@ -3062,7 +3061,7 @@ ${related.length ? `<section id="related">
   <h2>${esc(t('term_related'))}</h2>
   <p class="term-chips">${related.slice(0, 10).map(x => `<a class="chip" href="${home}term/${termSlug[x.key]}/">${esc(x.term)}</a>`).join(' ')}</p>
 </section>` : ''}
-${pageNote()}${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>
+${pageNote()}${nw && !isDropped('news-terms/') ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc(t('news_to_list'))}</a></p>\n` : ''}<p><a class="btn btn-ghost" href="${home}glossary/">${esc(t('term_to_glossary'))}</a></p>
 </div>
 </div>`,
     });
@@ -3070,7 +3069,7 @@ ${pageNote()}${nw ? `<p><a class="btn btn-ghost" href="${home}news-terms/">${esc
 
   // 資料のページ(ほかのページを作り終えてから。この言語にあるページだけをトップに並べる)
   buildReference({ L, code, defLang, home, base, langs, dataLangs, page, esc, t, S, terms, termSlug, built, short, crumbs, glossary, gloGroups, gloByLang, write,
-    R: refText[code], enGlo: gloByLang.en ?? {}, abbrExtra: readOpt('data/reference/abbr.json', {}), hasLang: x => !!refText[x] });
+    R: refText[code], enGlo: gloByLang.en ?? {}, abbrExtra: readOpt('data/reference/abbr.json', {}), hasLang: x => !!refText[x], dropped: isDropped });
 }
 
 // ---- sitemap / robots / その他 ----
