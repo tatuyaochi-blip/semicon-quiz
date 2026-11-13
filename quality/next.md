@@ -50,7 +50,7 @@ Google の自己評価の質問(誰が・どのように・なぜ、E-E-A-T)と�
 - 第1段で外したもの: 職種ガイド(11×3言語)、ニュース用語の一覧、7言語の対訳表(7×4言語)、オープンデータ。noindex にしたもの: 学習コース(本文300〜900字)、成績。トップのタイルを12→5。サイトマップ 3,911 → 3,834
 - 外したページは 404 になる(GitHub Pages ではリダイレクトの指定ができない)。Search Console の削除は使わない
 - 2026-11-13 の続き: 数値の合格基準(design.md)と検査 check:design、用語ページの問題の重複をなくす、行間をそろえる、トップの縮小図を外す、使われない JS 31 ファイルを出力から外す(サービスワーカーが最初の訪問で全員に配っていた)
-- 進行中: 用語解説の80字超の文(1,607文)を分野ごとに分割している。済: mosfet・cpu・sram-flash・hw-security・multicore-sync・logic・dram・embedded・compound・lithography・package・hdl-verification・etching(546文)。次: test・performance ほか、80字超の多い分野から。分割の点検で元の文の誤りも見つかるので、4言語で直す(audit.md)
+- 進行中: 用語解説の80字超の文(1,607文)を分野ごとに分割している。済: mosfet・cpu・sram-flash・hw-security・multicore-sync・logic・dram・embedded・compound・lithography・package・hdl-verification・etching・test・performance・sta-cdc・image-sensor(685文)。次: oxidation・io-interface・ai-stack・eda ほか、80字超の多い分野から。分割の点検で元の文の誤りも見つかるので、4言語で直す(audit.md)
 - 未着手: 用語集のほかの分野に年・「2020年代半ばの時点」が約130か所残る(解説に年を書かない方針)。分野ごとの分割のときに合わせて外す。外した分野の計算ツール用などの使われない CSS 約20KB(全体の19%)は 2026-11-13 に style.css から消した。外した分野を戻すときは、git の履歴(この日の「使われない CSS を消す」)から該当の規則を戻す
 - 次: 構成要素(文字・色・余白・部品・導線・ページの型)を一つずつ疑って見直す。運営者の指示「最小単位まで分解し、疑い、組み直し、評価する」を繰り返す
 
