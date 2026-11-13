@@ -34,7 +34,7 @@ export const RULES = {
   overflow: 0,          // 横にはみ出す量(px)
 };
 
-const PAGES = ['', 'term/1t1c-cell/', 'compare/npn-vs-pnp/', 'learn/arrhenius-equation-in-chips/', 'c/physics/',
+const PAGES = ['', 'term/1t1c-cell/', 'compare/npn-vs-pnp/', 'learn/arrhenius-equation-in-chips/', 'c/physics/', 'c/pn-junction/',
   'tools/adc-snr-enob-calculator/', 'q/physics/physics-001/', 'glossary/', 'reference/', 'about/', 'figures/', 'learn/', 'tools/', 'c/'];
 const LANGS = ['', 'en/', 'zh-hant/', 'ko/'];
 const VIEWS = [{ w: 360, name: '携帯360' }, { w: 390, name: '携帯390' }, { w: 1280, name: 'PC' }];

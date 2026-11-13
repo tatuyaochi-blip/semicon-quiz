@@ -1055,6 +1055,19 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
   // 分野ページ /c/{id}/
   // 分野の訳がない言語(更新を止めた言語に新しく足した分野など)では、分野ページを作らず、hreflang からも外す
   const catAlt = id => Object.fromEntries(langs.filter(x => x.code === defLang || catByLang[x.code][id]).map(x => [x.code, `${x.path}c/${id}/`]));
+  const lectureOf = c => (isDef ? c.lecture : catT[c.id]?.lecture) ?? null;
+  const lectureHtml = c => {
+    const lec = lectureOf(c);
+    if (!lec) return '';
+    // 用語は講義全体で最初の1回だけリンクする
+    const seen = new Set();
+    const para = text => linkTerms(mathMark(text), matcher, skipIn(c.id)).map(p => (typeof p === 'string' ? esc(p)
+      : seen.has(p.id) ? esc(p.text) : (seen.add(p.id), `<a class="term-link" href="${home}term/${termSlug[p.id]}/">${esc(p.text)}</a>`))).join('');
+    return lec.map(s => `<section class="lecture-sec">
+  <h3>${esc(s.h)}</h3>
+${s.p.split('\n').map(x => `  <p>${para(x)}</p>`).join('\n')}
+</section>`).join('\n') + (qs[c.id].length ? `\n<p class="lecture-next"><a class="btn btn-ghost" href="${home}quiz/?mode=category&amp;c=${c.id}&amp;n=10" rel="nofollow" data-track="cat_lecture_quiz">${esc(t('lecture_try'))} →</a></p>` : '');
+  };
   for (const c of cats) {
     if (!isDef && !catT[c.id]) continue;
     const g = groupOf(c);
@@ -1076,7 +1089,10 @@ ${main && qs[main.id]?.length ? `<p class="learn-quiz muted">${esc(LT.quizLine)}
         description: esc(c.description),
         groupName: esc(g.name),
         count,
-        keyPoints: esc(t('key_points', { name: c.name })),
+        // 講義(lecture: [{h, p}])がある分野は、要点の欄を「講義」にして、解く前に読む節を並べる。訳のない言語では日本語を出さない
+        keyPoints: esc(t(lectureOf(c) ? 'lecture_title' : 'key_points', { name: c.name })),
+        lecture: lectureHtml(c),
+        lectureJump: lectureOf(c) && count ? `<p class="lecture-jump"><a href="#lecture" data-track="cat_lecture">${esc(t('lecture_jump'))} ↓</a></p>` : '',
         otherInGroup: esc(t('other_in_group', { group: g.name })),
         // はじめて学ぶ人には、やさしい解説の記事を紹介文の前に案内する(この分野を主に扱う記事を先に)
         intro: (learnOfCat(c.id).length ? `<p class="learn-link">${esc(LT.catLink)}: ${learnOfCat(c.id).sort((a, b) => (b.cats[0] === c.id) - (a.cats[0] === c.id)).slice(0, 2).map(a => `<a href="${home}learn/${a.slug}/" data-track="cat_learn">${esc(a.title)}</a>`).join(' / ')}</p>\n` : '')
