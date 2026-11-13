@@ -322,6 +322,8 @@ const pagePath = (L, name) => (name === 'index' ? L.path : `${L.path}${name}/`);
 const sitemap = [];
 // hreflang の後始末用: noindex のページと、hreflang を出したページ(出力先と相手のパス)
 const noindexPaths = new Set();
+// ページが読み込む JS(page() の scripts)。どのページも使わない JS は、最後に docs/js から消す(サービスワーカーが全員に配っていたため)
+const usedScripts = new Set();
 // 問題ページを検索に出す言語(ほかの言語の問題ページは noindex にしてサイトマップからも外す)
 // 2026-10-29: ko・de・nl・fr を外した。2026-11-05: 検索表示の急落が続くため、運営者の判断で全言語の問題ページを外した
 // (問題ページはサイトマップの58%を占めるが、検索の表示は全体の約2%。クイズ・分野ページからは今までどおり使える)
@@ -911,7 +913,7 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
       langBanner: bannerHtml,
       htmlAttrs: ads && config.adPlaceholders && !config.adsenseClient ? ' data-ad-ph' : ads && config.adsenseClient && config.adsenseSlots ? ` data-adsense-client="${esc(config.adsenseClient)}" data-adsense-slots="${esc(JSON.stringify(config.adsenseSlots))}"` : '',
       content,
-      scripts: scripts.map(s => `<script type="module" src="${base}js/${s}"></script>`).join('\n'),
+      scripts: scripts.map(s => (usedScripts.add(s), `<script type="module" src="${base}js/${s}"></script>`)).join('\n'),
     }));
     // 更新日の判定用に、本文(タイトル・説明・内容)のハッシュを残す。ヘッダーなど全ページ共通の部分は含めない
     if (!noindex) sitemap.push({ url, hash: crypto.createHash('sha1').update(tt + description + rawContent).digest('hex').slice(0, 16) });
@@ -3114,6 +3116,27 @@ write('.nojekyll', '');
 if (config.cname) write('CNAME', config.cname + '\n');
 // AdSense の販売者情報(adsenseClient が ca-pub-XXXX のとき pub-XXXX を書く)
 if (config.adsenseClient) write('ads.txt', `google.com, ${config.adsenseClient.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
+
+// ---- 使われない JS を出力から外す(2026-11-13) ----
+// 外した分野の計算ツールの JS など、どのページからも読まれない JS が docs/js に残り、サービスワーカーが最初の訪問で全員に配っていた。
+// ページが読む JS と、そこから import される JS(静的・動的)だけを残す。src/js の元のファイルは残す(分野を戻せばまた出る)
+{
+  const jsDir = path.join(out, 'js');
+  const all = fs.readdirSync(jsDir, { recursive: true }).map(f => f.replaceAll('\\', '/')).filter(f => f.endsWith('.js'));
+  const keep = new Set([...usedScripts].filter(f => all.includes(f)));
+  const stack = [...keep];
+  while (stack.length) {
+    const f = stack.pop();
+    const src = fs.readFileSync(path.join(jsDir, f), 'utf8');
+    for (const m of src.matchAll(/(?:from|import)\s*\(?\s*['"`](\.{1,2}\/[\w./-]+\.js)['"`]/g)) {
+      const dep = path.posix.normalize(path.posix.join(path.posix.dirname(f), m[1]));
+      if (all.includes(dep) && !keep.has(dep)) { keep.add(dep); stack.push(dep); }
+    }
+  }
+  const drop = all.filter(f => !keep.has(f));
+  for (const f of drop) fs.rmSync(path.join(jsDir, f));
+  console.log(`使われない JS を出力から外しました: ${drop.length} ファイル(残す ${keep.size})`);
+}
 
 // ---- PWA: アイコンと Service Worker ----
 for (const size of [192, 512]) write(`icon-${size}.png`, iconPng(size));
