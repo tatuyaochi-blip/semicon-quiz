@@ -41,7 +41,7 @@ const insert = (text, mark) => {
 // ---- HTML(ビルド時): 対象の要素の中の文字にだけ <wbr> を入れる ----
 // 対象: 見出し・ボタン・表の見出し・カードの題と短い説明・選択肢・パンくず
 const TAGS = /^(h[1-4]|button|summary|th|dt|label)$/;
-const CLASSES = /(?:^|\s)(btn|chip|cat-name|cat-blurb|cmp-card|course-card|tile-label|mode-card|choice-text|tg-name|tr-name|ref-tile|rail-h|hero-sample-q|q-text|breadcrumb|area-title|start-card|learn-next|tool-kicker)(?:\s|$)/;
+const CLASSES = /(?:^|\s)(btn|chip|cat-name|cat-blurb|cmp-card|course-card|tile-label|mode-card|choice-text|tg-name|tr-name|ref-tile|rail-h|hero-sample-q|q-text|breadcrumb|area-title|start-card|learn-next|tool-kicker|learn-rows|rail-related|search-list|fig-gallery)(?:\s|$)/;
 // 1行で省略する要素(…で切る)には入れない(white-space: nowrap でも <wbr> では折り返すため)
 const NOWRAP = /(?:^|\s)(tg-preview|tg-meta|tr-meta)(?:\s|$)/;
 const SKIP = /^(script|style|pre|code|svg|math|textarea|select|option|title|kbd|samp)$/;
