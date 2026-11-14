@@ -49,3 +49,7 @@ test('HTML: タグ・属性・script・pre・入力欄の中は変えない', ()
   assert.equal(mathifyHtml('<p>VGS = 1 V</p><p>ユーザーID = 5</p>'), `<p>V<sub>GS</sub>${NB}=${NB}1${NB}V</p><p>ユーザーID${NB}=${NB}5</p>`);
   assert.equal(mathifyHtml('<p>変更なし</p>'), '<p>変更なし</p>');
 });
+
+test('長い積の後ろの「=」の前は切れる(数の途中で切れないように)', () => {
+  assert.equal(T('σ = qnμ = 1.6×10⁻¹⁹ × 1×10¹⁶ × 1000 = 1.6 S/cm'), 'σ =~qnμ~=~1.6×10⁻¹⁹~×~1×10¹⁶~×~1000 =~1.6~S/cm');
+});

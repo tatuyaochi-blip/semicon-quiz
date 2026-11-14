@@ -282,10 +282,13 @@ const A = '', B = '';
 export function splitFormulas(text, table, mark, inline = false) {
   const marked = mark(text, k => `${A}${k}${B}`);
   if (marked === text) return [text];
-  const parts = marked.split(new RegExp(`(${A}[^${B}]*${B})`)).filter(Boolean).map(part => {
+  const pieces = marked.split(new RegExp(`(${A}[^${B}]*${B})`)).filter(Boolean);
+  const parts = pieces.map((part, i) => {
     if (!part.startsWith(A)) return part;
+    // カギカッコ・丸カッコにちょうど囲まれた式は独立させない(カッコだけが前後の行に残らないように)
+    const quoted = /[「『（(]$/.test(pieces[i - 1] ?? '') && /^[」』）)]/.test(pieces[i + 1] ?? '');
     const key = part.slice(1, -1), mode = table[key].mode ?? modeOf(key);
-    const html = formulaHtml(key, { ...table[key], mode: inline && mode === 'block' ? 'compact' : mode });
+    const html = formulaHtml(key, { ...table[key], mode: (inline || quoted) && mode === 'block' ? 'compact' : mode });
     if (!html) return key;
     const box = document.createElement('span'); box.innerHTML = html;
     return box.firstChild;
