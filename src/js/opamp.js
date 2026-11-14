@@ -17,7 +17,7 @@ export function pairs(c, t, k = 3) {
   if (c === 'follower' || !(ratio > 0)) return [];
   const rins = [3, 4].flatMap(e => E24.map(m => Number((m * 10 ** e).toPrecision(3)))).concat(1e5);
   const gainOf = (f, r) => (c === 'noninv' ? 1 + f / r : c === 'inv' ? -f / r : f / r);
-  const want = c === 'inv' ? -Math.abs(t) : t;
+  const want = c === 'inv' ? -Math.abs(t) : Math.abs(t); // 差動で負の目標を入れても、探すのは |t| の組
   return rins.map(r => { const f = eNear(ratio * r); const g = gainOf(f, r); return { f, r, g, err: g / want - 1 }; })
     .filter(x => x.f >= 100 && x.f <= 1e7)
     // 誤差の小さい順、同じなら Rin が 10 kΩ に近いもの(電流が大きすぎず、雑音も増えにくい)を先に
@@ -36,11 +36,11 @@ function show() {
 }
 function update() {
   const c = form.elements.circuit.value;
-  const rf = val('rf', 1e-9) * 1e3, rin = val('rin', 1e-9) * 1e3;
+  const rf = val('rf', 0) * 1e3, rin = val('rin', 1e-9) * 1e3;
   const vin = val('vin'), v1 = val('v1'), v2 = val('v2');
   const vp = val('vpos'), vn = val('vneg');
   const a = amp({ c, rf, rin, vin, v1, v2, vp, vn });
-  out('gain').textContent = `${num(a.g, 4)}×`;
+  out('gain').textContent = `${num(a.g + 0, 4)}×`; // −0 を 0 と表示する
   out('gain_db').textContent = `${num(a.db, 4)} dB`;
   out('vout').textContent = si(a.vout, 'V', 4);
   document.getElementById('oa-sat').hidden = !a.sat;

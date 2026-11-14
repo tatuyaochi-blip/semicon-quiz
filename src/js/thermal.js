@@ -35,7 +35,7 @@ initSweep({
   form, inputs: ['p', 'ta', 'tja', 'tjc', 'tcs', 'tsa'], outputs: ['ja-tj', 'hs-tj', 'ja-pmax', 'hs-pmax'], defaults: { x: 'p', y: 'ja-tj' },
   calc: v => {
     const sink = v.tjc + v.tcs + v.tsa;
-    return { 'ja-tj': v.ta + v.p * v.tja, 'hs-tj': v.ta + v.p * sink, 'ja-pmax': (v.tjmax - v.ta) / v.tja, 'hs-pmax': (v.tjmax - v.ta) / sink };
+    return { 'ja-tj': v.ta + v.p * v.tja, 'hs-tj': v.ta + v.p * sink, 'ja-pmax': pmax(v.tjmax, v.ta, v.tja), 'hs-pmax': pmax(v.tjmax, v.ta, sink) };
   },
 });
 }

@@ -42,9 +42,11 @@ function update() {
     total *= g; used++;
   }
   document.getElementById('av-error').hidden = !bad;
-  out('total').textContent = used ? pct(total) : '–';
-  out('down').textContent = used ? downtime(total) : '–';
-  out('nines').textContent = used ? nines(total) : '–';
+  // 不正な行があるときは、残りの行だけの値を全体の値のように見せない
+  const okAll = used && !bad;
+  out('total').textContent = okAll ? pct(total) : '–';
+  out('down').textContent = okAll ? downtime(total) : '–';
+  out('nines').textContent = okAll ? nines(total) : '–';
 }
 if (form) {
 form.addEventListener('input', update);

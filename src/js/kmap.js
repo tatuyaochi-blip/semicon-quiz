@@ -176,7 +176,7 @@ function parseList(s) {
     const r = part.match(/^(\d+)(?:-(\d+))?$/);
     if (!r) continue;
     const a = Number(r[1]), b = Number(r[2] ?? r[1]);
-    for (let x = Math.min(a, b); x <= Math.max(a, b); x++) if (x < 1 << n) out.add(x);
+    for (let x = Math.min(a, b), hi = Math.min(Math.max(a, b), (1 << n) - 1); x <= hi; x++) out.add(x); // 範囲外の大きな数でループが長くならないように
   }
   return [...out];
 }

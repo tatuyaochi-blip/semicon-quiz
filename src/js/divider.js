@@ -17,7 +17,7 @@ export function calc({ vin, r1, r2, rl = 0 }) {
 if (form) {
   const val = reader(form);
   const update = () => {
-    const c = calc({ vin: val('vin'), r1: val('r1', 1e-9) * 1e3, r2: val('r2', 1e-9) * 1e3, rl: val('rl', 0) * 1e3 });
+    const c = calc({ vin: val('vin'), r1: val('r1', 0) * 1e3, r2: val('r2', 0) * 1e3, rl: val('rl', 0) * 1e3 });
     out('vout').textContent = si(c.vout, 'V', 4);
     out('ratio').textContent = num(c.ratio, 4);
     out('i').textContent = si(c.i, 'A');

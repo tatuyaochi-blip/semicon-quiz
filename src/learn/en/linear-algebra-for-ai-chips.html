@@ -1,7 +1,7 @@
 <!--
 {
   "title": "Matrix Multiplication FLOPs (2mnk) and Arithmetic Intensity",
-  "description": "A matrix multiply takes 2mnk FLOP. Divide by bytes moved for arithmetic intensity, and see why AI waits on memory: roofline, batching, systolic arrays.",
+  "description": "A matrix multiply takes 2mnk FLOP. Use arithmetic intensity to see why token-by-token batch-1 inference waits on memory: roofline, quantization, systolic arrays.",
   "series": "foundations",
   "order": 2,
   "minutes": 13,
@@ -27,7 +27,7 @@
 <div class="learn-box"><p class="learn-box-h">What you'll learn</p><ul>
 <li>How to count the calculations in a matrix multiplication (2mnk)</li>
 <li>How to count the data that must be moved, and a yardstick called arithmetic intensity</li>
-<li>Why running AI for one user at a time waits on memory, while large matrix multiplications are limited by the calculation circuits (the roofline)</li>
+<li>Why generating text for one user at a time, one token at a time, tends to wait on memory, while large matrix multiplications are limited by the calculation circuits (the roofline)</li>
 <li>Why batching, tiling, quantization and systolic arrays are all ways to "move less data"</li>
 </ul><p class="muted">Prerequisites: knowing that AI calculation is repeated "multiply, then add" ("<a href="{{home}}learn/why-gpus-for-ai/">Why Are GPUs Used for AI?</a>" explains this). Multiplication, division, and writing numbers as powers of ten.</p></div>
 
@@ -40,7 +40,7 @@
 
 <section>
 <h2>How it works 1: vectors and matrices are "tables of numbers"</h2>
-<p>A list of numbers in a single row is called a vector. One student's scores in History, Math and English (80, 60, 70) form a vector of three numbers. In text AI, one word is represented by a vector of thousands of numbers.</p>
+<p>A list of numbers in a single row is called a vector. One student's scores in Japanese, Math and English (80, 60, 70) form a vector of three numbers. In text AI, one word is represented by a vector of thousands of numbers.</p>
 <p>Numbers arranged in a grid of rows and columns form a matrix. A matrix with m rows and k columns is written "m×k." An AI's weights are stored as matrices too. Weights are numbers that say how much importance to give each input.</p>
 <p>Multiplying a matrix by a vector means doing one "multiply by the inputs, then add" for each row of the table. You get one answer per row. This is a matrix-vector product. Turning one student's scores into a STEM score and an arts score is this kind of calculation.</p>
 <p>Calculate scores for 100 students at once, and the input becomes a table too (3×100). Now it is a matrix-matrix product. Its key feature is that the same table of weights is reused for all 100 students. When a chat AI builds its answer one word at a time, the calculation for one user is close to the first kind. Grouping many users together makes it closer to the second.</p>
@@ -193,7 +193,7 @@
 
 <section>
 <h2>Common misconceptions</h2>
-<div class="myth"><p class="myth-q">Myth: The TFLOPS number alone tells you how fast AI will run</p><p>In fact, for jobs whose arithmetic intensity is below the bend, memory bandwidth sets the speed. Take a text AI with 7 billion weights, run in FP16 (14 billion bytes) for one user at a time. Each word takes about 14 billion FLOP, which is only about 0.014 ms at the H100's calculation limit. But reading all the weights takes about 4.2 ms, even at 3.35 TB/s. That is what sets the speed (a rough estimate that leaves out other data). Some TFLOPS numbers on spec sheets also use a trick that skips tables full of zeros, so check the conditions too.</p></div>
+<div class="myth"><p class="myth-q">Myth: The TFLOPS number alone tells you how fast AI will run</p><p>In fact, for jobs whose arithmetic intensity is below the bend, memory bandwidth sets the speed. Take a text AI with 7 billion weights, run in FP16 (14 billion bytes) for one user at a time. Each word takes about 14 billion FLOP, which is only about 0.014 ms at the H100's calculation limit. But reading all the weights takes about 4.2 ms, even at 3.35 TB/s. That is what sets the speed (a rough estimate that leaves out other data). Some TFLOPS numbers on spec sheets also assume a trick that skips multiplications by zero when two of every four weights are zero (2:4 structured sparsity), so check the conditions too.</p></div>
 <div class="myth"><p class="myth-q">Myth: The bigger the batch, the better</p><p>In fact, past the bend, doubling the batch doubles the time for each calculation. The amount you can process per second stops growing. Meanwhile, the wait before each user gets an answer grows longer. So does the time spent waiting for enough users to gather, and the memory each user needs. Where fast responses matter, you set a target for the slow end of response times and pick a batch size within it. The TPU paper also stresses meeting the response time at the slow end (the 99th percentile).</p></div>
 </section>
 
