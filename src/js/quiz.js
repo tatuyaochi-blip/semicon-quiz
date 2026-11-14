@@ -249,5 +249,5 @@ document.addEventListener('keydown', e => {
 
 // 問題文・選択肢・解説の数式と単位を整える(添字、行が切れないスペース)。描画のたびに行う。整えた後の文字は変わらないので繰り返さない
 // 日本語では、問題文・選択肢・ボタン・見出しを文節の切れ目で折り返す(src/js/phrase.js。区切りを入れた後の変化では何も増えないので止まる)
-const phraseSel = document.documentElement.lang === 'ja' ? '.q-text, .choice-text, .btn, .verdict, .result h1' : '';
+const phraseSel = document.documentElement.lang === 'ja' ? '.q-text, .choice-text, .btn, .verdict, .result h1, .review summary' : '';
 if (app) new MutationObserver(() => { if (mathKit) mathKit.mathBlocksDom(app, mathKit.table, mathKit.mark); mathifyDom(app); if (phraseSel) phraseDom(app, phraseSel); window.fitMath?.(app); }).observe(app, { childList: true, subtree: true });
