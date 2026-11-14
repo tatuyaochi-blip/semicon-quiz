@@ -73,7 +73,7 @@
         },
         {
           "h": "設計での使い方と注意点",
-          "p": "ラインサイズを大きくすると空間的局所性を生かせてミス率が下がりますが、1回のミスで運ぶデータが増えてミスペナルティが大きくなり、ライン数が減るぶん競合も増えます。現在の多くのCPUは64 Bを使っています。L1キャッシュでは、仮想アドレスでセットを引きながらTLBで変換する仮想インデックス・物理タグ(VIPT)方式がよく使われます。インデックスとオフセットをページ内に収めるため、容量はページサイズ × 連想度(4 KB × 8ウェイなら32 KB)以下に制限されます。タグのビット数は、タグを保存するメモリの大きさにも直結します。"
+          "p": "ラインサイズを大きくすると空間的局所性を生かせてミス率が下がりますが、1回のミスで運ぶデータが増えてミスペナルティが大きくなり、ライン数が減るぶん競合も増えます。現在の多くのCPUは64 Bを使っています。L1キャッシュでは、仮想アドレスでセットを引きながらTLBで変換する仮想インデックス・物理タグ(VIPT)方式がよく使われます。エイリアス(同じ物理アドレスが別のセットに入る問題)を追加の仕組みなしで避けるには、インデックスとオフセットをページ内に収める必要があり、容量はページサイズ × 連想度(4 KB × 8ウェイなら32 KB)以下になります。タグのビット数は、タグを保存するメモリの大きさにも直結します。"
         }
       ],
       "faq": [
@@ -129,11 +129,11 @@
         },
         {
           "h": "Average memory access time (AMAT)",
-          "p": "Caches should be compared by average memory access time, not miss rate alone. AMAT = hit time + miss rate × miss penalty, which is 4 + 0.05 × 100 = 9 cycles with the defaults. Even a 5% miss rate more than doubles the average because the penalty is large. Lowering the miss rate with a larger or more associative cache does not help if the hit time grows, since every access pays it. For multilevel caches, replace the L1 miss penalty with the L2 hit time + L2 miss rate × L2 miss penalty."
+          "p": "Caches should be compared by average memory access time, not miss rate alone. AMAT = hit time + miss rate × miss penalty, which is 4 + 0.05 × 100 = 9 cycles with the defaults. Even a 5% miss rate more than doubles the average because the penalty is large. Lowering the miss rate with a larger or more associative cache can be offset by a longer hit time, which every access pays, so evaluate both together. For multilevel caches, replace the L1 miss penalty with the L2 hit time + L2 miss rate × L2 miss penalty."
         },
         {
           "h": "Design use and pitfalls",
-          "p": "Larger lines exploit spatial locality and lower the miss rate, but each miss moves more data, raising the miss penalty, and fewer lines mean more conflicts; most current CPUs use 64 B. L1 caches often use a virtually indexed, physically tagged (VIPT) design that reads the set while the TLB translates the address. Keeping the index and offset inside the page offset limits the size to page size × associativity, for example 4 KB × 8 ways = 32 KB. The tag width also sets the size of the tag storage."
+          "p": "Larger lines exploit spatial locality and lower the miss rate, but each miss moves more data, raising the miss penalty, and fewer lines mean more conflicts; most current CPUs use 64 B. L1 caches often use a virtually indexed, physically tagged (VIPT) design that reads the set while the TLB translates the address. To avoid aliasing (one physical address landing in different sets) without extra hardware, the index and offset must fit inside the page offset, which limits the size to page size × associativity, for example 4 KB × 8 ways = 32 KB. The tag width also sets the size of the tag storage."
         }
       ],
       "faq": [
@@ -193,7 +193,7 @@
         },
         {
           "h": "設計上的運用與注意事項",
-          "p": "較大的快取行能利用空間局部性降低失誤率，但每次失誤要搬移更多資料，使失誤懲罰增加，且快取行數減少也會增加衝突；目前多數 CPU 採用 64 B。L1 快取常採用虛擬索引、實體標籤（VIPT）設計，在 TLB 轉換位址的同時讀取組。若要讓索引與偏移落在頁內偏移的範圍內，容量會被限制為頁面大小 × 相聯度，例如 4 KB × 8 路 = 32 KB。標籤寬度也決定了標籤儲存區的大小。"
+          "p": "較大的快取行能利用空間局部性降低失誤率，但每次失誤要搬移更多資料，使失誤懲罰增加，且快取行數減少也會增加衝突；目前多數 CPU 採用 64 B。L1 快取常採用虛擬索引、實體標籤（VIPT）設計，在 TLB 轉換位址的同時讀取組。若要在不加額外機制的情況下避免別名問題（同一實體位址進入不同的組），索引與偏移必須落在頁內偏移的範圍內，容量會被限制為頁面大小 × 相聯度，例如 4 KB × 8 路 = 32 KB。標籤寬度也決定了標籤儲存區的大小。"
         }
       ],
       "faq": [
@@ -249,11 +249,11 @@
         },
         {
           "h": "평균 메모리 접근 시간 (AMAT)",
-          "p": "캐시는 미스율만이 아니라 평균 메모리 접근 시간으로 비교해야 합니다. AMAT = 히트 시간 + 미스율 × 미스 페널티이며, 기본값에서는 4 + 0.05 × 100 = 9사이클입니다. 미스율이 5%에 불과해도 페널티가 크기 때문에 평균은 두 배 넘게 늘어납니다. 캐시를 키우거나 연관도를 높여 미스율을 낮추더라도 히트 시간이 늘어나면 모든 접근이 그 비용을 치르므로 효과가 없습니다. 다단 캐시에서는 L1 미스 페널티를 L2 히트 시간 + L2 미스율 × L2 미스 페널티로 바꾸어 계산합니다."
+          "p": "캐시는 미스율만이 아니라 평균 메모리 접근 시간으로 비교해야 합니다. AMAT = 히트 시간 + 미스율 × 미스 페널티이며, 기본값에서는 4 + 0.05 × 100 = 9사이클입니다. 미스율이 5%에 불과해도 페널티가 크기 때문에 평균은 두 배 넘게 늘어납니다. 캐시를 키우거나 연관도를 높여 미스율을 낮추더라도 히트 시간이 늘어나면 모든 접근이 느려지므로, 미스율과 히트 시간을 함께 평가합니다. 다단 캐시에서는 L1 미스 페널티를 L2 히트 시간 + L2 미스율 × L2 미스 페널티로 바꾸어 계산합니다."
         },
         {
           "h": "설계에서의 활용과 주의점",
-          "p": "라인을 크게 하면 공간적 지역성을 활용해 미스율이 낮아지지만, 미스 한 번에 옮기는 데이터가 많아져 미스 페널티가 커지고 라인 수가 줄어 충돌이 늘어나므로, 현재 대부분의 CPU는 64 B를 사용합니다. L1 캐시는 TLB가 주소를 변환하는 동안 세트를 읽는 VIPT(가상 인덱스·물리 태그) 방식을 사용하는 경우가 많습니다. 인덱스와 오프셋을 페이지 오프셋 안에 두려면 크기가 페이지 크기 × 연관도로 제한되며, 예를 들어 4 KB × 8웨이 = 32 KB입니다. 태그 폭은 태그 저장 영역의 크기도 결정합니다."
+          "p": "라인을 크게 하면 공간적 지역성을 활용해 미스율이 낮아지지만, 미스 한 번에 옮기는 데이터가 많아져 미스 페널티가 커지고 라인 수가 줄어 충돌이 늘어나므로, 현재 대부분의 CPU는 64 B를 사용합니다. L1 캐시는 TLB가 주소를 변환하는 동안 세트를 읽는 VIPT(가상 인덱스·물리 태그) 방식을 사용하는 경우가 많습니다. 추가 장치 없이 에일리어싱(같은 물리 주소가 다른 세트에 들어가는 문제)을 피하려면 인덱스와 오프셋을 페이지 오프셋 안에 두어야 하므로 크기가 페이지 크기 × 연관도로 제한되며, 예를 들어 4 KB × 8웨이 = 32 KB입니다. 태그 폭은 태그 저장 영역의 크기도 결정합니다."
         }
       ],
       "faq": [

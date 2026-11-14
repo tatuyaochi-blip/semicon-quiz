@@ -23,9 +23,10 @@ const q = 1.602e-19;
 const MOB = { n: [1414, 68.5, 9.2e16, 0.711], p: [470.5, 44.9, 2.23e17, 0.719] };
 export const mobility = (type, N) => { const [mx, mn, nr, a] = MOB[type] ?? MOB.n; return mn + (mx - mn) / (1 + (N / nr) ** a); };
 export const rho = (type, N) => 1 / (q * N * mobility(type, N));
-// 抵抗率から濃度: ρ は濃度について単調に減るので、log N の二分法で解く(1e10〜1e21 cm⁻³)
+// 抵抗率から濃度: ρ は濃度について単調に減るので、log N の二分法で解く(1e12〜1e21 cm⁻³)。
+// 下限は、真性キャリア密度(300 K で約 1e10 cm⁻³)に近づいて少数キャリアを無視できなくなる手前にとる
 export function conc(type, r) {
-  let lo = 10, hi = 21;
+  let lo = 12, hi = 21;
   if (!(r > 0) || r > rho(type, 10 ** lo) || r < rho(type, 10 ** hi)) return NaN;
   for (let k = 0; k < 60; k++) { const m = (lo + hi) / 2; if (rho(type, 10 ** m) > r) lo = m; else hi = m; }
   return 10 ** ((lo + hi) / 2);
@@ -43,7 +44,7 @@ function update(e) {
     if (!(N > 0)) N = NaN;
     if (Number.isFinite(N) && e) rEl.value = Number(rho(type, N).toPrecision(3));
   }
-  const ok = Number.isFinite(N) && N >= 1e10 && N <= 1e21;
+  const ok = Number.isFinite(N) && N >= 1e12 && N <= 1e21;
   document.getElementById('rs-warn').hidden = ok;
   const r = ok ? rho(type, N) : NaN, mu = ok ? mobility(type, N) : NaN;
   out('n').textContent = ok ? `${big(N)} cm⁻³` : '–';

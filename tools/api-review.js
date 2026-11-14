@@ -225,6 +225,8 @@ export function liveArticles() {
 export function articleText(html) {
   return html.replace(/^<!--[\s\S]*?-->/, '')
     .replace(/<(script|style)[\s\S]*?<\/\1>/g, '')
+    // 上付き・下付きは ^ と _ で残す(10<sup>18</sup> が 1018 に見えないように)
+    .replace(/<sup>([\s\S]*?)<\/sup>/g, '^($1)').replace(/<sub>([\s\S]*?)<\/sub>/g, '_($1)')
     .replace(/<svg[\s\S]*?<\/svg>/g, (m) => ` [図の中の文字: ${[...m.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((x) => x[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean).join(' / ')}] `)
     .replace(/<(h[1-6])[^>]*>/g, '\n## ').replace(/<li[^>]*>/g, '\n- ').replace(/<(td|th)[^>]*>/g, ' | ')
     .replace(/<\/(p|li|h[1-6]|tr|div|figcaption|figure|table|ul|ol|details|summary|pre)>/g, '\n').replace(/<br\s*\/?>/g, '\n')
@@ -285,7 +287,8 @@ function toolForm(slug) {
   if (!fs.existsSync(p)) return null;
   const h = fs.readFileSync(p, 'utf8');
   const m = h.match(/<div class="dy[^"]*"[\s\S]*?<article class="tool-article">/);
-  return m ? m[0].replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/\s+/g, ' ').replace(/<article class="tool-article">$/, '') : null;
+  // 図の中身は省くが、要素そのもの(id)は残す(JS が探す要素がないと誤って読まれないように)
+  return m ? m[0].replace(/<svg([^>]*)>[\s\S]*?<\/svg>/g, '<svg$1></svg>').replace(/\s+/g, ' ').replace(/<article class="tool-article">$/, '') : null;
 }
 
 export function loadTool(t, langs = TOOL_LANGS) {

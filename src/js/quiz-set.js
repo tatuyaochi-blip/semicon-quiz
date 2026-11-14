@@ -16,7 +16,8 @@ form.addEventListener('submit', async e => {
   if (!cats.length) { boxes()[0]?.focus(); return; }
   const n = Number(form.elements.n.value) || 10;
   // 分野ごとにシャッフルし、分野を順番に回しながら1問ずつ取る(分野が偏らないように)
-  const lists = (await Promise.all(cats.map(c => getData(`q/${c}.json`).catch(() => [])))).map(list => shuffle(list.map(q => q.id)));
+  // 分野の順番もシャッフルする(問題数が分野の数より少ないときや割り切れないときに、画面の上の分野へ偏らないように)
+  const lists = shuffle((await Promise.all(cats.map(c => getData(`q/${c}.json`).catch(() => [])))).map(list => shuffle(list.map(q => q.id))));
   const ids = [];
   for (let i = 0; ids.length < n && lists.some(l => l.length); i++) {
     const l = lists[i % lists.length];

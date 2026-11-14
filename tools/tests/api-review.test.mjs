@@ -164,3 +164,7 @@ test('記事・ツールのスキーマも additionalProperties: false', () => {
   assert.deepEqual(s.properties.findings.items.properties.field.enum, ['body']);
   assert.deepEqual(FINDINGS_SCHEMA.properties.findings.items.properties.field.enum.slice(0, 2), ['question', 'choices']);
 });
+
+test('記事の本文の取り出し: 上付き・下付きの数字を残す', () => {
+  assert.match(articleText('<p>18.45 × 10<sup>18</sup>、H<sub>2</sub>O</p>'), /10\^\(18\)、H_\(2\)O/);
+});
