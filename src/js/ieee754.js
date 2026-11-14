@@ -67,7 +67,10 @@ function sci(num, den) {
   let p = a.toString().length - den.toString().length;
   // a / den が 10^p 未満なら p を1つ下げる(10^p を掛ける側を整数のまま比べる)
   if (p >= 0 ? a < den * 10n ** BigInt(p) : a * 10n ** BigInt(-p) < den) p--;
-  const m = p >= 2 ? a / (den * 10n ** BigInt(p - 2)) : a * 10n ** BigInt(2 - p) / den;
+  // 4桁目まで求めて四捨五入する(999.5 以上は 1.00×10^(p+1) に繰り上げる)
+  let m = (p >= 3 ? a / (den * 10n ** BigInt(p - 3)) : a * 10n ** BigInt(3 - p) / den);
+  m = (m + 5n) / 10n;
+  if (m >= 1000n) { m /= 10n; p++; }
   const s = m.toString().padEnd(3, '0');
   return `${neg ? '−' : ''}${s[0]}.${s.slice(1, 3)}×10^${minus(p)}`;
 }

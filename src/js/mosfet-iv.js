@@ -31,11 +31,11 @@ function update() {
   out('region').textContent = labels[region] ?? region;
   out('id').textContent = `${fmt(i * 1e3, 3)} mA`;
   out('vdsat').textContent = vov > 0 ? `${fmt(vov)} V` : '–';
-  // 小信号パラメータ: 飽和では gm = 2ID/Vov、ro ≈ 1/(λ·ID)。線形では gm = β·VDS
+  // 小信号パラメータ: 飽和では gm = 2ID/Vov、ro = (1 + λVDS)/(λ·ID)(グラフの傾きの逆数)。線形では gm = β·VDS
   const beta = p.kp * 1e-6 * p.wl;
   const gm = region === 'sat' ? (2 * i) / vov : region === 'linear' ? beta * p.vds * (1 + p.lambda * p.vds) : 0;
   out('gm').textContent = gm > 0 ? `${fmt(gm * 1e3, 3)} mS` : '–';
-  out('ro').textContent = region === 'sat' && p.lambda > 0 && i > 0 ? `${fmt(1 / (p.lambda * i) / 1e3, 1)} kΩ` : '–';
+  out('ro').textContent = region === 'sat' && p.lambda > 0 && i > 0 ? `${fmt((1 + p.lambda * p.vds) / (p.lambda * i) / 1e3, 1)} kΩ` : '–';
   draw(p, i);
 }
 
@@ -77,7 +77,7 @@ if (form) {
     form, inputs: ['vgs', 'vds', 'wl', 'vth', 'kp', 'lambda'], outputs: ['id', 'gm', 'ro'], defaults: { x: 'vgs', y: 'id' }, ranges: { vgs: [0, 3.3] },
     calc: p => {
       const i = id(p, p.vgs, p.vds), vov = p.vgs - p.vth, sat = vov > 0 && p.vds >= vov;
-      return { id: i * 1e3, gm: sat ? ((2 * i) / vov) * 1e3 : vov > 0 ? p.kp * 1e-6 * p.wl * p.vds * (1 + p.lambda * p.vds) * 1e3 : 0, ro: sat && p.lambda > 0 && i > 0 ? 1 / (p.lambda * i) / 1e3 : NaN };
+      return { id: i * 1e3, gm: sat ? ((2 * i) / vov) * 1e3 : vov > 0 ? p.kp * 1e-6 * p.wl * p.vds * (1 + p.lambda * p.vds) * 1e3 : 0, ro: sat && p.lambda > 0 && i > 0 ? (1 + p.lambda * p.vds) / (p.lambda * i) / 1e3 : NaN };
     },
   });
 }

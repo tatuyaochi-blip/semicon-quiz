@@ -52,7 +52,7 @@ function update() {
   if (!(target > 0)) { out('single').textContent = '–'; box.innerHTML = ''; return; }
   const { single, singleErr, pairs } = nearest(kind, target);
   out('single').textContent = `${si(single, UNIT[kind])} (${fmtErr(singleErr)})`;
-  box.innerHTML = pairs.map(c => `<tr><td>${c.how === 's' ? T.pair_series : T.pair_parallel}</td><td>${si(c.a, UNIT[kind])} + ${si(c.b, UNIT[kind])}</td><td>${si(c.x, UNIT[kind], 4)}</td><td>${fmtErr(c.err)}</td></tr>`).join('');
+  box.innerHTML = pairs.map(c => `<tr><td>${c.how === 's' ? T.pair_series : T.pair_parallel}</td><td>${si(c.a, UNIT[kind])} ${c.how === 's' ? '+' : '∥'} ${si(c.b, UNIT[kind])}</td><td>${si(c.x, UNIT[kind], 4)}</td><td>${fmtErr(c.err)}</td></tr>`).join('');
 }
 const fmtErr = e => `${e >= 0 ? '+' : '−'}${num(Math.abs(e) * 100, 2)}%`;
 if (form) {
