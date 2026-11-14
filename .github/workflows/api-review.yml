@@ -12,8 +12,13 @@ on:
         type: choice
         options: [estimate, submit, fetch, status]
         default: estimate
+      kind:
+        description: '対象: questions=問題 / articles=やさしい解説の記事 / tools=計算ツール'
+        type: choice
+        options: [questions, articles, tools]
+        default: questions
       cats:
-        description: '分野の ID(カンマ区切り)、または all'
+        description: '分野の ID(articles は記事の slug、tools はツールの id)をカンマ区切りで、または all'
         default: 'all'
       max_usd:
         description: '今回の上限額(USD)。最悪の場合の額がこれを超えると送信しない'
@@ -60,10 +65,14 @@ jobs:
           fi
           mkdir -p quality/api-review
           if [ -d /tmp/results/quality/api-review ]; then cp -r /tmp/results/quality/api-review/. quality/api-review/; fi
+      - name: ページを作る(tools のとき。入力欄の既定値を docs/ から読むため)
+        if: inputs.kind == 'tools' && (inputs.action == 'estimate' || inputs.action == 'submit')
+        run: node tools/build.js > /dev/null
       - name: 実行
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ACTION: ${{ inputs.action }}
+          KIND: ${{ inputs.kind }}
           CATS: ${{ inputs.cats }}
           MAX_USD: ${{ inputs.max_usd }}
           TOTAL_CAP: ${{ inputs.total_cap_usd }}
@@ -71,13 +80,13 @@ jobs:
           EFFORT: ${{ inputs.effort }}
           BATCH_ID: ${{ inputs.batch_id }}
         run: |
-          args=(--cats "$CATS" --max-usd "$MAX_USD" --total-cap-usd "$TOTAL_CAP" --model "$MODEL" --effort "$EFFORT" --wait-minutes 320)
+          args=(--kind "$KIND" --cats "$CATS" --max-usd "$MAX_USD" --total-cap-usd "$TOTAL_CAP" --model "$MODEL" --effort "$EFFORT" --wait-minutes 320)
           if [ -n "$BATCH_ID" ]; then args+=(--batch "$BATCH_ID"); fi
           node tools/api-review.js "$ACTION" "${args[@]}"
       - name: 記録を api-review-results ブランチに保存
         if: always() && inputs.action != 'estimate' && inputs.action != 'status'
         env:
-          MSG: API 点検の記録 (${{ inputs.action }})
+          MSG: API 点検の記録 (${{ inputs.kind }} ${{ inputs.action }})
         run: |
           [ -d quality/api-review ] || exit 0
           mkdir -p /tmp/results/quality/api-review

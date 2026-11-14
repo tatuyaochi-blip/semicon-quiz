@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   buildRequests, estimate, checkBudget, parseResults, realCost, createBatch, liveCategories, customId, PRICES, FINDINGS_SCHEMA, reportMarkdown,
+  buildArticleRequests, buildToolRequests, liveArticles, liveTools, articleText, findingsSchema,
 } from '../api-review.js';
 
 const config = JSON.parse(fs.readFileSync(new URL('../../config.json', import.meta.url)));
@@ -114,4 +115,52 @@ test('送信: キーはヘッダーにだけ入り、本文には入らない。
   assert.equal(body.requests.length, reqs.length);
   assert.ok(!('meta' in body.requests[0]));
   if (old === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = old;
+});
+
+test('記事: サイトに出ている記事だけを1本1件で依頼し、外した分野の記事は含めない', () => {
+  const live = liveArticles();
+  assert.ok(live.includes('what-is-a-diode'));
+  for (const slug of config.keepLearn || []) assert.ok(live.includes(slug), slug);
+  const reqs = buildArticleRequests();
+  assert.equal(reqs.length, live.length);
+  assert.equal(new Set(reqs.map((r) => r.custom_id)).size, reqs.length);
+  for (const r of reqs) assert.match(r.custom_id, /^[a-zA-Z0-9_-]{1,64}$/);
+  const [r] = buildArticleRequests({ items: 'what-is-a-diode' });
+  const art = JSON.parse(r.params.messages[0].content[1].text.replace(/^[^\n]*\n/, ''));
+  assert.ok(art.ja.body && art.en.body && art['zh-hant'].body);
+  assert.ok(!/<svg|<\/p>/.test(art.ja.body));
+  assert.throws(() => buildArticleRequests({ items: 'no-such-article' }));
+});
+
+test('記事の本文の取り出し: タグを外し、図は中の文字だけ残す', () => {
+  const t = articleText('<!-- {"title":"x"} -->\n<h2>見出し</h2><p>本文 &amp; 続き</p><svg><text x="1">0.7 V</text><path d="M0"/></svg><script>x()</script>');
+  assert.match(t, /## 見出し/);
+  assert.match(t, /本文 & 続き/);
+  assert.match(t, /\[図の中の文字: 0\.7 V\]/);
+  assert.ok(!/x\(\)|title/.test(t));
+});
+
+test('計算ツール: 公開中のツールだけを依頼し、計算の JS と入力欄を渡す', { skip: !fs.existsSync(new URL('../../docs/tools/', import.meta.url)) && 'docs/ がない(先に build)' }, () => {
+  const ex = new Set(config.excludeCats);
+  const live = liveTools();
+  assert.ok(live.every((t) => !t.cat || !ex.has(t.cat)));
+  const reqs = buildToolRequests();
+  assert.equal(reqs.length, live.length);
+  const [r] = buildToolRequests({ items: 'die-yield' });
+  const tool = JSON.parse(r.params.messages[0].content[1].text.replace(/^[^\n]*\n/, ''));
+  assert.ok(tool.scripts['die-yield.js'] && tool.scripts['die-yield-calc.js']);
+  assert.ok(!tool.scripts['dom.js']);
+  assert.match(tool.form_ja, /<input/);
+  assert.ok(tool.text.ja && tool.text.en && !tool.text.de);
+});
+
+test('記事・ツールのスキーマも additionalProperties: false', () => {
+  const walk = (s) => {
+    if (s.type === 'object') { assert.equal(s.additionalProperties, false); Object.values(s.properties).forEach(walk); }
+    if (s.type === 'array') walk(s.items);
+  };
+  const s = findingsSchema(['body'], ['ja', 'en']);
+  walk(s);
+  assert.deepEqual(s.properties.findings.items.properties.field.enum, ['body']);
+  assert.deepEqual(FINDINGS_SCHEMA.properties.findings.items.properties.field.enum.slice(0, 2), ['question', 'choices']);
 });
