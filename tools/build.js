@@ -853,6 +853,8 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
     if (L.code === 'ja') content = phraseHtml(content);
     // リンクの矢印(「… →」「← …」)だけが次の行に残らないよう、矢印の前後のスペースを行が切れないスペースにする
     content = content.replaceAll(' →', '\u00a0→').replaceAll('← ', '←\u00a0');
+    // 幅の広い図(viewBox の幅 520 以上)に印を付ける。携帯では縮めすぎず、横に送れるようにする(CSS の .fig-wide)
+    content = content.replace(/<figure class="fig"><svg([^>]*?) viewBox="0 0 (\d+)/g, (m, a, w) => (+w >= 520 ? `<figure class="fig fig-wide"><svg${a} viewBox="0 0 ${w}` : m));
     // 比較表のセルに列の名前(data-label)を付ける。携帯では表を項目ごとのかたまりに組み替え、値の前に列の名前を出す(CSS)。
     // 更新日の判定(rawContent)より後で付けるので、この変更だけでは更新日は動かない
     content = content.replace(/<table class="compare">([\s\S]*?)<\/table>/g, (m, inner) => {
