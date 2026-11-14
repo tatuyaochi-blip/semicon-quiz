@@ -112,11 +112,12 @@ export function analyze(num, den, L = 0) {
   const gm = Number.isFinite(wpc) ? -at(wpc).db : NaN;
   const type = ps.filter(([re, im]) => re === 0 && im === 0).length - zs.filter(([re, im]) => re === 0 && im === 0).length;
   // 直流ゲイン(積分がなければ G(0))
-  const dc = type === 0 && Math.abs(den[0]) > 1e-14 ? num[0] / den[0] : NaN;
+  const dc = type < 0 ? 0 : type === 0 && Math.abs(den[0]) > 1e-14 ? num[0] / den[0] : NaN; // 原点の零点が多いと G(0) = 0
   let clStable = null;
   if (!L) {
     const cl = roots(add(num, den));
-    clStable = cl.length ? cl.every(([re]) => re < -1e-9) : null;
+    // 特性多項式が 0 でない定数なら閉ループの極はなく、安定
+    clStable = cl.length ? cl.every(([re]) => re < -1e-9) : add(num, den).some(c => Math.abs(c) > 1e-14) ? true : null;
   }
   return { zeros: zs, poles: ps, w, db: pts.map(p => p.db), ph: pts.map(p => p.ph), wgc, wpc, pm, gm, type, dc, clStable };
 }
@@ -141,7 +142,7 @@ if (form) {
     const r = analyze(num, den, L);
     out('poles').textContent = r.poles.length ? byRe(r.poles).map(cx).join(', ') : '–';
     out('zeros').textContent = r.zeros.length ? byRe(r.zeros).map(cx).join(', ') : '–';
-    out('dc').textContent = r.type > 0 ? T.integrator.replace('{n}', r.type) : Number.isFinite(r.dc) ? `${f(r.dc, 4)} (${f(20 * Math.log10(Math.abs(r.dc)), 3)} dB)` : '–';
+    out('dc').textContent = r.type > 0 ? T.integrator.replace('{n}', r.type) : r.dc === 0 ? '0 (−∞ dB)' : Number.isFinite(r.dc) ? `${f(r.dc, 4)} (${f(20 * Math.log10(Math.abs(r.dc)), 3)} dB)` : '–';
     out('wgc').textContent = Number.isFinite(r.wgc) ? `${f(r.wgc)} rad/s` : T.none;
     out('pm').textContent = Number.isFinite(r.pm) ? `${f(r.pm)}°` : T.none;
     out('wpc').textContent = Number.isFinite(r.wpc) ? `${f(r.wpc)} rad/s` : T.none;

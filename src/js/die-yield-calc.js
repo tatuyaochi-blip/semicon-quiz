@@ -39,7 +39,7 @@ export function compute({ d, w, h, scribe, edge, d0, alpha, cost }) {
   const px = w + scribe / 1000, py = h + scribe / 1000;
   const r = d / 2 - edge;
   const grid = dpwGrid(r, w, h, px, py);
-  const formula = dpwFormula(2 * r, px * py);
+  const formula = r > 0 ? dpwFormula(2 * r, px * py) : 0; // 除外幅が半径以上なら有効な面積はない
   const area = w * h; // mm²
   const y = yields((area / 100) * d0, alpha);
   const per = model => {

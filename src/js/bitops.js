@@ -1,7 +1,7 @@
 // ビット演算。2つの値(10進数・16進数 0x…・2進数 0b…)をビット幅 w の符号なし整数として、AND・OR・XOR・NOT・
 // 論理シフトと算術シフト(左右)・左右の回転を計算し、ビットの並びを色分けして表示する。負の10進数は2の補数として読む
 export function parseVal(s, w) {
-  const t = s.trim().replace(/_/g, '').toLowerCase();
+  const t = s.trim().replace(/_/g, '').replace(/[−‐‑–—]/g, '-').toLowerCase();
   let v;
   if (/^-?0x[0-9a-f]+$/.test(t)) v = BigInt(t.replace('-', '')) * (t.startsWith('-') ? -1n : 1n);
   else if (/^-?0b[01]+$/.test(t)) v = BigInt(t.replace('-', '')) * (t.startsWith('-') ? -1n : 1n);

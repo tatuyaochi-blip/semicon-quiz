@@ -36,11 +36,11 @@ function show() {
 }
 function update() {
   const c = form.elements.circuit.value;
-  const rf = val('rf', 1e-9) * 1e3, rin = val('rin', 1e-9) * 1e3;
+  const rf = val('rf', 0) * 1e3, rin = val('rin', 1e-9) * 1e3;
   const vin = val('vin'), v1 = val('v1'), v2 = val('v2');
   const vp = val('vpos'), vn = val('vneg');
   const a = amp({ c, rf, rin, vin, v1, v2, vp, vn });
-  out('gain').textContent = `${num(a.g, 4)}×`;
+  out('gain').textContent = `${num(a.g + 0, 4)}×`; // −0 を 0 と表示する
   out('gain_db').textContent = `${num(a.db, 4)} dB`;
   out('vout').textContent = si(a.vout, 'V', 4);
   document.getElementById('oa-sat').hidden = !a.sat;

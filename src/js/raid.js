@@ -22,7 +22,7 @@ if (form) {
   try { T = JSON.parse(form.dataset.text); } catch {}
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const num = v => String(Number(v.toPrecision(4)));
-  const prob = v => (v < 1e-6 ? v.toExponential(2).replace('e-', '×10^-') : `${num(v * 100)}%`);
+  const prob = v => (v === 0 ? '0%' : v < 1e-6 ? `${(v * 100).toExponential(2).replace('e-', '×10^-')}%` : `${num(v * 100)}%`);
   function disks(level, n) {
     // 図: 各ディスクに入るもの(D: データ、P/Q: パリティ、M: ミラー)を4ストライプ分
     const rows = 4, cell = (r, d) => {
