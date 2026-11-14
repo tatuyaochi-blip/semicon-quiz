@@ -65,7 +65,13 @@ export function mathText(text, context = text) {
   // 2項の演算子の前後(スペースで囲まれたもの)は行を切らない
   s = s.replace(/ ([−×·⋅∥+]) (?=\S)/g, `${NB}$1${NB}`);
   // 「=」の後ろは切らない。前は、右辺が数値だけのとき(値の代入)は切らず、式が続くときは切れるようにする
-  s = s.replace(/ ([=≈≒≤≥]) (?=(\S*))/g, (m, op, rhs) => `${/^[−-]?\d[\d.,]*(?:×10\S*)?(?:[、。,;:)）]|$)/.test(rhs) || /^[−-]?\d[\d.,]*(?:×10[⁰¹²³⁴-⁹⁻]+)?$/.test(rhs) ? NB : ' '}${op}${NB}`);
+  // 左辺が演算子でつないだ長いかたまり(1.6×10⁻¹⁹ × 1×10¹⁶ × 1000 = 1.6 S/cm)のときは、右辺が数値でも前で切れるようにする
+  // (切れないと1つのかたまりが行の幅を超え、「1. / 6 S/cm」のように数の途中で切れていた)
+  s = s.replace(/ ([=≈≒≤≥]) (?=(\S*))/g, (m, op, rhs, at, all) => {
+    const lhs = all.slice(0, at).split(' ').pop();
+    const value = /^[−-]?\d[\d.,]*(?:×10\S*)?(?:[、。,;:)）]|$)/.test(rhs) || /^[−-]?\d[\d.,]*(?:×10[⁰¹²³⁴-⁹⁻]+)?$/.test(rhs);
+    return `${value && !new RegExp(`${NB}[−×·⋅∥+]${NB}`).test(lhs) ? NB : ' '}${op}${NB}`;
+  });
   for (const [re, fn] of SURE) s = s.replace(re, fn);
   if (DEVICE.test(context)) {
     for (const [re, fn] of MAYBE_DEVICE) s = s.replace(re, fn);

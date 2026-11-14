@@ -47,6 +47,32 @@
 <main class="wrap">
 {{content}}
 </main>
+<script>(() => {
+  // 携帯で、段落から独立させた式(.math-block)が幅に入らないときは、2つめ以降の「=」「≈」の前で行を分け、記号の位置をそろえて縦に並べる(2026-11-14)。
+  // 分けても入らないときだけ、字を小さくする(0.8倍まで)。それでも入らない分は横に送れる。幅が戻れば元の1行に戻す
+  const REL = /^[=≈≒≤≥<>≠]$/, NS = 'http://www.w3.org/1998/Math/MathML';
+  const el = (n, kids = [], css = '') => { const e = document.createElementNS(NS, n); if (css) e.setAttribute('style', css); e.append(...kids); return e; };
+  const fit = box => {
+    const row = box.querySelector('math > semantics > mrow, math > mrow');
+    if (!row) return;
+    if (box._orig) { row.replaceChildren(...box._orig); box._orig = null; box.style.fontSize = ''; }
+    if (box.scrollWidth <= box.clientWidth + 1) return;
+    const kids = [...row.children], at = kids.map((k, i) => (k.localName === 'mo' && REL.test(k.textContent.trim()) ? i : -1)).filter(i => i > 0);
+    if (at.length >= 2) {
+      box._orig = kids;
+      const lines = [];
+      at.forEach((p, j) => lines.push(kids.slice(p, at[j + 1] ?? kids.length)));
+      const lhs = kids.slice(0, at[0]);
+      const mrow = c => el('mrow', c);
+      row.replaceChildren(el('mtable', lines.map((ln, j) => el('mtr', [el('mtd', j ? [] : [mrow(lhs)], 'text-align:right;padding:2px 0'), el('mtd', [mrow(ln)], 'text-align:left;padding:2px 0')]))));
+    }
+    for (let f = 0.95; box.scrollWidth > box.clientWidth + 1 && f >= 0.8; f -= 0.05) box.style.fontSize = f + 'em';
+  };
+  const all = root => (root || document).querySelectorAll('.math-block').forEach(fit);
+  // クイズ画面は、出したばかりの式だけを整える(整えた変化でもう一度呼ばれても、同じ式は二度触らない)
+  window.fitMath = root => root.querySelectorAll('.math-block:not([data-fit])').forEach(b => { b.dataset.fit = '1'; fit(b); });
+  if (document.querySelector('.math-block')) { all(); let w = innerWidth; addEventListener('resize', () => { if (innerWidth !== w) { w = innerWidth; all(); } }); }
+})();</script>
 
 <footer class="site-footer">
   <div class="wrap">
