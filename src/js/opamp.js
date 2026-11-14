@@ -17,7 +17,7 @@ export function pairs(c, t, k = 3) {
   if (c === 'follower' || !(ratio > 0)) return [];
   const rins = [3, 4].flatMap(e => E24.map(m => Number((m * 10 ** e).toPrecision(3)))).concat(1e5);
   const gainOf = (f, r) => (c === 'noninv' ? 1 + f / r : c === 'inv' ? -f / r : f / r);
-  const want = c === 'inv' ? -Math.abs(t) : t;
+  const want = c === 'inv' ? -Math.abs(t) : Math.abs(t); // 差動で負の目標を入れても、探すのは |t| の組
   return rins.map(r => { const f = eNear(ratio * r); const g = gainOf(f, r); return { f, r, g, err: g / want - 1 }; })
     .filter(x => x.f >= 100 && x.f <= 1e7)
     // 誤差の小さい順、同じなら Rin が 10 kΩ に近いもの(電流が大きすぎず、雑音も増えにくい)を先に

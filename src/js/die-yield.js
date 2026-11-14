@@ -42,8 +42,9 @@ function update() {
     const ratio = c2.negbin.cost / c.negbin.cost;
     let tpl = {};
     try { tpl = JSON.parse(note.dataset.tpl); } catch {}
-    // 面積を2倍にしたチップが1回の露光の範囲(26×33 mm = 858 mm²)に収まらないときは、倍率の文は出さない
-    const fits = 2 * p.w * p.h <= 858;
+    // 縦横を √2 倍にしたチップが1回の露光の範囲(26×33 mm、向きは問わない)に収まらないときは、倍率の文は出さない
+    const w2 = p.w * Math.SQRT2, h2 = p.h * Math.SQRT2;
+    const fits = (w2 <= 26 && h2 <= 33) || (w2 <= 33 && h2 <= 26);
     note.textContent = Number.isFinite(c.negbin.cost)
       ? [tpl.main.replace('{good}', fmt(c.negbin.good)).replace('{cost}', fmt(c.negbin.cost, 2)),
         fits && Number.isFinite(ratio) ? tpl.ratio.replace('{ratio}', fmt(ratio, 1)) : ''].filter(Boolean).join(/^(ja|zh)/.test(lang) ? '' : ' ')
