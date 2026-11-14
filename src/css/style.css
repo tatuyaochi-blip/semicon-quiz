@@ -77,6 +77,27 @@ h2 { font-size: 1.25rem; line-height: 1.4; margin: 2rem 0 .8rem; }
 h3 { font-size: 1.05rem; margin: 1.4rem 0 .6rem; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
+/* 文字の折り返し(2026-11-14)
+   - 日本語の見出し・ボタン・カードの題(説明の文は対象外。狭いカードで行末がそろわず、がたつくため)・選択肢は、語の途中で切らず文節の切れ目(build.js と quiz.js が入れる <wbr>)で折り返す。
+     word-break: auto-phrase は iPhone の Safari が対応していないので使わない。入りきらない長い語は body の overflow-wrap: anywhere で切れる
+   - 韓国語は語(空白の間)の途中で切らない(既定では音節の途中でも切れて「1비트/를」となっていた)
+   - 段落の最後の行に1〜2字だけ残るのを避ける(対応しているブラウザだけ) */
+:lang(ja) :is(h1, h2, h3, h4, button, summary, th, dt, label, .btn, .chip, .cat-name, .cat-blurb, :is(.cmp-card, .course-card, .mode-card, .start-card) :is(strong, b), .tile-label, .choice-text, .tg-name, .tr-name, .ref-tile, .rail-h, .hero-sample-q, .q-text, .breadcrumb, .area-title, .learn-next, .tool-kicker, .verdict, .learn-rows, .rail-related, .search-list, .fig-gallery) { word-break: keep-all; }
+/* リンクのチップは下線を付けない(ページによって下線のあるチップとないチップが混ざっていた) */
+a.chip { text-decoration: none; }
+:lang(ko) { word-break: keep-all; }
+/* 1行で出す決まりの場所では、その区切りを使わない(white-space: nowrap でも <wbr> では折り返すため) */
+:is(.menu-panel, .header-nav, table.numbers, table.compare thead, .dy-table, .sp-pairs, .bo2-table, table.abbr, .rail-toc, .tg-meta, .tr-meta, .dy-unit, .dy-sticky, .cc-seg, .rd-name) wbr { display: none; }
+p, li, dd, figcaption { text-wrap: pretty; }
+/* 表のセルでは、列の幅を決めるときに「0.026 eV」のような数と単位を割らない(body の overflow-wrap: anywhere だと列が細くなり「e / V」と切れていた) */
+td, th { overflow-wrap: break-word; }
+/* 美しさの周回(2026-11-14):
+   - 日本語の本文の段落は両端をそろえる(和文の組版の基本。携帯の狭い幅で右端のでこぼこが目立っていた)。最後の行は左寄せのまま
+   - 日本語の見出しは、かなの字の幅を詰める(palt。全角の幅のままだと「ト」「ッ」の前後が空いて間延びする) */
+:lang(ja) main p { text-align: justify; text-justify: inter-character; }
+:lang(ja) :is(h1, h2, h3) { font-feature-settings: "palt"; letter-spacing: .01em; }
+/* 下線は字から少し離し、細くする(日本語では下線が字の下端に重なり、詰まって見えた) */
+a { text-underline-offset: .2em; text-decoration-thickness: from-font; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 .wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; }
@@ -158,6 +179,8 @@ main.wrap { padding-block: 8px 48px; min-height: 60vh; }
   /* 幅360px 前後では「半導体教室」が12px 足りなかったので、言語とメニューのボタンの余白を詰める */
   .lang-menu > summary, .nav-menu > summary { padding-inline: 6px; }
   .header-inner { gap: 2px; }
+  /* 360px では、それでもサイト名が「半導体…」と切れていた(2026-11-14)。開閉の矢印を省いて、サイト名の場所を空ける */
+  .lang-menu > summary::after, .nav-menu > summary::after { display: none; }
 }
 /* 英語・ドイツ語・フランス語・オランダ語は言語名(English・Deutsch・Français・Nederlands)が長く、390〜430px でもサイト名が「Semicondu…」と切れる(G-004)ので、短い表記にする */
 @media (max-width: 430px) {
@@ -247,7 +270,7 @@ main.wrap { padding-block: 8px 48px; min-height: 60vh; }
 .cat-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 @media (max-width: 560px) { .cat-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
 .cat-card {
-  display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 6px;
   height: 100%; min-height: 84px; padding: 12px 14px; border-radius: 12px;
   background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
   color: var(--text); text-decoration: none;
@@ -255,7 +278,7 @@ main.wrap { padding-block: 8px 48px; min-height: 60vh; }
 .cat-card:hover { border-color: var(--accent); }
 .cat-name { font-weight: 700; line-height: 1.4; }
 .cat-blurb { font-size: .85rem; line-height: 1.5; color: var(--muted); }
-.cat-meta { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; font-size: .75rem; color: var(--muted); }
+.cat-meta { margin-top: auto; display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; font-size: .75rem; color: var(--muted); }
 .cat-meta b { color: var(--accent-2); }
 .cat-card .meter { height: 4px; }
 
@@ -264,6 +287,8 @@ main.wrap { padding-block: 8px 48px; min-height: 60vh; }
 .breadcrumb a { display: inline-block; padding: 4px 0; } /* 押せる高さを 24px 以上に(design.md の数値の基準) */
 .stat-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 1rem 0; }
 @media (min-width: 600px) { .stat-tiles { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
+/* 2列で奇数個のときは、最後の1枚を横いっぱいにする(右下が空いていた。2026-11-14) */
+@media (max-width: 599px) { .stat-tiles > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
 .tile { display: flex; flex-direction: column; padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
 .tile-num { font-size: 1.55rem; font-weight: 800; line-height: 1.4; color: var(--accent); }
 .tile-num small { font-size: .94rem; color: var(--muted); font-weight: 600; }
@@ -427,6 +452,21 @@ body:has(#quiz) .header-nav, body:has(#quiz) .site-search, body:has(#quiz) .sear
 /* 図(data/figures/*.svg)。色はクラスで指定し、ダークモードでも読めるようにする */
 .fig { margin: 12px 0; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
 .fig svg { display: block; width: 100%; height: auto; max-width: 560px; margin: 0 auto; }
+/* 携帯の図(2026-11-14): 幅560の図を幅317pxに縮め、図の中の字が約8pxになっていた。
+   本文の中の図は画面の端まで広げる(両側の余白と枠の分、約1.1倍)。幅520以上の図は、さらに幅440pxより小さくせず、横に送れるようにする(字が約11px)。
+   図の説明の行は、図を横に送っても動かない */
+@media (max-width: 599px) {
+  :is(article, section, .prose) > .fig { margin-inline: -16px; padding: 10px 8px; border-radius: 0; border-inline: 0; }
+  /* 横に送れることが分かるよう、続きのある側の端に薄い影を出す(送りきると消える) */
+  .fig-wide { overflow-x: auto; overscroll-behavior-x: contain;
+    background: linear-gradient(to right, var(--surface) 40%, transparent) left / 28px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 40%, transparent) right / 28px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, .2), transparent) left / 12px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .2), transparent) right / 12px 100% no-repeat scroll,
+      var(--surface); }
+  .fig-wide > svg { min-width: 440px; }
+  .fig-wide > figcaption { position: sticky; left: 0; max-width: calc(100vw - 16px); }
+}
 .fig text { fill: var(--text); font-size: 15px; font-family: inherit; }
 .fig text.sm { font-size: 13px; }
 .fig text.m { fill: var(--muted); }
@@ -533,6 +573,13 @@ body:has(#quiz) .header-nav, body:has(#quiz) .site-search, body:has(#quiz) .sear
   border: 2px solid var(--border); background: var(--surface); color: var(--text); font: inherit;
 }
 .search input:focus { border-color: var(--accent); outline: none; }
+/* 携帯では、件数を入力欄の下の右端に置き、入力欄を横いっぱいにする(2026-11-14。件数に幅を取られ、例の文が「MOSFET、ｪ」と切れていた) */
+@media (max-width: 599px) {
+  .search { flex-wrap: wrap; gap: 2px 12px; }
+  .search input { flex-basis: 100%; }
+  .search input::placeholder { font-size: .94rem; }
+  .search > span { margin-left: auto; font-size: .85rem; }
+}
 .glossary { margin: 0; display: grid; gap: 10px; }
 .term { padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); scroll-margin-top: 16px; }
 .term:target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
@@ -584,6 +631,9 @@ body:has(#quiz) .header-nav, body:has(#quiz) .site-search, body:has(#quiz) .sear
 .fig-gallery .fig-item { padding: 8px; }
 .fig-gallery .fig-item figcaption { font-size: .85rem; line-height: 1.4; }
 .fig-gallery .fig-item figcaption .muted { display: none; }
+/* 図の名前は、動かせる図(リンク)も動かせない図も同じ見た目にする(青い下線つきと黒い字が混ざり、まだらに見えた。2026-11-14)。動かせる図は「動かして確かめる →」で分かる */
+.fig-gallery .fig-item figcaption strong a { color: inherit; text-decoration: none; }
+.fig-gallery .fig-try { font-size: .85rem; font-weight: 600; text-decoration: none; }
 .fig-item { margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); scroll-margin-top: 16px; }
 .fig-item:target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .fig-item img { display: block; width: 100%; height: auto; border-radius: 8px; }
@@ -592,6 +642,9 @@ body:has(#quiz) .header-nav, body:has(#quiz) .site-search, body:has(#quiz) .sear
 .q-nav { display: flex; justify-content: space-between; gap: 10px; margin: 1.25rem 0; }
 .q-mini { margin: 1rem 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .q-mini h3 { margin: 0 0 .6rem; font-size: 1rem; font-weight: 600; line-height: 1.6; }
+/* 練習問題の問題文は、問題のページへのリンクでも本文の色で出す(問題文が丸ごと青い下線つきで、選択肢より目立っていた。2026-11-14)。触れたときだけ下線 */
+.q-mini h3 a { color: var(--text); text-decoration: none; }
+.q-mini h3 a:hover { color: var(--accent); text-decoration: underline; }
 .term-summary { margin-top: -.2rem; }
 .term-about h2 { margin-bottom: .4rem; }
 .term-about p { margin: 0; }
@@ -599,6 +652,23 @@ body:has(#quiz) .header-nav, body:has(#quiz) .site-search, body:has(#quiz) .sear
 /* ===== 比較ページ: 表の固定列、ツール、FAQ ===== */
 table.compare tbody th { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--border); }
 table.compare thead th:first-child { position: sticky; left: 0; z-index: 2; }
+/* 携帯(600px 未満)では、比較表を「項目ごとのかたまり」に組み替える(2026-11-14)。
+   3列の表は右の列(2つめの比べる相手)が画面の外に出て、横に送らないと読めなかった。
+   項目名を見出しにし、その下に「NPN | 値」「PNP | 値」を並べる(列の名前は build.js が td の data-label に入れる) */
+@media (max-width: 599px) {
+  .table-wrap:has(> table.compare) { overflow: visible; }
+  table.compare, table.compare tbody, table.compare tr, table.compare th, table.compare td { display: block; min-width: 0; width: auto; }
+  table.compare { min-width: 0; }
+  table.compare thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  table.compare tbody th { width: auto; min-width: 0; position: static; box-shadow: none; padding: 10px 14px 4px; background: var(--accent-soft); color: var(--text); border-bottom: 0; }
+  table.compare tbody tr:first-child th { border-radius: 11px 11px 0 0; }
+  table.compare tbody tr { border-bottom: 1px solid var(--border); }
+  table.compare tbody tr:last-child { border-bottom: 0; }
+  table.compare tbody tr > th { padding-top: 8px; padding-bottom: 8px; }
+  table.compare td { display: grid; grid-template-columns: minmax(4.5em, 28%) 1fr; gap: 10px; padding: 8px 14px; border-bottom: 0; }
+  table.compare td + td { border-top: 1px dashed var(--border); }
+  table.compare td::before { content: attr(data-label); font-weight: 700; color: var(--accent); font-size: .85rem; line-height: 1.85; }
+}
 .cmp-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: .75rem 0 0; }
 .cmp-tools .btn { min-height: 44px; padding: 0 14px; font-size: .85rem; }
 .faq h3 { margin: 1.25rem 0 .25rem; font-size: 1.05rem; line-height: 1.6; }
@@ -920,6 +990,8 @@ table.compare thead th:first-child { position: sticky; left: 0; z-index: 2; }
   padding: 12px 40px 12px 14px; cursor: pointer; list-style: none; position: relative;
 }
 .topic-group > summary::-webkit-details-marker { display: none; }
+/* 説明の行がない欄(計算ツール・比較の一覧)は、件数を名前の高さの中央にそろえる(アイコンつきの名前と基準線でそろえると、件数が下にずれていた。2026-11-14) */
+.topic-group > summary:not(:has(.tg-preview)) { align-items: center; }
 .topic-group > summary::after {
   content: ""; position: absolute; right: 16px; top: 20px; width: 8px; height: 8px;
   border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .15s;
@@ -1114,6 +1186,12 @@ table.ml small { display: block; color: var(--muted); font-size: .85rem; }
 /* 資料のトップ: アイコンと短い名前のタイル */
 .ref-tiles { list-style: none; margin: .6rem 0 1.2rem; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 @media (min-width: 700px) { .ref-tiles { grid-template-columns: repeat(4, 1fr); } }
+/* 携帯の2列で奇数個のときは、最後の1枚を中央に置く(左に寄って右が空いていた。2026-11-14) */
+@media (max-width: 699px) {
+  .ref-tiles:not(.home-tiles) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ref-tiles:not(.home-tiles) > li { grid-column: span 2; }
+  .ref-tiles:not(.home-tiles) > li:last-child:nth-child(odd) { grid-column: 2 / span 2; }
+}
 .ref-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 104px; padding: 14px 10px; text-align: center; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-decoration: none; font-weight: 600; font-size: .94rem; line-height: 1.4; }
 .ref-tile:hover { border-color: var(--accent); color: var(--accent); }
 .ref-tile .ic { width: 44px; height: 44px; padding: 9px; border-radius: 12px; color: var(--accent); background: var(--accent-soft); }
@@ -1151,8 +1229,16 @@ main.wrap:has(> .hero) .area-title { position: absolute; width: 1px; height: 1px
 .home-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 0; }
 .home-tiles .ref-tile { min-height: 92px; padding: 12px 6px; gap: 6px; font-size: .85rem; }
 .home-tiles .ref-tile .ic { width: 38px; height: 38px; padding: 8px; }
+/* 携帯の3列で5個のとき、2段目の2個を中央に置く(左に寄って右下が空いていた。2026-11-14) */
+@media (max-width: 699px) {
+  .home-tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .home-tiles > li { grid-column: span 2; }
+  .home-tiles > li:nth-child(4):nth-last-child(2) { grid-column: 2 / span 2; }
+}
 @media (min-width: 700px) { .home-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } .home-tiles .ref-tile { font-size: .85rem; } }
 @media (min-width: 900px) { .home-tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+/* PC で5個のときは5列にして、右端の空きをなくす(2026-11-14) */
+@media (min-width: 900px) { .home-tiles:has(> li:nth-child(5):last-child) { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 /* 図の見本: スマホは2列で4点、PC は3列で6点 */
 
 /* 押せるカードの動き(色と1pxの浮き。動きを減らす設定では動かさない) */
@@ -1211,6 +1297,16 @@ main.wrap:has(> .hero) .area-title { position: absolute; width: 1px; height: 1px
 /* 右の欄を、比較・問題・分野のページでも使う(.rail-head = 左上に置く見出しのかたまり)。右の欄に出したものは、PC では下の重複を隠す */
 .cat-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
 .cat-links .btn { min-height: 44px; padding: 0 16px; font-size: .94rem; }
+/* 携帯では、計算ツールへのリンクを1つの枠の中の行にする(2026-11-14。幅のそろわない枠のボタンが1つずつ縦に並び、がたついていた) */
+@media (max-width: 599px) {
+  .cat-links { flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+  .cat-links .btn { justify-content: flex-start; text-align: left; border: 0; border-radius: 0; border-top: 1px solid var(--border); box-shadow: none; padding: 10px 16px; line-height: 1.5; }
+  .cat-links .btn:first-child { border-top: 0; }
+  /* 分野ページの「10問練習する」(塗り)は横いっぱい、ほかの2つは横に並べる(縦に3枚重なり、画面の高さの半分を使っていた) */
+  .mode-grid:not(.compact):has(> .mode-card.primary) { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mode-grid:not(.compact):has(> .mode-card.primary) > .primary { grid-column: 1 / -1; }
+  .mode-grid:not(.compact):has(> .mode-card.primary) > .mode-card:not(.primary) { padding: 12px 14px; justify-content: flex-start; }
+}
 @media (min-width: 1100px) {
   .term-layout > .rail-head { grid-column: 1; grid-row: 1; min-width: 0; }
   .term-layout .rail-dup { display: none; }
@@ -1311,6 +1407,8 @@ math .mw { font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo
 
 /* ===== 押せる場所の大きさ(2026-11-13、design.md の数値の基準: 文の外のリンクは高さ 24px 以上) ===== */
 .q-list a, .books li a, .topics-all a, dl.glossary dt a, .glossary-cat-quiz a, .news-sources li > a, .q-mini h3 a, .footer-nav a, .footer-request a { display: inline-block; padding: 3px 0; }
+/* 一覧の中で折り返すリンクは、行頭の印(・や番号)を1行目にそろえる(inline-block の既定では最後の行にそろい、印が「す」の横に出ていた) */
+li > a:only-child, .q-list a, .books li a, .news-sources li > a { vertical-align: top; }
 /* 英語の本文は1行 80字以内に(WCAG 1.4.8 の目安。2026-11-13 に測ると 85〜99字だった)。日本語は本文の幅 760px で 45字以内に収まる */
 html[lang="en"] main p, html[lang="en"] main li { max-width: 35em; }
 
@@ -1322,3 +1420,12 @@ html[lang="en"] main p, html[lang="en"] main li { max-width: 35em; }
 .lecture-sec p { max-width: 39.5em; margin: 0 0 12px; }
 .lecture-next { margin: 24px 0 0; }
 .lecture-next .btn { min-height: 44px; padding: 0 16px; font-size: .94rem; }
+
+/* 横に送れる行(携帯の目次のチップ、計算ツールの分類)は、右端を薄くぼかして続きがあることを示す(2026-11-14。端で切れたチップが、続きなのか崩れなのか分からなかった)。
+   右の余白(16px)の分だけぼかすので、送りきったときの最後のチップはぼけない */
+@media (max-width: 1099px) {
+  .rail-toc ol { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+}
+@media (max-width: 640px) {
+  .tools-jump, .dy-presets { padding-right: 16px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+}

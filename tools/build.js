@@ -12,6 +12,7 @@ import { figures, localizeFigure } from './figures.js';
 import { buildReference } from './reference.js';
 import { icon } from './icons.js';
 import { mathifyHtml } from '../src/js/mathify.js';
+import { phraseHtml } from '../src/js/phrase.js';
 import { makeMarker, modeOf, formulaHtml } from '../src/js/mathml.js';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -839,13 +840,27 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
     content = content.replaceAll('<!--nohash-->', '').replaceAll('<!--/nohash-->', '');
     // 目印の付いた式を MathML に置き換える(読めなかった式は1行書きのまま)。その後で、残りの本文の添字と単位を整える
     // 独立させた式の前後のスペースは落とし、すぐ後ろの句読点は式の行の末尾に付ける(句読点だけが次の行の頭に残らないように)
-    if (content.includes(M0)) content = content.replace(new RegExp(`([ \\u00a0]*)${M0}([^${M1}]*)${M1}([ \\u00a0]*)([、。]|[,.;](?=[\\s<]|$))?`, 'g'), (m, s1, x, s2, punct = '') => {
-      const html = mathHtml(unescHtml(x));
+    if (content.includes(M0)) content = content.replace(new RegExp(`([ \\u00a0]*)${M0}([^${M1}]*)${M1}([ \\u00a0]*)([、。]|[,.;](?=[\\s<]|$))?`, 'g'), (m, s1, x, s2, punct = '', at, all) => {
+      // カギカッコ・丸カッコにちょうど囲まれた式(「ρ ≈ 1/(qnμ)」は…)は独立させず、文の流れの中に置く(カッコだけが前後の行に残らないように)
+      const quoted = typeof at === 'number' && /[「『（(]$/.test(all.slice(Math.max(0, at - 1), at)) && /^[」』）)]/.test(all.slice(at + m.length));
+      const html = mathHtml(quoted && !x.startsWith(MI) ? MI + unescHtml(x) : unescHtml(x));
       if (!html) return `${s1}${x}${s2}${punct}`;
       if (!html.startsWith('<span class="math-block">')) return `${s1}${html}${s2}${punct}`;
       return punct && !s2 ? html.replace(/<\/span>$/, `<span class="math-punct">${punct}</span></span>`) : `${html}${punct}`;
     }).replaceAll(M0, '').replaceAll(M1, '').replaceAll(MI, '');
     content = mathifyHtml(content);
+    // 日本語の見出し・ボタン・カードの題・選択肢に、文節の切れ目の区切り(<wbr>)を入れる(src/js/phrase.js。CSS の word-break: keep-all と組み合わせる)
+    if (L.code === 'ja') content = phraseHtml(content);
+    // リンクの矢印(「… →」「← …」)だけが次の行に残らないよう、矢印の前後のスペースを行が切れないスペースにする
+    content = content.replaceAll(' →', '\u00a0→').replaceAll('← ', '←\u00a0');
+    // 幅の広い図(viewBox の幅 520 以上)に印を付ける。携帯では縮めすぎず、横に送れるようにする(CSS の .fig-wide)
+    content = content.replace(/<figure class="fig"><svg([^>]*?) viewBox="0 0 (\d+)/g, (m, a, w) => (+w >= 520 ? `<figure class="fig fig-wide"><svg${a} viewBox="0 0 ${w}` : m));
+    // 比較表のセルに列の名前(data-label)を付ける。携帯では表を項目ごとのかたまりに組み替え、値の前に列の名前を出す(CSS)。
+    // 更新日の判定(rawContent)より後で付けるので、この変更だけでは更新日は動かない
+    content = content.replace(/<table class="compare">([\s\S]*?)<\/table>/g, (m, inner) => {
+      const heads = [...(inner.match(/<thead>[\s\S]*?<\/thead>/)?.[0] ?? '').matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map(x => x[1].replace(/<[^>]*>/g, '').replace(/"/g, '&quot;')).slice(1);
+      return m.replace(/<tr>([\s\S]*?)<\/tr>/g, (row, cells) => { let i = 0; return row.replace(/<td>/g, () => `<td data-label="${heads[i++] ?? ''}">`); });
+    });
     if (!noindex) built.set(p, { title: title ?? fullTitle ?? '', description: description ?? '' });
     const url = baseUrl + p;
     const tt = fullTitle || (title ? `${title} | ${siteName}` : siteName);
@@ -895,7 +910,7 @@ ${profile ? String(profile).split(/\n+/).map(x => `<p>${esc(x)}</p>`).join('\n')
       .filter((x, k, arr) => arr.findIndex(y => y[0] === x[0]) === k).map(([sub, label]) => `<a href="${home}${sub}">${esc(label)}</a>`).join('');
     // 既定言語以外のページ: ブラウザの言語がこのページの言語でない人に、既定言語版への案内を出す(閉じたら以後出さない)
     const mainHref = langBanner && code !== mainLang ? base + (alt[mainLang] ?? fallback(mainL)) : null;
-    const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner)}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
+    const bannerHtml = mainHref ? `<div class="lang-banner" lang="${mainL.htmlLang}" hidden><div class="wrap"><a href="${mainHref}" hreflang="${mainL.htmlLang}">${esc(mainS.lang_banner).replace(/ (→)$/, '\u00a0$1')}</a><button type="button" aria-label="${esc(mainS.lang_banner_close)}">×</button></div></div>
 <script>(() => { const b = document.currentScript.previousElementSibling, k = 'langBannerClosed', l = document.documentElement.lang.toLowerCase().split('-')[0]; let c; try { c = localStorage.getItem(k) || localStorage.getItem('langChoice'); } catch {} if (c || (navigator.languages || [navigator.language]).some(x => x && x.toLowerCase().startsWith(l))) return; b.hidden = false; b.querySelector('button').onclick = () => { b.hidden = true; try { localStorage.setItem(k, '1'); } catch {} }; })();</script>` : '';
     if (ads) scripts = ['ads.js', ...scripts];
     write(file || `${p}index.html`, fill(layout, {
